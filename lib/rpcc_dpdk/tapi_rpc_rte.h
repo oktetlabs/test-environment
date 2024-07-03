@@ -30,19 +30,19 @@ typedef rpc_ptr rpc_rte_flow_p;
 /**
  * Get TE_ENV_DPDK_REUSE_RPCS feature status
  *
- * @return @c TRUE, if the feature is requested;
- *         @c FALSE, if the feature is disabled
+ * @return @c true, if the feature is requested;
+ *         @c false, if the feature is disabled
  */
-static inline te_bool
+static inline bool
 dpdk_reuse_rpcs(void)
 {
     char     *reuse = NULL;
-    te_bool   is_enabled = TRUE;
+    bool is_enabled = true;
     te_errno  rc;
 
     rc = cfg_get_instance_string_fmt(&reuse, "/local:/dpdk:/reuse_rpcs:");
     if ((rc != 0) || (reuse == NULL) || (strcasecmp(reuse, "yes") != 0))
-        is_enabled = FALSE;
+        is_enabled = false;
 
     free(reuse);
 

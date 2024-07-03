@@ -115,7 +115,7 @@ coalesce_param_list(unsigned int gid,
  * @param _ecmd     Pointer to ethtool_coalesce structure
  * @param _val      Pointer to value which is to be either
  *                  get or set
- * @param _set      If @c TRUE, value in the structure should be
+ * @param _set      If @c true, value in the structure should be
  *                  set to @p _val, otherwise - vice versa
  */
 #define PROCESS_PARAM(_name, _field, _ecmd, _val, _set) \
@@ -138,7 +138,7 @@ coalesce_param_list(unsigned int gid,
  * @param name      Name of the parameter (structure field)
  * @param val       Pointer to the value which should be either
  *                  copied to @p ecmd or updated from it
- * @param do_set    If @c TRUE, the structure field should be
+ * @param do_set    If @c true, the structure field should be
  *                  updated, otherwise field value from the
  *                  structure should be obtained
  *
@@ -148,7 +148,7 @@ static te_errno
 process_coalesce_param(struct ethtool_coalesce *ecmd,
                        const char *name,
                        unsigned int *val,
-                       te_bool do_set)
+                       bool do_set)
 {
     PROCESS_PARAM(name, rx_coalesce_usecs, ecmd, val, do_set);
     PROCESS_PARAM(name, rx_max_coalesced_frames, ecmd, val, do_set);
@@ -210,7 +210,7 @@ coalesce_param_get(unsigned int gid,
         return rc;
 
     rc = process_coalesce_param(eptr, param_name, &param_val,
-                                FALSE);
+                                false);
     if (rc != 0)
         return rc;
 
@@ -271,7 +271,7 @@ coalesce_param_set(unsigned int gid,
 
     param_val = parsed_val;
     return process_coalesce_param(eptr, param_name, &param_val,
-                                  TRUE);
+                                  true);
 }
 
 /**

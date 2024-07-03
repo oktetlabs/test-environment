@@ -40,33 +40,33 @@ static const te_enum_map memtier_proto_mapping[] = {
 
 /* Command line options bindings */
 static const tapi_job_opt_bind memtier_binds[] = TAPI_JOB_OPT_SET(
-    TAPI_JOB_OPT_SOCKADDR_PTR("--server=", TRUE, tapi_memtier_opt, server),
-    TAPI_JOB_OPT_SOCKPORT_PTR("--port=", TRUE, tapi_memtier_opt, server),
-    TAPI_JOB_OPT_ENUM("--protocol=", TRUE, tapi_memtier_opt, protocol,
+    TAPI_JOB_OPT_SOCKADDR_PTR("--server=", true, tapi_memtier_opt, server),
+    TAPI_JOB_OPT_SOCKPORT_PTR("--port=", true, tapi_memtier_opt, server),
+    TAPI_JOB_OPT_ENUM("--protocol=", true, tapi_memtier_opt, protocol,
                       memtier_proto_mapping),
-    TAPI_JOB_OPT_UINT_T("--run-count=", TRUE, NULL, tapi_memtier_opt,
+    TAPI_JOB_OPT_UINT_T("--run-count=", true, NULL, tapi_memtier_opt,
                         run_count),
-    TAPI_JOB_OPT_UINT_T("--requests=", TRUE, NULL, tapi_memtier_opt,
+    TAPI_JOB_OPT_UINT_T("--requests=", true, NULL, tapi_memtier_opt,
                         requests),
-    TAPI_JOB_OPT_UINT_T("--clients=", TRUE, NULL, tapi_memtier_opt,
+    TAPI_JOB_OPT_UINT_T("--clients=", true, NULL, tapi_memtier_opt,
                         clients),
-    TAPI_JOB_OPT_UINT_T("--threads=", TRUE, NULL, tapi_memtier_opt,
+    TAPI_JOB_OPT_UINT_T("--threads=", true, NULL, tapi_memtier_opt,
                         threads),
-    TAPI_JOB_OPT_UINT_T("--pipeline=", TRUE, NULL, tapi_memtier_opt,
+    TAPI_JOB_OPT_UINT_T("--pipeline=", true, NULL, tapi_memtier_opt,
                         pipeline),
-    TAPI_JOB_OPT_UINT_T("--test-time=", TRUE, NULL, tapi_memtier_opt,
+    TAPI_JOB_OPT_UINT_T("--test-time=", true, NULL, tapi_memtier_opt,
                         test_time),
-    TAPI_JOB_OPT_UINT_T("--data-size=", TRUE, NULL, tapi_memtier_opt,
+    TAPI_JOB_OPT_UINT_T("--data-size=", true, NULL, tapi_memtier_opt,
                         data_size),
     TAPI_JOB_OPT_BOOL("--random-data", tapi_memtier_opt, random_data),
-    TAPI_JOB_OPT_STRING("--ratio=", TRUE, tapi_memtier_opt, ratio),
-    TAPI_JOB_OPT_STRING("--key-prefix=", TRUE, tapi_memtier_opt,
+    TAPI_JOB_OPT_STRING("--ratio=", true, tapi_memtier_opt, ratio),
+    TAPI_JOB_OPT_STRING("--key-prefix=", true, tapi_memtier_opt,
                         key_prefix),
-    TAPI_JOB_OPT_STRING("--key-pattern=", TRUE, tapi_memtier_opt,
+    TAPI_JOB_OPT_STRING("--key-pattern=", true, tapi_memtier_opt,
                         key_pattern),
-    TAPI_JOB_OPT_UINT_T("--key-minimum=", TRUE, NULL, tapi_memtier_opt,
+    TAPI_JOB_OPT_UINT_T("--key-minimum=", true, NULL, tapi_memtier_opt,
                         key_minimum),
-    TAPI_JOB_OPT_UINT_T("--key-maximum=", TRUE, NULL, tapi_memtier_opt,
+    TAPI_JOB_OPT_UINT_T("--key-maximum=", true, NULL, tapi_memtier_opt,
                         key_maximum),
     TAPI_JOB_OPT_BOOL("--hide-histogram", tapi_memtier_opt, hide_histogram),
     TAPI_JOB_OPT_BOOL("--debug", tapi_memtier_opt, debug)
@@ -83,18 +83,18 @@ const tapi_memtier_opt tapi_memtier_default_opt = {
     .pipeline = TAPI_JOB_OPT_UINT_UNDEF,
     .test_time = TAPI_JOB_OPT_UINT_UNDEF,
     .data_size = TAPI_JOB_OPT_UINT_UNDEF,
-    .random_data = FALSE,
+    .random_data = false,
     .ratio = NULL,
     .key_prefix = NULL,
     .key_pattern = NULL,
     .key_minimum = TAPI_JOB_OPT_UINT_UNDEF,
     .key_maximum = TAPI_JOB_OPT_UINT_UNDEF,
-    .hide_histogram = FALSE,
+    .hide_histogram = false,
     .memtier_path = NULL
 };
 
 /* Initializer for tapi_memtier_op_stats */
-#define MEMTIER_STATS_INIT { .tps = 0.0, .net_rate = 0.0, .parsed = FALSE }
+#define MEMTIER_STATS_INIT { .tps = 0.0, .net_rate = 0.0, .parsed = false }
 
 /* Initializer for report structure */
 const tapi_memtier_report tapi_memtier_default_report = {
@@ -158,20 +158,20 @@ tapi_memtier_create(tapi_job_factory_t *factory,
                 .stderr_loc = &new_app->out_chs[1],
                 .filters    = TAPI_JOB_SIMPLE_FILTERS(
                     {
-                        .use_stdout = TRUE,
-                        .readable = TRUE,
+                        .use_stdout = true,
+                        .readable = true,
                         .re = "^[a-zA-Z]+\\s+([0-9.-]+\\s+){2,}[0-9.-]+\\s*$",
                         .filter_var = &new_app->stats_filter,
                     },
                     {
-                        .use_stdout  = TRUE,
-                        .readable    = TRUE,
+                        .use_stdout  = true,
+                        .readable    = true,
                         .log_level   = TE_LL_RING,
                         .filter_name = "memtier_benchmark stdout"
                     },
                     {
-                        .use_stderr  = TRUE,
-                        .readable    = TRUE,
+                        .use_stderr  = true,
+                        .readable    = true,
                         .log_level   = TE_LL_WARN,
                         .filter_name = "memtier_benchmark stderr"
                     }
@@ -317,7 +317,7 @@ parse_stats(char *start, char *end, tapi_memtier_op_stats *stats)
      */
     stats->net_rate = stats->net_rate / 1024 * 8;
 
-    stats->parsed = TRUE;
+    stats->parsed = true;
 
     return 0;
 }
@@ -336,7 +336,7 @@ tapi_memtier_get_report(tapi_memtier_app *app, tapi_memtier_report *report)
 
     char *start = NULL;
     char *end = NULL;
-    te_bool parsed = FALSE;
+    bool parsed = false;
 
     if (app == NULL || report == NULL)
     {
@@ -383,7 +383,7 @@ tapi_memtier_get_report(tapi_memtier_app *app, tapi_memtier_report *report)
         if (rc != 0)
             goto finish;
 
-        parsed = TRUE;
+        parsed = true;
     }
 
     if (!parsed)

@@ -79,7 +79,7 @@ typedef struct thread_ctx {
     struct ipc_client *ipc_handle;
     msg_buf_head_t     msg_buf_head;
     uint32_t           seqno;
-    te_bool            log_cfg_changes;
+    bool log_cfg_changes;
 } thread_ctx_t;
 
 
@@ -96,12 +96,12 @@ static pthread_key_t    key;
 #endif
 
 /**
- * Log traffic operations using RING (TRUE) or INFO (FALSE) level.
+ * Log traffic operations using @c RING (@c true) or @c INFO (@c false) level.
  *
  * It is per library instance configuration variable. It is not
  * protected by any means.
  */
-static te_bool  rcf_tr_op_ring = TRUE;
+static bool rcf_tr_op_ring = true;
 
 
 /* Following two macros are necessary to provide tread safety */
@@ -112,7 +112,7 @@ static te_bool  rcf_tr_op_ring = TRUE;
 
 /* Declare and initialize (or obtain old) IPC library handle. */
 #define RCF_API_INIT \
-    thread_ctx_t *ctx_handle = get_ctx_handle(TRUE);            \
+    thread_ctx_t *ctx_handle = get_ctx_handle(true);            \
                                                                 \
     if (ctx_handle == NULL || ctx_handle->ipc_handle == NULL)   \
         return TE_RC(TE_RCF_API, TE_EIPC);                      \
@@ -417,7 +417,7 @@ wait_rcf_ipc_message(struct ipc_client *ipcc,
         return 0;
     }
 
-    while (TRUE)
+    while (true)
     {
         if ((rc = rcf_ipc_receive_answer(ipcc, recv_msg,
                                          recv_size, p_answer)) != 0)
@@ -572,7 +572,7 @@ rcf_api_key_create(void)
  * @return context handle or NULL if some error occurred
  */
 static thread_ctx_t *
-get_ctx_handle(te_bool create)
+get_ctx_handle(bool create)
 {
 #ifdef HAVE_PTHREAD_H
     thread_ctx_t          *handle;
@@ -635,7 +635,7 @@ void
 rcf_api_cleanup(void)
 {
 #if HAVE_PTHREAD_H
-    rcf_api_thread_ctx_destroy(get_ctx_handle(FALSE));
+    rcf_api_thread_ctx_destroy(get_ctx_handle(false));
     /* Write NULL to key value */
     if (pthread_setspecific(key, NULL) != 0)
     {
@@ -643,7 +643,7 @@ rcf_api_cleanup(void)
         fprintf(stderr, "pthread_setspecific() failed\n");
     }
 #else
-    struct ipc_client *ipcc = get_ctx_handle(FALSE);
+    struct ipc_client *ipcc = get_ctx_handle(false);
 
     if (ipc_close_client(ipcc) != 0)
     {
@@ -1119,9 +1119,9 @@ rcf_ta_reboot(const char *ta_name,
 
 /* See description in rcf_api.h */
 void
-rcf_log_cfg_changes(te_bool enable)
+rcf_log_cfg_changes(bool enable)
 {
-    thread_ctx_t *ctx_handle = get_ctx_handle(TRUE);
+    thread_ctx_t *ctx_handle = get_ctx_handle(true);
 
     if (ctx_handle != NULL)
         ctx_handle->log_cfg_changes = enable;
@@ -1315,7 +1315,7 @@ rcf_ta_cfg_del(const char *ta_name, int session, const char *oid)
 
 /* See description in rcf_api.h */
 te_errno
-rcf_ta_cfg_group(const char *ta_name, int session, te_bool is_start)
+rcf_ta_cfg_group(const char *ta_name, int session, bool is_start)
 {
     rcf_msg     msg;
     size_t      anslen = sizeof(msg);
@@ -1375,7 +1375,7 @@ rcf_get_sniffer_dump(const char *ta_name, const char *snif_id,
 /* See description in rcf_api.h */
 te_errno
 rcf_ta_get_sniffers(const char *ta_name, const char *snif_id, char **buf,
-                    size_t *len, te_bool sync)
+                    size_t *len, bool sync)
 {
     rcf_msg     msg;
     te_errno    rc;
@@ -1726,7 +1726,7 @@ rcf_ta_del_file(const char *ta_name, int session, const char *rfile)
 
 /* See description in rcf_api.h */
 te_errno
-rcf_tr_op_log(te_bool ring)
+rcf_tr_op_log(bool ring)
 {
     if (rcf_tr_op_ring != ring)
     {
@@ -1738,7 +1738,7 @@ rcf_tr_op_log(te_bool ring)
 }
 
 /* See description in rcf_api.h */
-te_bool
+bool
 rcf_tr_op_log_get(void)
 {
     return rcf_tr_op_ring;
@@ -2443,7 +2443,7 @@ rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
 
     unsigned int    i;
     rcf_trpoll_int *data;
-    te_bool         cancel;
+    bool cancel;
     te_errno        rc;
     unsigned int    n_active = 0;
     rcf_msg         msg;
@@ -2468,7 +2468,7 @@ rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
         return TE_RC(TE_RCF_API, TE_ENOMEM);
 
     /* Start poll operation for all CSAPs */
-    for (cancel = FALSE, i = 0; i < n_csaps; ++i)
+    for (cancel = false, i = 0; i < n_csaps; ++i)
     {
         if (csaps[i].csap_id == CSAP_INVALID_HANDLE)
         {
@@ -2487,7 +2487,7 @@ rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
                                                   &data[i].poll_id);
         }
         if (csaps[i].status != 0 || data[i].poll_id == 0)
-            cancel = TRUE;
+            cancel = true;
         else
             n_active++;
     }
@@ -2505,7 +2505,7 @@ rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
                                   &msg, &anslen, NULL);
         if (rc != 0)
         {
-            cancel = TRUE;
+            cancel = true;
         }
         else
         {
@@ -2565,7 +2565,7 @@ rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
  * Auxiliary function to check and code routine of task
  * entry point parameters.
  *
- * @param argv          if TRUE, paramaters should be in (argc, argv) form;
+ * @param argv          if @c true, paramaters should be in (argc, argv) form;
  *                      otherwise types are specified for parameters
  * @param argc          number of parameters
  * @param data          location for coded parameters
@@ -2770,7 +2770,7 @@ call_start(const char *ta_name, int session, int priority, const char *rtn,
 /* See description in rcf_api.h */
 te_errno
 rcf_ta_call(const char *ta_name, int session, const char *rtn,
-            te_errno *error, int argc, te_bool argv, ...)
+            te_errno *error, int argc, bool argv, ...)
 {
     te_errno    rc;
     va_list     ap;
@@ -2789,7 +2789,7 @@ rcf_ta_call(const char *ta_name, int session, const char *rtn,
 /* See description in rcf_api.h */
 te_errno
 rcf_ta_start_task(const char *ta_name, int session, int priority,
-                  const char *rtn, pid_t *pid, int argc, te_bool argv, ...)
+                  const char *rtn, pid_t *pid, int argc, bool argv, ...)
 {
     te_errno    rc;
     va_list     ap;
@@ -2807,7 +2807,7 @@ rcf_ta_start_task(const char *ta_name, int session, int priority,
 /* See description in rcf_api.h */
 te_errno
 rcf_ta_start_thread(const char *ta_name, int session, int priority,
-                  const char *rtn, int *tid, int argc, te_bool argv, ...)
+                  const char *rtn, int *tid, int argc, bool argv, ...)
 {
     te_errno    rc;
     va_list     ap;

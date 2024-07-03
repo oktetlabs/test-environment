@@ -1543,7 +1543,7 @@ cmsg_type_h2rpc(int level, int type)
 }
 
 /* See description in te_rpc_sys_socket.h */
-te_bool
+bool
 sockopt_is_boolean(rpc_sockopt opt)
 {
     switch (opt)
@@ -1609,10 +1609,10 @@ sockopt_is_boolean(rpc_sockopt opt)
 
         case RPC_UDP_NOCHECKSUM:
         case RPC_UDP_CORK:
-            return TRUE;
+            return true;
 
         default:
-            return FALSE;
+            return false;
     }
 }
 
@@ -2181,7 +2181,7 @@ sockaddr_input_h2rpc(const struct sockaddr *sa, tarpc_sa *rpc)
 
         default:
             ERROR("Unsupported address family %d", sa->sa_family);
-            assert(FALSE);
+            assert(false);
             break;
     }
 }
@@ -2191,7 +2191,7 @@ void
 sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
                       socklen_t len, tarpc_sa *rpc)
 {
-    te_bool raw_fallback = FALSE;
+    bool raw_fallback = false;
 
     assert(rpc != NULL);
 
@@ -2234,7 +2234,7 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
         ERROR("%s(): Address is too short (%u), it does not contain "
               "even 'sa_family'; will be retrieved in RAW format",
               __FUNCTION__, (unsigned)len);
-        raw_fallback = TRUE;
+        raw_fallback = true;
         goto finish;
     }
 
@@ -2269,7 +2269,7 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
                           "sockaddr_in' (%u); will be retrieved in RAW "
                           "format", __FUNCTION__, (unsigned)len,
                           (unsigned)sizeof(struct sockaddr_in));
-                    raw_fallback = TRUE;
+                    raw_fallback = true;
                     goto finish;
                 }
             }
@@ -2293,7 +2293,7 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
                       "sockaddr_in6' (%u); will be retrieved in RAW format",
                       __FUNCTION__, (unsigned)len,
                       (unsigned)sizeof(struct sockaddr_in6));
-                raw_fallback = TRUE;
+                raw_fallback = true;
                 goto finish;
             }
             rpc->sa_family = RPC_AF_INET6;
@@ -2320,7 +2320,7 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
                       "sockaddr_un' (%u); will be retrieved in RAW format",
                       __FUNCTION__, (unsigned)len,
                       (unsigned)sizeof(struct sockaddr_un));
-                raw_fallback = TRUE;
+                raw_fallback = true;
                 goto finish;
             }
             rpc->sa_family = RPC_AF_LOCAL;
@@ -2338,7 +2338,7 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
                      "sockaddr' (%u); will be retrieved in RAW format",
                       __FUNCTION__, (unsigned)len,
                      (unsigned)sizeof(struct sockaddr));
-                raw_fallback = TRUE;
+                raw_fallback = true;
                 goto finish;
             }
             rpc->sa_family = RPC_AF_ETHER;
@@ -2356,7 +2356,7 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
                      "sockaddr_ll' (%u); will be retrieved in RAW format",
                       __FUNCTION__, (unsigned)len,
                      (unsigned)sizeof(struct sockaddr_ll));
-                raw_fallback = TRUE;
+                raw_fallback = true;
                 goto finish;
             }
 
@@ -2369,7 +2369,7 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
         default:
             WARN("%s(): Address family %u is not supported - use raw "
                  "representation", __FUNCTION__, sa->sa_family);
-            raw_fallback = TRUE;
+            raw_fallback = true;
             break;
     }
 
@@ -2521,7 +2521,7 @@ sockaddr_rpc2h(const tarpc_sa *rpc,
                           "'struct sockaddr_un' (%u) - assertion failure",
                           __FUNCTION__, (unsigned)salen,
                           (unsigned)sizeof(struct sockaddr_un));
-                    assert(FALSE);
+                    assert(false);
                 }
                 memcpy(SUN(res_sa)->sun_path,
                        rpc->data.tarpc_sa_data_u.un.path,
@@ -2561,7 +2561,7 @@ sockaddr_rpc2h(const tarpc_sa *rpc,
 
         default:
             if (res_sa != NULL)
-                assert(FALSE);
+                assert(false);
             break;
     }
 
@@ -3610,7 +3610,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
 {
     int     rpc_level;
     int     rpc_type;
-    te_bool processed = FALSE;
+    bool processed = false;
 
     if (data == NULL || rpc_cmsg == NULL)
     {
@@ -3648,7 +3648,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                     rpc_cmsg->data_aux.type = TARPC_CMSG_DATA_INT;
                     rpc_cmsg->data_aux.tarpc_cmsg_data_u.int_data =
                                                         *(int32_t *)data;
-                    processed = TRUE;
+                    processed = true;
                     break;
 
                 case RPC_IP_TOS:
@@ -3671,7 +3671,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                               "for IP_TOS value", __FUNCTION__, len);
                         break;
                     }
-                    processed = TRUE;
+                    processed = true;
                     break;
 
                 case RPC_IP_RECVERR:
@@ -3710,7 +3710,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                         sockaddr_input_h2rpc(
                                         sa,
                                         &tarpc_ext_err->ee_offender);
-                        processed = TRUE;
+                        processed = true;
                     }
 #undef EXT_ERR_FIELD_H2TARPC
 #endif
@@ -3740,7 +3740,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                         tarpc_pktinfo->ipi_addr =
                                     ntohl(pktinfo->ipi_addr.s_addr);
                         tarpc_pktinfo->ipi_ifindex = pktinfo->ipi_ifindex;
-                        processed = TRUE;
+                        processed = true;
                     }
 #endif
                     break;
@@ -3777,7 +3777,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                                pktinfo->ipi6_addr.s6_addr,
                                sizeof(tarpc_pktinfo->ipi6_addr));
                         tarpc_pktinfo->ipi6_ifindex = pktinfo->ipi6_ifindex;
-                        processed = TRUE;
+                        processed = true;
                     }
 #endif
                     break;
@@ -3793,7 +3793,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                     rpc_cmsg->data_aux.type = TARPC_CMSG_DATA_INT;
                     rpc_cmsg->data_aux.tarpc_cmsg_data_u.int_data =
                                                         *(int32_t *)data;
-                    processed = TRUE;
+                    processed = true;
                     break;
             }
 
@@ -3822,7 +3822,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
 
                         tarpc_tv->tv_sec = tv->tv_sec;
                         tarpc_tv->tv_usec = tv->tv_usec;
-                        processed = TRUE;
+                        processed = true;
                     }
 
                     break;
@@ -3846,7 +3846,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                             &rpc_cmsg->data_aux.tarpc_cmsg_data_u.ts;
                         tarpc_ts->tv_sec = ts->tv_sec;
                         tarpc_ts->tv_nsec = ts->tv_nsec;
-                        processed = TRUE;
+                        processed = true;
                     }
 
                     break;
@@ -3875,7 +3875,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                         timespec_h2rpc(&tarpc_tstamp->hwtimetrans, ts);
                         ts++;
                         timespec_h2rpc(&tarpc_tstamp->hwtimeraw, ts);
-                        processed = TRUE;
+                        processed = true;
                     }
 
                     break;
@@ -3907,7 +3907,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
 
                     rpcts->len = ts->len;
 
-                    processed = TRUE;
+                    processed = true;
                     break;
                 }
 
@@ -3921,7 +3921,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                     rpc_cmsg->data_aux.type = TARPC_CMSG_DATA_INT;
                     rpc_cmsg->data_aux.tarpc_cmsg_data_u.int_data =
                                                         *(int32_t *)data;
-                    processed = TRUE;
+                    processed = true;
                     break;
             }
 

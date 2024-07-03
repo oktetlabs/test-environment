@@ -89,14 +89,14 @@ extern te_errno te_ipstack_calc_l4_cksum(const struct sockaddr  *ip_dst_addr,
  *
  * @param raw_packet      Pointer to buffer with headers and payload
  * @param total_size      Total size of raw packet
- * @param remove_vlan_hdr Remove all VLAN headers if @c TRUE
+ * @param remove_vlan_hdr Remove all VLAN headers if @c true
  * @param sadr_ll         Link local address to filling. May be @c NULL.
  *
  * @return Status code
  */
 extern te_errno te_ipstack_prepare_raw_tcpv4_packet(
     uint8_t *raw_packet, ssize_t *total_size,
-    te_bool remove_vlan_hdr, struct sockaddr_ll *sadr_ll);
+    bool remove_vlan_hdr, struct sockaddr_ll *sadr_ll);
 
 /**
  * Reverse addresses and ports of a RAW Ethernet/IP[4,6]/UDP packet,

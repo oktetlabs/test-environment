@@ -550,7 +550,7 @@ rgt_parse_xml_files(void)
     int         res;
     char       *chars    = NULL;
     size_t      size;
-    bool        main_st = FALSE;
+    bool        main_st = false;
 
     while (!SLIST_EMPTY(&rgt_flist_h))
     {

@@ -79,7 +79,7 @@ cmd_monitor_add(unsigned int gid, const char *oid, char *value, char *name)
     }
     monitor = calloc(1, sizeof(*monitor));
 
-    monitor->enable = FALSE;
+    monitor->enable = false;
     monitor->name = strdup(name);
     monitor->command = strdup("");
     monitor->time_to_wait = strdup("");
@@ -98,7 +98,7 @@ cmd_monitor_add(unsigned int gid, const char *oid, char *value, char *name)
  * @return 0 on success or error code on failure
  */
 static te_errno
-_monitor_set_enable(cmd_monitor_t *monitor, te_bool enable)
+_monitor_set_enable(cmd_monitor_t *monitor, bool enable)
 {
     int rc = 0;
 
@@ -150,7 +150,7 @@ _cmd_monitor_del(cmd_monitor_t *monitor)
 {
     te_errno rc = 0;
 
-    if ((rc = _monitor_set_enable(monitor, FALSE)) != 0)
+    if ((rc = _monitor_set_enable(monitor, false)) != 0)
         return rc;
 
     TAILQ_REMOVE(&cmd_monitors_h, monitor, links);
@@ -279,7 +279,7 @@ monitor_set_enable(unsigned int gid, const char *oid, char *value,
                    const char *name)
 {
     cmd_monitor_t *monitor = monitor_find_by_name(name);
-    te_bool        enable = FALSE;
+    bool enable = false;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -287,7 +287,7 @@ monitor_set_enable(unsigned int gid, const char *oid, char *value,
     if (monitor == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    enable = (atoi(value) == 0) ? FALSE : TRUE;
+    enable = (atoi(value) == 0) ? false : true;
 
     return _monitor_set_enable(monitor, enable);
 }

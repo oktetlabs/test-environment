@@ -52,15 +52,15 @@ extern const tapi_ethtool_opt tapi_ethtool_default_opt;
 
 /** Interface properties parsed in case of @c TAPI_ETHTOOL_CMD_NONE */
 typedef struct tapi_ethtool_if_props {
-    te_bool link;     /**< Link status */
-    te_bool autoneg;  /**< Auto-negotiation state */
+    bool link;     /**< Link status */
+    bool autoneg;  /**< Auto-negotiation state */
 } tapi_ethtool_if_props;
 
 /** Pause parameters parsed in case of @c TAPI_ETHTOOL_CMD_SHOW_PAUSE */
 typedef struct tapi_ethtool_pause {
-    te_bool autoneg; /**< Pause auto-negotiation state */
-    te_bool rx; /**< Whether reception of pause frames is enabled */
-    te_bool tx; /**< Whether transmission of pause frames is enabled */
+    bool autoneg; /**< Pause auto-negotiation state */
+    bool rx; /**< Whether reception of pause frames is enabled */
+    bool tx; /**< Whether transmission of pause frames is enabled */
 } tapi_ethtool_pause;
 
 /** Ring parameters parsed in case of @c TAPI_ETHTOOL_CMD_SHOW_RING */
@@ -75,7 +75,7 @@ typedef struct tapi_ethtool_ring {
 typedef struct tapi_ethtool_report {
     tapi_ethtool_cmd cmd; /**< Ethtool command */
 
-    te_bool err_out;       /**< @c TRUE if something was printed to
+    bool err_out;       /**< @c true if something was printed to
                                 stderr */
     te_string err_data;    /**< Text printed to stderr */
     te_errno err_code;     /**< Error code determined from parsing

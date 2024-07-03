@@ -62,7 +62,7 @@
 #define ICMP_DATALEN 56
 
 void
-tapi_rpc_msghdr_msg_flags_init_check(te_bool enable)
+tapi_rpc_msghdr_msg_flags_init_check(bool enable)
 {
     rpc_msghdr_msg_flags_init_check_enabled = enable;
 }
@@ -272,7 +272,7 @@ rpc_socket(rcf_rpc_server *rpcs,
  */
 static int
 rpc_bind_gen(rcf_rpc_server *rpcs, int s, const struct sockaddr *my_addr,
-             socklen_t len, te_bool fwd_len)
+             socklen_t len, bool fwd_len)
 {
     tarpc_bind_in  in;
     tarpc_bind_out out;
@@ -303,7 +303,7 @@ rpc_bind_gen(rcf_rpc_server *rpcs, int s, const struct sockaddr *my_addr,
 int
 rpc_bind(rcf_rpc_server *rpcs, int s, const struct sockaddr *my_addr)
 {
-    return rpc_bind_gen(rpcs, s, my_addr, 0, FALSE);
+    return rpc_bind_gen(rpcs, s, my_addr, 0, false);
 }
 
 /* See description in the tapi_rpc_socket.h */
@@ -311,7 +311,7 @@ int
 rpc_bind_len(rcf_rpc_server *rpcs, int s, const struct sockaddr *my_addr,
              socklen_t addrlen)
 {
-    return rpc_bind_gen(rpcs, s, my_addr, addrlen, TRUE);
+    return rpc_bind_gen(rpcs, s, my_addr, addrlen, true);
 }
 
 int rpc_bind_raw(rcf_rpc_server *rpcs, int s,
@@ -345,7 +345,7 @@ rpc_check_port_is_free(rcf_rpc_server *rpcs, uint16_t port)
 {
     tarpc_check_port_is_free_in  in;
     tarpc_check_port_is_free_out out;
-    te_bool errno_change_check_prev = rpcs->errno_change_check;
+    bool errno_change_check_prev = rpcs->errno_change_check;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -366,11 +366,11 @@ rpc_check_port_is_free(rcf_rpc_server *rpcs, uint16_t port)
 
     rcf_rpc_call(rpcs, "check_port_is_free", &in, &out);
     CHECK_RETVAL_VAR(check_port_is_free, out.retval,
-                     (out.retval != TRUE && out.retval != FALSE), FALSE);
+                     (out.retval != true && out.retval != false), false);
     TAPI_RPC_LOG(rpcs, check_port_is_free, "%d", "%d",
                  (int)port, out.retval);
     rpcs->errno_change_check = errno_change_check_prev;
-    TAPI_RPC_OUT(check_port_is_free, FALSE);
+    TAPI_RPC_OUT(check_port_is_free, false);
     return out.retval; /* no jumps! */
 }
 
@@ -882,7 +882,7 @@ ssize_t
 rpc_send_msg_more_ext(rcf_rpc_server *rpcs, int s, rpc_ptr buf,
                       size_t first_len, size_t second_len,
                       tarpc_send_function first_func,
-                      tarpc_send_function second_func, te_bool set_nodelay)
+                      tarpc_send_function second_func, bool set_nodelay)
 {
     tarpc_send_msg_more_in  in;
     tarpc_send_msg_more_out out;
@@ -925,7 +925,7 @@ rpc_send_msg_more(rcf_rpc_server *rpcs, int s, rpc_ptr buf,
 {
     return rpc_send_msg_more_ext(rpcs, s, buf, first_len, second_len,
                                  TARPC_SEND_FUNC_SEND,
-                                 TARPC_SEND_FUNC_SEND, FALSE);
+                                 TARPC_SEND_FUNC_SEND, false);
 }
 
 ssize_t
@@ -963,7 +963,7 @@ rpc_send_one_byte_many(rcf_rpc_server *rpcs, int s, int duration)
  * @param ok    Was the recvmsg() call sucessful?
  */
 static void
-msghdr_check_msg_flags(rpc_msghdr *msg, te_bool ok)
+msghdr_check_msg_flags(rpc_msghdr *msg, bool ok)
 {
     if (msg == NULL || !rpc_msghdr_msg_flags_init_check_enabled ||
         (msg->msg_flags_mode & RPC_MSG_FLAGS_NO_CHECK) != 0)
@@ -1014,7 +1014,7 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
         in.msg.msg_val = &rpc_msg;
         in.msg.msg_len = 1;
 
-        rc = msghdr_rpc2tarpc(msg, &rpc_msg, FALSE);
+        rc = msghdr_rpc2tarpc(msg, &rpc_msg, false);
         if (rc != 0)
         {
             rpcs->_errno = TE_RC(TE_TAPI, rc);
@@ -1066,7 +1066,7 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
         in.msg.msg_val = &rpc_msg;
         in.msg.msg_len = 1;
 
-        rc = msghdr_rpc2tarpc(msg, &rpc_msg, TRUE);
+        rc = msghdr_rpc2tarpc(msg, &rpc_msg, true);
         if (rc != 0)
         {
             rpcs->_errno = TE_RC(TE_TAPI, rc);
@@ -1240,7 +1240,7 @@ rpc_getpeername_gen(rcf_rpc_server *rpcs,
     RETVAL_INT(getpeername, out.retval);
 }
 
-static te_bool
+static bool
 mreq_source_cpy(tarpc_mreq_source *opt, struct option_value *val,
                 rpc_sockopt optname)
 {
@@ -1248,7 +1248,7 @@ mreq_source_cpy(tarpc_mreq_source *opt, struct option_value *val,
     {
         ERROR("Unknown option type for %s get request",
               sockopt_rpc2str(optname));
-        return FALSE;
+        return false;
     }
 
     val->opttype = opt->type;
@@ -1268,7 +1268,7 @@ mreq_source_cpy(tarpc_mreq_source *opt, struct option_value *val,
     val->option_value_u.opt_mreq_source.imr_sourceaddr =
       ntohl(val->option_value_u.opt_mreq_source.imr_sourceaddr);
 
-    return TRUE;
+    return true;
 }
 
 int
@@ -1743,7 +1743,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
         if (raw_optval != NULL)
         {
             unsigned int i;
-            te_bool      show_hidden = FALSE;
+            bool show_hidden = false;
 
             if (optname != RPC_IP_PKTOPTIONS || out.retval < 0 ||
                 out.optval.optval_val[0].option_value_u.
@@ -1786,7 +1786,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
             {
                 if (i == (raw_optlen == NULL ? 0 : *raw_optlen))
                 {
-                    show_hidden = TRUE;
+                    show_hidden = true;
                     te_log_buf_append(opt_val_str, " (");
                 }
                 te_log_buf_append(opt_val_str, " %#02x",
@@ -2105,7 +2105,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
     if (raw_optval != NULL)
     {
         unsigned int i;
-        te_bool      show_hidden = FALSE;
+        bool show_hidden = false;
 
         if (opt_val_str == NULL)
             opt_val_str = te_log_buf_alloc();
@@ -2122,7 +2122,7 @@ rpc_setsockopt_gen(rcf_rpc_server *rpcs,
         {
             if (i == raw_optlen)
             {
-                show_hidden = TRUE;
+                show_hidden = true;
                 te_log_buf_append(opt_val_str, " (");
             }
             te_log_buf_append(opt_val_str, " %#02x",
@@ -2181,7 +2181,7 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
 
     if (mmsg != NULL && rpcs->op != RCF_RPC_WAIT)
     {
-        rc = mmsghdrs_rpc2tarpc(mmsg, vlen, &tarpc_mmsg, TRUE);
+        rc = mmsghdrs_rpc2tarpc(mmsg, vlen, &tarpc_mmsg, true);
         if (rc != 0)
         {
             rpcs->_errno = TE_RC(TE_TAPI, rc);
@@ -2265,7 +2265,7 @@ rpc_sendmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
 
     if (mmsg != NULL && rpcs->op != RCF_RPC_WAIT)
     {
-        rc = mmsghdrs_rpc2tarpc(mmsg, vlen, &tarpc_mmsg, FALSE);
+        rc = mmsghdrs_rpc2tarpc(mmsg, vlen, &tarpc_mmsg, false);
         if (rc != 0)
         {
             rpcs->_errno = TE_RC(TE_TAPI, rc);
@@ -2390,7 +2390,7 @@ rpc_setsockopt_check_int(rcf_rpc_server *rpcs,
         ERROR("Changing %s value failure: set %d, got %d",
               sockopt_rpc2str(optname), optval, getval);
         rpcs->_errno = TE_RC(TE_TAPI, TE_EINVAL);
-        rpcs->err_log = TRUE;
+        rpcs->err_log = true;
         rc = -1;
         if (awaiting_err)
             TAPI_JMP_DO(TE_EFAIL);

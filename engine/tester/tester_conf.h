@@ -107,7 +107,7 @@ struct test_entity_value {
     const test_entity_value    *ref;    /**< Reference to another value */
     char                       *ext;    /**< Reference to external value */
     test_requirements           reqs;   /**< Attached requirements */
-    te_bool                     global; /**< Is this variable global? */
+    bool global; /**< Is this variable global? */
 };
 
 
@@ -181,10 +181,10 @@ typedef struct test_var_arg {
     const test_entity_value *preferred; /**< Preferred value for list
                                            iteration */
 
-    te_bool                  handdown;  /**< Handdown session variable
+    bool handdown;  /**< Handdown session variable
                                              to all children */
-    te_bool                  variable;  /**< Is variable */
-    te_bool                  global;    /**< In case it's a variable - is it
+    bool variable;  /**< Is variable */
+    bool global;    /**< In case it's a variable - is it
                                            global? */
 } test_var_arg;
 
@@ -214,7 +214,7 @@ struct test_session {
     run_item           *prologue;       /**< Prologue */
     run_item           *epilogue;       /**< Epilogue */
     run_items           run_items;      /**< List of run items */
-    te_bool             simultaneous;   /**< Run all items simultaneously */
+    bool simultaneous;   /**< Run all items simultaneously */
     unsigned int        flags;          /**< Flags */
 };
 
@@ -360,7 +360,7 @@ test_get_attrs(run_item *ri)
             return &ri->u.package->session.attrs;
 
         default:
-            assert(FALSE);
+            assert(false);
             return NULL;
     }
 }
@@ -392,7 +392,7 @@ test_get_name(const run_item *ri)
             return ri->u.package->name;
 
         default:
-            assert(FALSE);
+            assert(false);
             return NULL;
     }
 }
@@ -409,7 +409,7 @@ run_item_name(const run_item *ri)
 /**
  * Is run item a container (session or package)?
  */
-static inline te_bool
+static inline bool
 run_item_container(const run_item *ri)
 {
     return ri->type == RUN_ITEM_SESSION || ri->type == RUN_ITEM_PACKAGE;
@@ -461,7 +461,7 @@ typedef te_errno (* test_var_arg_enum_cb)(const test_var_arg *va,
  */
 extern te_errno test_run_item_enum_args(const run_item *ri,
                                         test_var_arg_enum_cb callback,
-                                        te_bool up_to_first_err,
+                                        bool up_to_first_err,
                                         void *opaque);
 
 /**
@@ -601,7 +601,7 @@ extern tester_cfg * tester_cfg_new(const char *filename);
  * @return Status code.
  */
 extern te_errno tester_parse_configs(tester_cfgs *cfgs,
-                                     te_bool build, te_bool verbose);
+                                     bool build, bool verbose);
 
 /**
  * Prepare configuration to be passed by testing scenario generator.

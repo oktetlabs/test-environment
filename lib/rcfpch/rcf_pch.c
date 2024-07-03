@@ -151,7 +151,7 @@ transform_str(char **ptr, char **str)
     char   *p = *ptr;
     char   *s;
 
-    te_bool quotes = FALSE;
+    bool quotes = false;
 
     SKIP_SPACES(p);
     s = p;
@@ -160,7 +160,7 @@ transform_str(char **ptr, char **str)
     if (*p == '\"')
     {
         p++;
-        quotes = TRUE;
+        quotes = true;
     }
 
     while (*p != 0)
@@ -236,7 +236,7 @@ get_type(char **ptr)
  * and most significant second for little-endian architecture.
  */
 static int
-parse_parameters(char *params, te_bool *is_argv, int *argc, void **param)
+parse_parameters(char *params, bool *is_argv, int *argc, void **param)
 {
     char *ptr = params;
     int   n = 0;
@@ -248,7 +248,7 @@ parse_parameters(char *params, te_bool *is_argv, int *argc, void **param)
 
     if (strncmp(ptr, "argv ", strlen("argv ")) == 0)
     {
-        *is_argv = TRUE;
+        *is_argv = true;
         ptr += strlen("argv ");
         SKIP_SPACES(ptr);
         while (*ptr != 0)
@@ -262,7 +262,7 @@ parse_parameters(char *params, te_bool *is_argv, int *argc, void **param)
     }
     else
     {
-        *is_argv = FALSE;
+        *is_argv = false;
         SKIP_SPACES(ptr);
         while (*ptr != 0)
         {
@@ -407,7 +407,7 @@ transmit_log(struct rcf_comm_connection *conn, char *cbuf,
     {
         ERROR("Command buffer too small");
         /* It MUST NOT happen */
-        assert(FALSE);
+        assert(false);
     }
 
     RCF_CH_LOCK;
@@ -485,7 +485,7 @@ rcf_pch_run(const char *confstr, const char *info)
             goto bad_protocol;                          \
         ptr = tmp;                                      \
         SKIP_SPACES(ptr);                               \
-    } while (FALSE)
+    } while (false)
 
 /**
  * Read pending bytes, if necessary and send an answer to the RCF.
@@ -507,7 +507,7 @@ rcf_pch_run(const char *confstr, const char *info)
         RCF_CH_UNLOCK;                                              \
         if (rc != 0)                                                \
             goto communication_problem;                             \
-    } while (FALSE)
+    } while (false)
 
     rcf_pch_init_id(confstr);
 
@@ -547,7 +547,7 @@ rcf_pch_run(const char *confstr, const char *info)
     register_vfork_hook(rcf_pch_detach_vfork, rcf_pch_attach_vfork,
                         rcf_pch_detach);
 
-    while (TRUE)
+    while (true)
     {
         size_t   len = cmd_buf_len;
         char    *ptr;
@@ -965,7 +965,7 @@ rcf_pch_run(const char *confstr, const char *info)
                         break;
 
                     default:
-                        assert(FALSE);
+                        assert(false);
                  }
 
                 if (rtn(conn, cmd, cmd_buf_len, answer_plen, handle) < 0)
@@ -1002,7 +1002,7 @@ rcf_pch_run(const char *confstr, const char *info)
                         break;
 
                     default:
-                        assert(FALSE);
+                        assert(false);
                         rtn = NULL;
                  }
 
@@ -1137,7 +1137,7 @@ rcf_pch_run(const char *confstr, const char *info)
                 void    *param[RCF_MAX_PARAMS];
                 char    *rtn;
                 int      argc;
-                te_bool  is_argv;
+                bool is_argv;
                 int      priority = -1;
 
                 rcf_execute_mode mode;
@@ -1309,7 +1309,7 @@ rcf_pch_run(const char *confstr, const char *info)
             }
 
             default:
-                assert(FALSE);
+                assert(false);
         }
         continue;
 

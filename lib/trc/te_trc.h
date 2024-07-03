@@ -58,7 +58,7 @@ typedef struct trc_test_iter_args {
 typedef struct trc_report_argument {
     char    *name;              /**< Argument name */
     char    *value;             /**< Argument value */
-    te_bool  variable;          /**< Is this argument in fact a variable */
+    bool variable;          /**< Is this argument in fact a variable */
 } trc_report_argument;
 
 /**
@@ -72,7 +72,7 @@ typedef struct trc_exp_result_entry {
     /* Auxiliary information */
     char       *key;            /**< BugID-like information */
     char       *notes;          /**< Any kind of notes */
-    te_bool     is_expected;    /**< Is this result expected
+    bool is_expected;    /**< Is this result expected
                                      (used by TRC Update) */
 } trc_exp_result_entry;
 
@@ -199,7 +199,7 @@ extern void trc_db_free_walker(te_trc_db_walker *walker);
  *
  * @param walker        Current walker position
  */
-extern te_bool trc_db_walker_is_iter(const te_trc_db_walker *walker);
+extern bool trc_db_walker_is_iter(const te_trc_db_walker *walker);
 
 /**
  * Move walker from the current position to the child test with
@@ -211,14 +211,14 @@ extern te_bool trc_db_walker_is_iter(const te_trc_db_walker *walker);
  * @param walker        Current walker position
  * @param test_name     Name of the test
  * @param force         Force to create DB entry, if it does not
- *                      exist (if resources allocation fails, FALSE is
- *                      returned, else TRUE is returned)
+ *                      exist (if resources allocation fails, @c false is
+ *                      returned, else @c true is returned)
  *
  * @return Is walker in a known place in TRC database tree?
  */
-extern te_bool trc_db_walker_step_test(te_trc_db_walker *walker,
+extern bool trc_db_walker_step_test(te_trc_db_walker *walker,
                                        const char       *test_name,
-                                       te_bool           force);
+                                       bool force);
 
 /**
  * Typedef for function matching iterations in TRC with
@@ -230,7 +230,7 @@ extern te_bool trc_db_walker_step_test(te_trc_db_walker *walker,
  */
 typedef int (*func_args_match_ptr)(const void *,
                                    unsigned int, trc_report_argument *,
-                                   te_bool);
+                                   bool);
 
 /**
  * Flags passed to trc_db_walker_step_iter() function.
@@ -281,7 +281,7 @@ typedef enum step_iter_flags {
  *
  * @return Is walker in a known place in TRC database tree?
  */
-extern te_bool trc_db_walker_step_iter(te_trc_db_walker *walker,
+extern bool trc_db_walker_step_iter(te_trc_db_walker *walker,
                                        unsigned int n_args,
                                        trc_report_argument *args,
                                        uint32_t flags,
@@ -341,9 +341,9 @@ extern const trc_exp_result *trc_db_walker_get_exp_result(
  * @param lhv   Left hand result value
  * @param rhv   Right hand result value
  *
- * @return      TRUE if results are equal, FALSE otherwise.
+ * @return      @c true if results are equal, @c false otherwise.
  */
-extern te_bool
+extern bool
 te_test_results_equal(const te_test_result *lhv,
                       const te_test_result *rhv);
 
@@ -365,7 +365,7 @@ extern const trc_exp_result_entry *trc_is_result_expected(
  *
  * @param result        Expected result to check
  */
-extern te_bool trc_is_exp_result_skipped(const trc_exp_result *result);
+extern bool trc_is_exp_result_skipped(const trc_exp_result *result);
 
 
 /*
@@ -443,7 +443,7 @@ extern te_errno trc_db_walker_set_prop_ud(
                     const te_trc_db_walker *walker,
                     unsigned int            user_id,
                     void                   *user_data,
-                    void                   *(*data_gen)(void *, te_bool));
+                    void                   *(*data_gen)(void *, bool));
 
 /**
  * Free user data associated by user with current position in TRC

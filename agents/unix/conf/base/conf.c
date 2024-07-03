@@ -1130,20 +1130,20 @@ RCF_PCH_CFG_NODE_RW(node_xen, "xen",
 static int vlans_buffer[MAX_VLANS];
 #endif
 
-te_bool
+bool
 ta_interface_is_mine(const char *ifname)
 {
     if (rcf_pch_rsrc_accessible("/agent:%s/interface:%s",
                                 ta_name, ifname))
-        return TRUE;
+        return true;
 
 #if 0
     if (INTERFACE_IS_PPP(ifname) ||
         rcf_pch_rsrc_accessible("/agent:%s/pppoeserver:", ta_name))
-        return TRUE;
+        return true;
 #endif
 
-    return FALSE;
+    return false;
 }
 
 #ifndef DISABLE_NETWORKMANAGER_CHECK
@@ -1274,7 +1274,7 @@ ta_unix_conf_base_init(void)
 int
 rcf_ch_conf_init(void)
 {
-    static te_bool init = FALSE;
+    static bool init = false;
 
     if (!init)
     {
@@ -1563,7 +1563,7 @@ rcf_ch_conf_init(void)
         if (ta_unix_conf_selftest_init() != 0)
             goto fail;
 
-        init = TRUE;
+        init = true;
 
     }
     return 0;
@@ -1692,7 +1692,7 @@ write_sys_value(const char *value, const char *format, ...)
 
 /* See the description in conf_common.h */
 te_errno
-read_sys_value(char *value, size_t len, te_bool ignore_eaccess,
+read_sys_value(char *value, size_t len, bool ignore_eaccess,
                const char *format, ...)
 {
     va_list   valist;
@@ -1776,7 +1776,7 @@ read_sys_value(char *value, size_t len, te_bool ignore_eaccess,
 /* See the description in conf_common.h */
 te_errno
 get_dir_list(const char *path, char *buffer, size_t length,
-             te_bool ignore_absence,
+             bool ignore_absence,
              include_callback_func include_callback,
              void *callback_data,
              int (*compar)(const struct dirent **,
@@ -1927,14 +1927,14 @@ ipforward_solaris(char *ipfw_str, int *p_val)
 /**
  * Set or obtain the value of IP forwarding variable on BSD.
  *
- * @param ip6           FALSE for IPv4, TRUE for IPv6
+ * @param ip6           @c false for IPv4, @c true for IPv6
  * @param p_val         location of the value: 0 or 1 to set the variable,
  *                      other - to read into the location (IN/OUT).
  *
  * @return              Status code.
  */
 static te_errno
-ipforward_bsd(te_bool ip6, int *p_val)
+ipforward_bsd(bool ip6, int *p_val)
 {
     int rc;
 #define MIB_SZ 4
@@ -2017,7 +2017,7 @@ ip4_fw_get(unsigned int gid, const char *oid, char *value)
 
 #elif BSD_IP_FW
     ival = 2;
-    rc = ipforward_bsd(FALSE, &ival); /* FALSE if not ip6 */
+    rc = ipforward_bsd(false, &ival); /* @c false if not ip6 */
     if (rc != 0)
         return rc;
     sprintf(value, "%d", ival);
@@ -2077,7 +2077,7 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
 
 #elif BSD_IP_FW
     ival = atoi(value);
-    rc = ipforward_bsd(FALSE, &ival); /* FALSE if not ip6 */
+    rc = ipforward_bsd(false, &ival); /* @c false if not ip6 */
     if (rc != 0)
         return rc;
 
@@ -2134,7 +2134,7 @@ ip6_fw_get(unsigned int gid, const char *oid, char *value)
 
 #elif BSD_IP_FW
     ival = 2;
-    rc = ipforward_bsd(TRUE, &ival); /* FALSE if not ip6 */
+    rc = ipforward_bsd(true, &ival); /* @c false if not ip6 */
     if (rc != 0)
         return rc;
     sprintf(value, "%d", ival);
@@ -2195,7 +2195,7 @@ ip6_fw_set(unsigned int gid, const char *oid, const char *value)
 
 #elif BSD_IP_FW
     ival = atoi(value);
-    rc = ipforward_bsd(TRUE, &ival); /* FALSE if not ip6 */
+    rc = ipforward_bsd(true, &ival); /* @c false if not ip6 */
     if (rc != 0)
         return rc;
 
@@ -2260,7 +2260,7 @@ ta_unix_conf_get_addr(const char *ifname, sa_family_t af, void **addr)
 
 
 /* Check, if one interface is alias of other interface */
-static te_bool
+static bool
 is_alias_of(const char *candidate, const char *master)
 {
     char *tmp = strchr(candidate, ':');
@@ -2887,7 +2887,7 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
     {
         struct vlan_ioctl_args  if_request;
         struct ifreq            ifr;
-        te_bool                 try_restore_ip_addr = TRUE;
+        bool try_restore_ip_addr = true;
 
         if (cfg_socket < 0)
         {
@@ -2904,7 +2904,7 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
         ifr.ifr_addr.sa_family = AF_INET;
         te_strlcpy(ifr.ifr_name, ifname, IFNAMSIZ);
         if (ioctl(cfg_socket, SIOCGIFADDR, &ifr) != 0)
-            try_restore_ip_addr = FALSE;
+            try_restore_ip_addr = false;
 
         if_request.cmd = ADD_VLAN_CMD;
         strcpy(if_request.device1, ifname);
@@ -3373,7 +3373,7 @@ aliases_list()
     size_t              ifconf_len;
     struct my_ifreq    *req;
 
-    te_bool     first = TRUE;
+    bool first = true;
     char       *name = NULL;
     char       *ptr = buf;
 
@@ -3394,7 +3394,7 @@ aliases_list()
         if (first)
         {
             buf[0] = 0;
-            first = FALSE;
+            first = false;
         }
         ptr += sprintf(ptr, "%s ", name);
     }
@@ -4256,7 +4256,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         int             sock = (family == AF_INET6) ?
                                cfg6_socket : cfg_socket;
         struct lifreq   lreq;
-        te_bool         logical_iface = FALSE;
+        bool logical_iface = false;
 
         memset(&lreq, 0, sizeof(lreq));
         te_strlcpy(lreq.lifr_name, ifname, sizeof(lreq.lifr_name));
@@ -4266,7 +4266,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 
         if (!te_sockaddr_is_wildcard(SA(&lreq.lifr_addr)))
         {
-            logical_iface = TRUE;
+            logical_iface = true;
             CFG_IOCTL(sock, SIOCLIFADDIF, &lreq);
             /* NOTE: Name of logical interface was set in 'lreq' */
         }
@@ -4581,7 +4581,7 @@ net_addr_del(unsigned int gid, const char *oid,
         gen_ip_address          ip_addr;
         netconf_list           *list;
         netconf_node           *t;
-        te_bool                 found;
+        bool found;
         unsigned char           prefix = 0;
 
         family = str_addr_family(addr);
@@ -4610,14 +4610,14 @@ net_addr_del(unsigned int gid, const char *oid,
             return TE_OS_RC(TE_TA_UNIX, errno);
         }
 
-        found = FALSE;
+        found = false;
         for (t = list->head; t != NULL; t = t->next)
         {
             const netconf_net_addr *naddr = &(t->data.net_addr);
 
             if (memcmp(&ip_addr, naddr->address, addrlen) == 0)
             {
-                found = TRUE;
+                found = true;
                 prefix = naddr->prefix;
                 break;
             }
@@ -4989,7 +4989,7 @@ prefix_get(unsigned int gid, const char *oid, char *value,
         gen_ip_address          ip_addr;
         netconf_list           *list;
         netconf_node           *t;
-        te_bool                 found;
+        bool found;
 
         if ((rc = CHECK_INTERFACE(ifname)) != 0)
         {
@@ -5023,14 +5023,14 @@ prefix_get(unsigned int gid, const char *oid, char *value,
             return TE_OS_RC(TE_TA_UNIX, errno);
         }
 
-        found = FALSE;
+        found = false;
         for (t = list->head; t != NULL; t = t->next)
         {
             const netconf_net_addr *net_addr = &(t->data.net_addr);
 
             if (memcmp(&ip_addr, net_addr->address, addrlen) == 0)
             {
-                found = TRUE;
+                found = true;
                 prefix = net_addr->prefix;
                 break;
             }
@@ -5134,7 +5134,7 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
         netconf_list           *list;
         netconf_node           *t;
         unsigned char           oldprefix = 0;
-        te_bool                 found;
+        bool found;
 
         if ((rc = CHECK_INTERFACE(ifname)) != 0)
         {
@@ -5168,14 +5168,14 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
             return TE_OS_RC(TE_TA_UNIX, errno);
         }
 
-        found = FALSE;
+        found = false;
         for (t = list->head; t != NULL; t = t->next)
         {
             const netconf_net_addr *naddr = &(t->data.net_addr);
 
             if (memcmp(&ip_addr, naddr->address, addrlen) == 0)
             {
-                found = TRUE;
+                found = true;
                 oldprefix = naddr->prefix;
                 break;
             }
@@ -5271,7 +5271,7 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
         gen_ip_address          ip_addr;
         netconf_list           *list;
         netconf_node           *t;
-        te_bool                 found;
+        bool found;
 
         if ((rc = CHECK_INTERFACE(ifname)) != 0)
         {
@@ -5299,7 +5299,7 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
             return TE_OS_RC(TE_TA_UNIX, errno);
         }
 
-        found = FALSE;
+        found = false;
         for (t = list->head; t != NULL; t = t->next)
         {
             const netconf_net_addr *net_addr = &(t->data.net_addr);
@@ -5307,7 +5307,7 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
             if (memcmp(&ip_addr, net_addr->address,
                        sizeof(struct in_addr)) == 0)
             {
-                found = TRUE;
+                found = true;
 
                 if (net_addr->broadcast != NULL)
                 {
@@ -5419,7 +5419,7 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
         gen_ip_address          ip_addr;
         netconf_list           *list;
         netconf_node           *t;
-        te_bool                 found;
+        bool found;
         unsigned char           prefix = 0;
 
         if ((rc = CHECK_INTERFACE(ifname)) != 0)
@@ -5449,7 +5449,7 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
             return TE_OS_RC(TE_TA_UNIX, errno);
         }
 
-        found = FALSE;
+        found = false;
         for (t = list->head; t != NULL; t = t->next)
         {
             const netconf_net_addr *naddr = &(t->data.net_addr);
@@ -5457,7 +5457,7 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
             if (memcmp(&ip_addr, naddr->address,
                        sizeof(struct in_addr)) == 0)
             {
-                found = TRUE;
+                found = true;
                 prefix = naddr->prefix;
                 break;
             }
@@ -5880,7 +5880,7 @@ static te_errno
 change_mtu(const char *ifname, int mtu)
 {
     te_errno  rc = 0;
-    te_bool   status;
+    bool status;
 
     req.my_ifr_mtu = mtu;
     strcpy(req.my_ifr_name, ifname);
@@ -5896,7 +5896,7 @@ change_mtu(const char *ifname, int mtu)
 
         /* Try to down interface */
         if (ta_interface_status_get(ifname, &status) == 0 &&
-            status && ta_interface_status_set(ifname, FALSE) == 0)
+            status && ta_interface_status_set(ifname, false) == 0)
         {
             te_errno  rc1;
 
@@ -5909,7 +5909,7 @@ change_mtu(const char *ifname, int mtu)
                 ERROR("Failed to change MTU to %d on interface %s: %r",
                       mtu, ifname, TE_OS_RC(TE_TA_UNIX, errno));
 
-            if ((rc1 = ta_interface_status_set(ifname, TRUE)) != 0)
+            if ((rc1 = ta_interface_status_set(ifname, true)) != 0)
             {
                 ERROR("Failed to up interface after mtu changing "
                       "error %r", rc1);
@@ -6026,7 +6026,7 @@ arp_set(unsigned int gid, const char *oid, const char *value,
 }
 
 /**
- * Get oper status of the interface (TRUE - RUNNING).
+ * Get oper status of the interface (@c true - RUNNING).
  *
  * @param ifname        name of the interface (like "eth0")
  * @param status        location to put status of the interface
@@ -6034,7 +6034,7 @@ arp_set(unsigned int gid, const char *oid, const char *value,
  * @return              Status code
  */
 te_errno
-ta_interface_oper_status_get(const char *ifname, te_bool *status)
+ta_interface_oper_status_get(const char *ifname, bool *status)
 {
     te_errno rc;
 
@@ -6059,7 +6059,7 @@ ta_interface_oper_status_get(const char *ifname, te_bool *status)
 }
 
 /**
- * Get status of the interface (FALSE - down or TRUE - up).
+ * Get status of the interface (@c false - down or @c true - up).
  *
  * @param ifname        name of the interface (like "eth0")
  * @param status        location to put status of the interface
@@ -6067,7 +6067,7 @@ ta_interface_oper_status_get(const char *ifname, te_bool *status)
  * @return              Status code
  */
 te_errno
-ta_interface_status_get(const char *ifname, te_bool *status)
+ta_interface_status_get(const char *ifname, bool *status)
 {
     te_errno rc;
 
@@ -6097,12 +6097,12 @@ ta_interface_status_get(const char *ifname, te_bool *status)
  * of down interfaces.
  *
  * @param ifname        name of the interface (like "eth0")
- * @param status        TRUE to get interface up and FALSE to down
+ * @param status        @c true to get interface up and @c false to down
  *
  * @return              Status code
  */
 te_errno
-ta_interface_status_set(const char *ifname, te_bool status)
+ta_interface_status_set(const char *ifname, bool status)
 {
     te_errno rc;
 
@@ -6141,7 +6141,7 @@ oper_status_get(unsigned int gid, const char *oid, char *value,
                 const char *ifname)
 {
     te_errno rc;
-    te_bool  status;
+    bool status;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -6169,7 +6169,7 @@ status_get(unsigned int gid, const char *oid, char *value,
            const char *ifname)
 {
     te_errno rc;
-    te_bool  status;
+    bool status;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -6198,15 +6198,15 @@ static te_errno
 status_set(unsigned int gid, const char *oid, const char *value,
            const char *ifname)
 {
-    te_bool  status;
+    bool status;
 
     UNUSED(gid);
     UNUSED(oid);
 
     if (strcmp(value, "0") == 0)
-        status = FALSE;
+        status = false;
     else if (strcmp(value, "1") == 0)
-        status = TRUE;
+        status = true;
     else
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
@@ -6514,7 +6514,7 @@ rp_filter_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
 
 #if __linux__
-    return read_sys_value(value, RCF_MAX_VAL, FALSE,
+    return read_sys_value(value, RCF_MAX_VAL, false,
                           "/proc/sys/net/ipv4/conf/%s/rp_filter",
                           ifname);
 #else
@@ -6609,7 +6609,7 @@ arp_ignore_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
 
 #if __linux__
-    return read_sys_value(value, RCF_MAX_VAL, FALSE,
+    return read_sys_value(value, RCF_MAX_VAL, false,
                           "/proc/sys/net/ipv4/conf/%s/arp_ignore",
                           ifname);
 #else
@@ -6794,8 +6794,8 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
     unsigned int        addrlen;
     netconf_list       *list;
     netconf_node       *t;
-    te_bool             dynamic;
-    te_bool             found;
+    bool dynamic;
+    bool found;
 
     family = str_addr_family(addr);
     dynamic = (strstr(oid, "dynamic") != NULL);
@@ -6827,7 +6827,7 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-    found = FALSE;
+    found = false;
     for (t = list->head; t != NULL; t = t->next)
     {
         const netconf_neigh *neigh = &(t->data.neigh);
@@ -6845,7 +6845,7 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
             continue;
         }
 
-        found = TRUE;
+        found = true;
 
         if (mac_p != NULL)
         {
@@ -7017,11 +7017,11 @@ static te_errno
 neigh_add(unsigned int gid, const char *oid, const char *value,
           const char *ifname, const char *addr)
 {
-    te_bool             proxy = (strstr(oid, "proxy") != NULL);
+    bool proxy = (strstr(oid, "proxy") != NULL);
 
 #if defined(USE_LIBNETCONF)
     te_errno            rc;
-    te_bool             dynamic;
+    bool dynamic;
     sa_family_t         family;
     unsigned int        ifindex;
     gen_ip_address      ip_addr;
@@ -7160,7 +7160,7 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
           const char *addr)
 {
     te_errno      rc;
-    te_bool       proxy = (strstr(oid, "proxy") != NULL);
+    bool proxy = (strstr(oid, "proxy") != NULL);
 
     UNUSED(gid);
 
@@ -7265,8 +7265,8 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
 
 #if defined(USE_LIBNETCONF)
 static te_errno
-ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
-                        te_bool is_proxy, char **list)
+ta_unix_conf_neigh_list(const char *ifname, bool is_static,
+                        bool is_proxy, char **list)
 {
     te_errno            rc;
     unsigned int        ifindex;
@@ -7381,8 +7381,8 @@ ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
 }
 #else
 static te_errno
-ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
-                        te_bool is_proxy, char **list)
+ta_unix_conf_neigh_list(const char *ifname, bool is_static,
+                        bool is_proxy, char **list)
 {
     UNUSED(ifname);
     UNUSED(is_static);
@@ -7541,7 +7541,7 @@ nameserver_get(unsigned int gid, const char *oid, char *result,
  * @param name_len  -1, if @a name is a NUL-terminated string;
  *                  >= 0, if length of the @a name is @a name_len
  */
-static te_bool
+static bool
 env_is_hidden(const char *name, int name_len)
 {
     unsigned int    i;
@@ -7550,7 +7550,7 @@ env_is_hidden(const char *name, int name_len)
     {
         if (strncmp(env_hidden[i], name,
                     (name_len < 0) ? strlen(name) : (size_t)name_len) == 0)
-            return TRUE;
+            return true;
     }
     for (i = 0; i < sizeof(env_prefix_hidden) / sizeof(env_prefix_hidden[0]);
          ++i)
@@ -7558,9 +7558,9 @@ env_is_hidden(const char *name, int name_len)
         if ((name_len < 0 || name_len >= strlen(env_prefix_hidden[i])) &&
             strncmp(env_prefix_hidden[i], name,
                     strlen(env_prefix_hidden[i])) == 0)
-            return TRUE;
+            return true;
     }
-    return FALSE;
+    return false;
 }
 
 /**
@@ -7615,7 +7615,7 @@ env_set(unsigned int gid, const char *oid, const char *value,
     if (env_is_hidden(name, -1))
         return TE_RC(TE_TA_UNIX, TE_EPERM);
 
-    if (setenv(name, value, TRUE) == 0)
+    if (setenv(name, value, true) == 0)
     {
         return 0;
     }
@@ -7651,7 +7651,7 @@ env_add(unsigned int gid, const char *oid, const char *value,
 
     if (getenv(name) == NULL)
     {
-        if (setenv(name, value, FALSE) == 0)
+        if (setenv(name, value, false) == 0)
         {
             return 0;
         }
@@ -7966,12 +7966,12 @@ user_list(unsigned int gid, const char *oid,
  *
  * @param user          user name
  *
- * @return              TRUE if user exists, FALSE if does not
+ * @return              @c true if user exists, @c false if does not
  */
-static te_bool
+static bool
 user_exists(const char *user)
 {
-    return getpwnam(user) != NULL ? TRUE : FALSE;
+    return getpwnam(user) != NULL ? true : false;
 }
 
 #if TA_USE_PAM
@@ -8349,7 +8349,7 @@ static struct {
        char const *if_name;      /**< DomU testing interface name        */
        char        ip_addr[16];  /**< DomU testing interface IP address  */
        char        mac_addr[18]; /**< DomU testing interface MAC address */
-       te_bool     accel;        /**< Accelerated spec-tion in config    */
+       bool accel;        /**< Accelerated spec-tion in config    */
     }
     bridge_slot[MAX_BRIDGE_NUM]; /**< DomU bridges where dom0 tested
                                       interfaces are added to            */
@@ -8580,10 +8580,10 @@ dom_u_status_string_to_status(char const *status_string)
 /**
  * Checks whether the agent runs within dom0 or not
  *
- * @return              TRUE if the agent runs within dom0,
- *                      otherwise - FALSE
+ * @return              @c true if the agent runs within dom0,
+ *                      otherwise - @c false
  */
-static te_bool
+static bool
 is_within_dom0(void)
 {
     struct stat st;
@@ -9912,14 +9912,14 @@ xen_executive(char const *cmd)
 }
 
 static te_errno
-xen_accel_get_executive(te_bool *status)
+xen_accel_get_executive(bool *status)
 {
     char const pt[] = "sfc_netback";
     te_errno   rc   = xen_executive("lsmod | grep -w ^sfc_netback "
                                     "2> /dev/null | awk '{print$1}'");
 
     if (rc == 0)
-        *status = strncmp(buf, pt, sizeof(pt) - 1) == 0 ? TRUE : FALSE;
+        *status = strncmp(buf, pt, sizeof(pt) - 1) == 0 ? true : false;
 
     return rc;
 }
@@ -9938,7 +9938,7 @@ static te_errno
 xen_accel_get(unsigned int gid, char const *oid, char *value)
 {
 #if XEN_SUPPORT
-    te_bool  status;
+    bool status;
     te_errno rc;
 #endif
 
@@ -9980,8 +9980,8 @@ static te_errno
 xen_accel_set(unsigned int gid, char const *oid, char const *value)
 {
 #if XEN_SUPPORT
-    te_bool     status;
-    te_bool     needed_status = strcmp(value, "0") == 0 ? FALSE : TRUE;
+    bool status;
+    bool needed_status = strcmp(value, "0") == 0 ? false : true;
     te_errno    rc;
     char const *cmd = NULL;
 #endif
@@ -10590,8 +10590,8 @@ dom_u_set(unsigned int gid, char const *oid, char const *value,
     unsigned int u;
     struct stat  st;
     int          sys;
-    te_bool      to_set = strcmp(value, "1") == 0;
-    te_bool      is_set;
+    bool to_set = strcmp(value, "1") == 0;
+    bool is_set;
     te_errno     rc = 0;
 
     char const *const dom_u_path = get_dom_u_path(dom_u);
@@ -11626,7 +11626,7 @@ dom_u_bridge_add(unsigned int gid, char const *oid,
 
     strcpy(dom_u_slot[u].bridge_slot[v].ip_addr, init_ip_addr);
     strcpy(dom_u_slot[u].bridge_slot[v].mac_addr, init_mac_addr);
-    dom_u_slot[u].bridge_slot[v].accel = FALSE;
+    dom_u_slot[u].bridge_slot[v].accel = false;
     return 0;
 #else
 #warning '/agent/xen/dom_u/bridge' 'add' access method is not implemented
@@ -12005,7 +12005,7 @@ dom_u_bridge_accel_set(unsigned int gid, char const *oid,
     FIND_DOM_U(dom_u, u);
     FIND_BRIDGE(bridge, u, v);
 
-    dom_u_slot[u].bridge_slot[v].accel = *value != '0' ? TRUE : FALSE;
+    dom_u_slot[u].bridge_slot[v].accel = *value != '0' ? true : false;
     return 0;
 #else
 #warning '/agent/xen/dom_u/bridge/accel' 'set' \

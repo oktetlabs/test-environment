@@ -68,7 +68,7 @@ typedef struct tapi_ssh_client_opt {
      * ssh -g
      * @endcode
      */
-    te_bool gateway_ports;
+    bool gateway_ports;
 
     /**
      * String representation of
@@ -92,7 +92,7 @@ typedef struct tapi_ssh_client_opt {
      * ssh -N
      * @endcode
      */
-    te_bool forbid_remote_commands_execution;
+    bool forbid_remote_commands_execution;
 
     /**
      * File with identity (private key) for public key
@@ -232,7 +232,7 @@ typedef struct tapi_ssh_server_opt {
      *
      * May be @c yes or @c no
      */
-    te_bool pub_key_authentication;
+    bool pub_key_authentication;
 
     /**
      * Sets checking ownership of user's files and home directory
@@ -249,7 +249,7 @@ typedef struct tapi_ssh_server_opt {
      *
      * May be @c yes or @c no
      */
-    te_bool strict_modes;
+    bool strict_modes;
 
     /**
      * Port to listen on

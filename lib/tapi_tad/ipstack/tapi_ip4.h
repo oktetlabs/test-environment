@@ -44,7 +44,7 @@ typedef struct tapi_ip4_packet_t {
     size_t      pld_len;
 
     size_t      ip_ident;
-    te_bool     more_frags;
+    bool more_frags;
     size_t      offset;
 } tapi_ip4_packet_t;
 
@@ -96,7 +96,7 @@ extern te_errno tapi_ip4_add_csap_layer(asn_value **csap_spec,
  */
 extern te_errno tapi_ip4_add_pdu(asn_value **tmpl_or_ptrn,
                                  asn_value **pdu,
-                                 te_bool     is_pattern,
+                                 bool is_pattern,
                                  in_addr_t   src_addr,
                                  in_addr_t   dst_addr,
                                  int         ip_proto,

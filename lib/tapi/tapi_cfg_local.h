@@ -68,7 +68,7 @@ tapi_no_reuse_pco_reset(void)
  * @return @return 0 on success or error code
  */
 static inline te_errno
-tapi_no_reuse_pco_get(te_bool *no_reuse_pco)
+tapi_no_reuse_pco_get(bool *no_reuse_pco)
 {
     int      no_reuse_pco_tmp;
     te_errno rc;
@@ -76,11 +76,11 @@ tapi_no_reuse_pco_get(te_bool *no_reuse_pco)
     rc = tapi_cfg_get_int_str(&no_reuse_pco_tmp, "/local:/no_reuse_pco:");
     if (rc == TE_RC(TE_CS, TE_ENOENT))
     {
-      *no_reuse_pco = FALSE;
+      *no_reuse_pco = false;
       return 0;
     }
     if (rc == 0)
-      *no_reuse_pco = (no_reuse_pco_tmp == 0) ? FALSE : TRUE;
+      *no_reuse_pco = (no_reuse_pco_tmp == 0) ? false : true;
 
     return rc;
 }

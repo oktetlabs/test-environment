@@ -23,7 +23,7 @@
 #include "te_alloc.h"
 
 msg_queue  listener_queue;
-te_bool    listeners_enabled = FALSE;
+bool listeners_enabled = false;
 char      *metafile_path = NULL;
 
 static json_t *trc_tags = NULL;
@@ -37,7 +37,7 @@ msg_queue_init(msg_queue *queue)
 {
     memset(queue, 0, sizeof(*queue));
     TAILQ_INIT(&queue->items);
-    queue->shutdown = FALSE;
+    queue->shutdown = false;
     pthread_mutex_init(&queue->mutex, NULL);
     queue->eventfd = eventfd(0, 0);
     return 0;
@@ -76,7 +76,7 @@ msg_queue_post(msg_queue *queue, const char *buf, size_t len)
 /* See description in logger_stream.h */
 void
 msg_queue_extract(msg_queue *queue, refcnt_buffer_list *list,
-                  te_bool *shutdown)
+                  bool *shutdown)
 {
     uint64_t cnt;
 
@@ -99,7 +99,7 @@ msg_queue_shutdown(msg_queue *queue)
     uint64_t inc;
 
     pthread_mutex_lock(&queue->mutex);
-    queue->shutdown = TRUE;
+    queue->shutdown = true;
     pthread_mutex_unlock(&queue->mutex);
 
     inc = 1;
@@ -399,7 +399,7 @@ typedef enum queue_event {
  *    is found, it is ignored silently (for the purposes of optimization).
  */
 typedef struct special_message {
-    te_bool             found;
+    bool found;
     const queue_event   event;
     te_errno          (*handler)(const log_msg_view *msg);
     const char         *entity;
@@ -415,15 +415,15 @@ process_special_messages(const log_msg_view *msg)
 #define STRING_WITH_LEN(str) (str), (sizeof(str) - 1)
     static special_message special[] = {
         /* Execution plan */
-        { FALSE, QEVENT_PLAN, process_plan,
+        { false, QEVENT_PLAN, process_plan,
           STRING_WITH_LEN(TE_LOG_CMSG_ENTITY_TESTER),
           STRING_WITH_LEN(TE_LOG_EXEC_PLAN_USER) },
         /* TRC tags */
-        { FALSE, QEVENT_NONE, process_trc_tags,
+        { false, QEVENT_NONE, process_trc_tags,
           STRING_WITH_LEN(TE_LOG_CMSG_ENTITY_TESTER),
           STRING_WITH_LEN(TE_LOG_TRC_TAGS_USER) },
         /* Tester PID */
-        { FALSE, QEVENT_NONE, process_tester_proc_info,
+        { false, QEVENT_NONE, process_tester_proc_info,
           STRING_WITH_LEN(TE_LOG_CMSG_ENTITY_TESTER),
           STRING_WITH_LEN(TE_LOG_PROC_INFO_USER) },
     };
@@ -442,7 +442,7 @@ process_special_messages(const log_msg_view *msg)
             strncmp(msg->entity, special[i].entity, msg->entity_len) == 0 &&
             strncmp(msg->user, special[i].user, msg->user_len) == 0)
         {
-            special[i].found = TRUE;
+            special[i].found = true;
             evt = special[i].event;
             rc = special[i].handler(msg);
             if (rc != 0)
@@ -464,8 +464,8 @@ process_queue(void)
     refcnt_buffer      *item;
     refcnt_buffer      *tmp;
     queue_event         evt = QEVENT_NONE;
-    te_bool             queue_shutdown;
-    te_bool             failure = FALSE;
+    bool queue_shutdown;
+    bool failure = false;
 
     msg_queue_extract(&listener_queue, &messages, &queue_shutdown);
     if (queue_shutdown)
@@ -485,7 +485,7 @@ process_queue(void)
                 /* Check if the message is special */
                 evt |= process_special_messages(&view);
                 if (evt & QEVENT_FAILURE)
-                    failure = TRUE;
+                    failure = true;
                 /* Run through filters */
                 if (!failure)
                     for (i = 0; i < streaming_filters_num; i++)
@@ -595,7 +595,7 @@ listeners_thread(void *arg)
     size_t          i;
     int             ret;
     te_errno        rc;
-    te_bool         added_handles;
+    bool            added_handles;
     struct pollfd   fds[1 + LOG_MAX_LISTENERS];
     struct timeval  now;
     struct timeval  next;
@@ -660,7 +660,7 @@ listeners_thread(void *arg)
     next.tv_sec = 0;
     curl_multi_socket_action(curl_mhandle, CURL_SOCKET_TIMEOUT, 0, &curl_running);
     do {
-        added_handles = FALSE;
+        added_handles = false;
 
         gettimeofday(&now, NULL);
         if (next.tv_sec != 0 && timercmp(&next, &now, <))
@@ -774,9 +774,9 @@ listeners_thread(void *arg)
             if (listener->need_retry &&
                 timercmp(&listener->next_tv, &now, <))
             {
-                listener->need_retry = FALSE;
+                listener->need_retry = false;
                 curl_multi_add_handle(curl_mhandle, listener->curl_handle);
-                added_handles = TRUE;
+                added_handles = true;
                 continue;
             }
 
@@ -797,7 +797,7 @@ listeners_thread(void *arg)
                 if (rc != 0)
                     ERROR("Listener %s: failed to dump messages");
                 curl_multi_add_handle(curl_mhandle, listener->curl_handle);
-                added_handles = TRUE;
+                added_handles = true;
             }
 
             /* Finish once all messages have been sent */
@@ -807,7 +807,7 @@ listeners_thread(void *arg)
             {
                 listener_finish(listener);
                 curl_multi_add_handle(curl_mhandle, listener->curl_handle);
-                added_handles = TRUE;
+                added_handles = true;
             }
 
             if (next.tv_sec == 0 ||

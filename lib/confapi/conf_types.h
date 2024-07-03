@@ -33,7 +33,7 @@ typedef enum {
      * file. Therefore it should be set as a zero.
      */
     CVT_NONE = 0,
-    CVT_BOOL,        /**< Value of the type 'te_bool' */
+    CVT_BOOL,        /**< Value of the type 'bool' */
     CVT_INT8,        /**< Value of the type 'int8_t' */
     CVT_UINT8,       /**< Value of the type 'uint8_t' */
     CVT_INT16,       /**< Value of the type 'int16_t' */
@@ -60,7 +60,7 @@ struct cfg_msg;
 /** Object instance value */
 typedef union cfg_inst_val {
         struct sockaddr *val_addr;    /**< sockaddr value */
-        te_bool          val_bool;    /**< te_bool value */
+        bool             val_bool;    /**< bool value */
         int8_t           val_int8;    /**< int8_t value */
         uint8_t          val_uint8;   /**< uint8_t value */
         int16_t          val_int16;   /**< int16_t value */
@@ -109,7 +109,7 @@ typedef struct cfg_primary_type {
     void (* put_to_msg)(cfg_inst_val val, struct cfg_msg *msg);
 
     /** Compare two values */
-    te_bool (* is_equal)(cfg_inst_val val1, cfg_inst_val val2);
+    bool(* is_equal)(cfg_inst_val val1, cfg_inst_val val2);
 
     /** Get the size of given value */
     size_t (* value_size)(cfg_inst_val val);

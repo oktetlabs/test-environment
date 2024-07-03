@@ -90,10 +90,10 @@ main(int argc, char **argv)
 
     trex_opt.driver = TE_TREX_PCI_DRIVER;
     trex_opt.astf_template = astf_template;
-    trex_opt.force_close_at_end = TRUE;
-    trex_opt.no_monitors = TRUE;
-    trex_opt.astf_server_only = TRUE;
-    trex_opt.lro_disable = TRUE;
+    trex_opt.force_close_at_end = true;
+    trex_opt.no_monitors = true;
+    trex_opt.astf_server_only = true;
+    trex_opt.lro_disable = true;
     trex_opt.duration = TAPI_JOB_OPT_DOUBLE_VAL(trex_duration);
 
     trex_opt.servers = TAPI_TREX_SERVERS(

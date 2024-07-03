@@ -76,7 +76,7 @@ test_suites_info_free(test_suites_info *suites)
  * @return Status code.
  */
 extern te_errno tester_build_suite(const test_suite_info *suite,
-                                   te_bool                verbose);
+                                   bool verbose);
 
 /**
  * Build list of Test Suites.
@@ -87,7 +87,7 @@ extern te_errno tester_build_suite(const test_suite_info *suite,
  * @return Status code.
  */
 extern te_errno tester_build_suites(const test_suites_info *suites,
-                                    te_bool                 verbose);
+                                    bool verbose);
 
 #ifdef __cplusplus
 } /* extern "C" */

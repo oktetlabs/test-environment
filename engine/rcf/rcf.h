@@ -188,18 +188,18 @@ typedef struct ta_reboot_context {
      * The flag to check that the response from the agent is received.
      * Use for the reboot context only.
      */
-    te_bool is_answer_recv;
+    bool is_answer_recv;
     /** The error that occurred during the reboot */
     te_errno error;
     /**
      * This field is used to avoid a lot of message
      * "Agent in the reboot state" in the logs
      */
-    te_bool is_agent_reboot_msg_sent;
+    bool is_agent_reboot_msg_sent;
     /** Number of agent restart attempts */
     unsigned int restart_attempt;
     /** The flag to check that timeout for cold reboot is expired */
-    te_bool is_cold_reboot_time_expired;
+    bool is_cold_reboot_time_expired;
 } ta_reboot_context;
 
 /** Structure for one Test Agent */
@@ -209,7 +209,7 @@ struct ta {
                                                  by start() method */
     char               *name;               /**< Test Agent name */
     char               *type;               /**< Test Agent type */
-    te_bool             enable_synch_time;  /**< Enable synchronize time */
+    bool enable_synch_time;  /**< Enable synchronize time */
     te_kvpair_h         conf;               /**< Configurations list of kv_pairs */
     usrreq              sent;               /**< User requests sent
                                                  to the TA */
@@ -225,7 +225,7 @@ struct ta {
                                                  sending (in seconds) */
     int                 sid;                /**< Free session identifier
                                                  (starts from 2) */
-    te_bool             conn_locked;        /**< Connection is locked until
+    bool conn_locked;        /**< Connection is locked until
                                                  the response from TA
                                                  is received */
     int                 lock_sid;           /**< SID of the command
@@ -237,7 +237,7 @@ struct ta {
     int                 cold_reboot_timeout; /**< Waiting time for a cold
                                                   reboot */
 
-    te_bool            dynamic;             /**< Dynamic creation flag */
+    bool dynamic;             /**< Dynamic creation flag */
 
     struct rcf_talib_methods m; /**< TA-specific Methods */
 
@@ -350,9 +350,9 @@ extern void rcf_set_ta_reboot_state(ta *agent, ta_reboot_state state);
  * @param agent Test Agent structure
  * @param req   User request
  *
- * @return @c TRUE if command should be sent
+ * @return @c true if command should be sent
  */
-extern te_bool rcf_ta_reboot_before_req(ta *agent, usrreq *req);
+extern bool rcf_ta_reboot_before_req(ta *agent, usrreq *req);
 
 /**
  * Check that in terms of the reboot context the waiting
@@ -360,9 +360,9 @@ extern te_bool rcf_ta_reboot_before_req(ta *agent, usrreq *req);
  *
  * @param agent  Test Agent structure
  * @param opcode Request operation code
- * @return @c FALSE if the waiting requests should be processed
+ * @return @c false if the waiting requests should be processed
  */
-extern te_bool rcf_ta_reboot_on_req_reply(ta *agent, rcf_op_t opcode);
+extern bool rcf_ta_reboot_on_req_reply(ta *agent, rcf_op_t opcode);
 
 /**
  * Initialize reboot context for the TA

@@ -98,7 +98,7 @@ get_operation_result(const testing_act *seg0, const testing_act *seg1,
             break;
 
         default:
-            assert(FALSE);
+            assert(false);
     }
 }
 
@@ -184,12 +184,12 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
     testing_act    *gap0, *gap1;
     testing_act    *next0, *next1 = NULL;   /* it points to gap or elm */
     unsigned int    the_end_0, the_end_1; /* how far we've already gone */
-    te_bool         need_get_next1 = TRUE;   /* flag */
+    bool need_get_next1 = true;   /* flag */
     testing_act    *overlap;         /* overlap of two intervals */
     testing_act    *overlap_grow;    /* cumulative overlap */
 
     testing_scenario    h_rslt; /* resulting list */
-    te_bool             result_replace; /* put result into h0 */
+    bool result_replace; /* put result into h0 */
 
 
     result_replace = (h_rslt_p == h0); /* result should replace h0 */
@@ -240,7 +240,7 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
         {
             if (!need_get_next1)
             {
-                need_get_next1 = TRUE; /* reset on each pass */
+                need_get_next1 = true; /* reset on each pass */
             }
             else
             {
@@ -276,7 +276,7 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
                 if (next1->last > next0->last)
                 {
                     /* still have to process this next1 and new next0: */
-                    need_get_next1 = FALSE;
+                    need_get_next1 = false;
                 }
                 break; /* need to step forward next0 now */
             }
@@ -415,7 +415,7 @@ scenario_by_bit_mask(testing_scenario *scenario, unsigned int offset,
 {
     te_errno        rc;
     unsigned int    bit;
-    te_bool         started = FALSE;
+    bool started = false;
     unsigned int    start = 0; /* Just to make compiler happy */
 
     ENTRY("scenario=%p offset=%u bm=%p bm_len=%u bit_weight=%u",
@@ -427,7 +427,7 @@ scenario_by_bit_mask(testing_scenario *scenario, unsigned int offset,
         {
             if (!bit_mask_is_set(bm, bit))
             {
-                started = FALSE;
+                started = false;
                 rc = scenario_add_act(scenario,
                                       offset + start * bit_weight,
                                       offset + bit * bit_weight - 1,
@@ -440,7 +440,7 @@ scenario_by_bit_mask(testing_scenario *scenario, unsigned int offset,
         {
             if (bit_mask_is_set(bm, bit))
             {
-                started = TRUE;
+                started = true;
                 start = bit;
             }
         }
@@ -708,7 +708,7 @@ scenario_apply_flags(testing_scenario *scenario,
 testing_direction
 scenario_step(const testing_act **act, unsigned int *act_id,
               unsigned int start_id, unsigned int next_id,
-              te_bool skip)
+              bool skip)
 {
     assert(act != NULL);
     if (*act == NULL)

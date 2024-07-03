@@ -106,7 +106,7 @@ static resource_type_mapping resource_type[] =
 static void
 init_glib_type(void)
 {
-    static te_bool single = FALSE;
+    static bool single = false;
 
     if (single)
         return;
@@ -120,7 +120,7 @@ init_glib_type(void)
      */
     g_type_init();
 #endif /* !GLIB_CHECK_VERSION(2,35,0) */
-    single = TRUE;
+    single = true;
 }
 
 #if !GLIB_CHECK_VERSION(2,28,0)
@@ -511,7 +511,7 @@ extract_base_class_data(GUPnPDIDLLiteObject *upnp_object,
         }
     }
     base->restricted =
-        (te_bool)gupnp_didl_lite_object_get_restricted(upnp_object);
+        (bool)gupnp_didl_lite_object_get_restricted(upnp_object);
 
 #ifdef LIBGUPNP_VER_0_12
     /* Now it is available only in unstable version libgupnp. */
@@ -774,7 +774,7 @@ extract_container_data(GUPnPDIDLLiteContainer *upnp_container,
     container->data.container.child_count =
         gupnp_didl_lite_container_get_child_count(upnp_container);
     container->data.container.searchable =
-        (te_bool)gupnp_didl_lite_container_get_searchable(upnp_container);
+        (bool)gupnp_didl_lite_container_get_searchable(upnp_container);
 
 #ifndef LIBGUPNP_DIDLLITE_CONTAINER_BUG
     container->data.container.storage_used =

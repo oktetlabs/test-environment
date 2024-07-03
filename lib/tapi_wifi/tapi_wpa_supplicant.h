@@ -160,7 +160,7 @@ extern te_errno tapi_wpa_supplicant_configure(
                         const char *ta, const char *ifname,
                         const uint8_t *bssid, const char *ssid,
                         tapi_wpa_supplicant_security *security,
-                        te_bool scan_ssid,
+                        bool scan_ssid,
                         const char *opts_fmt, ...)
                         TE_LIKE_PRINTF(7, 8);
 
@@ -174,7 +174,7 @@ extern te_errno tapi_wpa_supplicant_configure_va(
                         const char *ta, const char *ifname,
                         const uint8_t *bssid, const char *ssid,
                         tapi_wpa_supplicant_security *security,
-                        te_bool scan_ssid,
+                        bool scan_ssid,
                         const char *opts_fmt, va_list ap);
 
 /**

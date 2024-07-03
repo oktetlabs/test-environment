@@ -450,7 +450,7 @@ extern int rcf_ch_trsend_start(struct rcf_comm_connection *handle,
                                char *cbuf, size_t buflen,
                                size_t answer_plen,
                                const uint8_t *ba, size_t cmdlen,
-                               csap_handle_t csap, te_bool postponed);
+                               csap_handle_t csap, bool postponed);
 
 /**
  * "trsend_stop" command handler.
@@ -691,7 +691,7 @@ extern int rcf_ch_trpoll_cancel(struct rcf_comm_connection *handle,
  *                        copied to the answer
  *
  * @param rtn           routine name
- * @param is_argv       if TRUE, then routine prototype is
+ * @param is_argv       if @c true, then routine prototype is
  *                        (int argc, char **argv)
  * @param argc          number of arguments
  * @param params        pointer to array of RCF_MAX_PARAMS length
@@ -706,7 +706,7 @@ extern int rcf_ch_trpoll_cancel(struct rcf_comm_connection *handle,
  */
 extern int rcf_ch_call(struct rcf_comm_connection *handle,
                        char *cbuf, size_t buflen, size_t answer_plen,
-                       const char *rtn, te_bool is_argv,
+                       const char *rtn, bool is_argv,
                        int argc, void **params);
 /**@} <!-- END rcf_ch_func --> */
 
@@ -736,7 +736,7 @@ extern int rcf_ch_call(struct rcf_comm_connection *handle,
  * @return Status code
  */
 extern int rcf_ch_start_process(pid_t *pid, int priority,
-                                const char *rtn, te_bool do_exec,
+                                const char *rtn, bool do_exec,
                                 int argc, void **params);
 
 /**
@@ -746,7 +746,7 @@ extern int rcf_ch_start_process(pid_t *pid, int priority,
  * @param priority      priority of the new process or -1 if the
  *                        priority is not specified in the command
  * @param rtn           routine entry point name
- * @param is_argv       if TRUE, then routine prototype is
+ * @param is_argv       if @c true, then routine prototype is
  *                        (int argc, char **argv)
  * @param argc          number of arguments
  * @param params        pointer to array of RCF_MAX_PARAMS length
@@ -755,7 +755,7 @@ extern int rcf_ch_start_process(pid_t *pid, int priority,
  * @return Status code
  */
 extern int rcf_ch_start_thread(int *tid, int priority,
-                               const char *rtn, te_bool is_argv,
+                               const char *rtn, bool is_argv,
                                int argc, void **params);
 
 

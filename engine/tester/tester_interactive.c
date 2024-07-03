@@ -104,7 +104,7 @@ tester_interactive_open_prompt(const tester_cfgs *cfgs,
                 }
                 VERB("Test path '%s' was processed.\n", argv[i]);
             }
-            rc = tester_process_test_paths(cfgs, paths, scenario, FALSE);
+            rc = tester_process_test_paths(cfgs, paths, scenario, false);
             if (rc != 0)
             {
                 return TESTER_INTERACTIVE_ERROR;

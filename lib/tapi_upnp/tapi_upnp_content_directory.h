@@ -87,7 +87,7 @@ typedef struct tapi_upnp_cd_resource_node {
 typedef struct tapi_upnp_cd_object {
     const char *id;
     const char *parent_id;
-    te_bool     restricted;
+    bool restricted;
     const char *title;
     const char *class;
     const char *creator;
@@ -119,7 +119,7 @@ typedef struct tapi_upnp_cd_container {
     union {
         struct {
             int      child_count;
-            te_bool  searchable;
+            bool  searchable;
 #ifndef LIBGUPNP_DIDLLITE_CONTAINER_BUG
             int64_t  storage_used;
 #endif /* !LIBGUPNP_DIDLLITE_CONTAINER_BUG */

@@ -36,7 +36,7 @@ extern "C" {
 typedef struct trc_re_match_subst {
     TAILQ_ENTRY(trc_re_match_subst) links;  /**< List links */
 
-    te_bool             match;  /**< Match or string */
+    bool match;  /**< Match or string */
     union {
         char           *str;    /**< String to insert */
         unsigned int    match;  /**< Match index to insert */

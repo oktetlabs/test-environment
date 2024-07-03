@@ -95,9 +95,9 @@ te_raw_log_parse(const void *buf, size_t buf_len, log_msg_view *view)
  * @param size          first argument: tuple size
  * @param nmemb         second argument: number of tuples
  *
- * @returns TRUE if the arguments were extracted, FALSE otherwise
+ * @return @c true if the arguments were extracted, @c false otherwise
  */
-static te_bool
+static bool
 extended_format(const char **fmt_orig, const char *fmt_end,
                 int *size, int *nmemb)
 {
@@ -106,7 +106,7 @@ extended_format(const char **fmt_orig, const char *fmt_end,
     int         n_tuples;
 
     if (fmt_orig == NULL)
-        return FALSE;
+        return false;
     fmt = *fmt_orig;
 
     /* Match [[ */
@@ -141,11 +141,11 @@ extended_format(const char **fmt_orig, const char *fmt_end,
                 *size = tuple_width;
                 *nmemb = n_tuples;
                 *fmt_orig = fmt;
-                return TRUE;
+                return true;
             }
         }
     }
-    return FALSE;
+    return false;
 }
 
 /* See description in raw_log_filter.h */

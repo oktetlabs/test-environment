@@ -21,7 +21,7 @@ main(int argc, char **argv)
 {
     TEST_START;
 
-    CHECK_RC(tapi_cfg_net_all_up(FALSE));
+    CHECK_RC(tapi_cfg_net_all_up(false));
     CHECK_RC(tapi_cfg_net_all_assign_ip(AF_INET));
     CHECK_RC(tapi_cfg_net_all_assign_ip(AF_INET6));
 

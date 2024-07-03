@@ -23,9 +23,9 @@
  *
  * @param linkgen   The general link attributes array
  *
- * @return @c TRUE if link is VXLAN.
+ * @return @c true if link is VXLAN.
  */
-static te_bool
+static bool
 vxlan_link_is_vxlan(struct rtattr **linkgen)
 {
     struct rtattr *linkinfo[IFLA_INFO_MAX + 1];
@@ -36,9 +36,9 @@ vxlan_link_is_vxlan(struct rtattr **linkgen)
     if (linkinfo[IFLA_INFO_KIND] == NULL ||
         strcmp(RTA_DATA(linkinfo[IFLA_INFO_KIND]),
                NETCONF_LINK_KIND_VXLAN) != 0)
-        return FALSE;
+        return false;
 
-    return TRUE;
+    return true;
 }
 
 /* See netconf.h */
@@ -55,7 +55,7 @@ vxlan_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
     netconf_parse_link(h, linkgen, IFLA_MAX);
 
     if (linkgen[IFLA_LINKINFO] == NULL || linkgen[IFLA_IFNAME] == NULL ||
-        vxlan_link_is_vxlan(linkgen) == FALSE)
+        vxlan_link_is_vxlan(linkgen) == false)
         return 0;
 
     vxlan.generic.ifname = netconf_dup_rta(linkgen[IFLA_IFNAME]);

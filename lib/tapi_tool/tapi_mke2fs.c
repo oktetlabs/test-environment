@@ -24,23 +24,23 @@ struct tapi_mke2fs_app {
     /* Output channels handles */
     tapi_job_channel_t *out_chs[2];
     /* Whether it was requested to use journal in tapi_mke2fs_opt */
-    te_bool use_journal;
+    bool use_journal;
     /* Filter to check journal creation */
     tapi_job_channel_t *journal_filter;
 };
 
 const tapi_mke2fs_opt tapi_mke2fs_default_opt = {
     .block_size   = TAPI_JOB_OPT_OMIT_UINT,
-    .use_journal  = FALSE,
+    .use_journal  = false,
     .fs_type      = NULL,
     .device       = NULL,
 };
 
 static const tapi_job_opt_bind mke2fs_binds[] = TAPI_JOB_OPT_SET(
-    TAPI_JOB_OPT_UINT_OMITTABLE("-b", FALSE, NULL, tapi_mke2fs_opt, block_size),
+    TAPI_JOB_OPT_UINT_OMITTABLE("-b", false, NULL, tapi_mke2fs_opt, block_size),
     TAPI_JOB_OPT_BOOL("-j", tapi_mke2fs_opt, use_journal),
-    TAPI_JOB_OPT_STRING("-t", FALSE, tapi_mke2fs_opt, fs_type),
-    TAPI_JOB_OPT_STRING(NULL, FALSE, tapi_mke2fs_opt, device)
+    TAPI_JOB_OPT_STRING("-t", false, tapi_mke2fs_opt, fs_type),
+    TAPI_JOB_OPT_STRING(NULL, false, tapi_mke2fs_opt, device)
 );
 
 te_errno
@@ -72,21 +72,21 @@ tapi_mke2fs_create(tapi_job_factory_t *factory, const tapi_mke2fs_opt *opt,
                             .stderr_loc = &result->out_chs[1],
                             .filters    = TAPI_JOB_SIMPLE_FILTERS(
                                 {
-                                    .use_stdout  = TRUE,
-                                    .readable    = TRUE,
+                                    .use_stdout  = true,
+                                    .readable    = true,
                                     .re          = "Creating journal .*: done",
                                     .extract     = 0,
                                     .filter_var  = &result->journal_filter,
                                 },
                                 {
-                                    .use_stdout  = TRUE,
-                                    .readable    = FALSE,
+                                    .use_stdout  = true,
+                                    .readable    = false,
                                     .log_level   = TE_LL_RING,
                                     .filter_name = "mke2fs stdout",
                                 },
                                 {
-                                    .use_stderr  = TRUE,
-                                    .readable    = FALSE,
+                                    .use_stderr  = true,
+                                    .readable    = false,
                                     .log_level   = TE_LL_ERROR,
                                     .filter_name = "mke2fs stderr",
                                 }

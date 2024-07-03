@@ -35,7 +35,7 @@ tapi_local_file_get_name(const tapi_local_file *file)
 }
 
 /* See description in tapi_local_file.h. */
-te_bool
+bool
 tapi_local_file_cmp(const tapi_local_file *file1,
                     const tapi_local_file *file2)
 {

@@ -43,32 +43,32 @@ typedef struct tad_gre_proto_pdu_data {
     tad_bps_pkt_frag_data header;
 
     tad_bps_pkt_frag_data opt_cksum;
-    te_bool               opt_cksum_valid;
+    bool opt_cksum_valid;
 
     tad_bps_pkt_frag_data opt_key_nvgre;
-    te_bool               opt_key_nvgre_valid;
+    bool opt_key_nvgre_valid;
 
     tad_bps_pkt_frag_data opt_seqn;
-    te_bool               opt_seqn_valid;
+    bool opt_seqn_valid;
 } tad_gre_proto_pdu_data_t;
 
 /** GRE header BPS representation (RFC 2784 updated by RFC 2890) */
 static const tad_bps_pkt_frag tad_gre_bps_header[] =
 {
     { "cksum-present",     1,  BPS_FLD_CONST_DEF(NDN_TAG_GRE_CKSUM_PRESENT, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "flags-reserved-1",  1,  BPS_FLD_CONST(0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "key-present",       1,  BPS_FLD_CONST_DEF(NDN_TAG_GRE_KEY_PRESENT, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "seqn-present",      1,  BPS_FLD_CONST_DEF(NDN_TAG_GRE_SEQN_PRESENT, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "flags-reserved-2",  9,  BPS_FLD_CONST(0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "version",           3,  BPS_FLD_CONST(0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "protocol",          16, BPS_FLD_SIMPLE(NDN_TAG_GRE_PROTOCOL),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 /** GRE header optional checksum BPS representation (RFC 2784) */
@@ -76,9 +76,9 @@ static const tad_bps_pkt_frag tad_gre_bps_header_opt_cksum[] =
 {
     { "value",             16,
       BPS_FLD_CONST_DEF(NDN_TAG_GRE_OPT_CKSUM_VALUE, 0),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
     { "reserved",          16, BPS_FLD_CONST(0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 /**
@@ -89,10 +89,10 @@ static const tad_bps_pkt_frag tad_gre_bps_header_opt_key_nvgre[] =
 {
     { "vsid",              24,
       BPS_FLD_CONST_DEF(NDN_TAG_GRE_OPT_KEY_NVGRE_VSID, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "flowid",            8,
       BPS_FLD_CONST_DEF(NDN_TAG_GRE_OPT_KEY_NVGRE_FLOWID, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 /** GRE header optional sequence number BPS representation (RFC 2890) */
@@ -100,7 +100,7 @@ static const tad_bps_pkt_frag tad_gre_bps_header_opt_seqn[] =
 {
     { "value",             32,
       BPS_FLD_CONST_DEF(NDN_TAG_GRE_OPT_SEQN_VALUE, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 /* See description in 'tad_gre_impl.h' */
@@ -212,7 +212,7 @@ static te_errno
 tad_gre_mk_data_from_nds_and_confirm(tad_bps_pkt_frag_def  *def,
                                      asn_value             *nds,
                                      tad_bps_pkt_frag_data *data,
-                                     te_bool                confirm)
+                                     bool confirm)
 {
     te_errno rc;
 
@@ -229,7 +229,7 @@ static te_errno
 tad_gre_process_opt_fields(tad_gre_proto_data_t        *proto_data,
                            asn_value                   *layer_pdu,
                            tad_gre_proto_pdu_data_t    *pdu_data,
-                           te_bool                      confirm)
+                           bool confirm)
 {
     asn_value *opt_cksum = NULL;
     asn_value *opt_seqn = NULL;
@@ -273,7 +273,7 @@ tad_gre_process_opt_fields(tad_gre_proto_data_t        *proto_data,
         if (rc != 0)                                                           \
             goto fail;                                                         \
                                                                                \
-        pdu_data->_name##_valid = TRUE;                                        \
+        pdu_data->_name##_valid = true;                                        \
     }
 
     TAD_GRE_PROCESS_OPT_FIELD(opt_cksum);
@@ -314,11 +314,11 @@ tad_gre_confirm_tmpl_cb(csap_p         csap,
     tmpl_data = TE_ALLOC(sizeof(*tmpl_data));
 
     rc = tad_gre_mk_data_from_nds_and_confirm(&proto_data->header, layer_pdu,
-                                              &tmpl_data->header, TRUE);
+                                              &tmpl_data->header, true);
     if (rc != 0)
         goto fail;
 
-    rc = tad_gre_process_opt_fields(proto_data, layer_pdu, tmpl_data, TRUE);
+    rc = tad_gre_process_opt_fields(proto_data, layer_pdu, tmpl_data, true);
     if (rc != 0)
         goto fail;
 
@@ -409,7 +409,7 @@ tad_gre_gen_bin_cb(csap_p                csap,
 #undef TAD_GRE_GEN_BIN_OPT_FIELD
 
     tad_pkts_move(pdus, sdus);
-    rc = tad_pkts_add_new_seg(pdus, TRUE, binary, binary_len,
+    rc = tad_pkts_add_new_seg(pdus, true, binary, binary_len,
                               tad_pkt_seg_data_free);
     if (rc != 0)
         goto fail;
@@ -447,7 +447,7 @@ tad_gre_confirm_ptrn_cb(csap_p         csap,
     if (rc != 0)
         goto fail;
 
-    rc = tad_gre_process_opt_fields(proto_data, layer_pdu, ptrn_data, FALSE);
+    rc = tad_gre_process_opt_fields(proto_data, layer_pdu, ptrn_data, false);
     if (rc != 0)
         goto fail;
 
@@ -651,7 +651,7 @@ tad_gre_match_do_cb(csap_p           csap,
             goto fail;
         }
 
-        pkt_data->opt_cksum_valid = TRUE;
+        pkt_data->opt_cksum_valid = true;
 
         rc = tad_bps_pkt_frag_match_pre(&proto_data->opt_cksum,
                                         &pkt_data->opt_cksum);
@@ -719,7 +719,7 @@ tad_gre_match_do_cb(csap_p           csap,
             goto fail;
         }
 
-        pkt_data->opt_key_nvgre_valid = TRUE;
+        pkt_data->opt_key_nvgre_valid = true;
 
         rc = tad_bps_pkt_frag_match_pre(&proto_data->opt_key_nvgre,
                                         &pkt_data->opt_key_nvgre);
@@ -749,7 +749,7 @@ tad_gre_match_do_cb(csap_p           csap,
             goto fail;
         }
 
-        pkt_data->opt_seqn_valid = TRUE;
+        pkt_data->opt_seqn_valid = true;
 
         rc = tad_bps_pkt_frag_match_pre(&proto_data->opt_seqn,
                                         &pkt_data->opt_seqn);

@@ -59,7 +59,7 @@ te_readlink_fmt(const char *path_fmt, ...)
     va_list ap;
     te_string path = TE_STRING_INIT;
     te_dbuf linkbuf = TE_DBUF_INIT(100);
-    te_bool resolved = FALSE;
+    bool resolved = false;
 
     va_start(ap, path_fmt);
     te_string_append_va(&path, path_fmt, ap);
@@ -82,7 +82,7 @@ te_readlink_fmt(const char *path_fmt, ...)
         }
         if (nbytes < linkbuf.len)
         {
-            resolved = TRUE;
+            resolved = true;
             linkbuf.ptr[nbytes] = '\0';
         }
         else
@@ -123,8 +123,7 @@ te_file_join_filename(te_string *result, const char *dirname, const char *path,
 
     if (!te_str_is_null_or_empty(path))
     {
-        te_bool need_slash = result->len > 0 &&
-            result->ptr[result->len - 1] != '/';\
+        bool need_slash = result->len > 0 && result->ptr[result->len - 1] != '/';\
         te_string_append(result, "%s%s", need_slash ? "/" : "", path);
     }
     if (!te_str_is_null_or_empty(suffix))
@@ -334,7 +333,7 @@ te_file_resolve_pathname(const char *filename, const char *path,
         }
     }
 
-    te_vec_split_string(path, &pathvec, ':', TRUE);
+    te_vec_split_string(path, &pathvec, ':', true);
 
     rc = te_file_resolve_pathname_vec(filename, &pathvec, mode, resolved);
     te_vec_deep_free(&pathvec);
@@ -388,7 +387,7 @@ te_unlink_fmt(const char *fmt, ...)
 }
 
 te_errno
-te_file_read_string(te_string *dest, te_bool binary,
+te_file_read_string(te_string *dest, bool binary,
                     size_t maxsize, const char *path_fmt, ...)
 {
     te_string pathname = TE_STRING_INIT;
@@ -573,7 +572,7 @@ te_file_read_text(const char *path, char *buffer, size_t bufsize)
 {
     te_string bufstr = TE_STRING_EXT_BUF_INIT(buffer, bufsize);
 
-    return te_file_read_string(&bufstr, FALSE, bufsize - 1, "%s", path);
+    return te_file_read_string(&bufstr, false, bufsize - 1, "%s", path);
 }
 
 static te_errno
@@ -668,7 +667,7 @@ te_file_scandir(const char *dirname,
 static void
 analyze_pattern(const char *pattern, size_t *prefix_len, size_t *suffix_len)
 {
-    te_bool seen_wildcard = FALSE;
+    bool seen_wildcard = false;
     size_t count = 0;
 
     while (*pattern != '\0')
@@ -708,7 +707,7 @@ analyze_pattern(const char *pattern, size_t *prefix_len, size_t *suffix_len)
                 *prefix_len = count;
                 pattern++;
                 count = 0;
-                seen_wildcard = TRUE;
+                seen_wildcard = true;
                 break;
             default:
                 pattern++;
@@ -724,7 +723,7 @@ analyze_pattern(const char *pattern, size_t *prefix_len, size_t *suffix_len)
 
 char *
 te_file_extract_glob(const char *filename, const char *pattern,
-                     te_bool basename)
+                     bool basename)
 {
     size_t prefix_len;
     size_t suffix_len;

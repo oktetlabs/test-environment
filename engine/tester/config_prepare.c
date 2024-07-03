@@ -185,7 +185,7 @@ inherit_executable(run_item **child_exec, unsigned int *child_flags,
                 break;
 
             default:
-                assert(FALSE);
+                assert(false);
         }
     }
     else
@@ -325,7 +325,7 @@ prepare_calc_iters(run_item *ri)
     data.n_args = 0;
     data.n_iters = 1;
 
-    rc = test_run_item_enum_args(ri, prepare_arg_cb, TRUE, &data);
+    rc = test_run_item_enum_args(ri, prepare_arg_cb, true, &data);
     if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
         return rc;
 

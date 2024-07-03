@@ -76,16 +76,16 @@ typedef struct interface_entry {
     SLIST_ENTRY(interface_entry)  port_links;
     char                         *name;
     char                         *type;
-    te_bool                       temporary;
-    te_bool                       active;
+    bool temporary;
+    bool active;
 
-    te_bool                       mac_requested;
+    bool mac_requested;
     char                         *mac_request;
 
-    te_bool                       ofport_requested;
+    bool ofport_requested;
     char                         *ofport_request;
 
-    te_bool                       mtu_requested;
+    bool mtu_requested;
     char                         *mtu_request;
 
     char                         *dpdk_devargs;
@@ -99,7 +99,7 @@ typedef SLIST_HEAD(interface_list_t, interface_entry) interface_list_t;
 
 typedef struct port_vlan {
     char *type;
-    te_bool trunks[PORT_MAX_TRUNKS];
+    bool trunks[PORT_MAX_TRUNKS];
     int tag;
 } port_vlan;
 
@@ -108,7 +108,7 @@ typedef struct port_entry {
     char                    *name;
     char                    *value;
     interface_list_t         interfaces;
-    te_bool                  bridge_local;
+    bool bridge_local;
     const char              *parent_bridge_name;
     port_vlan                vlan;
 } port_entry;
@@ -125,7 +125,7 @@ typedef struct bridge_entry {
 typedef SLIST_HEAD(bridge_list_t, bridge_entry) bridge_list_t;
 
 typedef struct ovs_ctx_s {
-    te_bool           dpdk_init;
+    bool dpdk_init;
     te_kvpair_h       other_cfg;
 
     te_string         root_path;
@@ -151,7 +151,7 @@ typedef struct ovs_ctx_s {
 } ovs_ctx_t;
 
 static ovs_ctx_t ovs_ctx = {
-    .dpdk_init = FALSE,
+    .dpdk_init = false,
     .other_cfg = TAILQ_HEAD_INITIALIZER(ovs_ctx.other_cfg),
 
     .root_path = TE_STRING_INIT,
@@ -221,7 +221,7 @@ ovs_ctx_get(const char *ovs)
     return (ovs[0] == '\0') ? &ovs_ctx : NULL;
 }
 
-static te_bool
+static bool
 ovs_value_is_valid(const char **supported_values,
                    const char  *test_value)
 {
@@ -230,13 +230,13 @@ ovs_value_is_valid(const char **supported_values,
     for (; *valuep != NULL; ++valuep)
     {
         if (strcmp(test_value, *valuep) == 0)
-            return TRUE;
+            return true;
     }
 
-    return FALSE;
+    return false;
 }
 
-static te_bool
+static bool
 ovs_value_is_valid_mac(const char *value)
 {
     unsigned int x[ETHER_ADDR_LEN];
@@ -246,7 +246,7 @@ ovs_value_is_valid_mac(const char *value)
     n = sscanf(value, "%02x:%02x:%02x:%02x:%02x:%02x%c",
                &x[0], &x[1], &x[2], &x[3], &x[4], &x[5], &c);
 
-    return (n == ETHER_ADDR_LEN) ? TRUE : FALSE;
+    return (n == ETHER_ADDR_LEN) ? true : false;
 }
 
 static te_errno
@@ -461,7 +461,7 @@ ovs_log_fini_modules(ovs_ctx_t *ctx)
 static interface_entry *
 ovs_interface_alloc(const char *name,
                     const char *type,
-                    te_bool     temporary)
+                    bool temporary)
 {
     interface_entry *interface;
 
@@ -484,8 +484,8 @@ ovs_interface_alloc(const char *name,
         goto fail;
     }
 
-    interface->mac_requested = FALSE;
-    interface->ofport_requested = FALSE;
+    interface->mac_requested = false;
+    interface->ofport_requested = false;
     interface->ofport_request = strdup("0");
     if (interface->ofport_request == NULL)
     {
@@ -493,7 +493,7 @@ ovs_interface_alloc(const char *name,
         goto fail;
     }
 
-    interface->mtu_requested = FALSE;
+    interface->mtu_requested = false;
     interface->mtu_request = strdup("0");
     if (interface->mtu_request == NULL)
     {
@@ -502,7 +502,7 @@ ovs_interface_alloc(const char *name,
     }
 
     interface->temporary = temporary;
-    interface->active = FALSE;
+    interface->active = false;
 
     return interface;
 
@@ -569,7 +569,7 @@ static te_errno
 ovs_interface_init(ovs_ctx_t        *ctx,
                    const char       *name,
                    const char       *type,
-                   te_bool           activate,
+                   bool activate,
                    interface_entry **interface_out)
 {
     interface_entry *interface = NULL;
@@ -618,11 +618,11 @@ ovs_interface_fini(ovs_ctx_t       *ctx,
     }
     else if (interface->active)
     {
-        interface->active = FALSE;
+        interface->active = false;
     }
     else
     {
-        assert(FALSE);
+        assert(false);
     }
 }
 
@@ -659,7 +659,7 @@ ovs_bridge_find(ovs_ctx_t  *ctx,
 static te_errno
 ovs_interface_check_error(ovs_ctx_t        *ctx,
                           interface_entry  *interface,
-                          te_bool          *error_setp,
+                          bool *error_setp,
                           char            **error_bufp)
 {
     char     *buf = NULL;
@@ -680,11 +680,11 @@ ovs_interface_check_error(ovs_ctx_t        *ctx,
     switch (ret)
     {
         case 0:
-            *error_setp = FALSE;
+            *error_setp = false;
             break;
 
         case 1:
-            *error_setp = TRUE;
+            *error_setp = true;
             break;
 
         default:
@@ -866,7 +866,7 @@ static port_entry *
 ovs_bridge_port_alloc(const char       *parent_bridge_name,
                       const char       *name,
                       const char       *value,
-                      te_bool           bridge_local,
+                      bool bridge_local,
                       interface_entry **interfaces,
                       unsigned int      nb_interfaces)
 {
@@ -1036,14 +1036,14 @@ ovs_bridge_port_init_regular(ovs_ctx_t    *ctx,
                              const char   *port_name)
 {
     char            *error_message;
-    te_bool          error_set;
+    bool error_set;
     interface_entry *interface;
     port_entry      *port;
     te_errno         rc;
 
     INFO("Initialising the regular port '%s'", port_name);
 
-    rc = ovs_interface_init(ctx, port_name, "system", TRUE, &interface);
+    rc = ovs_interface_init(ctx, port_name, "system", true, &interface);
     if (rc != 0)
     {
         ERROR("Failed to initialise the port interface list entry");
@@ -1051,7 +1051,7 @@ ovs_bridge_port_init_regular(ovs_ctx_t    *ctx,
     }
 
     port = ovs_bridge_port_alloc(bridge->interface->name, port_name, "",
-                                 FALSE, &interface, 1);
+                                 false, &interface, 1);
     if (port == NULL)
     {
         ERROR("Failed to allocate the port list entry");
@@ -1157,7 +1157,7 @@ ovs_bridge_alloc(const char      *datapath_type,
     SLIST_INIT(&bridge->ports);
 
     port = ovs_bridge_port_alloc(interface->name, interface->name,
-                                 "", TRUE, &interface, 1);
+                                 "", true, &interface, 1);
     if (port == NULL)
     {
         ERROR("Failed to initialise the bridge local port list entry");
@@ -1271,13 +1271,13 @@ ovs_bridge_init(ovs_ctx_t  *ctx,
 {
     interface_entry *interface = NULL;
     char            *error_message;
-    te_bool          error_set;
+    bool error_set;
     bridge_entry    *bridge;
     te_errno         rc;
 
     INFO("Initialising the bridge '%s'", name);
 
-    rc = ovs_interface_init(ctx, name, "internal", TRUE, &interface);
+    rc = ovs_interface_init(ctx, name, "internal", true, &interface);
     if (rc != 0)
     {
         ERROR("Failed to initialise the bridge local interface list entry");
@@ -1391,18 +1391,18 @@ out:
     te_string_free(&cmd);
 }
 
-static te_bool
+static bool
 ovs_dbserver_is_running(ovs_ctx_t *ctx)
 {
     return (ctx->dbserver_pid == -1) ?
-           FALSE : (ta_waitpid(ctx->dbserver_pid, NULL, WNOHANG) == 0);
+           false : (ta_waitpid(ctx->dbserver_pid, NULL, WNOHANG) == 0);
 }
 
-static te_bool
+static bool
 ovs_vswitchd_is_running(ovs_ctx_t *ctx)
 {
     return (ctx->vswitchd_pid == -1) ?
-           FALSE : (ta_waitpid(ctx->vswitchd_pid, NULL, WNOHANG) == 0);
+           false : (ta_waitpid(ctx->vswitchd_pid, NULL, WNOHANG) == 0);
 }
 
 static te_errno
@@ -1707,8 +1707,8 @@ ovs_stop(ovs_ctx_t *ctx)
 static int
 ovs_is_running(ovs_ctx_t *ctx)
 {
-    te_bool dbserver_is_running = ovs_dbserver_is_running(ctx);
-    te_bool vswitchd_is_running = ovs_vswitchd_is_running(ctx);
+    bool dbserver_is_running = ovs_dbserver_is_running(ctx);
+    bool vswitchd_is_running = ovs_vswitchd_is_running(ctx);
 
     if (dbserver_is_running != vswitchd_is_running)
     {
@@ -1762,7 +1762,7 @@ ovs_status_set(unsigned int  gid,
                const char   *value,
                const char   *ovs)
 {
-    te_bool    enable = !!atoi(value);
+    bool enable = !!atoi(value);
     ovs_ctx_t *ctx;
     te_errno   rc;
 
@@ -1822,7 +1822,7 @@ ovs_dpdk_init_set(unsigned int  gid,
                   const char   *value,
                   const char   *ovs)
 {
-    te_bool    enable = !!atoi(value);
+    bool enable = !!atoi(value);
     ovs_ctx_t *ctx;
 
     UNUSED(gid);
@@ -2189,7 +2189,7 @@ out:
 static te_errno
 ovs_interface_pick(const char       *ovs,
                    const char       *interface_name,
-                   te_bool           writable,
+                   bool writable,
                    ovs_ctx_t       **ctx_out,
                    interface_entry **interface_out)
 {
@@ -2248,7 +2248,7 @@ ovs_interface_link_state_get(unsigned int  gid,
     INFO("Querying (requested) link state of the interface '%s'",
          interface_name);
 
-    rc = ovs_interface_pick(ovs, interface_name, FALSE, &ctx, &interface);
+    rc = ovs_interface_pick(ovs, interface_name, false, &ctx, &interface);
     if (rc != 0)
     {
         ERROR("Failed to pick the interface entry");
@@ -2273,7 +2273,7 @@ ovs_interface_link_state_get(unsigned int  gid,
         else if (strcmp(resp, "up") == 0)
             value[0] = '1';
         else
-            assert(FALSE);
+            assert(false);
 
         free(resp);
     }
@@ -2301,7 +2301,7 @@ ovs_interface_dpdk_devargs_get(unsigned int  gid,
     UNUSED(gid);
     UNUSED(oid);
 
-    rc = ovs_interface_pick(ovs, interface_name, FALSE, &ctx, &interface);
+    rc = ovs_interface_pick(ovs, interface_name, false, &ctx, &interface);
     if (rc != 0)
     {
         ERROR("Failed to pick the interface entry");
@@ -2327,7 +2327,7 @@ ovs_interface_dpdk_devargs_set(unsigned int  gid,
     UNUSED(gid);
     UNUSED(oid);
 
-    rc = ovs_interface_pick(ovs, interface_name, TRUE, NULL, &interface);
+    rc = ovs_interface_pick(ovs, interface_name, true, NULL, &interface);
     if (rc != 0)
     {
         ERROR("Failed to pick the interface entry");
@@ -2357,7 +2357,7 @@ ovs_interface_tunnel_option_get(unsigned int  gid,
     if (rc != 0)
         return rc;
 
-    rc = ovs_interface_pick(ovs, interface_name, FALSE, &ctx, &interface);
+    rc = ovs_interface_pick(ovs, interface_name, false, &ctx, &interface);
     if (rc != 0)
     {
         ERROR("Failed to pick the interface entry");
@@ -2390,7 +2390,7 @@ ovs_interface_tunnel_option_add(unsigned int  gid,
     if (rc != 0)
         return rc;
 
-    rc = ovs_interface_pick(ovs, interface_name, FALSE, &ctx, &interface);
+    rc = ovs_interface_pick(ovs, interface_name, false, &ctx, &interface);
     if (rc != 0)
     {
         ERROR("Failed to pick the interface entry");
@@ -2419,7 +2419,7 @@ ovs_interface_tunnel_option_del(unsigned int  gid,
     if (rc != 0)
         return rc;
 
-    rc = ovs_interface_pick(ovs, interface_name, FALSE, &ctx, &interface);
+    rc = ovs_interface_pick(ovs, interface_name, false, &ctx, &interface);
     if (rc != 0)
     {
         ERROR("Failed to pick the interface entry");
@@ -2447,7 +2447,7 @@ ovs_interface_tunnel_option_list(unsigned int  gid,
     UNUSED(oid);
     UNUSED(sub_id);
 
-    rc = ovs_interface_pick(ovs, interface_name, FALSE, &ctx, &interface);
+    rc = ovs_interface_pick(ovs, interface_name, false, &ctx, &interface);
     if (rc != 0)
     {
         ERROR("Failed to pick the interface entry");
@@ -2488,7 +2488,7 @@ ovs_interface_vhost_server_path_get(unsigned int  gid,
     UNUSED(gid);
     UNUSED(oid);
 
-    rc = ovs_interface_pick(ovs, interface_name, FALSE, &ctx, &interface);
+    rc = ovs_interface_pick(ovs, interface_name, false, &ctx, &interface);
     if (rc != 0)
     {
         ERROR("Failed to pick the interface entry");
@@ -2514,7 +2514,7 @@ ovs_interface_vhost_server_path_set(unsigned int  gid,
     UNUSED(gid);
     UNUSED(oid);
 
-    rc = ovs_interface_pick(ovs, interface_name, TRUE, NULL, &interface);
+    rc = ovs_interface_pick(ovs, interface_name, true, NULL, &interface);
     if (rc != 0)
     {
         ERROR("Failed to pick the interface entry");
@@ -2540,7 +2540,7 @@ ovs_interface_mtu_get(unsigned int  gid,
 
     INFO("Querying (requested) MTU of the interface '%s'", interface_name);
 
-    rc = ovs_interface_pick(ovs, interface_name, FALSE, &ctx, &interface);
+    rc = ovs_interface_pick(ovs, interface_name, false, &ctx, &interface);
     if (rc != 0)
     {
         ERROR("Failed to pick the interface entry");
@@ -2588,7 +2588,7 @@ ovs_interface_mtu_set(unsigned int  gid,
     INFO("Requesting the custom MTU '%s' for the interface '%s'",
          value, interface_name);
 
-    rc = ovs_interface_pick(ovs, interface_name, TRUE, NULL, &interface);
+    rc = ovs_interface_pick(ovs, interface_name, true, NULL, &interface);
     if (rc != 0)
     {
         ERROR("Failed to pick the interface entry");
@@ -2605,7 +2605,7 @@ ovs_interface_mtu_set(unsigned int  gid,
     if (rc != 0)
         ERROR("Failed to store the new interface custom MTU value");
     else
-        interface->mtu_requested = (test != 0) ? TRUE : FALSE;
+        interface->mtu_requested = (test != 0) ? true : false;
 
     return TE_RC(TE_TA_UNIX, rc);
 }
@@ -2633,7 +2633,7 @@ ovs_interface_ofport_get(unsigned int  gid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
-    rc = ovs_interface_pick(ovs, interface_name, FALSE, &ctx, &interface);
+    rc = ovs_interface_pick(ovs, interface_name, false, &ctx, &interface);
     if (rc != 0)
     {
         ERROR("Failed to pick the interface entry");
@@ -2681,7 +2681,7 @@ ovs_interface_ofport_set(unsigned int  gid,
     INFO("Requesting the custom ofport '%s' for the interface '%s'",
          value, interface_name);
 
-    rc = ovs_interface_pick(ovs, interface_name, TRUE, NULL, &interface);
+    rc = ovs_interface_pick(ovs, interface_name, true, NULL, &interface);
     if (rc != 0)
     {
         ERROR("Failed to pick the interface entry");
@@ -2698,7 +2698,7 @@ ovs_interface_ofport_set(unsigned int  gid,
     if (rc != 0)
         ERROR("Failed to store the new interface custom ofport value");
     else
-        interface->ofport_requested = (test != 0) ? TRUE : FALSE;
+        interface->ofport_requested = (test != 0) ? true : false;
 
     return TE_RC(TE_TA_UNIX, rc);
 }
@@ -2756,7 +2756,7 @@ ovs_interface_mac_get(unsigned int  gid,
 
     INFO("Querying (requested) MAC of the interface '%s'", interface_name);
 
-    rc = ovs_interface_pick(ovs, interface_name, FALSE, &ctx, &interface);
+    rc = ovs_interface_pick(ovs, interface_name, false, &ctx, &interface);
     if (rc != 0)
     {
         ERROR("Failed to pick the interface entry");
@@ -2790,7 +2790,7 @@ ovs_interface_mac_set(unsigned int  gid,
                       const char   *ovs,
                       const char   *interface_name)
 {
-    te_bool          mac_requested = FALSE;
+    bool mac_requested = false;
     interface_entry *interface;
     te_errno         rc;
 
@@ -2801,7 +2801,7 @@ ovs_interface_mac_set(unsigned int  gid,
     INFO("Requesting the custom MAC '%s' for the interface '%s'",
          value, interface_name);
 
-    rc = ovs_interface_pick(ovs, interface_name, TRUE, NULL, &interface);
+    rc = ovs_interface_pick(ovs, interface_name, true, NULL, &interface);
     if (rc != 0)
     {
         ERROR("Failed to pick the interface entry");
@@ -2816,7 +2816,7 @@ ovs_interface_mac_set(unsigned int  gid,
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
 
-        mac_requested = TRUE;
+        mac_requested = true;
     }
 
     rc = string_replace(&interface->mac_request, value);
@@ -2881,7 +2881,7 @@ ovs_interface_add(unsigned int  gid,
         }
     }
 
-    rc = ovs_interface_init(ctx, name, value, FALSE, NULL);
+    rc = ovs_interface_init(ctx, name, value, false, NULL);
     if (rc != 0)
         ERROR("Failed to initialise the interface list entry");
 
@@ -2904,7 +2904,7 @@ ovs_interface_del(unsigned int  gid,
 
     INFO("Removing the interface '%s'", name);
 
-    rc = ovs_interface_pick(ovs, name, TRUE, &ctx, &interface);
+    rc = ovs_interface_pick(ovs, name, true, &ctx, &interface);
     if (rc != 0)
     {
         ERROR("Failed to pick the interface entry");
@@ -2932,7 +2932,7 @@ ovs_interface_get(unsigned int  gid,
 
     INFO("Querying the type of the interface '%s'", name);
 
-    rc = ovs_interface_pick(ovs, name, FALSE, NULL, &interface);
+    rc = ovs_interface_pick(ovs, name, false, NULL, &interface);
     if (rc != 0)
     {
         ERROR("Failed to pick the interface entry");
@@ -2960,7 +2960,7 @@ ovs_interface_set(unsigned int  gid,
 
     INFO("Setting the type '%s' for the interface '%s'", value, name);
 
-    rc = ovs_interface_pick(ovs, name, TRUE, NULL, &interface);
+    rc = ovs_interface_pick(ovs, name, true, NULL, &interface);
     if (rc != 0)
     {
         ERROR("Failed to pick the interface entry");
@@ -3632,7 +3632,7 @@ ovs_bridge_port_vlan_tag_set(unsigned int  gid,
     ovs_ctx_t       *ctx;
     te_errno         rc;
     int              tag;
-    te_bool          set;
+    bool set;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -3774,7 +3774,7 @@ ovs_bridge_port_vlan_trunks_add(unsigned int  gid,
     if (rc != 0)
         return rc;
 
-    port->vlan.trunks[tag] = TRUE;
+    port->vlan.trunks[tag] = true;
 
     return 0;
 }
@@ -3827,7 +3827,7 @@ ovs_bridge_port_vlan_trunks_del(unsigned int  gid,
     if (rc != 0)
         return rc;
 
-    port->vlan.trunks[tag] = FALSE;
+    port->vlan.trunks[tag] = false;
 
     return 0;
 }

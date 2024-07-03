@@ -435,7 +435,7 @@ The example below demonstrates how to add a new sniffer with name **newsniffer**
 
 	tapi_sniffer_id    *snif;
 
-	snif = tapi_sniffer_add("Agt_B", "lo", "newsniffer", "ip", TRUE); /* Add new sniffer */
+	snif = tapi_sniffer_add("Agt_B", "lo", "newsniffer", "ip", true); /* Add new sniffer */
 	tapi_sniffer_mark(NULL, snif, "My first marker packet.");         /* Insert marker packet */
 	tapi_sniffer_stop(snif);                                          /* Suspend the sniffer work*/
 	tapi_sniffer_start(snif);                                         /* Renew the sniffer work */

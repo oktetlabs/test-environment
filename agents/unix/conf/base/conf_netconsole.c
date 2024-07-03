@@ -105,7 +105,7 @@ typedef SLIST_HEAD(netconsole_targets,
 
 static netconsole_targets     targets;
 
-static te_bool netconsole_was_loaded = TRUE;
+static bool netconsole_was_loaded = true;
 
 /**
  * Configure netconsole kernel module.
@@ -130,7 +130,7 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
 
     struct sockaddr_in  local_ipv4_addr;
     struct sockaddr_in  remote_ipv4_addr;
-    te_bool             remote_ipv4_found = FALSE;
+    bool remote_ipv4_found = false;
     int                 rc;
     int                 s = -1;
     struct arpreq       remote_hwaddr_req;
@@ -244,7 +244,7 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
 
     if (SLIST_EMPTY(&targets) &&
         ta_system("lsmod | grep netconsole || exit 1") != 0)
-        netconsole_was_loaded = FALSE;
+        netconsole_was_loaded = false;
 
     if (ta_system("/sbin/modprobe netconsole") != 0)
     {

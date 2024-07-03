@@ -189,7 +189,7 @@ rgt_log_end_element(void *user_data, const rgt_xmlChar *xml_tag)
         case RGT_XML2HTML_STATE_MEM_DUMP_ROW:
             assert(strcmp(tag, "row") == 0);
             proc_mem_row_end(ctx, depth_ctx, NULL);
-            ctx->mem_ctx.first_row = FALSE;
+            ctx->mem_ctx.first_row = false;
             ctx->state = RGT_XML2HTML_STATE_MEM_DUMP;
             break;
 
@@ -527,7 +527,7 @@ rgt_log_start_element(void *user_data,
             }
             else if (strcmp(tag, "mem-dump") == 0)
             {
-                ctx->mem_ctx.first_row = TRUE;
+                ctx->mem_ctx.first_row = true;
                 ctx->mem_ctx.mem_width = 0;
 
                 proc_mem_dump_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
@@ -822,7 +822,7 @@ rgt_parse_file(rgt_gen_ctx_t *gen_ctx)
     size_t         n;
     char          *buf = NULL;
     size_t         buf_len = BUF_BLOCK_LEN * 1024; /* 1Mb */
-    te_bool        err = FALSE;
+    bool err = false;
 
     if ((fd = fopen(gen_ctx->xml_fname, "r")) == NULL)
     {
@@ -869,7 +869,7 @@ rgt_parse_file(rgt_gen_ctx_t *gen_ctx)
             fprintf(stderr, "Parse error at line %d:\n%s\n",
                     XML_GetCurrentLineNumber(p),
                     XML_ErrorString(XML_GetErrorCode(p)));
-            err = TRUE;
+            err = true;
             break;
         }
     } while (n != 0);
@@ -1092,7 +1092,7 @@ rgt_node2str(rgt_node_t node_type)
 /* See the description in xml2gen.h */
 void *
 rgt_xml2fmt_alloc_depth_data(rgt_depth_data_storage *storage,
-                             uint32_t depth, te_bool *reused)
+                             uint32_t depth, bool *reused)
 {
     GPtrArray *p_arr;
     void *result;
@@ -1119,11 +1119,11 @@ rgt_xml2fmt_alloc_depth_data(rgt_depth_data_storage *storage,
         memset(ptr, 0, storage->data_size);
 
         if (reused != NULL)
-            *reused = FALSE;
+            *reused = false;
     }
     else if (reused != NULL)
     {
-        *reused = TRUE;
+        *reused = true;
     }
 
     result = g_ptr_array_index(p_arr, depth - 1);
@@ -1151,7 +1151,7 @@ rgt_xml2fmt_free_depth_data(rgt_depth_data_storage *storage,
                             rgt_xml2fmt_free_depth_data_cb *cb)
 {
     g_ptr_array_foreach(storage->array, free_depth_data_part, cb);
-    g_ptr_array_free(storage->array, TRUE);
+    g_ptr_array_free(storage->array, true);
     storage->array = NULL;
 }
 
@@ -1217,7 +1217,7 @@ main(int argc, char **argv)
 
     gen_ctx.state = RGT_XML2HTML_STATE_INITIAL;
     gen_ctx.depth = 0;
-    gen_ctx.depth_info = g_array_new(FALSE, FALSE,
+    gen_ctx.depth_info = g_array_new(false, false,
                                      sizeof(rgt_depth_ctx_t));
     if (gen_ctx.depth_info == NULL)
     {
@@ -1235,7 +1235,7 @@ main(int argc, char **argv)
     free(gen_ctx.xml_fname);
     free(gen_ctx.out_fname);
 
-    g_array_free(gen_ctx.depth_info, TRUE);
+    g_array_free(gen_ctx.depth_info, true);
 
     return rc;
 }

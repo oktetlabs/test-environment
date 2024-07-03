@@ -347,11 +347,11 @@ te_test_result_cmp(te_test_result *p, te_test_result *q)
 
 
 /* See the description in trc_update.h */
-te_bool
-trc_update_is_to_save(void *data, te_bool is_iter)
+bool
+trc_update_is_to_save(void *data, bool is_iter)
 {
     if (data == NULL)
-        return FALSE;
+        return false;
 
     if (is_iter)
     {
@@ -371,13 +371,13 @@ trc_update_is_to_save(void *data, te_bool is_iter)
 
 /* See the description in trc_update.h */
 char *
-trc_update_set_user_attr(void *data, te_bool is_iter)
+trc_update_set_user_attr(void *data, bool is_iter)
 {
     char *attr_value;
     int   val_len = 20;
 
     if (data == NULL)
-        return FALSE;
+        return false;
 
     if (is_iter)
     {
@@ -530,13 +530,13 @@ trc_update_rentry_cmp(trc_exp_result_entry *p,
 /* See the description in trc_update.h */
 int
 trc_update_result_cmp_gen(trc_exp_result *p, trc_exp_result *q,
-                          te_bool tags_cmp)
+                          bool tags_cmp)
 {
     int                      rc;
     trc_exp_result_entry    *p_r;
     trc_exp_result_entry    *q_r;
-    te_bool                  p_tags_str_void;
-    te_bool                  q_tags_str_void;
+    bool p_tags_str_void;
+    bool q_tags_str_void;
 
     DUMMY_CMP(p, q);
 
@@ -595,14 +595,14 @@ trc_update_result_cmp_gen(trc_exp_result *p, trc_exp_result *q,
 int
 trc_update_result_cmp(trc_exp_result *p, trc_exp_result *q)
 {
-    return trc_update_result_cmp_gen(p, q, TRUE);
+    return trc_update_result_cmp_gen(p, q, true);
 }
 
 /* See the description in trc_update.h */
 int
 trc_update_result_cmp_no_tags(trc_exp_result *p, trc_exp_result *q)
 {
-    return trc_update_result_cmp_gen(p, q, FALSE);
+    return trc_update_result_cmp_gen(p, q, false);
 }
 
 /* See the description in trc_update.h */
@@ -612,8 +612,8 @@ trc_update_results_cmp(trc_exp_results *p, trc_exp_results *q)
     int                  rc;
     trc_exp_result      *p_r;
     trc_exp_result      *q_r;
-    te_bool              p_is_void = (p == NULL || STAILQ_EMPTY(p));
-    te_bool              q_is_void = (q == NULL || STAILQ_EMPTY(q));
+    bool p_is_void = (p == NULL || STAILQ_EMPTY(p));
+    bool q_is_void = (q == NULL || STAILQ_EMPTY(q));
 
     if (p_is_void && q_is_void)
         return 0;
@@ -737,9 +737,9 @@ trc_update_ins_rule(trc_update_rule *rule,
  * @return Generated data pointer
  */
 void *
-trc_update_gen_user_data(void *data, te_bool is_iter)
+trc_update_gen_user_data(void *data, bool is_iter)
 {
-    te_bool     to_save = *((te_bool *)data);
+    bool to_save = *((bool *)data);
 
     if (is_iter)
     {
@@ -748,9 +748,9 @@ trc_update_gen_user_data(void *data, te_bool is_iter)
         trc_update_init_test_iter_data(iter_d);
 
         if (to_save)
-            iter_d->to_save = TRUE;
+            iter_d->to_save = true;
         else
-            iter_d->to_save = FALSE;
+            iter_d->to_save = false;
 
         return iter_d;
     }
@@ -759,9 +759,9 @@ trc_update_gen_user_data(void *data, te_bool is_iter)
         trc_update_test_data *test_d = TE_ALLOC(sizeof(*test_d));
 
         if (to_save)
-            test_d->to_save = TRUE;
+            test_d->to_save = true;
         else
-            test_d->to_save = FALSE;
+            test_d->to_save = false;
 
         return test_d;
     }
@@ -799,7 +799,7 @@ trc_update_fill_iters_user_data(trc_test_iters *iters,
 {
     trc_update_test_iter_data   *user_data;
     trc_test_iter               *iter;
-    te_bool                      to_save = TRUE;
+    bool to_save = true;
     trc_report_argument         *args;
     unsigned int                 args_n;
     unsigned int                 args_max;
@@ -808,7 +808,7 @@ trc_update_fill_iters_user_data(trc_test_iters *iters,
 
     TAILQ_FOREACH(iter, &iters->head, links)
     {
-        user_data = trc_update_gen_user_data(&to_save, TRUE);
+        user_data = trc_update_gen_user_data(&to_save, true);
         trc_db_iter_set_user_data(iter, user_id, user_data);
         if (!TAILQ_EMPTY(&iter->args.head))
         {
@@ -820,7 +820,7 @@ trc_update_fill_iters_user_data(trc_test_iters *iters,
             {
                 args[args_n].name = strdup(arg->name);
                 args[args_n].value = strdup(arg->value);
-                args[args_n].variable = FALSE;
+                args[args_n].variable = false;
                 args_n++;
 
                 if (args_n == args_max)
@@ -852,14 +852,14 @@ trc_update_fill_tests_user_data(trc_tests *tests,
 {
     trc_update_test_data    *user_data;
     trc_test                *test;
-    te_bool                  to_save = TRUE;
+    bool to_save = true;
     int                      tests_count = 0;
     trc_update_test_entry   *test_entry;
     trc_update_tests_group  *tests_group;
 
     TAILQ_FOREACH(test, &tests->head, links)
     {
-        user_data = trc_update_gen_user_data(&to_save, FALSE);
+        user_data = trc_update_gen_user_data(&to_save, false);
         trc_db_test_set_user_data(test, user_id, user_data);
         if (trc_update_fill_iters_user_data(&test->iters,
                                             updated_tests,
@@ -923,7 +923,7 @@ trc_update_fill_db_user_data(te_trc_db *db,
  */
 static te_errno trc_update_set_tests_to_save(trc_tests *tests,
                                              unsigned int user_id,
-                                             te_bool to_save);
+                                             bool to_save);
 
 /**
  * Set to_save property of user data for all the iterations
@@ -940,8 +940,8 @@ static te_errno trc_update_set_tests_to_save(trc_tests *tests,
 static te_errno
 trc_update_set_iters_to_save(trc_test_iters *iters,
                              unsigned int user_id,
-                             te_bool to_save,
-                             te_bool restore)
+                             bool to_save,
+                             bool restore)
 {
     trc_update_test_iter_data   *user_data;
     trc_test_iter               *iter;
@@ -974,7 +974,7 @@ trc_update_set_iters_to_save(trc_test_iters *iters,
 static te_errno
 trc_update_set_tests_to_save(trc_tests *tests,
                              unsigned int user_id,
-                             te_bool to_save)
+                             bool to_save)
 {
     trc_update_test_data    *user_data;
     trc_test                *test;
@@ -989,7 +989,7 @@ trc_update_set_tests_to_save(trc_tests *tests,
 
             rc = trc_update_set_iters_to_save(&test->iters,
                                               user_id, to_save,
-                                              FALSE);
+                                              false);
             if (rc != 0)
                 return rc;
         }
@@ -1011,7 +1011,7 @@ trc_update_set_tests_to_save(trc_tests *tests,
 static te_errno
 trc_update_set_to_save(te_trc_db *db,
                        unsigned int user_id,
-                       te_bool to_save)
+                       bool to_save)
 {
     return trc_update_set_tests_to_save(&db->tests, user_id, to_save);
 }
@@ -1029,9 +1029,9 @@ trc_update_set_to_save(te_trc_db *db,
  */
 static te_errno
 trc_update_set_propagate_to_save(void *element,
-                                 te_bool is_iter,
+                                 bool is_iter,
                                  unsigned int user_id,
-                                 te_bool to_save)
+                                 bool to_save)
 {
     trc_test_iter               *iter;
     trc_test                    *test;
@@ -1078,7 +1078,7 @@ static te_errno trc_update_iter_data_merge_result(trc_update_ctx *ctx,
                                                             *upd_iter_data,
                                                   te_test_result
                                                                 *te_result,
-                                                  te_bool is_expected);
+                                                  bool is_expected);
 
 /**
  * Add a new unexpected result to all the iterations of a given tests.
@@ -1123,7 +1123,7 @@ trc_update_iters_add_result(trc_update_ctx *ctx,
                 rc = trc_update_iter_data_merge_result(ctx,
                                                        user_data,
                                                        te_result,
-                                                       TRUE);
+                                                       true);
 
             if (rc != 0)
                 return rc;
@@ -1181,16 +1181,16 @@ trc_update_add_skipped(trc_update_ctx *ctx)
  * Typedef for a function checking some condition
  * on given test results.
  */
-typedef te_bool (*check_res_cond)(trc_exp_results *);
+typedef bool (*check_res_cond)(trc_exp_results *);
 
 /**
  * Check whether all the results are SKIPPED or not.
  *
  * @param results   Test results
  *
- * @return @c TRUE or @c FALSE
+ * @return @c true or @c false
  */
-static te_bool
+static bool
 is_skip_only(trc_exp_results *results)
 {
     trc_exp_result              *result;
@@ -1207,9 +1207,9 @@ is_skip_only(trc_exp_results *results)
     }
 
     if (result == NULL)
-        return TRUE;
+        return true;
 
-    return FALSE;
+    return false;
 }
 
 /**
@@ -1217,9 +1217,9 @@ is_skip_only(trc_exp_results *results)
  *
  * @param results   Test results
  *
- * @return @c TRUE or @c FALSE
+ * @return @c true or @c false
  */
-static te_bool
+static bool
 is_exp_only(trc_exp_results *results)
 {
     trc_exp_result              *result;
@@ -1236,9 +1236,9 @@ is_exp_only(trc_exp_results *results)
     }
 
     if (result == NULL)
-        return TRUE;
+        return true;
 
-    return FALSE;
+    return false;
 }
 
 /** Result editing operation */
@@ -1259,13 +1259,13 @@ typedef enum result_ops {
 /**
  * For all the tests, perform a given operation on a list of
  * unexpected results where for all of them a given condition
- * is @c TRUE.
+ * is @c true.
  *
  * @param ctx            TRC Update context
  * @param tests          Queue of tests
  * @param cond_func      Condition function
  * @param op             Result editing operation
- * @param all_empty      Will be set to @c TRUE if
+ * @param all_empty      Will be set to @c true if
  *                       all the lists of unexpected
  *                       results are empty
  *
@@ -1275,7 +1275,7 @@ static te_errno trc_update_tests_cond_res_op(trc_update_ctx *ctx,
                                              trc_tests *tests,
                                              check_res_cond cond_func,
                                              result_ops op,
-                                             te_bool *all_empty);
+                                             bool *all_empty);
 
 static void
 trc_exp_results_remove_expected(trc_exp_results *results)
@@ -1301,13 +1301,13 @@ trc_exp_results_remove_expected(trc_exp_results *results)
 /**
  * For all the iterations, perform a given operation on a list of
  * unexpected results where for all of them a given condition
- * is @c TRUE.
+ * is @c true.
  *
  * @param ctx            TRC Update context
  * @param iters          Queue of iterations
  * @param cond_func      Condition function
  * @param op             Result editing operation
- * @param all_empty      Will be set to @c TRUE if
+ * @param all_empty      Will be set to @c true if
  *                       all the lists of unexpected
  *                       results are empty
  *
@@ -1317,15 +1317,15 @@ static te_errno
 trc_update_iters_cond_res_op(trc_update_ctx *ctx,
                              trc_test_iters *iters,
                              check_res_cond cond_func,
-                             result_ops op, te_bool *all_empty)
+                             result_ops op, bool *all_empty)
 {
     trc_update_test_iter_data   *user_data;
     trc_test_iter               *iter;
     int                          rc;
     trc_exp_result              *q;
     trc_exp_result              *q_tvar;
-    te_bool                      my_all_empty = TRUE;
-    te_bool                      all_empty_aux = TRUE;
+    bool my_all_empty = true;
+    bool all_empty_aux = true;
 
     TAILQ_FOREACH(iter, &iters->head, links)
     {
@@ -1338,10 +1338,10 @@ trc_update_iters_cond_res_op(trc_update_ctx *ctx,
                                                   cond_func, op,
                                                   &all_empty_aux);
                 if (!all_empty_aux)
-                    my_all_empty = FALSE;
+                    my_all_empty = false;
 
                 if (all_empty_aux && op == RESULT_OP_EXCL_EXP_EMPTY)
-                    user_data->to_save = FALSE;
+                    user_data->to_save = false;
             }
             else
             {
@@ -1381,11 +1381,11 @@ trc_update_iters_cond_res_op(trc_update_ctx *ctx,
                 if (!STAILQ_EMPTY(&user_data->new_results) ||
                     (!STAILQ_EMPTY(&iter->exp_results) &&
                      op == RESULT_OP_EXCL_EXP_EMPTY))
-                    my_all_empty = FALSE;
+                    my_all_empty = false;
 
                 if (STAILQ_EMPTY(&iter->exp_results) &&
                     op == RESULT_OP_EXCL_EXP_EMPTY)
-                    user_data->to_save = FALSE;
+                    user_data->to_save = false;
             }
 
             if (rc != 0)
@@ -1399,12 +1399,12 @@ trc_update_iters_cond_res_op(trc_update_ctx *ctx,
         {
             user_data = trc_db_iter_get_user_data(iter, ctx->db_uid);
             if (user_data != NULL)
-                user_data->to_save = FALSE;
+                user_data->to_save = false;
         }
     }
 
     if (all_empty != NULL)
-        *(te_bool *)all_empty = my_all_empty;
+        *(bool *)all_empty = my_all_empty;
 
     return 0;
 }
@@ -1415,15 +1415,15 @@ trc_update_tests_cond_res_op(trc_update_ctx *ctx,
                              trc_tests *tests,
                              check_res_cond cond_func,
                              result_ops op,
-                             te_bool *all_empty)
+                             bool *all_empty)
 {
     trc_update_test_data    *user_data;
     trc_test                *test;
     int                      rc;
-    te_bool                  my_all_empty = FALSE;
+    bool my_all_empty = false;
 
     if (all_empty != NULL)
-        *(te_bool *)all_empty = TRUE;
+        *(bool *)all_empty = true;
 
     TAILQ_FOREACH(test, &tests->head, links)
     {
@@ -1436,14 +1436,14 @@ trc_update_tests_cond_res_op(trc_update_ctx *ctx,
             if (rc != 0)
                 return rc;
 
-            if (my_all_empty == FALSE)
+            if (my_all_empty == false)
             {
                 if (all_empty != NULL)
-                    *(te_bool *)all_empty = FALSE;
+                    *(bool *)all_empty = false;
             }
             else if (op == RESULT_OP_EXCLUDE_EMPTY ||
                      op == RESULT_OP_EXCL_EXP_EMPTY)
-                user_data->to_save = FALSE;
+                user_data->to_save = false;
         }
     }
 
@@ -1452,7 +1452,7 @@ trc_update_tests_cond_res_op(trc_update_ctx *ctx,
 
 /**
  * Perform a given operation on a list of unexpected results
- * where for all of them a given condition is @c TRUE.
+ * where for all of them a given condition is @c true.
  *
  * @param ctx            TRC Update context
  * @param cond_func      Condition function
@@ -1548,7 +1548,7 @@ trc_update_rule_to_xml(trc_update_rule *rule, xmlNodePtr node)
         }
 
         trc_exp_result_to_xml(rule->def_res, defaults,
-                              TRUE);
+                              true);
     }
 
     old_res = xmlNewChild(rule_node, NULL,
@@ -1561,7 +1561,7 @@ trc_update_rule_to_xml(trc_update_rule *rule, xmlNodePtr node)
 
     if (rule->type == TRC_UPDATE_RULE_RESULTS ||
         rule->type == TRC_UPDATE_RULE_RESULT)
-        trc_exp_results_to_xml(rule->old_res, old_res, FALSE);
+        trc_exp_results_to_xml(rule->old_res, old_res, false);
     else if (rule->type == TRC_UPDATE_RULE_ENTRY)
         trc_exp_result_entry_to_xml(rule->old_re, old_res);
     else if (rule->type == TRC_UPDATE_RULE_VERDICT)
@@ -1579,7 +1579,7 @@ trc_update_rule_to_xml(trc_update_rule *rule, xmlNodePtr node)
         }
 
         if (rule->confl_res != NULL)
-            trc_exp_results_to_xml(rule->confl_res, confl_res, FALSE);
+            trc_exp_results_to_xml(rule->confl_res, confl_res, false);
     }
 
     if ((rule->new_res != NULL && !STAILQ_EMPTY(rule->new_res) &&
@@ -1598,7 +1598,7 @@ trc_update_rule_to_xml(trc_update_rule *rule, xmlNodePtr node)
 
         if (rule->type == TRC_UPDATE_RULE_RESULTS ||
             rule->type == TRC_UPDATE_RULE_RESULT)
-            trc_exp_results_to_xml(rule->new_res, new_res, FALSE);
+            trc_exp_results_to_xml(rule->new_res, new_res, false);
         else if (rule->type == TRC_UPDATE_RULE_ENTRY)
             trc_exp_result_entry_to_xml(rule->new_re, new_res);
         else if (rule->type == TRC_UPDATE_RULE_VERDICT)
@@ -1754,12 +1754,12 @@ save_test_rules_to_file(trc_update_tests_groups *updated_tests,
  *
  * @param find_result       Result to be found
  * @param results           List of results where to search
- * @param no_tags           If @c TRUE, tag expressions won't
+ * @param no_tags           If @c true, tag expressions won't
  *                          be taken into account
  * @param result_found      If result was found, it will be set
- *                          to @c TRUE
+ *                          to @c true
  * @param entry_found       If result entry was found, it will
- *                          be set to @c TRUE
+ *                          be set to @c true
  * @param result            If result was found, it will be set
  *                          to its pointer in list; otherwise
  *                          it will be set to the pointer of
@@ -1771,18 +1771,18 @@ save_test_rules_to_file(trc_update_tests_groups *updated_tests,
 static te_errno
 trc_update_find_result(trc_exp_result *find_result,
                        trc_exp_results *results,
-                       te_bool no_tags, te_bool *result_found,
-                       te_bool *entry_found,
+                       bool no_tags, bool *result_found,
+                       bool *entry_found,
                        trc_exp_result **result)
 {
     trc_exp_result             *prev = NULL;
     trc_exp_result             *p;
     trc_exp_result_entry       *q;
     int                         rc = 0;
-    te_bool                     tags_fit;
+    bool tags_fit;
 
-    *result_found = FALSE;
-    *entry_found = FALSE;
+    *result_found = false;
+    *entry_found = false;
     *result = NULL;
 
     if (!STAILQ_EMPTY(results))
@@ -1806,14 +1806,14 @@ trc_update_find_result(trc_exp_result *find_result,
                 if (q != NULL)
                 {
                     *result = p;
-                    *result_found = TRUE;
-                    *entry_found = TRUE;
+                    *result_found = true;
+                    *entry_found = true;
                     return 0;
                 }
                 else if (!no_tags)
                 {
                     *result = p;
-                    *result_found = TRUE;
+                    *result_found = true;
                     return 0;
                 }
             }
@@ -1835,14 +1835,14 @@ static te_errno
 trc_update_iter_data_merge_result(trc_update_ctx *ctx,
                                   trc_update_test_iter_data *upd_iter_data,
                                   te_test_result *te_result,
-                                  te_bool is_expected)
+                                  bool is_expected)
 {
     trc_exp_result             *merge_result;
     trc_exp_result_entry       *result_entry;
     trc_exp_results            *results_list = NULL;
     trc_exp_result             *res = NULL;
-    te_bool                     result_found = FALSE;
-    te_bool                     entry_found = FALSE;
+    bool result_found = false;
+    bool entry_found = false;
     te_test_verdict            *verdict;
 
     tqe_string  *tqs_p;
@@ -2013,7 +2013,7 @@ trc_update_iter_data_merge_result(trc_update_ctx *ctx,
 
     results_list = &upd_iter_data->new_results;
 
-    trc_update_find_result(merge_result, results_list, FALSE,
+    trc_update_find_result(merge_result, results_list, false,
                            &result_found, &entry_found, &res);
 
     if (!result_found)
@@ -2052,7 +2052,7 @@ trc_update_merge_result(trc_update_ctx *ctx,
 {
     trc_update_test_iter_data  *upd_iter_data;
     trc_exp_result             *p;
-    te_bool                     is_expected = FALSE;
+    bool is_expected = false;
 
     upd_iter_data = trc_db_iter_get_user_data(iter, ctx->db_uid);
 
@@ -2079,7 +2079,7 @@ trc_update_merge_result(trc_update_ctx *ctx,
 static te_errno trc_update_gen_test_wilds_fss(unsigned int db_uid,
                                               trc_update_test_entry
                                                             *test_entry,
-                                              te_bool grouped,
+                                              bool grouped,
                                               int groups_cnt,
                                               trc_update_args_groups
                                                                 *wildcards,
@@ -2088,7 +2088,7 @@ static te_errno trc_update_gen_test_wilds_fss(unsigned int db_uid,
 /* Predeclaration of function, see description below. */
 static te_errno trc_update_generate_test_wilds(unsigned int db_uid,
                                                trc_test *test,
-                                               te_bool grouped,
+                                               bool grouped,
                                                int groups_cnt,
                                                trc_update_args_groups
                                                            *save_wildcards,
@@ -2262,7 +2262,7 @@ simplify_log_exprs(trc_exp_results *results,
                 if (test_iter_args_match(args_group->args,
                                          iter_data->args_n,
                                          iter_data->args,
-                                         TRUE) !=
+                                         true) !=
                                             ITER_NO_MATCH)
                 {
                     entry_p = TAILQ_FIRST(&p->results);
@@ -2298,7 +2298,7 @@ simplify_log_exprs(trc_exp_results *results,
                     TE_ALLOC(sizeof(trc_report_argument) * n_args);
                 iter_data->args_n = n_args;
                 iter_data->args_max = n_args;
-                iter_data->to_save = TRUE;
+                iter_data->to_save = true;
                 j = 0;
 
                 TAILQ_FOREACH(arg, &args_group->args->head, links)
@@ -2319,7 +2319,7 @@ simplify_log_exprs(trc_exp_results *results,
                 logic_expr_parse(q->tags_str, &q->tags_expr);
                 STAILQ_INSERT_TAIL(&iter->exp_results, q, links);
 
-                trc_db_set_user_data(iter, TRUE, 0, iter_data);
+                trc_db_set_user_data(iter, true, 0, iter_data);
                 TAILQ_INSERT_TAIL(&test->iters.head, iter, links);
             }
 
@@ -2332,10 +2332,10 @@ simplify_log_exprs(trc_exp_results *results,
      * Generate wildcards for fake test.
      */
     if (trc_update_gen_test_wilds_fss(
-                                0, test_entry, FALSE, 0, NULL,
+                                0, test_entry, false, 0, NULL,
                                 flags | TRC_UPDATE_INTERSEC_WILDS) < 0)
         trc_update_generate_test_wilds(
-                                    0, test, FALSE, 0, NULL,
+                                    0, test, false, 0, NULL,
                                     flags | TRC_UPDATE_INTERSEC_WILDS);
 
     trc_exp_results_free(results);
@@ -2470,7 +2470,7 @@ trc_update_simplify_results(unsigned int db_uid,
                 {
                     iter_data = trc_db_iter_get_user_data(iter, db_uid);
 
-                    if (iter_data == NULL || iter_data->to_save == FALSE)
+                    if (iter_data == NULL || iter_data->to_save == false)
                         continue;
 
                     new_results = &iter->exp_results;
@@ -2484,7 +2484,7 @@ trc_update_simplify_results(unsigned int db_uid,
             {
                 iter_data = trc_db_iter_get_user_data(iter, db_uid);
 
-                if (iter_data == NULL || iter_data->to_save == FALSE)
+                if (iter_data == NULL || iter_data->to_save == false)
                     continue;
 
                 if (iter_data->r_simple == RES_SIMPLE)
@@ -2503,7 +2503,7 @@ trc_update_simplify_results(unsigned int db_uid,
                         trc_db_iter_get_user_data(iter_aux, db_uid);
 
                     if (iter_data_aux == NULL ||
-                        iter_data_aux->to_save == FALSE)
+                        iter_data_aux->to_save == false)
                         continue;
 
                     if (flags & TRC_UPDATE_LOG_WILDS)
@@ -2582,7 +2582,7 @@ trc_update_simplify_results(unsigned int db_uid,
                         trc_db_iter_get_user_data(iter_aux, db_uid);
 
                     if (iter_data_aux == NULL ||
-                        iter_data_aux->to_save == FALSE)
+                        iter_data_aux->to_save == false)
                         continue;
 
                     if (iter_data_aux->r_simple == RES_SIMPLE)
@@ -2664,10 +2664,10 @@ trc_update_apply_rverdict(trc_test_iter *iter,
                     if ((flags & TRC_UPDATE_RULE_UPD_ONLY) &&
                         !iter_data->to_save)
                     {
-                        trc_update_set_propagate_to_save(iter, TRUE,
-                                                         db_uid, TRUE);
+                        trc_update_set_propagate_to_save(iter, true,
+                                                         db_uid, true);
                         trc_update_set_iters_to_save(&iter->parent->iters,
-                                                     db_uid, FALSE, TRUE);
+                                                     db_uid, false, true);
                     }
 
                     iter_verdict = dup_verdict;
@@ -2731,10 +2731,10 @@ trc_update_apply_rrentry(trc_test_iter *iter,
                 if ((flags & TRC_UPDATE_RULE_UPD_ONLY) &&
                     !iter_data->to_save)
                 {
-                    trc_update_set_propagate_to_save(iter, TRUE,
-                                                     db_uid, TRUE);
+                    trc_update_set_propagate_to_save(iter, true,
+                                                     db_uid, true);
                     trc_update_set_iters_to_save(&iter->parent->iters,
-                                                 db_uid, FALSE, TRUE);
+                                                 db_uid, false, true);
                 }
 
                 iter_rentry = dup_rentry;
@@ -2800,9 +2800,9 @@ trc_update_apply_rresult(trc_test_iter *iter,
             if ((flags & TRC_UPDATE_RULE_UPD_ONLY) &&
                 !iter_data->to_save)
             {
-                trc_update_set_propagate_to_save(iter, TRUE, db_uid, TRUE);
+                trc_update_set_propagate_to_save(iter, true, db_uid, true);
                 trc_update_set_iters_to_save(&iter->parent->iters,
-                                             db_uid, FALSE, TRUE);
+                                             db_uid, false, true);
             }
 
             iter_result = dup_result;
@@ -2874,9 +2874,9 @@ trc_update_apply_rresults(trc_test_iter *iter,
         if ((flags & TRC_UPDATE_RULE_UPD_ONLY) &&
             !iter_data->to_save)
         {
-            trc_update_set_propagate_to_save(iter, TRUE, db_uid, TRUE);
+            trc_update_set_propagate_to_save(iter, true, db_uid, true);
             trc_update_set_iters_to_save(&iter->parent->iters,
-                                         db_uid, FALSE, TRUE);
+                                         db_uid, false, true);
         }
 
         free(results_dup);
@@ -2910,8 +2910,8 @@ trc_update_apply_rules(unsigned int db_uid,
     trc_update_rule             *rule;
     trc_update_wilds_list_entry *wild;
     tqe_string                  *expr;
-    te_bool                      rules_switch = FALSE;
-    te_bool                      is_applicable = FALSE;
+    bool rules_switch = false;
+    bool is_applicable = false;
 
     UNUSED(flags);
 
@@ -2924,7 +2924,7 @@ trc_update_apply_rules(unsigned int db_uid,
                 iter_data = trc_db_iter_get_user_data(iter, db_uid);
 
                 if (iter_data == NULL ||
-                    (iter_data->to_save == FALSE &&
+                    (iter_data->to_save == false &&
                      !(flags & TRC_UPDATE_RULE_UPD_ONLY)))
                     continue;
 
@@ -2936,17 +2936,17 @@ trc_update_apply_rules(unsigned int db_uid,
                     strncmp(value, "rule_", 5) == 0)
                     rule_id = atoi(value + 5);
 
-                rules_switch = FALSE;
+                rules_switch = false;
 
                 for (rule = TAILQ_FIRST(global_rules);
-                     !(rule == NULL && rules_switch == TRUE);
+                     !(rule == NULL && rules_switch == true);
                      rule = TAILQ_NEXT(rule, links))
                 {
                     if (rule == NULL)
                     {
                         if (group->rules != NULL)
                             rule = TAILQ_FIRST(group->rules);
-                        rules_switch = TRUE;
+                        rules_switch = true;
 
                         if (rule == NULL)
                             break;
@@ -2957,7 +2957,7 @@ trc_update_apply_rules(unsigned int db_uid,
                         rule_id != 0)
                         continue;
 
-                    is_applicable = FALSE;
+                    is_applicable = false;
 
                     if (rule->wilds != NULL &&
                         !SLIST_EMPTY(rule->wilds))
@@ -2971,7 +2971,7 @@ trc_update_apply_rules(unsigned int db_uid,
                                                 iter_data->args,
                                                 wild->is_strict) !=
                                                     ITER_NO_MATCH)
-                                is_applicable = TRUE;
+                                is_applicable = true;
                         }
                     }
                     else if (rule->match_exprs != NULL &&
@@ -2986,7 +2986,7 @@ trc_update_apply_rules(unsigned int db_uid,
                         }
                     }
                     else
-                        is_applicable = TRUE;
+                        is_applicable = true;
 
                     if (is_applicable)
                     {
@@ -3040,9 +3040,9 @@ trc_update_apply_rules(unsigned int db_uid,
  * @param iter      Test iteration
  * @param db_uid    TRC DB UID
  *
- * @return @c TRUE or @c FALSE
+ * @return @c true or @c false
  */
-static te_bool
+static bool
 trc_update_rule_match_iter(trc_update_rule *rule,
                            trc_test_iter *iter,
                            int db_uid)
@@ -3073,26 +3073,26 @@ trc_update_rule_match_iter(trc_update_rule *rule,
                   trc_update_results_cmp(
                                    &iter_data->new_results,
                                    rule->confl_res) == 0)))
-                return TRUE;
+                return true;
             break;
 
         case TRC_UPDATE_RULE_RESULT:
             rule_result = STAILQ_FIRST(rule->old_res);
             if (rule_result == NULL)
-                return TRUE;
+                return true;
             STAILQ_FOREACH(iter_result, &iter->exp_results, links)
                 if (trc_update_result_cmp(iter_result, rule_result) == 0)
-                    return TRUE;
+                    return true;
           break;
 
         case TRC_UPDATE_RULE_ENTRY:
             if (rule->old_re == NULL)
-                return TRUE;
+                return true;
             STAILQ_FOREACH(iter_result, &iter->exp_results, links)
                 TAILQ_FOREACH(iter_rentry, &iter_result->results, links)
                     if (trc_update_rentry_cmp(iter_rentry,
                                               rule->old_re) == 0)
-                    return TRUE;
+                    return true;
           break;
 
         case TRC_UPDATE_RULE_VERDICT:
@@ -3103,14 +3103,14 @@ trc_update_rule_match_iter(trc_update_rule *rule,
                                   links)
                         if (strcmp_null(iter_verdict->str,
                                         rule->old_v) == 0)
-                            return TRUE;
+                            return true;
         break;
 
         default:
         break;
     }
 
-    return FALSE;
+    return false;
 }
 
 /**
@@ -3144,10 +3144,10 @@ trc_update_rule_gen_args(trc_update_test_entry *test_entry,
         TAILQ_FOREACH(iter, &test_entry->test->iters.head, links)
         {
             iter_data = trc_db_iter_get_user_data(iter, db_uid);
-            if (iter_data == NULL || iter_data->to_save == FALSE)
+            if (iter_data == NULL || iter_data->to_save == false)
                 continue;
 
-            iter_data->in_wildcard = FALSE;
+            iter_data->in_wildcard = false;
             if (trc_update_rule_match_iter(rule, iter, db_uid))
                 iter_data->results_id = 1;
             else
@@ -3159,11 +3159,11 @@ trc_update_rule_gen_args(trc_update_test_entry *test_entry,
 
         if (rc == 0)
             rc = trc_update_gen_test_wilds_fss(db_uid, test_entry,
-                                               TRUE, 2, &wildcards, flags);
+                                               true, 2, &wildcards, flags);
         else
         {
             rc = trc_update_generate_test_wilds(db_uid, test_entry->test,
-                                                TRUE, 2, &wildcards, flags);
+                                                true, 2, &wildcards, flags);
             if (rc < 0)
                 break;
         }
@@ -3178,7 +3178,7 @@ trc_update_rule_gen_args(trc_update_test_entry *test_entry,
             continue;
 
         wilds_list_entry = TE_ALLOC(sizeof(*wilds_list_entry));
-        wilds_list_entry->is_strict = TRUE;
+        wilds_list_entry->is_strict = true;
         assert(args_group->args != NULL);
         wilds_list_entry->args = args_group->args;
         args_group->args = NULL;
@@ -3190,9 +3190,9 @@ trc_update_rule_gen_args(trc_update_test_entry *test_entry,
     TAILQ_FOREACH(iter, &test_entry->test->iters.head, links)
     {
         iter_data = trc_db_iter_get_user_data(iter, db_uid);
-        if (iter_data == NULL || iter_data->to_save == FALSE)
+        if (iter_data == NULL || iter_data->to_save == false)
             continue;
-        iter_data->in_wildcard = FALSE;
+        iter_data->in_wildcard = false;
     }
 
     return 0;
@@ -3369,9 +3369,9 @@ trc_update_load_rule(xmlNodePtr rule_node, trc_update_rule *rule)
                                         CONST_CHAR2XML("type")));
 
             if (value != NULL && strcmp(value, "strict") == 0)
-                wilds_entry->is_strict = TRUE;
+                wilds_entry->is_strict = true;
             else
-                wilds_entry->is_strict = FALSE;
+                wilds_entry->is_strict = false;
 
             SLIST_INSERT_HEAD(rule->wilds, wilds_entry, links);
         }
@@ -3406,7 +3406,7 @@ trc_update_load_rule(xmlNodePtr rule_node, trc_update_rule *rule)
                 TAILQ_INIT(&rule->def_res->results);
                 if (value == NULL)
                      get_expected_result(rule_section_node,
-                                         rule->def_res, TRUE);
+                                         rule->def_res, true);
                 else
                 {
                     entry = TE_ALLOC(sizeof(*entry));
@@ -3429,7 +3429,7 @@ trc_update_load_rule(xmlNodePtr rule_node, trc_update_rule *rule)
                       CONST_CHAR2XML("new")) == 0)
         {
             GET_RULE_SEC(new);
-            rule->apply = TRUE;
+            rule->apply = true;
         }
         else
         {
@@ -3670,7 +3670,7 @@ trc_update_gen_rverdict(trc_test_iter *iter,
             {
                 rule = TE_ALLOC(sizeof(*rule));
                 rule->type = TRC_UPDATE_RULE_VERDICT;
-                rule->apply = FALSE;
+                rule->apply = false;
                 rule->old_v = strdup(verdict->str);
                 if (flags & TRC_UPDATE_COPY_OLD)
                     rule->new_v = strdup(rule->old_v);
@@ -3710,7 +3710,7 @@ trc_update_gen_rrentry(trc_test_iter *iter,
         {
             rule = TE_ALLOC(sizeof(*rule));
             rule->type = TRC_UPDATE_RULE_ENTRY;
-            rule->apply = FALSE;
+            rule->apply = false;
             rule->old_re = trc_exp_result_entry_dup(rentry);
 
             if (flags & TRC_UPDATE_COPY_OLD)
@@ -3748,7 +3748,7 @@ trc_update_gen_rresult(trc_test_iter *iter,
     {
         rule = TE_ALLOC(sizeof(*rule));
         rule->type = TRC_UPDATE_RULE_RESULT;
-        rule->apply = FALSE;
+        rule->apply = false;
         rule->old_res = TE_ALLOC(sizeof(trc_exp_results));
         STAILQ_INIT(rule->old_res);
         res_dup = trc_exp_result_dup(result);
@@ -3805,9 +3805,9 @@ trc_update_gen_rresults(trc_test_iter *iter,
         goto err_cleanup;
 
     if (!STAILQ_EMPTY(rule->confl_res))
-        rule->apply = TRUE;
+        rule->apply = true;
     else
-        rule->apply = FALSE;
+        rule->apply = false;
 
     rule->new_res = TE_ALLOC(sizeof(*(rule->new_res)));
     STAILQ_INIT(rule->new_res);
@@ -3903,7 +3903,7 @@ trc_update_gen_rules(unsigned int db_uid,
             {
                 iter_data1 = trc_db_iter_get_user_data(iter1, db_uid);
 
-                if (iter_data1 == NULL || iter_data1->to_save == FALSE)
+                if (iter_data1 == NULL || iter_data1->to_save == false)
                     continue;
 
                 if ((!STAILQ_EMPTY(&iter_data1->new_results) ||
@@ -3956,7 +3956,7 @@ trc_update_gen_rules(unsigned int db_uid,
 
                             if (iter_data2 == NULL ||
                                 iter_data2->rule != NULL ||
-                                iter_data2->to_save == FALSE)
+                                iter_data2->to_save == false)
                                 continue;
 
                             if (trc_update_result_cmp(
@@ -4016,7 +4016,7 @@ trc_update_group_test_iters(unsigned int db_uid,
     {
         iter_data1 = trc_db_iter_get_user_data(iter1, db_uid);
 
-        if (iter_data1 == NULL || iter_data1->to_save == FALSE ||
+        if (iter_data1 == NULL || iter_data1->to_save == false ||
             iter_data1->results_id != 0)
             continue;
 
@@ -4029,7 +4029,7 @@ trc_update_group_test_iters(unsigned int db_uid,
                             iter2, db_uid);
 
             if (iter_data2 == NULL || iter_data2->results_id != 0 ||
-                iter_data2->to_save == FALSE)
+                iter_data2->to_save == false)
                 continue;
 
             if (trc_update_results_cmp(&iter1->exp_results,
@@ -4080,7 +4080,7 @@ trc_update_get_iters_args_combs(unsigned int db_uid,
                 if (test_iter_args_match(args_group->args,
                                          iter_data->args_n,
                                          iter_data->args,
-                                         TRUE) != ITER_NO_MATCH)
+                                         true) != ITER_NO_MATCH)
                     break;
             }
 
@@ -4114,7 +4114,7 @@ trc_update_get_iters_args_combs(unsigned int db_uid,
  *         combination is the last one.
  */
 static int
-get_next_args_comb(te_bool *args_comb,
+get_next_args_comb(bool *args_comb,
                    int args_count,
                    int *cur_comb_count)
 {
@@ -4125,13 +4125,13 @@ get_next_args_comb(te_bool *args_comb,
         return -1;
     else if (*cur_comb_count == 0)
     {
-        args_comb[0] = TRUE;
+        args_comb[0] = true;
         *cur_comb_count = 1;
     }
     else
     {
         for (j = args_count - 1; j >= args_count - *cur_comb_count; j--)
-            if (args_comb[j] == FALSE)
+            if (args_comb[j] == false)
                 break;
 
         if (j < args_count - *cur_comb_count)
@@ -4139,27 +4139,27 @@ get_next_args_comb(te_bool *args_comb,
             (*cur_comb_count)++;
             for (j = 0; j < args_count; j++)
                 if (j < *cur_comb_count)
-                    args_comb[j] = TRUE;
+                    args_comb[j] = true;
                 else
-                    args_comb[j] = FALSE;
+                    args_comb[j] = false;
         }
         else
         {
             k = args_count - j;
 
-            while (args_comb[j] == FALSE)
+            while (args_comb[j] == false)
                 j--;
 
-            args_comb[j] = FALSE;
+            args_comb[j] = false;
 
             while (k > 0)
             {
-                args_comb[++j] = TRUE;
+                args_comb[++j] = true;
                 k--;
             }
 
             for (j++; j < args_count; j++)
-                args_comb[j] = FALSE;
+                args_comb[j] = false;
         }
     }
 
@@ -4179,7 +4179,7 @@ get_next_args_comb(te_bool *args_comb,
  * @return Status code
  */
 static te_errno
-args_comb_to_wildcard(te_bool *args_comb,
+args_comb_to_wildcard(bool *args_comb,
                       int args_count,
                       trc_report_argument *iter_args,
                       trc_update_args_group *wildcard)
@@ -4231,11 +4231,11 @@ trc_update_extend_wild(unsigned int db_uid,
     TAILQ_FOREACH(iter, &test->iters.head, links)
     {
         iter_data = trc_db_iter_get_user_data(iter, db_uid);
-        if (iter_data == NULL || iter_data->to_save == FALSE)
+        if (iter_data == NULL || iter_data->to_save == false)
             continue;
 
         if (test_iter_args_match(wildcard->args, iter_data->args_n,
-                                 iter_data->args, TRUE) !=
+                                 iter_data->args, true) !=
                                                     ITER_NO_MATCH)
         {
             if (ext_wild == NULL)
@@ -4301,7 +4301,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                                 trc_update_args_groups *wildcards,
                                 uint64_t flags)
 {
-    te_bool            *args_in_wild;
+    bool *args_in_wild;
     int                 args_count = 0;
     int                 i;
     int                 args_wild_count = 0;
@@ -4317,9 +4317,9 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
     trc_test_iter               *iter2;
     trc_update_test_iter_data   *iter_data2;
 
-    te_bool allow_intersect = !!(flags & TRC_UPDATE_INTERSEC_WILDS);
-    te_bool new_iter_added;
-    te_bool iter_remained;
+    bool allow_intersect = !!(flags & TRC_UPDATE_INTERSEC_WILDS);
+    bool new_iter_added;
+    bool iter_remained;
 
     unsigned int iter_num = 0;
 
@@ -4329,9 +4329,9 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
     TAILQ_FOREACH(arg, &args_group->args->head, links)
         args_count++;
 
-    args_in_wild = TE_ALLOC(sizeof(te_bool) * args_count);
+    args_in_wild = TE_ALLOC(sizeof(bool) * args_count);
     for (i = 0; i < args_count; i++)
-        args_in_wild[i] = FALSE;
+        args_in_wild[i] = false;
 
     do {
         iter_num = 0;
@@ -4346,7 +4346,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                 continue;
 
             if (test_iter_args_match(args_group->args, iter_data1->args_n,
-                                     iter_data1->args, TRUE) !=
+                                     iter_data1->args, true) !=
                                                         ITER_NO_MATCH)
             {
                 new_group = TE_ALLOC(sizeof(*new_group));
@@ -4357,7 +4357,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                                       iter_data1->args,
                                       new_group);
 
-                new_iter_added = FALSE;
+                new_iter_added = false;
                 TAILQ_FOREACH(iter2, &test->iters.head, links)
                 {
                     iter_data2 =
@@ -4368,7 +4368,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                     if (test_iter_args_match(new_group->args,
                                              iter_data2->args_n,
                                              iter_data2->args,
-                                             TRUE) != ITER_NO_MATCH)
+                                             true) != ITER_NO_MATCH)
                     {
                         if ((!allow_intersect &&
                              iter_data2->in_wildcard) ||
@@ -4376,7 +4376,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                             break;
 
                         if (!iter_data2->in_wildcard)
-                            new_iter_added = TRUE;
+                            new_iter_added = true;
                     }
                 }
 
@@ -4400,9 +4400,9 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                     if (test_iter_args_match(new_group->args,
                                              iter_data2->args_n,
                                              iter_data2->args,
-                                             TRUE) != ITER_NO_MATCH)
+                                             true) != ITER_NO_MATCH)
                     {
-                        iter_data2->in_wildcard = TRUE;
+                        iter_data2->in_wildcard = true;
                     }
                 }
 
@@ -4455,7 +4455,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
             }
         }
 
-        iter_remained = FALSE;
+        iter_remained = false;
         TAILQ_FOREACH(iter1, &test->iters.head, links)
         {
             iter_data1 = trc_db_iter_get_user_data(iter1, db_uid);
@@ -4463,7 +4463,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                 iter_data1->results_id == results_id &&
                 !iter_data1->in_wildcard)
             {
-                iter_remained = TRUE;
+                iter_remained = true;
                 break;
             }
         }
@@ -4493,7 +4493,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
 static te_errno
 trc_update_generate_test_wilds(unsigned int db_uid,
                                trc_test *test,
-                               te_bool grouped,
+                               bool grouped,
                                int groups_cnt,
                                trc_update_args_groups *save_wildcards,
                                uint64_t flags)
@@ -4575,7 +4575,7 @@ trc_update_generate_test_wilds(unsigned int db_uid,
                 iter->filename = strdup(test->filename);
 
             iter_data = TE_ALLOC(sizeof(*iter_data));
-            iter_data->to_save = TRUE;
+            iter_data->to_save = true;
             trc_db_iter_set_user_data(iter, db_uid, iter_data);
 
             TAILQ_INSERT_TAIL(&test->iters.head, iter, links);
@@ -4618,7 +4618,7 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
                               trc_update_args_group *args_group,
                               uint64_t flags)
 {
-    te_bool            *args_in_wild;
+    bool *args_in_wild;
     int                 args_count = 0;
     int                 i;
     int                 j;
@@ -4654,9 +4654,9 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
     TAILQ_FOREACH(arg, &args_group->args->head, links)
         args_count++;
 
-    args_in_wild = TE_ALLOC(sizeof(te_bool) * args_count);
+    args_in_wild = TE_ALLOC(sizeof(bool) * args_count);
     for (i = 0; i < args_count; i++)
-        args_in_wild[i] = FALSE;
+        args_in_wild[i] = false;
 
     do {
         if (TIME_DIFF >= 1000000L &&
@@ -4680,14 +4680,14 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
                 continue;
 
             if (test_iter_args_match(args_group->args, iter_data1->args_n,
-                                     iter_data1->args, TRUE) !=
+                                     iter_data1->args, true) !=
                                                         ITER_NO_MATCH)
             {
                 SLIST_FOREACH(p_group, &cur_comb_wilds, links)
                     if (test_iter_args_match(p_group->args,
                                              iter_data1->args_n,
                                              iter_data1->args,
-                                             TRUE) != ITER_NO_MATCH)
+                                             true) != ITER_NO_MATCH)
                         break;
 
                 if (p_group != NULL)
@@ -4698,7 +4698,7 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
                         if (test_iter_args_match(p_group->args,
                                                  iter_data1->args_n,
                                                  iter_data1->args,
-                                                 TRUE) != ITER_NO_MATCH)
+                                                 true) != ITER_NO_MATCH)
                             break;
 
                     if (p_group != NULL)
@@ -4734,7 +4734,7 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
                         if (test_iter_args_match(new_group->args,
                                                  iter_data2->args_n,
                                                  iter_data2->args,
-                                                 TRUE) != ITER_NO_MATCH)
+                                                 true) != ITER_NO_MATCH)
                         {
                             if (iter_data2->results_id != results_id)
                                 break;
@@ -4790,7 +4790,7 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
                                                     new_group->args,
                                                     iter_data2->args_n,
                                                     iter_data2->args,
-                                                    TRUE) == ITER_NO_MATCH)
+                                                    true) == ITER_NO_MATCH)
                                         break;
                                 }
 
@@ -4863,7 +4863,7 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
                             if (test_iter_args_match(new_group->args,
                                                      iter_data2->args_n,
                                                      iter_data2->args,
-                                                     TRUE) != ITER_NO_MATCH)
+                                                     true) != ITER_NO_MATCH)
                             {
                                 if (iter_data2->nums_cnt >=
                                             iter_data2->nums_max)
@@ -4933,7 +4933,7 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
 te_errno
 trc_update_gen_test_wilds_fss(unsigned int db_uid,
                               trc_update_test_entry *test_entry,
-                              te_bool grouped,
+                              bool grouped,
                               int groups_cnt,
                               trc_update_args_groups *wildcards,
                               uint64_t flags)
@@ -5163,7 +5163,7 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
                     iter->filename = strdup(test_entry->test->filename);
 
                 iter_data = TE_ALLOC(sizeof(*iter_data));
-                iter_data->to_save = TRUE;
+                iter_data->to_save = true;
                 trc_db_iter_set_user_data(iter, db_uid, iter_data);
 
                 TAILQ_INSERT_TAIL(&test_entry->test->iters.head,
@@ -5207,10 +5207,10 @@ trc_update_generate_wilds_gen(unsigned int db_uid,
         TAILQ_FOREACH(test_entry, &group->tests, links)
         {
             rc = trc_update_gen_test_wilds_fss(db_uid, test_entry,
-                                               FALSE, 0, NULL, flags);
+                                               false, 0, NULL, flags);
             if (rc < 0)
                 trc_update_generate_test_wilds(db_uid, test_entry->test,
-                                               FALSE, 0, NULL, flags);
+                                               false, 0, NULL, flags);
         }
     }
 
@@ -5466,7 +5466,7 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
         uint32_t  verdicts_count;
         uint32_t  logs_count;
         uint32_t  i;
-        te_bool   iter_found = TRUE;
+        bool iter_found = true;
 
         LOGS_DUMP_READ_TAG(tag_id, LOGS_DUMP_TAG_TEST);
         test_path = logs_dump_str_read(f);
@@ -5510,7 +5510,7 @@ trc_update_process_logs_dump(trc_update_ctx *ctx)
 
             for (j = 0; j < params_count; j++)
             {
-                args[j].variable = FALSE;
+                args[j].variable = false;
                 args[j].name = logs_dump_str_read(f);
                 if (args[j].name == NULL)
                     LOGS_DUMP_ERR("%s", "Failed to read argument name");
@@ -5726,7 +5726,7 @@ trc_update_process_iter(trc_update_ctx *ctx,
 {
     trc_update_test_iter_data     *upd_iter_data;
     trc_update_test_iter_data     *upd_test_data;
-    te_bool                        to_save;
+    bool to_save;
     te_errno                       rc = 0;
 
     if (ctx->flags & TRC_UPDATE_PRINT_PATHS)
@@ -5741,7 +5741,7 @@ trc_update_process_iter(trc_update_ctx *ctx,
     if (upd_iter_data == NULL)
     {
         assert(!(ctx->flags & TRC_UPDATE_FILT_LOG));
-        to_save = TRUE;
+        to_save = true;
 
         /* Attach iteration data to TRC database */
         if (upd_test_data != NULL)
@@ -5750,7 +5750,7 @@ trc_update_process_iter(trc_update_ctx *ctx,
                             ctx->db_uid,
                             trc_update_gen_user_data(
                                                 &to_save,
-                                                TRUE));
+                                                true));
         else
             rc = trc_db_walker_set_prop_ud(
                               db_walker,
@@ -5767,7 +5767,7 @@ trc_update_process_iter(trc_update_ctx *ctx,
         assert(upd_iter_data != NULL);
 
         if (ctx->flags & (TRC_UPDATE_FAKE_LOG | TRC_UPDATE_LOG_WILDS))
-            iter->log_found = TRUE;
+            iter->log_found = true;
 
         /*
          * Arguments here are sorted - qsort() was
@@ -5782,7 +5782,7 @@ trc_update_process_iter(trc_update_ctx *ctx,
         entry->args_max = 0;
     }
     else if (ctx->flags & TRC_UPDATE_FILT_LOG)
-        upd_iter_data->filtered = TRUE;
+        upd_iter_data->filtered = true;
 
     upd_iter_data->counter = ctx->cur_lnum;
 
@@ -6011,7 +6011,7 @@ trc_update_process_logs(trc_update_ctx *gctx)
     if (gctx->flags & TRC_UPDATE_RULE_UPD_ONLY)
         trc_update_set_to_save(gctx->db,
                                gctx->db_uid,
-                               FALSE);
+                               false);
 
     if (gctx->rules_load_from != NULL)
     {

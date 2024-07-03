@@ -110,9 +110,9 @@ extern char **environ;
 
 #if (defined(__sun) || defined(sun)) && \
     (defined(__SVR4) || defined(__svr4__))
-#define SOLARIS TRUE
+#define SOLARIS true
 #else
-#define SOLARIS FALSE
+#define SOLARIS false
 #endif
 
 /** Entry in a queue of FD close hooks */
@@ -135,7 +135,7 @@ static pthread_mutex_t      close_fd_hooks_lock = PTHREAD_MUTEX_INITIALIZER;
 extern sigset_t         rpcs_received_signals;
 extern tarpc_siginfo_t  last_siginfo;
 
-static te_bool   dynamic_library_set = FALSE;
+static bool dynamic_library_set = false;
 static char      dynamic_library_name[RCF_MAX_PATH];
 static void     *dynamic_library_handle = NULL;
 
@@ -209,7 +209,7 @@ int
 tarpc_close_fd_hook_unregister(tarpc_close_fd_hook *hook, void *cookie)
 {
     close_fd_hook_entry *entry;
-    te_bool              found = FALSE;
+    bool found = false;
     int                  rc;
 
     rc = tarpc_mutex_lock(&close_fd_hooks_lock);
@@ -225,7 +225,7 @@ tarpc_close_fd_hook_unregister(tarpc_close_fd_hook *hook, void *cookie)
     {
         if (entry->hook == hook && entry->cookie == cookie)
         {
-            found = TRUE;
+            found = true;
             TAILQ_REMOVE(&close_fd_hooks, entry, links);
             free(entry);
             break;
@@ -306,7 +306,7 @@ tarpc_setlibname(const char *libname)
     {
         if (*libname == 0)
         {
-            dynamic_library_set = TRUE;
+            dynamic_library_set = true;
             return 0;
         }
         ERROR("Cannot load shared library '%s': %s", libname, dlerror());
@@ -320,7 +320,7 @@ tarpc_setlibname(const char *libname)
         dynamic_library_handle = NULL;
         return TE_RC(TE_TA_UNIX, TE_ENOSPC);
     }
-    dynamic_library_set = TRUE;
+    dynamic_library_set = true;
     TE_STRLCPY(dynamic_library_name, libname,
                sizeof(dynamic_library_name));
     RING("Dynamic library is set to '%s'", libname);
@@ -350,7 +350,7 @@ tarpc_setlibname(const char *libname)
 }
 
 /* See the description in tarpc_server.h */
-te_bool
+bool
 tarpc_dynamic_library_loaded(void)
 {
     return dynamic_library_set && dynamic_library_handle != NULL;
@@ -409,7 +409,7 @@ tarpc_find_func(tarpc_lib_flags lib_flags, const char *name, api_func *func)
     if ((lib_flags & TARPC_LIB_USE_LIBC) || !tarpc_dynamic_library_loaded())
     {
         static void *libc_handle = NULL;
-        static te_bool dlopen_null = FALSE;
+        static bool dlopen_null = false;
 
         if (dlopen_null)
             goto try_ta_symtbl;
@@ -418,7 +418,7 @@ tarpc_find_func(tarpc_lib_flags lib_flags, const char *name, api_func *func)
         {
             if ((libc_handle = dlopen(NULL, RTLD_LAZY)) == NULL)
             {
-                dlopen_null = TRUE;
+                dlopen_null = true;
                 goto try_ta_symtbl;
             }
         }
@@ -432,7 +432,7 @@ tarpc_find_func(tarpc_lib_flags lib_flags, const char *name, api_func *func)
          * library to be used with tarpc_setlibname() function earlier,
          * and so we should use it to find symbol.
          */
-        assert(dynamic_library_set == TRUE);
+        assert(dynamic_library_set == true);
         assert(dynamic_library_handle != NULL);
 
         handle = dynamic_library_handle;
@@ -607,7 +607,7 @@ _setlibname_1_svc(tarpc_setlibname_in *in, tarpc_setlibname_out *out,
     out->retval = (out->common._errno == 0) ? 0 : -1;
     out->common.duration = 0;
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- rpc_find_func() ----------------------*/
@@ -625,7 +625,7 @@ _rpc_find_func_1_svc(tarpc_rpc_find_func_in  *in,
 
     out->find_result = tarpc_find_func(in->common.lib_flags,
                                        in->func_name, &func);
-    return TRUE;
+    return true;
 }
 
 /*-------------- sizeof() -------------------------------*/
@@ -637,7 +637,8 @@ typedef struct {
 
 static type_info_t type_info[] =
 {
-    {"te_bool", sizeof(te_bool)},
+    {"bool", sizeof(bool)},
+    {"te_bool", sizeof(bool)},
     {"char", sizeof(char)},
     {"short", sizeof(short)},
     {"int", sizeof(int)},
@@ -677,13 +678,13 @@ _get_sizeof_1_svc(tarpc_get_sizeof_in *in, tarpc_get_sizeof_out *out,
     if (in->typename == NULL)
     {
         ERROR("Name of type not specified");
-        return FALSE;
+        return false;
     }
 
     if (in->typename[0] == '*')
     {
         out->size = sizeof(void *);
-        return TRUE;
+        return true;
     }
 
     for (i = 0; i < sizeof(type_info) / sizeof(type_info_t); i++)
@@ -691,7 +692,7 @@ _get_sizeof_1_svc(tarpc_get_sizeof_in *in, tarpc_get_sizeof_out *out,
         if (strcmp(in->typename, type_info[i].type_name) == 0)
         {
             out->size = type_info[i].type_size;
-            return TRUE;
+            return true;
         }
     }
 
@@ -699,7 +700,7 @@ _get_sizeof_1_svc(tarpc_get_sizeof_in *in, tarpc_get_sizeof_out *out,
 #if 0
     out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
 #endif
-    return TRUE;
+    return true;
 }
 
 /*-------------- get_addrof() ---------------------------------*/
@@ -713,7 +714,7 @@ _get_addrof_1_svc(tarpc_get_addrof_in *in, tarpc_get_addrof_out *out,
 
     out->addr = addr == NULL ? 0 : rcf_pch_mem_alloc(addr);
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- get_var() ---------------------------------*/
@@ -728,11 +729,11 @@ _get_var_1_svc(tarpc_get_var_in *in, tarpc_get_var_out *out,
     if (addr == NULL)
     {
         ERROR("Variable %s is not found", in->name);
-        out->found = FALSE;
-        return TRUE;
+        out->found = false;
+        return true;
     }
 
-    out->found = TRUE;
+    out->found = true;
 
     switch (in->size)
     {
@@ -740,10 +741,10 @@ _get_var_1_svc(tarpc_get_var_in *in, tarpc_get_var_out *out,
         case 2: out->val = *(uint16_t *)addr; break;
         case 4: out->val = *(uint32_t *)addr; break;
         case 8: out->val = *(uint64_t *)addr; break;
-        default: return FALSE;
+        default: return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- set_var() ---------------------------------*/
@@ -759,11 +760,11 @@ _set_var_1_svc(tarpc_set_var_in *in, tarpc_set_var_out *out,
     if (addr == NULL)
     {
         ERROR("Variable %s is not found", in->name);
-        out->found = FALSE;
-        return TRUE;
+        out->found = false;
+        return true;
     }
 
-    out->found = TRUE;
+    out->found = true;
 
     switch (in->size)
     {
@@ -771,10 +772,10 @@ _set_var_1_svc(tarpc_set_var_in *in, tarpc_set_var_out *out,
         case 2: *(uint16_t *)addr = in->val; break;
         case 4: *(uint32_t *)addr = in->val; break;
         case 8: *(uint64_t *)addr = in->val; break;
-        default: return FALSE;
+        default: return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- create_process() ---------------------------------*/
@@ -822,7 +823,7 @@ _create_process_1_svc(tarpc_create_process_in *in,
     if (out->pid == -1)
     {
         out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
-        return TRUE;
+        return true;
     }
     if (out->pid == 0)
     {
@@ -839,7 +840,7 @@ _create_process_1_svc(tarpc_create_process_in *in,
         exit(EXIT_FAILURE);
     }
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- vfork() -------------------------------------*/
@@ -862,7 +863,7 @@ _vfork_1_svc(tarpc_vfork_in *in,
         rc = errno;
         ERROR("No vfork() function: errno=%d", rc);
         out->common._errno = TE_OS_RC(TE_TA_UNIX, rc);
-        return TRUE;
+        return true;
     }
 
     run_vfork_hooks(VFORK_HOOK_PHASE_PREPARE);
@@ -876,7 +877,7 @@ _vfork_1_svc(tarpc_vfork_in *in,
     {
         out->common._errno = TE_OS_RC(TE_TA_UNIX, errno);
         run_vfork_hooks(VFORK_HOOK_PHASE_PARENT);
-        return TRUE;
+        return true;
     }
 
     if (out->pid == 0)
@@ -898,7 +899,7 @@ _vfork_1_svc(tarpc_vfork_in *in,
         run_vfork_hooks(VFORK_HOOK_PHASE_PARENT);
     }
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- thread_create() -----------------------------*/
@@ -921,7 +922,7 @@ _thread_create_1_svc(tarpc_thread_create_in *in,
     if (out->retval == 0)
         out->tid = (tarpc_pthread_t)tid;
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- thread_cancel() -----------------------------*/
@@ -935,7 +936,7 @@ _thread_cancel_1_svc(tarpc_thread_cancel_in *in,
 
     out->retval = pthread_cancel((pthread_t)in->tid);
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- thread_join() -----------------------------*/
@@ -948,7 +949,7 @@ _thread_join_1_svc(tarpc_thread_join_in *in,
     memset(out, 0, sizeof(*out));
 
     out->retval = pthread_join((pthread_t)in->tid, NULL);
-    return TRUE;
+    return true;
 }
 
 /**
@@ -970,7 +971,7 @@ _sigreceived_1_svc(tarpc_sigreceived_in *in, tarpc_sigreceived_out *out,
         ptr = rcf_pch_mem_alloc(&rpcs_received_signals);
     out->set = ptr;
 
-    return TRUE;
+    return true;
 }
 
 /**
@@ -987,7 +988,7 @@ _siginfo_received_1_svc(tarpc_siginfo_received_in *in,
 
     memcpy(&out->siginfo, &last_siginfo, sizeof(last_siginfo));
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- execve() ---------------------------------*/
@@ -1275,7 +1276,7 @@ TARPC_FUNC(bind, {},
 
 /*------------- rpc_check_port_is_free() ----------------*/
 
-te_bool
+bool
 check_port_is_free(uint16_t port)
 {
     return agent_check_l4_port_is_free(0, 0, port);
@@ -1471,7 +1472,7 @@ TARPC_FUNC(socket_listen_close, {},
  * @param addr        Where to save source address.
  * @param addrlen     On input, number of bytes available for source
  *                    address; on output, its actual length.
- * @param chk_func    If @c TRUE, use __recvfrom_chk() instead of recvfrom().
+ * @param chk_func    If @c true, use __recvfrom_chk() instead of recvfrom().
  * @param lib_flags   Flags for dynamic function resolution.
  *
  * @return Value returned by the target function or
@@ -1480,7 +1481,7 @@ TARPC_FUNC(socket_listen_close, {},
 static int
 recvfrom_rpc_handler(int fd, void *buf, size_t len, size_t rlen,
                      int flags, struct sockaddr *addr, socklen_t *addrlen,
-                     te_bool chk_func, tarpc_lib_flags lib_flags)
+                     bool chk_func, tarpc_lib_flags lib_flags)
 {
     api_func recvfrom_func;
     const char *func_name = (chk_func ? "__recvfrom_chk" : "recvfrom");
@@ -1500,7 +1501,7 @@ TARPC_FUNC_STANDALONE(recvfrom,
     COPY_ARG_ADDR(from);
 },
 {
-    te_bool          free_name = FALSE;
+    bool          free_name = false;
     struct sockaddr *addr_ptr;
     socklen_t        addr_len;
 
@@ -1525,7 +1526,7 @@ TARPC_FUNC_STANDALONE(recvfrom,
                 out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
                 goto finish;
             }
-            free_name = TRUE;
+            free_name = true;
             memcpy(addr_ptr, out->from.raw.raw_val, addr_len);
         }
         else
@@ -1574,7 +1575,7 @@ finish:
  * @param rlen        Actual buffer length (makes sense only for
  *                    __recv_chk()).
  * @param flags       Receive flags (@c MSG_DONTWAIT, etc).
- * @param chk_func    If @c TRUE, use __recv_chk() instead of recv().
+ * @param chk_func    If @c true, use __recv_chk() instead of recv().
  * @param lib_flags   Flags for dynamic function resolution.
  *
  * @return Value returned by the target function or
@@ -1582,7 +1583,7 @@ finish:
  */
 static int
 recv_rpc_handler(int fd, void *buf, size_t len, size_t rlen,
-                 int flags, te_bool chk_func, tarpc_lib_flags lib_flags)
+                 int flags, bool chk_func, tarpc_lib_flags lib_flags)
 {
     api_func recv_func;
     const char *func_name = (chk_func ? "__recv_chk" : "recv");
@@ -1953,7 +1954,7 @@ TARPC_FUNC(readdir, {},
                         func_ptr(rcf_pch_mem_get(in->mem_ptr)));
     if (dent == NULL)
     {
-        out->ret_null = TRUE;
+        out->ret_null = true;
     }
     else
     {
@@ -1966,7 +1967,7 @@ TARPC_FUNC(readdir, {},
         {
             out->dent.dent_len = 1;
 
-            out->ret_null = FALSE;
+            out->ret_null = false;
             out->dent.dent_val = rpc_dent;
 
             rpc_dent->d_name.d_name_val = strdup(dent->d_name);
@@ -2044,7 +2045,7 @@ TARPC_FUNC(send, {},
  * @param len         Buffer length passed to read().
  * @param rlen        Actual buffer length (makes sense only for
  *                    __read_chk()).
- * @param chk_func    If @c TRUE, use __read_chk() instead of read().
+ * @param chk_func    If @c true, use __read_chk() instead of read().
  * @param lib_flags   Flags for dynamic function resolution.
  *
  * @return Value returned by the target function or
@@ -2052,7 +2053,7 @@ TARPC_FUNC(send, {},
  */
 static int
 read_rpc_handler(int fd, void *buf, size_t len, size_t rlen,
-                 te_bool chk_func, tarpc_lib_flags lib_flags)
+                 bool chk_func, tarpc_lib_flags lib_flags)
 {
     api_func read_func;
     const char *func_name = (chk_func ? "__read_chk" : "read");
@@ -2091,7 +2092,7 @@ TARPC_FUNC_STANDALONE(read,
  * @param offset      Offset from the start of @b fd.
  * @param rlen        Actual buffer length (makes sense only for
  *                    __pread_chk()).
- * @param chk_func    If @c TRUE, use __pread_chk() instead of pread().
+ * @param chk_func    If @c true, use __pread_chk() instead of pread().
  * @param lib_flags   Flags for dynamic function resolution.
  *
  * @return Value returned by the target function or
@@ -2099,7 +2100,7 @@ TARPC_FUNC_STANDALONE(read,
  */
 static int
 pread_rpc_handler(int fd, void *buf, size_t len, off_t offset, size_t rlen,
-                 te_bool chk_func, tarpc_lib_flags lib_flags)
+                 bool chk_func, tarpc_lib_flags lib_flags)
 {
     api_func pread_func;
     const char *func_name = (chk_func ? "__pread_chk" : "pread");
@@ -2370,7 +2371,7 @@ _write_and_close_1_svc(tarpc_write_and_close_in *in,
         }
     }
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- readbuf() ------------------------------*/
@@ -2720,7 +2721,7 @@ TARPC_FUNC(readv,
     {
         ERROR("Too long iovec is provided");
         out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-        return TRUE;
+        return true;
     }
     COPY_ARG(vector);
 },
@@ -2731,7 +2732,7 @@ TARPC_FUNC(readv,
     if (out->vector.vector_val != NULL)
     {
         rpcs_iovec_tarpc2h(out->vector.vector_val, iovec_arr,
-                           out->vector.vector_len, TRUE,
+                           out->vector.vector_len, true,
                            arglist);
         res = iovec_arr;
     }
@@ -2751,7 +2752,7 @@ TARPC_FUNC(preadv,
     {
         ERROR("Too long iovec is provided");
         out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-        return TRUE;
+        return true;
     }
     COPY_ARG(vector);
 },
@@ -2762,7 +2763,7 @@ TARPC_FUNC(preadv,
     if (out->vector.vector_val != NULL)
     {
         rpcs_iovec_tarpc2h(out->vector.vector_val, iovec_arr,
-                           out->vector.vector_len, TRUE,
+                           out->vector.vector_len, true,
                            arglist);
         res = iovec_arr;
     }
@@ -2783,7 +2784,7 @@ TARPC_FUNC(preadv2,
     {
         ERROR("Too long iovec is provided");
         out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-        return TRUE;
+        return true;
     }
     COPY_ARG(vector);
 },
@@ -2794,7 +2795,7 @@ TARPC_FUNC(preadv2,
     if (out->vector.vector_val != NULL)
     {
         rpcs_iovec_tarpc2h(out->vector.vector_val, iovec_arr,
-                           out->vector.vector_len, TRUE,
+                           out->vector.vector_len, true,
                            arglist);
         res = iovec_arr;
     }
@@ -2814,7 +2815,7 @@ TARPC_FUNC(writev,
     {
         ERROR("Too long iovec is provided");
         out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-        return TRUE;
+        return true;
     }
 },
 {
@@ -2824,7 +2825,7 @@ TARPC_FUNC(writev,
     if (in->vector.vector_val != NULL)
     {
         rpcs_iovec_tarpc2h(in->vector.vector_val, iovec_arr,
-                           in->vector.vector_len, FALSE,
+                           in->vector.vector_len, false,
                            arglist);
         res = iovec_arr;
     }
@@ -2843,7 +2844,7 @@ TARPC_FUNC(pwritev,
     {
         ERROR("Too long iovec is provided");
         out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-        return TRUE;
+        return true;
     }
 },
 {
@@ -2853,7 +2854,7 @@ TARPC_FUNC(pwritev,
     if (in->vector.vector_val != NULL)
     {
         rpcs_iovec_tarpc2h(in->vector.vector_val, iovec_arr,
-                           in->vector.vector_len, FALSE,
+                           in->vector.vector_len, false,
                            arglist);
         res = iovec_arr;
     }
@@ -2874,7 +2875,7 @@ TARPC_FUNC(pwritev2,
     {
         ERROR("Too long iovec is provided");
         out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-        return TRUE;
+        return true;
     }
 },
 {
@@ -2884,7 +2885,7 @@ TARPC_FUNC(pwritev2,
     if (in->vector.vector_val != NULL)
     {
         rpcs_iovec_tarpc2h(in->vector.vector_val, iovec_arr,
-                           in->vector.vector_len, FALSE,
+                           in->vector.vector_len, false,
                            arglist);
         res = iovec_arr;
     }
@@ -3276,7 +3277,7 @@ _sigset_new_1_svc(tarpc_sigset_new_in *in, tarpc_sigset_new_out *out,
         out->set = rcf_pch_mem_alloc(set);
     }
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- sigset_t destructor ----------------------------*/
@@ -3295,7 +3296,7 @@ _sigset_delete_1_svc(tarpc_sigset_delete_in *in,
     rcf_pch_mem_free(in->set);
     out->common._errno = RPC_ERRNO;
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- sigemptyset() ------------------------------*/
@@ -3605,7 +3606,7 @@ TARPC_FUNC(signal,
     if (in->signum == RPC_SIGINT)
     {
         out->common._errno = TE_RC(TE_TA_UNIX, TE_EPERM);
-        return TRUE;
+        return true;
     }
 },
 {
@@ -3651,7 +3652,7 @@ TARPC_FUNC(bsd_signal,
     if (in->signum == RPC_SIGINT)
     {
         out->common._errno = TE_RC(TE_TA_UNIX, TE_EPERM);
-        return TRUE;
+        return true;
     }
 },
 {
@@ -3690,7 +3691,7 @@ TARPC_FUNC(sysv_signal,
     if (in->signum == RPC_SIGINT)
     {
         out->common._errno = TE_RC(TE_TA_UNIX, TE_EPERM);
-        return TRUE;
+        return true;
     }
 },
 {
@@ -3728,7 +3729,7 @@ TARPC_FUNC(__sysv_signal,
     if (in->signum == RPC_SIGINT)
     {
         out->common._errno = TE_RC(TE_TA_UNIX, TE_EPERM);
-        return TRUE;
+        return true;
     }
 },
 {
@@ -3805,7 +3806,7 @@ TARPC_FUNC(sigaction,
     if (in->signum == RPC_SIGINT)
     {
         out->common._errno = TE_RC(TE_TA_UNIX, TE_EPERM);
-        return TRUE;
+        return true;
     }
     COPY_ARG(oldact);
 },
@@ -5453,7 +5454,7 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
 #endif
 
         default:
-            assert(FALSE);
+            assert(false);
     }
 
     return 0;
@@ -5670,7 +5671,7 @@ finish:
  * @param fds         Array of poll event structures.
  * @param nfds        Number of elements in the array.
  * @param timeout     Poll timeout in ms.
- * @param chk_func    If @c TRUE, use __poll_chk() instead of poll().
+ * @param chk_func    If @c true, use __poll_chk() instead of poll().
  * @param fdslen      Size of memory occupied by @p fds (makes sense only
  *                    for __poll_chk()).
  * @param lib_flags   Flags for dynamic function resolution.
@@ -5680,7 +5681,7 @@ finish:
  */
 static int
 poll_rpc_handler(struct pollfd *fds, unsigned int nfds,
-                 int timeout, te_bool chk_func, size_t fdslen,
+                 int timeout, bool chk_func, size_t fdslen,
                  tarpc_lib_flags lib_flags)
 {
     api_func_ptr poll_func;
@@ -5701,7 +5702,7 @@ TARPC_FUNC_STANDALONE(poll,
     {
         ERROR("Too big nfds is passed to the poll()");
         out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        return TRUE;
+        return true;
     }
     COPY_ARG(ufds);
 },
@@ -5753,7 +5754,7 @@ TARPC_FUNC_STANDALONE(poll,
  * @param ts          Poll timeout.
  * @param sigmask     If not @c NULL, this signal mask is set
  *                    for ppoll() call.
- * @param chk_func    If @c TRUE, use __ppoll_chk() instead of ppoll().
+ * @param chk_func    If @c true, use __ppoll_chk() instead of ppoll().
  * @param fdslen      Size of memory occupied by @p fds (makes sense only
  *                    for __ppoll_chk()).
  * @param lib_flags   Flags for dynamic function resolution.
@@ -5764,7 +5765,7 @@ TARPC_FUNC_STANDALONE(poll,
 static int
 ppoll_rpc_handler(struct pollfd *fds, unsigned int nfds,
                   const struct timespec *ts, const sigset_t *sigmask,
-                  te_bool chk_func, size_t fdslen,
+                  bool chk_func, size_t fdslen,
                   tarpc_lib_flags lib_flags)
 {
     api_func_ptr ppoll_func;
@@ -5785,7 +5786,7 @@ TARPC_FUNC_STANDALONE(ppoll,
     {
         ERROR("Too big nfds is passed to the ppoll()");
         out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        return TRUE;
+        return true;
     }
     COPY_ARG(ufds);
     COPY_ARG(timeout);
@@ -5900,7 +5901,7 @@ TARPC_FUNC(epoll_wait,
     {
         ERROR("Too many events is passed to the epoll_wait()");
         out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        return TRUE;
+        return true;
     }
     COPY_ARG(events);
 },
@@ -5942,7 +5943,7 @@ TARPC_FUNC(epoll_pwait,
     {
         ERROR("Too many events is passed to the epoll_pwait()");
         out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        return TRUE;
+        return true;
     }
     COPY_ARG(events);
 },
@@ -5994,7 +5995,7 @@ TARPC_FUNC_STANDALONE(epoll_pwait2,
     {
         ERROR("Too many events is passed to the epoll_pwait2()");
         out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        return TRUE;
+        return true;
     }
     COPY_ARG(events);
     COPY_ARG(timeout);
@@ -6281,7 +6282,7 @@ TARPC_FUNC_STATIC(getaddrinfo, {},
     MAKE_CALL(out->retval = func(in->node.node_val,
                                  in->service.service_val, info, &res));
     /* GLIBC getaddrinfo clean up errno on success */
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
     if (out->retval != 0 && res != NULL)
     {
         out->common._errno = TE_RC(TE_TA_UNIX, TE_ECORRUPTED);
@@ -6636,11 +6637,11 @@ copy_ta_libs(char *path)
     char    str[MAX_CMD];
     char    cmd[MAX_CMD];
     char   *begin_path = 0;
-    te_bool was_cut = FALSE;
+    bool was_cut = false;
     char   *s;
     FILE   *f;
     FILE   *f_list;
-    te_bool ld_found = FALSE;
+    bool ld_found = false;
     int     saved_errno = errno;
 
     struct stat file_stat;
@@ -6685,7 +6686,7 @@ copy_ta_libs(char *path)
 
         if (strstr(begin_path, "/ld-") != NULL ||
             strstr(begin_path, "/ld.") != NULL)
-            ld_found = TRUE;
+            ld_found = true;
 
         if (stat(begin_path, &file_stat) >= 0)
         {
@@ -6694,14 +6695,14 @@ copy_ta_libs(char *path)
                            path_to_lib, RCF_MAX_PATH);
 
             fprintf(f_list, "%s\n", path_to_lib);
-            was_cut = FALSE;
+            was_cut = false;
 
             while ((s = strrchr(path_to_lib, '/')) != NULL)
             {
                 if (stat(path_to_lib, &file_stat) >= 0)
                     break;
                 *s = '\0';
-                was_cut = TRUE;
+                was_cut = true;
             }
             if (was_cut)
             {
@@ -6860,7 +6861,7 @@ _vlan_get_parent_1_svc(tarpc_vlan_get_parent_in *in,
 
     out->retval = (out->common._errno == 0) ? 0 : -1;
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- bond_get_slaves----------------------*/
@@ -6925,7 +6926,7 @@ cleanup:
     out->retval = (out->common._errno == 0) ? 0 : -1;
     tq_strings_free(&slaves, &free);
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- getenv() --------------------------------*/
@@ -7011,7 +7012,7 @@ TARPC_FUNC(getpwnam, {},
 
     MAKE_CALL(pw = (struct passwd *)func_ptr_ret_ptr(in->name.name_val));
     /* GLIBC getpwnam clean up errno on success */
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
 
     if (pw != NULL)
     {
@@ -7267,8 +7268,8 @@ simple_receiver(tarpc_simple_receiver_in *in,
 
     for (start = now = time(NULL);
          (in->time2run != 0) ?
-          ((unsigned int)(now - start) <= in->time2run) : TRUE;
-         now = time(NULL))
+          ((unsigned int)(now - start) <= in->time2run) : true;
+          now = time(NULL))
     {
         rc = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
                         1000);
@@ -7547,8 +7548,8 @@ flooder(tarpc_flooder_in *in)
 
     struct timeval  timeout;   /* time when we should go out */
     int             iomux_timeout;
-    te_bool         time2run_expired = FALSE;
-    te_bool         session_rx;
+    bool time2run_expired = false;
+    bool session_rx;
 
     INFO("%d flooder start", getpid());
     memset(rcv_buf, 0x0, FLOODER_BUF);
@@ -7585,7 +7586,7 @@ flooder(tarpc_flooder_in *in)
     }
     for (i = 0; i < rcvnum; i++)
     {
-        int found = FALSE;
+        int found = false;
 
         for (j = 0; j < sndnum; j++)
         {
@@ -7597,7 +7598,7 @@ flooder(tarpc_flooder_in *in)
                 iomux_close(iomux, &iomux_f, &iomux_st);
                 return rc;
             }
-            found = TRUE;
+            found = true;
             break;
         }
 
@@ -7626,7 +7627,7 @@ flooder(tarpc_flooder_in *in)
         int fd = -1;    /* Shut up compiler warning */
         int events = 0; /* Shut up compiler warning */
 
-        session_rx = FALSE;
+        session_rx = false;
         rc = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
                         iomux_timeout);
 
@@ -7703,7 +7704,7 @@ flooder(tarpc_flooder_in *in)
                 }
                 else if (received > 0)
                 {
-                    session_rx = TRUE;
+                    session_rx = true;
                     if (rx_stat != NULL)
                     {
                         for (i = 0; i < rcvnum; i++)
@@ -7742,7 +7743,7 @@ flooder(tarpc_flooder_in *in)
                 TE_US2MS(timeout.tv_usec - now.tv_usec);
             if (iomux_timeout < 0)
             {
-                time2run_expired = TRUE;
+                time2run_expired = true;
 
                 /* Clean up POLLOUT requests for all descriptors */
                 for (i = 0; i < sndnum; i++)
@@ -7769,7 +7770,7 @@ flooder(tarpc_flooder_in *in)
                 }
 
                 /* Just to make sure that we'll get all from buffers */
-                session_rx = TRUE;
+                session_rx = true;
                 INFO("%s(): time2run expired", __FUNCTION__);
             }
         }
@@ -7870,8 +7871,8 @@ echoer(tarpc_echoer_in *in)
 
     struct timeval  timeout;   /* time when we should go out */
     int             iomux_timeout;
-    te_bool         time2run_expired = FALSE;
-    te_bool         session_rx;
+    bool time2run_expired = false;
+    bool session_rx;
 
     TAILQ_INIT(&buffs);
 
@@ -7917,7 +7918,7 @@ echoer(tarpc_echoer_in *in)
         int fd = -1;
         int events = 0;
 
-        session_rx = FALSE;
+        session_rx = false;
         rc = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
                         iomux_timeout);
 
@@ -7954,7 +7955,7 @@ echoer(tarpc_echoer_in *in)
                     free_buffers(&buffs);
                     return -1;
                 }
-                session_rx = TRUE;
+                session_rx = true;
             }
             if ((events & POLLOUT) &&
                 (buf = TAILQ_LAST(&buffs, buffers)) != NULL)
@@ -8003,9 +8004,9 @@ echoer(tarpc_echoer_in *in)
                 TE_US2MS(timeout.tv_usec - now.tv_usec);
             if (iomux_timeout < 0)
             {
-                time2run_expired = TRUE;
+                time2run_expired = true;
                 /* Just to make sure that we'll get all from buffers */
-                session_rx = TRUE;
+                session_rx = true;
                 INFO("%s(): time2run expired", __FUNCTION__);
             }
         }
@@ -8180,7 +8181,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
         send_wrapper = (api_func_ptr)
                           rcf_ch_symbol_addr(
                               in->swrapper.swrapper_val,
-                              TRUE);
+                              true);
         if (send_wrapper == NULL)
         {
             te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOENT),
@@ -8216,7 +8217,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
         pollerr_handler = (api_func_ptr)
                           rcf_ch_symbol_addr(
                               in->pollerr_handler.pollerr_handler_val,
-                              TRUE);
+                              true);
         if (pollerr_handler == NULL)
         {
             te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOENT),
@@ -8238,7 +8239,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
     }
 
     if ((pattern_gen_func =
-                rcf_ch_symbol_addr(in->fname.fname_val, TRUE)) == NULL)
+                rcf_ch_symbol_addr(in->fname.fname_val, true)) == NULL)
     {
         te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOENT),
                          "failed to resolve '%s'", in->fname.fname_val);
@@ -8458,7 +8459,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
             {
                 ERROR("send() failed in pattern_sender(): errno %s (%x)",
                       strerror(errno), errno);
-                out->func_failed = TRUE;
+                out->func_failed = true;
                 PTRN_SEND_ERROR;
             }
             else
@@ -8590,7 +8591,7 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
 
     if (tarpc_find_func(in->common.lib_flags, "recv", &recv_func) != 0 ||
         (pattern_gen_func =
-                rcf_ch_symbol_addr(in->fname.fname_val, TRUE)) == NULL)
+                rcf_ch_symbol_addr(in->fname.fname_val, true)) == NULL)
         return -1;
 
     if ((buf = malloc(MAX_PKT)) == NULL ||
@@ -8729,7 +8730,7 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
 
             ERROR("recv() failed in pattern_receiver(): errno %s (%x)",
                   strerror(errno), errno);
-            out->func_failed = TRUE;
+            out->func_failed = true;
             if (recv_errno != ECONNRESET)
                 PTRN_RECV_ERROR;
             else
@@ -8823,7 +8824,7 @@ TARPC_FUNC_DYNAMIC_UNSAFE(sendfile,
     COPY_ARG(offset);
 },
 {
-    if (in->force64 == TRUE)
+    if (in->force64 == true)
     {
         do {
             int         rc;
@@ -9043,8 +9044,8 @@ socket_to_file(tarpc_socket_to_file_in *in)
     struct timeval  timeout;
     struct timeval  timestamp;
     int             iomux_timeout;
-    te_bool         time2run_expired = FALSE;
-    te_bool         session_rx;
+    bool time2run_expired = false;
+    bool session_rx;
 
     path[in->path.path_len] = '\0';
 
@@ -9100,7 +9101,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
     do {
         int fd = -1;
         int events = 0;
-        session_rx = FALSE;
+        session_rx = false;
 
         rc = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
                         iomux_timeout);
@@ -9131,7 +9132,7 @@ socket_to_file(tarpc_socket_to_file_in *in)
             }
             else if (received > 0)
             {
-                session_rx = TRUE;
+                session_rx = true;
 
                 total += received;
                 VERB("%s(): write retrieved data to file", __FUNCTION__);
@@ -9169,9 +9170,9 @@ socket_to_file(tarpc_socket_to_file_in *in)
                 TE_US2MS(timeout.tv_usec - timestamp.tv_usec);
             if (iomux_timeout < 0)
             {
-                time2run_expired = TRUE;
+                time2run_expired = true;
                 /* Just to make sure that we'll get all from buffers */
-                session_rx = TRUE;
+                session_rx = true;
                 INFO("%s(): time2run expired", __FUNCTION__);
             }
 #ifdef DEBUG
@@ -9450,7 +9451,7 @@ iomux_splice(tarpc_iomux_splice_in *in,
     iomux_return_iterator   itr;
     struct timeval          now;
     struct timeval          end;
-    te_bool                 out_ev = FALSE;
+    bool out_ev = false;
     int                     fd = -1;
     int                     events = 0;
 
@@ -9534,7 +9535,7 @@ iomux_splice(tarpc_iomux_splice_in *in,
                 usleep(10000);
                 continue;
             }
-            out_ev = TRUE;
+            out_ev = true;
             continue;
         }
 
@@ -9555,7 +9556,7 @@ iomux_splice(tarpc_iomux_splice_in *in,
             ret = -1;
             break;
         }
-        out_ev = FALSE;
+        out_ev = false;
     } while (end.tv_sec > now.tv_sec);
 
 iomux_splice_exit:
@@ -9674,21 +9675,21 @@ TARPC_FUNC(iomux_create_state,{},
     iomux_funcs     iomux_f;
     iomux_func      iomux = in->iomux;
     iomux_state    *iomux_st = NULL;
-    te_bool         is_fail = FALSE;
+    bool            is_fail = false;
 
     if (iomux_find_func(in->common.lib_flags, &iomux, &iomux_f) != 0)
     {
         ERROR("%s(): Failed to resolve iomux %s function(s)",
               __FUNCTION__, iomux2str(iomux));
         out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOENT);
-        is_fail = TRUE;
+        is_fail = true;
         goto finish;
     }
 
     if ((iomux_st = (iomux_state *)malloc(sizeof(*iomux_st))) == NULL)
     {
         out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        is_fail = TRUE;
+        is_fail = true;
         goto finish;
     }
 
@@ -9969,7 +9970,7 @@ _create_aiocb_1_svc(tarpc_create_aiocb_in *in, tarpc_create_aiocb_out *out,
         out->common._errno = RPC_ERRNO;
     }
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- AIO control block constructor --------------------------*/
@@ -9988,7 +9989,7 @@ _fill_aiocb_1_svc(tarpc_fill_aiocb_in *in,
     {
         ERROR("Try to fill NULL AIO control block");
         out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);
-        return TRUE;
+        return true;
     }
 
     cb->aio_fildes = in->fildes;
@@ -10011,7 +10012,7 @@ _fill_aiocb_1_svc(tarpc_fill_aiocb_in *in,
     cb->aio_sigevent.sigev_notify = sigev_notify_rpc2h(in->sigevent.notify);
     out->common._errno = fill_sigev_thread(&(cb->aio_sigevent),
                                            in->sigevent.function);
-    return TRUE;
+    return true;
 }
 
 
@@ -10030,7 +10031,7 @@ _delete_aiocb_1_svc(tarpc_delete_aiocb_in *in,
     rcf_pch_mem_free(in->cb);
     out->common._errno = RPC_ERRNO;
 
-    return TRUE;
+    return true;
 }
 
 /*---------------------- aio_read() --------------------------*/
@@ -10204,7 +10205,7 @@ _get_addr_by_id_1_svc(tarpc_get_addr_by_id_in  *in,
             (uint64_t)((uint8_t *)rcf_pch_mem_get(in->id) -
                        (uint8_t *)NULL);
 
-    return TRUE;
+    return true;
 }
 
 /*------------ raw2integer ---------------------------*/
@@ -10604,12 +10605,12 @@ _setrlimit_1_svc(tarpc_setrlimit_in *in,
     {
         ERROR("Failed to resolve \"%s\" function address", func_name);
         out->common._errno = rc;
-        return TRUE;
+        return true;
     }
 
     out->retval = func(rlimit_resource_rpc2h(in->resource), &rlim);
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- getrlimit() ------------------------------*/
@@ -10648,7 +10649,7 @@ _getrlimit_1_svc(tarpc_getrlimit_in *in,
     {
         ERROR("Failed to resolve \"%s\" function address", func_name);
         out->common._errno = rc;
-        return TRUE;
+        return true;
     }
 
     out->retval = func(rlimit_resource_rpc2h(in->resource), &rlim);
@@ -10659,7 +10660,7 @@ _getrlimit_1_svc(tarpc_getrlimit_in *in,
         out->rlim.rlim_val->rlim_max = rlim.rlim_max;
     }
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- sysconf() ------------------------------*/
@@ -11646,7 +11647,7 @@ TARPC_FUNC(rpcserver_plugin_disable, {},
  */
 static int
 send_flooder_iomux(tarpc_lib_flags lib_flags, int sock, iomux_func iomux,
-                   tarpc_send_function send_func, te_bool msg_dontwait,
+                   tarpc_send_function send_func, bool msg_dontwait,
                    int packet_size, int duration, uint64_t *packets,
                    uint32_t *errors)
 {
@@ -11662,7 +11663,7 @@ send_flooder_iomux(tarpc_lib_flags lib_flags, int sock, iomux_func iomux,
     iomux_return    iomux_ret;
     uint64_t        i;
     int             rc;
-    te_bool         writable = FALSE;
+    bool writable = false;
     int             back_errno = errno;
     size_t iovcnt = rand_range(1, TARPC_SEND_IOMUX_FLOODER_MAX_IOVCNT);
 
@@ -11797,7 +11798,7 @@ send_flooder_iomux(tarpc_lib_flags lib_flags, int sock, iomux_func iomux,
                       "(%r)", i, rc, RPC_ERRNO);
                 break;
             }
-            writable = FALSE;
+            writable = false;
         }
 
         (*packets)++;
@@ -11847,7 +11848,7 @@ int64_t
 copy_fd2fd(tarpc_copy_fd2fd_in *in)
 {
     /* Whether limited number of bytes to copy or not. */
-    const te_bool partial_copy = (in->count != 0);
+    const bool partial_copy = (in->count != 0);
     api_func      write_func;
     api_func      read_func;
     iomux_funcs   iomux_f;
@@ -12132,7 +12133,7 @@ drain_fd(tarpc_lib_flags lib_flags, int fd, size_t size, int time2wait,
     int iomux_timeout;
     long int time_diff;
     long int duration_usec = TE_SEC2US(duration);
-    te_bool do_iomux = FALSE;
+    bool do_iomux = false;
 
     struct timeval tv_start;
     struct timeval tv_now;
@@ -12150,7 +12151,7 @@ drain_fd(tarpc_lib_flags lib_flags, int fd, size_t size, int time2wait,
     }
     else if (time2wait > 0 || duration > 0)
     {
-        do_iomux = TRUE;
+        do_iomux = true;
 
         if (iomux_find_func(lib_flags, &iomux, &iomux_f) != 0)
         {
@@ -12481,7 +12482,7 @@ TARPC_SYSCALL_WRAPPER(epoll_pwait2, int, (int a, struct epoll_event *b, int c,
  * @return              Return the syscall() result.
  */
 static int
-fcntl_te_wrap_syscall_common(te_bool use_libc,
+fcntl_te_wrap_syscall_common(bool use_libc,
                              int fd,
                              int cmd,
                              va_list argp)
@@ -12545,7 +12546,7 @@ int fcntl_te_wrap_syscall(int fd, int cmd, ...)
     int rc;
 
     va_start(argp, cmd);
-    rc = fcntl_te_wrap_syscall_common(TRUE, fd, cmd, argp);
+    rc = fcntl_te_wrap_syscall_common(true, fd, cmd, argp);
     va_end(argp);
     return rc;
 }
@@ -12567,7 +12568,7 @@ int fcntl_te_wrap_syscall_dl(int fd, int cmd, ...)
     int rc;
 
     va_start(argp, cmd);
-    rc = fcntl_te_wrap_syscall_common(FALSE, fd, cmd, argp);
+    rc = fcntl_te_wrap_syscall_common(false, fd, cmd, argp);
     va_end(argp);
     return rc;
 }

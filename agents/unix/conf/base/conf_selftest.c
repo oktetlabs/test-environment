@@ -47,7 +47,7 @@ static two_props_data incr_obj_state = {0, 0};
 
 static te_errno
 commit_obj_prop_get(unsigned int gid, const char *oid, char *value,
-                    te_bool first)
+                    bool first)
 {
     te_string value_str = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
 
@@ -63,18 +63,18 @@ commit_obj_prop_get(unsigned int gid, const char *oid, char *value,
 static te_errno
 commit_obj_prop_a_get(unsigned int gid, const char *oid, char *value)
 {
-    return commit_obj_prop_get(gid, oid, value, TRUE);
+    return commit_obj_prop_get(gid, oid, value, true);
 }
 
 static te_errno
 commit_obj_prop_b_get(unsigned int gid, const char *oid, char *value)
 {
-    return commit_obj_prop_get(gid, oid, value, FALSE);
+    return commit_obj_prop_get(gid, oid, value, false);
 }
 
 static te_errno
 commit_obj_prop_set(unsigned int gid, const char *oid, const char *value,
-                    te_bool first)
+                    bool first)
 {
     unsigned int value_uint;
     te_errno rc;
@@ -103,13 +103,13 @@ commit_obj_prop_set(unsigned int gid, const char *oid, const char *value,
 static te_errno
 commit_obj_prop_a_set(unsigned int gid, const char *oid, const char *value)
 {
-    return commit_obj_prop_set(gid, oid, value, TRUE);
+    return commit_obj_prop_set(gid, oid, value, true);
 }
 
 static te_errno
 commit_obj_prop_b_set(unsigned int gid, const char *oid, const char *value)
 {
-    return commit_obj_prop_set(gid, oid, value, FALSE);
+    return commit_obj_prop_set(gid, oid, value, false);
 }
 
 static te_errno
@@ -135,7 +135,7 @@ commit_obj_commit(unsigned int gid, const cfg_oid *p_oid)
 
 static te_errno
 incr_obj_prop_get(unsigned int gid, const char *oid, char *value,
-                  te_bool first)
+                  bool first)
 {
     te_string value_str = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
 
@@ -151,18 +151,18 @@ incr_obj_prop_get(unsigned int gid, const char *oid, char *value,
 static te_errno
 incr_obj_prop_a_get(unsigned int gid, const char *oid, char *value)
 {
-    return incr_obj_prop_get(gid, oid, value, TRUE);
+    return incr_obj_prop_get(gid, oid, value, true);
 }
 
 static te_errno
 incr_obj_prop_b_get(unsigned int gid, const char *oid, char *value)
 {
-    return incr_obj_prop_get(gid, oid, value, FALSE);
+    return incr_obj_prop_get(gid, oid, value, false);
 }
 
 static te_errno
 incr_obj_prop_set(unsigned int gid, const char *oid, const char *value,
-                  te_bool first)
+                  bool first)
 {
     unsigned int value_uint;
     te_errno rc;
@@ -201,13 +201,13 @@ incr_obj_prop_set(unsigned int gid, const char *oid, const char *value,
 static te_errno
 incr_obj_prop_a_set(unsigned int gid, const char *oid, const char *value)
 {
-    return incr_obj_prop_set(gid, oid, value, TRUE);
+    return incr_obj_prop_set(gid, oid, value, true);
 }
 
 static te_errno
 incr_obj_prop_b_set(unsigned int gid, const char *oid, const char *value)
 {
-    return incr_obj_prop_set(gid, oid, value, FALSE);
+    return incr_obj_prop_set(gid, oid, value, false);
 }
 
 static te_errno

@@ -320,7 +320,7 @@ tapi_bpf_obj_del(const char *ta, unsigned int bpf_id)
 
     assert(ta != NULL);
 
-    if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/bpf:%u", ta, bpf_id)) != 0)
+    if ((rc = cfg_del_instance_fmt(false, "/agent:%s/bpf:%u", ta, bpf_id)) != 0)
     {
         ERROR("%s(): Failed to delete BPF object /agent:%s/bpf:%u: %r",
               __FUNCTION__, ta, bpf_id, rc);
@@ -489,7 +489,7 @@ tapi_bpf_prog_link(const char *ta, const char *ifname,
         case TAPI_BPF_LINK_TC_INGRESS:
         case TAPI_BPF_LINK_TC_EGRESS:
         {
-            te_bool qdisc_is_enabled = FALSE;
+            bool qdisc_is_enabled = false;
             tapi_cfg_qdisc_kind_t qdisc_kind = TAPI_CFG_QDISC_KIND_UNKNOWN;
             const char *param = link_type == TAPI_BPF_LINK_TC_INGRESS ?
                                 "bpf_ingress" : "bpf_egress";
@@ -727,7 +727,7 @@ tapi_bpf_map_get_max_entries(const char *ta, unsigned int bpf_id,
 /* See description in tapi_bpf.h */
 te_errno
 tapi_bpf_map_get_writable_state(const char *ta, unsigned int bpf_id,
-                                const char *map, te_bool *is_writable)
+                                const char *map, bool *is_writable)
 {
     int          val;
     te_errno     rc;
@@ -740,7 +740,7 @@ tapi_bpf_map_get_writable_state(const char *ta, unsigned int bpf_id,
                                        "/agent:%s/bpf:%u/map:%s/writable:",
                                        ta, bpf_id, map)) == 0)
     {
-        *is_writable = val == 0 ? FALSE : TRUE;
+        *is_writable = val == 0 ? false : true;
     }
     else
     {
@@ -801,7 +801,7 @@ tapi_bpf_map_update_kvpair(const char *ta, unsigned int bpf_id,
 {
     te_string    key_str = TE_STRING_INIT_STATIC(RCF_MAX_VAL);
     te_string    val_str = TE_STRING_INIT_STATIC(RCF_MAX_VAL);
-    te_bool      wrtbl;
+    bool wrtbl;
     te_errno     rc;
 
     assert(ta != NULL);
@@ -874,7 +874,7 @@ tapi_bpf_map_lookup_kvpair(const char *ta,
 {
     te_string       key_str = TE_STRING_INIT_STATIC(RCF_MAX_VAL);
     char           *val_str = NULL;
-    te_bool         wrtbl;
+    bool wrtbl;
     te_errno        rc;
 
     assert(ta != NULL);
@@ -919,7 +919,7 @@ tapi_bpf_map_delete_kvpair(const char *ta, unsigned int bpf_id, const char *map,
 {
     te_string    key_str = TE_STRING_INIT_STATIC(RCF_MAX_VAL);
     unsigned int real_key_size;
-    te_bool      wrtbl;
+    bool wrtbl;
     te_errno     rc;
 
     assert(ta != NULL);
@@ -948,7 +948,7 @@ tapi_bpf_map_delete_kvpair(const char *ta, unsigned int bpf_id, const char *map,
     if ((rc = te_str_hex_raw2str(key, key_size, &key_str)) != 0)
         return rc;
 
-    if ((rc = cfg_del_instance_fmt(FALSE,
+    if ((rc = cfg_del_instance_fmt(false,
                                    "/agent:%s/bpf:%u/map:%s/writable:/key:%s",
                                    ta, bpf_id, map, key_str.ptr)) != 0)
     {
@@ -970,7 +970,7 @@ tapi_bpf_map_get_key_list(const char *ta, unsigned int bpf_id, const char *map,
     unsigned int    k_count;
     unsigned int    k_size;
     unsigned int    i;
-    te_bool         wrtbl;
+    bool wrtbl;
     te_errno        rc;
 
     assert(ta != NULL);

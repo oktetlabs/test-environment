@@ -19,10 +19,10 @@ int
 tapi_cfg_net_route_flush(rcf_rpc_server *rpcs)
 {
     int     fd;
-    te_bool wait_err = FALSE;
+    bool wait_err = false;
 
     if (RPC_AWAITING_ERROR(rpcs))
-        wait_err = TRUE;
+        wait_err = true;
 
     if ((fd = rpc_open(rpcs, "/proc/sys/net/ipv4/route/flush",
                        RPC_O_WRONLY, 0)) < 0)

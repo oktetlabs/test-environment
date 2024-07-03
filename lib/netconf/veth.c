@@ -71,9 +71,9 @@ veth_parse_link(struct nlmsghdr *h, struct rtattr **rta_arr, int max)
  *
  * @param linkgen   The general link attributes array
  *
- * @return @c TRUE if link is veth.
+ * @return @c true if link is veth.
  */
-static te_bool
+static bool
 veth_link_is_veth(struct rtattr **linkgen)
 {
     struct rtattr *linkinfo[IFLA_INFO_MAX + 1];
@@ -84,9 +84,9 @@ veth_link_is_veth(struct rtattr **linkgen)
     if (linkinfo[IFLA_INFO_KIND] == NULL ||
         strcmp(RTA_DATA(linkinfo[IFLA_INFO_KIND]),
                NETCONF_LINK_KIND_VETH) != 0)
-        return FALSE;
+        return false;
 
-    return TRUE;
+    return true;
 }
 
 /**
@@ -146,12 +146,12 @@ veth_extract_peer(struct rtattr **linkgen, char **peer_name)
  *
  * @param h         The netlink message header
  * @param list      Netconf list to keep the data
- * @param get_peer  Extract veth peer name if @c TRUE
+ * @param get_peer  Extract veth peer name if @c true
  *
  * @return @c 0 on success, @c -1 on error (check @b errno for details).
  */
 static int
-veth_link_gen_cb(struct nlmsghdr *h, netconf_list *list, te_bool get_peer)
+veth_link_gen_cb(struct nlmsghdr *h, netconf_list *list, bool get_peer)
 {
     netconf_veth        veth;
     struct rtattr      *linkgen[IFLA_MAX + 1];
@@ -161,7 +161,7 @@ veth_link_gen_cb(struct nlmsghdr *h, netconf_list *list, te_bool get_peer)
     veth_parse_link(h, linkgen, IFLA_MAX);
 
     if (linkgen[IFLA_LINKINFO] == NULL || linkgen[IFLA_IFNAME] == NULL ||
-        veth_link_is_veth(linkgen) == FALSE)
+        veth_link_is_veth(linkgen) == false)
         return 0;
 
     if (get_peer)
@@ -202,7 +202,7 @@ veth_peer_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
     UNUSED(cookie);
 
-    return veth_link_gen_cb(h, list, TRUE);
+    return veth_link_gen_cb(h, list, true);
 }
 
 /**
@@ -220,7 +220,7 @@ veth_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
     UNUSED(cookie);
 
-    return veth_link_gen_cb(h, list, FALSE);
+    return veth_link_gen_cb(h, list, false);
 }
 
 /* See netconf_internal.h */
@@ -355,7 +355,7 @@ netconf_veth_list(netconf_handle nh, netconf_veth_list_filter_func filter_cb,
         if (node->data.veth.ifname != NULL)
         {
             if (filter_cb != NULL &&
-                filter_cb(node->data.veth.ifname, filter_opaque) == FALSE)
+                filter_cb(node->data.veth.ifname, filter_opaque) == false)
                 continue;
 
             rc = te_string_append(&str, "%s ", node->data.veth.ifname);

@@ -112,7 +112,7 @@ main(int argc, char **argv)
     size_t   i;
     size_t   j;
     opaque_t op;
-    te_bool  test_ok = TRUE;
+    bool test_ok = true;
 
     TEST_START;
     TEST_GET_STRING_LIST_PARAM(areas, num_areas);
@@ -188,7 +188,7 @@ main(int argc, char **argv)
 
                 if (TE_RC_GET_ERROR(rc) != expected_rc)
                 {
-                    test_ok = FALSE;
+                    test_ok = false;
 
                     switch (TE_RC_GET_ERROR(rc))
                     {

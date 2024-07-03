@@ -173,7 +173,7 @@ define_kernel_version(cli_csap_specific_data_p spec_data)
     int   major_ver = 0;
     int   minor_ver = 0;
 
-    spec_data->kernel_like_2_4 = TRUE;
+    spec_data->kernel_like_2_4 = true;
 
     if ((fd = fopen("/proc/version", "r")) == NULL)
         return;
@@ -184,7 +184,7 @@ define_kernel_version(cli_csap_specific_data_p spec_data)
         sscanf(ptr, "%d.%d.", &major_ver, &minor_ver) == 2)
     {
         if ((major_ver >= 2 && minor_ver > 4) || major_ver >= 3)
-            spec_data->kernel_like_2_4 = FALSE;
+            spec_data->kernel_like_2_4 = false;
     }
 
     fclose(fd);
@@ -204,7 +204,7 @@ parent_wait_sync(cli_csap_specific_data_p spec_data)
     fd_set         read_set;
     int            rc;
 
-    while (TRUE)
+    while (true)
     {
         FD_ZERO(&read_set);
         FD_SET(spec_data->sync_pipe, &read_set);
@@ -264,7 +264,7 @@ parent_read_byte(cli_csap_specific_data_p spec_data,
     max_descr = spec_data->sync_pipe > spec_data->data_sock ?
         spec_data->sync_pipe : spec_data->data_sock;
 
-    while (TRUE)
+    while (true)
     {
         FD_ZERO(&read_set);
         FD_SET(spec_data->sync_pipe, &read_set);
@@ -396,7 +396,7 @@ parent_read_reply(cli_csap_specific_data_p spec_data,
 {
     te_errno    rc;
     char        data;
-    te_bool     echo_stripped = FALSE;
+    bool echo_stripped = false;
     size_t      bytes_read = 0;
     size_t      echo_count = 0;
 
@@ -427,7 +427,7 @@ parent_read_reply(cli_csap_specific_data_p spec_data,
             if (data == '\n' || data == '\r')
                 continue;
 
-            echo_stripped = TRUE;
+            echo_stripped = true;
         }
 
         if (reply_buf == NULL)
@@ -468,26 +468,26 @@ parent_read_reply(cli_csap_specific_data_p spec_data,
  *
  * @param spec_data  CSAP-specific data
  *
- * @return TRUE if CLI session is running, and FALSE otherwise.
+ * @return @c true if CLI session is running, and @c false otherwise.
  */
-static te_bool
+static bool
 cli_session_alive(cli_csap_specific_data_p spec_data)
 {
     pid_t pid;
     int   status;
 
     if (spec_data->expect_pid == 0)
-        return FALSE;
+        return false;
 
     if (spec_data->kernel_like_2_4)
     {
         /*
          * We are working with 2.4 kernel, so we can't define
          * status of main child, as we are a thread created from main.
-         * Always return TRUE, if child crashed, that will be defined
+         * Always return @c true, if child crashed, that will be defined
          * as the result of write failure, or read returning 0.
          */
-        return TRUE;
+        return true;
     }
 
     pid = ta_waitpid(spec_data->expect_pid, &status, WNOHANG);
@@ -495,22 +495,22 @@ cli_session_alive(cli_csap_specific_data_p spec_data)
     {
         ERROR("waitpid(%d) failed, errno = %d",
               spec_data->expect_pid, errno);
-        return FALSE;
+        return false;
     }
     else if (pid == 0)
     {
         VERB("The child with PID %d is still alive", spec_data->expect_pid);
-        return TRUE;
+        return true;
     }
     else
     {
         assert(pid == spec_data->expect_pid);
         VERB("The child with PID %d is finished", spec_data->expect_pid);
-        return FALSE;
+        return false;
     }
 
     assert(0);
-    return FALSE;
+    return false;
 }
 
 
@@ -717,7 +717,7 @@ tad_cli_read_cb(csap_p csap, unsigned int timeout,
 
     /* Try to wait for command reply during timeout */
     timeout_rate = timeout / 10;
-    while (TRUE)
+    while (true)
     {
         if ((rc = process_sync_pipe(spec_data)) != 0)
         {
@@ -1624,7 +1624,7 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
     int     rc;
     char    data;
     int     reply_len;
-    te_bool timeout_notif_sent = FALSE;
+    bool timeout_notif_sent = false;
 
     logfork_register_user("CLI CSAP CHILD");
 
@@ -1655,7 +1655,7 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
     VERB("CLI session is synchronized with CSAP Engine");
 
     /* Wait for command from CSAP Engine */
-    while (TRUE)
+    while (true)
     {
         VERB("Start waiting for a command from CSAP Engine");
 
@@ -1731,7 +1731,7 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
             if (rc == EXP_TIMEOUT)
             {
                 VERB("Timeout waiting for prompt");
-                timeout_notif_sent = TRUE;
+                timeout_notif_sent = true;
                 child_send_sync(spec_data, SYNC_RES_TIMEOUT);
             }
         } while (rc != CLI_COMMAND_PROMPT);
@@ -1748,7 +1748,7 @@ cli_expect_main(cli_csap_specific_data_p spec_data)
             VERB("Notify CSAP Engine that eventually we've got prompt");
             child_send_sync(spec_data, SYNC_RES_OK);
 
-            timeout_notif_sent = FALSE;
+            timeout_notif_sent = false;
         }
 
         VERB("Send reply for the command");

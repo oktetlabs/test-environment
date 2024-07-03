@@ -171,7 +171,7 @@ extern char ta_lib_mod_dir[RCF_MAX_PATH];
 extern char ta_lib_bin_dir[RCF_MAX_PATH];
 
 /**
- * Get oper status of the interface (TRUE - RUNNING).
+ * Get oper status of the interface (@c true - RUNNING).
  *
  * @param ifname        name of the interface (like "eth0")
  * @param status        location to put status of the interface
@@ -179,10 +179,10 @@ extern char ta_lib_bin_dir[RCF_MAX_PATH];
  * @return              Status code
  */
 extern te_errno ta_interface_oper_status_get(const char *ifname,
-                                             te_bool *status);
+                                             bool *status);
 
 /**
- * Get status of the interface (FALSE - down or TRUE - up).
+ * Get status of the interface (@c false - down or @c true - up).
  *
  * @param ifname        name of the interface (like "eth0")
  * @param status        location to put status of the interface
@@ -190,7 +190,7 @@ extern te_errno ta_interface_oper_status_get(const char *ifname,
  * @return              Status code
  */
 extern te_errno ta_interface_status_get(const char *ifname,
-                                        te_bool *status);
+                                        bool *status);
 
 /**
  * Change status of the interface. If virtual interface is put to down
@@ -198,11 +198,11 @@ extern te_errno ta_interface_status_get(const char *ifname,
  * of down interfaces.
  *
  * @param ifname        name of the interface (like "eth0")
- * @param status        TRUE to get interface up and FALSE to down
+ * @param status        @c true to get interface up and @c false to down
  *
  * @return              Status code
  */
-extern te_errno ta_interface_status_set(const char *ifname, te_bool status);
+extern te_errno ta_interface_status_set(const char *ifname, bool status);
 
 /* Sockets to be used by various parts of configurator */
 extern int cfg_socket;

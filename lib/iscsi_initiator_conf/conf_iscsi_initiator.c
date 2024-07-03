@@ -272,7 +272,7 @@ iscsi_conn_del(unsigned int gid, const char *oid,
 
     return iscsi_post_connection_request(iscsi_get_target_id(oid),
                                          iscsi_get_cid(oid),
-                                         ISCSI_CONNECTION_REMOVED, FALSE);
+                                         ISCSI_CONNECTION_REMOVED, false);
 }
 
 static te_errno
@@ -357,7 +357,7 @@ iscsi_target_data_del(unsigned int gid, const char *oid,
         {
             /* to stop the thread and possibly a service daemon */
             iscsi_post_connection_request(ISCSI_ALL_CONNECTIONS, ISCSI_ALL_CONNECTIONS,
-                                          ISCSI_CONNECTION_REMOVED, FALSE);
+                                          ISCSI_CONNECTION_REMOVED, false);
         }
     }
 
@@ -464,7 +464,7 @@ iscsi_generic_device_get(unsigned int gid, const char *oid,
             pthread_mutex_unlock(&target->conns[0].status_mutex);
             rc = iscsi_get_device_name(&target->conns[0],
                                        target->target_id,
-                                       TRUE,
+                                       true,
                                        target->conns[0]. \
                                        scsi_generic_device_name);
             if (rc != 0)
@@ -754,7 +754,7 @@ iscsi_status_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(instance);
 
-    return iscsi_post_connection_request(tgt_id, cid, oper, FALSE);
+    return iscsi_post_connection_request(tgt_id, cid, oper, false);
 }
 
 static te_errno

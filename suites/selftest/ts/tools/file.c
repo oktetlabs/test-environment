@@ -35,7 +35,7 @@ main(int argc, char **argv)
     te_string padding = TE_STRING_INIT;
     te_string expected = TE_STRING_INIT;
     const char *content;
-    te_bool binary;
+    bool binary;
     char *path = NULL;
     te_errno chk_rc;
 
@@ -79,7 +79,7 @@ main(int argc, char **argv)
     if (binary)
     {
         TEST_STEP("Checking embedded zero detection");
-        chk_rc = te_file_read_string(&inbuf, FALSE, 0, "%s", path);
+        chk_rc = te_file_read_string(&inbuf, false, 0, "%s", path);
         if (chk_rc != TE_EILSEQ)
             TEST_VERDICT("Embedded zeroes are not detected: %r", chk_rc);
     }
@@ -91,7 +91,7 @@ main(int argc, char **argv)
         te_string_append_buf(&expected, outbuf.ptr, outbuf.len);
         te_string_append_buf(&expected, padding.ptr, padding.len);
 
-        CHECK_RC(te_file_read_string(&inbuf, TRUE, 0, "%s", path));
+        CHECK_RC(te_file_read_string(&inbuf, true, 0, "%s", path));
         if (!te_compare_bufs(expected.ptr, expected.len, 1,
                              inbuf.ptr, inbuf.len, TE_LL_ERROR))
         {

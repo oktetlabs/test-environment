@@ -47,11 +47,22 @@
 #define NULL ((void *)0)
 #endif
 
-/** Boolean type to be used everywhere in Test Environment */
+/**
+ * Legacy TE boolean type.
+ *
+ * @deprecated Use normal ISO C @c bool.
+ */
 typedef bool te_bool;
 
 #ifndef FALSE
+/**
+ * @deprecated Use ISO C @c false.
+ */
 #define FALSE false
+
+/**
+ * @deprecated Use ISO C @c true.
+ */
 #define TRUE  true
 #endif
 
@@ -336,13 +347,13 @@ typedef enum te_bool3 {
                             \
         (_p1) = (_p2);      \
         (_p2) = tmp;        \
-    } while (FALSE)
+    } while (0)
 
 
 /** Useful for debugging */
 #if 0 /* BUG here */
 #define malloc(_x)   (((_x) < 0x04000000) ? (malloc)(_x) : \
-                                            (({assert(FALSE);}), NULL))
+                                            (({assert(0);}), NULL))
 #endif
 
 /** Prefix for tester user name */
@@ -494,14 +505,14 @@ te_make_tmp_file(char *tmp_name)
  *
  * @param ptr   A pointer
  *
- * @return @c TRUE if @p ptr is not NULL
+ * @return @c true if @p ptr is not NULL
  */
-static inline te_bool
+static inline bool
 ptr_is_not_null(const void *ptr)
 {
     if (ptr != NULL)
-        return TRUE;
-    return FALSE;
+        return true;
+    return false;
 }
 
 #ifdef __GNUC__
@@ -630,7 +641,7 @@ te_round_to_zero(unsigned int n, unsigned int m)
 /** Unsigned integer which can be left undefined */
 typedef struct te_optional_uint_t {
     unsigned int value; /**< Value */
-    te_bool defined;    /**< If @c TRUE, value is defined */
+    bool defined;    /**< If @c true, value is defined */
 } te_optional_uint_t;
 
 /**
@@ -639,16 +650,16 @@ typedef struct te_optional_uint_t {
  * @param _x        Value to set.
  */
 #define TE_OPTIONAL_UINT_VAL(_x) \
-    (te_optional_uint_t){ .value = (_x), .defined = TRUE }
+    (te_optional_uint_t){ .value = (_x), .defined = true }
 
 /** Undefined value for te_optional_uint_t. */
 #define TE_OPTIONAL_UINT_UNDEF \
-    (te_optional_uint_t){ .defined = FALSE }
+    (te_optional_uint_t){ .defined = false }
 
 /** Unsigned long integer which can be left undefined */
 typedef struct te_optional_uintmax_t {
     uintmax_t value; /**< Value */
-    te_bool defined; /**< If @c TRUE, value is defined */
+    bool defined; /**< If @c true, value is defined */
 } te_optional_uintmax_t;
 
 /**
@@ -657,16 +668,16 @@ typedef struct te_optional_uintmax_t {
  * @param _x        Value to set.
  */
 #define TE_OPTIONAL_UINTMAX_VAL(_x) \
-    (te_optional_uintmax_t){ .value = (_x), .defined = TRUE }
+    (te_optional_uintmax_t){ .value = (_x), .defined = true }
 
 /** Undefined value for te_optional_uintmax_t. */
 #define TE_OPTIONAL_UINTMAX_UNDEF \
-    (te_optional_uintmax_t){ .defined = FALSE }
+    (te_optional_uintmax_t){ .defined = false }
 
 /** Double which can be left undefined */
 typedef struct te_optional_double_t {
     double value; /**< Value */
-    te_bool defined; /**< If @c TRUE, value is defined */
+    bool defined; /**< If @c true, value is defined */
 } te_optional_double_t;
 
 /**
@@ -675,11 +686,11 @@ typedef struct te_optional_double_t {
  * @param _x        Value to set.
  */
 #define TE_OPTIONAL_DOUBLE_VAL(_x) \
-    (te_optional_double_t){ .value = (_x), .defined = TRUE }
+    (te_optional_double_t){ .value = (_x), .defined = true }
 
 /** Undefined value for te_optional_double_t. */
 #define TE_OPTIONAL_DOUBLE_UNDEF \
-    (te_optional_double_t){ .defined = FALSE }
+    (te_optional_double_t){ .defined = false }
 
 /**@}*/
 

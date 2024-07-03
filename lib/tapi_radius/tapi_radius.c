@@ -683,7 +683,7 @@ tapi_radius_serv_enable(const char *ta_name)
 {
     assert(ta_name != NULL);
 
-    return cfg_set_instance_fmt(CVT_INT32, (void *)TRUE,
+    return cfg_set_instance_fmt(CVT_INT32, (void *) true,
                                 "/agent:%s/radiusserver:", ta_name);
 }
 
@@ -693,7 +693,7 @@ tapi_radius_serv_disable(const char *ta_name)
 {
     assert(ta_name != NULL);
 
-    return cfg_set_instance_fmt(CVT_INT32, (void *)FALSE,
+    return cfg_set_instance_fmt(CVT_INT32, (void *) false,
                                 "/agent:%s/radiusserver:", ta_name);
 }
 
@@ -794,7 +794,7 @@ tapi_radius_serv_del_client(const char *ta_name,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    if ((rc = cfg_del_instance_fmt(FALSE,
+    if ((rc = cfg_del_instance_fmt(false,
                                    "/agent:%s/radiusserver:/client:%s",
                                    ta_name, clnt_name)) != 0)
     {
@@ -809,7 +809,7 @@ tapi_radius_serv_del_client(const char *ta_name,
 te_errno
 tapi_radius_serv_add_user(const char *ta_name,
                           const char *user_name,
-                          te_bool acpt_user,
+                          bool acpt_user,
                           const tapi_radius_attr_list_t *check_attrs,
                           const tapi_radius_attr_list_t *acpt_attrs,
                           const tapi_radius_attr_list_t *chlg_attrs)
@@ -937,7 +937,7 @@ tapi_radius_serv_del_user(const char *ta_name, const char *user_name)
 {
     te_errno rc;
 
-    if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/radiusserver:/user:%s",
+    if ((rc = cfg_del_instance_fmt(false, "/agent:%s/radiusserver:/user:%s",
                                    ta_name, user_name)) != 0)
     {
         ERROR("Failed to remove RADIUS user '%s' from the Configurator DB",
@@ -981,7 +981,7 @@ tapi_radius_add_auth(const char *ta_name, const tapi_auth_info_t *auth,
         if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, auth->_field),   \
                                        "%s" _suboid, oid)) != 0)        \
             break;                                                      \
-    } while (FALSE)
+    } while (false)
 
             CFG_SET_PARAM(tls.server.cert_fname, "/eap-tls:/cert:");
             CFG_SET_PARAM(tls.server.key_fname, "/eap-tls:/key:");
@@ -1155,7 +1155,7 @@ tapi_supp_set_auth(const char *ta_name, const char *if_name,
         if ((rc = cfg_set_instance_local_fmt(CFG_VAL(STRING, info->_field), \
                                              "%s" _suboid, supp_oid)) != 0) \
         return rc;                                                          \
-    } while (FALSE)
+    } while (false)
 
     SUPP_SET_PARAM(identity, "/identity:");
     switch (info->eap_type)

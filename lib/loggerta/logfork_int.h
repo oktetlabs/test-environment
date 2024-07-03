@@ -46,8 +46,8 @@ typedef struct logfork_msg {
             char        name[LOGFORK_MAXUSER]; /**< Logfork user name */
         } add;
         struct {
-            te_bool     enabled;    /**< @c TRUE - enable, @c FALSE - disable
-                                         logging of name and pid in messages */
+            bool     enabled;    /**< @c true - enable, @c false - disable
+                                      logging of name and pid in messages */
         } set_id_logging;
         struct {
             te_log_ts_sec   sec;                  /**< Seconds */

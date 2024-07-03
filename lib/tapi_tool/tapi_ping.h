@@ -71,12 +71,12 @@ typedef struct tapi_ping_report {
     /** Packet loss (percentage) */
     unsigned int lost_percentage;
     /**
-     * @c TRUE if rtt stats were produced by ping tool.
-     * @c FALSE if they were not (because the packet_size was too small),
+     * @c true if rtt stats were produced by ping tool.
+     * @c false if they were not (because the packet_size was too small),
      * in this case the rtt field contains irrelevant data
      * and should not be addressed.
      */
-    te_bool with_rtt;
+    bool with_rtt;
     /** RTT statistics */
     tapi_ping_rtt_stats rtt;
 } tapi_ping_report;

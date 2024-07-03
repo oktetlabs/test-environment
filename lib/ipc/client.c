@@ -136,7 +136,7 @@ struct ipc_client_server {
 
 /** Storage of IPC client state information */
 struct ipc_client {
-    te_bool conn;                       /**< Is connection-oriented? */
+    bool conn;                       /**< Is connection-oriented? */
     char    name[UNIX_PATH_MAX];        /**< IPC client name */
 
     struct ipc_client_server   *pool;   /**< Pool of the used servers */
@@ -428,7 +428,7 @@ get_datagram(struct ipc_client *ipcc,
     }
     else
     { /* Datagram with specified source address expected */
-        while (TRUE)
+        while (true)
         {
             struct sockaddr_un sa;
             socklen_t sa_len = sizeof(sa);
@@ -567,7 +567,7 @@ write_socket(int socket, const char *buffer, size_t len)
 
 /* See description in ipc_client.h */
 int
-ipc_init_client(const char *name, te_bool conn,
+ipc_init_client(const char *name, bool conn,
                 struct ipc_client **p_client)
 {
     struct ipc_client  *ipcc;
@@ -926,7 +926,7 @@ ipc_dgram_receive_answer(struct ipc_client *ipcc, const char *server_name,
         /* Count received octets */
         server->dgram.octets_received = octets_received;
 
-        while (TRUE)
+        while (true)
         {
             /* Write portion of data to the user buffer */
             if (total_octets_written + octets_received <= *p_buf_len)
@@ -1161,7 +1161,7 @@ ipc_dgram_receive_rest_answer(struct ipc_client *ipcc,
         struct ipc_dgram_header *iph =
             (struct ipc_dgram_header *)server->dgram.buffer;
 
-        while (TRUE)
+        while (true)
         {
             if(get_datagram(ipcc, server) == NULL)
             {

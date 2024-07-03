@@ -194,7 +194,7 @@ Example
 	     * packets sent to it.
 	     */
 	    CHECK_RC(tapi_update_arp(pco_iut->ta, iut_if, NULL, NULL,
-	                             tst_addr, alien_link_addr->sa_data, TRUE));
+	                             tst_addr, alien_link_addr->sa_data, true));
 
 	    /*
 	     * Create TCP socket emulation on Tester for passive connection
@@ -210,7 +210,7 @@ Example
 	    /* Create socket on IUT and establish TCP connection. */
 
 	    iut_s = rpc_create_and_bind_socket(pco_iut, RPC_SOCK_STREAM,
-	                                       RPC_PROTO_DEF, FALSE, FALSE,
+	                                       RPC_PROTO_DEF, false, false,
 	                                       iut_addr);
 
 	    pco_iut->op = RCF_RPC_CALL;
@@ -245,7 +245,7 @@ Example
 	    CLEANUP_CHECK_RC(tapi_tcp_destroy_connection(csap_tst_s));
 	    CLEANUP_CHECK_RC(tapi_update_arp(pco_iut->ta, iut_if,
 	                                     pco_tst->ta, tst_if,
-	                                     tst_addr, NULL, FALSE));
+	                                     tst_addr, NULL, false));
 
 	    TEST_END;
 	}

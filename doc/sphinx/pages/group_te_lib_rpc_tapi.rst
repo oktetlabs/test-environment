@@ -323,7 +323,7 @@ Notes:
 
   .. ref-code-block:: c
 
-    tarpc_bool out_buf_len_null; /* TRUE when out_buf_len parameter is NULL */
+    tarpc_bool out_buf_len_null; /* true when out_buf_len parameter is NULL */
     tarpc_size_t out_buf_len; /* The value of out_buf_len when it is not NULL */
 
 * We define ``rpc_foo_in::out_buf`` array in ``rpc_foo_out`` data structure in order to be able to encode filled output buffer value;
@@ -617,19 +617,19 @@ For example:
 	sock_1 = rpc_socket(rpc_srv, RPC_PF_INET, RPC_SOCK_STREAM, RPC_PROTO_DEF);
 
 	/* Call socket() function from libc library */
-	rpc_srv->use_libc_once = TRUE;
+	rpc_srv->use_libc_once = true;
 	sock_2 = rpc_socket(rpc_srv, RPC_PF_INET, RPC_SOCK_STREAM, RPC_PROTO_DEF);
 
 	/* Next call will be again from libmy_shared_library.so */
 	rpc_bind(rpc_srv, sock_1, bind_addr_1);
 
 	/* To switch completely to libc we can do: */
-	rpc_srv->use_libc = TRUE;
+	rpc_srv->use_libc = true;
 	rpc_bind(rpc_srv, sock_2, bind_addr_2);
 	rpc_listen(rpc_srv, sock_2, 1);
 
 	/* Now switch back to libmy_shared_library.so */
-	rpc_srv->use_libc = FALSE;
+	rpc_srv->use_libc = false;
 	rpc_connect(rpc_srv, sock_1, bind_addr_2);
 
 |	:ref:`Macros for socket API remote calls<doxid-group__te__lib__rpcsock__macros>`

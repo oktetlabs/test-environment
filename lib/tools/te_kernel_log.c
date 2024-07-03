@@ -97,8 +97,8 @@ te_kernel_log_set_system_func(void *p)
  */
 te_errno
 te_get_host_addrs(const char *host_name, struct sockaddr_in *host_ipv4,
-                  te_bool *ipv4_found, struct sockaddr_in6 *host_ipv6,
-                  te_bool *ipv6_found)
+                  bool *ipv4_found, struct sockaddr_in6 *host_ipv6,
+                  bool *ipv6_found)
 {
 #if defined(HAVE_GETADDRINFO) && defined(HAVE_NETDB_H)
     struct addrinfo    *addrs;
@@ -122,13 +122,13 @@ te_get_host_addrs(const char *host_name, struct sockaddr_in *host_ipv4,
             ipv4_found != NULL)
         {
             memcpy(host_ipv4, p->ai_addr, p->ai_addrlen);
-            *ipv4_found = TRUE;
+            *ipv4_found = true;
         }
         else if (p->ai_family == AF_INET6 && host_ipv6 != NULL &&
                  ipv6_found != NULL)
         {
             memcpy(host_ipv6, p->ai_addr, p->ai_addrlen);
-            *ipv6_found = TRUE;
+            *ipv6_found = true;
         }
     }
 
@@ -273,7 +273,7 @@ te_open_conserver(const char *conserver)
     char       *point = NULL;
     char       *colon = NULL;
     char       *endptr = NULL;
-    te_bool     is_ipv4 = TRUE;
+    bool is_ipv4 = true;
 
     struct sockaddr_storage srv_addr;
 
@@ -333,7 +333,7 @@ te_open_conserver(const char *conserver)
 
         point = strchr(tmp, '.');
         if (point == NULL)
-            is_ipv4 = FALSE;
+            is_ipv4 = false;
 
         if (is_ipv4)
             SIN(&srv_addr)->sin_family = AF_INET;
@@ -347,8 +347,8 @@ te_open_conserver(const char *conserver)
         {
             struct sockaddr_in  ipv4_addr;
             struct sockaddr_in6 ipv6_addr;
-            te_bool             ipv4_found;
-            te_bool             ipv6_found;
+            bool ipv4_found;
+            bool ipv6_found;
             int                 rc;
 
             rc = te_get_host_addrs(tmp, &ipv4_addr, &ipv4_found,
@@ -503,14 +503,14 @@ parser_data_processing(serial_parser_t *parser, char *buffer)
                 WARN("Parser %s has detected overlap with pattern '%s'. "
                      "Tester event %s is activated.", parser->name, pat->v,
                      event->t_name);
-                event->status = TRUE;
+                event->status = true;
                 event->count++;
                 break;
             }
         }
     }
 
-    if (parser->logging == TRUE)
+    if (parser->logging == true)
         TE_LOG(parser->level, TE_LGR_ENTITY, parser->log_user, "%s", buffer);
 
     if (pthread_mutex_unlock(&parser->mutex) != 0)
@@ -558,8 +558,8 @@ log_serial(void *ready, int argc, char *argv[])
         te_strlcpy(parser.mode, argv[4], TE_SERIAL_MAX_NAME);
     sem_post(ready);
 
-    parser.rcf = TRUE;
-    parser.logging = TRUE;
+    parser.rcf = true;
+    parser.logging = true;
     parser.port = -1;
     rc = pthread_mutex_init(&parser.mutex, NULL);
     if (rc != 0)
@@ -607,8 +607,8 @@ te_serial_parser(serial_parser_t *parser)
 
     time_t  now;
     time_t  last_alive = 0;
-    te_bool rcf;
-    te_bool is_netconsole = FALSE;
+    bool rcf;
+    bool is_netconsole = false;
 
 #define MAYBE_DO_LOG \
 do {                                                            \
@@ -692,7 +692,7 @@ do {                                                            \
                         parser->port, strerror(rc));
             return TE_OS_RC(TE_TA_UNIX, rc);
         }
-        is_netconsole = TRUE;
+        is_netconsole = true;
     }
     else if (*parser->c_name != '/')
     {

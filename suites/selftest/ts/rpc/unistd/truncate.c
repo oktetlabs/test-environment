@@ -10,7 +10,7 @@
  *
  * @objective Test the implementation of truncate/ftruncate RPC.
  *
- * @param use_ftruncate  use ftruncate() if @c TRUE; otherwise truncate()
+ * @param use_ftruncate  use ftruncate() if @c true; otherwise truncate()
  * @param length         the length to set
  * @param trail_size     the size of a trailing chunk to check for zeroes
  *
@@ -29,7 +29,7 @@ main(int argc, char **argv)
 
     tarpc_off_t length = 0;
     tarpc_off_t trail_size;
-    te_bool use_ftruncate;
+    bool use_ftruncate;
 
     static const char file_template[] = "te_trunc_XXXXXX";
     char *filename = NULL;

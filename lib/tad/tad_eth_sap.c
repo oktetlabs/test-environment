@@ -517,7 +517,7 @@ tad_eth_sap_send_open(tad_eth_sap *sap, unsigned int mode)
 #ifdef USE_PF_PACKET
 error_exit:
     if (close(data->out) < 0)
-        assert(FALSE);
+        assert(false);
     data->out = -1;
     return rc;
 #endif
@@ -751,7 +751,7 @@ tad_eth_sap_send_close(tad_eth_sap *sap)
 }
 
 #ifdef USE_PF_PACKET
-static inline te_bool
+static inline bool
 tad_eth_sap_pkt_vlan_tag_valid(uint16_t    tp_vlan_tci,
                                uint32_t    tp_status)
 {
@@ -900,7 +900,7 @@ tad_eth_sap_pkt_rx_ring_recv(tad_eth_sap        *sap,
     tad_eth_sap_data       *data;
     struct tpacket_req     *tp;
     struct tpacket2_hdr    *ph;
-    te_bool                 vlan_tag_valid;
+    bool vlan_tag_valid;
     size_t                  seg_len;
     uint8_t                *seg_data = NULL;
     size_t                  copy_len;
@@ -1149,7 +1149,7 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
 #ifdef USE_PF_PACKET
 error_exit:
     if (close(data->in) < 0)
-        assert(FALSE);
+        assert(false);
     data->in = -1;
     return rc;
 #endif

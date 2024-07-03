@@ -1507,7 +1507,7 @@ rgt_expand_log_msg(log_msg *msg)
                     int  tuple_width;
                     int  cur_pos = 0;
                     char one_byte_str[3];
-                    int  default_format = FALSE;
+                    int  default_format = false;
                     int  k;
                     int rc = 10;
 
@@ -1541,7 +1541,7 @@ rgt_expand_log_msg(log_msg *msg)
                         (rc = sscanf(msg->fmt_str + i, "%%Tm[[%d].[%d]]",
                                &n_tuples, &tuple_width)) != 2)
                     {
-                        default_format = TRUE;
+                        default_format = true;
                         tuple_width = 1;
                         n_tuples = 16; /* @todo remove hardcode */
                     }

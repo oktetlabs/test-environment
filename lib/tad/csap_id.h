@@ -65,8 +65,8 @@ extern void *csap_id_delete(csap_handle_t csap_id);
  * @param ptr       Associated pointer
  * @param opaque    User opaque data
  *
- * @retval TRUE     Continue
- * @retval FALSE    Break
+ * @retval @c true     Continue
+ * @retval @c false    Break
  */
 typedef void (*csap_id_enum_cb)(csap_handle_t csap_id, void *ptr,
                                 void *opaque);

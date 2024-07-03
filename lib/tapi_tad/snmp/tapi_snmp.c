@@ -810,7 +810,7 @@ tapi_snmp_gen_csap_create(const char *ta, int sid, const char *snmp_agent,
 
     rc = rcf_ta_csap_create(ta, sid, "snmp", tmp_name, csap_id);
     if ((rc == 0) &&
-        ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/csap:*", ta)) != 0))
+        ((rc = cfg_synchronize_fmt(true, "/agent:%s/csap:*", ta)) != 0))
     {
         ERROR("%s(): cfg_synchronize_fmt(/agent:%s/csap:*) failed: %r",
               __FUNCTION__, ta, rc);

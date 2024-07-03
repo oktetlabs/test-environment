@@ -267,9 +267,9 @@ extern te_errno rcf_ta_reboot(const char *ta_name,
 /**
  * Enable/disable logging of TA configuration changes.
  *
- * @param enable        if TRUE, enable loging
+ * @param enable        if @c true, enable loging
  */
-extern void rcf_log_cfg_changes(te_bool enable);
+extern void rcf_log_cfg_changes(bool enable);
 
 /**
  * This function is used to obtain value of object instance by its
@@ -372,7 +372,7 @@ extern te_errno rcf_ta_cfg_del(const char *ta_name, int session,
  *
  * @param ta_name       Test Agent name
  * @param session       TA session or 0
- * @param is_start      Is start(TRUE) or end(FALSE) of a group?
+ * @param is_start      Is start (@c true) or end (@c false) of a group?
  *
  * @return error code
  *
@@ -381,7 +381,7 @@ extern te_errno rcf_ta_cfg_del(const char *ta_name, int session,
  * @retval other        error returned by command handler on the TA
  */
 extern te_errno rcf_ta_cfg_group(const char *ta_name, int session,
-                                 te_bool is_start);
+                                 bool is_start);
 
 /**
  * This function is used to pull out capture logs from the sniffer. The only
@@ -435,7 +435,7 @@ extern te_errno rcf_get_sniffer_dump(const char *ta_name,
  */
 extern te_errno rcf_ta_get_sniffers(const char *ta_name,
                                     const char *snif_id, char **buf,
-                                    size_t *len, te_bool sync);
+                                    size_t *len, bool sync);
 
 /**
  * This function is used to get bulk of log from the Test Agent.
@@ -585,19 +585,19 @@ extern te_errno rcf_ta_del_file(const char *ta_name, int session,
  * Switch traffic operations logging among RING (enabled) and INFO
  * (disabled) levels.
  *
- * @param ring      TRUE - log using RING level,
- *                  FALSE - log using INFO level
+ * @param ring      @c true  log using RING level,
+ *                  @c false log using INFO level
  *
  * @return Status code.
  */
-extern te_errno rcf_tr_op_log(te_bool ring);
+extern te_errno rcf_tr_op_log(bool ring);
 
 /**
  * Get traffic operations logging level.
  *
- * @return @c TRUE - log using RING level, @c FALSE - log using INFO level.
+ * @return @c true - log using RING level, @c false - log using INFO level.
  */
-extern te_bool rcf_tr_op_log_get(void);
+extern bool rcf_tr_op_log_get(void);
 
 
 /**
@@ -987,14 +987,16 @@ extern te_errno rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
  * @param rtn           routine name
  * @param error         location for the code returned by the routine
  * @param argc          number of parameters
- * @param argv          if TRUE, rest of parameters are char *;
+ * @param argv          if @c true, rest of parameters are char *;
  *                      otherwise pairs: type, value.
  *
  * Usage example:
- * rcf_ta_call("loki.oktetlabs.ru", 25, "foo_rtn", &rc, 3, TRUE,
+ * @code
+ * rcf_ta_call("loki.oktetlabs.ru", 25, "foo_rtn", &rc, 3, true,
  *             str, "foo", "bar");
- * rcf_ta_call("thor", 13, "bar_rtn", &rc, 3, FALSE,
+ * rcf_ta_call("thor", 13, "bar_rtn", &rc, 3, false,
  *             RCF_INT8, 7, RCF_STRING, "foo", RCF_STRING, arg)
+ * @endcode
  *
  * @return error code
  *
@@ -1008,7 +1010,7 @@ extern te_errno rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
  */
 extern te_errno rcf_ta_call(const char *ta_name, int session,
                             const char *rtn, int *error,
-                            int argc, te_bool argv, ...);
+                            int argc, bool argv, ...);
 
 /**
  * This function is used to start a process on the Test Agent or
@@ -1020,16 +1022,18 @@ extern te_errno rcf_ta_call(const char *ta_name, int session,
  * @param rtn           routine name (task entry point)
  * @param pid           location for process identifier
  * @param argc          number of parameters
- * @param argv          if TRUE, rest of parameters are char *;
+ * @param argv          if @c true, rest of parameters are char *;
  *                      otherwise pairs: type, value.
  *
  * Usage example:
+ * @code
  * rcf_ta_start_task("loki.oktetlabs.ru", 25, HIGH_PRIORITY,
- *                   "foo_entry_pont", &pid, 3, TRUE,
+ *                   "foo_entry_pont", &pid, 3, true,
  *                   str, "foo", "bar");
  * rcf_ta_start_task("thor", 13, LOW_PRIORITY, "bar_entry_point",
- *                   &pid, 3, FALSE,
+ *                   &pid, 3, false,
  *                   RCF_INT8, 7, RCF_STRING, "foo", RCF_STRING, arg)
+ * @endcode
  *
  * @return error code
  *
@@ -1045,7 +1049,7 @@ extern te_errno rcf_ta_call(const char *ta_name, int session,
  */
 extern te_errno rcf_ta_start_task(const char *ta_name, int session,
                                   int priority,  const char *rtn,
-                                  pid_t *pid, int argc, te_bool argv, ...);
+                                  pid_t *pid, int argc, bool argv, ...);
 
 /**
  * This function is similar to rcf_ta_start_task, but
@@ -1055,7 +1059,7 @@ extern te_errno rcf_ta_start_task(const char *ta_name, int session,
  */
 extern te_errno rcf_ta_start_thread(const char *ta_name, int session,
                                     int priority,  const char *rtn,
-                                    int *tid, int argc, te_bool argv, ...);
+                                    int *tid, int argc, bool argv, ...);
 
 /**
  * This function is used to kill a process on the Test Agent or

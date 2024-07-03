@@ -218,11 +218,11 @@
  */
 #define TE_LOG_ONCE(_log_fn, _fs...) \
     do {                                            \
-        static __thread te_bool logged_ = FALSE;    \
+        static __thread bool logged_ = false;    \
         if (!logged_)                               \
         {                                           \
             _log_fn(_fs);                           \
-            logged_ = TRUE;                         \
+            logged_ = true;                         \
         }                                           \
     } while (0)
 

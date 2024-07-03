@@ -72,10 +72,10 @@ main(int argc, char **argv)
         expect_base = NULL;
 
     TEST_STEP("Checking full pathname");
-    do_extract(FALSE, filename, pattern, expect_full);
+    do_extract(false, filename, pattern, expect_full);
 
     TEST_STEP("Checking basename");
-    do_extract(TRUE, filename, pattern, expect_base);
+    do_extract(true, filename, pattern, expect_base);
 
     TEST_SUCCESS;
 

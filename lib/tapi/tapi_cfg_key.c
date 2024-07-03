@@ -16,13 +16,13 @@
 #include "tapi_file.h"
 #include "te_enum.h"
 
-te_bool
+bool
 tapi_cfg_key_exists(const char *ta, const char *key_name)
 {
     return cfg_find_fmt(NULL, "/agent:%s/key:%s", ta, key_name) == 0;
 }
 
-static te_bool
+static bool
 check_key_params(const char *ta, const char *key_name,
                  const char *exp_manager, const char *exp_type,
                  unsigned exp_bit_size)
@@ -36,7 +36,7 @@ check_key_params(const char *ta, const char *key_name,
     if (rc != 0)
     {
         ERROR("Cannot get key manager: %r", rc);
-        return FALSE;
+        return false;
     }
 
     if (strcmp(result, exp_manager) != 0)
@@ -44,7 +44,7 @@ check_key_params(const char *ta, const char *key_name,
         RING("Key '%s' on '%s': expected manager '%s', got '%s'",
              key_name, ta, exp_manager, result);
         free(result);
-        return FALSE;
+        return false;
     }
     free(result);
 
@@ -53,7 +53,7 @@ check_key_params(const char *ta, const char *key_name,
     if (rc != 0)
     {
         ERROR("Cannot get key type: %r", rc);
-        return FALSE;
+        return false;
     }
 
     if (strcmp(result, exp_type) != 0)
@@ -61,7 +61,7 @@ check_key_params(const char *ta, const char *key_name,
         RING("Key '%s' on '%s': expected type '%s', got '%s'",
              key_name, ta, exp_type, result);
         free(result);
-        return FALSE;
+        return false;
     }
     free(result);
 
@@ -70,17 +70,17 @@ check_key_params(const char *ta, const char *key_name,
     if (rc != 0)
     {
         ERROR("Cannot get key bit size: %r", rc);
-        return FALSE;
+        return false;
     }
 
     if ((unsigned)val != exp_bit_size)
     {
         RING("Key '%s' on '%s': expected bit size %u, got %d",
              key_name, ta, exp_bit_size, val);
-        return FALSE;
+        return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 te_errno
@@ -187,7 +187,7 @@ tapi_cfg_key_add(const char *ta, const char *key_name,
 
 fail:
     if (!existing)
-        cfg_del_instance_local_fmt(FALSE, "/agent:%s/key:%s", ta, key_name);
+        cfg_del_instance_local_fmt(false, "/agent:%s/key:%s", ta, key_name);
     return rc;
 }
 
@@ -250,7 +250,7 @@ tapi_cfg_key_get_public_key(const char *ta, const char *key_name)
 te_errno
 tapi_cfg_key_del(const char *ta, const char *key_name)
 {
-    return cfg_del_instance_fmt(FALSE, "/agent:%s/key:%s", ta, key_name);
+    return cfg_del_instance_fmt(false, "/agent:%s/key:%s", ta, key_name);
 }
 
 te_errno

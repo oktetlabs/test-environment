@@ -54,7 +54,7 @@ extern void log_branch_filter_init(log_branch_filter *filter);
  */
 extern te_errno log_branch_filter_add(log_branch_filter *filter,
                                       const char *path,
-                                      te_bool include);
+                                      bool include);
 
 /**
  * Check a path.
@@ -121,7 +121,7 @@ extern te_errno log_duration_filter_init(log_duration_filter *filter);
 extern te_errno log_duration_filter_add(log_duration_filter *filter,
                                         const char *type,
                                         uint32_t min, uint32_t max,
-                                        te_bool include);
+                                        bool include);
 
 /**
  * Check a duration.

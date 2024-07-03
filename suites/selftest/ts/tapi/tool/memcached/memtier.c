@@ -67,7 +67,7 @@ main(int argc, char **argv)
     memtier_opts.ratio = "1:1";
     memtier_opts.key_pattern = "S:R";
     memtier_opts.protocol = TAPI_MEMTIER_PROTO_MEMCACHE_TEXT;
-    memtier_opts.hide_histogram = TRUE;
+    memtier_opts.hide_histogram = true;
 
     TEST_STEP("Check that memtier_benchmark application can be "
               "found on IUT.");

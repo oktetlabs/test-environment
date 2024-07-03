@@ -69,7 +69,7 @@ tapi_forw_task_create(const char *ta, int sid,
         VERB("%s, buffer with forw action ASN spec: --\n%s",
                 __FUNCTION__, fa_buffer);
 
-        rc = rcf_ta_call(ta, sid, FORW_TASK_ADD_FNAME, &rc_ta_call, 2, FALSE,
+        rc = rcf_ta_call(ta, sid, FORW_TASK_ADD_FNAME, &rc_ta_call, 2, false,
                          RCF_STRING, fa_buffer, RCF_INT32, sendq_id);
         if (rc != 0)
         {
@@ -109,7 +109,7 @@ tapi_forw_sendq_create(const char *ta,  int sid,
 {
     int rc;
 
-    rc = rcf_ta_call(ta, sid, "tadf_sendq_create", sendq_id, 3, FALSE,
+    rc = rcf_ta_call(ta, sid, "tadf_sendq_create", sendq_id, 3, false,
                      RCF_INT32, csap, RCF_INT32, band, RCF_INT32, bufsize);
 
     if (rc == 0 && (*sendq_id) < 0)
@@ -133,7 +133,7 @@ tapi_forw_sendq_destroy(const char *ta, int sid, int sendq_id)
     int rc = 0;
     int func_rc = 0;
 
-    rc = rcf_ta_call(ta, sid, "tadf_sendq_destroy", &func_rc, 1, FALSE,
+    rc = rcf_ta_call(ta, sid, "tadf_sendq_destroy", &func_rc, 1, false,
                      RCF_INT32, sendq_id);
 
     if (rc == 0)
@@ -149,7 +149,7 @@ tapi_forw_task_destroy(const char *ta, int sid, const char *ftask_name)
     int rc;
     int func_rc = 0;
 
-    rc = rcf_ta_call(ta, sid, "tadf_del_forw_task", &func_rc, 1, FALSE,
+    rc = rcf_ta_call(ta, sid, "tadf_del_forw_task", &func_rc, 1, false,
                      RCF_STRING, ftask_name);
 
     RING("forw task '%s' destroy, rcf call rc %r, frow_task delete rc %r",
@@ -187,7 +187,7 @@ tapi_forw_task_set_param(const char *ta, int sid, const char *ftask_name,
         return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
     rc = rcf_ta_call(ta, sid, "tadf_forw_task_set_param",
-                     &rc_ta_call, 3, FALSE,
+                     &rc_ta_call, 3, false,
                      RCF_STRING, ftask_name,
                      RCF_STRING, param, RCF_INT32, val);
     if (rc)
@@ -286,7 +286,7 @@ tapi_forw_sendq_set_param(const char *ta, int sid,
     int rc_ta_call = 0;
 
     rc = rcf_ta_call(ta, sid, "tadf_sendq_set_param",
-                     &rc_ta_call, 3, FALSE,
+                     &rc_ta_call, 3, false,
                      RCF_INT32, sendq_id,
                      RCF_STRING, param, RCF_INT32, val);
     if (rc)
@@ -328,7 +328,7 @@ tapi_forw_sendq_get_param(const char *ta, int sid,
 {
     int rc;
 
-    rc = rcf_ta_call(ta, sid, "tadf_sendq_get_param", val, 2, FALSE,
+    rc = rcf_ta_call(ta, sid, "tadf_sendq_get_param", val, 2, false,
                      RCF_INT32, sendq_id, RCF_STRING, param);
     return TE_RC(TE_TAPI, rc);
 }

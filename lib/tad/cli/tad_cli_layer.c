@@ -79,7 +79,7 @@ tad_cli_gen_bin_cb(csap_p csap, unsigned int layer,
     cli_container_get_prompt_params(tmpl_pdu, &cli_spec_data->cur_prompts);
 
     tad_pkts_move(pdus, sdus);
-    rc = tad_pkts_add_new_seg(pdus, TRUE,
+    rc = tad_pkts_add_new_seg(pdus, true,
                               msg, msg_len, tad_pkt_seg_data_free);
     if (rc != 0)
     {

@@ -92,7 +92,7 @@ static intmax_t min_int_val[CFG_PRIMARY_TYPES_NUM + 1] = { [CVT_BOOL] = 0,
     [CVT_STRING] = 0, [CVT_ADDRESS] = 0, [CVT_NONE] = 0, [CVT_UNSPECIFIED] = 0};
 
 /* Check if given address family value is valid */
-static te_bool
+static bool
 addr_valid_family(unsigned short af)
 {
     switch (af)
@@ -101,9 +101,9 @@ addr_valid_family(unsigned short af)
         case AF_INET6:
         case AF_LOCAL:
         case AF_UNSPEC:
-            return TRUE;
+            return true;
         default:
-            return FALSE;
+            return false;
     }
 }
 
@@ -133,7 +133,7 @@ static void variant_ ## _free(cfg_inst_val val);                             \
 static te_errno variant_ ## _copy(cfg_inst_val src, cfg_inst_val *dst);      \
 static te_errno variant_ ## _get(cfg_msg *msg, cfg_inst_val *val);           \
 static void variant_ ## _put(cfg_inst_val val, cfg_msg *msg);                \
-static te_bool variant_ ## _equal(cfg_inst_val first, cfg_inst_val second);  \
+static bool variant_ ## _equal(cfg_inst_val first, cfg_inst_val second);  \
 static size_t variant_ ## _value_size(cfg_inst_val val)
 
 DECLARE_CFG_TYPE_METHODS(bool);
@@ -249,7 +249,7 @@ str_to_ ## variant_(char *val_str, cfg_inst_val *val)                       \
 }                                                                           \
 struct noop
 
-DEFINE_STR_TO_INTEGER(bool, CVT_BOOL, uintmax_t, str_to_u_integer, te_bool);
+DEFINE_STR_TO_INTEGER(bool, CVT_BOOL, uintmax_t, str_to_u_integer, bool);
 DEFINE_STR_TO_INTEGER(int8, CVT_INT8, intmax_t, str_to_s_integer, int8_t);
 DEFINE_STR_TO_INTEGER(uint8, CVT_UINT8, uintmax_t, str_to_u_integer, uint8_t);
 DEFINE_STR_TO_INTEGER(int16, CVT_INT16, intmax_t, str_to_s_integer, int16_t);
@@ -480,7 +480,7 @@ variant_ ## _put(cfg_inst_val val, cfg_msg *msg)                     \
 }                                                                    \
 struct noop
 
-DEFINE_INTEGER_PUT(bool, te_bool);
+DEFINE_INTEGER_PUT(bool, bool);
 DEFINE_INTEGER_PUT(int8, int8_t);
 DEFINE_INTEGER_PUT(uint8, uint8_t);
 DEFINE_INTEGER_PUT(int16, int16_t);
@@ -495,7 +495,7 @@ DEFINE_INTEGER_PUT(uint64, uint64_t);
 /* Definitions of equality methods for integral types */
 
 #define DEFINE_INTEGER_EQUAL(variant_) \
-static te_bool                                                                 \
+static bool                                                                 \
 variant_ ## _equal(cfg_inst_val first, cfg_inst_val second)                    \
 {                                                                              \
     return first.val_ ## variant_ == second.val_ ## variant_;                  \
@@ -525,7 +525,7 @@ variant_ ## _value_size(cfg_inst_val val)                        \
 }                                                                \
 struct noop
 
-DEFINE_INTEGER_VALUE_SIZE(bool, te_bool);
+DEFINE_INTEGER_VALUE_SIZE(bool, bool);
 DEFINE_INTEGER_VALUE_SIZE(int8, int8_t);
 DEFINE_INTEGER_VALUE_SIZE(uint8, uint8_t);
 DEFINE_INTEGER_VALUE_SIZE(int16, int16_t);
@@ -638,7 +638,7 @@ double_put(cfg_inst_val val, cfg_msg *msg)
     SET_MSG_LEN(msg);
 }
 
-static te_bool
+static bool
 double_equal(cfg_inst_val first, cfg_inst_val second)
 {
     return first.val_double == second.val_double;
@@ -739,10 +739,10 @@ string_put(cfg_inst_val val, cfg_msg *msg)
 }
 
 
-static te_bool
+static bool
 string_equal(cfg_inst_val first, cfg_inst_val second)
 {
-    return (strcmp(first.val_str, second.val_str) == 0) ? TRUE : FALSE;
+    return (strcmp(first.val_str, second.val_str) == 0) ? true : false;
 }
 
 static size_t
@@ -1016,7 +1016,7 @@ addr_put(cfg_inst_val val, cfg_msg *msg)
     return;
 }
 
-static te_bool
+static bool
 addr_equal(cfg_inst_val first, cfg_inst_val second)
 {
     struct sockaddr *first_addr = first.val_addr;
@@ -1024,13 +1024,13 @@ addr_equal(cfg_inst_val first, cfg_inst_val second)
     int ret_val;
 
     if (first_addr->sa_family != second_addr->sa_family)
-        return FALSE;
+        return false;
 
     if (!addr_valid_family(first_addr->sa_family))
-        return FALSE;
+        return false;
 
     ret_val = memcmp(first_addr, second_addr, addr_value_size(first));
-    return (ret_val == 0) ? TRUE : FALSE;
+    return (ret_val == 0) ? true : false;
 }
 
 static size_t
@@ -1095,12 +1095,12 @@ none_put(cfg_inst_val val, cfg_msg *msg)
     return;
 }
 
-static te_bool
+static bool
 none_equal(cfg_inst_val first, cfg_inst_val second)
 {
     UNUSED(first);
     UNUSED(second);
-    return TRUE;
+    return true;
 }
 
 static size_t

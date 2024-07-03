@@ -93,7 +93,7 @@ trc_report_collect_stats(trc_report_ctx *ctx)
     te_errno                rc = 0;
     te_trc_db_walker       *walker;
     trc_db_walker_motion    mv;
-    te_bool                 is_iter = TRUE;
+    bool is_iter = true;
     trc_report_stats       *sum = NULL;
     trc_report_stats       *add = NULL;
 
@@ -224,7 +224,7 @@ trc_report_collect_stats(trc_report_ctx *ctx)
                 break;
 
             default:
-                assert(FALSE);
+                assert(false);
                 break;
         }
     }

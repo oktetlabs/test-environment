@@ -39,13 +39,13 @@ extern "C" {
 
 /** Stopwatch context */
 typedef struct te_stopwatch_t {
-    te_bool is_running;         /**< Whether it is in progress or not */
+    bool is_running;         /**< Whether it is in progress or not */
     struct timeval start;       /**< Stopwatch start timestamp */
 } te_stopwatch_t;
 
 /** On-stack stopwatch context initializer */
 #define TE_STOPWATCH_INIT { \
-    .is_running = FALSE,    \
+    .is_running = false,    \
     .start = { 0 }          \
 }
 

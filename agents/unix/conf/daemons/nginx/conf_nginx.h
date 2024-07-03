@@ -43,9 +43,9 @@ typedef struct nginx_http_listen_entry {
     char       *addr_spec;      /**< Address specification, e.g.
                                      IP-address:port, hostname:port,
                                      unix domain socket path */
-    te_bool     reuseport;      /**< Create an individual listening
+    bool reuseport;      /**< Create an individual listening
                                      socket for each worker */
-    te_bool     ssl;            /**< Use ssl for connections */
+    bool ssl;            /**< Use ssl for connections */
     char       *name;           /**< Friendly entry name */
 } nginx_http_listen_entry;
 
@@ -139,7 +139,7 @@ typedef struct nginx_http_client {
 typedef struct nginx_http_proxy {
     unsigned int    conn_timeout;      /**< Timeout in seconds for
                                             establishing a connection */
-    te_bool         buffering_enable;  /**< Enable buffering */
+    bool buffering_enable;  /**< Enable buffering */
     unsigned int    buffering_num;     /**< Buffers number */
 
     unsigned int    buffering_def_size;  /**< Default proxy buffers size
@@ -150,14 +150,14 @@ typedef struct nginx_http_proxy {
 
 /** HTTP server file caching settings */
 typedef struct nginx_http_file_cache {
-    te_bool         enable;         /**< Enable caching */
+    bool enable;         /**< Enable caching */
     unsigned int    max_num;        /**< Maximum number of elements
                                          in the cache */
     unsigned int    inactive_time;  /**< Time in seconds after which inactive
                                          cache entry will be removed */
     unsigned int    valid_time;     /**< Time in seconds after which cache
                                          elements should be validated */
-    te_bool         errors_enable;  /**< Do caching of file lookup errors */
+    bool errors_enable;  /**< Do caching of file lookup errors */
 } nginx_http_file_cache;
 
 /** HTTP server settings */
@@ -172,7 +172,7 @@ typedef struct nginx_http_server {
     char    *hostname;  /**< Server hostname pattern */
     char    *ssl_name;  /**< SSL settings object instance name */
 
-    te_bool  access_log_enable;     /**< Enable access logging */
+    bool access_log_enable;     /**< Enable access logging */
     char    *access_log_path;       /**< Path to access log file on TA */
 
     char          *mime_type_default;   /**< Default MIME type */
@@ -183,13 +183,13 @@ typedef struct nginx_http_server {
                                              one keep-alive connection */
     unsigned int   send_timeout;        /**< Timeout for transmitting
                                              a response */
-    te_bool        sendfile;    /**<  Whether sendfile() should be used */
-    te_bool        tcp_nopush;  /**<  Whether TCP_NOPUSH socket option
+    bool sendfile;    /**<  Whether sendfile() should be used */
+    bool tcp_nopush;  /**<  Whether TCP_NOPUSH socket option
                                       should be used */
-    te_bool        tcp_nodelay; /**<  Whether TCP_NODELAY socket option should
+    bool tcp_nodelay; /**<  Whether TCP_NODELAY socket option should
                                       be used */
 
-    te_bool        reset_timedout_conn;    /**< Whether timed out connections
+    bool reset_timedout_conn;    /**< Whether timed out connections
                                                 should be reset */
 
     nginx_server_tokens_mode tokens_mode;  /**< Server presentation mode */
@@ -209,19 +209,19 @@ typedef struct nginx_inst {
     LIST_HEAD(, nginx_ssl_entry)       ssl_entries;    /**< SSL settings */
 
     char       *name;           /**< Friendly name of nginx instance */
-    te_bool     is_running;     /**< Is daemon running */
+    bool is_running;     /**< Is daemon running */
     char       *pid_path;       /**< Path to PID file on TA */
     char       *config_path;    /**< Path to configuration file on TA */
     char       *cmd_prefix;     /**< Prefix to nginx command line */
 
-    te_bool     error_log_enable;   /**< Enable error logging */
+    bool error_log_enable;   /**< Enable error logging */
     char       *error_log_path;     /**< Path to error log file on TA */
 
     char       *evt_method;     /**< Method of connections processing,
                                      e.g. epoll */
-    te_bool     multi_accept;   /**< Whether one worker can accept multiple
+    bool multi_accept;   /**< Whether one worker can accept multiple
                                      connections at a time */
-    te_bool     accept_mutex;   /**< Whether worker processes will accept
+    bool accept_mutex;   /**< Whether worker processes will accept
                                      new connections by turn */
 
     unsigned int    wrk_ps_num;    /**< Number of worker processes */
@@ -232,8 +232,8 @@ typedef struct nginx_inst {
 
     nginx_cpu_aff_mode aff_mode;   /**< Worker processes CPU affinity mode */
 
-    te_bool     to_be_deleted;     /**< Flag to delete instance on commit */
-    te_bool     is_created;        /**< Flag to track if instance was created */
+    bool to_be_deleted;     /**< Flag to delete instance on commit */
+    bool is_created;        /**< Flag to track if instance was created */
     unsigned int id;               /**< ID of the created job */
 } nginx_inst;
 
@@ -326,7 +326,7 @@ extern te_errno nginx_param_set_uint(unsigned int *param, const char *value);
  *
  * @return Status code
  */
-extern te_errno nginx_param_get_boolean(char *value, te_bool param);
+extern te_errno nginx_param_get_boolean(char *value, bool param);
 
 /**
  * Set nginx boolean parameter from configurator value.
@@ -336,7 +336,7 @@ extern te_errno nginx_param_get_boolean(char *value, te_bool param);
  *
  * @return Status code
  */
-extern te_errno nginx_param_set_boolean(te_bool *param, const char *value);
+extern te_errno nginx_param_set_boolean(bool *param, const char *value);
 
 #ifdef __cplusplus
 } /* extern "C" */

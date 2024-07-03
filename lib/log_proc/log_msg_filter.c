@@ -46,7 +46,7 @@ prepare_pcre(const char *pattern, pcre **regex)
  * @param fname         name stored in a filter
  * @param regex         pcre stored in a filter
  */
-static te_bool
+static bool
 check_name(const char *name, size_t name_len, const char *fname, pcre *regex)
 {
     if (regex == NULL)
@@ -65,7 +65,7 @@ check_name(const char *name, size_t name_len, const char *fname, pcre *regex)
  * @returns Status code
  */
 static te_errno
-log_user_filter_init(log_user_filter *filter, const char *name, te_bool regex)
+log_user_filter_init(log_user_filter *filter, const char *name, bool regex)
 {
     te_errno rc;
 
@@ -119,7 +119,7 @@ log_user_filter_free(log_user_filter *filter)
  */
 static te_errno
 log_entity_filter_init(log_entity_filter *filter,
-                       const char *name, te_bool regex)
+                       const char *name, bool regex)
 {
     te_errno rc;
 
@@ -177,7 +177,7 @@ te_errno
 log_msg_filter_init(log_msg_filter *filter)
 {
     SLIST_INIT(&filter->entities);
-    return log_entity_filter_init(&filter->def_entity, NULL, FALSE);
+    return log_entity_filter_init(&filter->def_entity, NULL, false);
 }
 
 /**
@@ -190,7 +190,7 @@ log_msg_filter_init(log_msg_filter *filter)
  */
 static log_entity_filter *
 log_msg_filter_get_entity(log_msg_filter *filter,
-                          const char *name, te_bool regex)
+                          const char *name, bool regex)
 {
     int                cmp;
     log_entity_filter *entity = NULL;
@@ -230,7 +230,7 @@ log_msg_filter_get_entity(log_msg_filter *filter,
 
 /* See description in raw_log_filter.h */
 te_errno
-log_msg_filter_set_default(log_msg_filter *filter, te_bool include,
+log_msg_filter_set_default(log_msg_filter *filter, bool include,
                            te_log_level level_mask)
 {
     /*
@@ -247,8 +247,8 @@ log_msg_filter_set_default(log_msg_filter *filter, te_bool include,
 
 /* See description in raw_log_filter.h */
 te_errno
-log_msg_filter_add_entity(log_msg_filter *filter, te_bool include,
-                          const char *name, te_bool regex,
+log_msg_filter_add_entity(log_msg_filter *filter, bool include,
+                          const char *name, bool regex,
                           te_log_level level_mask)
 {
     log_entity_filter *entity;
@@ -277,8 +277,8 @@ log_msg_filter_add_entity(log_msg_filter *filter, te_bool include,
  * @returns Status code
  */
 static te_errno
-log_entity_filter_add_user(log_entity_filter *entity, te_bool include,
-                           const char *name, te_bool regex,
+log_entity_filter_add_user(log_entity_filter *entity, bool include,
+                           const char *name, bool regex,
                            te_log_level level_mask)
 {
     int              cmp;
@@ -324,9 +324,9 @@ log_entity_filter_add_user(log_entity_filter *entity, te_bool include,
 
 /* See description in raw_log_filter.h */
 te_errno
-log_msg_filter_add_user(log_msg_filter *filter, te_bool include,
-                        const char *entity, te_bool entity_regex,
-                        const char *user, te_bool user_regex,
+log_msg_filter_add_user(log_msg_filter *filter, bool include,
+                        const char *entity, bool entity_regex,
+                        const char *user, bool user_regex,
                         te_log_level level_mask)
 {
     log_entity_filter *ent;
@@ -399,18 +399,18 @@ log_msg_filter_check(const log_msg_filter *filter, const log_msg_view *view)
 }
 
 /* Check entity filters for equality */
-static te_bool
+static bool
 entity_filter_equal(const log_entity_filter *a, const log_entity_filter *b)
 {
     log_user_filter *usera;
     log_user_filter *userb;
 
     if (a == b)
-        return TRUE;
+        return true;
 
     if (a->level != b->level ||
         (a->name != b->name && strcmp(a->name, b->name) != 0))
-        return FALSE;
+        return false;
 
     for (usera = SLIST_FIRST(&a->users), userb = SLIST_FIRST(&b->users);
          usera != NULL && userb != NULL;
@@ -419,31 +419,31 @@ entity_filter_equal(const log_entity_filter *a, const log_entity_filter *b)
         if (usera->level != userb->level ||
             (usera->name != userb->name &&
              strcmp(usera->name, userb->name) != 0))
-            return FALSE;
+            return false;
     }
 
     return usera == userb;
 }
 
 /* See description in raw_log_filter.h */
-te_bool
+bool
 log_msg_filter_equal(const log_msg_filter *a, const log_msg_filter *b)
 {
     log_entity_filter *enta;
     log_entity_filter *entb;
 
     if (a == b)
-        return TRUE;
+        return true;
 
     if (!entity_filter_equal(&a->def_entity, &b->def_entity))
-        return FALSE;
+        return false;
 
     for (enta = SLIST_FIRST(&a->entities), entb = SLIST_FIRST(&b->entities);
          enta != NULL && entb != NULL;
          enta = SLIST_NEXT(enta, links), entb = SLIST_NEXT(entb, links))
     {
         if (!entity_filter_equal(enta, entb))
-            return FALSE;
+            return false;
     }
 
     return enta == entb;

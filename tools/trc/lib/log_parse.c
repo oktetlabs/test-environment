@@ -51,7 +51,7 @@
  */
 static te_errno
 trc_log_parse_stack_push(trc_log_parse_ctx *ctx,
-                                te_bool value)
+                                bool value)
 {
     if (ctx->stack_pos == ctx->stack_size)
     {
@@ -73,7 +73,7 @@ trc_log_parse_stack_push(trc_log_parse_ctx *ctx,
  *
  * @return Value from the stack.
  */
-static te_bool
+static bool
 trc_log_parse_stack_pop(trc_log_parse_ctx *ctx)
 {
     assert(ctx->stack_pos > 0);
@@ -223,8 +223,8 @@ trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
     int                      tin = -1;
     int                      test_id = -1;
     char                    *hash = NULL;
-    te_bool                  name_found = FALSE;
-    te_bool                  status_found = FALSE;
+    bool name_found = false;
+    bool status_found = false;
     te_test_status           status = TE_TEST_UNSPEC;
     char                    *s = NULL;
     trc_test                *test = NULL;
@@ -245,9 +245,9 @@ trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
         if (ctx->type != TRC_TEST_SESSION &&
             xmlStrcmp(attrs[0], CONST_CHAR2XML("name")) == 0)
         {
-            name_found = TRUE;
+            name_found = true;
             if (!trc_db_walker_step_test(ctx->db_walker,
-                                         XML2CHAR(attrs[1]), TRUE))
+                                         XML2CHAR(attrs[1]), true))
             {
                 ERROR("Unable to create a new test entry %s",
                       attrs[1]);
@@ -274,12 +274,12 @@ trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
                 }
 
                 /* It is harless to set it in the case of failure */
-                ctx->rc = trc_log_parse_stack_push(ctx, TRUE);
+                ctx->rc = trc_log_parse_stack_push(ctx, true);
             }
         }
         else if (xmlStrcmp(attrs[0], CONST_CHAR2XML("result")) == 0)
         {
-            status_found = TRUE;
+            status_found = true;
             ctx->rc = te_test_str2status(XML2CHAR(attrs[1]), &status);
         }
         else if (xmlStrcmp(attrs[0], CONST_CHAR2XML("tin")) == 0)
@@ -314,7 +314,7 @@ trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
     {
         INFO("Name of the test/package/session not found - ignore");
         assert(ctx->iter_data == NULL);
-        ctx->rc = trc_log_parse_stack_push(ctx, FALSE);
+        ctx->rc = trc_log_parse_stack_push(ctx, false);
     }
     else if (!status_found)
     {
@@ -481,7 +481,7 @@ trc_log_parse_test_param(trc_log_parse_ctx *ctx, const xmlChar **attrs)
         {
             entry->args[i].name = NULL;
             entry->args[i].value = NULL;
-            entry->args[i].variable = FALSE;
+            entry->args[i].variable = false;
         }
     }
 
@@ -533,30 +533,30 @@ trc_log_parse_test_param(trc_log_parse_ctx *ctx, const xmlChar **attrs)
  *
  * @return Is obtained result expected?
  */
-static te_bool
+static bool
 trc_report_test_iter_stats_update(trc_report_stats     *stats,
                                   const trc_exp_result *exp_result,
                                   const te_test_result *result)
 {
-    te_bool is_expected;
+    bool is_expected;
 
     if (result->status == TE_TEST_UNSPEC)
     {
         ERROR("Unexpected value of obtained result");
-        return FALSE;
+        return false;
     }
 
     if (result->status == TE_TEST_FAKED ||
         result->status == TE_TEST_EMPTY)
     {
-        return TRUE;
+        return true;
     }
 
     if (exp_result == NULL ||
         exp_result == exp_defaults_get(TE_TEST_UNSPEC))
     {
         /* Expected result is unknown */
-        is_expected = FALSE;
+        is_expected = false;
 
         switch (result->status)
         {
@@ -902,8 +902,8 @@ trc_log_parse_start_element(void *user_data,
         case TRC_LOG_PARSE_LOGS:
             if (strcmp(tag, "msg") == 0)
             {
-                te_bool entity_match = FALSE;
-                te_bool user_match = FALSE;
+                bool entity_match = false;
+                bool user_match = false;
 
                 while ((!entity_match || !user_match) &&
                        (attrs[0] != NULL) && (attrs[1] != NULL))
@@ -913,7 +913,7 @@ trc_log_parse_start_element(void *user_data,
                     {
                         if (xmlStrcmp(attrs[1], CONST_CHAR2XML("Tester")) != 0)
                             break;
-                        entity_match = TRUE;
+                        entity_match = true;
                     }
                     if (!user_match &&
                         xmlStrcmp(attrs[0], CONST_CHAR2XML("user")) == 0)
@@ -921,7 +921,7 @@ trc_log_parse_start_element(void *user_data,
                         if (xmlStrcmp(attrs[1],
                                       CONST_CHAR2XML("TRC tags")) != 0)
                             break;
-                        user_match = TRUE;
+                        user_match = true;
                     }
                     attrs += 2;
                 }
@@ -947,7 +947,7 @@ trc_log_parse_start_element(void *user_data,
         default:
             ERROR("Unexpected state %u at start of a new element '%s'",
                   ctx->state, tag);
-            assert(FALSE);
+            assert(false);
             break;
     }
 }
@@ -1245,7 +1245,7 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
 
         default:
             ERROR("%s(): Unexpected state %u", __FUNCTION__, ctx->state);
-            assert(FALSE);
+            assert(false);
             break;
     }
 }

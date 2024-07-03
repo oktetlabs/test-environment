@@ -38,28 +38,28 @@ cfg_db_find_son(cfg_instance *father, const char *subid, const char *name)
 /** rcfunix parameters to string conversion rules */
 struct cfg_rcfunix_conf_param {
     const char *name;       /**< Parameter name */
-    te_bool required;       /**< Is parameter required? */
-    te_bool has_value;      /**< Does it have a value? */
+    bool required;       /**< Is parameter required? */
+    bool has_value;      /**< Does it have a value? */
 };
 
 static te_errno
 cfg_rcfunix_make_confstr(te_string *confstr, cfg_instance *ta)
 {
     static const struct cfg_rcfunix_conf_param params[] = {
-        { "host",         FALSE,  TRUE  },
-        { "port",         TRUE,   TRUE  },
-        { "user",         FALSE,  TRUE  },
-        { "key",          FALSE,  TRUE  },
-        { "ssh_port",     FALSE,  TRUE  },
-        { "ssh_proxy",    FALSE,  TRUE  },
-        { "copy_timeout", FALSE,  TRUE  },
-        { "copy_tries",   FALSE,  TRUE  },
-        { "kill_timeout", FALSE,  TRUE  },
-        { "notcopy",      FALSE,  FALSE },
-        { "sudo",         FALSE,  FALSE },
-        { "connect",      FALSE,  TRUE  },
-        { "opaque",       FALSE,  TRUE  },
-        { NULL,           FALSE,  FALSE },
+        { "host",         false,  true  },
+        { "port",         true,   true  },
+        { "user",         false,  true  },
+        { "key",          false,  true  },
+        { "ssh_port",     false,  true  },
+        { "ssh_proxy",    false,  true  },
+        { "copy_timeout", false,  true  },
+        { "copy_tries",   false,  true  },
+        { "kill_timeout", false,  true  },
+        { "notcopy",      false,  false },
+        { "sudo",         false,  false },
+        { "connect",      false,  true  },
+        { "opaque",       false,  true  },
+        { NULL,           false,  false },
     };
     const struct cfg_rcfunix_conf_param *p;
     cfg_instance *inst;
@@ -128,7 +128,7 @@ cfg_rcf_ta_sync(const char *ta_name)
     if (ret >= (int)sizeof(oid))
         return TE_RC(TE_CS, TE_ESMALLBUF);
 
-    return cfg_ta_sync(oid, TRUE);
+    return cfg_ta_sync(oid, true);
 }
 
 static te_errno

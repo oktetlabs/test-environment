@@ -64,33 +64,33 @@ typedef struct tad_dhcp_proto_pdu_data {
 static const tad_bps_pkt_frag tad_dhcp_bps_hdr[] =
 {
     { "op",        8, BPS_FLD_NO_DEF(NDN_DHCP_OP),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "htype",     8, BPS_FLD_NO_DEF(NDN_DHCP_HTYPE),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "hlen",      8, BPS_FLD_NO_DEF(NDN_DHCP_HLEN),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
     { "hops",      8, BPS_FLD_CONST_DEF(NDN_DHCP_HOPS, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "xid",      32, BPS_FLD_CONST_DEF(NDN_DHCP_XID, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "secs",     16, BPS_FLD_CONST_DEF(NDN_DHCP_SECS, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "flags" ,   16, BPS_FLD_NO_DEF(NDN_DHCP_FLAGS),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "ciaddr",   32, BPS_FLD_CONST_DEF(NDN_DHCP_CIADDR, 0),
-      TAD_DU_OCTS, FALSE },
+      TAD_DU_OCTS, false },
     { "yiaddr",   32, BPS_FLD_CONST_DEF(NDN_DHCP_YIADDR, 0),
-      TAD_DU_OCTS, FALSE },
+      TAD_DU_OCTS, false },
     { "siaddr",   32, BPS_FLD_CONST_DEF(NDN_DHCP_SIADDR, 0),
-      TAD_DU_OCTS, FALSE },
+      TAD_DU_OCTS, false },
     { "giaddr",   32, BPS_FLD_CONST_DEF(NDN_DHCP_GIADDR, 0),
-      TAD_DU_OCTS, FALSE },
+      TAD_DU_OCTS, false },
     { "chaddr",  128, BPS_FLD_NO_DEF(NDN_DHCP_CHADDR),
-      TAD_DU_OCTS, FALSE },
+      TAD_DU_OCTS, false },
     { "sname",   512, BPS_FLD_CONST_DEF(NDN_DHCP_SNAME, 0),
-      TAD_DU_OCTS, FALSE },
+      TAD_DU_OCTS, false },
     { "file",   1024, BPS_FLD_CONST_DEF(NDN_DHCP_FILE, 0),
-      TAD_DU_OCTS, FALSE },
+      TAD_DU_OCTS, false },
 };
 
 /**
@@ -99,9 +99,9 @@ static const tad_bps_pkt_frag tad_dhcp_bps_hdr[] =
 static const tad_bps_pkt_frag tad_dhcp6_bps_hdr[] =
 {
     { "msg-type", 8, BPS_FLD_NO_DEF(NDN_DHCP6_TYPE),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "transaction-id", 24, BPS_FLD_CONST_DEF(NDN_DHCP6_TID, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 #if 0
@@ -111,13 +111,13 @@ static const tad_bps_pkt_frag tad_dhcp6_bps_hdr[] =
 static const tad_bps_pkt_frag tad_dhcp6_bps_hdr[] =
 {
     { "msg-type", 8, BPS_FLD_NO_DEF(NDN_DHCP6_TYPE),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "hop-count", 8, BPS_FLD_CONST_DEF(NDN_DHCP6_HOPCNT, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "link-addr", 128, BPS_FLD_CONST_DEF(NDN_DHCP6_LADDR, 0),
-      TAD_DU_OCTS, FALSE},
+      TAD_DU_OCTS, false},
     { "peer-addr", 128, BPS_FLD_CONST_DEF(NDN_DHCP6_PADDR, 0),
-      TAD_DU_OCTS, FALSE},
+      TAD_DU_OCTS, false},
 };
 #endif
 
@@ -410,7 +410,7 @@ tad_dhcp_gen_bin_cb(csap_p csap, unsigned int layer,
 
     /* Move SDUs to PDUs and add DHCP message header */
     tad_pkts_move(pdus, sdus);
-    rc = tad_pkts_add_new_seg(pdus, TRUE,
+    rc = tad_pkts_add_new_seg(pdus, true,
                               msg, bitlen >> 3, tad_pkt_seg_data_free);
     if (rc != 0)
     {
@@ -489,7 +489,7 @@ tad_dhcp6_gen_bin_cb(csap_p csap, unsigned int layer,
 
     /* Move SDUs to PDUs and add DHCP message header */
     tad_pkts_move(pdus, sdus);
-    rc = tad_pkts_add_new_seg(pdus, TRUE,
+    rc = tad_pkts_add_new_seg(pdus, true,
                               msg, bitlen >> 3, tad_pkt_seg_data_free);
     if (rc != 0)
     {

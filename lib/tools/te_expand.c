@@ -103,9 +103,9 @@ get_positional_arg(const char *param_name, const char * const *posargs)
  * @param ctx           Array of positional arguments.
  * @param dest          Destination string.
  *
- * @return @c TRUE if the expansion has happened.
+ * @return @c true if the expansion has happened.
  */
-static te_bool
+static bool
 expand_env_value(const char *param_name, const void *ctx, te_string *dest)
 {
     const char * const *posargs = ctx;
@@ -131,10 +131,10 @@ typedef struct kvpairs_expand_ctx {
     unsigned int loop_index;
 } kvpairs_expand_ctx;
 
-static te_bool expand_kvpairs_value(const char *param_name, const void *ctx,
+static bool expand_kvpairs_value(const char *param_name, const void *ctx,
                                     te_string *dest);
 
-static te_bool
+static bool
 expand_kvpairs_index(const te_kvpair_h *kvpairs, const char *name,
                      long int ival, te_string *dest)
 {
@@ -146,7 +146,7 @@ expand_kvpairs_index(const te_kvpair_h *kvpairs, const char *name,
         if (ival > UINT_MAX)
         {
             ERROR("The index %ld is too large", ival);
-            return FALSE;
+            return false;
         }
         idx = (unsigned int)ival;
     }
@@ -156,7 +156,7 @@ expand_kvpairs_index(const te_kvpair_h *kvpairs, const char *name,
         if (-ival > idx)
         {
             ERROR("The index %ls is too small", ival);
-            return FALSE;
+            return false;
         }
         idx += (int)ival;
     }
@@ -167,12 +167,12 @@ expand_kvpairs_index(const te_kvpair_h *kvpairs, const char *name,
     return value != NULL;
 }
 
-static te_bool
+static bool
 expand_kvpairs_sep(const te_kvpair_h *kvpairs, const char *name,
                    const char *sep, te_string *dest)
 {
     te_vec all_values = TE_VEC_INIT(const char *);
-    te_bool result;
+    bool result;
 
     result = (te_kvpairs_get_all(kvpairs, name, &all_values) == 0);
 
@@ -182,7 +182,7 @@ expand_kvpairs_sep(const te_kvpair_h *kvpairs, const char *name,
     return result;
 }
 
-static te_bool
+static bool
 expand_kvpairs_subscript(const char *param_name, const char *sub_start,
                          const kvpairs_expand_ctx *ctx, te_string *dest)
 {
@@ -197,14 +197,14 @@ expand_kvpairs_subscript(const char *param_name, const char *sub_start,
     if (end == NULL || end[1] != '\0')
     {
         ERROR("Invalid list subscript: %s", sub_start);
-        return FALSE;
+        return false;
     }
     else
     {
         char sub_expr[end - sub_start + 1];
         te_string index = TE_STRING_INIT;
         long int ival;
-        te_bool result;
+        bool result;
 
         memcpy(sub_expr, sub_start, sizeof(sub_expr) - 1);
         sub_expr[sizeof(sub_expr) - 1] = '\0';
@@ -213,7 +213,7 @@ expand_kvpairs_subscript(const char *param_name, const char *sub_start,
                                         ctx, &index) != 0)
         {
             te_string_free(&index);
-            return FALSE;
+            return false;
         }
 
         if (te_strtol_silent(index.ptr, 0, &ival) == 0)
@@ -231,7 +231,7 @@ expand_kvpairs_subscript(const char *param_name, const char *sub_start,
     }
 }
 
-static te_bool
+static bool
 expand_kvpairs_loop(const char *param_name, const char *loop_start,
                          const kvpairs_expand_ctx *ctx, te_string *dest)
 {
@@ -244,7 +244,7 @@ expand_kvpairs_loop(const char *param_name, const char *loop_start,
 
     count = te_kvpairs_count(ctx->kvpairs, base_param_name);
     if (count == 0)
-        return FALSE;
+        return false;
 
     for (inner_ctx.loop_index = 0;
          inner_ctx.loop_index < count;
@@ -254,7 +254,7 @@ expand_kvpairs_loop(const char *param_name, const char *loop_start,
                                     &inner_ctx, dest);
     }
 
-    return TRUE;
+    return true;
 }
 
 /**
@@ -264,9 +264,9 @@ expand_kvpairs_loop(const char *param_name, const char *loop_start,
  * @param ctx           Context, see kvpairs_expand_ctx.
  * @param dest          Destination string
  *
- * @return @c TRUE if the expansion has happended.
+ * @return @c true if the expansion has happended.
  */
-static te_bool
+static bool
 expand_kvpairs_value(const char *param_name, const void *ctx, te_string *dest)
 {
     const kvpairs_expand_ctx *kvpairs_ctx = ctx;
@@ -275,7 +275,7 @@ expand_kvpairs_value(const char *param_name, const void *ctx, te_string *dest)
     if (*param_name == '\0')
     {
         te_string_append(dest, "%u", kvpairs_ctx->loop_index);
-        return TRUE;
+        return true;
     }
 
     value = get_positional_arg(param_name, kvpairs_ctx->posargs);
@@ -285,14 +285,14 @@ expand_kvpairs_value(const char *param_name, const void *ctx, te_string *dest)
         if (*param_name == '\0')
         {
             te_string_append(dest, "%u", kvpairs_ctx->loop_index);
-            return TRUE;
+            return true;
         }
         else if (*param_name == '#')
         {
             te_string_append(dest, "%u",
                              te_kvpairs_count(kvpairs_ctx->kvpairs,
                                               param_name + 1));
-            return TRUE;
+            return true;
         }
         else
         {
@@ -326,7 +326,7 @@ static te_errno
 base64_filter(const te_string *src, te_string *dest)
 {
     te_string_encode_base64(dest, src->len, (const uint8_t *)src->ptr,
-                            FALSE);
+                            false);
     return 0;
 }
 
@@ -334,7 +334,7 @@ static te_errno
 base64uri_filter(const te_string *src, te_string *dest)
 {
     te_string_encode_base64(dest, src->len, (const uint8_t *)src->ptr,
-                            TRUE);
+                            true);
     return 0;
 }
 
@@ -388,7 +388,7 @@ c_identifier_filter(const te_string *src, te_string *dest)
 static te_errno
 crlf_filter(const te_string *src, te_string *dest)
 {
-    te_bool after_cr = FALSE;
+    bool after_cr = false;
     const char *iter;
 
     for (iter = te_string_value(src); *iter != '\0'; iter++)
@@ -463,7 +463,7 @@ nonzero_filter(const te_string *src, te_string *dest)
 static te_errno
 normalize_filter(const te_string *src, te_string *dest)
 {
-    te_bool after_space = TRUE;
+    bool after_space = true;
     const char *iter;
     size_t prev_len = dest->len;
 
@@ -642,7 +642,7 @@ expand_with_filter(te_string *dest, char *ref,
 
     if (filter == NULL)
     {
-        te_bool expanded = expand_param(ref, ctx, dest);
+        bool expanded = expand_param(ref, ctx, dest);
 
         return expanded ? 0 : TE_ENODATA;
     }
@@ -785,7 +785,7 @@ typedef struct legacy_expand_ctx {
     const void *params_ctx;
 } legacy_expand_ctx;
 
-static te_bool
+static bool
 legacy_expand(const char *param_name, const void *ctx, te_string *dest)
 {
     const legacy_expand_ctx *legacy_ctx = ctx;

@@ -140,7 +140,7 @@ typedef long ta_log_arg;
  * the number of consequent ring buffer elements.
  */
 typedef struct lgr_mess_header {
-    te_bool         user_in_first_arg;  /**< User_name is in the first string
+    bool user_in_first_arg;  /**< User_name is in the first string
                                              argument */
     uint32_t        elements;       /**< Number of consequent ring buffer
                                          elements in message */
@@ -153,7 +153,7 @@ typedef struct lgr_mess_header {
     te_log_level    level;          /**< Log level mask to be passed
                                          in raw log*/
     const char     *user;           /**< User_name string location (if
-                                         user_in_first_arg is @c FALSE) */
+                                         user_in_first_arg is @c false) */
     const char     *fmt;            /**< Format string location */
 
     unsigned int    n_args;                 /**< Number of arguments */
@@ -348,7 +348,7 @@ lgr_rb_allocate_head(struct lgr_rb *ring_buffer,
 
 static inline void
 lgr_rb_init_header(lgr_mess_header *header, unsigned int level,
-                   const char *user, const char *fmt, te_bool user_in_first_arg,
+                   const char *user, const char *fmt, bool user_in_first_arg,
                    te_log_ts_sec sec, te_log_ts_usec usec)
 {
     memset(header, 0, sizeof(*header));
@@ -386,7 +386,7 @@ lgr_rb_fill_allocated_header(lgr_mess_header *allocated,
  *                       the input).
  * @param arg_addr       Argument address (memory dump
  *                       address or string address).
- * @param add_zero       If @c TRUE, a terminating zero
+ * @param add_zero       If @c true, a terminating zero
  *                       byte is appended to the output
  *                       buffer.
  *
@@ -395,7 +395,7 @@ lgr_rb_fill_allocated_header(lgr_mess_header *allocated,
 static inline uint32_t
 lgr_rb_allocate_and_copy(struct lgr_rb *ring_buffer,
                          const void *start, uint32_t length,
-                         uint8_t **arg_addr, te_bool add_zero)
+                         uint8_t **arg_addr, bool add_zero)
 {
     uint32_t start_pos = 0;
     uint32_t need_elements;

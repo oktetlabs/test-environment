@@ -50,14 +50,14 @@ static const tad_bps_pkt_frag tad_udp_bps_hdr[] =
 {
     { "src-port", 16, NDN_TAG_UDP_SRC_PORT,
       NDN_TAG_UDP_LOCAL_PORT, NDN_TAG_UDP_REMOTE_PORT, 0,
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "dst-port", 16, NDN_TAG_UDP_DST_PORT,
       NDN_TAG_UDP_REMOTE_PORT, NDN_TAG_UDP_LOCAL_PORT, 0,
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "length",   16, BPS_FLD_CONST_DEF(NDN_TAG_UDP_LENGTH, 0),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
     { "checksum", 16, BPS_FLD_CONST_DEF(NDN_TAG_UDP_CHECKSUM, 0),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
 };
 
 
@@ -246,7 +246,7 @@ tad_udp_gen_bin_cb(csap_p csap, unsigned int layer,
     tad_pkts_move(pdus, sdus);
 
     /* Allocate and add UDP header to all packets */
-    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, TAD_UDP_HDR_LEN, NULL);
+    rc = tad_pkts_add_new_seg(pdus, true, NULL, TAD_UDP_HDR_LEN, NULL);
     if (rc != 0)
         return rc;
 

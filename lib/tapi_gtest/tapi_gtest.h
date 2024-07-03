@@ -39,7 +39,7 @@ typedef struct tapi_gtest {
     const char *group;      /**< Group name in GTest */
     const char *name;       /**< Test name in GTest */
 
-    te_bool run_disabled;   /**< Force run disabled test */
+    bool run_disabled;   /**< Force run disabled test */
     int rand_seed;          /**< Random seed */
 
     tapi_gtest_impl impl;   /**< Internal implementation struct */
@@ -51,7 +51,7 @@ typedef struct tapi_gtest {
     .bin = NULL,                            \
     .group = NULL,                          \
     .name = NULL,                           \
-    .run_disabled = FALSE,                  \
+    .run_disabled = false,                  \
     .impl = TAPI_GTEST_IMPL_DEFAULTS,       \
 }
 
@@ -62,7 +62,7 @@ typedef struct tapi_gtest {
     .group = TEST_STRING_PARAM(_gtest##_group),  \
     .name = TEST_STRING_PARAM(_gtest##_name),    \
     .rand_seed = TEST_INT_PARAM(te_rand_seed),  \
-    .run_disabled = FALSE,                      \
+    .run_disabled = false,                      \
     .impl = TAPI_GTEST_IMPL_DEFAULTS,           \
 }
 

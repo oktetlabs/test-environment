@@ -73,7 +73,7 @@ tapi_sock_read_data(rcf_rpc_server *rpcs,
 
     ssize_t  total_len = 0;
 
-    while (TRUE)
+    while (true)
     {
         RPC_AWAIT_ERROR(rpcs);
         rc = rpc_recv(rpcs, s, data, READ_LEN,
@@ -104,7 +104,7 @@ tapi_sock_read_data(rcf_rpc_server *rpcs,
 te_errno
 tapi_sock_raw_tcpv4_send(rcf_rpc_server *rpcs, rpc_iovec *iov,
                          int iovlen, int ifindex, int raw_socket,
-                         te_bool remove_vlan_hdr)
+                         bool remove_vlan_hdr)
 {
     uint8_t                *raw_packet;
     ssize_t                 total_size = 0;

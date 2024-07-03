@@ -68,7 +68,7 @@ struct supplicant;
 /** Callbacks for handling supplicant implementation */
 typedef struct supplicant_impl
 {
-    te_bool  (*get)(const char *ifname);
+    bool  (*get)(const char *ifname);
     te_errno (*start)(const char *ifname, const char *confname);
     te_errno (*stop)(const char *ifname);
     te_errno (*reload)(const char *ifname);
@@ -81,9 +81,9 @@ typedef struct supplicant
     char              *ifname;     /**< interface name */
     char               confname[256];
                                    /**< Name of configuration file */
-    te_bool            started;    /**< Supplicant was started and
+    bool started;    /**< Supplicant was started and
                                         is supposed to be running */
-    te_bool            changed;    /**< Configuration is changed
+    bool changed;    /**< Configuration is changed
                                         but not commited into file yet */
     char              *params[SP_MAX];
                                    /**< Supplicant parameters,
@@ -128,9 +128,9 @@ static te_errno supp_update(supplicant *supp);
  *
  * @param ifname   Name of interface where XSupplicant should listen
  *
- * @return TRUE if XSupplicant is found, FALSE otherwise.
+ * @return @c true if XSupplicant is found, @c false otherwise.
  */
-static te_bool
+static bool
 xsupplicant_get(const char *ifname)
 {
     char buf[128];
@@ -139,9 +139,9 @@ xsupplicant_get(const char *ifname)
              PS_ALL_COMM " | grep xsupplicant | grep -v grep | grep -q %s",
              ifname);
     if (ta_system(buf) == 0)
-        return TRUE;
+        return true;
 
-    return FALSE;
+    return false;
 }
 
 /**
@@ -150,9 +150,9 @@ xsupplicant_get(const char *ifname)
  *
  * @param ifname   Name of interface where XSupplicant should listen
  *
- * @return TRUE if XSupplicant is found, FALSE otherwise.
+ * @return @c true if XSupplicant is found, @c false otherwise.
  */
-static te_bool
+static bool
 xsupplicant_get_valid(const char *ifname)
 {
     char buf[128];
@@ -160,9 +160,9 @@ xsupplicant_get_valid(const char *ifname)
     snprintf(buf, sizeof(buf), "fuser -s %s%s >/dev/null 2>&1",
              XSUPPLICANT_SOCK_NAME, ifname);
     if (ta_system(buf) == 0)
-        return TRUE;
+        return true;
 
-    return FALSE;
+    return false;
 }
 
 /**
@@ -347,7 +347,7 @@ wpa_supp_get_status(const char *ifname, char **status)
     return 0;
 }
 
-static te_bool
+static bool
 wpa_supp_get(const char *ifname)
 {
     char buf[128];
@@ -366,12 +366,12 @@ wpa_supp_get(const char *ifname)
     if (ta_system(buf) == 0)
     {
         RING("WPA supplicant on interface %s is running.", ifname);
-        return TRUE;
+        return true;
     }
     else
         INFO("WPA supplicant on interface %s is not running", ifname);
 
-    return FALSE;
+    return false;
 }
 
 static te_errno
@@ -653,7 +653,7 @@ supp_set_param(supplicant *supp, supp_param_t id, const char *value)
         if (supp->params[id] != NULL)
         {
             free(supp->params[id]);
-            supp->changed = TRUE;
+            supp->changed = true;
             return 0;
         }
         return 0;
@@ -671,7 +671,7 @@ supp_set_param(supplicant *supp, supp_param_t id, const char *value)
               __FUNCTION__, value);
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
-    supp->changed = TRUE;
+    supp->changed = true;
     return 0;
 }
 
@@ -696,8 +696,8 @@ supp_create(const char *ifname)
         free(ns);
         return NULL;
     }
-    ns->started = FALSE;
-    ns->changed = TRUE;
+    ns->started = false;
+    ns->changed = true;
 #ifdef USE_XSUPPLICANT
     ns->impl = &xsupplicant;
 #else
@@ -802,7 +802,7 @@ supp_update(supplicant *supp)
     new_impl->write_config(conf, supp);
     fclose(conf);
 
-    supp->changed = FALSE;
+    supp->changed = false;
     if (!supp->started)
         supp->impl->stop(supp->ifname);
     else
@@ -878,7 +878,7 @@ ds_supplicant_set(unsigned int gid, const char *oid,
     if (supp == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    supp->started = (*value == '0') ? FALSE : TRUE;
+    supp->started = (*value == '0') ? false : true;
 
     return 0;
 }

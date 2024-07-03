@@ -43,7 +43,7 @@ typedef struct serial_event_t {
     char    name[TE_SERIAL_MAX_NAME + 1];   /**< Name of the event */
     char    t_name[TE_SERIAL_MAX_NAME + 1]; /**< Tester name of the event */
     int     count;                          /**< Event counter */
-    te_bool status;                         /**< Status of the event */
+    bool status;                         /**< Status of the event */
 
     serial_pattern_h_t           patterns;  /**< Head of pattern list */
     SLIST_ENTRY(serial_event_t)  ent_ev_l;  /**< Elements connector */
@@ -58,14 +58,14 @@ typedef struct serial_parser_t {
     char    user[TE_SERIAL_MAX_NAME + 1];   /**< User name */
     char    mode[TE_SERIAL_MAX_NAME + 1];   /**< Share mode */
 
-    te_bool enable;                     /**< The parser thread state */
+    bool enable;                     /**< The parser thread state */
     int     port;                       /**< The serial console port */
     int     interval;                   /**< Intreval of polling console */
-    te_bool logging;                    /**< Enable logging from console
+    bool logging;                    /**< Enable logging from console
                                              to the main log */
     int     level;                      /**< Message level for logging */
     char    log_user[TE_SERIAL_MAX_NAME + 1];   /**< Logger user name */
-    te_bool rcf;                        /**< Launched via RCF */
+    bool rcf;                        /**< Launched via RCF */
 
     pthread_t                     thread;     /**< Thread identifier */
     pthread_mutex_t               mutex;      /**< Provides access to this

@@ -167,7 +167,7 @@ typedef struct gen_ctx_user {
     FILE             *fd; /**< File descriptor of the document to output
                                the result */
 
-    te_bool mi_artifact;  /**< If @c TRUE, MI artifact is processed */
+    bool mi_artifact;  /**< If @c true, MI artifact is processed */
     te_dbuf json_data;    /**< Buffer for collecting JSON before it can
                                be parsed */
 
@@ -345,12 +345,12 @@ RGT_DEF_FUNC(proc_document_start)
     ctx->user_data = gen_user = &user_ctx;
 
     user_ctx.json_data = (te_dbuf)TE_DBUF_INIT(0);
-    user_ctx.mi_artifact = FALSE;
+    user_ctx.mi_artifact = false;
 
     user_ctx.msg_prefix_len = 0;
 
     /* In text output all XML entities should be expanded */
-    ctx->expand_entities = TRUE;
+    ctx->expand_entities = true;
 
     if (ctx->out_fname == NULL)
         gen_user->fd = stdout;
@@ -543,7 +543,7 @@ RGT_DEF_FUNC(proc_log_msg_start)
     RGT_FUNC_UNUSED_PRMS();
 
     if (level != NULL && strcmp(level, "MI") == 0 && !mi_raw)
-        user_ctx->mi_artifact = TRUE;
+        user_ctx->mi_artifact = true;
 
     if (!no_prefix)
     {
@@ -944,7 +944,7 @@ RGT_DEF_FUNC(proc_log_msg_end)
             te_rgt_mi_clean(&mi);
         }
 
-        user_ctx->mi_artifact = FALSE;
+        user_ctx->mi_artifact = false;
         te_dbuf_reset(&user_ctx->json_data);
     }
 
@@ -971,8 +971,8 @@ proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     fwrite_log(user_ctx, ch, len, 1);
 }
 
-te_bool
+bool
 proc_expand_entities(void)
 {
-    return TRUE;
+    return true;
 }

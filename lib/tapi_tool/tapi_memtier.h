@@ -41,8 +41,8 @@ typedef struct tapi_memtier_op_stats {
     double tps;
     /** The rate of network, Mbit/sec */
     double net_rate;
-    /** Set to TRUE if statistics were parsed */
-    te_bool parsed;
+    /** Set to @c true if statistics were parsed */
+    bool parsed;
 } tapi_memtier_op_stats;
 
 /** memtier_benchmark information from stdout */
@@ -97,7 +97,7 @@ typedef struct tapi_memtier_opt {
     /** Object data size in bytes */
     tapi_job_opt_uint_t data_size;
     /** Indicate that data should be randomized */
-    te_bool random_data;
+    bool random_data;
 
     /** Set:Get ratio (for example, "1:10") */
     const char *ratio;
@@ -123,10 +123,10 @@ typedef struct tapi_memtier_opt {
     tapi_job_opt_uint_t key_maximum;
 
     /** Don't print detailed latency histogram */
-    te_bool hide_histogram;
+    bool hide_histogram;
 
     /** Print debug output */
-    te_bool debug;
+    bool debug;
 
     /** Path to memtier_benchmark executable */
     const char *memtier_path;

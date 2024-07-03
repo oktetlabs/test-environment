@@ -48,7 +48,7 @@ tapi_cfg_module_change_finish(const char *ta_name, const char *mod_name)
 
 static te_errno
 tapi_cfg_module_get_shared(const char *ta_name, const char *mod_name,
-                              te_bool *shared)
+                              bool *shared)
 {
     int result_shared;
     char *rsrc_name = tapi_cfg_module_rsrc_name(mod_name);
@@ -73,7 +73,7 @@ tapi_cfg_module_get_shared(const char *ta_name, const char *mod_name,
 static te_errno
 tapi_cfg_module_check_exclusive_rsrc(const char *ta_name, const char *mod_name)
 {
-    te_bool shared;
+    bool shared;
     te_errno rc;
 
     rc = tapi_cfg_module_get_shared(ta_name, mod_name, &shared);
@@ -92,12 +92,12 @@ tapi_cfg_module_check_exclusive_rsrc(const char *ta_name, const char *mod_name)
 
 static te_errno
 tapi_cfg_module_grab(const char *ta_name, const char *mod_name,
-                     te_bool *shared)
+                     bool *shared)
 {
     static const unsigned int grab_timeout_ms = 3000;
     char *rsrc_name = NULL;
     char *module_oid = NULL;
-    te_bool set_oid = TRUE;
+    bool set_oid = true;
     char *old_oid;
     int result_shared;
     te_errno rc;
@@ -176,10 +176,10 @@ out:
 }
 
 te_errno
-tapi_cfg_module_add(const char *ta_name, const char *mod_name, te_bool load)
+tapi_cfg_module_add(const char *ta_name, const char *mod_name, bool load)
 {
     int         rc;
-    te_bool shared = FALSE;
+    bool shared = false;
 
     ENTRY("ta_name=%s mod_name=%s load=%s", ta_name, mod_name,
           load ? "true" : "false");
@@ -227,7 +227,7 @@ out:
 
 static te_errno
 tapi_cfg_module_loaded_set(const char *ta_name, const char *mod_name,
-                           te_bool loaded)
+                           bool loaded)
 {
     return cfg_set_instance_fmt(CFG_VAL(INT32, loaded ? 1 : 0),
                                 CFG_MODULE_OID_FMT "/loaded:", ta_name,
@@ -237,13 +237,13 @@ tapi_cfg_module_loaded_set(const char *ta_name, const char *mod_name,
 te_errno
 tapi_cfg_module_load(const char *ta_name, const char *mod_name)
 {
-    return tapi_cfg_module_loaded_set(ta_name, mod_name, TRUE);
+    return tapi_cfg_module_loaded_set(ta_name, mod_name, true);
 }
 
 te_errno
 tapi_cfg_module_unload(const char *ta_name, const char *mod_name)
 {
-    return tapi_cfg_module_loaded_set(ta_name, mod_name, FALSE);
+    return tapi_cfg_module_loaded_set(ta_name, mod_name, false);
 }
 
 te_errno
@@ -398,8 +398,8 @@ tapi_cfg_module_param_get_int(const char *ta_name,
 te_errno
 tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
                                    const char *module_name,
-                                   te_bool     load_dependencies,
-                                   te_bool     fallback)
+                                   bool load_dependencies,
+                                   bool fallback)
 {
     te_string     module_path = TE_STRING_INIT;
     char         *ta_lib_mod_dir;
@@ -432,7 +432,7 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
         goto out;
     }
 
-    te_bool shared;
+    bool shared;
     rc = tapi_cfg_module_get_shared(ta_name, module_name, &shared);
     if (rc != 0)
         goto out;
@@ -561,20 +561,20 @@ out:
 te_errno
 tapi_cfg_module_add_from_ta_dir(const char *ta_name,
                                 const char *module_name,
-                                te_bool     load_dependencies)
+                                bool load_dependencies)
 {
     return tapi_cfg_module_add_from_ta_dir_fb(ta_name, module_name,
-                                              load_dependencies, FALSE);
+                                              load_dependencies, false);
 }
 
 /* See description in 'tapi_cfg_modules.h' */
 te_errno
 tapi_cfg_module_add_from_ta_dir_or_fallback(const char *ta_name,
                                             const char *module_name,
-                                            te_bool     load_dependencies)
+                                            bool load_dependencies)
 {
     return tapi_cfg_module_add_from_ta_dir_fb(ta_name, module_name,
-                                              load_dependencies, TRUE);
+                                              load_dependencies, true);
 }
 
 /* See description in 'tapi_cfg_modules.h' */
@@ -589,7 +589,7 @@ tapi_cfg_module_version_get(const char *ta_name, const char *module_name,
 /* See description in 'tapi_cfg_modules.h' */
 te_errno
 tapi_cfg_module_check_devices(const char *ta_name, const char *module_name,
-                              te_bool *all_grabbed)
+                              bool *all_grabbed)
 {
     cfg_handle *devs = NULL;
     unsigned int devs_num;
@@ -629,7 +629,7 @@ tapi_cfg_module_check_devices(const char *ta_name, const char *module_name,
                 return rc;
             }
 
-            *all_grabbed = FALSE;
+            *all_grabbed = false;
             rc = 0;
             goto cleanup;
         }
@@ -638,7 +638,7 @@ tapi_cfg_module_check_devices(const char *ta_name, const char *module_name,
         dev = NULL;
     }
 
-    *all_grabbed = TRUE;
+    *all_grabbed = true;
 
 cleanup:
 

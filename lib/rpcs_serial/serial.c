@@ -131,7 +131,7 @@ static buffered_match *
 buffered_match_add_update(int sock, const char *buffer, unsigned int buffer_len)
 {
     buffered_match *bm;
-    te_bool         created = FALSE;
+    bool created = false;
 
     bm = buffered_match_get(sock);
     if (bm == NULL)
@@ -139,7 +139,7 @@ buffered_match_add_update(int sock, const char *buffer, unsigned int buffer_len)
         bm = buffered_match_add(sock);
         if (bm == NULL)
             return NULL;
-        created = TRUE;
+        created = true;
     }
 
     te_dbuf_reset(&bm->dbuf);

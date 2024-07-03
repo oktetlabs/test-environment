@@ -57,7 +57,7 @@ tapi_cfg_cmd_monitor_begin(char const *ta,
                                    "/agent:%s/command_monitor:%s/enable:",
                                    ta, name)) != 0)
     {
-        cfg_del_instance_fmt(FALSE,
+        cfg_del_instance_fmt(false,
                              "/agent:%s/command_monitor:%s",
                              ta, name);
         return rc;
@@ -79,7 +79,7 @@ static inline te_errno
 tapi_cfg_cmd_monitor_end(char const *ta,
                          char const *name)
 {
-    return cfg_del_instance_fmt(FALSE,
+    return cfg_del_instance_fmt(false,
                                 "/agent:%s/monitor:%s",
                                 ta, name);
 }

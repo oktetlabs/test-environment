@@ -30,8 +30,8 @@
  * as opaque data.
  */
 typedef struct tad_atm_cell_ctrl_data {
-    te_bool     indication; /**< ATM-user-to-ATM-user indication */
-    te_bool     user_data;  /**< User data cell (received cell only) */
+    bool indication; /**< ATM-user-to-ATM-user indication */
+    bool user_data;  /**< User data cell (received cell only) */
     uint16_t    vpi;        /**< VPI (received cell only) */
     uint16_t    vci;        /**< VCI (received cell only) */
 } tad_atm_cell_ctrl_data;

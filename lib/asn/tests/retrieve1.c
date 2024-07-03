@@ -118,11 +118,11 @@ main(void)
     if (0)
     {
         te_errno cb_r = 0;
-        rc = asn_walk_depth(val, TRUE, &cb_r, check_walk_p, NULL);
+        rc = asn_walk_depth(val, true, &cb_r, check_walk_p, NULL);
 
 
         printf("rc = %x, status %x\n\n  another walk:\n", rc, cb_r);
-        rc = asn_walk_depth(val, FALSE, &cb_r, check_walk_g, NULL);
+        rc = asn_walk_depth(val, false, &cb_r, check_walk_g, NULL);
         printf("rc = %x, status %x:\n", rc, cb_r);
     }
 

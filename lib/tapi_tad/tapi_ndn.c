@@ -114,7 +114,7 @@ tapi_tad_new_ptrn_unit(asn_value **obj_spec, asn_value **unit_spec)
 /* See the description in tapi_ndn.h */
 static te_errno
 tapi_tad_tmpl_ptrn_get_unit(asn_value **obj_spec,
-                            te_bool     is_pattern,
+                            bool is_pattern,
                             asn_value **unit_spec)
 {
     te_errno    rc;
@@ -172,7 +172,7 @@ tapi_tad_tmpl_ptrn_get_unit(asn_value **obj_spec,
 /* See the description in tapi_ndn.h */
 te_errno
 tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
-                             te_bool           is_pattern,
+                             bool is_pattern,
                              const asn_type   *pdu_type,
                              const char       *pdu_choice,
                              asn_value       **pdu_spec)
@@ -269,7 +269,7 @@ tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
 /* See the description in tapi_ndn.h */
 te_errno
 tapi_tad_tmpl_ptrn_set_payload_plain(asn_value  **obj_spec,
-                                     te_bool      is_pattern,
+                                     bool is_pattern,
                                      const void  *payload,
                                      size_t       length)
 {
@@ -708,7 +708,7 @@ out:
 static te_errno
 tapi_tad_set_cksum_script_correct(asn_value  *proto_pdu,
                                   char       *du_cksum_label,
-                                  te_bool     accept_zero_cksum)
+                                  bool accept_zero_cksum)
 {
     te_errno    err = 0;
     int         du_cksum_index = -1;
@@ -805,7 +805,7 @@ tapi_tad_request_correct_cksums(uint32_t   hw_flags,
             {
                 err = tapi_tad_set_cksum_script_correct(pdu_ip4_outer,
                                                         "h-checksum",
-                                                        FALSE);
+                                                        false);
                 if (err != 0)
                     goto out;
             }
@@ -816,7 +816,7 @@ tapi_tad_request_correct_cksums(uint32_t   hw_flags,
         if (pdu_udp_outer != NULL)
         {
             err = tapi_tad_set_cksum_script_correct(pdu_udp_outer, "checksum",
-                                                    TRUE);
+                                                    true);
             if (err != 0)
                 goto out;
         }
@@ -837,7 +837,7 @@ tapi_tad_request_correct_cksums(uint32_t   hw_flags,
     if (((hw_flags & SEND_COND_HW_OFFL_IP_CKSUM) ==
          SEND_COND_HW_OFFL_IP_CKSUM) && (pdu_ip4 != NULL))
     {
-        err = tapi_tad_set_cksum_script_correct(pdu_ip4, "h-checksum", FALSE);
+        err = tapi_tad_set_cksum_script_correct(pdu_ip4, "h-checksum", false);
         if (err != 0)
             goto out;
     }
@@ -847,14 +847,16 @@ tapi_tad_request_correct_cksums(uint32_t   hw_flags,
     {
         if (pdu_tcp != NULL)
         {
-            err = tapi_tad_set_cksum_script_correct(pdu_tcp, "checksum", FALSE);
+            err = tapi_tad_set_cksum_script_correct(pdu_tcp, "checksum",
+                                                    false);
             if (err != 0)
                 goto out;
         }
 
         if (pdu_udp != NULL)
         {
-            err = tapi_tad_set_cksum_script_correct(pdu_udp, "checksum", FALSE);
+            err = tapi_tad_set_cksum_script_correct(pdu_udp, "checksum",
+                                                    false);
             if (err != 0)
                 goto out;
         }
@@ -873,7 +875,7 @@ tapi_tad_generate_pattern_unit(asn_value      *pdus,
                                size_t          payload_len,
                                size_t         *data_offset,
                                send_transform *transform,
-                               te_bool         is_tso,
+                               bool is_tso,
                                asn_value    ***pattern_units,
                                unsigned int   *n_pattern_units)
 {
@@ -1095,7 +1097,7 @@ tapi_tad_packet_to_pattern_units(asn_value      *packet,
             err = tapi_tad_generate_pattern_unit(pdus, payload_data,
                                                  (size_t)payload_len,
                                                  &data_offset, transform,
-                                                 TRUE, &pattern_units,
+                                                 true, &pattern_units,
                                                  &n_pattern_units);
             if (err != 0)
             {
@@ -1114,7 +1116,7 @@ tapi_tad_packet_to_pattern_units(asn_value      *packet,
     {
         err = tapi_tad_generate_pattern_unit(pdus, payload_data,
                                              (size_t)payload_len, &data_offset,
-                                             transform, FALSE, &pattern_units,
+                                             transform, false, &pattern_units,
                                              &n_pattern_units);
         if (err != 0)
             goto out;
@@ -1388,7 +1390,7 @@ out:
 
 static te_errno
 tapi_ndn_pdu_idx_by_proto(asn_value          *container_of_pdus,
-                          te_bool             outer,
+                          bool outer,
                           te_tad_protocols_t  proto,
                           int                *idx)
 {
@@ -1494,7 +1496,7 @@ tapi_ndn_tmpl_set_tcp_cksum(asn_value *tmpl,
 
     assert(tmpl != NULL);
 
-    rc = tapi_ndn_pdu_idx_by_proto(tmpl, FALSE, TE_PROTO_TCP, &pdu_idx);
+    rc = tapi_ndn_pdu_idx_by_proto(tmpl, false, TE_PROTO_TCP, &pdu_idx);
     if (rc != 0)
         goto out;
 
@@ -1515,7 +1517,7 @@ tapi_ndn_tmpl_set_tcp_flags(asn_value *tmpl,
 
     assert(tmpl != NULL);
 
-    rc = tapi_ndn_pdu_idx_by_proto(tmpl, FALSE, TE_PROTO_TCP, &pdu_idx);
+    rc = tapi_ndn_pdu_idx_by_proto(tmpl, false, TE_PROTO_TCP, &pdu_idx);
     if (rc != 0)
         goto out;
 
@@ -1607,7 +1609,7 @@ tapi_ndn_pdus_inject_vlan_tags(asn_value *pdus, const uint16_t *vlan_vid,
                                const uint16_t *vlan_pri, const uint16_t *vlan_cfi,
                                size_t n_tags)
 {
-    te_bool has_vlan = FALSE;
+    bool has_vlan = false;
     asn_value *new_vlan;
     uint16_t old_vid[2];
     uint16_t old_pri[2];
@@ -1943,7 +1945,7 @@ out:
 /* See the description in 'tapi_ndn.h' */
 te_errno
 tapi_ndn_pkt_demand_correct_udp_cksum(asn_value        *pkt,
-                                      te_bool           can_be_zero,
+                                      bool can_be_zero,
                                       tapi_ndn_level_t  level)
 {
     int        pdu_idx;
@@ -1986,7 +1988,7 @@ tapi_ndn_pkt_demand_correct_tcp_cksum(asn_value *pkt)
 
     assert(pkt != NULL);
 
-    rc = tapi_ndn_pdu_idx_by_proto(pkt, FALSE, TE_PROTO_TCP, &pdu_idx);
+    rc = tapi_ndn_pdu_idx_by_proto(pkt, false, TE_PROTO_TCP, &pdu_idx);
     if (rc != 0)
        goto out;
 
@@ -2147,7 +2149,7 @@ tapi_ndn_tso_pkts_edit(asn_value    **pkts,
     assert(nb_pkts != 0);
     assert(pkts[0] != NULL);
 
-    rc = tapi_ndn_pdu_idx_by_proto(pkts[0], FALSE, TE_PROTO_TCP, &pdu_idx);
+    rc = tapi_ndn_pdu_idx_by_proto(pkts[0], false, TE_PROTO_TCP, &pdu_idx);
     if (rc != 0)
         goto out;
 
@@ -2300,7 +2302,7 @@ tapi_ndn_gso_pkts_ip_id_edit(asn_value        **pkts,
     uint16_t      superframe_ip_id;
     size_t        superframe_ip_id_size = sizeof(superframe_ip_id);
     char         *tso_ip_id_inc_algo = NULL;
-    te_bool       mod15 = FALSE;
+    bool mod15 = false;
     te_errno      rc = 0;
     unsigned int  i;
 
@@ -2328,7 +2330,7 @@ tapi_ndn_gso_pkts_ip_id_edit(asn_value        **pkts,
         goto out;
 
     if (strcmp(tso_ip_id_inc_algo, "mod15") == 0)
-        mod15 = TRUE;
+        mod15 = true;
 
     for (i = 1; i < nb_pkts; ++i)
     {
@@ -2629,8 +2631,7 @@ tapi_eth_transform_ptrn_on_rx(receive_transform *rx_transform,
             if ((~rx_transform->hw_flags & RX_XFRM_HW_OFFL_VLAN_STRIP) ||
                 (~rx_transform->hw_flags & RX_XFRM_HW_OFFL_QINQ_STRIP))
             {
-                te_bool outer = (rx_transform->hw_flags &
-                                 RX_XFRM_HW_OFFL_VLAN_STRIP);
+                bool outer = (rx_transform->hw_flags & RX_XFRM_HW_OFFL_VLAN_STRIP);
 
                 rc = tapi_ndn_pdus_inject_vlan_tags(pdus,
                                                     outer ? &vid[1] : &vid[0],

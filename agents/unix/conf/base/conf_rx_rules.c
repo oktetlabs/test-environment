@@ -34,8 +34,8 @@
 
 #ifdef ETHTOOL_GRXCLSRLALL
 
-/* TRUE if adding new Rx classification rule is in progress */
-static te_bool rule_add_started = FALSE;
+/* @c true if adding new Rx classification rule is in progress */
+static bool rule_add_started = false;
 /* Location of Rx rule added the last time */
 static long int last_rule_added = -1;
 /*
@@ -380,7 +380,7 @@ rule_add(unsigned int gid, const char *oid,
     rc = ta_ethtool_add_rx_cls_rule(gid, if_name, location, NULL);
     if (rc == 0)
     {
-        rule_add_started = TRUE;
+        rule_add_started = true;
         TE_SPRINTF(last_rule_if_name, "%s", if_name);
         last_rule_added = -1;
     }
@@ -436,7 +436,7 @@ rule_commit(unsigned int gid, const cfg_oid *p_oid)
     if (rc == 0 && rule_add_started)
         last_rule_added = ret_location;
 
-    rule_add_started = FALSE;
+    rule_add_started = false;
 
     return rc;
 }
@@ -598,7 +598,7 @@ rule_flow_spec_set(unsigned int gid, const char *oid,
  * where to look for it
  */
 static te_errno
-rule_field_from_oid(const char *oid, te_string *field_name, te_bool *mask)
+rule_field_from_oid(const char *oid, te_string *field_name, bool *mask)
 {
     cfg_oid *parsed_oid;
     const char *name;
@@ -622,7 +622,7 @@ rule_field_from_oid(const char *oid, te_string *field_name, te_bool *mask)
         goto finish;
     if (strcmp(name, "mask") == 0)
     {
-        *mask = TRUE;
+        *mask = true;
 
         name = cfg_oid_inst_subid(parsed_oid, parsed_oid->len - 2);
         if (name == NULL)
@@ -630,7 +630,7 @@ rule_field_from_oid(const char *oid, te_string *field_name, te_bool *mask)
     }
     else
     {
-        *mask = FALSE;
+        *mask = false;
     }
 
     rc = te_string_append_chk(field_name, "%s", name);
@@ -700,7 +700,7 @@ rule_field_get(unsigned int gid, const char *oid,
     te_string str_val = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
     te_string field_name_str = TE_STRING_INIT_STATIC(CFG_SUBID_MAX);
     const char *field_name = te_string_value(&field_name_str);
-    te_bool mask;
+    bool mask;
     te_errno rc;
 
     UNUSED(rules_name);
@@ -808,7 +808,7 @@ rule_field_set(unsigned int gid, const char *oid,
     ta_ethtool_rx_cls_rule_fields *fields = NULL;
     te_string field_name_str = TE_STRING_INIT_STATIC(CFG_SUBID_MAX);
     const char *field_name = te_string_value(&field_name_str);
-    te_bool mask;
+    bool mask;
     te_errno rc;
 
     UNUSED(rules_name);

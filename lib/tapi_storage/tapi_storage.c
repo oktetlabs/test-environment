@@ -24,7 +24,7 @@
 te_errno
 tapi_storage_bootstrap(tapi_storage_client *client,
                        const char          *root,
-                       te_bool              remove_root)
+                       bool remove_root)
 {
     const char *root_dir = (root != NULL ? root : "/");
     te_errno    con_rc;
@@ -35,7 +35,7 @@ tapi_storage_bootstrap(tapi_storage_client *client,
         return con_rc;
 
     if (root == NULL || remove_root)
-        rc = tapi_storage_client_rm(client, root_dir, TRUE);
+        rc = tapi_storage_client_rm(client, root_dir, true);
     else
     {
         tapi_local_file_list  files;
@@ -47,7 +47,7 @@ tapi_storage_bootstrap(tapi_storage_client *client,
         {
             TAPI_LOCAL_FS_FOREACH(f, &files, file)
             {
-                rc = tapi_storage_client_rm(client, file->pathname, TRUE);
+                rc = tapi_storage_client_rm(client, file->pathname, true);
                 if (rc != 0)
                     break;
             }
@@ -99,7 +99,7 @@ tapi_storage_setup(tapi_storage_client *client,
     if (con_rc != 0 && TE_RC_GET_ERROR(con_rc) != TE_EISCONN)
         return con_rc;
 
-    rc = tapi_storage_client_mput(client, &root_dir, root, TRUE, !lazy);
+    rc = tapi_storage_client_mput(client, &root_dir, root, true, !lazy);
 
     if (con_rc == 0)
         con_rc = tapi_storage_client_disconnect(client);

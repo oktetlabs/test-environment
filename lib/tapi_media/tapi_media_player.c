@@ -129,7 +129,7 @@ tapi_media_player_get_errors(tapi_media_player *player)
 }
 
 /* See description in tapi_media_player.h. */
-te_bool
+bool
 tapi_media_player_check_errors(tapi_media_player *player)
 {
     size_t   i;

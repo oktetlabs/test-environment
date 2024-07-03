@@ -76,7 +76,7 @@ static char    *te_log_raw = NULL;
  */
 static int64_t raw_log_max_size = (1LLU << 32);
 /* Is the raw log file length bigger than raw_log_max_size */
-static te_bool  raw_log_too_big = FALSE;
+static bool raw_log_too_big = false;
 
 /* raw log file check counter */
 static int      raw_file_check_cnt = 0;
@@ -137,7 +137,7 @@ te_log_raw_get_nfl(const void *buf)
  *
  * @return Is log message valid?
  */
-static te_bool
+static bool
 lgr_message_valid(const void *msg, size_t len)
 {
     const uint8_t *p = msg;
@@ -145,7 +145,7 @@ lgr_message_valid(const void *msg, size_t len)
     UNUSED(p);
     UNUSED(len);
 
-    return TRUE;
+    return true;
 }
 
 /**
@@ -235,7 +235,7 @@ lgr_register_message(const void *buf, size_t len)
         /* RAW log is too big now, ignore new messages */
         if (raw_file_stat.st_size > (off64_t)raw_log_max_size)
         {
-            raw_log_too_big = TRUE;
+            raw_log_too_big = true;
 
             fprintf(stderr, "\nRAW LOG HAS REACHED SIZE LIMIT, ALL THE "
                     "NEXT MESSAGES WILL BE LOST\n");
@@ -337,7 +337,7 @@ te_handler(void)
         return NULL;
     }
 
-    while (TRUE) /* Forever loop */
+    while (true) /* Forever loop */
     {
         if (finished_timeout-- <= 0)
         {
@@ -427,7 +427,7 @@ te_handler(void)
                     continue;
                 }
 
-                inst->thread_run = FALSE;
+                inst->thread_run = false;
                 memcpy(inst->agent, msg + pl, ml - pl);
 
                 RING("Logger '%s' TA handler is being added", inst->agent);
@@ -453,7 +453,7 @@ te_handler(void)
                     continue;
                 }
 
-                inst->thread_run = TRUE;
+                inst->thread_run = true;
 
                 RING("Logger '%s' TA handler has been added", inst->agent);
             }
@@ -553,8 +553,8 @@ ta_handler(void *ta)
     struct timeval      now;        /**< Current time */
 
     /* Flush variavles */
-    te_bool             do_flush = FALSE;
-    te_bool             flush_done = FALSE;
+    bool do_flush = false;
+    bool flush_done = false;
     unsigned int        flush_msg_max = 0;
     struct timeval      flush_ts;   /**< Time stamp when flush has been
                                          started */
@@ -605,7 +605,7 @@ ta_handler(void *ta)
         /* If flush operation is done, reply to requester */
         if (flush_done)
         {
-            flush_done = FALSE;
+            flush_done = false;
             if (ta_flush_done(srv) != 0)
                 break;
         }
@@ -662,7 +662,7 @@ ta_handler(void *ta)
                 if (FD_ISSET(fd_server, &rfds))
                 {
                     /* Go into the logs flush mode */
-                    do_flush = TRUE;
+                    do_flush = true;
                     flush_msg_max = LGR_FLUSH_TA_MSG_MAX;
                     gettimeofday(&flush_ts, NULL);
                 }
@@ -687,8 +687,8 @@ ta_handler(void *ta)
             /* Any error interrupts flush operation */
             if (do_flush)
             {
-                do_flush = FALSE;
-                flush_done = TRUE;
+                do_flush = false;
+                flush_done = true;
             }
             if (/* No log messages */
                 (rc == TE_RC(TE_RCF_PCH, TE_ENOENT)) ||
@@ -733,8 +733,8 @@ ta_handler(void *ta)
             }
             if (do_flush)
             {
-                do_flush = FALSE;
-                flush_done = TRUE;
+                do_flush = false;
+                flush_done = true;
             }
             continue;
         }
@@ -794,8 +794,8 @@ ta_handler(void *ta)
                      (msg_ts_usec > (te_log_ts_usec)flush_ts.tv_usec)) ||
                     (flush_msg_max == 0))
                 {
-                    do_flush = FALSE;
-                    flush_done = TRUE;
+                    do_flush = false;
+                    flush_done = true;
                     if (flush_msg_max == 0)
                     {
                         WARN("TA %s: Flush operation was interrupted",
@@ -855,7 +855,7 @@ ta_handler(void *ta)
 
             lgr_register_message(buf, p_buf - buf);
 
-        } while (TRUE);
+        } while (true);
 
         if (feof(ta_file) == 0)
         {
@@ -1079,7 +1079,7 @@ sniffer_polling_sets_start_init(void)
     snifp_sets.rotation = 0;
     snifp_sets.period   = 0;
     snifp_sets.ofill    = ROTATION;
-    snifp_sets.errors   = FALSE;
+    snifp_sets.errors   = false;
 
     sniffers_init();
 }
@@ -1098,7 +1098,7 @@ sniffer_polling_sets_cli_init(void)
         te_strlcpy(snifp_sets.dir, tmp, RCF_MAX_PATH);
     if (strlen(snifp_sets.dir) == 0)
     {
-        snifp_sets.errors = TRUE;
+        snifp_sets.errors = true;
         return;
     }
 
@@ -1239,7 +1239,7 @@ main(int argc, const char *argv[])
      * Go to background, if foreground mode is not requested.
      * No threads should be created before become a daemon.
      */
-    if ((~lgr_flags & LOGGER_FOREGROUND) && (daemon(TRUE, TRUE) != 0))
+    if ((~lgr_flags & LOGGER_FOREGROUND) && (daemon(true, true) != 0))
     {
         ERROR("daemon() failed");
         goto exit;
@@ -1346,7 +1346,7 @@ main(int argc, const char *argv[])
 
             ta_el = (struct ta_inst *)malloc(sizeof(struct ta_inst));
             memset(ta_el, 0, sizeof(struct ta_inst));
-            ta_el->thread_run = FALSE;
+            ta_el->thread_run = false;
             aux_str = ta_names + str_len;
             tmp_len = strlen(aux_str) + 1;
             memcpy(ta_el->agent, aux_str, tmp_len);
@@ -1378,7 +1378,7 @@ main(int argc, const char *argv[])
             ERROR("Logger(client): pthread_create() failed: %s\n", err_buf);
             goto join_te_srv;
         }
-        ta_el->thread_run = TRUE;
+        ta_el->thread_run = true;
     }
 
     result = EXIT_SUCCESS;

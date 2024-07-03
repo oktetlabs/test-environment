@@ -16,7 +16,7 @@
 /** Timeout between attempts to initialize the agent in seconds */
 #define RCF_RESTART_TA_ATTEMPT_TIMEOUT 5
 
-static te_bool
+static bool
 is_timed_out(time_t timestart, double timeout)
 {
     time_t t = time(NULL);
@@ -28,8 +28,8 @@ void
 rcf_ta_reboot_init_ctx(ta *agent)
 {
     agent->reboot_ctx.state = TA_REBOOT_STATE_IDLE;
-    agent->reboot_ctx.is_agent_reboot_msg_sent = FALSE;
-    agent->reboot_ctx.is_answer_recv = FALSE;
+    agent->reboot_ctx.is_agent_reboot_msg_sent = false;
+    agent->reboot_ctx.is_answer_recv = false;
     agent->reboot_ctx.restart_attempt = 0;
     agent->reboot_ctx.requested_types = 0;
 }
@@ -114,7 +114,7 @@ rcf_set_ta_reboot_state(ta *agent, ta_reboot_state state)
     agent->reboot_ctx.reboot_timestamp = time(NULL);
 }
 
-te_bool
+bool
 rcf_ta_reboot_before_req(ta *agent, usrreq *req)
 {
     /*
@@ -124,7 +124,7 @@ rcf_ta_reboot_before_req(ta *agent, usrreq *req)
         req->message->opcode != RCFOP_GET_LOG)
     {
         WARN("The agent is waiting for reboot");
-        return FALSE;
+        return false;
     }
 
     /*
@@ -139,16 +139,16 @@ rcf_ta_reboot_before_req(ta *agent, usrreq *req)
         if (!agent->reboot_ctx.is_agent_reboot_msg_sent)
         {
             ERROR("Agent `%s` in the reboot state", agent->name);
-            agent->reboot_ctx.is_agent_reboot_msg_sent = TRUE;
+            agent->reboot_ctx.is_agent_reboot_msg_sent = true;
         }
 
-        return FALSE;
+        return false;
     }
 
-    return TRUE;
+    return true;
 }
 
-te_bool
+bool
 rcf_ta_reboot_on_req_reply(ta *agent, rcf_op_t opcode)
 {
     if (agent->reboot_ctx.state == TA_REBOOT_STATE_LOG_FLUSH &&
@@ -159,18 +159,18 @@ rcf_ta_reboot_on_req_reply(ta *agent, rcf_op_t opcode)
          * there is no need to push the next waiting request and so on.
          * This will make the reboot state machine.
          */
-        agent->reboot_ctx.is_answer_recv = TRUE;
-        return TRUE;
+        agent->reboot_ctx.is_answer_recv = true;
+        return true;
     }
 
-    return FALSE;
+    return false;
 }
 
 te_errno
 rcf_ta_reboot_is_reboot_answer(ta *agent, usrreq *req)
 {
     if (req->message->opcode == RCFOP_REBOOT)
-        agent->reboot_ctx.is_answer_recv = TRUE;
+        agent->reboot_ctx.is_answer_recv = true;
 
     return 0;
 }
@@ -181,7 +181,7 @@ rcf_ta_reboot_is_cold_reboot_answer(ta *agent, usrreq *req)
     if (req->message->opcode == RCFOP_EXECUTE &&
         strcmp(req->message->id, "cold_reboot") == 0)
     {
-        agent->reboot_ctx.is_answer_recv = TRUE;
+        agent->reboot_ctx.is_answer_recv = true;
     }
 
     return 0;
@@ -217,14 +217,14 @@ log_flush_state_handler(ta *agent)
         if (req != NULL)
             return 0;
 
-        agent->conn_locked = FALSE;
+        agent->conn_locked = false;
 
         if (agent->reboot_ctx.current_type == TA_REBOOT_TYPE_AGENT)
             rcf_set_ta_reboot_state(agent, TA_REBOOT_STATE_REBOOTING);
         else
             rcf_set_ta_reboot_state(agent, TA_REBOOT_STATE_WAITING);
 
-        agent->reboot_ctx.is_answer_recv = FALSE;
+        agent->reboot_ctx.is_answer_recv = false;
         return 0;
     }
 
@@ -240,7 +240,7 @@ log_flush_state_handler(ta *agent)
         else
             rcf_set_ta_reboot_state(agent, TA_REBOOT_STATE_WAITING);
 
-        agent->reboot_ctx.is_answer_recv = FALSE;
+        agent->reboot_ctx.is_answer_recv = false;
     }
 
     return 0;
@@ -423,7 +423,7 @@ waiting_ack_state_host_reboot_handler(ta *agent)
     if (agent->reboot_ctx.is_answer_recv)
     {
         rcf_set_ta_reboot_state(agent, TA_REBOOT_STATE_REBOOTING);
-        agent->reboot_ctx.is_answer_recv = FALSE;
+        agent->reboot_ctx.is_answer_recv = false;
     }
 
     if (is_timed_out(agent->reboot_ctx.reboot_timestamp,
@@ -461,7 +461,7 @@ waiting_ack_state_cold_reboot_handler(ta *agent)
     if (power_ta->reboot_ctx.is_answer_recv)
     {
         rcf_set_ta_reboot_state(agent, TA_REBOOT_STATE_REBOOTING);
-        power_ta->reboot_ctx.is_answer_recv = FALSE;
+        power_ta->reboot_ctx.is_answer_recv = false;
     }
 
     if (is_timed_out(agent->reboot_ctx.reboot_timestamp,
@@ -693,7 +693,7 @@ rebooting_state_cold_reboot_handler(ta *agent)
                          agent->cold_reboot_timeout))
         {
             agent->reboot_ctx.reboot_timestamp = time(NULL);
-            agent->reboot_ctx.is_cold_reboot_time_expired = TRUE;
+            agent->reboot_ctx.is_cold_reboot_time_expired = true;
         }
 
         return 0;
@@ -826,7 +826,7 @@ rcf_ta_reboot_state_handler(ta *agent)
             rcf_ta_reboot_get_next_reboot_type(agent);
             rcf_set_ta_reboot_state(agent, TA_REBOOT_STATE_WAITING);
             agent->reboot_ctx.error = 0;
-            agent->reboot_ctx.is_agent_reboot_msg_sent = FALSE;
+            agent->reboot_ctx.is_agent_reboot_msg_sent = false;
         }
         else
         {

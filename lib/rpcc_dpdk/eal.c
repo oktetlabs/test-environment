@@ -53,7 +53,7 @@ tapi_eal_rpcs_get_cached_eal_args(const rcf_rpc_server *rpcs, char **eal_args)
 static te_errno
 tapi_eal_rpcs_reset_cached_eal_args(const rcf_rpc_server *rpcs)
 {
-    te_bool already_reset = FALSE;
+    bool already_reset = false;
     char *old_args;
     te_errno rc;
 
@@ -218,7 +218,7 @@ lcore_mask_to_hex(const lcore_mask_t *mask)
     return result;
 }
 
-static te_bool
+static bool
 lcore_mask_is_zero(const lcore_mask_t *mask)
 {
     uint8_t test = 0;
@@ -230,13 +230,13 @@ lcore_mask_is_zero(const lcore_mask_t *mask)
     return (test == 0);
 }
 
-static te_bool
+static bool
 lcore_mask_bit_is_set(const lcore_mask_t *mask, unsigned int bit)
 {
     unsigned int index;
 
     if (bit >= TE_ARRAY_LEN(mask->bytes) * CHAR_BIT)
-        return FALSE;
+        return false;
 
     index = bit / CHAR_BIT;
 
@@ -306,7 +306,7 @@ tapi_rte_get_dev_args(const char *ta, const char *vendor, const char *device,
 {
     te_string result = TE_STRING_INIT;
     te_vec *specifiers;
-    te_bool first;
+    bool first;
     te_errno rc;
     char **spec;
 
@@ -315,7 +315,7 @@ tapi_rte_get_dev_args(const char *ta, const char *vendor, const char *device,
     if (rc != 0)
         return rc;
 
-    first = TRUE;
+    first = true;
     TE_VEC_FOREACH(specifiers, spec)
     {
         char *args;
@@ -332,7 +332,7 @@ tapi_rte_get_dev_args(const char *ta, const char *vendor, const char *device,
         if (args != NULL && args[0] != '\0')
         {
             rc = te_string_append(&result, "%s%s", first ? "" : ",", args);
-            first = FALSE;
+            first = false;
         }
 
         free(args);
@@ -706,7 +706,7 @@ tapi_reuse_eal(tapi_env         *env,
                tapi_env_ps_ifs  *ifsp,
                int               argc,
                char             *argv[],
-               te_bool          *need_init,
+               bool *need_init,
                char            **eal_args_out)
 {
     char                 *eal_args = NULL;
@@ -736,7 +736,7 @@ tapi_reuse_eal(tapi_env         *env,
         rc = tapi_rte_eal_fini(env, rpcs);
         if (rc == 0)
         {
-            *need_init = TRUE;
+            *need_init = true;
             *eal_args_out = eal_args;
         }
         goto out;
@@ -839,7 +839,7 @@ tapi_reuse_eal(tapi_env         *env,
             goto out;
     }
 
-    *need_init = FALSE;
+    *need_init = false;
     *eal_args_out = NULL;
 
     free(eal_args);
@@ -942,7 +942,7 @@ tapi_eal_get_vdev_properties(tapi_env              *env,
                              const tapi_env_ps_if  *ps_if,
                              char                 **namep,
                              char                 **modep,
-                             te_bool               *is_bondingp)
+                             bool *is_bondingp)
 {
     cfg_nets_t     *cfg_nets = &env->cfg_nets;
     tapi_env_net   *net = ps_if->iface->net;
@@ -973,9 +973,9 @@ tapi_eal_get_vdev_properties(tapi_env              *env,
     *modep = mode;
 
     if (strncmp(name, name_prefix_bonding, strlen(name_prefix_bonding)) == 0)
-        *is_bondingp = TRUE;
+        *is_bondingp = true;
     else
-        *is_bondingp = FALSE;
+        *is_bondingp = false;
 
 out:
     if (rc != 0)
@@ -989,7 +989,7 @@ out:
 static te_errno
 tapi_eal_mk_vdev_slave_list_str(tapi_env              *env,
                                 const tapi_env_ps_if  *ps_if,
-                                te_bool                is_bonding,
+                                bool is_bonding,
                                 char                 **slave_list_strp,
                                 const char            *ta)
 {
@@ -1007,14 +1007,14 @@ tapi_eal_mk_vdev_slave_list_str(tapi_env              *env,
     unsigned int   i;
     const char *dn = ps_if->iface->if_info.if_name;
     const char dn_prefix_af_xdp[] = "net_af_xdp";
-    te_bool is_af_xdp = FALSE;
+    bool is_af_xdp = false;
 
     prefix = (is_bonding) ? prefix_bonding : prefix_failsafe;
     postfix = (is_bonding) ? postfix_bonding : postfix_failsafe;
 
     if (strncmp(dn, dn_prefix_af_xdp, strlen(dn_prefix_af_xdp)) == 0)
     {
-        is_af_xdp = TRUE;
+        is_af_xdp = true;
         prefix = ",iface=";
         postfix = "";
     }
@@ -1120,7 +1120,7 @@ tapi_eal_add_vdev_args(tapi_env          *env,
         {
             char    *name = NULL;
             char    *mode = NULL;
-            te_bool  is_bonding;
+            bool is_bonding;
             char    *slave_list_str = NULL;
 
             rc = tapi_eal_get_vdev_properties(env, ps_if, &name, &mode,
@@ -1367,7 +1367,7 @@ build_service_core_mask_arg(int *argc, char ***argv,
                             unsigned int n_service_cores)
 {
     lcore_mask_t s_core_mask = {{0}};
-    te_bool first = TRUE;
+    bool first = true;
     unsigned int bit;
     unsigned int n;
     te_errno rc;
@@ -1384,7 +1384,7 @@ build_service_core_mask_arg(int *argc, char ***argv,
             /* Skip the main lcore; it can't be treated as a service lcore. */
             if (first)
             {
-                first = FALSE;
+                first = false;
                 continue;
             }
 
@@ -1732,7 +1732,7 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     int                     my_argc = 0;
     int                     ret;
     int                     i;
-    te_bool                 need_init = TRUE;
+    bool need_init = true;
     char                   *eal_args_new = NULL;
 
     if (env == NULL || rpcs == NULL)
@@ -1815,7 +1815,7 @@ tapi_rte_eal_fini(tapi_env *env, rcf_rpc_server *rpcs)
     return rcf_rpc_server_restart(rpcs);
 }
 
-static te_bool
+static bool
 tarpc_rte_proc_type_t_valid(enum tarpc_rte_proc_type_t val)
 {
     return val == TARPC_RTE_PROC_AUTO ||
@@ -2006,7 +2006,7 @@ rpc_rte_epoll_wait(rcf_rpc_server *rpcs,
     }
 
     rcf_rpc_call(rpcs, "rte_epoll_wait", &in, &out);
-    CHECK_RETVAL_VAR_ERR_COND(rte_epoll_wait, out.retval, FALSE,
+    CHECK_RETVAL_VAR_ERR_COND(rte_epoll_wait, out.retval, false,
                               -TE_RC(TE_TAPI, TE_ECORRUPTED), (out.retval < 0));
 
     if (events != NULL && out.events.events_len != 0)

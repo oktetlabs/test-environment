@@ -95,7 +95,7 @@
         _rc = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);     \
         RCF_CH_UNLOCK;                                                  \
         return _rc;                                                     \
-    } while (FALSE)
+    } while (false)
 
 /** User environment */
 extern char **environ;
@@ -136,30 +136,30 @@ extern rcf_symbol_entry generated_table[];
 #endif
 
 static rcf_symbol_entry essential_symbols[] = {
-   {.name = "socket",       .addr = (void *)socket,       .is_func = TRUE},
-   {.name = "bind",         .addr = (void *)bind,         .is_func = TRUE},
-   {.name = "select",       .addr = (void *)select,       .is_func = TRUE},
-   {.name = "connect",      .addr = (void *)connect,      .is_func = TRUE},
-   {.name = "listen",       .addr = (void *)listen,       .is_func = TRUE},
-   {.name = "accept",       .addr = (void *)accept,       .is_func = TRUE},
-   {.name = "send",         .addr = (void *)send,         .is_func = TRUE},
-   {.name = "sendto",       .addr = (void *)sendto,       .is_func = TRUE},
-   {.name = "recv",         .addr = (void *)recv,         .is_func = TRUE},
-   {.name = "read",         .addr = (void *)read,         .is_func = TRUE},
-   {.name = "write",        .addr = (void *)write,        .is_func = TRUE},
-   {.name = "close",        .addr = (void *)close,        .is_func = TRUE},
-   {.name = "waitpid",      .addr = (void *)waitpid,      .is_func = TRUE},
-   {.name = "te_shell_cmd", .addr = (void *)te_shell_cmd, .is_func = TRUE},
-   {.name = "getsockname",  .addr = (void *)getsockname,  .is_func = TRUE},
-   {.name = "poll",         .addr = (void *)poll,         .is_func = TRUE},
+   {.name = "socket",       .addr = (void *)socket,       .is_func = true},
+   {.name = "bind",         .addr = (void *)bind,         .is_func = true},
+   {.name = "select",       .addr = (void *)select,       .is_func = true},
+   {.name = "connect",      .addr = (void *)connect,      .is_func = true},
+   {.name = "listen",       .addr = (void *)listen,       .is_func = true},
+   {.name = "accept",       .addr = (void *)accept,       .is_func = true},
+   {.name = "send",         .addr = (void *)send,         .is_func = true},
+   {.name = "sendto",       .addr = (void *)sendto,       .is_func = true},
+   {.name = "recv",         .addr = (void *)recv,         .is_func = true},
+   {.name = "read",         .addr = (void *)read,         .is_func = true},
+   {.name = "write",        .addr = (void *)write,        .is_func = true},
+   {.name = "close",        .addr = (void *)close,        .is_func = true},
+   {.name = "waitpid",      .addr = (void *)waitpid,      .is_func = true},
+   {.name = "te_shell_cmd", .addr = (void *)te_shell_cmd, .is_func = true},
+   {.name = "getsockname",  .addr = (void *)getsockname,  .is_func = true},
+   {.name = "poll",         .addr = (void *)poll,         .is_func = true},
 #if defined (HAVE_AIO_H)
-   {.name = "aio_read",     .addr = (void *)aio_read,     .is_func = TRUE},
-   {.name = "aio_error",    .addr = (void *)aio_error,    .is_func = TRUE},
-   {.name = "aio_return",   .addr = (void *)aio_return,   .is_func = TRUE},
-   {.name = "aio_write",    .addr = (void *)aio_write,    .is_func = TRUE},
-   {.name = "aio_suspend",  .addr = (void *)aio_suspend,  .is_func = TRUE},
-   {.name = "aio_cancel",   .addr = (void *)aio_cancel,   .is_func = TRUE},
-   {.name = "lio_listio",   .addr = (void *)lio_listio,   .is_func = TRUE},
+   {.name = "aio_read",     .addr = (void *)aio_read,     .is_func = true},
+   {.name = "aio_error",    .addr = (void *)aio_error,    .is_func = true},
+   {.name = "aio_return",   .addr = (void *)aio_return,   .is_func = true},
+   {.name = "aio_write",    .addr = (void *)aio_write,    .is_func = true},
+   {.name = "aio_suspend",  .addr = (void *)aio_suspend,  .is_func = true},
+   {.name = "aio_cancel",   .addr = (void *)aio_cancel,   .is_func = true},
+   {.name = "lio_listio",   .addr = (void *)lio_listio,   .is_func = true},
 #endif
    {.name = NULL, .addr = NULL}
 };
@@ -546,7 +546,7 @@ reject:
 int
 rcf_ch_call(struct rcf_comm_connection *handle,
             char *cbuf, size_t buflen, size_t answer_plen,
-            const char *rtn, te_bool is_argv, int argc, void **params)
+            const char *rtn, bool is_argv, int argc, void **params)
 {
     UNUSED(handle);
     UNUSED(cbuf);
@@ -563,10 +563,10 @@ rcf_ch_call(struct rcf_comm_connection *handle,
 
 static int
 rcf_ch_start_ta_process(pid_t *pid,
-                        int priority, const char *rtn, te_bool do_exec,
+                        int priority, const char *rtn, bool do_exec,
                         int argc, void **params)
 {
-    void *addr = rcf_ch_symbol_addr(rtn, TRUE);
+    void *addr = rcf_ch_symbol_addr(rtn, true);
 
     VERB("Start task handler is executed");
 
@@ -767,7 +767,7 @@ rcf_ch_start_ext_process(pid_t *pid,
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_start_process(pid_t *pid,
-                    int priority, const char *rtn, te_bool do_exec,
+                    int priority, const char *rtn, bool do_exec,
                     int argc, void **params)
 {
     const char *provider = rcf_pch_rpc_get_provider();
@@ -785,14 +785,14 @@ rcf_ch_start_process(pid_t *pid,
 }
 
 struct rcf_thread_parameter {
-    te_bool    active;
+    bool active;
     pthread_t  id;
     void      *addr;
-    te_bool is_argv;
+    bool is_argv;
     int        argc;
     void     **params;
     te_errno   rc;
-    te_bool    sem_created;
+    bool sem_created;
     sem_t      params_processed;
 };
 
@@ -825,7 +825,7 @@ rcf_ch_thread_wrapper(void *arg)
     }
     VERB("thread is terminating");
     pthread_mutex_lock(&thread_pool_mutex);
-    parm->active = FALSE;
+    parm->active = false;
     pthread_mutex_unlock(&thread_pool_mutex);
     return NULL;
 }
@@ -833,10 +833,10 @@ rcf_ch_thread_wrapper(void *arg)
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_start_thread(int *tid,
-                    int priority, const char *rtn, te_bool is_argv,
+                    int priority, const char *rtn, bool is_argv,
                     int argc, void **params)
 {
-    void *addr = rcf_ch_symbol_addr(rtn, TRUE);
+    void *addr = rcf_ch_symbol_addr(rtn, true);
 
     struct rcf_thread_parameter *iter;
 
@@ -862,8 +862,8 @@ rcf_ch_start_thread(int *tid,
                 iter->id = 0;
                 if (!iter->sem_created)
                 {
-                    sem_init(&iter->params_processed, FALSE, 0);
-                    iter->sem_created = TRUE;
+                    sem_init(&iter->params_processed, false, 0);
+                    iter->sem_created = true;
                 }
                 if ((rc = pthread_create(&iter->id, NULL,
                                          rcf_ch_thread_wrapper, iter)) != 0)
@@ -872,7 +872,7 @@ rcf_ch_start_thread(int *tid,
                     return TE_OS_RC(TE_TA_UNIX, rc);
                 }
                 VERB("started thread %d", iter - thread_pool);
-                iter->active = TRUE;
+                iter->active = true;
                 sem_wait(&iter->params_processed);
                 pthread_mutex_unlock(&thread_pool_mutex);
                 *tid = (int)(iter - thread_pool);
@@ -1330,17 +1330,17 @@ ta_sigint_handler(void)
 /* static, see above */ void
 ta_sigpipe_handler(void)
 {
-    static te_bool here = FALSE;
+    static bool here = false;
 
     if (!here)
     {
-        here = TRUE;
+        here = true;
         fprintf(stderr, "SIGPIPE is received\n");
-        here = FALSE;
+        here = false;
     }
 }
 
-/** TRUE if first timeval is less than second */
+/** @c true if first timeval is less than second */
 #define TV_LESS(_le, _ge) \
     ((_le).tv_sec < (_ge).tv_sec ||                               \
      ((_le).tv_sec == (_ge).tv_sec && (_le).tv_usec < (_ge).tv_usec))
@@ -1358,13 +1358,13 @@ static void
 init_tce_subsystem(void)
 {
     tce_stop_function =
-        rcf_ch_symbol_addr("tce_stop_collector", TRUE);
+        rcf_ch_symbol_addr("tce_stop_collector", true);
     tce_notify_function =
-        rcf_ch_symbol_addr("tce_notify_collector", TRUE);
+        rcf_ch_symbol_addr("tce_notify_collector", true);
     tce_get_peer_function =
-        rcf_ch_symbol_addr("tce_obtain_principal_peer_id", TRUE);
+        rcf_ch_symbol_addr("tce_obtain_principal_peer_id", true);
     tce_get_conn_function =
-        rcf_ch_symbol_addr("tce_obtain_principal_connect", TRUE);
+        rcf_ch_symbol_addr("tce_obtain_principal_connect", true);
 }
 
 /** Print environment to the console */

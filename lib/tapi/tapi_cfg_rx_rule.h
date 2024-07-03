@@ -316,15 +316,15 @@ extern te_errno tapi_cfg_rx_rule_rss_context_get(const char *ta,
  *
  * @param ta          Test Agent
  * @param if_name     Interface name
- * @param value       Will be set to @c TRUE if special locations are
- *                    supported, to @c FALSE otherwise
+ * @param value       Will be set to @c true if special locations are
+ *                    supported, to @c false otherwise
  *
  * @return Status code.
  */
 extern te_errno tapi_cfg_rx_rule_spec_loc_get(
                                         const char *ta,
                                         const char *if_name,
-                                        te_bool *value);
+                                        bool *value);
 
 /**
  * Get size of Rx classification rules table.

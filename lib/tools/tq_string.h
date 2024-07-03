@@ -50,10 +50,10 @@ extern void tq_strings_free(tqh_strings *head, void (*value_free)(void *));
  * @param s1        The first tail queue
  * @param s2        The second tail queue
  *
- * @retval TRUE     Equal
- * @retval FALSE    Not equal
+ * @retval @c true     Equal
+ * @retval @c false    Not equal
  */
-extern te_bool tq_strings_equal(const tqh_strings *s1,
+extern bool tq_strings_equal(const tqh_strings *s1,
                                 const tqh_strings *s2);
 
 /**
@@ -72,7 +72,7 @@ extern te_bool tq_strings_equal(const tqh_strings *s1,
  */
 extern te_errno tq_strings_add_uniq_gen(tqh_strings *list,
                                         const char *value,
-                                        te_bool duplicate);
+                                        bool duplicate);
 
 /**
  * Add a new string into the list, if no such string is already present

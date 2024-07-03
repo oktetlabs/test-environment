@@ -146,7 +146,7 @@ extern te_errno rpc_job_deallocate_channels(rcf_rpc_server *rpcs,
  * @param filter_name   Name of the filter
  * @param n_channels    Count of @p channels
  * @param channels      Output channels to attach the filter to.
- * @param readable      If @c TRUE, the output of the filter can be
+ * @param readable      If @c true, the output of the filter can be
  *                      read with rpc_job_receive(); otherwise, it is discarded,
  *                      possibly after being logged.
  * @param log_level     If non-zero, the output of the filter is
@@ -161,7 +161,7 @@ extern te_errno rpc_job_attach_filter(rcf_rpc_server *rpcs,
                                       const char *filter_name,
                                       unsigned int n_channels,
                                       unsigned int *channels,
-                                      te_bool readable,
+                                      bool readable,
                                       te_log_level log_level,
                                       unsigned int *filter);
 

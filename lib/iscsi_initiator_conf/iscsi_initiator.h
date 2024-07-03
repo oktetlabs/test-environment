@@ -140,7 +140,7 @@ typedef struct iscsi_tgt_chap_data {
                                                          notation) */
     char        local_secret[ISCSI_SECURITY_VALUE_LENGTH]; /**< Local Secret (lx in
                                                            UNH Notation */
-    te_bool     need_target_auth; /**< If TRUE, then Target authentication is
+    bool need_target_auth; /**< If @c true, then Target authentication is
                                        required during the Security Phase */
 } iscsi_tgt_chap_data_t;
 
@@ -194,7 +194,7 @@ typedef struct iscsi_connection_data {
  */
 typedef struct iscsi_target_data {
     int               target_id; /**< Id of the Target */
-    te_bool           is_active;
+    bool is_active;
 
     int               number_of_open_connections;
                                  /**< Number of initiated connections
@@ -238,7 +238,7 @@ typedef struct iscsi_initiator_data {
     pthread_mutex_t            mutex; /**< Structure mutex */
     sem_t                      request_sem;
                           /**< Pending request semaphore */
-    te_bool                    request_thread_started;
+    bool request_thread_started;
     pthread_t                  request_thread;
     pthread_t                  timer_thread;
     iscsi_connection_req      *request_queue_head; /**< Request queue head */
@@ -265,7 +265,7 @@ typedef char *(*iscsi_param_formatter_t)(void *);
  * A function type for predicates determining
  * whether a given parameter need to be configured
  */
-typedef te_bool (*iscsi_param_predicate_t)(iscsi_target_data_t *,
+typedef bool (*iscsi_param_predicate_t)(iscsi_target_data_t *,
                                            iscsi_connection_data_t *,
                                            iscsi_tgt_chap_data_t *);
 
@@ -276,9 +276,9 @@ typedef struct iscsi_target_param_descr_t
 {
     uint32_t offer; /**< OFFER_XXX mask */
     char    *name;  /**< Parameter name */
-    te_bool  is_string; /**< TRUE if the corresponding field
+    bool is_string; /**< @c true if the corresponding field
                          *  is `char *`,
-                         *  FALSE if it is `int`
+                         *  @c false if it is `int`
                          */
     enum iscsi_target_param_kind_t kind;
                          /**< Parameter type.
@@ -295,12 +295,12 @@ typedef struct iscsi_target_param_descr_t
                                   *   a given parameter really needs to be
                                   *   configured depending on other
                                   *   parameters.
-                                  *   NULL == always TRUE
+                                  *   @c NULL == always @c true
                                   */
 } iscsi_target_param_descr_t;
 
 /** Trailing element in iscsi_target_param_descr_t array */
-#define ISCSI_END_PARAM_TABLE {0, NULL, FALSE, 0, -1, NULL, NULL}
+#define ISCSI_END_PARAM_TABLE {0, NULL, false, 0, -1, NULL, NULL}
 
 
 /** Returns a pointer to master iSCSI initiator parameter table
@@ -342,11 +342,11 @@ extern int iscsi_get_cid(const char *oid);
  * @param target_id     Target number
  * @param cid           Connection number
  * @param status        New status
- * @param urgent        If TRUE, the request will be put into the head
+ * @param urgent        If @c true, the request will be put into the head
  *                      of the queue, instead of the tail
  */
 extern te_errno iscsi_post_connection_request(int target_id, int cid,
-                                              int status, te_bool urgent);
+                                              int status, bool urgent);
 
 extern te_errno iscsi_initiator_start_thread(void);
 
@@ -548,14 +548,14 @@ extern te_errno iscsi_initiator_win32_set(iscsi_connection_req *req);
  * Check whether a given parameter @p param needs to be configured
  * in a certain situation.
  *
- * @return TRUE if the parameter should be configured
+ * @return @c true if the parameter should be configured
  *
  * @param param         Parameter description
  * @param tgt_data      Target-wide parameters
  * @param conn_data     iSCSI operational parameters
  * @param auth_data     iSCSI security parameters
  */
-static inline te_bool
+static inline bool
 iscsi_is_param_needed(iscsi_target_param_descr_t *param,
                       iscsi_target_data_t *tgt_data,
                       iscsi_connection_data_t *conn_data,
@@ -563,7 +563,7 @@ iscsi_is_param_needed(iscsi_target_param_descr_t *param,
 {
     return (param->predicate != NULL ?
             param->predicate(tgt_data, conn_data, auth_data) :
-            TRUE);
+            true);
 }
 
 /**
@@ -614,39 +614,39 @@ extern void iscsi_append_to_buf(void *destination, char *what);
 /**
  * Predicate function for iscsi_write_param().
  *
- * @return TRUE if target authentication is requested
+ * @return @c true if target authentication is requested
  *
  * @param target_data   Target-wide parameters
  * @param conn_data     iSCSI operational parameters
  * @param auth_data     iSCSI security parameters
  */
-extern te_bool iscsi_when_tgt_auth(iscsi_target_data_t *target_data,
+extern bool iscsi_when_tgt_auth(iscsi_target_data_t *target_data,
                                    iscsi_connection_data_t *conn_data,
                                    iscsi_tgt_chap_data_t *auth_data);
 
 /**
  * Predicate function for iscsi_write_param().
  *
- * @return TRUE if target authentication is not requested
+ * @return @c true if target authentication is not requested
  *
  * @param target_data   Target-wide parameters
  * @param conn_data     iSCSI operational parameters
  * @param auth_data     iSCSI security parameters
  */
-extern te_bool iscsi_when_not_tgt_auth(iscsi_target_data_t *target_data,
+extern bool iscsi_when_not_tgt_auth(iscsi_target_data_t *target_data,
                                        iscsi_connection_data_t *conn_data,
                                        iscsi_tgt_chap_data_t *auth_data);
 
 /**
  * Predicate function for iscsi_write_param().
  *
- * @return TRUE if any authentication is requested
+ * @return @c true if any authentication is requested
  *
  * @param target_data   Target-wide parameters
  * @param conn_data     iSCSI operational parameters
  * @param auth_data     iSCSI security parameters
  */
-extern te_bool iscsi_when_chap(iscsi_target_data_t *target_data,
+extern bool iscsi_when_chap(iscsi_target_data_t *target_data,
                                iscsi_connection_data_t *conn_data,
                                iscsi_tgt_chap_data_t *auth_data);
 
@@ -656,7 +656,7 @@ extern te_bool iscsi_when_chap(iscsi_target_data_t *target_data,
  *
  * @param conn          Connection data
  * @param target_id     Target ID
- * @param is_generic    If TRUE, obtain SCSI generic device name,
+ * @param is_generic    If @c true, obtain SCSI generic device name,
  *                      otherwise block device name
  * @param outbuffer     Device name buffer (OUT)
  *
@@ -664,6 +664,6 @@ extern te_bool iscsi_when_chap(iscsi_target_data_t *target_data,
  */
 extern te_errno iscsi_get_device_name(iscsi_connection_data_t *conn,
                                       int target_id,
-                                      te_bool is_generic, char *outbuffer);
+                                      bool is_generic, char *outbuffer);
 
 #endif

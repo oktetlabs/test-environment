@@ -136,7 +136,7 @@ typedef struct tapi_pat_sender {
 
     /* out */
     uint64_t            sent;             /**< Number of sent bytes */
-    te_bool             send_failed;      /**< @c TRUE if @b send() call
+    bool send_failed;      /**< @c true if @b send() call
                                                failed */
 
     /*
@@ -150,8 +150,8 @@ typedef struct tapi_pat_sender {
                                                pattern generator */
     uint64_t           *sent_ptr;         /**< Where to save number of
                                                sent bytes */
-    te_bool            *send_failed_ptr;  /**< Pointer to a variable which
-                                               will be set to @c TRUE if
+    bool               *send_failed_ptr;  /**< Pointer to a variable which
+                                               will be set to @c true if
                                                sending fails */
 } tapi_pat_sender;
 
@@ -181,7 +181,7 @@ typedef struct tapi_pat_receiver {
                                               wait until @b duration_sec
                                               expires) */
 
-    tarpc_bool          ignore_pollerr;   /**< If @c TRUE, ignore @c POLLERR
+    tarpc_bool          ignore_pollerr;   /**< If @c true, ignore @c POLLERR
                                                if it arrives instead of
                                                @c POLLIN, and continue
                                                polling */
@@ -193,7 +193,7 @@ typedef struct tapi_pat_receiver {
                                              receiving this number of
                                              bytes) */
     uint64_t            received;       /**< Number of received bytes */
-    te_bool             recv_failed;    /**< @c TRUE if @b recv() call
+    bool recv_failed;    /**< @c true if @b recv() call
                                              was failed */
 
     /*
@@ -207,8 +207,8 @@ typedef struct tapi_pat_receiver {
                                                pattern generator */
     uint64_t           *received_ptr;     /**< Where to save number of
                                                received bytes */
-    te_bool            *recv_failed_ptr;  /**< Pointer to a variable which
-                                               will be set to @c TRUE if
+    bool               *recv_failed_ptr;  /**< Pointer to a variable which
+                                               will be set to @c true if
                                                @b recv() fails. */
 } tapi_pat_receiver;
 
@@ -228,7 +228,7 @@ extern void tapi_pat_receiver_init(tapi_pat_receiver *p);
  *
  * @return            Value returned by @b tarpc_find_func()
  */
-extern te_bool rpc_find_func(rcf_rpc_server *rpcs,
+extern bool rpc_find_func(rcf_rpc_server *rpcs,
                              const char *func_name);
 
 /**
@@ -284,10 +284,10 @@ extern tarpc_ssize_t rpc_get_sizeof(rcf_rpc_server *rpcs,
  * @param is_wide2           boolean defining if fields of second
  *                           protocol info are wide-character
  *
- * @return                   TRUE if information in @p buf1 is equal to
+ * @return                   @c true if information in @p buf1 is equal to
  *                           information in buf2
  */
-extern te_bool rpc_protocol_info_cmp(rcf_rpc_server *rpcs,
+extern bool rpc_protocol_info_cmp(rcf_rpc_server *rpcs,
                                      const uint8_t *buf1,
                                      const uint8_t *buf2,
                                      tarpc_bool is_wide1,
@@ -356,8 +356,8 @@ extern void rpc_set_var(rcf_rpc_server *rpcs,
  * @param ignore_err        Ignore errors while run
  *
  * @return Number of sent bytes or -1 in the case of failure if ignore_err
- *         set to FALSE or number of sent bytes or 0 if ignore_err set to
- *         TRUE
+ *         set to @c false or number of sent bytes or 0 if ignore_err set to
+ *         @c true
  */
 extern int rpc_simple_sender(rcf_rpc_server *handle,
                              int s,
@@ -558,7 +558,7 @@ extern int rpc_iomux_flooder(rcf_rpc_server *handle,
 extern int rpc_send_flooder_iomux(rcf_rpc_server *rpcs, int sock,
                                   iomux_func iomux,
                                   tarpc_send_function send_func,
-                                  te_bool msg_dontwait, int packet_size,
+                                  bool msg_dontwait, int packet_size,
                                   int duration, uint64_t *packets,
                                   uint32_t *errors);
 
@@ -650,15 +650,15 @@ extern int64_t rpc_copy_fd2fd(rcf_rpc_server *rpcs,
  *
  * @param handle        RPC server
  * @param uri           FTP uri: ftp://user:password@server/directory/file
- * @param rdonly        if TRUE, get file
- * @param passive       if TRUE, passive mode
+ * @param rdonly        if @c true, get file
+ * @param passive       if @c true, passive mode
  * @param offset        file offset
  * @param sock          pointer to a socket descriptor
  *
  * @return File descriptor, which may be used for reading/writing data
  */
 extern int rpc_ftp_open(rcf_rpc_server *handle,
-                        char *uri, te_bool rdonly, te_bool passive,
+                        char *uri, bool rdonly, bool passive,
                         int offset, int *sock);
 
 /**
@@ -884,10 +884,10 @@ extern int rpc_read_fd2te_string(rcf_rpc_server *rpcs, int fd, int time2wait,
  * host where the specified RPC server runs.
  *
  * @param rpcs          RPC server
- * @param start         TRUE if want to start the VM trasher,
- *                      FALSE if want to stop the VM trasher.
+ * @param start         @c true if want to start the VM trasher,
+ *                      @c false if want to stop the VM trasher.
  */
-extern void rpc_vm_trasher(rcf_rpc_server *rpcs, te_bool start);
+extern void rpc_vm_trasher(rcf_rpc_server *rpcs, bool start);
 
 /**
  * Copy the @b src_buf buffer in @b dst_buf located in TA address space
@@ -1222,7 +1222,7 @@ extern int rpc_integer2raw(rcf_rpc_server *rpcs, uint64_t number,
  *
  * @return @c 0 on success or @c -1
  */
-extern int rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, te_bool use_exec);
+extern int rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, bool use_exec);
 
 /**
  * Determine if the interface is grabbed by the testing.
@@ -1230,9 +1230,9 @@ extern int rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, te_bool use_exec);
  * @param ta         Test agent name
  * @param interface  Interface name
  *
- * @return @c TRUE if the interface is grabbed.
+ * @return @c true if the interface is grabbed.
  */
-static inline te_bool
+static inline bool
 tapi_interface_is_mine(const char *ta, const char *interface)
 {
     char *val;
@@ -1241,10 +1241,10 @@ tapi_interface_is_mine(const char *ta, const char *interface)
                                     ta, interface) == 0)
     {
         free(val);
-        return TRUE;
+        return true;
     }
 
-    return FALSE;
+    return false;
 }
 
 /**
@@ -1335,10 +1335,10 @@ extern te_errno tapi_store_saved_mtus(const char *ta,
  * @param ta      Test Agent name.
  * @param name    Name used to identify MTU values list.
  *
- * @return @c TRUE if MTU values are stored under the @p name,
- *         @c FALSE otherwise.
+ * @return @c true if MTU values are stored under the @p name,
+ *         @c false otherwise.
  */
-extern te_bool tapi_stored_mtus_exist(const char *ta,
+extern bool tapi_stored_mtus_exist(const char *ta,
                                       const char *name);
 
 /**
@@ -1399,9 +1399,9 @@ extern te_errno tapi_set_if_mtu_smart2_rollback(te_saved_mtus *backup);
  * @param rpcs       RPC server handler
  * @param interface  Interface name
  *
- * @return @c TRUE if the interface is grabbed.
+ * @return @c true if the interface is grabbed.
  */
-extern te_bool tapi_interface_is_vlan(rcf_rpc_server *rpcs,
+extern bool tapi_interface_is_vlan(rcf_rpc_server *rpcs,
                                       const struct if_nameindex *interface);
 
 /**

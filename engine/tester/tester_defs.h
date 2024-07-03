@@ -85,7 +85,7 @@ ri_role2str(run_item_role role)
 typedef int test_id;
 
 /** Is SIGINT signal received by Tester? */
-extern te_bool tester_sigint_received;
+extern bool tester_sigint_received;
 
 
 /**
@@ -118,7 +118,7 @@ bit_mask_clear(uint8_t *mem, unsigned int bit)
  * @param mem           Bit mask memory
  * @param bit           Bit number to test (starting from 0)
  */
-static inline te_bool
+static inline bool
 bit_mask_is_set(const uint8_t *mem, unsigned int bit)
 {
     return !!(mem[bit >> 3] & (1 << (bit & 0x7)));

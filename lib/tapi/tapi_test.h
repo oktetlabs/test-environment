@@ -452,7 +452,7 @@ cleanup_specific:                                                   \
  * int main(int argc, char **argv)
  * {
  *     int      size;
- *     te_bool  oob;
+ *     bool     oob;
  *     char    *msg;
  *
  *     TEST_START;
@@ -940,17 +940,17 @@ cleanup_specific:                                                   \
     } while (0)
 
 /**
- * The list of values allowed for parameter of type 'te_bool'
+ * The list of values allowed for parameter of type @c bool
  */
 #define BOOL_MAPPING_LIST \
-            { "TRUE", (int)TRUE }, \
-            { "FALSE", (int)FALSE }
+            { "TRUE", true }, \
+            { "FALSE", false }
 
 /**
- * Get the value of parameter of type 'te_bool'
+ * Get the value of parameter of type @c bool
  *
  * @param var_name_  Name of the variable used to get the value of
- *                   "var_name_" parameter of type 'te_bool' (OUT)
+ *                   "var_name_" parameter of type @c bool (OUT)
  */
 #define TEST_GET_BOOL_PARAM(var_name_) \
     TEST_GET_ENUM_PARAM(var_name_, BOOL_MAPPING_LIST)
@@ -1159,10 +1159,10 @@ extern unsigned int te_test_id;
 /**
  * Check whether SIGUSR2 signal has ever been caught
  *
- * @retval FALSE No signal has been caught
- * @retval TRUE  Signal(-s) has(-ve) been caught.
+ * @retval @c false No signal has been caught
+ * @retval @c true  Signal(-s) has(-ve) been caught.
  */
-extern te_bool te_sigusr2_caught(void);
+extern bool te_sigusr2_caught(void);
 
 /**
  * Finds a particular parameter in the list of parameters
@@ -1426,9 +1426,9 @@ typedef struct tapi_test_expected_result {
  * @param rc        actual status code
  * @param output    actual output
  *
- * @return @c TRUE if the actual result matches the expected one.
+ * @return @c true if the actual result matches the expected one.
  */
-extern te_bool
+extern bool
 tapi_test_check_expected_result(const tapi_test_expected_result *expected,
                                 te_errno rc, const char *output);
 
@@ -1445,9 +1445,9 @@ tapi_test_check_expected_result(const tapi_test_expected_result *expected,
  * @param rc        actual status code
  * @param ival      actual integral result
  *
- * @return @c TRUE if the actual result matches the expected one.
+ * @return @c true if the actual result matches the expected one.
  */
-extern te_bool
+extern bool
 tapi_test_check_expected_int_result(const tapi_test_expected_result *expected,
                                     te_errno rc, intmax_t ival);
 

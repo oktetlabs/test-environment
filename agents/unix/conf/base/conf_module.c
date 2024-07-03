@@ -73,17 +73,17 @@ typedef struct te_kernel_module {
     char  name[TE_MODULE_NAME_LEN]; /*< Name of the module */
     char *filename; /*< Should be set only for modules that we add before
                      *  enabling */
-    te_bool filename_load_dependencies; /**< Demands that dependencies be
+    bool filename_load_dependencies; /**< Demands that dependencies be
                                          *   loaded prior loading the module
                                          *   by its filename
                                          */
-    te_bool unload_holders; /**< Demands that module holders be
+    bool unload_holders; /**< Demands that module holders be
                              *   unloaded prior unloading the module
                              */
-    te_bool loaded; /*< Is the module loaded into the system */
-    te_bool fallback; /*< Load module shipped with the kernel if file
+    bool loaded; /*< Is the module loaded into the system */
+    bool fallback; /*< Load module shipped with the kernel if file
                           pointed by filename does not exist */
-    te_bool fake_unload; /*< Flag to handle module unload when the module
+    bool fake_unload; /*< Flag to handle module unload when the module
                              is shared as a resource. */
 
     /*< List of parameters of unloaded module to pass later when load it */
@@ -218,13 +218,13 @@ RCF_PCH_CFG_NODE_COLLECTION(node_module, "module",
                             module_add, module_del,
                             module_list, NULL);
 
-static te_bool
+static bool
 module_is_exclusive_locked(const char *name)
 {
     return rcf_pch_rsrc_accessible("/agent:%s/module:%s", ta_name, name);
 }
 
-static te_bool
+static bool
 module_is_locked(const char *name)
 {
     return rcf_pch_rsrc_accessible_may_share("/agent:%s/module:%s", ta_name,
@@ -278,7 +278,7 @@ mod_find(const char *mod_name)
     return module;
 }
 
-static te_bool
+static bool
 mod_loaded(const char *mod_name)
 {
     struct stat st;
@@ -291,13 +291,13 @@ mod_loaded(const char *mod_name)
     return stat(buf, &st) == 0;
 }
 
-static te_bool
+static bool
 mod_filename_exist(te_kernel_module *module)
 {
     struct stat st;
 
     if (module->filename == NULL)
-        return FALSE;
+        return false;
 
     return stat(module->filename, &st) == 0;
 }
@@ -346,7 +346,7 @@ mod_make_cmd_printing_dependencies(const char *modname,
 
 static te_errno
 mod_load_with_dependencies(const char *modname, const char *filename,
-                           te_bool load_itself)
+                           bool load_itself)
 {
     te_string cmd = TE_STRING_INIT;
     te_errno rc;
@@ -373,7 +373,7 @@ mod_load_with_dependencies(const char *modname, const char *filename,
             goto close;
         *c = '\0';
         RING("Loading dependent module %s for %s", dep_name, modname);
-        rc = mod_load_with_dependencies(dep_name, NULL, TRUE);
+        rc = mod_load_with_dependencies(dep_name, NULL, true);
         if (rc != 0)
             goto close;
     }
@@ -413,7 +413,7 @@ mod_filename_modprobe_try_load_dependencies(te_kernel_module *module)
     if (!module->filename_load_dependencies)
         return 0;
 
-    return mod_load_with_dependencies(module->name, module->filename, FALSE);
+    return mod_load_with_dependencies(module->name, module->filename, false);
 }
 
 static te_errno
@@ -445,14 +445,14 @@ mod_insert_or_move_holder_uniq_tail(tqh_strings *holders, char *mod_name)
  * @param fn        File name
  * @param data      Not used
  *
- * @return @c TRUE if file name looks like PCI address,
- *         @c FALSE otherwise.
+ * @return @c true if file name looks like PCI address,
+ *         @c false otherwise.
  */
-static te_bool
+static bool
 filter_pci_addrs_cb(const char *fn, void *data)
 {
     int i;
-    te_bool point_found = FALSE;
+    bool point_found = false;
 
     UNUSED(data);
 
@@ -461,11 +461,11 @@ filter_pci_addrs_cb(const char *fn, void *data)
         if ((point_found || (fn[i] != ':' && fn[i] != '.')) &&
             !isxdigit(fn[i]))
         {
-            return FALSE;
+            return false;
         }
 
         if (fn[i] == '.')
-            point_found = TRUE;
+            point_found = true;
     }
 
     return point_found;
@@ -508,7 +508,7 @@ get_module_subdir_list(const char *module_name, char *buf, size_t len,
     if (rc != 0)
         goto cleanup;
 
-    rc = get_dir_list(path_str.ptr, buf, len, TRUE,
+    rc = get_dir_list(path_str.ptr, buf, len, true,
                       include_cb, cb_data, NULL);
 
 cleanup:
@@ -692,7 +692,7 @@ mod_modprobe(te_kernel_module *module)
 }
 
 static void
-mod_consistentcy_check(te_kernel_module *module, te_bool loaded)
+mod_consistentcy_check(te_kernel_module *module, bool loaded)
 {
     if (module != NULL && (loaded ^ module->loaded) && !module->fake_unload)
         WARN("Inconsistent state of '%s' module : system=%s cache=%s",
@@ -771,7 +771,7 @@ module_version_get(unsigned int gid, const char *oid, char *value,
     if (rc != 0)
         return rc;
 
-    return read_sys_value(value, RCF_MAX_VAL, TRUE,
+    return read_sys_value(value, RCF_MAX_VAL, true,
                           SYS_MODULE "/%s/version",
                           name);
 #else
@@ -812,7 +812,8 @@ verify_loaded_module_param(const te_kernel_module *module,
     if (rc != 0)
         return rc;
 
-    rc = read_sys_value(value, RCF_MAX_VAL, TRUE, SYS_MODULE"/%s/parameters/%s",
+    rc = read_sys_value(value, RCF_MAX_VAL, true,
+                        SYS_MODULE"/%s/parameters/%s",
                         name, param_name);
     if (rc != 0)
         return rc;
@@ -933,7 +934,7 @@ module_param_get(unsigned int gid, const char *oid, char *value,
         if (rc != 0)
             return rc;
 
-        return read_sys_value(value, RCF_MAX_VAL, TRUE,
+        return read_sys_value(value, RCF_MAX_VAL, true,
                               SYS_MODULE "/%s/parameters/%s",
                               name, param_name);
     }
@@ -985,7 +986,7 @@ module_param_set(unsigned int gid, const char *oid, const char *value,
     te_errno rc;
     te_kernel_module *module = mod_find(module_name);
     te_kernel_module_param *param;
-    te_bool found = FALSE;
+    bool found = false;
 
     if (module == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1021,7 +1022,7 @@ module_param_set(unsigned int gid, const char *oid, const char *value,
         if (strcmp(param->name, param_name) == 0)
         {
             TE_SPRINTF(param->value, "%s", value);
-            found = TRUE;
+            found = true;
             break;
         }
     }
@@ -1218,7 +1219,7 @@ module_filename_set(unsigned int gid, const char *oid,
                     const char *value, const char *mod_name, ...)
 {
     te_kernel_module *module = mod_find(mod_name);
-    te_bool loaded;
+    bool loaded;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1442,9 +1443,9 @@ module_add(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     TE_SPRINTF(module->name, "%s", mod_name);
     module->filename = NULL;
-    module->filename_load_dependencies = FALSE;
-    module->fallback = FALSE;
-    module->fake_unload = FALSE;
+    module->filename_load_dependencies = false;
+    module->fallback = false;
+    module->fake_unload = false;
     LIST_INIT(&module->params);
 
     LIST_INSERT_HEAD(&modules, module, list);
@@ -1457,7 +1458,7 @@ module_add(unsigned int gid, const char *oid,
 static te_errno
 module_del(unsigned int gid, const char *oid, const char *mod_name)
 {
-    te_bool loaded = mod_loaded(mod_name);
+    bool loaded = mod_loaded(mod_name);
     te_kernel_module *module;
 
     UNUSED(gid);
@@ -1477,7 +1478,7 @@ module_del(unsigned int gid, const char *oid, const char *mod_name)
 }
 
 /**
- * If the module is used by another agent set fake_unload to @c TRUE
+ * If the module is used by another agent set fake_unload to @c true
  *
  * @param module Kernel module
  *
@@ -1539,8 +1540,8 @@ module_loaded_set(unsigned int gid, const char *oid, char *value,
                   char *mod_name)
 {
     te_kernel_module *module = mod_find(mod_name);
-    te_bool loaded = mod_loaded(mod_name);
-    te_bool load;
+    bool loaded = mod_loaded(mod_name);
+    bool load;
     te_errno rc = 0;
 
     UNUSED(gid);
@@ -1557,7 +1558,7 @@ module_loaded_set(unsigned int gid, const char *oid, char *value,
     if (load)
     {
         rc = mod_load(module);
-        module->fake_unload = FALSE;
+        module->fake_unload = false;
     }
     else
     {
@@ -1582,7 +1583,7 @@ module_loaded_get(unsigned int gid, const char *oid, char *value,
                   char *mod_name)
 {
     te_kernel_module *module = mod_find(mod_name);
-    te_bool loaded = module->fake_unload ? FALSE : mod_loaded(mod_name);
+    bool loaded = module->fake_unload ? false : mod_loaded(mod_name);
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1597,7 +1598,7 @@ module_loaded_oper_get(unsigned int gid, const char *oid, char *value,
                        char *mod_name)
 {
     te_kernel_module *module = mod_find(mod_name);
-    te_bool loaded = mod_loaded(mod_name);
+    bool loaded = mod_loaded(mod_name);
 
     UNUSED(gid);
     UNUSED(oid);

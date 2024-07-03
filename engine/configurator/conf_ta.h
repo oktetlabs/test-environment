@@ -37,7 +37,7 @@ extern char *cfg_get_buf;
  * Whether local commands sequence is terminated or not.
  * This variable is intended to solve the problem mentioned in note 1 above.
  */
-extern te_bool local_cmd_seq;
+extern bool local_cmd_seq;
 
 /**
  * Maximum allowed subtree value for commit operation.
@@ -66,7 +66,7 @@ extern void cfg_ta_reboot_all(void);
  *
  * @return status code (see te_errno.h)
  */
-extern int cfg_ta_sync(char *oid, te_bool subtree);
+extern int cfg_ta_sync(char *oid, bool subtree);
 
 /**
  * Synchronize all instances with given object with Test Agents
@@ -74,7 +74,7 @@ extern int cfg_ta_sync(char *oid, te_bool subtree);
  * @param obj       object or object tree
  * @param subtree   1 if subtree should be synchronized
  */
-extern void cfg_ta_sync_obj(cfg_object *obj, te_bool subtree);
+extern void cfg_ta_sync_obj(cfg_object *obj, bool subtree);
 
 /**
  * Add instances for all agents.
@@ -97,14 +97,14 @@ extern int cfg_tas_commit(const char *oid);
  * Synchronize dependant nodes.
  *
  * @param inst          Instance whose dependants to synchronize.
- * @param no_children   If @c TRUE, do not synchronize direct
+ * @param no_children   If @c true, do not synchronize direct
  *                      children (makes things faster when synchronization
  *                      is done after removing an instance from TA).
  *
  * @return 0 on success, error code otherwise
  */
 extern int cfg_ta_sync_dependants(cfg_instance *inst,
-                                  te_bool no_children);
+                                  bool no_children);
 
 /**
  * Toggles logging of all sync operations
@@ -112,7 +112,7 @@ extern int cfg_ta_sync_dependants(cfg_instance *inst,
  * @param flag Is logging enabled
  *
  */
-extern void cfg_ta_log_syncing(te_bool flag);
+extern void cfg_ta_log_syncing(bool flag);
 
 /**
  * Perform check whether local commands sequence is started or not.

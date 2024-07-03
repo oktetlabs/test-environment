@@ -22,7 +22,7 @@ extern "C" {
  * @param ta                Test agent name
  * @param ifname            Interface name
  * @param feature_name      Feature name
- * @param readonly          Will be set to @c TRUE if the feature
+ * @param readonly          Will be set to @c true if the feature
  *                          is read-only
  *
  * @return Status code
@@ -30,7 +30,7 @@ extern "C" {
 extern te_errno tapi_cfg_if_feature_is_readonly(const char *ta,
                                                 const char *ifname,
                                                 const char *feature_name,
-                                                te_bool *readonly);
+                                                bool *readonly);
 
 /**
  * Check whether a given interface feature is present
@@ -38,7 +38,7 @@ extern te_errno tapi_cfg_if_feature_is_readonly(const char *ta,
  * @param ta                Test agent name
  * @param ifname            Interface name
  * @param feature_name      Feature name
- * @param present           Will be set to @c TRUE if the feature
+ * @param present           Will be set to @c true if the feature
  *                          is present
  *
  * @return Status code
@@ -46,7 +46,7 @@ extern te_errno tapi_cfg_if_feature_is_readonly(const char *ta,
 extern te_errno tapi_cfg_if_feature_is_present(const char *ta,
                                                const char *ifname,
                                                const char *feature_name,
-                                               te_bool *present);
+                                               bool *present);
 
 /**
  * Get feature value of an ethernet interface
@@ -365,15 +365,15 @@ extern te_errno tapi_cfg_if_msglvl_set(const char *ta, const char *ifname,
  * @param ta              Test agent name
  * @param if_name         Interface name
  * @param flag_name       Name of the flag
- * @param state           Will be set to @c TRUE if flag is enabled,
- *                        to @c FALSE otherwise
+ * @param state           Will be set to @c true if flag is enabled,
+ *                        to @c false otherwise
  *
  * @return Status code.
  */
 extern te_errno tapi_cfg_if_priv_flag_get(const char *ta,
                                           const char *if_name,
                                           const char *flag_name,
-                                          te_bool *state);
+                                          bool *state);
 
 /**
  * Set status of a private flag for a network interface.
@@ -381,14 +381,14 @@ extern te_errno tapi_cfg_if_priv_flag_get(const char *ta,
  * @param ta              Test agent name
  * @param if_name         Interface name
  * @param flag_name       Name of the flag
- * @param state           @c TRUE to enable, @c FALSE to disable
+ * @param state           @c true to enable, @c false to disable
  *
  * @return Status code.
  */
 extern te_errno tapi_cfg_if_priv_flag_set(const char *ta,
                                           const char *if_name,
                                           const char *flag_name,
-                                          te_bool state);
+                                          bool state);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -430,7 +430,7 @@ listener_finish_request(log_listener *listener, CURLcode result)
          * should not occupy our computational resources. They will also
          * not get in the way of Logger exiting once it's told to shutdown.
          */
-        listener->need_retry = TRUE;
+        listener->need_retry = true;
         gettimeofday(&listener->next_tv, NULL);
         listener->next_tv.tv_sec += listener->interval;
         return 0;

@@ -80,12 +80,12 @@ tapi_perf_opts_init(tapi_perf_opts *opts)
     opts->interval_sec = TAPI_PERF_INTERVAL_DISABLED;
     opts->length = 1470;
     opts->streams = 1;
-    opts->reverse = FALSE;
-    opts->dual = FALSE;
+    opts->reverse = false;
+    opts->dual = false;
 }
 
 /* See description in tapi_performance.h */
-te_bool
+bool
 tapi_perf_opts_cmp(const tapi_perf_opts *opts_a, const tapi_perf_opts *opts_b)
 {
     return (opts_a->ipversion == opts_b->ipversion &&

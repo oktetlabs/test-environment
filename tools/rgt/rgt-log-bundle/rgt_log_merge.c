@@ -19,10 +19,10 @@
 #include "te_file.h"
 #include "rgt_log_bundle_common.h"
 
-/** If @c TRUE, find log messages to be merged by TIN */
-static te_bool use_tin = FALSE;
-/** If @c TRUE, find log messages to be merged by test ID */
-static te_bool use_test_id = FALSE;
+/** If @c true, find log messages to be merged by TIN */
+static bool use_tin = false;
+/** If @c true, find log messages to be merged by test ID */
+static bool use_test_id = false;
 /** TIN of log node to be merged */
 static unsigned int filter_tin = (unsigned int)-1;
 /** Test ID of log node to be merged */
@@ -95,7 +95,7 @@ process_sniff_frag(const char *fpath, const char *sniff_path,
 
     CHECK_FOPEN(f, fpath, "r");
 
-    while (TRUE)
+    while (true)
     {
         CHECK_RC(rc = rgt_read_cap_prefix(f, &file_id, &pkt_offset, &len));
         if (rc == 0)
@@ -171,21 +171,21 @@ append_frag_to_file(FILE *f, const char *frag_path)
  * @param f_result            Where to store merged raw log
  * @param f_frags_count       If not @c NULL, save number of fragments
  *                            in the target node there
- * @param get_needed_frags    If @c TRUE, do not create merged log, only
+ * @param get_needed_frags    If @c true, do not create merged log, only
  *                            get list of all the fragment files which
  *                            should be extracted from the RAW log bundle
  *                            before this function can work.
  * @param needed_frags        String to which to append names of required
  *                            fragment files if @p get_needed_frags is
- *                            @c TRUE.
+ *                            @c true.
  *
  * @return Number of required fragment files if @p get_needed_frags is
- *         @c TRUE; @c 0 otherwise. On failure this function returns @c -1.
+ *         @c true; @c 0 otherwise. On failure this function returns @c -1.
  */
 static int
 merge(const char *split_log_path, const char *sniff_path,
       FILE *f_raw_gist, FILE *f_frags_list, FILE *f_result,
-      FILE *f_frags_count, te_bool get_needed_frags,
+      FILE *f_frags_count, bool get_needed_frags,
       te_string *needed_frags)
 {
     rgt_frag_rec rec;
@@ -194,7 +194,7 @@ merge(const char *split_log_path, const char *sniff_path,
 
     uint64_t cum_length = 0;
     int64_t target_node_id = -1;
-    te_bool sniff_logs_needed = FALSE;
+    bool sniff_logs_needed = false;
 
     uint64_t i;
     int needed_frags_cnt = 0;
@@ -300,7 +300,7 @@ merge(const char *split_log_path, const char *sniff_path,
                                                needed_frags,
                                                " %s_sniff_%" PRIu64,
                                                rec.frag_name, i));
-                        sniff_logs_needed = TRUE;
+                        sniff_logs_needed = true;
                     }
 
                     needed_frags_cnt++;
@@ -443,12 +443,12 @@ process_cmd_line_opts(int argc, char **argv)
             else if (strstr(filter, "id") == filter)
             {
                 sscanf(filter, "id%u", &filter_test_id);
-                use_test_id = TRUE;
+                use_test_id = true;
             }
             else
             {
                 sscanf(filter, "%u", &filter_tin);
-                use_tin = TRUE;
+                use_tin = true;
             }
 
             free(filter);
@@ -571,7 +571,7 @@ main(int argc, char **argv)
         te_string_reset(&cmd);
         CHECK_TE_RC(te_string_append(&cmd, "pixz -x "));
         CHECK_RC(res = merge(split_log_path, sniff_path, f_raw_gist,
-                             f_frags_list, f_result, NULL, TRUE, &cmd));
+                             f_frags_list, f_result, NULL, true, &cmd));
 
         if (res > 0)
         {
@@ -590,7 +590,7 @@ main(int argc, char **argv)
     }
 
     CHECK_RC(merge(split_log_path, sniff_path, f_raw_gist, f_frags_list,
-                   f_result, f_frags_count, FALSE, NULL));
+                   f_result, f_frags_count, false, NULL));
 
     RGT_ERROR_SECTION;
 

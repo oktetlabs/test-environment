@@ -82,9 +82,9 @@ struct mountpoint_info
     /** Value from the 'pagesize' option of hugetlbfs in kB */
     unsigned int hp_size;
     /** Is the directory already created */
-    te_bool is_created;
+    bool is_created;
     /** Is the directory mounted by the agent */
-    te_bool is_mounted;
+    bool is_mounted;
 };
 
 /** List of the mountpoints */
@@ -131,7 +131,7 @@ add_hugepage_info(unsigned int size)
 
 static te_errno
 find_hugepage_info(const char *size_str, struct hugepage_info **hp_info,
-                   te_bool quiet)
+                   bool quiet)
 {
     struct hugepage_info *tmp;
     long int size;
@@ -346,7 +346,7 @@ split_proc_mounts_line(char *str, te_vec *vec)
 }
 
 static te_errno
-convert_mountpoint_name(const char *mountpoint, te_string *name, te_bool decode)
+convert_mountpoint_name(const char *mountpoint, te_string *name, bool decode)
 {
     te_errno rc;
 
@@ -381,7 +381,7 @@ mount_hugepage_dir(const struct hugepage_info *hp_info,
         return rc;
     }
 
-    mp_info->is_created = (rv == 0) ? FALSE : TRUE;
+    mp_info->is_created = (rv == 0) ? false : true;
 
     rc = te_string_append(&options, "pagesize=%ukB", hp_info->size);
     if (rc != 0)
@@ -422,7 +422,7 @@ find_mountpoint_info(const struct hugepage_info *hp_info, const char *name)
 
 static te_errno
 add_mountpoint_info(struct hugepage_info *hp_info, const char *name,
-                    te_bool do_mount)
+                    bool do_mount)
 {
     struct mountpoint_info *mp_info;
     te_errno rc;
@@ -437,7 +437,7 @@ add_mountpoint_info(struct hugepage_info *hp_info, const char *name,
     }
 
     mp_info->is_mounted = do_mount;
-    mp_info->is_created = FALSE;
+    mp_info->is_created = false;
 
     if (do_mount)
     {
@@ -473,7 +473,7 @@ update_mountpoint_info(struct hugepage_info *hp_info, te_vec *mount_args)
     if (mp_info != NULL)
         return 0;
 
-    rc = convert_mountpoint_name(name, &encode_name, FALSE);
+    rc = convert_mountpoint_name(name, &encode_name, false);
     if (rc != 0)
     {
         ERROR("%s(): Cannot encode mountpoint name: %r", __FUNCTION__, rc);
@@ -494,7 +494,7 @@ update_mountpoint_info(struct hugepage_info *hp_info, te_vec *mount_args)
     if (strstr(option, target_option.ptr) == NULL)
         goto out;
 
-    rc = add_mountpoint_info(hp_info, name, FALSE);
+    rc = add_mountpoint_info(hp_info, name, false);
     if (rc != 0)
     {
         ERROR("%s(): Failed to add mountpoint info: %r",
@@ -586,7 +586,7 @@ hugepages_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     UNUSED(unused);
 
-    rc = find_hugepage_info(hugepage_size, &hp_info, FALSE);
+    rc = find_hugepage_info(hugepage_size, &hp_info, false);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
@@ -622,7 +622,7 @@ hugepages_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
     UNUSED(unused);
 
-    rc = find_hugepage_info(hugepage_size, &hp_info, TRUE);
+    rc = find_hugepage_info(hugepage_size, &hp_info, true);
     if (rc != 0)
     {
         if (rc == TE_EPERM)
@@ -668,7 +668,7 @@ hugepages_mountpoint_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(unused);
     UNUSED(value);
 
-    rc = find_hugepage_info(hugepage_size, &hp_info, FALSE);
+    rc = find_hugepage_info(hugepage_size, &hp_info, false);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
@@ -679,7 +679,7 @@ hugepages_mountpoint_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EPERM);
     }
 
-    rc = convert_mountpoint_name(mountpoint, &decode_name, TRUE);
+    rc = convert_mountpoint_name(mountpoint, &decode_name, true);
     if (rc != 0)
     {
         ERROR("%s(): Failed to decode mountpoint name: %r", __FUNCTION__, rc);
@@ -702,7 +702,7 @@ hugepages_mountpoint_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
     }
 
-    rc = add_mountpoint_info(hp_info, decode_name.ptr, TRUE);
+    rc = add_mountpoint_info(hp_info, decode_name.ptr, true);
     if (rc != 0)
     {
         ERROR("%s(): Failed to add mountpoint info: %r", __FUNCTION__, rc);
@@ -725,11 +725,11 @@ hugepages_mountpoint_del(unsigned int gid, const char *oid, const char *unused,
     UNUSED(oid);
     UNUSED(unused);
 
-    rc = find_hugepage_info(hugepage_size, &hp_info, FALSE);
+    rc = find_hugepage_info(hugepage_size, &hp_info, false);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    rc = convert_mountpoint_name(mountpoint, &decode_name, TRUE);
+    rc = convert_mountpoint_name(mountpoint, &decode_name, true);
     if (rc != 0)
     {
         ERROR("%s(): Failed to decode mountpoint name: %r", __FUNCTION__, rc);
@@ -776,7 +776,7 @@ hugepages_mountpoint_list(unsigned int gid, const char *oid, const char *sub_id,
     struct mountpoint_info *mp_info;
     te_errno rc;
 
-    rc = find_hugepage_info(hugepage_size, &hp_info, TRUE);
+    rc = find_hugepage_info(hugepage_size, &hp_info, true);
     if (rc != 0)
     {
         if (rc == TE_EPERM)
@@ -874,7 +874,7 @@ hugepages_mountpoint_grab(const char *name)
     if (oid == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    rc = find_hugepage_info(CFG_OID_GET_INST_NAME(oid, 3), &hp_info, FALSE);
+    rc = find_hugepage_info(CFG_OID_GET_INST_NAME(oid, 3), &hp_info, false);
 
     cfg_free_oid(oid);
     return TE_RC(TE_TA_UNIX, rc);
@@ -892,7 +892,7 @@ thp_enabled_get(unsigned int gid, const char *oid, char *value, ...)
     UNUSED(gid);
     UNUSED(oid);
 
-    rc = read_sys_value(val, RCF_MAX_VAL, FALSE, SYS_THP "/%s", "enabled");
+    rc = read_sys_value(val, RCF_MAX_VAL, false, SYS_THP "/%s", "enabled");
     if (rc != 0)
         return rc;
 

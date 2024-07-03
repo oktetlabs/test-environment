@@ -193,7 +193,7 @@ netns_namespace_release(netns_namespace *netns)
 {
     netns_interface *netif;
 
-    while (SLIST_EMPTY(&netns->ifs_h) == FALSE)
+    while (SLIST_EMPTY(&netns->ifs_h) == false)
     {
         netif = SLIST_FIRST(&netns->ifs_h);
         SLIST_REMOVE_HEAD(&netns->ifs_h, ent_l);
@@ -416,7 +416,7 @@ netns_interface_del(unsigned int gid, const char *oid, const char *ns,
         return rc;
 
     if ((rc = rcf_ch_start_process(&pid, -1,
-                                   "netns_unset_interface_process", FALSE,
+                                   "netns_unset_interface_process", false,
                                    argc, (void **)params)) != 0)
     {
         ERROR("Failed to start auxiliary process");
@@ -612,7 +612,7 @@ netns_add(unsigned int gid, const char *oid, const char *value,
 
     /* Create new process to avoid moving the main agent process to the new
      * namespace. */
-    if ((rc = rcf_ch_start_process(&pid, -1, "netns_create_process", FALSE,
+    if ((rc = rcf_ch_start_process(&pid, -1, "netns_create_process", false,
                                    argc, (void **)params)) != 0)
     {
         ERROR("Failed to start auxiliary process");
@@ -680,9 +680,9 @@ netns_del(unsigned int gid, const char *oid, const char *ns,
  * @param ns_name   Namespace name.
  * @param data      Opaque data (unused).
  *
- * @return @c TRUE if the namespace is grabbed, @c FALSE otherwise.
+ * @return @c true if the namespace is grabbed, @c false otherwise.
  */
-static te_bool
+static bool
 netns_check_rsrc_cb(const char *ns_name, void *data)
 {
     UNUSED(data);
@@ -714,7 +714,7 @@ netns_list(unsigned int gid, const char *oid,
     UNUSED(sub_id);
     UNUSED(ns);
 
-    rc = get_dir_list(NETNS_FDS_DIR, list_buf, sizeof(list_buf), TRUE,
+    rc = get_dir_list(NETNS_FDS_DIR, list_buf, sizeof(list_buf), true,
                       &netns_check_rsrc_cb, NULL, NULL);
     if (rc != 0)
     {

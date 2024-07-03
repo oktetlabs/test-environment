@@ -117,8 +117,8 @@ struct tapi_trex_interface {
      * It can be PCI address, interface name or @p TAPI_TREX_DUMMY.
      */
     char *if_name;
-    /** If @c TRUE then interface will be bound. */
-    te_bool need_to_bind;
+    /** If @c true then interface will be bound. */
+    bool need_to_bind;
 };
 
 /** TRex YAML config file template. */
@@ -163,14 +163,14 @@ static const tapi_job_opt_bind trex_args_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_DUMMY("default.py"),
     TAPI_JOB_OPT_DUMMY("--astf"),
     TAPI_JOB_OPT_BOOL("--astf-server-only", tapi_trex_opt, astf_server_only),
-    TAPI_JOB_OPT_UINT_T("-c", FALSE, NULL, tapi_trex_opt, n_threads),
+    TAPI_JOB_OPT_UINT_T("-c", false, NULL, tapi_trex_opt, n_threads),
     TAPI_JOB_OPT_BOOL("--tso-disable", tapi_trex_opt, tso_disable),
     TAPI_JOB_OPT_BOOL("--lro-disable", tapi_trex_opt, lro_disable),
-    TAPI_JOB_OPT_DOUBLE("-d", FALSE, NULL, tapi_trex_opt, duration),
+    TAPI_JOB_OPT_DOUBLE("-d", false, NULL, tapi_trex_opt, duration),
     TAPI_JOB_OPT_BOOL("--flip", tapi_trex_opt, asymmetric_traffic_flow),
     TAPI_JOB_OPT_BOOL("--hdrh", tapi_trex_opt, use_hdr_histograms),
     TAPI_JOB_OPT_BOOL("--ipv6", tapi_trex_opt, ipv6),
-    TAPI_JOB_OPT_UINT_T("-m", FALSE, NULL, tapi_trex_opt, rate_multiplier),
+    TAPI_JOB_OPT_UINT_T("-m", false, NULL, tapi_trex_opt, rate_multiplier),
     TAPI_JOB_OPT_BOOL("--nc", tapi_trex_opt, force_close_at_end),
     TAPI_JOB_OPT_BOOL("--no-flow-control-change", tapi_trex_opt,
                       enable_flow_control),
@@ -179,13 +179,13 @@ static const tapi_job_opt_bind trex_args_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_BOOL("-pubd", tapi_trex_opt, no_monitors),
     TAPI_JOB_OPT_BOOL("--queue-drop", tapi_trex_opt, dont_resend_pkts),
     TAPI_JOB_OPT_BOOL("--sleeps", tapi_trex_opt, use_sleep),
-    TAPI_JOB_OPT_ENUM("-v", FALSE, tapi_trex_opt, verbose,
+    TAPI_JOB_OPT_ENUM("-v", false, tapi_trex_opt, verbose,
                       tapi_trex_verbose_mapping),
-    TAPI_JOB_OPT_ENUM("--iom", FALSE, tapi_trex_opt, iom,
+    TAPI_JOB_OPT_ENUM("--iom", false, tapi_trex_opt, iom,
                       tapi_trex_iom_mapping),
-    TAPI_JOB_OPT_ENUM(NULL, FALSE, tapi_trex_opt, so, tapi_trex_so_mapping),
-    TAPI_JOB_OPT_UINT_T("-w", FALSE, NULL, tapi_trex_opt, init_wait_sec),
-    TAPI_JOB_OPT_STRING("--prefix", FALSE, tapi_trex_opt, instance_prefix)
+    TAPI_JOB_OPT_ENUM(NULL, false, tapi_trex_opt, so, tapi_trex_so_mapping),
+    TAPI_JOB_OPT_UINT_T("-w", false, NULL, tapi_trex_opt, init_wait_sec),
+    TAPI_JOB_OPT_STRING("--prefix", false, tapi_trex_opt, instance_prefix)
 );
 
 /* Default values of TRex common configuration. */
@@ -215,22 +215,22 @@ const struct tapi_trex_server_config tapi_trex_server_config_default = {
 const tapi_trex_opt tapi_trex_default_opt = {
     .stdout_log_level = TE_LL_RING,
     .stderr_log_level = TE_LL_WARN,
-    .astf_server_only = FALSE,
+    .astf_server_only = false,
     .n_threads = TAPI_JOB_OPT_UINT_UNDEF,
-    .tso_disable = FALSE,
-    .lro_disable = FALSE,
+    .tso_disable = false,
+    .lro_disable = false,
     .duration = TAPI_JOB_OPT_DOUBLE_UNDEF,
-    .asymmetric_traffic_flow = FALSE,
-    .use_hdr_histograms = FALSE,
-    .ipv6 = FALSE,
+    .asymmetric_traffic_flow = false,
+    .use_hdr_histograms = false,
+    .ipv6 = false,
     .rate_multiplier = TAPI_JOB_OPT_UINT_UNDEF,
-    .force_close_at_end = FALSE,
-    .enable_flow_control = FALSE,
-    .no_watchdog = FALSE,
-    .use_realtime_prio = FALSE,
-    .no_monitors = FALSE,
-    .dont_resend_pkts = FALSE,
-    .use_sleep = FALSE,
+    .force_close_at_end = false,
+    .enable_flow_control = false,
+    .no_watchdog = false,
+    .use_realtime_prio = false,
+    .no_monitors = false,
+    .dont_resend_pkts = false,
+    .use_sleep = false,
     .verbose  = TAPI_TREX_VERBOSE_NONE,
     .iom = TAPI_TREX_IOM_NONE,
     .so = TAPI_TREX_SO_NONE,
@@ -342,7 +342,7 @@ tapi_trex_gen_astf_config(const char *ta, const tapi_trex_opt *opt)
     te_string template = TE_STRING_INIT;
 
     char astf_json_path[RCF_MAX_PATH];
-    te_bool prefix_is_empty = te_str_is_null_or_empty(opt->instance_prefix);
+    bool prefix_is_empty = te_str_is_null_or_empty(opt->instance_prefix);
 
     te_kvpair_h kvpairs;
     te_kvpair_init(&kvpairs);
@@ -404,7 +404,7 @@ cleanup:
  *              - @c NULL
  */
 static tapi_trex_interface *
-tapi_trex_interface_init(const char *name, te_bool bind)
+tapi_trex_interface_init(const char *name, bool bind)
 {
     tapi_trex_interface *interface = TE_ALLOC(sizeof(tapi_trex_interface));
 
@@ -625,7 +625,7 @@ action_oid_interface(const char *inst_oid, const cfg_oid *parsed_oid, void *ctx)
 
     UNUSED(parsed_oid);
 
-    *iface = tapi_trex_interface_init(pci_addr, TRUE);
+    *iface = tapi_trex_interface_init(pci_addr, true);
 
     free(pci_addr);
     free(name);
@@ -652,7 +652,7 @@ action_oid_device(const char *inst_oid, const cfg_oid *parsed_oid, void *ctx)
         return rc;
     }
 
-    *iface = tapi_trex_interface_init(pci_addr, TRUE);
+    *iface = tapi_trex_interface_init(pci_addr, true);
 
     free(pci_addr);
     free(oid);
@@ -687,7 +687,7 @@ action_oid_vendor(const char *inst_oid, const cfg_oid *parsed_oid, void *ctx)
         return rc;
     }
 
-    *iface = tapi_trex_interface_init(pci_addr, TRUE);
+    *iface = tapi_trex_interface_init(pci_addr, true);
 
     free(pci_dev_oid);
     free(pci_addr);
@@ -710,7 +710,7 @@ static const cfg_oid object_oid_vendor = CFG_OBJ_OID_LITERAL(
 
 /* See description in tapi_trex.h */
 tapi_trex_interface *
-tapi_trex_interface_init_oid(te_bool use_kernel_interface,
+tapi_trex_interface_init_oid(bool use_kernel_interface,
                              const char *oid_fmt, ...)
 {
     te_errno rc;
@@ -722,17 +722,17 @@ tapi_trex_interface_init_oid(te_bool use_kernel_interface,
     static const cfg_oid_rule oid_rules[] = {
         {
             .object_oid = &object_oid_interface,
-            .match_prefix = FALSE,
+            .match_prefix = false,
             .action = action_oid_interface
         },
         {
             .object_oid = &object_oid_device,
-            .match_prefix = FALSE,
+            .match_prefix = false,
             .action = action_oid_device
         },
         {
             .object_oid = &object_oid_vendor,
-            .match_prefix = FALSE,
+            .match_prefix = false,
             .action = action_oid_vendor
         },
         CFG_OID_RULE_END
@@ -752,7 +752,7 @@ tapi_trex_interface_init_oid(te_bool use_kernel_interface,
 
         interface = TE_ALLOC(sizeof(tapi_trex_interface));
         *interface = (tapi_trex_interface){ .if_name = name,
-                                            .need_to_bind = FALSE };
+                                            .need_to_bind = false };
         cfg_free_oid(oid_cfg);
     }
     else
@@ -802,7 +802,7 @@ tapi_trex_setup_port(const char *ta,
     te_errno rc;
 
     const char *iface;
-    te_bool need_to_bind;
+    bool need_to_bind;
     te_string src = TE_STRING_INIT;
     te_string dst = TE_STRING_INIT;
 
@@ -830,7 +830,7 @@ tapi_trex_setup_port(const char *ta,
 
     if (interface == NULL || te_str_is_null_or_empty(interface->if_name))
     {
-        need_to_bind = FALSE;
+        need_to_bind = false;
         iface = TAPI_TREX_DUMMY;
     }
     else
@@ -1085,7 +1085,7 @@ tapi_trex_port_stat_flts_attach(tapi_trex_app *app, const tapi_trex_opt *opt)
             te_string_append(&buf, "port %u %s", flt->index,
                              port_stat_types[flt->param].name);
             rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(app->out_chs[0]),
-                                        buf.ptr, TRUE, 0, &flt->filter);
+                                        buf.ptr, true, 0, &flt->filter);
             if (rc != 0)
             {
                 ERROR("%s() failed to attach '%s' filter: %r", __func__,
@@ -1199,109 +1199,109 @@ tapi_trex_create(tapi_job_factory_t *factory,
                             .stderr_loc = &new_app->out_chs[1],
                             .filters    = TAPI_JOB_SIMPLE_FILTERS(
                                 {
-                                    .use_stdout = TRUE,
-                                    .readable = TRUE,
+                                    .use_stdout = true,
+                                    .readable = true,
                                     .re = "Total\\-Tx\\s+\\:\\s+"
                                           "([0-9]+\\.[0-9]{2}\\s.)bps",
                                     .extract = 1,
                                     .filter_var = &new_app->total_tx_filter,
                                 },
                                 {
-                                    .use_stdout = TRUE,
-                                    .readable = TRUE,
+                                    .use_stdout = true,
+                                    .readable = true,
                                     .re = "Total\\-Rx\\s+\\:\\s+"
                                           "([0-9]+\\.[0-9]{2}\\s.)bps",
                                     .extract = 1,
                                     .filter_var = &new_app->total_rx_filter,
                                 },
                                 {
-                                    .use_stdout = TRUE,
-                                    .readable = TRUE,
+                                    .use_stdout = true,
+                                    .readable = true,
                                     .re = "Total\\-CPS\\s+\\:\\s+"
                                           "([0-9]+\\.[0-9]{2}\\s.)cps",
                                     .extract = 1,
                                     .filter_var = &new_app->total_cps_filter,
                                 },
                                 {
-                                    .use_stdout = TRUE,
-                                    .readable = TRUE,
+                                    .use_stdout = true,
+                                    .readable = true,
                                     .re = "Total-tx-pkt\\s+:\\s+([0-9]+)\\s+pkts",
                                     .extract = 1,
                                     .filter_var = &new_app->total_tx_pkt_filter,
                                 },
                                 {
-                                    .use_stdout = TRUE,
-                                    .readable = TRUE,
+                                    .use_stdout = true,
+                                    .readable = true,
                                     .re = "Total-rx-pkt\\s+:\\s+([0-9]+)\\s+pkts",
                                     .extract = 1,
                                     .filter_var = &new_app->total_rx_pkt_filter,
                                 },
                                 {
-                                    .use_stdout = TRUE,
-                                    .readable = TRUE,
+                                    .use_stdout = true,
+                                    .readable = true,
                                     .re = TAPI_TREX_M_TRAFF_DUR_FLT,
                                     .extract = 1,
                                     .filter_var = &new_app->m_traff_dur_cl_flt,
                                 },
                                 {
-                                    .use_stdout = TRUE,
-                                    .readable = TRUE,
+                                    .use_stdout = true,
+                                    .readable = true,
                                     .re = TAPI_TREX_M_TRAFF_DUR_FLT,
                                     .extract = 2,
                                     .filter_var = &new_app->m_traff_dur_srv_flt,
                                 },
                                 {
-                                    .use_stdout = TRUE,
-                                    .readable = TRUE,
+                                    .use_stdout = true,
+                                    .readable = true,
                                     .re = TAPI_TREX_TCPS_SNDBYTE,
                                     .extract = 1,
                                     .filter_var = &new_app->tcps_sndbyte_cl_flt,
                                 },
                                 {
-                                    .use_stdout = TRUE,
-                                    .readable = TRUE,
+                                    .use_stdout = true,
+                                    .readable = true,
                                     .re = TAPI_TREX_TCPS_SNDBYTE,
                                     .extract = 2,
                                     .filter_var = &new_app->tcps_sndbyte_srv_flt,
                                 },
                                 {
-                                    .use_stdout = TRUE,
-                                    .readable = TRUE,
+                                    .use_stdout = true,
+                                    .readable = true,
                                     .re = TAPI_TREX_TCPS_RCVBYTE,
                                     .extract = 1,
                                     .filter_var = &new_app->tcps_rcvbyte_cl_flt,
                                 },
                                 {
-                                    .use_stdout = TRUE,
-                                    .readable = TRUE,
+                                    .use_stdout = true,
+                                    .readable = true,
                                     .re = TAPI_TREX_TCPS_RCVBYTE,
                                     .extract = 2,
                                     .filter_var = &new_app->tcps_rcvbyte_srv_flt,
                                 },
                                 {
-                                    .use_stdout = TRUE,
-                                    .readable = TRUE,
+                                    .use_stdout = true,
+                                    .readable = true,
                                     .re = "Total-tx-bytes\\s+:\\s+([0-9]+)\\s+byte",
                                     .extract = 1,
                                     .filter_var = &new_app->total_tx_bytes_flt,
                                 },
                                 {
-                                    .use_stdout = TRUE,
-                                    .readable = TRUE,
+                                    .use_stdout = true,
+                                    .readable = true,
                                     .re = "Total-rx-bytes\\s+:\\s+([0-9]+)\\s+byte",
                                     .extract = 1,
                                     .filter_var = &new_app->total_rx_bytes_flt,
                                 },
                                 {
-                                   .use_stdout  = TRUE,
-                                   .readable    = TRUE,
+                                   .use_stdout  = true,
+                                   .readable    = true,
                                    .log_level   = opt->stdout_log_level,
                                    .filter_name = "TRex stdout",
                                    .filter_var = &new_app->std_out,
                                 },
                                 {
-                                   .use_stderr  = TRUE,
-                                   .readable    = TRUE,
+                                   .use_stderr  = true,
+                                   .readable    = true,
                                    .log_level   = opt->stderr_log_level,
                                    .filter_name = "TRex stderr",
                                    .filter_var = &new_app->std_err,
@@ -1862,7 +1862,7 @@ tapi_trex_val_to_double(void *ptr, tapi_trex_val_type type, double *out)
 void
 tapi_trex_port_stat_param_series_get(tapi_trex_report *report,
                           tapi_trex_port_stat_enum param, unsigned int index,
-                          te_bool absolute_value, te_bool by_time,
+                          bool absolute_value, bool by_time,
                           double **vals, unsigned int *n_vals)
 {
     size_t offset;

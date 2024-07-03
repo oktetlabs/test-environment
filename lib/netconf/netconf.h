@@ -315,7 +315,7 @@ typedef union netconf_devlink_param_value_data {
     uint32_t u32; /**< uint32 value */
     uint64_t u64; /**< uint64 value */
     char *str;    /**< string value */
-    te_bool flag; /**< flag */
+    bool  flag; /**< flag */
 } netconf_devlink_param_value_data;
 
 /**
@@ -333,7 +333,7 @@ extern void netconf_devlink_param_value_data_mv(
 
 /** Device parameter value */
 typedef struct netconf_devlink_param_value {
-    te_bool defined; /**< @c TRUE if value is defined */
+    bool defined; /**< @c true if value is defined */
     netconf_devlink_param_value_data data; /**< Value */
 } netconf_devlink_param_value;
 
@@ -379,7 +379,7 @@ typedef struct netconf_devlink_param {
     char *bus_name;         /**< Bus name */
     char *dev_name;         /**< Device name */
     char *name;             /**< Parameter name */
-    te_bool generic;        /**< Is parameter generic or driver-specific */
+    bool generic;        /**< Is parameter generic or driver-specific */
     netconf_nla_type type;  /**< Parameter type */
 
     /** Parameter values in different configuration modes */
@@ -929,9 +929,9 @@ extern te_errno netconf_veth_get_peer(netconf_handle nh, const char *ifname,
  * @param ifname    The interface name
  * @param data      Opaque data
  *
- * @return @c TRUE to include interface to the list.
+ * @return @c true to include interface to the list.
  */
-typedef te_bool (*netconf_veth_list_filter_func)(const char *ifname,
+typedef bool (*netconf_veth_list_filter_func)(const char *ifname,
                                                  void *data);
 
 /**
@@ -955,9 +955,9 @@ extern te_errno netconf_veth_list(netconf_handle nh,
  * @param ifname    The interface name
  * @param data      Opaque data
  *
- * @return @c TRUE to include interface to the list.
+ * @return @c true to include interface to the list.
  */
-typedef te_bool (*netconf_udp_tunnel_list_filter_func)(const char *ifname,
+typedef bool (*netconf_udp_tunnel_list_filter_func)(const char *ifname,
                                                        void *data);
 
 /**
@@ -1064,9 +1064,9 @@ extern te_errno netconf_bridge_del(netconf_handle nh, const char *ifname);
  * @param ifname    The interface name
  * @param data      Opaque data
  *
- * @return @c TRUE to include interface to the list.
+ * @return @c true to include interface to the list.
  */
-typedef te_bool (*netconf_bridge_list_filter_func)(const char *ifname,
+typedef bool (*netconf_bridge_list_filter_func)(const char *ifname,
                                                    void *data);
 
 /**
@@ -1090,9 +1090,9 @@ extern te_errno netconf_bridge_list(netconf_handle nh,
  * @param ifname    The interface name
  * @param data      Opaque data
  *
- * @return @c TRUE to include interface to the list.
+ * @return @c true to include interface to the list.
  */
-typedef te_bool (*netconf_port_list_filter_func)(const char *ifname,
+typedef bool (*netconf_port_list_filter_func)(const char *ifname,
                                                  void *data);
 
 /**

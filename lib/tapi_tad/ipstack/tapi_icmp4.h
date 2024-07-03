@@ -59,7 +59,7 @@ extern te_errno tapi_icmp4_add_csap_layer(asn_value **csap_spec);
  */
 extern te_errno tapi_icmp4_add_pdu(asn_value **tmpl_or_ptrn,
                                    asn_value **pdu,
-                                   te_bool     is_pattern,
+                                   bool is_pattern,
                                    int         type,
                                    int         code);
 

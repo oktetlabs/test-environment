@@ -41,7 +41,7 @@ typedef struct te_intset_ops {
     /** Method to remove an integer @p v from the set @p val. */
     void (*unset)(int v, void *val);
     /** Method to check whether @p v is in @p val. */
-    te_bool (*check)(int v, const void *val);
+    bool(* check)(int v, const void *val);
 } te_intset_ops;
 
 /**
@@ -95,9 +95,9 @@ extern char *te_intset_generic2string(const te_intset_ops *ops,
  * @param subset   a subset to test
  * @param superset its superset
  *
- * @return @c TRUE iff @p subset is a subset of @p superset
+ * @return @c true iff @p subset is a subset of @p superset
  */
-extern te_bool te_intset_generic_is_subset(const te_intset_ops *ops,
+extern bool te_intset_generic_is_subset(const te_intset_ops *ops,
                                            int minval, int maxval,
                                            const void *subset,
                                            const void *superset);
@@ -223,9 +223,9 @@ te_charset_remove_range(te_charset *cset, uint8_t minbyte, uint8_t maxbyte)
  * @param cset  character set
  * @param byte  a byte to check
  *
- * @return @c TRUE iff @p byte is in @p cset
+ * @return @c true iff @p byte is in @p cset
  */
-static inline te_bool
+static inline bool
 te_charset_check(const te_charset *cset, uint8_t byte)
 {
     return te_charset_intset.check(byte, cset);
@@ -263,9 +263,9 @@ extern void te_charset_get_bytes(const te_charset *cset,
  * @param len    length of @p bytes
  * @param bytes  data to check
  *
- * @return @c TRUE if all @p bytes are in @p cset.
+ * @return @c true if all @p bytes are in @p cset.
  */
-extern te_bool te_charset_check_bytes(const te_charset *cset,
+extern bool te_charset_check_bytes(const te_charset *cset,
                                       size_t len, const uint8_t *bytes);
 
 /** Description of POSIX fd_set as an integral set. */
@@ -319,9 +319,9 @@ te_fdset2string(int nfds, const fd_set *fdset)
  * @param sub    FD set to test
  * @param super  FD superset
  *
- * @return @c TRUE iff @p sub is a subset of @p super
+ * @return @c true iff @p sub is a subset of @p super
  */
-static inline te_bool
+static inline bool
 te_fdset_is_subset(int nfds, const fd_set *sub, const fd_set *super)
 {
     return te_intset_generic_is_subset(&te_fdset_intset, 0, nfds - 1,
@@ -381,9 +381,9 @@ te_cpuset2string(const cpu_set_t *cpuset)
  * @param sub    CPU set to test
  * @param super  CPU superset
  *
- * @return @c TRUE iff @p sub is a subset of @p super
+ * @return @c true iff @p sub is a subset of @p super
  */
-static inline te_bool
+static inline bool
 te_cpuset_is_subset(const cpu_set_t *sub, const cpu_set_t *super)
 {
     return te_intset_generic_is_subset(&te_cpuset_intset, 0, CPU_SETSIZE - 1,

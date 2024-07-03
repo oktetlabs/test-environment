@@ -34,8 +34,8 @@ extern "C" {
 
 /** Value of a measured parameter or statistic obtained from JSON. */
 typedef struct te_rgt_mi_meas_value {
-    te_bool defined;            /**< If @c TRUE, the value is defined */
-    te_bool specified;          /**< If @c TRUE, the numeric value was
+    bool defined;            /**< If @c true, the value is defined */
+    bool specified;          /**< If @c true, the numeric value was
                                      specified */
     double value;               /**< Value of "value" field */
     const char *multiplier;     /**< Value of "multiplier" field */
@@ -43,7 +43,7 @@ typedef struct te_rgt_mi_meas_value {
 } te_rgt_mi_meas_value;
 
 /** Initializer for te_rgt_mi_meas_value structure */
-#define TE_RGT_MI_MEAS_VALUE_INIT { FALSE, FALSE, 0, NULL, NULL }
+#define TE_RGT_MI_MEAS_VALUE_INIT { false, false, 0, NULL, NULL }
 
 /** Description of measured parameter */
 typedef struct te_rgt_mi_meas_param {
@@ -51,7 +51,7 @@ typedef struct te_rgt_mi_meas_param {
     const char *type;                   /**< Parameter type */
     const char *descr;                  /**< Parameter description */
 
-    te_bool stats_present;              /**< @c TRUE if some of the
+    bool stats_present;              /**< @c true if some of the
                                              statistics are set */
     te_rgt_mi_meas_value min;           /**< Minimum value */
     te_rgt_mi_meas_value max;           /**< Maximum value */
@@ -66,7 +66,7 @@ typedef struct te_rgt_mi_meas_param {
     size_t values_num;                  /**< Number of elements in the
                                              array of values */
 
-    te_bool in_graph;                   /**< @c TRUE if this measured
+    bool in_graph;                   /**< @c true if this measured
                                              parameter is part of some
                                              graph view */
 } te_rgt_mi_meas_param;
@@ -190,7 +190,7 @@ typedef struct te_rgt_mi {
     te_errno rc;      /**< Error occurred when parsing and
                            filling the structure. @c TE_EOPNOTSUPP
                            means there is no libjansson. */
-    te_bool parse_failed;   /**< Will be set to @c TRUE if it could
+    bool parse_failed;   /**< Will be set to @c true if it could
                                  not parse JSON */
     char parse_err[TE_RGT_MI_MAX_ERR_LEN]; /**< Error message from
                                                 JSON parser */

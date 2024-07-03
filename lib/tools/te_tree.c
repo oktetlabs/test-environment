@@ -133,30 +133,30 @@ te_tree_add_kvpair_children(te_tree *tree, const te_kvpair_h *kvpair)
     te_kvpairs_foreach(kvpair, add_child_cb, NULL, tree);
 }
 
-typedef te_bool (*tree_make_typed_fn)(const char *type, te_tree *t,
+typedef bool (*tree_make_typed_fn)(const char *type, te_tree *t,
                                       va_list args);
 
-static te_bool
+static bool
 tree_make_unsupported(const char *type, te_tree *t, va_list args)
 {
     ERROR("Type '%s' is not supported", type);
     UNUSED(t);
     UNUSED(args);
 
-    return FALSE;
+    return false;
 }
 
-static te_bool
+static bool
 tree_make_null(const char *type, te_tree *t, va_list args)
 {
     UNUSED(type);
     UNUSED(t);
     UNUSED(args);
 
-    return TRUE;
+    return true;
 }
 
-static te_bool
+static bool
 tree_make_string(const char *type, te_tree *t, va_list args)
 {
     const char *str = va_arg(args, const char *);
@@ -166,13 +166,13 @@ tree_make_string(const char *type, te_tree *t, va_list args)
     if (str == NULL)
     {
         ERROR("NULL string value");
-        return FALSE;
+        return false;
     }
     te_tree_add_attr(t, TE_TREE_ATTR_VALUE, "%s", str);
-    return TRUE;
+    return true;
 }
 
-static te_bool
+static bool
 tree_make_int(const char *type, te_tree *t, va_list args)
 {
     int ival = va_arg(args, int);
@@ -180,10 +180,10 @@ tree_make_int(const char *type, te_tree *t, va_list args)
     UNUSED(type);
 
     te_tree_add_attr(t, TE_TREE_ATTR_VALUE, "%d", ival);
-    return TRUE;
+    return true;
 }
 
-static te_bool
+static bool
 tree_make_boolean(const char *type, te_tree *t, va_list args)
 {
     int bval = va_arg(args, int);
@@ -192,10 +192,10 @@ tree_make_boolean(const char *type, te_tree *t, va_list args)
 
     te_tree_add_attr(t, TE_TREE_ATTR_VALUE, "%s",
                      bval == 0 ? "false" : "true");
-    return TRUE;
+    return true;
 }
 
-static te_bool
+static bool
 tree_make_float(const char *type, te_tree *t, va_list args)
 {
     double dval = va_arg(args, double);
@@ -203,14 +203,14 @@ tree_make_float(const char *type, te_tree *t, va_list args)
     UNUSED(type);
 
     te_tree_add_attr(t, TE_TREE_ATTR_VALUE, "%g", dval);
-    return TRUE;
+    return true;
 }
 
-static te_bool
+static bool
 tree_make_array(const char *type, te_tree *t, va_list args)
 {
     te_tree *child;
-    te_bool ok = TRUE;
+    bool ok = true;
 
     UNUSED(type);
 
@@ -222,7 +222,7 @@ tree_make_array(const char *type, te_tree *t, va_list args)
         {
             ERROR("a child has unexpected '%s' attribute'",
                   TE_TREE_ATTR_NAME);
-            ok = FALSE;
+            ok = false;
         }
         te_tree_add_child(t, child);
     }
@@ -230,12 +230,12 @@ tree_make_array(const char *type, te_tree *t, va_list args)
     return ok;
 }
 
-static te_bool
+static bool
 tree_make_dict(const char *type, te_tree *t, va_list args)
 {
     const char *subname;
     te_tree *child;
-    te_bool ok = TRUE;
+    bool ok = true;
 
     while ((subname = va_arg(args, const char *)) != NULL)
     {
@@ -243,7 +243,7 @@ tree_make_dict(const char *type, te_tree *t, va_list args)
         if (child == NULL)
         {
             ERROR("A child of a dictionary cannot be null");
-            ok = FALSE;
+            ok = false;
             continue;
         }
 
@@ -251,7 +251,7 @@ tree_make_dict(const char *type, te_tree *t, va_list args)
         {
             ERROR("a child has unexpected '%s' attribute'",
                   TE_TREE_ATTR_NAME);
-            ok = FALSE;
+            ok = false;
         }
         te_tree_add_child(t, child);
     }
@@ -278,7 +278,7 @@ te_tree_make_typed(const char *name, const char *type, ...)
 
     te_tree *t = te_tree_alloc();
     va_list args;
-    te_bool ok;
+    bool ok;
 
     if (name != NULL)
         te_tree_add_attr(t, TE_TREE_ATTR_NAME, "%s", name);
@@ -326,32 +326,32 @@ te_tree_get_float_attr(const te_tree *tree, const char *attr, double *result)
 }
 
 te_errno
-te_tree_get_bool_attr(const te_tree *tree, const char *attr, te_bool *result)
+te_tree_get_bool_attr(const te_tree *tree, const char *attr, bool *result)
 {
     static const te_enum_map bool_map[] = {
-        {.name = "TRUE", .value = TRUE},
-        {.name = "True", .value = TRUE},
-        {.name = "true", .value = TRUE},
-        {.name = "T", .value = TRUE},
-        {.name = "t", .value = TRUE},
-        {.name = "YES", .value = TRUE},
-        {.name = "Yes", .value = TRUE},
-        {.name = "yes", .value = TRUE},
-        {.name = "Y", .value = TRUE},
-        {.name = "y", .value = TRUE},
-        {.name = "1", .value = TRUE},
-        {.name = "FALSE", .value = FALSE},
-        {.name = "False", .value = FALSE},
-        {.name = "false", .value = FALSE},
-        {.name = "F", .value = FALSE},
-        {.name = "f", .value = FALSE},
-        {.name = "NO", .value = FALSE},
-        {.name = "No", .value = FALSE},
-        {.name = "no", .value = FALSE},
-        {.name = "N", .value = FALSE},
-        {.name = "n", .value = FALSE},
-        {.name = "0", .value = FALSE},
-        {.name = "", .value = FALSE},
+        {.name = "TRUE", .value = true},
+        {.name = "True", .value = true},
+        {.name = "true", .value = true},
+        {.name = "T", .value = true},
+        {.name = "t", .value = true},
+        {.name = "YES", .value = true},
+        {.name = "Yes", .value = true},
+        {.name = "yes", .value = true},
+        {.name = "Y", .value = true},
+        {.name = "y", .value = true},
+        {.name = "1", .value = true},
+        {.name = "FALSE", .value = false},
+        {.name = "False", .value = false},
+        {.name = "false", .value = false},
+        {.name = "F", .value = false},
+        {.name = "f", .value = false},
+        {.name = "NO", .value = false},
+        {.name = "No", .value = false},
+        {.name = "no", .value = false},
+        {.name = "N", .value = false},
+        {.name = "n", .value = false},
+        {.name = "0", .value = false},
+        {.name = "", .value = false},
         TE_ENUM_MAP_END
     };
     const char *str = te_tree_get_attr(tree, attr);
@@ -364,7 +364,7 @@ te_tree_get_bool_attr(const te_tree *tree, const char *attr, te_bool *result)
         return TE_EINVAL;
 
     if (result != NULL)
-        *result = (te_bool)bval;
+        *result = (bool)bval;
 
     return 0;
 }
@@ -394,13 +394,13 @@ te_tree_get_type(const te_tree *tree)
     return TE_TREE_ATTR_TYPE_ARRAY;
 }
 
-te_bool
+bool
 te_tree_has_attr(const te_tree *tree, const char *attr, const char *value)
 {
     return te_kvpairs_has_kv(&tree->attrs, attr, value);
 }
 
-te_bool
+bool
 te_tree_has_attrs(const te_tree *tree, const te_kvpair_h *attrs)
 {
     return te_kvpairs_is_submap(attrs, &tree->attrs);
@@ -683,7 +683,7 @@ te_tree_map(const te_tree *tree, te_tree_map_fn *fn, void *data)
 }
 
 typedef struct validate_type_info {
-    te_bool allow_unknown;
+    bool allow_unknown;
     const te_tree **bad_node;
 } validate_type_info;
 
@@ -887,8 +887,8 @@ validate_tree_cb(const te_tree *tree, void *data)
     return rc;
 }
 
-te_bool
-te_tree_validate_types(const te_tree *tree, te_bool allow_unknown,
+bool
+te_tree_validate_types(const te_tree *tree, bool allow_unknown,
                        const te_tree **bad_node)
 {
     validate_type_info info = {allow_unknown, bad_node};

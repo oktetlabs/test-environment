@@ -26,7 +26,7 @@
 #define VALID_FD_PTR(ptr) ((ptr) != NULL && (ptr) != TE_EXEC_CHILD_DEV_NULL_FD)
 
 static void
-maybe_open_dev_null(const int *fd_arg, te_bool input, int *dev_null_fd)
+maybe_open_dev_null(const int *fd_arg, bool input, int *dev_null_fd)
 {
     int flags = input ? O_RDONLY : O_WRONLY;
 
@@ -43,7 +43,7 @@ maybe_open_dev_null(const int *fd_arg, te_bool input, int *dev_null_fd)
  * (write end of input pipe or read end of output pipe).
  */
 static int
-pipe_cloexec_parent_end(int pipe_fd[2], te_bool input)
+pipe_cloexec_parent_end(int pipe_fd[2], bool input)
 {
     int rc;
     int result[2];
@@ -208,9 +208,9 @@ te_exec_child(const char *file, char *const argv[],
         errno = EINVAL;
         return -1;
     }
-    if (VALID_FD_PTR(in_fd) && pipe_cloexec_parent_end(in_pipe, TRUE) != 0)
+    if (VALID_FD_PTR(in_fd) && pipe_cloexec_parent_end(in_pipe, true) != 0)
         return -1;
-    if (VALID_FD_PTR(out_fd) && pipe_cloexec_parent_end(out_pipe, FALSE) != 0)
+    if (VALID_FD_PTR(out_fd) && pipe_cloexec_parent_end(out_pipe, false) != 0)
     {
         if (VALID_FD_PTR(in_fd))
         {
@@ -219,7 +219,7 @@ te_exec_child(const char *file, char *const argv[],
         }
         return -1;
     }
-    if (VALID_FD_PTR(err_fd) && pipe_cloexec_parent_end(err_pipe, FALSE) != 0)
+    if (VALID_FD_PTR(err_fd) && pipe_cloexec_parent_end(err_pipe, false) != 0)
     {
         if (VALID_FD_PTR(in_fd))
         {
@@ -251,9 +251,9 @@ te_exec_child(const char *file, char *const argv[],
                   uid, file);
         }
 
-        maybe_open_dev_null(in_fd, TRUE, &dev_null_fd[0]);
-        maybe_open_dev_null(out_fd, FALSE, &dev_null_fd[1]);
-        maybe_open_dev_null(err_fd, FALSE, &dev_null_fd[2]);
+        maybe_open_dev_null(in_fd, true, &dev_null_fd[0]);
+        maybe_open_dev_null(out_fd, false, &dev_null_fd[1]);
+        maybe_open_dev_null(err_fd, false, &dev_null_fd[2]);
 
         /* Find file descriptors */
         if (VALID_FD_PTR(in_fd))

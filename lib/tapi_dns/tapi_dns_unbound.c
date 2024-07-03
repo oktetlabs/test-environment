@@ -40,9 +40,9 @@ static const te_enum_map tapi_dns_unbound_verbose_mapping[] = {
 };
 
 static const tapi_job_opt_bind unbound_binds[] = TAPI_JOB_OPT_SET(
-    TAPI_JOB_OPT_STRING("-c", FALSE, tapi_dns_unbound_opt, cfg_file),
+    TAPI_JOB_OPT_STRING("-c", false, tapi_dns_unbound_opt, cfg_file),
     TAPI_JOB_OPT_DUMMY("-dp"),
-    TAPI_JOB_OPT_ENUM(NULL, FALSE, tapi_dns_unbound_opt, verbose,
+    TAPI_JOB_OPT_ENUM(NULL, false, tapi_dns_unbound_opt, verbose,
                       tapi_dns_unbound_verbose_mapping)
 );
 
@@ -93,8 +93,8 @@ tapi_dns_unbound_create(tapi_job_factory_t *factory,
                                 .stderr_loc = &unbound_app->out_chs[1],
                                 .filters = TAPI_JOB_SIMPLE_FILTERS(
                                     {
-                                        .use_stdout = TRUE,
-                                        .readable = FALSE,
+                                        .use_stdout = true,
+                                        .readable = false,
                                         .re = "\\[[0-9]+\\].+:.+: (.*)",
                                         .extract = 1,
                                         .log_level = TE_LL_RING,
@@ -102,8 +102,8 @@ tapi_dns_unbound_create(tapi_job_factory_t *factory,
                                         .filter_name = "unbound.out",
                                     },
                                     {
-                                        .use_stderr = TRUE,
-                                        .readable = FALSE,
+                                        .use_stderr = true,
+                                        .readable = false,
                                         .re = ".+(notice|debug): (.*)",
                                         .extract = 2,
                                         .log_level = TE_LL_RING,
@@ -111,8 +111,8 @@ tapi_dns_unbound_create(tapi_job_factory_t *factory,
                                         .filter_name = "unbound.info",
                                     },
                                     {
-                                        .use_stderr = TRUE,
-                                        .readable = FALSE,
+                                        .use_stderr = true,
+                                        .readable = false,
                                         .re = ".+error: (.*)",
                                         .extract = 1,
                                         .log_level = TE_LL_ERROR,

@@ -59,7 +59,7 @@ RGT_DEF_FUNC(proc_document_start)
     ctx->user_data = gen_user = &user_ctx;
 
     /* In text output all XML entities should be expanded */
-    ctx->expand_entities = TRUE;
+    ctx->expand_entities = true;
 
     if (ctx->out_fname == NULL)
         gen_user->fd = stdout;
@@ -226,8 +226,8 @@ proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     fwrite(ch, len, 1, fd);
 }
 
-te_bool
+bool
 proc_expand_entities(void)
 {
-    return FALSE;
+    return false;
 }

@@ -73,8 +73,8 @@ iscsi_win32_report_error(const char *function, int line,
     }
 }
 
-/** TRUE if `iscsicli' process is running */
-static te_bool             cli_started;
+/** @c true if `iscsicli` process is running */
+static bool cli_started;
 
 /** Handles for pipes communicating with `iscsicli' process */
 static HANDLE              host_input, cli_output;
@@ -212,9 +212,9 @@ iscsi_win32_write_to_device(iscsi_connection_data_t *conn)
 /**
  *  Detect Initiator instance name for the current iSCSI device
  *
- *  @return TRUE if the detected instance name is in the list of Initiators
+ *  @return @c true if the detected instance name is in the list of Initiators
  */
-static te_bool
+static bool
 iscsi_win32_detect_initiator_name(void)
 {
     char          service_name[128] = "";
@@ -232,7 +232,7 @@ iscsi_win32_detect_initiator_name(void)
     {
         if (GetLastError() != ERROR_INVALID_DATA)
             ISCSI_WIN32_REPORT_ERROR();
-        return FALSE;
+        return false;
     }
 
     if ((result = RegOpenKeyEx(HKEY_LOCAL_MACHINE,
@@ -240,7 +240,7 @@ iscsi_win32_detect_initiator_name(void)
                                0, KEY_ALL_ACCESS, &all_services)) != 0)
     {
         ISCSI_WIN32_REPORT_RESULT(result);
-        return FALSE;
+        return false;
     }
     strcat(service_name, "\\Enum");
     if ((result = RegOpenKeyEx(all_services, service_name,
@@ -248,7 +248,7 @@ iscsi_win32_detect_initiator_name(void)
     {
         RegCloseKey(all_services);
         ISCSI_WIN32_REPORT_RESULT(result);
-        return FALSE;
+        return false;
     }
     RegCloseKey(all_services);
 
@@ -261,10 +261,10 @@ iscsi_win32_detect_initiator_name(void)
     if (result != 0)
     {
         ISCSI_WIN32_REPORT_RESULT(result);
-        return FALSE;
+        return false;
     }
     strcat(iscsi_initiator_instance, "_0");
-    return TRUE;
+    return true;
 }
 
 /**
@@ -457,7 +457,7 @@ iscsi_win32_run_cli(const char *cmdline)
 
     if (cli_timeout_timer == INVALID_HANDLE_VALUE)
     {
-        cli_timeout_timer = CreateWaitableTimer(NULL, TRUE, NULL);
+        cli_timeout_timer = CreateWaitableTimer(NULL, true, NULL);
         if (cli_timeout_timer == NULL)
         {
             ISCSI_WIN32_REPORT_ERROR();
@@ -475,7 +475,7 @@ iscsi_win32_run_cli(const char *cmdline)
 
     attr.nLength = sizeof(attr);
     attr.lpSecurityDescriptor = NULL;
-    attr.bInheritHandle = TRUE;
+    attr.bInheritHandle = true;
 
     if (!CreatePipe(&host_input, &cli_output, &attr, 0))
     {
@@ -499,7 +499,7 @@ iscsi_win32_run_cli(const char *cmdline)
 
     RING("Running iSCSI CLI as '%s'", cmdline);
     if (!CreateProcess(NULL, (char *)cmdline,
-                       NULL, NULL, TRUE,
+                       NULL, NULL, true,
                        CREATE_NO_WINDOW, NULL, NULL,
                        &startup, &process_info))
     {
@@ -510,7 +510,7 @@ iscsi_win32_run_cli(const char *cmdline)
         CloseHandle(cli_input);
         return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
     }
-    cli_started = TRUE;
+    cli_started = true;
     return 0;
 }
 
@@ -745,7 +745,7 @@ iscsi_cli_timeout(void *state,
 {
     UNUSED(low_timer);
     UNUSED(high_timer);
-    *(te_bool *)state = TRUE;
+    *(bool *)state = true;
 }
 
 /**
@@ -788,7 +788,7 @@ iscsi_win32_wait_for(regex_t *pattern,
     int re_code;
     int i;
     int j;
-    te_bool timeout = FALSE;
+    bool timeout = false;
     LARGE_INTEGER timeout_value;
 
     regmatch_t matches[10];
@@ -824,10 +824,10 @@ iscsi_win32_wait_for(regex_t *pattern,
 
             RING("Waiting for %d bytes from iSCSI CLI", read_size);
             available = 0;
-            timeout = FALSE;
+            timeout = false;
 
             if (!SetWaitableTimer(cli_timeout_timer, &timeout_value, 0,
-                                  iscsi_cli_timeout, &timeout, FALSE))
+                                  iscsi_cli_timeout, &timeout, false))
             {
                 ISCSI_WIN32_REPORT_ERROR();
                 return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
@@ -840,7 +840,7 @@ iscsi_win32_wait_for(regex_t *pattern,
                     ISCSI_WIN32_REPORT_ERROR();
                     return TE_RC(ISCSI_AGENT_TYPE, TE_EIO);
                 }
-                SleepEx(0, TRUE);
+                SleepEx(0, true);
             }
             if (timeout)
             {
@@ -936,8 +936,8 @@ iscsi_win32_disable_readahead(const char *devname)
         CloseHandle(dev_handle);
         return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
     }
-    cache_info.ReadCacheEnabled = FALSE;
-    cache_info.WriteCacheEnabled = FALSE;
+    cache_info.ReadCacheEnabled = false;
+    cache_info.WriteCacheEnabled = false;
     cache_info.DisablePrefetchTransferLength = 0;
     if (!DeviceIoControl(dev_handle,
                          IOCTL_DISK_SET_CACHE_INFORMATION,
@@ -965,7 +965,7 @@ iscsi_win32_disable_readahead(const char *devname)
 te_errno
 iscsi_win32_finish_cli(void)
 {
-    te_bool success;
+    bool success;
 
     CloseHandle(host_output);
     CloseHandle(host_input);
@@ -979,7 +979,7 @@ iscsi_win32_finish_cli(void)
 
     CloseHandle(process_info.hThread);
     CloseHandle(process_info.hProcess);
-    cli_started = FALSE;
+    cli_started = false;
     memset(cli_buffer, 0, sizeof(cli_buffer));
     residual = 0;
 
@@ -1096,12 +1096,12 @@ iscsi_constant_instance(void *null)
  * @return Status code
  * @param target        Target-wide data
  * @param connection    Connection data
- * @param is_connection TRUE if it's not the leading connection
+ * @param is_connection @c true if it's not the leading connection
  */
 static te_errno
 iscsi_win32_write_target_params(iscsi_target_data_t *target,
                                 iscsi_connection_data_t *connection,
-                                te_bool is_connection)
+                                bool is_connection)
 {
     /** Registry configurable operation parameters */
     static iscsi_win32_registry_parameter rparams[] =
@@ -1125,22 +1125,22 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
     /** CLI-configurable session-wide parameters */
     static iscsi_target_param_descr_t params[] =
         {
-            GPARAMETER(target_name, TRUE),
+            GPARAMETER(target_name, true),
             CONSTANT(true),
-            GPARAMETER(target_addr, TRUE),
-            GPARAMETER(target_port, FALSE),
+            GPARAMETER(target_addr, true),
+            GPARAMETER(target_port, false),
             CONSTANT(instance),
             CONSTANT(wildcard),
             CONSTANT(zero),
             CONSTANT(zero),
-            XPARAMETER(header_digest, HEADER_DIGEST, TRUE, iscsi_not_none),
-            XPARAMETER(data_digest, DATA_DIGEST, TRUE, iscsi_not_none),
-            PARAMETER(max_connections, MAX_CONNECTIONS,  FALSE),
-            PARAMETER(default_time2wait, DEFAULT_TIME2WAIT,  FALSE),
-            PARAMETER(default_time2retain, DEFAULT_TIME2RETAIN,  FALSE),
-            AUTH_PARAM(peer_name, TRUE),
-            AUTH_PARAM(peer_secret, TRUE),
-            XAUTH_PARAM(chap, TRUE, iscsi_not_none),
+            XPARAMETER(header_digest, HEADER_DIGEST, true, iscsi_not_none),
+            XPARAMETER(data_digest, DATA_DIGEST, true, iscsi_not_none),
+            PARAMETER(max_connections, MAX_CONNECTIONS,  false),
+            PARAMETER(default_time2wait, DEFAULT_TIME2WAIT,  false),
+            PARAMETER(default_time2retain, DEFAULT_TIME2RETAIN,  false),
+            AUTH_PARAM(peer_name, true),
+            AUTH_PARAM(peer_secret, true),
+            XAUTH_PARAM(chap, true, iscsi_not_none),
             CONSTANT(wildcard),
             CONSTANT(zero),
             ISCSI_END_PARAM_TABLE
@@ -1149,21 +1149,21 @@ iscsi_win32_write_target_params(iscsi_target_data_t *target,
     /** CLI-configurable connection-wide parameters */
     static iscsi_target_param_descr_t conn_params[] =
         {
-            GPARAMETER(session_id, TRUE),
+            GPARAMETER(session_id, true),
             CONSTANT(wildcard),
             CONSTANT(wildcard),
-            GPARAMETER(target_addr, TRUE),
-            GPARAMETER(target_port, FALSE),
+            GPARAMETER(target_addr, true),
+            GPARAMETER(target_port, false),
             CONSTANT(zero),
             CONSTANT(zero),
-            XPARAMETER(header_digest, HEADER_DIGEST, TRUE, iscsi_not_none),
-            XPARAMETER(data_digest, DATA_DIGEST, TRUE, iscsi_not_none),
-            PARAMETER(max_connections, MAX_CONNECTIONS,  FALSE),
-            PARAMETER(default_time2wait, DEFAULT_TIME2WAIT,  FALSE),
-            PARAMETER(default_time2retain, DEFAULT_TIME2RETAIN,  FALSE),
-            AUTH_PARAM(peer_name, TRUE),
-            AUTH_PARAM(peer_secret, TRUE),
-            XAUTH_PARAM(chap, TRUE, iscsi_not_none),
+            XPARAMETER(header_digest, HEADER_DIGEST, true, iscsi_not_none),
+            XPARAMETER(data_digest, DATA_DIGEST, true, iscsi_not_none),
+            PARAMETER(max_connections, MAX_CONNECTIONS,  false),
+            PARAMETER(default_time2wait, DEFAULT_TIME2WAIT,  false),
+            PARAMETER(default_time2retain, DEFAULT_TIME2RETAIN,  false),
+            AUTH_PARAM(peer_name, true),
+            AUTH_PARAM(peer_secret, true),
+            XAUTH_PARAM(chap, true, iscsi_not_none),
             CONSTANT(wildcard),
             ISCSI_END_PARAM_TABLE
         };
@@ -1235,20 +1235,20 @@ iscsi_win32_do_discovery(iscsi_target_data_t *target,
     /** CLI-configurable parameters for Discovery sessions */
     static iscsi_target_param_descr_t params[] =
         {
-            GPARAMETER(target_addr, TRUE),
-            GPARAMETER(target_port, FALSE),
+            GPARAMETER(target_addr, true),
+            GPARAMETER(target_port, false),
             CONSTANT(instance),
             CONSTANT(wildcard),
             CONSTANT(zero),
             CONSTANT(zero),
-            XPARAMETER(header_digest, HEADER_DIGEST, TRUE, iscsi_not_none),
-            XPARAMETER(data_digest, DATA_DIGEST, TRUE, iscsi_not_none),
-            PARAMETER(max_connections, MAX_CONNECTIONS,  FALSE),
-            PARAMETER(default_time2wait, DEFAULT_TIME2WAIT,  FALSE),
-            PARAMETER(default_time2retain, DEFAULT_TIME2RETAIN,  FALSE),
-            AUTH_PARAM(peer_name, TRUE),
-            AUTH_PARAM(peer_secret, TRUE),
-            XAUTH_PARAM(chap, TRUE, iscsi_not_none),
+            XPARAMETER(header_digest, HEADER_DIGEST, true, iscsi_not_none),
+            XPARAMETER(data_digest, DATA_DIGEST, true, iscsi_not_none),
+            PARAMETER(max_connections, MAX_CONNECTIONS,  false),
+            PARAMETER(default_time2wait, DEFAULT_TIME2WAIT,  false),
+            PARAMETER(default_time2retain, DEFAULT_TIME2RETAIN,  false),
+            AUTH_PARAM(peer_name, true),
+            AUTH_PARAM(peer_secret, true),
+            XAUTH_PARAM(chap, true, iscsi_not_none),
             ISCSI_END_PARAM_TABLE
         };
     int rc;
@@ -1321,7 +1321,7 @@ iscsi_initiator_win32_set(iscsi_connection_req *req)
             RING("Connection Down");
             if (strcmp(conn->session_type, "Discovery") != 0)
             {
-                te_bool do_logout = FALSE;
+                bool do_logout = false;
 
                 rc = 0;
                 if (req->cid > 0)
@@ -1335,7 +1335,7 @@ iscsi_initiator_win32_set(iscsi_connection_req *req)
                             ("RemoveConnection %s %s",
                              target->session_id,
                              conn->connection_id);
-                        do_logout = TRUE;
+                        do_logout = true;
                     }
                     else
                     {
@@ -1351,7 +1351,7 @@ iscsi_initiator_win32_set(iscsi_connection_req *req)
                         rc = iscsi_send_to_win32_iscsicli \
                             ("LogoutTarget %s",
                              target->session_id);
-                        do_logout = TRUE;
+                        do_logout = true;
                     }
                     else
                     {
@@ -1670,7 +1670,7 @@ iscsi_win32_prepare_device(iscsi_connection_data_t *conn, int target_id)
 /**
  * Compile iscsi_conditions into iscsi_regexps
  *
- * @return TRUE if successfully compiled, FALSE otherwise
+ * @return @c true if successfully compiled, @c false otherwise
  */
 te_errno
 iscsi_win32_init_regexps(void)

@@ -281,7 +281,7 @@ ipc_init(void)
     }
     prg_num = rpc->r_number;
 
-    while (TRUE)
+    while (true)
     {
         /* Create a socket */
         s = socket(AF_INET, SOCK_STREAM, 0);

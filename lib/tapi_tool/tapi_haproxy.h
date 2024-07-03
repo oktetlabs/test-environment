@@ -42,7 +42,7 @@ typedef struct tapi_haproxy_opt {
      */
     const tapi_haproxy_cfg_opt *cfg_opt;
     /** Verbosity flag. */
-    te_bool verbose;
+    bool verbose;
 } tapi_haproxy_opt;
 
 /** Default options initializer. */

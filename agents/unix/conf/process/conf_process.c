@@ -58,7 +58,7 @@ struct ps_opt_entry {
     SLIST_ENTRY(ps_opt_entry)     links;
     char                         *name;
     char                         *value;
-    te_bool                       is_long;
+    bool is_long;
 };
 
 typedef SLIST_HEAD(ps_arg_list_t, ps_arg_entry) ps_arg_list_t;
@@ -67,7 +67,7 @@ typedef SLIST_HEAD(ps_opt_list_t, ps_opt_entry) ps_opt_list_t;
 
 struct ps_ta_job {
     unsigned int     id;
-    te_bool          created;
+    bool created;
     /*
      * TA job subsystem is used to control actual processes on TA.
      * Everytime we change parameters of a process (e.g. arguments, exe, etc.),
@@ -75,23 +75,23 @@ struct ps_ta_job {
      * parameters cannot be changed.
      * This flag is used to check whether or not TA job should be renewed.
      */
-    te_bool          reconfigure_required;
+    bool reconfigure_required;
     ta_job_status_t  exit_status;
 };
 
 struct ps_entry {
     SLIST_ENTRY(ps_entry)   links;
-    te_bool                 enabled;
+    bool enabled;
     char                   *name;
     char                   *exe;
     ps_arg_list_t           args;
     unsigned int            argc;
     ps_env_list_t           envs;
     ps_opt_list_t           opts;
-    te_bool                 long_opt_sep;
+    bool long_opt_sep;
     unsigned int            autorestart;
     unsigned int            time_until_check;
-    te_bool                 autorestart_failed;
+    bool autorestart_failed;
     struct ps_ta_job        ta_job;
 
     te_vec                  exec_params;
@@ -121,7 +121,7 @@ ps_arg_compare(const void *a, const void *b)
  * Whether the option consists of one or two arguments (i.e. there should be
  * space between option name and value).
  */
-static te_bool
+static bool
 ps_opt_is_one_arg(struct ps_entry *ps, struct ps_opt_entry *opt)
 {
     return (opt->value[0] == '\0') || (opt->is_long && ps->long_opt_sep);
@@ -235,7 +235,7 @@ ps_get_envp(struct ps_entry *ps, char ***envp)
     unsigned int env_len;
     unsigned int name_len;
     unsigned int i;
-    te_bool found;
+    bool found;
     char *sub;
 
     for (env_len = 0; environ[env_len] != NULL; env_len++)
@@ -264,7 +264,7 @@ ps_get_envp(struct ps_entry *ps, char ***envp)
     SLIST_FOREACH(env, &ps->envs, links)
     {
         name_len = strlen(env->name);
-        found = FALSE;
+        found = false;
         for (i = 0; i < env_len; i++)
         {
             sub = strchr(tmp[i], '=');
@@ -273,7 +273,7 @@ ps_get_envp(struct ps_entry *ps, char ***envp)
             {
                 free(tmp[i]);
                 tmp[i] = NULL;
-                found = TRUE;
+                found = true;
                 break;
             }
         }
@@ -460,7 +460,7 @@ ps_enable_stdout_and_stderr_logging(struct ps_entry *ps)
     char *stderr_filter_name = NULL;
     unsigned int stdout_filter_id;
 
-    rc = ta_job_allocate_channels(manager, ta_job->id, FALSE, 2, channel_ids);
+    rc = ta_job_allocate_channels(manager, ta_job->id, false, 2, channel_ids);
     if (rc != 0)
     {
         ERROR("Failed to allocate output channels for TA job corresponding "
@@ -478,7 +478,7 @@ ps_enable_stdout_and_stderr_logging(struct ps_entry *ps)
 
     /* Attach stdout filter */
     rc = ta_job_attach_filter(manager, stdout_filter_name, 1, &channel_ids[0],
-                              FALSE, TE_LL_RING, &stdout_filter_id);
+                              false, TE_LL_RING, &stdout_filter_id);
     if (rc != 0)
     {
         ERROR("Failed to attach stdout filter for TA job corresponding to "
@@ -488,7 +488,7 @@ ps_enable_stdout_and_stderr_logging(struct ps_entry *ps)
 
     /* Attach stderr filter */
     rc = ta_job_attach_filter(manager, stderr_filter_name, 1, &channel_ids[1],
-                              FALSE, TE_LL_WARN, NULL);
+                              false, TE_LL_WARN, NULL);
     if (rc != 0)
     {
         ERROR("Failed to attach stderr filter for TA job corresponding to "
@@ -530,7 +530,7 @@ ps_ta_job_reconfigure(struct ps_entry *ps)
             return rc;
         }
 
-        ta_job->created = FALSE;
+        ta_job->created = false;
     }
 
     rc = ps_get_argv(ps, &argv);
@@ -556,7 +556,7 @@ ps_ta_job_reconfigure(struct ps_entry *ps)
         return rc;
     }
 
-    ta_job->created = TRUE;
+    ta_job->created = true;
 
     exec_params = ps_get_exec_params(ps);
     rc = ta_job_add_exec_param(manager, ta_job->id, exec_params);
@@ -590,7 +590,7 @@ ps_start(struct ps_entry *ps)
         if (rc != 0)
             return rc;
 
-        ps->ta_job.reconfigure_required = FALSE;
+        ps->ta_job.reconfigure_required = false;
     }
 
     rc = ta_job_start(manager, ps->ta_job.id);
@@ -662,12 +662,12 @@ ps_list(unsigned int gid, const char *oid, const char *sub_id, char **list)
 static void
 ps_ta_job_init(struct ps_ta_job *ta_job)
 {
-    ta_job->created = FALSE;
+    ta_job->created = false;
     /*
      * We should create a new TA job for the process because for now
      * it does not exist
      */
-    ta_job->reconfigure_required = TRUE;
+    ta_job->reconfigure_required = true;
     ta_job->exit_status.type = TA_JOB_STATUS_UNKNOWN;
     ta_job->exit_status.value = 0;
 }
@@ -696,12 +696,12 @@ ps_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
-    ps->enabled = FALSE;
+    ps->enabled = false;
     ps->argc = 0;
-    ps->long_opt_sep = FALSE;
+    ps->long_opt_sep = false;
     ps->autorestart = 0;
     ps->time_until_check = 0;
-    ps->autorestart_failed = FALSE;
+    ps->autorestart_failed = false;
     ps->exec_params = TE_VEC_INIT(te_exec_param);
 
     ps_ta_job_init(&ps->ta_job);
@@ -756,13 +756,13 @@ ps_long_opt_sep_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     if (strcmp(value, "=") == 0)
-        ps->long_opt_sep = TRUE;
+        ps->long_opt_sep = true;
     else if (value[0] == '\0')
-        ps->long_opt_sep = FALSE;
+        ps->long_opt_sep = false;
     else
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    ps->ta_job.reconfigure_required = TRUE;
+    ps->ta_job.reconfigure_required = true;
 
     return 0;
 }
@@ -852,7 +852,7 @@ ps_del(unsigned int gid, const char *oid,
                   "error: %r", ps->name, rc);
         }
 
-        ps->ta_job.created = FALSE;
+        ps->ta_job.created = false;
     }
 
     SLIST_REMOVE(&processes, ps, ps_entry, links);
@@ -905,13 +905,13 @@ ps_exe_set(unsigned int gid, const char *oid, const char *value,
 
     rc = string_replace(&ps->exe, value);
     if (rc == 0)
-        ps->ta_job.reconfigure_required = TRUE;
+        ps->ta_job.reconfigure_required = true;
 
     return rc;
 }
 
 static te_errno
-ps_status_check(struct ps_entry *ps, te_bool *is_running)
+ps_status_check(struct ps_entry *ps, bool *is_running)
 {
     te_errno rc = ta_job_wait(manager, ps->ta_job.id, 0,
                               &ps->ta_job.exit_status);
@@ -920,11 +920,11 @@ ps_status_check(struct ps_entry *ps, te_bool *is_running)
     {
         case 0:
         case TE_ECHILD:
-            *is_running = FALSE;
+            *is_running = false;
             rc = 0;
             break;
         case TE_EINPROGRESS:
-            *is_running = TRUE;
+            *is_running = true;
             rc = 0;
             break;
         default:
@@ -932,7 +932,7 @@ ps_status_check(struct ps_entry *ps, te_bool *is_running)
                  "is running, ta_job_wait() exited with error %r.\n"
                  "Considering that the job is not running.",
                  ps->name, rc);
-            *is_running = FALSE;
+            *is_running = false;
             break;
     }
 
@@ -960,7 +960,7 @@ ps_status_get(unsigned int gid, const char *oid, char *value,
     if (ps->autorestart == 0 && ps->enabled)
         rc = ps_status_check(ps, &ps->enabled);
     else if (ps->autorestart_failed)
-        ps->enabled = FALSE;
+        ps->enabled = false;
 
     pthread_mutex_unlock(&autorestart_lock);
 
@@ -974,7 +974,7 @@ ps_status_set(unsigned int gid, const char *oid, const char *value,
               const char *ps_name)
 {
     struct ps_entry *ps;
-    te_bool enable = !!atoi(value);
+    bool enable = !!atoi(value);
     te_errno rc = 0;
 
     UNUSED(gid);
@@ -999,7 +999,7 @@ ps_status_set(unsigned int gid, const char *oid, const char *value,
         rc = ps_start(ps);
         if (rc == 0 && ps->autorestart != 0)
         {
-            ps->autorestart_failed = FALSE;
+            ps->autorestart_failed = false;
             ps->time_until_check = ps->autorestart;
         }
     }
@@ -1167,7 +1167,7 @@ ps_workdir_set(unsigned int gid, const char *oid, const char *value,
                             .data = &param });
 
     if (rc == 0)
-        ps->ta_job.reconfigure_required = TRUE;
+        ps->ta_job.reconfigure_required = true;
 
     return rc;
 }
@@ -1196,7 +1196,7 @@ ps_arg_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
     te_string result = TE_STRING_INIT;
     struct ps_entry *ps;
     struct ps_arg_entry *arg;
-    te_bool first = TRUE;
+    bool first = true;
     te_errno rc;
 
     UNUSED(gid);
@@ -1209,7 +1209,7 @@ ps_arg_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
     SLIST_FOREACH(arg, &ps->args, links)
     {
         rc = te_string_append(&result, "%s%u", first ? "" : " ", arg->order);
-        first = FALSE;
+        first = false;
         if (rc != 0)
         {
             te_string_free(&result);
@@ -1287,7 +1287,7 @@ ps_arg_add(unsigned int gid, const char *oid, const char *value,
 
     SLIST_INSERT_HEAD(&ps->args, arg, links);
     ps->argc++;
-    ps->ta_job.reconfigure_required = TRUE;
+    ps->ta_job.reconfigure_required = true;
 
     return 0;
 }
@@ -1320,7 +1320,7 @@ ps_arg_del(unsigned int gid, const char *oid,
 
     SLIST_REMOVE(&ps->args, arg, ps_arg_entry, links);
     ps->argc--;
-    ps->ta_job.reconfigure_required = TRUE;
+    ps->ta_job.reconfigure_required = true;
 
     ps_arg_free(arg);
 
@@ -1351,7 +1351,7 @@ ps_env_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
     te_string result = TE_STRING_INIT;
     struct ps_entry *ps;
     struct ps_env_entry *env;
-    te_bool first = TRUE;
+    bool first = true;
     te_errno rc;
 
     UNUSED(gid);
@@ -1364,7 +1364,7 @@ ps_env_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
     SLIST_FOREACH(env, &ps->envs, links)
     {
         rc = te_string_append(&result, "%s%s", first ? "" : " ", env->name);
-        first = FALSE;
+        first = false;
         if (rc != 0)
         {
             te_string_free(&result);
@@ -1434,7 +1434,7 @@ ps_env_add(unsigned int gid, const char *oid, const char *value,
     }
 
     SLIST_INSERT_HEAD(&ps->envs, env, links);
-    ps->ta_job.reconfigure_required = TRUE;
+    ps->ta_job.reconfigure_required = true;
 
     return 0;
 }
@@ -1460,7 +1460,7 @@ ps_env_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     SLIST_REMOVE(&ps->envs, env, ps_env_entry, links);
-    ps->ta_job.reconfigure_required = TRUE;
+    ps->ta_job.reconfigure_required = true;
 
     ps_env_free(env);
 
@@ -1491,7 +1491,7 @@ ps_opt_list(unsigned int gid, const char *oid, const char *sub_id,
     te_string result = TE_STRING_INIT;
     struct ps_entry *ps;
     struct ps_opt_entry *opt;
-    te_bool first = TRUE;
+    bool first = true;
     te_errno rc;
 
     UNUSED(gid);
@@ -1504,7 +1504,7 @@ ps_opt_list(unsigned int gid, const char *oid, const char *sub_id,
     SLIST_FOREACH(opt, &ps->opts, links)
     {
         rc = te_string_append(&result, "%s%s", first ? "" : " ", opt->name);
-        first = FALSE;
+        first = false;
         if (rc != 0)
         {
             te_string_free(&result);
@@ -1573,10 +1573,10 @@ ps_opt_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
-    opt->is_long = (strlen(opt->name) > 1) ? TRUE : FALSE;
+    opt->is_long = (strlen(opt->name) > 1) ? true : false;
 
     SLIST_INSERT_HEAD(&ps->opts, opt, links);
-    ps->ta_job.reconfigure_required = TRUE;
+    ps->ta_job.reconfigure_required = true;
 
     return 0;
 }
@@ -1602,7 +1602,7 @@ ps_opt_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     SLIST_REMOVE(&ps->opts, opt, ps_opt_entry, links);
-    ps->ta_job.reconfigure_required = TRUE;
+    ps->ta_job.reconfigure_required = true;
 
     ps_opt_free(opt);
 
@@ -1663,7 +1663,7 @@ autorestart_loop(void *arg)
             if (ps->enabled && ps->autorestart != 0 &&
                 !ps->autorestart_failed && --ps->time_until_check == 0)
             {
-                te_bool is_running;
+                bool is_running;
 
                 /* Try to restart the process even if the check failed */
                 ps_status_check(ps, &is_running);
@@ -1672,7 +1672,7 @@ autorestart_loop(void *arg)
                     rc = ps_start(ps);
                     if (rc != 0)
                     {
-                        ps->autorestart_failed = TRUE;
+                        ps->autorestart_failed = true;
                         ERROR("Failed to (re)start process '%s', error: %r",
                               ps->name, rc);
                     }
@@ -1715,7 +1715,7 @@ ps_kill_common_get(unsigned int gid, const char *oid, char *value,
 
 static te_errno
 ps_kill_common_set(unsigned int gid, const char *oid, const char *value,
-                   const char *ps_name, te_bool killpg)
+                   const char *ps_name, bool killpg)
 {
     struct ps_entry *ps;
     int signo;
@@ -1747,14 +1747,14 @@ static te_errno
 ps_kill_self_set(unsigned int gid, const char *oid, const char *value,
                  const char *ps_name)
 {
-    return ps_kill_common_set(gid, oid, value, ps_name, FALSE);
+    return ps_kill_common_set(gid, oid, value, ps_name, false);
 }
 
 static te_errno
 ps_kill_group_set(unsigned int gid, const char *oid, const char *value,
                   const char *ps_name)
 {
-    return ps_kill_common_set(gid, oid, value, ps_name, TRUE);
+    return ps_kill_common_set(gid, oid, value, ps_name, true);
 }
 
 static te_errno

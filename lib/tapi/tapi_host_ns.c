@@ -27,7 +27,7 @@
 #define TAPI_HOST_NS_TREE_IF_PARENT TAPI_HOST_NS_TREE_IF "/parent:%d"
 
 /* See description in tapi_host_ns.h */
-te_bool
+bool
 tapi_host_ns_enabled(void)
 {
     te_errno    rc;
@@ -35,9 +35,9 @@ tapi_host_ns_enabled(void)
 
     rc = cfg_find_str("/local/host", &handle);
     if (rc != 0 || handle == CFG_HANDLE_INVALID)
-        return FALSE;
+        return false;
 
-    return TRUE;
+    return true;
 }
 
 /* See description in tapi_host_ns.h */
@@ -136,7 +136,7 @@ tapi_host_ns_agent_del(const char *ta)
     if (rc != 0)
         return rc;
 
-    rc = cfg_del_instance_fmt(FALSE, TAPI_HOST_NS_TREE_AGENT, host, ta);
+    rc = cfg_del_instance_fmt(false, TAPI_HOST_NS_TREE_AGENT, host, ta);
     free(host);
 
     return rc;
@@ -248,7 +248,7 @@ tapi_host_ns_if_parent_add(const char *ta, const char *ifname,
  * @return Status code.
  */
 static te_errno
-rm_parent_link(cfg_handle handle, char *link, te_bool all)
+rm_parent_link(cfg_handle handle, char *link, bool all)
 {
     te_errno rc;
     char    *val;
@@ -262,7 +262,7 @@ rm_parent_link(cfg_handle handle, char *link, te_bool all)
 
     if (strcmp(link, val) == 0)
     {
-        rc = cfg_del_instance(handle, FALSE);
+        rc = cfg_del_instance(handle, false);
         if (rc == 0 && !all)
             rc = TE_RC(TE_TAPI, TE_EOK);
     }
@@ -286,7 +286,7 @@ rm_parent_link(cfg_handle handle, char *link, te_bool all)
 static te_errno
 rm_parent_link_cb(cfg_handle handle, void *opaque)
 {
-    return rm_parent_link(handle, (char *)opaque, FALSE);
+    return rm_parent_link(handle, (char *)opaque, false);
 }
 
 /**
@@ -300,7 +300,7 @@ rm_parent_link_cb(cfg_handle handle, void *opaque)
 static te_errno
 rm_parent_link_all_cb(cfg_handle handle, void *opaque)
 {
-    return rm_parent_link(handle, (char *)opaque, TRUE);
+    return rm_parent_link(handle, (char *)opaque, true);
 }
 
 /* See description in tapi_host_ns.h */
@@ -395,7 +395,7 @@ tapi_host_ns_if_refs_del(const char *host, const char *ta, const char *ifname)
 
 /* See description in tapi_host_ns.h */
 te_errno
-tapi_host_ns_if_del(const char *ta, const char *ifname, te_bool del_refs)
+tapi_host_ns_if_del(const char *ta, const char *ifname, bool del_refs)
 {
     te_errno rc;
     te_errno rc2;
@@ -408,7 +408,7 @@ tapi_host_ns_if_del(const char *ta, const char *ifname, te_bool del_refs)
     if (del_refs)
         rc = tapi_host_ns_if_refs_del(host, ta, ifname);
 
-    rc2 = cfg_del_instance_fmt(TRUE, TAPI_HOST_NS_TREE_IF, host, ta, ifname);
+    rc2 = cfg_del_instance_fmt(true, TAPI_HOST_NS_TREE_IF, host, ta, ifname);
     free(host);
     if (rc == 0)
         rc = rc2;
@@ -571,7 +571,7 @@ tapi_host_ns_if_change_ns(const char *ta, const char *ifname,
     CHRC(rc, "Failed to update parent links of the interface %s/%s: %r",
          ns_ta, ifname, rc);
 
-    rc = tapi_host_ns_if_del(ta, ifname, FALSE);
+    rc = tapi_host_ns_if_del(ta, ifname, false);
     CHRC(rc, "Cannot delete moved interface %s/%s: %r", ta, ifname, rc);
 
 #undef CHRC

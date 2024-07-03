@@ -68,8 +68,8 @@ te_errno
 tapi_storage_client_mput(tapi_storage_client   *client,
                          const tapi_local_file *local_file,
                          const char            *remote_file,
-                         te_bool                recursive,
-                         te_bool                force)
+                         bool recursive,
+                         bool force)
 {
     te_errno  rc;
     char     *real_local_pathname;
@@ -180,7 +180,7 @@ te_errno
 tapi_storage_client_mget(tapi_storage_client *client,
                          const char          *remote_file,
                          const char          *local_file,
-                         te_bool              recursive)
+                         bool recursive)
 {
     UNUSED(client);
     UNUSED(remote_file);

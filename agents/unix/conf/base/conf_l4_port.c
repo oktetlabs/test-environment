@@ -25,9 +25,9 @@
 static int socket_family = 0;
 static int socket_type = 0;
 static te_vec allocated_ports = TE_VEC_INIT(uint16_t);
-static te_bool allocate_on_get = TRUE;
+static bool allocate_on_get = true;
 static int32_t last_allocated_port = -1;
-static te_bool allocate_property_changed = FALSE;
+static bool allocate_property_changed = false;
 
 static int *
 l4_port_alloc_property_ptr_by_oid(const char *oid)
@@ -73,7 +73,7 @@ l4_port_alloc_property_set(unsigned int gid, const char *oid, const char *value)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     if (*property != property_value)
-        allocate_property_changed = TRUE;
+        allocate_property_changed = true;
 
     *property = property_value;
 
@@ -99,7 +99,7 @@ l4_port_alloc_property_get(unsigned int gid, const char *oid, char *value)
 static te_errno
 l4_port_alloc_next_get(unsigned int gid, const char *oid, char *value)
 {
-    te_bool realloc_last_port;
+    bool realloc_last_port;
     uint16_t port;
     te_errno rc;
 
@@ -122,8 +122,8 @@ l4_port_alloc_next_get(unsigned int gid, const char *oid, char *value)
         last_allocated_port = port;
     }
 
-    allocate_property_changed = FALSE;
-    allocate_on_get = FALSE;
+    allocate_property_changed = false;
+    allocate_on_get = false;
     te_snprintf(value, RCF_MAX_VAL, "%d", last_allocated_port);
 
     return 0;
@@ -182,7 +182,7 @@ l4_port_allocated_add(unsigned int gid, const char *oid, const char *value,
 
     rc = TE_VEC_APPEND(&allocated_ports, port);
     if (rc == 0)
-        allocate_on_get = TRUE;
+        allocate_on_get = true;
 
     return rc;
 }

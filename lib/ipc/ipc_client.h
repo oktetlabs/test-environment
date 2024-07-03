@@ -34,13 +34,13 @@ typedef struct ipc_client ipc_client;
  *
  * @param client_name   Unique name of the client (must be less than
  *                      UNIX_PATH_MAX)
- * @param conn          FALSE - connectionless client,
- *                      TRUE - connection-oriented client
+ * @param conn          @c false connectionless client,
+ *                      @c true connection-oriented client
  * @param p_client      Location for client handle
  *
  * @return Status code.
  */
-extern int ipc_init_client(const char *client_name, te_bool conn,
+extern int ipc_init_client(const char *client_name, bool conn,
                            struct ipc_client **p_client);
 
 /**

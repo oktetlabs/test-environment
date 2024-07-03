@@ -28,7 +28,7 @@ extern "C" {
 typedef struct te_conf_ip_rule {
     uint8_t         family;             /**< Address family of rule */
     te_ip_type      type;               /**< Type of rule entry */
-    te_bool         invert;             /**< Inversion flag (works as
+    bool invert;             /**< Inversion flag (works as
                                              ip rule not ... ). */
     uint8_t         srclen;             /**< Prefix length of source */
     uint8_t         dstlen;             /**< Prefix length of destination */
@@ -124,19 +124,19 @@ extern te_conf_obj_compare_result te_conf_ip_rule_compare(
  * Set inversion flag for IP rule.
  *
  * @param rule    IP rule structure.
- * @param invert  If TRUE, set the flag; otherwise clear it.
+ * @param invert  If @c true, set the flag; otherwise clear it.
  */
 extern void te_conf_ip_rule_set_invert(te_conf_ip_rule *rule,
-                                       te_bool invert);
+                                       bool invert);
 
 /**
  * Get state of inversion flag for IP rule.
  *
  * @param rule    IP rule structure.
  *
- * @return TRUE if flag is set, FALSE otherwise.
+ * @return @c true if flag is set, @c false otherwise.
  */
-extern te_bool te_conf_ip_rule_get_invert(const te_conf_ip_rule *rule);
+extern bool te_conf_ip_rule_get_invert(const te_conf_ip_rule *rule);
 
 #ifdef __cplusplus
 } /* extern "C" */

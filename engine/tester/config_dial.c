@@ -85,15 +85,15 @@ typedef struct dial_node {
     char *path;
 
     /**
-     * TRUE if this node was created by splitting parent
+     * @c true if this node was created by splitting parent
      * node after removing chosen iteration from it.
      */
-    te_bool split;
+    bool split;
     /**
-     * TRUE if this is a leaf node from which iterations
+     * @c true if this is a leaf node from which iterations
      * can be chosen.
      */
-    te_bool leaf;
+    bool leaf;
 
     /** Associated run item */
     const run_item *ri;
@@ -297,7 +297,7 @@ node_del(dial_node *node)
          * tester_get_dial_scenario() will remove it
          * itself.
          */
-        node->leaf = FALSE;
+        node->leaf = false;
     }
 }
 
@@ -344,7 +344,7 @@ node_start(unsigned int cfg_id_off, unsigned int self_iters,
     node->cur_iters = node->init_iters = inner_iters;
 
     if (ri != NULL && ri->type == RUN_ITEM_SCRIPT)
-        node->leaf = TRUE;
+        node->leaf = true;
 
     node_add_child(ctx->cur_node, node);
     ctx->cur_node = node;
@@ -769,8 +769,8 @@ select_test_iter(dial_node *node, unsigned int *iter_out,
             brother->sel_weight = node->last - iter;
             brother->init_sel_weight = brother->sel_weight;
             brother->cur_iters = brother->init_iters = brother->sel_weight;
-            brother->split = TRUE;
-            brother->leaf = TRUE;
+            brother->split = true;
+            brother->leaf = true;
             brother->act_ptr = node->act_ptr;
             brother->parent = node->parent;
 
@@ -797,28 +797,28 @@ select_test_iter(dial_node *node, unsigned int *iter_out,
             right = TE_ALLOC(sizeof(*right));
 
             node_init(left);
-            left->split = TRUE;
+            left->split = true;
             left->first = node->first;
             left->last = iter - 1;
             left->sel_weight = iter - node->first;
             left->init_sel_weight = left->sel_weight;
             left->cur_iters = left->init_iters = left->sel_weight;
             left->parent = node;
-            left->leaf = TRUE;
+            left->leaf = true;
             left->act_ptr = node->act_ptr;
 
             node_init(right);
-            right->split = TRUE;
+            right->split = true;
             right->first = iter + 1;
             right->last = node->last;
             right->sel_weight = node->last - iter;
             right->init_sel_weight = right->sel_weight;
             right->cur_iters = right->init_iters = right->sel_weight;
             right->parent = node;
-            right->leaf = TRUE;
+            right->leaf = true;
             right->act_ptr = node->act_ptr;
 
-            node->leaf = FALSE;
+            node->leaf = false;
             node->children_sel_weight = node->last - node->first;
 
             TAILQ_INSERT_TAIL(&node->children, left, links);
@@ -968,7 +968,7 @@ normalize_after_adding(dial_node *node)
 
     if (node->act_ptr != NULL)
     {
-        node->leaf = TRUE;
+        node->leaf = true;
         return node->init_iters;
     }
 
@@ -986,7 +986,7 @@ normalize_after_adding(dial_node *node)
     }
 
     node->cur_iters = node->init_iters = result;
-    node->leaf = FALSE;
+    node->leaf = false;
 
     return result;
 }
@@ -1001,7 +1001,7 @@ act_to_scenario(act_chosen *act, testing_scenario *scenario)
 {
     unsigned int i;
     unsigned int start = 0;
-    te_bool started = FALSE;
+    bool started = false;
     te_errno rc;
 
     for (i = act->first; i <= act->last; i++)
@@ -1011,12 +1011,12 @@ act_to_scenario(act_chosen *act, testing_scenario *scenario)
             if (!started)
             {
                 start = i;
-                started = TRUE;
+                started = true;
             }
         }
         else if (started)
         {
-            started = FALSE;
+            started = false;
             rc = scenario_add_act(scenario, start, i - 1, act->flags, NULL);
             if (rc != 0)
                 return rc;

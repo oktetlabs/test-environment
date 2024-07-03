@@ -62,7 +62,7 @@ start_cmd_monitors(cmd_monitor_descrs *monitors)
                                            monitor->name,
                                            monitor->command,
                                            monitor->time_to_wait) == 0)
-                monitor->enabled = TRUE;
+                monitor->enabled = true;
             else
             {
                 ERROR("Failed to enable command monitor for '%s'",
@@ -88,7 +88,7 @@ stop_cmd_monitors(cmd_monitor_descrs *monitors)
         {
             if (tapi_cfg_cmd_monitor_end(monitor->ta,
                                          monitor->name) == 0)
-                monitor->enabled = FALSE;
+                monitor->enabled = false;
             else
             {
                 ERROR("Failed to enable command monitor for '%s'",

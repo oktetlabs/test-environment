@@ -223,7 +223,7 @@ split_long_string(char *s, unsigned int max_len)
             te_string_append(value, p0);
             break;
         }
-    } while (TRUE);
+    } while (true);
 
     return value;
 }

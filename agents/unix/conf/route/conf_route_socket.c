@@ -376,9 +376,9 @@ route_log(const char *title, const struct rt_msghdr *rtm)
     const struct sockaddr  *addr = CONST_SA(rtm + 1);
     socklen_t               addrlen;
     unsigned int            i;
-    te_bool                 unknown;
+    bool unknown;
 
-    for (unknown = FALSE, i = 0; i < RTAX_MAX; i++)
+    for (unknown = false, i = 0; i < RTAX_MAX; i++)
     {
         if (!unknown && rtm->rtm_addrs & (1 << i))
         {

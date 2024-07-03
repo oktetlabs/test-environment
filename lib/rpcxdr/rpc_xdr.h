@@ -91,7 +91,7 @@ extern int rpc_xdr_encode_call(const char *name, void *buf, size_t *buflen,
  * @retval TE_ESUNRPC   Buffer is too small or another encoding error
  *                      ocurred
  */
-extern int rpc_xdr_encode_result(const char *name, te_bool rc,
+extern int rpc_xdr_encode_result(const char *name, bool rc,
                                  void *buf, size_t *buflen, void *objp);
 
 
@@ -117,7 +117,7 @@ extern int rpc_xdr_decode_call(void *buf, size_t buflen,
  * @param buflen  length of the data
  * @param objp    C structure for input parameters to be filled
  *
- * @return Status code (if rc attribute of result is FALSE, an error should
+ * @return Status code (if rc attribute of result is @c false, an error should
  *         be returned)
  */
 extern int rpc_xdr_decode_result(const char *name, void *buf,
@@ -146,7 +146,7 @@ extern te_errno rpc_xdr_inspect_call(const void *buf, size_t buflen,
  * @param buflen  length of the data
  * @param common  Decode common output parameters
  *
- * @return Status code (if rc attribute of result is FALSE, an error should
+ * @return Status code (if rc attribute of result is @c false, an error should
  *         be returned)
  */
 extern te_errno rpc_xdr_inspect_result(const void *buf, size_t buflen,

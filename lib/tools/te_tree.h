@@ -228,7 +228,7 @@ extern void te_tree_add_kvpair_children(te_tree *tree,
  *                    "string value");
  * te_tree_make_typed("node2", TE_TREE_ATTR_TYPE_INT, 42);
  * te_tree_make_typed("node3", TE_TREE_ATTR_TYPE_FLOAT, 42.0);
- * te_tree_make_typed("node4", TE_TREE_ATTR_TYPE_BOOL, TRUE);
+ * te_tree_make_typed("node4", TE_TREE_ATTR_TYPE_BOOL, true);
  * te_tree_make_typed("node6", TE_TREE_ATTR_TYPE_ARRAY,
  *                    item1, item2, item3, NULL);
  * te_tree_make_typed("node7", TE_TREE_ATTR_TYPE_DICT,
@@ -307,10 +307,10 @@ extern te_errno te_tree_get_float_attr(const te_tree *tree, const char *attr,
  * Get a boolean value of an attribute of a tree.
  *
  * All "natural" way of representing booleans are supported:
- * - @c TRUE, @c true, @c True, @c T, @c t, @c YES, @c yes,
- *   @c Yes, @c Y, @c y, @c 1 all map to @c TRUE
- * - @c FALSE, @c false, @c False, @c F, @c f, @c NO, @c no,
- * - @c No, @c N, @xc n, @c 0 and empty string all map to @c FALSE.
+ * - @c true, @c true, @c True, @c T, @c t, @c YES, @c yes,
+ *   @c Yes, @c Y, @c y, @c 1 all map to @c true
+ * - @c false, @c false, @c False, @c F, @c f, @c NO, @c no,
+ * - @c No, @c N, @xc n, @c 0 and empty string all map to @c false.
  *
  * @param[in]  tree    tree
  * @param[in]  attr    attribute name
@@ -321,7 +321,7 @@ extern te_errno te_tree_get_float_attr(const te_tree *tree, const char *attr,
  * @retval TE_EINVAL   The value is not a valid boolean representation.
  */
 extern te_errno te_tree_get_bool_attr(const te_tree *tree, const char *attr,
-                                      te_bool *result);
+                                      bool *result);
 
 /**@}*/
 
@@ -361,9 +361,9 @@ extern const char *te_tree_get_type(const te_tree *tree);
  * @param attr   attribute name (may be @c NULL)
  * @param value  attribute value (may be @c NULL)
  *
- * @return @c TRUE if there is an attribute with a given name and value
+ * @return @c true if there is an attribute with a given name and value
  */
-extern te_bool te_tree_has_attr(const te_tree *tree, const char *attr,
+extern bool te_tree_has_attr(const te_tree *tree, const char *attr,
                                 const char *value);
 
 /**
@@ -372,10 +372,10 @@ extern te_bool te_tree_has_attr(const te_tree *tree, const char *attr,
  * @param tree   tree
  * @param attrs  list of name-value pairs
  *
- * @return @c TRUE if all attributes from @p attrs have matching
+ * @return @c true if all attributes from @p attrs have matching
  *         values in @p tree
  */
-extern te_bool te_tree_has_attrs(const te_tree *tree, const te_kvpair_h *attrs);
+extern bool te_tree_has_attrs(const te_tree *tree, const te_kvpair_h *attrs);
 
 /**
  * Get an immutable attribute list.
@@ -678,10 +678,10 @@ extern te_tree *te_tree_map(const te_tree *tree, te_tree_map_fn *fn,
  * @param[out] bad_node        location for a pointer to the first detected
  *                             bad node
  *
- * @return @c TRUE if the tree is valid
+ * @return @c true if the tree is valid
  */
-extern te_bool te_tree_validate_types(const te_tree *tree,
-                                      te_bool allow_unknown,
+extern bool te_tree_validate_types(const te_tree *tree,
+                                      bool allow_unknown,
                                       const te_tree **bad_node);
 
 #ifdef __cplusplus

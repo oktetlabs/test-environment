@@ -82,7 +82,7 @@ netconf_udp_tunnel_list(netconf_handle nh,
         if (ifname != NULL)
         {
             if (filter_cb != NULL &&
-                filter_cb(ifname, filter_opaque) == FALSE)
+                filter_cb(ifname, filter_opaque) == false)
                 continue;
 
             rc = te_string_append(&str, "%s ", ifname);

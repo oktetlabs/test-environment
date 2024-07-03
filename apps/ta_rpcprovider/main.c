@@ -129,13 +129,13 @@ sigint_handler(void)
 static void
 sigpipe_handler(void)
 {
-    static te_bool here = FALSE;
+    static bool here = false;
 
     if (!here)
     {
-        here = TRUE;
+        here = true;
         fprintf(stderr, MSG_PFX "SIGPIPE is received\n");
-        here = FALSE;
+        here = false;
     }
 }
 

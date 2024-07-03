@@ -107,7 +107,7 @@ typedef void (ta_cfg_obj_data_free)(void *data);
 
 /** Object data structure, which is inserted into collection */
 typedef struct ta_cfg_obj {
-    te_bool  in_use;    /**< Whether this entry is in use */
+    bool in_use;    /**< Whether this entry is in use */
     char    *type;      /**< Object type in string representation */
     char    *name;      /**< Object name - actually, instance name */
     char    *value;     /**< Object value - actually, instance value */
@@ -186,14 +186,14 @@ typedef te_errno (* ta_obj_cb)(ta_cfg_obj_t *obj);
  * @param cb_func     Callback function for filling object attributes
  *                    if it is created.
  * @param obj         Where to save pointer to object.
- * @param created     Will be set to @c TRUE if not @c NULL and object
+ * @param created     Will be set to @c true if not @c NULL and object
  *                    is created.
  *
  * @return Status code.
  */
 extern te_errno ta_obj_find_create(const char *type, const char *name,
                                    unsigned int gid, ta_obj_cb cb_func,
-                                   ta_cfg_obj_t **obj, te_bool *created);
+                                   ta_cfg_obj_t **obj, bool *created);
 
 /**
  * Create an object of specified type with particular value.
@@ -498,8 +498,8 @@ extern int ta_rt_parse_obj(ta_cfg_obj_t *obj, ta_rt_info_t *rt_info);
  * Create a lock for the resource with specified name.
  *
  * @param name                  resource name
- * @param[in,out] shared        create lock in shared (@c TRUE) or exclusive
- *                              (@c FALSE) mode. On success contains actual
+ * @param[in,out] shared        create lock in shared (@c true) or exclusive
+ *                              (@c false) mode. On success contains actual
  *                              mode of the acquired lock.
  * @param fallback_shared       Should the attempt to acquire lock in shared
  *                              mode be taken after unsuccessful attempts
@@ -509,8 +509,8 @@ extern int ta_rt_parse_obj(ta_cfg_obj_t *obj, ta_rt_info_t *rt_info);
  *
  * @return Status code
  */
-extern te_errno ta_rsrc_create_lock(const char *name, te_bool *shared,
-                                    te_bool fallback_shared,
+extern te_errno ta_rsrc_create_lock(const char *name, bool *shared,
+                                    bool fallback_shared,
                                     unsigned int attempts_timeout_ms);
 
 /*

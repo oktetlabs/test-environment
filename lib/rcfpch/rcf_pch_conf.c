@@ -88,7 +88,7 @@ typedef struct rcf_pch_commit_op_t {
 /** Head of postponed commits */
 static TAILQ_HEAD(rcf_pch_commit_head_t, rcf_pch_commit_op_t)   commits;
 
-static te_bool      is_group = FALSE;       /**< Is group started? */
+static bool is_group = false;       /**< Is group started? */
 static unsigned int gid;                    /**< Group identifier */
 
 
@@ -266,7 +266,7 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
     char *inst_name = NULL;
     char *next_level;
 
-    te_bool all;
+    bool all;
     te_errno rc;
 
 /**
@@ -281,7 +281,7 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
         free(sub_id);                   \
         free(inst_name);                \
         return (_rc);                   \
-    } while (FALSE)
+    } while (false)
 
     if (*oid == 0 || obj == NULL)
         return 0;
@@ -430,7 +430,7 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
     char *next_level;
     char *sub_id = NULL;
 
-    te_bool all;
+    bool all;
 
 /**
  * Return from function with resources deallocation.
@@ -443,7 +443,7 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
             free_list(*list);           \
         free(sub_id);                   \
         return (_rc);                   \
-    } while (FALSE)
+    } while (false)
 
 
     if (*oid == 0 || obj == NULL)
@@ -1092,13 +1092,13 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
     {
         case RCF_CH_CFG_GRP_START:
             VERB("Configuration group %u start", gid);
-            is_group = TRUE;
+            is_group = true;
             SEND_ANSWER("0");
             break;
 
         case RCF_CH_CFG_GRP_END:
             VERB("Configuration group %u end", gid);
-            is_group = FALSE;
+            is_group = false;
             SEND_ANSWER("%d", commit_all_postponed());
             break;
 
@@ -1177,7 +1177,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
     }
 
     /* Unreachable */
-    assert(FALSE);
+    assert(false);
     return 0;
 
 #undef ALL_INST_NAMES
@@ -1199,7 +1199,7 @@ rcf_pch_find_node(const char *oid_str, rcf_pch_cfg_object **node)
         return TE_RC(TE_RCF_PCH, TE_EINVAL);
     }
 
-    while (TRUE)
+    while (true)
     {
         for (; tmp != NULL; tmp = tmp->brother)
         {
@@ -1493,7 +1493,7 @@ static te_errno
 update_rsrc_lock_file(rsrc_lock *lock, const char *fname, int fd)
 {
     te_string str = TE_STRING_INIT;
-    te_bool empty = TRUE;
+    bool empty = true;
     te_errno rc;
     pid_t *pid;
 
@@ -1501,7 +1501,7 @@ update_rsrc_lock_file(rsrc_lock *lock, const char *fname, int fd)
     {
         if (*pid >= 0)
         {
-            empty = FALSE;
+            empty = false;
             break;
         }
     }
@@ -1562,22 +1562,22 @@ free_rsrc_lock(rsrc_lock *lock)
  * by @p may_share.
  *
  * @param lock          Existing lock
- * @param may_share     Process wants to lock resource as shared (@c TRUE),
- *                      or exclusive (@c FALSE)
+ * @param may_share     Process wants to lock resource as shared (@c true),
+ *                      or exclusive (@c false)
  * @param my_pid        PID of a process that needs a lock
  *
  * @return              Status code
  */
 static te_errno
-add_rsrc_lock(rsrc_lock *lock, te_bool may_share, pid_t my_pid)
+add_rsrc_lock(rsrc_lock *lock, bool may_share, pid_t my_pid)
 {
-    te_bool has_my_pid = FALSE;
+    bool has_my_pid = false;
     te_errno rc;
     pid_t *pid;
 
     if (te_vec_size(&lock->pids) > 0)
     {
-        te_bool first_pid_mine = TE_VEC_GET(pid_t, &lock->pids, 0) == my_pid;
+        bool first_pid_mine = TE_VEC_GET(pid_t, &lock->pids, 0) == my_pid;
 
         if (lock->type == RSRC_LOCK_UNDEFINED)
         {
@@ -1596,7 +1596,7 @@ add_rsrc_lock(rsrc_lock *lock, te_bool may_share, pid_t my_pid)
     TE_VEC_FOREACH(&lock->pids, pid)
     {
         if (*pid == my_pid)
-            has_my_pid = TRUE;
+            has_my_pid = true;
     }
 
     if (!has_my_pid)
@@ -1620,7 +1620,7 @@ add_rsrc_lock(rsrc_lock *lock, te_bool may_share, pid_t my_pid)
 static te_errno
 remove_rsrc_lock(rsrc_lock *lock, pid_t my_pid)
 {
-    te_bool my_pid_removed = FALSE;
+    bool my_pid_removed = false;
     size_t i;
 
     for (i = 0; i < te_vec_size(&lock->pids); i++)
@@ -1628,7 +1628,7 @@ remove_rsrc_lock(rsrc_lock *lock, pid_t my_pid)
         if (TE_VEC_GET(pid_t, &lock->pids, i) == my_pid)
         {
             te_vec_remove_index(&lock->pids, i);
-            my_pid_removed = TRUE;
+            my_pid_removed = true;
             break;
         }
     }
@@ -1905,10 +1905,10 @@ rcf_pch_rsrc_check_locks(const char *rsrc_ptrn)
  * then updated lock file is written (or removed if no PIDs are left).
  *
  * @param name                  Resource name
- * @param shared             @c TRUE if resource is shared
- * @param add_lock              @c TRUE - add lock @c FALSE - remove lock
+ * @param shared             @c true if resource is shared
+ * @param add_lock              @c true - add lock @c false - remove lock
  * @param my_pid                PID of a process to update lock for
- * @param fallback_shared    @c TRUE - try to lock as shared if
+ * @param fallback_shared    @c true - try to lock as shared if
  *                              exclusive locking failed
  * @param attempts_timeout_ms   Retry attempts to lock until the timeout
  *                              passes (in milliseconds)
@@ -1916,15 +1916,15 @@ rcf_pch_rsrc_check_locks(const char *rsrc_ptrn)
  * @return Status code.
  */
 static te_errno
-ta_rsrc_update_lock(const char *name, te_bool *shared, te_bool add_lock,
-                    pid_t my_pid, te_bool fallback_shared,
+ta_rsrc_update_lock(const char *name, bool *shared, bool add_lock,
+                    pid_t my_pid, bool fallback_shared,
                     unsigned int attempts_timeout_ms)
 {
     char        fname[RCF_MAX_PATH];
     rsrc_lock  *lock = NULL;
     int         fd;
     te_errno    rc = 0;
-    te_bool     result_shared = *shared;
+    bool result_shared = *shared;
 
     if (rsrc_lock_path(name, fname, sizeof(fname)) == NULL)
         return TE_RC(TE_RCF_PCH, TE_ENAMETOOLONG);
@@ -1973,7 +1973,7 @@ ta_rsrc_update_lock(const char *name, te_bool *shared, te_bool add_lock,
             if (rc != 0)
                 goto out;
 
-            result_shared = TRUE;
+            result_shared = true;
         }
         else
         {
@@ -1995,11 +1995,11 @@ out:
 }
 
 te_errno
-ta_rsrc_create_lock(const char *name, te_bool *shared,
-                    te_bool fallback_shared,
+ta_rsrc_create_lock(const char *name, bool *shared,
+                    bool fallback_shared,
                     unsigned int attempts_timeout_ms)
 {
-    return ta_rsrc_update_lock(name, shared, TRUE, getpid(),
+    return ta_rsrc_update_lock(name, shared, true, getpid(),
                                fallback_shared, attempts_timeout_ms);
 }
 
@@ -2011,9 +2011,9 @@ ta_rsrc_create_lock(const char *name, te_bool *shared,
 void
 ta_rsrc_delete_lock(const char *name)
 {
-    te_bool shared = FALSE;
+    bool shared = false;
 
-    ta_rsrc_update_lock(name, &shared, FALSE, getpid(), FALSE, 0);
+    ta_rsrc_update_lock(name, &shared, false, getpid(), false, 0);
 }
 #endif /* !__CYGWIN__ */
 
@@ -2022,7 +2022,7 @@ typedef struct rsrc {
     struct rsrc *next;  /**< Next element in the list */
     char        *id;    /**< Name of the instance in the OID */
     char        *name;  /**< Resource name (instance value) */
-    te_bool      shared; /**< Resource is shared if @c TRUE */
+    bool shared; /**< Resource is shared if @c true */
     unsigned int fallback_shared; /**<
                                       * Try to grab as shared if exclusive
                                       * grab failed.
@@ -2371,27 +2371,27 @@ rsrc_add(unsigned int gid, const char *oid, const char *value,
  *
  * @param fmt           format string for resource name
  * @param shared     check for accessibility
- *                      in shared/exclusive (@c TRUE)
- *                      or only exclusive (@c FALSE) mode.
+ *                      in shared/exclusive (@c true)
+ *                      or only exclusive (@c false) mode.
  *
- * @return  TRUE is the resource is accessible with given shared/exclusive
+ * @return  @c true if the resource is accessible with given shared/exclusive
  *          access right
  *
  * @note The function should be called from TA main thread only.
  */
-static te_bool
-rsrc_accessible_generic(te_bool shared, const char *fmt, va_list ap)
+static bool
+rsrc_accessible_generic(bool shared, const char *fmt, va_list ap)
 {
     rsrc   *tmp;
     char    buf[RCF_MAX_VAL];
 
     if (fmt == NULL)
-        return FALSE;
+        return false;
 
     if (vsnprintf(buf, sizeof(buf), fmt, ap) >= (int)sizeof(buf))
     {
         ERROR("Too long resource name");
-        return FALSE;
+        return false;
     }
 
     for (tmp = rsrc_lst; tmp != NULL; tmp = tmp->next)
@@ -2402,35 +2402,35 @@ rsrc_accessible_generic(te_bool shared, const char *fmt, va_list ap)
             !(tmp->shared && !shared))
         {
             VERB("%s(): match", __FUNCTION__);
-            return TRUE;
+            return true;
         }
     }
     VERB("%s(): no match", __FUNCTION__);
 
-    return FALSE;
+    return false;
 }
 
-te_bool
+bool
 rcf_pch_rsrc_accessible(const char *fmt, ...)
 {
     va_list ap;
-    te_bool result;
+    bool result;
 
     va_start(ap, fmt);
-    result = rsrc_accessible_generic(FALSE, fmt, ap);
+    result = rsrc_accessible_generic(false, fmt, ap);
     va_end(ap);
 
     return result;
 }
 
-te_bool
+bool
 rcf_pch_rsrc_accessible_may_share(const char *fmt, ...)
 {
     va_list ap;
-    te_bool result;
+    bool result;
 
     va_start(ap, fmt);
-    result = rsrc_accessible_generic(TRUE, fmt, ap);
+    result = rsrc_accessible_generic(true, fmt, ap);
     va_end(ap);
 
     return result;
@@ -2478,7 +2478,7 @@ static te_errno
 rsrc_shared_set(unsigned int gid, const char *oid, const char *value,
                    const char *id)
 {
-    te_bool shared;
+    bool shared;
     te_errno rc;
     rsrc *tmp;
 

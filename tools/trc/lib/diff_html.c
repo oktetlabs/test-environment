@@ -1085,7 +1085,7 @@ trc_diff_stats_js_table_align(FILE *f, unsigned int align)
 
 void
 trc_diff_stats_js_table_report(FILE *f, const trc_diff_sets *sets,
-                               trc_diff_stats *stats, te_bool with_hashes)
+                               trc_diff_stats *stats, bool with_hashes)
 {
     const trc_diff_set *set1;
     const trc_diff_set *set2;
@@ -1392,7 +1392,7 @@ trc_diff_stats_entry_to_html(FILE *f, trc_diff_stats_counter *counters,
                              char *set1_name, char *set2_name,
                              int status1, int status2, int flags)
 {
-    te_bool use_popups = (~flags & TRC_DIFF_FLAGS_NO_POPUPS);
+    bool use_popups = (~flags & TRC_DIFF_FLAGS_NO_POPUPS);
 
     if ((counters[TRC_DIFF_MATCH].counter == 0)    &&
         (counters[TRC_DIFF_NO_MATCH].counter == 0) &&
@@ -1585,8 +1585,8 @@ trc_diff_one_stats_brief_to_html(FILE               *f,
                                  const trc_diff_set *set_x,
                                  const trc_diff_set *set_y,
                                  tqh_strings        *ref_tags,
-                                 te_bool             diff_only,
-                                 te_bool             use_popups)
+                                 bool diff_only,
+                                 bool use_popups)
 {
     trc_diff_stats_counters *counters;
     trc_diff_stats_counters *ref_counters;
@@ -1598,7 +1598,7 @@ trc_diff_one_stats_brief_to_html(FILE               *f,
     trc_test_status         status_x;
     trc_test_status         status_y;
     trc_diff_status         diff;
-    te_bool                 empty;
+    bool empty;
 
     if (set_x == NULL)
         set_x = set_y;
@@ -1690,7 +1690,7 @@ trc_diff_one_stats_brief_to_html(FILE               *f,
                 break;                                                  \
         }                                                               \
                                                                         \
-        empty = FALSE;                                                  \
+        empty = false;                                                  \
                                                                         \
         if (use_popups)                                                 \
         {                                                               \
@@ -1713,37 +1713,37 @@ trc_diff_one_stats_brief_to_html(FILE               *f,
     } while (0)
 
     fprintf(f, "<td style=\"text-align:right;\">");
-    empty = TRUE;
+    empty = true;
     if (set_x == set_y)
     {
         WRITE_COUNTER("passed", total[TRC_TEST_PASSED], NULL,
                       TRC_DIFF_SUMMARY_PASSED,
-                      TRC_DIFF_SUMMARY_MATCH, FALSE);
+                      TRC_DIFF_SUMMARY_MATCH, false);
     }
     else
     {
         WRITE_COUNTER("passed_new", total_y[TRC_TEST_PASSED], " + ",
                       TRC_DIFF_SUMMARY_PASSED,
-                      TRC_DIFF_SUMMARY_NEW, FALSE);
+                      TRC_DIFF_SUMMARY_NEW, false);
         WRITE_COUNTER("passed_old", total_x[TRC_TEST_PASSED], " - ",
                       TRC_DIFF_SUMMARY_PASSED,
-                      TRC_DIFF_SUMMARY_OLD, FALSE);
+                      TRC_DIFF_SUMMARY_OLD, false);
         WRITE_COUNTER("passed_ignored_new",
                       (*counters)[TRC_TEST_SKIPPED][TRC_TEST_PASSED]
                                  [TRC_DIFF_NO_MATCH_IGNORE].counter, " + ",
                       TRC_DIFF_SUMMARY_PASSED,
-                      TRC_DIFF_SUMMARY_SKIPPED_NEW, FALSE);
+                      TRC_DIFF_SUMMARY_SKIPPED_NEW, false);
         WRITE_COUNTER("passed_ignored_old",
                       (*counters)[TRC_TEST_PASSED][TRC_TEST_SKIPPED]
                                  [TRC_DIFF_NO_MATCH_IGNORE].counter, " - ",
                       TRC_DIFF_SUMMARY_PASSED,
-                      TRC_DIFF_SUMMARY_SKIPPED_OLD, FALSE);
+                      TRC_DIFF_SUMMARY_SKIPPED_OLD, false);
         if (!diff_only)
         {
             WRITE_COUNTER("passed", ref_total[TRC_TEST_PASSED],
                           empty ? NULL : " = ",
                           TRC_DIFF_SUMMARY_PASSED,
-                          TRC_DIFF_SUMMARY_MATCH, TRUE);
+                          TRC_DIFF_SUMMARY_MATCH, true);
         }
     }
     if (empty)
@@ -1751,37 +1751,37 @@ trc_diff_one_stats_brief_to_html(FILE               *f,
     fprintf(f, "</td>");
 
     fprintf(f, "<td style=\"text-align:right;\">");
-    empty = TRUE;
+    empty = true;
     if (set_x == set_y)
     {
         WRITE_COUNTER("passed_une", total[TRC_TEST_PASSED_UNE], NULL,
                       TRC_DIFF_SUMMARY_PASSED_UNE,
-                      TRC_DIFF_SUMMARY_MATCH, FALSE);
+                      TRC_DIFF_SUMMARY_MATCH, false);
     }
     else
     {
         WRITE_COUNTER("passed_une_new", total_y[TRC_TEST_PASSED_UNE], " + ",
                       TRC_DIFF_SUMMARY_PASSED_UNE,
-                      TRC_DIFF_SUMMARY_NEW, FALSE);
+                      TRC_DIFF_SUMMARY_NEW, false);
         WRITE_COUNTER("passed_une_old", total_x[TRC_TEST_PASSED_UNE], " - ",
                       TRC_DIFF_SUMMARY_PASSED_UNE,
-                      TRC_DIFF_SUMMARY_OLD, FALSE);
+                      TRC_DIFF_SUMMARY_OLD, false);
         WRITE_COUNTER("passed_une_ignored_new",
                       (*counters)[TRC_TEST_SKIPPED][TRC_TEST_PASSED_UNE]
                                  [TRC_DIFF_NO_MATCH_IGNORE].counter, " + ",
                       TRC_DIFF_SUMMARY_PASSED_UNE,
-                      TRC_DIFF_SUMMARY_SKIPPED_NEW, FALSE);
+                      TRC_DIFF_SUMMARY_SKIPPED_NEW, false);
         WRITE_COUNTER("passed_une_ignored_old",
                       (*counters)[TRC_TEST_PASSED_UNE][TRC_TEST_SKIPPED]
                                  [TRC_DIFF_NO_MATCH_IGNORE].counter, " - ",
                       TRC_DIFF_SUMMARY_PASSED_UNE,
-                      TRC_DIFF_SUMMARY_SKIPPED_OLD, FALSE);
+                      TRC_DIFF_SUMMARY_SKIPPED_OLD, false);
         if (!diff_only)
         {
             WRITE_COUNTER("passed_une", ref_total[TRC_TEST_PASSED_UNE],
                           empty ? NULL : " = ",
                           TRC_DIFF_SUMMARY_PASSED_UNE,
-                          TRC_DIFF_SUMMARY_MATCH, TRUE);
+                          TRC_DIFF_SUMMARY_MATCH, true);
         }
     }
     if (empty)
@@ -1789,38 +1789,38 @@ trc_diff_one_stats_brief_to_html(FILE               *f,
     fprintf(f, "</td>");
 
     fprintf(f, "<td style=\"text-align:right;\">");
-    empty = TRUE;
+    empty = true;
     if (set_x == set_y)
     {
         WRITE_COUNTER("failed", total[TRC_TEST_FAILED], NULL,
                       TRC_DIFF_SUMMARY_FAILED,
-                      TRC_DIFF_SUMMARY_MATCH, FALSE);
+                      TRC_DIFF_SUMMARY_MATCH, false);
     }
     else
     {
         WRITE_COUNTER("failed_new", total_y[TRC_TEST_FAILED], " + ",
                       TRC_DIFF_SUMMARY_FAILED,
-                      TRC_DIFF_SUMMARY_NEW, FALSE);
+                      TRC_DIFF_SUMMARY_NEW, false);
         WRITE_COUNTER("failed_old", total_x[TRC_TEST_FAILED], " - ",
                       TRC_DIFF_SUMMARY_FAILED,
-                      TRC_DIFF_SUMMARY_OLD, FALSE);
+                      TRC_DIFF_SUMMARY_OLD, false);
         WRITE_COUNTER("failed_ignored_new",
                       (*counters)[TRC_TEST_SKIPPED][TRC_TEST_FAILED]
                                  [TRC_DIFF_NO_MATCH_IGNORE].counter, " + ",
                       TRC_DIFF_SUMMARY_FAILED,
-                      TRC_DIFF_SUMMARY_SKIPPED_NEW, FALSE);
+                      TRC_DIFF_SUMMARY_SKIPPED_NEW, false);
 
         WRITE_COUNTER("failed_ignored_old",
                       (*counters)[TRC_TEST_FAILED][TRC_TEST_SKIPPED]
                                  [TRC_DIFF_NO_MATCH_IGNORE].counter, " - ",
                       TRC_DIFF_SUMMARY_FAILED,
-                      TRC_DIFF_SUMMARY_SKIPPED_OLD, FALSE);
+                      TRC_DIFF_SUMMARY_SKIPPED_OLD, false);
         if (!diff_only)
         {
             WRITE_COUNTER("failed", ref_total[TRC_TEST_FAILED],
                           empty ? NULL : " = ",
                           TRC_DIFF_SUMMARY_FAILED,
-                          TRC_DIFF_SUMMARY_MATCH, TRUE);
+                          TRC_DIFF_SUMMARY_MATCH, true);
         }
     }
     if (empty)
@@ -1828,37 +1828,37 @@ trc_diff_one_stats_brief_to_html(FILE               *f,
     fprintf(f, "</td>");
 
     fprintf(f, "<td style=\"text-align:right;\">");
-    empty = TRUE;
+    empty = true;
     if (set_x == set_y)
     {
         WRITE_COUNTER("failed_une", total[TRC_TEST_FAILED_UNE], NULL,
                       TRC_DIFF_SUMMARY_FAILED_UNE,
-                      TRC_DIFF_SUMMARY_MATCH, FALSE);
+                      TRC_DIFF_SUMMARY_MATCH, false);
     }
     else
     {
         WRITE_COUNTER("failed_une_new", total_y[TRC_TEST_FAILED_UNE], " + ",
                       TRC_DIFF_SUMMARY_FAILED_UNE,
-                      TRC_DIFF_SUMMARY_NEW, FALSE);
+                      TRC_DIFF_SUMMARY_NEW, false);
         WRITE_COUNTER("failed_une_old", total_x[TRC_TEST_FAILED_UNE], " - ",
                       TRC_DIFF_SUMMARY_FAILED_UNE,
-                      TRC_DIFF_SUMMARY_OLD, FALSE);
+                      TRC_DIFF_SUMMARY_OLD, false);
         WRITE_COUNTER("failed_une_ignored_new",
                       (*counters)[TRC_TEST_SKIPPED][TRC_TEST_FAILED_UNE]
                                  [TRC_DIFF_NO_MATCH_IGNORE].counter, " + ",
                       TRC_DIFF_SUMMARY_FAILED_UNE,
-                      TRC_DIFF_SUMMARY_SKIPPED_NEW, FALSE);
+                      TRC_DIFF_SUMMARY_SKIPPED_NEW, false);
         WRITE_COUNTER("failed_une_ignored_old",
                       (*counters)[TRC_TEST_FAILED_UNE][TRC_TEST_SKIPPED]
                                  [TRC_DIFF_NO_MATCH_IGNORE].counter, " - ",
                       TRC_DIFF_SUMMARY_FAILED_UNE,
-                      TRC_DIFF_SUMMARY_SKIPPED_OLD, FALSE);
+                      TRC_DIFF_SUMMARY_SKIPPED_OLD, false);
         if (!diff_only)
         {
             WRITE_COUNTER("failed_une", ref_total[TRC_TEST_FAILED_UNE],
                           empty ? NULL : " = ",
                           TRC_DIFF_SUMMARY_FAILED_UNE,
-                          TRC_DIFF_SUMMARY_MATCH, TRUE);
+                          TRC_DIFF_SUMMARY_MATCH, true);
         }
     }
     if (empty)
@@ -1866,14 +1866,14 @@ trc_diff_one_stats_brief_to_html(FILE               *f,
     fprintf(f, "</td>");
 
     fprintf(f, "<td style=\"text-align:right;\">");
-    empty = TRUE;
+    empty = true;
     if (set_x == set_y)
     {
         WRITE_COUNTER("total",
                       total[TRC_TEST_PASSED] + total[TRC_TEST_PASSED_UNE] +
                       total[TRC_TEST_FAILED] + total[TRC_TEST_FAILED_UNE],
                       NULL, TRC_DIFF_SUMMARY_TOTAL, TRC_DIFF_SUMMARY_MATCH,
-                      FALSE);
+                      false);
 
     }
     else
@@ -1886,7 +1886,7 @@ trc_diff_one_stats_brief_to_html(FILE               *f,
                       total_y[TRC_TEST_SKIPPED], " + ",
                       TRC_DIFF_SUMMARY_TOTAL,
                       TRC_DIFF_SUMMARY_NEW,
-                      FALSE);
+                      false);
         WRITE_COUNTER("total_old",
                       total_x[TRC_TEST_PASSED] +
                       total_x[TRC_TEST_PASSED_UNE] +
@@ -1895,7 +1895,7 @@ trc_diff_one_stats_brief_to_html(FILE               *f,
                       total_x[TRC_TEST_SKIPPED], " - ",
                       TRC_DIFF_SUMMARY_TOTAL,
                       TRC_DIFF_SUMMARY_OLD,
-                      FALSE);
+                      false);
         if (!diff_only)
         {
             WRITE_COUNTER("total",
@@ -1906,7 +1906,7 @@ trc_diff_one_stats_brief_to_html(FILE               *f,
                           empty ? NULL : " = ",
                           TRC_DIFF_SUMMARY_TOTAL,
                           TRC_DIFF_SUMMARY_MATCH,
-                          TRUE);
+                          true);
         }
     }
     if (empty)
@@ -1946,7 +1946,7 @@ trc_diff_stats_brief_report(FILE *f, const trc_diff_sets *sets,
     fprintf(f, trc_diff_stats_brief_table_row_start,
                ref_set->name);
     trc_diff_one_stats_brief_to_html(f, stats, ref_set, ref_set,
-                                     ref_tags, TRUE,
+                                     ref_tags, true,
                                      ~flags & TRC_DIFF_FLAGS_NO_POPUPS);
     fprintf(f, "%s", trc_diff_stats_brief_table_row_end);
 
@@ -1967,7 +1967,7 @@ trc_diff_stats_brief_report(FILE *f, const trc_diff_sets *sets,
         }
 
         trc_diff_one_stats_brief_to_html(f, stats, ref_set,
-                                         compare_set, ref_tags, TRUE,
+                                         compare_set, ref_tags, true,
                                          ~flags & TRC_DIFF_FLAGS_NO_POPUPS);
         fprintf(f, "%s", trc_diff_stats_brief_table_row_end);
     }
@@ -2007,7 +2007,7 @@ trc_diff_stats_brief_incremental_report(FILE *f, const trc_diff_sets *sets,
     fprintf(f, trc_diff_stats_brief_table_row_start,
             ref_set->name);
     trc_diff_one_stats_brief_to_html(f, stats, NULL, ref_set,
-                                     ref_tags, FALSE,
+                                     ref_tags, false,
                                      ~flags & TRC_DIFF_FLAGS_NO_POPUPS);
     fprintf(f, "%s", trc_diff_stats_brief_table_row_end);
 
@@ -2026,7 +2026,7 @@ trc_diff_stats_brief_incremental_report(FILE *f, const trc_diff_sets *sets,
                     ref_set->name, compare_set->name, compare_set->name);
         }
         trc_diff_one_stats_brief_to_html(f, stats, ref_set,
-                                         compare_set, ref_tags, FALSE,
+                                         compare_set, ref_tags, false,
                                          ~flags & TRC_DIFF_FLAGS_NO_POPUPS);
         fprintf(f, "%s", trc_diff_stats_brief_table_row_end);
 
@@ -2591,8 +2591,7 @@ trc_diff_report_to_html(trc_diff_ctx *ctx, const char *filename,
 
         if (~ctx->flags & TRC_DIFF_FLAGS_NO_POPUPS)
         {
-            te_bool with_hashes =
-                ((ctx->flags & TRC_DIFF_FLAGS_NO_DETAILS) == 0);
+            bool with_hashes = ((ctx->flags & TRC_DIFF_FLAGS_NO_DETAILS) == 0);
             /* Fill tests lists in stats table */
             trc_diff_stats_js_table_report(f, &ctx->sets,
                                            &ctx->stats, with_hashes);

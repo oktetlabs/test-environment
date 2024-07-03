@@ -63,7 +63,7 @@ tapi_pppoe_add_csap_layer(asn_value **csap_spec,
 te_errno
 tapi_pppoe_add_pdu(asn_value          **tmpl_or_ptrn,
                    asn_value          **pdu,
-                   te_bool              is_pattern,
+                   bool is_pattern,
                    uint8_t              version,
                    uint8_t              type,
                    uint8_t              code,

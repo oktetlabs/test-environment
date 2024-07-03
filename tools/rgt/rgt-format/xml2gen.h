@@ -106,7 +106,7 @@ typedef struct rgt_depth_ctx {
 typedef struct rgt_mem_ctx {
     uint32_t mem_width; /**< Number of elements in a memory row */
     uint32_t cur_num; /**< Current element number in memory row */
-    te_bool  first_row; /* Whether we are working with the first
+    bool first_row; /* Whether we are working with the first
                            memory row or not */
 } rgt_mem_ctx_t;
 
@@ -129,7 +129,7 @@ typedef enum {
 typedef struct rgt_gen_ctx {
     char           *xml_fname; /**< XML file name */
     char           *out_fname; /**< Output file name */
-    te_bool         expand_entities; /**< Whether to expand standard
+    bool expand_entities; /**< Whether to expand standard
                                           XML entities
                                           like &lt; and &gt; or not? */
 
@@ -289,9 +289,9 @@ extern void proc_chars(rgt_gen_ctx_t *ctx,
  * For instance XML, HTML generating programs do not want entities
  * to be expanded, TEXT generating programs do.
  *
- * @return TRUE if entities should be expanded, or FALSE otherwise.
+ * @return @c true if entities should be expanded, or @c false otherwise.
  */
-extern te_bool proc_expand_entities(void);
+extern bool proc_expand_entities(void);
 
 /**
  * Get index of the element in xml2fmt_files massive. Search by short name.
@@ -320,13 +320,13 @@ typedef struct rgt_depth_data_storage {
  *
  * @param[in]  storage      Pointer to user data storage.
  * @param[in]  depth        Depth for which to obtain user data.
- * @param[out] reused       Set to TRUE if data is reused (rather than
+ * @param[out] reused       Set to @c true if data is reused (rather than
  *                          allocated from scratch).
  *
  * @return Pointer to the requested user data.
  */
 extern void *rgt_xml2fmt_alloc_depth_data(rgt_depth_data_storage *storage,
-                                          uint32_t depth, te_bool *reused);
+                                          uint32_t depth, bool *reused);
 
 /**
  * Type of callback to use with rgt_xml2fmt_free_depth_data().

@@ -67,8 +67,8 @@ main(int argc, char *argv[])
     int acc_sock = -1;
     int opt_val = 1;
 
-    te_bool is_server;
-    te_bool init_close;
+    bool is_server;
+    bool init_close;
 
     const struct sockaddr *csap_addr;
     const struct sockaddr *sock_addr;

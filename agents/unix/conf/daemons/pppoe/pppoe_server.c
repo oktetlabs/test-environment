@@ -85,16 +85,16 @@ typedef struct te_pppoe_server {
     int       prefix; /**< Subnet prefix  */
     int       max_sessions; /**< Maximum allowed ppp sessions */
 
-    te_bool   initialised; /**< structure initialisation flag */
-    te_bool   started;     /**< admin status for pppoe server */
-    te_bool   changed;     /**< configuration changed flag, used to detect
+    bool initialised; /**< structure initialisation flag */
+    bool started;     /**< admin status for pppoe server */
+    bool changed;     /**< configuration changed flag, used to detect
                                 if pppoe-server restart is required */
 
     struct sockaddr_storage laddr;  /**< Local IP address */
     struct sockaddr_storage raddr;  /**< Starting remote IP address */
 } te_pppoe_server;
 
-static te_bool
+static bool
 pppoe_server_is_running(te_pppoe_server *pppoe);
 
 /** Static pppoe server structure */
@@ -175,7 +175,7 @@ pppoe_server_init(te_pppoe_server *pppoe)
     pppoe->max_sessions = PPPOE_MAX_SESSIONS;
     pppoe->started = pppoe_server_is_running(pppoe);
     pppoe->changed = pppoe->started;
-    pppoe->initialised = TRUE;
+    pppoe->initialised = true;
     generate_laddr(pppoe);
     generate_raddr(pppoe);
 
@@ -324,10 +324,10 @@ pppoe_server_build_cmd(te_pppoe_server *pppoe, te_string *cmd)
  *
  * @return pppoe server running status
  */
-static te_bool
+static bool
 pppoe_server_is_running(te_pppoe_server *pppoe)
 {
-    te_bool is_running;
+    bool is_running;
     char buf[PPPOE_MAX_CMD_SIZE];
 
     UNUSED(pppoe);
@@ -485,7 +485,7 @@ pppoe_server_set(unsigned int gid, const char *oid, const char *value)
     pppoe->started = (strcmp(value, "1") == 0);
     if (pppoe->started != pppoe_server_is_running(pppoe))
     {
-        pppoe->changed = TRUE;
+        pppoe->changed = true;
     }
 
     EXIT("pppoe server status has been set");
@@ -543,7 +543,7 @@ pppoe_server_commit(unsigned int gid, const char *oid)
         }
     }
 
-    pppoe->changed = FALSE;
+    pppoe->changed = false;
 
     EXIT("pppoe server changes have been committed");
 
@@ -638,7 +638,7 @@ pppoe_server_option_set(unsigned int gid, const char *oid,
     {
         free(opt->value);
         opt->value = strdup(value);
-        pppoe->changed = TRUE;
+        pppoe->changed = true;
         EXIT("pppoe server option '%s' has been set", option);
         return 0;
     }
@@ -685,7 +685,7 @@ pppoe_server_option_add(unsigned int gid, const char *oid,
     opt->name = strdup(option);
     opt->value = strdup(value);
     SLIST_INSERT_HEAD(&pppoe->options, opt, list);
-    pppoe->changed = TRUE;
+    pppoe->changed = true;
 
     EXIT("pppoe server option '%s' has been added", option);
 
@@ -724,7 +724,7 @@ pppoe_server_option_del(unsigned int gid, const char *oid,
     }
 
     SLIST_REMOVE(&pppoe->options, opt, te_pppoe_option, list);
-    pppoe->changed = TRUE;
+    pppoe->changed = true;
 
     EXIT("pppoe server option '%s' has been deleted", option);
 
@@ -845,7 +845,7 @@ pppoe_server_ifs_add(unsigned int gid, const char *oid,
     iface = (te_pppoe_if *)calloc(1, sizeof(te_pppoe_if));
     iface->ifname = strdup(ifname);
     SLIST_INSERT_HEAD(&pppoe->ifs, iface, list);
-    pppoe->changed = TRUE;
+    pppoe->changed = true;
 
     EXIT("pppoe server interface '%s' has been added", ifname);
 
@@ -887,9 +887,9 @@ pppoe_server_ifs_del(unsigned int gid, const char *oid,
     if (SLIST_EMPTY(&pppoe->ifs))
     {
         /* Stop server forcedly if there are no interfaces to run on */
-        pppoe->started = FALSE;
+        pppoe->started = false;
     }
-    pppoe->changed = TRUE;
+    pppoe->changed = true;
 
     EXIT("pppoe server interface '%s' has been deleted", ifname);
 
@@ -1029,7 +1029,7 @@ pppoe_server_subnet_set(unsigned int gid, const char *oid,
     generate_laddr(pppoe);
     generate_raddr(pppoe);
 
-    pppoe->changed = TRUE;
+    pppoe->changed = true;
 
     EXIT("pppoe server subnet IP address has been set");
 
@@ -1155,7 +1155,7 @@ pppoeserver_grab(const char *name)
     ENTRY("Grab pppoe server resources");
 
     /* Find PPPoE server executable */
-    rc = find_file(1, pppoe_paths, TRUE);
+    rc = find_file(1, pppoe_paths, true);
     if (rc < 0)
     {
         ERROR("Failed to find PPPoE server executable - "
@@ -1175,7 +1175,7 @@ pppoeserver_grab(const char *name)
         return rc;
     }
 
-    pppoe->started = FALSE;
+    pppoe->started = false;
 
     EXIT("pppoe server resources have been grabbed");
 

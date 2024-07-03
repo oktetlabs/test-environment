@@ -163,7 +163,7 @@ tapi_file_create_pattern(size_t len, char c)
 
 /* See description in tapi_file.h */
 char *
-tapi_file_create(size_t len, char *buf, te_bool random)
+tapi_file_create(size_t len, char *buf, bool random)
 {
     te_string pathname = TE_STRING_INIT;
     te_string buffer = TE_STRING_EXT_BUF_INIT(buf, len + 1);
@@ -278,7 +278,7 @@ tapi_file_copy_ta(const char *ta_src, const char *src,
     te_string pathname = TE_STRING_INIT;
     te_errno rc = 0;
     struct stat st;
-    te_bool need_unlink = FALSE;
+    bool need_unlink = false;
 
     if (ta_src == NULL)
     {
@@ -299,7 +299,7 @@ tapi_file_copy_ta(const char *ta_src, const char *src,
     else
     {
         tapi_file_make_pathname(&pathname);
-        need_unlink = TRUE;
+        need_unlink = true;
     }
 
     if (ta_src != NULL)
@@ -343,7 +343,7 @@ cleanup:
 
 static te_errno
 tapi_file_read_ta_gen(const char *ta, const char *filename,
-                      te_bool may_not_exist, char **pbuf)
+                      bool may_not_exist, char **pbuf)
 {
     te_string pathname = TE_STRING_INIT;
     te_string content = TE_STRING_INIT;
@@ -365,7 +365,7 @@ tapi_file_read_ta_gen(const char *ta, const char *filename,
         return rc;
     }
 
-    rc = te_file_read_string(&content, TRUE, 0, "%s", pathname.ptr);
+    rc = te_file_read_string(&content, true, 0, "%s", pathname.ptr);
 
     unlink(pathname.ptr);
     te_string_free(&pathname);
@@ -382,7 +382,7 @@ tapi_file_read_ta_gen(const char *ta, const char *filename,
 te_errno
 tapi_file_read_ta(const char *ta, const char *filename, char **pbuf)
 {
-    return tapi_file_read_ta_gen(ta, filename, FALSE, pbuf);
+    return tapi_file_read_ta_gen(ta, filename, false, pbuf);
 }
 
 /* See description in tapi_file.h */
@@ -391,7 +391,7 @@ tapi_file_append_ta(const char *ta, const char *filename, const char *fmt, ...)
 {
     va_list ap;
     char *old_contents = NULL;
-    te_errno rc = tapi_file_read_ta_gen(ta, filename, TRUE, &old_contents);
+    te_errno rc = tapi_file_read_ta_gen(ta, filename, true, &old_contents);
 
     if (rc != 0)
         return rc;

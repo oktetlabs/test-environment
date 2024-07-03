@@ -51,16 +51,16 @@ tapi_sfptpd_disable(const char *ta)
  *
  * @param ta    Test agent name
  *
- * @return @c TRUE if daemon is enabled
+ * @return @c true if daemon is enabled
  */
-static inline te_bool
+static inline bool
 tapi_sfptpd_status(const char *ta)
 {
     int val;
 
     CHECK_RC(cfg_get_instance_int_fmt(&val, "/agent:%s/sfptpd:/enable:", ta));
 
-    return val == 0 ? FALSE : TRUE;
+    return val == 0 ? false : true;
 }
 
 

@@ -143,7 +143,7 @@ te_string_append_va_chk(te_string *str, const char *fmt, va_list ap)
     char    *s;
     size_t   rest;
     int      printed;
-    te_bool  again;
+    bool again;
     va_list  ap_start;
 
     if (str->ptr == NULL)
@@ -182,13 +182,13 @@ te_string_append_va_chk(te_string *str, const char *fmt, va_list ap)
 
                 rest = str->size - str->len;
                 /* Print again */
-                again = TRUE;
+                again = true;
             }
         }
         else
         {
             str->len += printed;
-            again = FALSE;
+            again = false;
         }
     } while (again);
 
@@ -223,7 +223,7 @@ te_string_append_buf(te_string *str, const char *buf, size_t len)
 te_errno
 te_string_append_shell_arg_as_is(te_string *str, const char *arg)
 {
-    while (TRUE)
+    while (true)
     {
         const char *p;
 
@@ -310,7 +310,7 @@ te_errno
 te_string_join_vec(te_string *str, const te_vec *strvec,
                    const char *sep)
 {
-    te_bool need_sep = FALSE;
+    bool need_sep = false;
     const char * const *item;
 
     TE_VEC_FOREACH(strvec, item)
@@ -323,7 +323,7 @@ te_string_join_vec(te_string *str, const te_vec *strvec,
             continue;
 
         te_string_append(str, "%s%s", need_sep ? sep : "", *item);
-        need_sep = TRUE;
+        need_sep = true;
     }
 
     return 0;
@@ -332,7 +332,7 @@ te_string_join_vec(te_string *str, const te_vec *strvec,
 void
 te_string_join_uri_path(te_string *str, const te_vec *strvec)
 {
-    te_bool need_sep = FALSE;
+    bool need_sep = false;
     const char * const *item;
 
     TE_VEC_FOREACH(strvec, item)
@@ -341,7 +341,7 @@ te_string_join_uri_path(te_string *str, const te_vec *strvec)
             te_string_append(str, "/");
         te_string_append_escape_uri(str, TE_STRING_URI_ESCAPE_PATH_SEGMENT,
                                     *item);
-        need_sep = TRUE;
+        need_sep = true;
     }
 }
 
@@ -433,7 +433,7 @@ te_string_generic_escape(te_string *str, const char *input,
 }
 
 static char
-encode_base64_bits(uint8_t sextet, te_bool url_safe)
+encode_base64_bits(uint8_t sextet, bool url_safe)
 {
     char bc;
 
@@ -455,7 +455,7 @@ encode_base64_bits(uint8_t sextet, te_bool url_safe)
 
 void
 te_string_encode_base64(te_string *str, size_t len, const uint8_t bytes[len],
-                        te_bool url_safe)
+                        bool url_safe)
 {
     size_t i;
     uint32_t latch = 0;
@@ -643,7 +643,7 @@ te_string_add_centered(te_string *str, const char *src,
 }
 
 te_errno
-te_string_process_lines(te_string *buffer, te_bool complete_lines,
+te_string_process_lines(te_string *buffer, bool complete_lines,
                         te_string_line_handler_fn *callback, void *user_data)
 {
     te_errno rc = 0;

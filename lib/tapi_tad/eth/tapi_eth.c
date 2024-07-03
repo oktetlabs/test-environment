@@ -125,7 +125,7 @@ tapi_eth_set_csap_layer(asn_value       *csap_spec,
 te_errno
 tapi_eth_add_pdu(asn_value      **tmpl_or_ptrn,
                  asn_value      **pdu,
-                 te_bool          is_pattern,
+                 bool is_pattern,
                  const uint8_t   *dst_addr,
                  const uint8_t   *src_addr,
                  const uint16_t  *ether_type,
@@ -164,7 +164,7 @@ tapi_eth_add_pdu(asn_value      **tmpl_or_ptrn,
     }
     else
     {
-        assert(FALSE);
+        assert(false);
     }
 
     if (llc == TE_BOOL3_ANY)
@@ -183,7 +183,7 @@ tapi_eth_add_pdu(asn_value      **tmpl_or_ptrn,
     }
     else
     {
-        assert(FALSE);
+        assert(false);
     }
 
     if (pdu != NULL)

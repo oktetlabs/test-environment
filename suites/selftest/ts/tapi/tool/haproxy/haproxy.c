@@ -83,7 +83,7 @@ main(int argc, char **argv)
     cfg_opt.backend.backends = backends;
 
     opt.cfg_opt = &cfg_opt;
-    opt.verbose = TRUE;
+    opt.verbose = true;
 
     TEST_STEP("Start HAProxy on IUT");
     CHECK_RC(tapi_job_factory_rpc_create(iut_rpcs, &factory));

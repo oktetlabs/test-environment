@@ -29,7 +29,7 @@ typedef struct tapi_mke2fs_opt {
      */
     unsigned int block_size;
     /** Create the filesystem with an ext3 journal. */
-    te_bool use_journal;
+    bool use_journal;
     /** The filesystem type that is to be created. */
     const char *fs_type;
     /** The device name on which to create the filesystem (mandatory). */

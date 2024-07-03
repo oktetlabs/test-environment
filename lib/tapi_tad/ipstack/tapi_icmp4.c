@@ -175,7 +175,7 @@ tapi_udp_ip4_icmp_ip4_eth_csap_create(const char    *ta_name,
 /* See the description in tapi_icmp4.h */
 te_errno
 tapi_icmp4_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
-                   te_bool is_pattern,
+                   bool is_pattern,
                    int type, int code)
 {
     asn_value  *tmp_pdu;

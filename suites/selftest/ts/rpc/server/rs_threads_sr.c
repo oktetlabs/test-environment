@@ -202,7 +202,7 @@ main(int argc, char *argv[])
     wt_arg_s       *ct_args = NULL;   /* Client threads arguments */
     pthread_t      *st_ids = NULL;    /* Server threads identifiers */
     pthread_t      *ct_ids = NULL;    /* Client threads identifiers */
-    te_bool         one_of_threads_failed = FALSE;
+    bool one_of_threads_failed = false;
     void           *tret;
     int             i;
     int             ret;
@@ -319,7 +319,7 @@ main(int argc, char *argv[])
         st_ids[i] = 0;
 
         if (tret != (void*)0) /* At least one of threads failed */
-            one_of_threads_failed = TRUE;
+            one_of_threads_failed = true;
     }
 
     /* Wait for client threads termination */
@@ -334,10 +334,10 @@ main(int argc, char *argv[])
         ct_ids[i] = 0;
 
         if (tret != (void*)0) /* At least one of threads failed */
-            one_of_threads_failed = TRUE;
+            one_of_threads_failed = true;
     }
 
-    if (one_of_threads_failed == TRUE)
+    if (one_of_threads_failed == true)
         TEST_STOP;
 
     TEST_SUCCESS;

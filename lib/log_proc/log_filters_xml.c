@@ -38,7 +38,7 @@ te_errno
 log_branch_filter_load_xml(log_branch_filter *filter, xmlNodePtr filter_node)
 {
     te_errno  rc;
-    te_bool   include;
+    bool include;
     xmlChar  *path;
 
     if (filter_node == NULL)
@@ -75,7 +75,7 @@ log_branch_filter_load_xml(log_branch_filter *filter, xmlNodePtr filter_node)
 te_errno
 log_duration_filter_load_xml(log_duration_filter *filter, xmlNodePtr filter_node)
 {
-    te_bool   include;
+    bool include;
     xmlChar  *node_str, *min_str, *max_str;
     uint32_t  min, max;
     te_errno  rc;
@@ -241,7 +241,7 @@ parse_level_mask(xmlNodePtr node)
 te_errno
 log_msg_filter_load_xml(log_msg_filter *filter, xmlNodePtr filter_node)
 {
-    te_bool       regex;
+    bool regex;
     xmlChar      *match_prop;
     te_errno      rc;
 
@@ -249,12 +249,12 @@ log_msg_filter_load_xml(log_msg_filter *filter, xmlNodePtr filter_node)
         /* Empty file, nothing to do */
         return 0;
 
-    regex = FALSE;
+    regex = false;
     match_prop = xmlGetProp(filter_node, (const xmlChar *)"match");
     if (match_prop)
     {
         if (xmlStrcmp(match_prop, (const xmlChar *)"regexp") == 0)
-            regex = TRUE;
+            regex = true;
 
         xmlFree(match_prop);
     }
@@ -262,7 +262,7 @@ log_msg_filter_load_xml(log_msg_filter *filter, xmlNodePtr filter_node)
     filter_node = filter_node->xmlChildrenNode;
     while (filter_node != NULL)
     {
-        te_bool       include;
+        bool include;
         xmlChar      *entity = NULL;
         te_log_level  level = 0xffff;
         xmlNodePtr    user;

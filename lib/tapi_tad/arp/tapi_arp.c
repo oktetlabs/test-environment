@@ -342,7 +342,7 @@ tapi_arp_prepare_pattern_eth_only(const uint8_t *src_mac,
 {
     uint16_t eth_type = ETHERTYPE_ARP;
 
-    return tapi_eth_add_pdu(pattern, NULL, TRUE, dst_mac, src_mac,
+    return tapi_eth_add_pdu(pattern, NULL, true, dst_mac, src_mac,
                             &eth_type,
                             TE_BOOL3_ANY /* tagged/untagged */,
                             TE_BOOL3_ANY /* Ethernet2/LLC */);
@@ -390,7 +390,7 @@ tapi_arp_add_csap_layer_eth_ip4(asn_value **csap_spec)
 /* See the description in tapi_arp.h */
 te_errno
 tapi_arp_add_pdu_eth_ip4(asn_value      **tmpl_or_ptrn,
-                         te_bool          is_pattern,
+                         bool is_pattern,
                          const uint16_t  *opcode,
                          const uint8_t   *snd_hw_addr,
                          const uint8_t   *snd_proto_addr,

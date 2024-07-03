@@ -152,7 +152,7 @@ cleanup:
 /* See description in agentlib.h */
 te_errno
 ta_bond_get_slaves(const char *ifname, tqh_strings *slaves,
-                   int *slaves_num, te_bool *is_team)
+                   int *slaves_num, bool *is_team)
 {
     int    i = 0;
     char   path[64];
@@ -164,7 +164,7 @@ ta_bond_get_slaves(const char *ifname, tqh_strings *slaves,
     int    rc = 0;
     int    status;
 
-    te_bool teamnl_used = FALSE;
+    bool teamnl_used = false;
 
     if (slaves_num != NULL)
         *slaves_num = 0;
@@ -180,7 +180,7 @@ ta_bond_get_slaves(const char *ifname, tqh_strings *slaves,
         if (access(TEAMNL_PATHNAME, X_OK) != 0)
             return 0;
 
-        teamnl_used = TRUE;
+        teamnl_used = true;
 
         /* Set here path for logging purpose */
         TE_SPRINTF(path, "%s %s ports", TEAMNL_PATHNAME, ifname);
@@ -232,7 +232,7 @@ ta_bond_get_slaves(const char *ifname, tqh_strings *slaves,
             goto cleanup;
         }
 
-        rc = tq_strings_add_uniq_gen(slaves, ifname, TRUE);
+        rc = tq_strings_add_uniq_gen(slaves, ifname, true);
         if (rc != 0)
         {
             ERROR("%s(): failed to add interface name to the list",

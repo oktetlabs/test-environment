@@ -51,7 +51,7 @@
     do {                        \
         EXIT("%d", (_rc));      \
         return (_rc);           \
-    } while (FALSE)
+    } while (false)
 
 
 
@@ -282,7 +282,7 @@ tapi_tad_csap_create(const char *ta_name, int session,
                             (stack_id == NULL) ? stack_id_by_spec : stack_id,
                             tmp_name, handle);
     if ((rc == 0) &&
-        ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/csap:*",
+        ((rc = cfg_synchronize_fmt(true, "/agent:%s/csap:*",
                                    ta_name)) != 0))
     {
         ERROR("%s(): cfg_synchronize_fmt(/agent:%s/csap:*) failed: %r",
@@ -305,7 +305,7 @@ tapi_tad_csap_destroy(const char *ta_name, int session,
 
     rc = rcf_ta_csap_destroy(ta_name, session, handle);
     if ((rc == 0) &&
-        ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/csap:*",
+        ((rc = cfg_synchronize_fmt(true, "/agent:%s/csap:*",
                                    ta_name)) != 0))
     {
         ERROR("%s(): cfg_synchronize_fmt(/agent:%s/csap:*) failed: %r",
@@ -707,7 +707,7 @@ tapi_tad_csap_destroy_all_by_ta(cfg_handle ta_cfg_handle,
     }
 
     if (rc == 0)
-        rc = cfg_synchronize_fmt(TRUE, "/agent:%s/csap:*", ta_name);
+        rc = cfg_synchronize_fmt(true, "/agent:%s/csap:*", ta_name);
 
 out:
     free(csap_cfg_handles);

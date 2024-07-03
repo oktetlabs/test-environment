@@ -104,14 +104,14 @@ tapi_upnp_set_sv_property_boolean(tapi_upnp_state_variable *variable,
         ERROR("Invalid array index");
         return TE_EINVAL;
     }
-    variable->properties[property_idx] = malloc(sizeof(te_bool));
+    variable->properties[property_idx] = malloc(sizeof(bool));
     if (variable->properties[property_idx] == NULL)
     {
         ERROR("Cannot allocate memory");
         return TE_ENOMEM;
     }
-    *(te_bool*)variable->properties[property_idx] =
-                                            (te_bool)json_is_true(value);
+    *(bool *)variable->properties[property_idx] =
+                                            (bool)json_is_true(value);
     return 0;
 }
 
@@ -302,7 +302,7 @@ static const char *
 tapi_upnp_get_state_variable_send_events_to_string(
                                 const tapi_upnp_state_variable *variable)
 {
-    te_bool     send_events;
+    bool send_events;
     te_errno    rc;
 
     rc = tapi_upnp_get_state_variable_send_events(variable, &send_events);
@@ -1143,14 +1143,14 @@ te_errno
 tapi_upnp_get_state_variable_property_boolean(
                         const tapi_upnp_state_variable     *variable,
                         te_upnp_state_variable_property_idx property_idx,
-                        te_bool                            *value)
+                        bool *value)
 {
     if (property_idx >= VPROPERTY_MAX ||
         property_idx != VPROPERTY_SEND_EVENTS)
         return TE_EINVAL;
     if (variable->properties[property_idx] == NULL)
         return TE_ENODATA;
-    *value = *(te_bool *)variable->properties[property_idx];
+    *value = *(bool *)variable->properties[property_idx];
     return 0;
 }
 

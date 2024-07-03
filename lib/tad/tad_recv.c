@@ -77,7 +77,7 @@ tad_recv_preprocess_pdus(csap_p csap, const asn_value *ptrn_unit,
     }
 
     /* FIXME: Remove type cast */
-    rc = tad_confirm_pdus(csap, TRUE, (asn_value *)nds_pdus,
+    rc = tad_confirm_pdus(csap, true, (asn_value *)nds_pdus,
                           data->layer_opaque);
     if (rc != 0)
     {
@@ -804,7 +804,7 @@ tad_recv_do_action(csap_p csap, tad_action_spec *action_spec,
 
         default:
             /* It have to be caught by preprocessing */
-            assert(FALSE);
+            assert(false);
     }
 
     return rc;
@@ -874,7 +874,7 @@ tad_recv_match_payload(tad_payload_spec_t *pattern, const tad_pkt *payload)
              * trailing bytes.
              */
             rc = tad_pkt_match_bytes(payload, pattern->plain.length,
-                                     pattern->plain.data, FALSE);
+                                     pattern->plain.data, false);
             break;
 
         default:
@@ -910,7 +910,7 @@ tad_recv_match_payload(tad_payload_spec_t *pattern, const tad_pkt *payload)
  */
 static te_errno
 tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
-                         tad_recv_pkt *meta_pkt, te_bool *clean_bottom_layer)
+                         tad_recv_pkt *meta_pkt, bool *clean_bottom_layer)
 {
     const asn_value    *pattern_unit = unit_data->nds;
     unsigned int        layer;
@@ -974,12 +974,12 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
                          * pattern units is over and cleaning is required
                          * to invalidate Ethernet for mismatch reporting.
                          */
-                        *clean_bottom_layer = TRUE;
+                        *clean_bottom_layer = true;
                     }
                     else
                     {
                         tad_pkt_cleanup(pdu);
-                        *clean_bottom_layer = FALSE;
+                        *clean_bottom_layer = false;
                     }
                 }
                 /* FALLTHROUGH */
@@ -1028,9 +1028,9 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
  */
 static te_errno
 tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
-               tad_recv_pkt *meta_pkt, size_t pkt_len, te_bool *no_report)
+               tad_recv_pkt *meta_pkt, size_t pkt_len, bool *no_report)
 {
-    te_bool         clean_bottom_layer = FALSE;
+    bool clean_bottom_layer = false;
     unsigned int    unit;
     te_errno        rc;
 
@@ -1145,9 +1145,9 @@ tad_recv_do(csap_p csap)
 {
     tad_recv_context   *context;
     csap_read_cb_t      read_cb;
-    te_bool             stop_on_timeout = FALSE;
+    bool stop_on_timeout = false;
     te_errno            rc;
-    te_bool             no_report = FALSE;
+    bool no_report = false;
     tad_recv_pkt       *meta_pkt = NULL;
     tad_pkt            *pkt;
     size_t              read_len;
@@ -1212,7 +1212,7 @@ tad_recv_do(csap_p csap)
         goto exit;
     }
 
-    while (TRUE)
+    while (true)
     {
         unsigned int    timeout;
 
@@ -1287,7 +1287,7 @@ tad_recv_do(csap_p csap)
                CSAP_LOG_ARGS(csap), (unsigned)read_len, rc);
 
         /* We have read something, now allow to stop on timeout */
-        stop_on_timeout = TRUE;
+        stop_on_timeout = true;
 
         if (TE_RC_GET_ERROR(rc) == TE_ETIMEDOUT)
         {
@@ -1338,7 +1338,7 @@ tad_recv_do(csap_p csap)
              * don't want to stop because of timeout, at least continue
              * to poll with zero timeout.
              */
-            stop_on_timeout = FALSE;
+            stop_on_timeout = false;
             continue;
         }
         if (rc != 0) /* Unexpected match error */
@@ -1366,7 +1366,7 @@ tad_recv_do(csap_p csap)
         }
         else
         {
-            no_report = FALSE;
+            no_report = false;
             tad_recv_pkt_cleanup(csap, meta_pkt);
         }
 
@@ -1443,7 +1443,7 @@ tad_recv_thread(void *arg)
  * @return Status code.
  */
 static te_errno
-tad_recv_get_packet(csap_p csap, te_bool wait, tad_recv_pkt **pkt)
+tad_recv_get_packet(csap_p csap, bool wait, tad_recv_pkt **pkt)
 {
     tad_recv_context   *ctx = csap_get_recv_context(csap);
     te_errno            rc = 0;
@@ -1478,7 +1478,7 @@ tad_recv_get_packet(csap_p csap, te_bool wait, tad_recv_pkt **pkt)
 
 /* See description in tad_api.h */
 te_errno
-tad_recv_get_packets(csap_p csap, tad_reply_context *reply_ctx, te_bool wait,
+tad_recv_get_packets(csap_p csap, tad_reply_context *reply_ctx, bool wait,
                      unsigned int *got)
 {
     te_errno        rc;
@@ -1763,7 +1763,7 @@ tad_recv_op_enqueue(csap_p csap, tad_traffic_op_t op,
     tad_recv_op_context    *context;
     int                     ret;
     te_errno                rc;
-    te_bool                 start_thread;
+    bool start_thread;
 
     context = malloc(sizeof(*context));
     if (context == NULL)

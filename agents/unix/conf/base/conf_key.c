@@ -29,8 +29,8 @@ typedef struct key_info {
     /** Name of the key */
     char *name;
 
-    /** If TRUE, the key should be regenerated on commit */
-    te_bool need_generation;
+    /** If @c true, the key should be regenerated on commit */
+    bool need_generation;
 
     /** Key type */
     char *type;
@@ -126,7 +126,7 @@ key_add(unsigned int gid, const char *oid, const char *value, const char *id)
 {
     te_errno rc;
     key_info new_key = {
-        .need_generation = FALSE
+        .need_generation = false
     };
 
     UNUSED(gid);
@@ -236,7 +236,7 @@ key_commit(unsigned int gid, const cfg_oid *p_oid)
         return rc;
     }
 
-    key->need_generation = FALSE;
+    key->need_generation = false;
 
     return 0;
 }
@@ -274,7 +274,7 @@ key_type_set(unsigned int gid, const char *oid, const char *value,
 
     free(key->type);
     key->type = strdup(value);
-    key->need_generation = TRUE;
+    key->need_generation = true;
 
     return 0;
 }

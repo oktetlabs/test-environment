@@ -125,7 +125,7 @@ xsk_socket_config_tarpc2str(tarpc_xsk_socket_config *config, te_string *str)
 int
 rpc_xsk_socket__create(rcf_rpc_server *rpcs, const char *if_name,
                        uint32_t queue_id, rpc_ptr umem,
-                       te_bool shared_umem,
+                       bool shared_umem,
                        tarpc_xsk_socket_config *config,
                        rpc_ptr *sock)
 {

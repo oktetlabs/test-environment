@@ -32,7 +32,7 @@ typedef union any_scalar {
 
 static void
 check_cast_func(intmax_t val, te_scalar_type src_type, te_scalar_type dst_type,
-                te_bool expect_trunc)
+                bool expect_trunc)
 {
     te_errno rc;
     any_scalar src;
@@ -88,7 +88,7 @@ main(int argc, char **argv)
     intmax_t src_min;
     intmax_t dst_min;
 
-    te_bool is_trunc = FALSE;
+    bool is_trunc = false;
 
     TEST_START;
     TEST_GET_STRING_PARAM(src_type);
@@ -113,11 +113,11 @@ main(int argc, char **argv)
                     src_min < dst_min);
 
     TEST_STEP("Test the casting of '1' value");
-    check_cast_func(1, src_scalar_type, dst_scalar_type, FALSE);
+    check_cast_func(1, src_scalar_type, dst_scalar_type, false);
 
     TEST_STEP("Test the casting of '-1' value");
     if (te_scalar_type_is_signed(src_scalar_type))
-        is_trunc = te_scalar_type_is_signed(dst_scalar_type) ? FALSE : TRUE;
+        is_trunc = te_scalar_type_is_signed(dst_scalar_type) ? false : true;
     else
         is_trunc = (src_max > dst_max);
 

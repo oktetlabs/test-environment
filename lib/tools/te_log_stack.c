@@ -28,7 +28,7 @@
 #define LOG_STACK_DEPTH 10
 #define LOG_STACK_ELEMENT_LEN 256
 
-static __thread te_bool init_done
+static __thread bool init_done
                            __attribute__((tls_model("global-dynamic")));
 static __thread const char *top_point
                            __attribute__((tls_model("global-dynamic")));
@@ -50,7 +50,7 @@ te_log_stack_init_here(const char *point)
         log_stack[i] = TE_ALLOC(LOG_STACK_ELEMENT_LEN);
 
     top_point = TE_STRDUP(point);
-    init_done = TRUE;
+    init_done = true;
 }
 
 void

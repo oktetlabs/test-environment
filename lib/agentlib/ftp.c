@@ -65,7 +65,7 @@ read_all(int s, char *buf, int n)
 
     *buf = 0;
 
-    while (TRUE)
+    while (true)
     {
         struct timeval tv = {4, 0};
         fd_set         set;
@@ -238,7 +238,7 @@ parse_ftp_uri(const char *uri, struct sockaddr *srv,
 int
 ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
 {
-    te_bool new_sock;
+    bool new_sock;
     int     control_socket = -1;
     int     data_socket = -1;
     int     active_listening = -1;
@@ -319,12 +319,12 @@ ftp_open(const char *uri, int flags, int passive, int offset, int *sock)
         if (connect(control_socket, SA(&addr), sizeof(addr)) != 0)
             RET_ERR("connect() failed; errno %d", errno);
         VERB("Connected");
-        new_sock = TRUE;
+        new_sock = true;
     }
     else
     {
         control_socket = *sock;
-        new_sock = FALSE;
+        new_sock = false;
         memset(buf, 0, sizeof(buf));
         if (read_all(control_socket, buf, sizeof(buf)) > 0)
             VERB("Response: %s", buf);

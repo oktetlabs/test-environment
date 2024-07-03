@@ -25,7 +25,7 @@ extern char *rcf_ch_symbol_name_auto(const void *addr);
 
 /* See description in rcf_ch_api.h */
 void *
-rcf_ch_symbol_addr(const char *name, te_bool is_func)
+rcf_ch_symbol_addr(const char *name, bool is_func)
 {
     return rcf_ch_symbol_addr_auto(name, (int)is_func);
 }
@@ -56,7 +56,7 @@ thread_self()
 void *
 thread_mutex_create(void)
 {
-    return (void *)CreateMutex(NULL, FALSE, NULL);
+    return (void *)CreateMutex(NULL, false, NULL);
 }
 
 /**

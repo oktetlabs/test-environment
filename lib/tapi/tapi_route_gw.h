@@ -204,7 +204,7 @@ extern te_errno tapi_update_arp(const char *ta_src,
                                 const char *ifname_dest,
                                 const struct sockaddr *addr_dest,
                                 const void *link_addr_dest,
-                                 te_bool is_static);
+                                 bool is_static);
 
 /**
  * Remove existing ARP table entry, wait for a while, check that it
@@ -273,7 +273,7 @@ extern te_errno tapi_route_gateway_configure(tapi_route_gateway *gw);
  * @return Status code.
  */
 extern te_errno tapi_route_gateway_set_forwarding(tapi_route_gateway *gw,
-                                              te_bool enabled);
+                                              bool enabled);
 
 /**
  * Break connection from gateway to IUT.

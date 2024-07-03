@@ -66,9 +66,9 @@ typedef te_errno (* tapi_storage_server_method_disable)(
  *
  * @param server       Server handle.
  *
- * @return @c TRUE if server is enabled.
+ * @return @c true if server is enabled.
  */
-typedef te_bool (* tapi_storage_server_method_is_enabled)(
+typedef bool (* tapi_storage_server_method_is_enabled)(
                                        tapi_storage_server *server);
 
 /**
@@ -206,9 +206,9 @@ tapi_storage_server_disable(tapi_storage_server *server)
  *
  * @param server       Server handle.
  *
- * @return @c TRUE if server is enabled.
+ * @return @c true if server is enabled.
  */
-static inline te_bool
+static inline bool
 tapi_storage_server_is_enabled(tapi_storage_server *server)
 {
     if (server->methods != NULL && server->methods->is_enabled != NULL)
@@ -218,7 +218,7 @@ tapi_storage_server_is_enabled(tapi_storage_server *server)
     else
     {
         ERROR("%s(): Method is not implemented", __FUNCTION__);
-        return FALSE;
+        return false;
     }
 }
 

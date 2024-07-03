@@ -299,7 +299,7 @@ tad_iscsi_write_cb(csap_p csap, const tad_pkt *pkt)
             break;
 
         default:
-            assert(FALSE);
+            assert(false);
     }
 
     if (rc != 0)

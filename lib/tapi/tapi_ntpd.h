@@ -53,9 +53,9 @@ tapi_ntpd_disable(rcf_rpc_server *rpcs)
  *
  * @param rpcs RPC server
  *
- * @return @c TRUE if deaimon is enabled
+ * @return @c true if deaimon is enabled
  */
-static inline te_bool
+static inline bool
 tapi_ntpd_status(rcf_rpc_server *rpcs)
 {
     int val;
@@ -63,7 +63,7 @@ tapi_ntpd_status(rcf_rpc_server *rpcs)
     CHECK_RC(cfg_get_instance_int_fmt(&val, "/agent:%s/ntpd:/enable:",
                                       rpcs->ta));
 
-    return val == 0 ? FALSE : TRUE;
+    return val == 0 ? false : true;
 }
 
 

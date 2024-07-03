@@ -356,7 +356,7 @@ extern te_errno tapi_bpf_map_get_max_entries(const char *ta,
 extern te_errno tapi_bpf_map_get_writable_state(const char *ta,
                                                 unsigned int bpf_id,
                                                 const char *map,
-                                                te_bool *is_writable);
+                                                bool *is_writable);
 
 /**
  * Enable writable view for the map

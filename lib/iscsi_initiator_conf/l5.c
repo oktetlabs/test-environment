@@ -105,35 +105,35 @@ iscsi_l5_write_target_params(FILE *destination,
     /** Session-wide parameter descriptions */
     static iscsi_target_param_descr_t session_params[] =
         {
-            PARAMETER(max_connections, MAX_CONNECTIONS,  FALSE),
-            PARAMETER(initial_r2t, INITIAL_R2T,  TRUE),
-            PARAMETER(immediate_data, IMMEDIATE_DATA,  TRUE),
-            PARAMETER(first_burst_length, FIRST_BURST_LENGTH,  FALSE),
-            PARAMETER(max_burst_length, MAX_BURST_LENGTH,  FALSE),
-            PARAMETER(default_time2wait, DEFAULT_TIME2WAIT,  FALSE),
-            PARAMETER(default_time2retain, DEFAULT_TIME2RETAIN,  FALSE),
-            PARAMETER(max_outstanding_r2t, MAX_OUTSTANDING_R2T,  FALSE),
-            PARAMETER(data_pdu_in_order, DATA_PDU_IN_ORDER,  TRUE),
-            PARAMETER(data_sequence_in_order, DATA_SEQUENCE_IN_ORDER,  TRUE),
-            PARAMETER(error_recovery_level, ERROR_RECOVERY_LEVEL,  FALSE),
-            AUTH_PARAM(local_name, "TargetCHAPName", TRUE, iscsi_when_tgt_auth),
-            AUTH_PARAM(local_secret, "TargetCHAPSecret", TRUE, iscsi_when_tgt_auth),
+            PARAMETER(max_connections, MAX_CONNECTIONS,  false),
+            PARAMETER(initial_r2t, INITIAL_R2T,  true),
+            PARAMETER(immediate_data, IMMEDIATE_DATA,  true),
+            PARAMETER(first_burst_length, FIRST_BURST_LENGTH,  false),
+            PARAMETER(max_burst_length, MAX_BURST_LENGTH,  false),
+            PARAMETER(default_time2wait, DEFAULT_TIME2WAIT,  false),
+            PARAMETER(default_time2retain, DEFAULT_TIME2RETAIN,  false),
+            PARAMETER(max_outstanding_r2t, MAX_OUTSTANDING_R2T,  false),
+            PARAMETER(data_pdu_in_order, DATA_PDU_IN_ORDER,  true),
+            PARAMETER(data_sequence_in_order, DATA_SEQUENCE_IN_ORDER,  true),
+            PARAMETER(error_recovery_level, ERROR_RECOVERY_LEVEL,  false),
+            AUTH_PARAM(local_name, "TargetCHAPName", true, iscsi_when_tgt_auth),
+            AUTH_PARAM(local_secret, "TargetCHAPSecret", true, iscsi_when_tgt_auth),
             ISCSI_END_PARAM_TABLE
         };
 
     /** Connection-wide parameter descriptions */
     static iscsi_target_param_descr_t connection_params[] =
         {
-            GPARAMETER("Host", target_addr, TRUE),
-            GPARAMETER("Port", target_port, FALSE),
-            PARAMETER(header_digest, HEADER_DIGEST,  TRUE),
-            PARAMETER(data_digest, DATA_DIGEST,  TRUE),
+            GPARAMETER("Host", target_addr, true),
+            GPARAMETER("Port", target_port, false),
+            PARAMETER(header_digest, HEADER_DIGEST,  true),
+            PARAMETER(data_digest, DATA_DIGEST,  true),
             PARAMETER(max_recv_data_segment_length, MAX_RECV_DATA_SEGMENT_LENGTH,
-                      FALSE),
-            AUTH_PARAM(chap, "AuthMethod", TRUE, iscsi_when_not_tgt_auth),
+                      false),
+            AUTH_PARAM(chap, "AuthMethod", true, iscsi_when_not_tgt_auth),
             CONSTANT("AuthMethod", l5_tgt_auth, iscsi_when_tgt_auth),
-            AUTH_PARAM(peer_name, "CHAPName", TRUE, iscsi_when_chap),
-            AUTH_PARAM(peer_secret, "CHAPSecret", TRUE, iscsi_when_chap),
+            AUTH_PARAM(peer_name, "CHAPName", true, iscsi_when_chap),
+            AUTH_PARAM(peer_secret, "CHAPSecret", true, iscsi_when_chap),
             ISCSI_END_PARAM_TABLE
         };
 
@@ -203,7 +203,7 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
     FILE                *destination;
     iscsi_target_data_t *target;
     int                  conn_no;
-    te_bool              is_first;
+    bool is_first;
 
     snprintf(filename, sizeof(filename),
              "%s/configs",
@@ -236,14 +236,14 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
                          "Targets:",
             target->conns[0].initiator_name);
 
-    is_first = TRUE;
+    is_first = true;
 
     /** Output a line containing all configured target ids */
     for (; target < iscsi_data->targets + ISCSI_MAX_TARGETS_NUMBER; target++)
     {
         if (target->target_id >= 0)
         {
-            target->is_active = FALSE;
+            target->is_active = false;
             for (conn_no = 0;
                  conn_no < ISCSI_MAX_CONNECTIONS_NUMBER;
                  conn_no++)
@@ -257,7 +257,7 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
                              "not supported by L5");
                     }
 
-                    target->is_active = TRUE;
+                    target->is_active = true;
                     break;
                 }
             }
@@ -266,7 +266,7 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
                 fprintf(destination, "%s target%d",
                         is_first ? "" : ",",
                         target->target_id);
-                is_first = FALSE;
+                is_first = false;
             }
         }
     }
@@ -284,7 +284,7 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
                     "Connections: ",
                     target->target_id,
                     target->target_name);
-            is_first = TRUE;
+            is_first = true;
             for (conn_no = 0; conn_no < ISCSI_MAX_CONNECTIONS_NUMBER; conn_no++)
             {
                 if (target->conns[conn_no].status != ISCSI_CONNECTION_REMOVED)
@@ -293,7 +293,7 @@ iscsi_l5_write_config(iscsi_initiator_data_t *iscsi_data)
                             is_first ? "" : ",",
                             target->target_id,
                             conn_no);
-                    is_first = FALSE;
+                    is_first = false;
                 }
             }
             fputs("\n\n", destination);

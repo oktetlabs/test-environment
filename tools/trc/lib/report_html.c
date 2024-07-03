@@ -1691,13 +1691,13 @@ static keys_type_info keys_types_info[] = {
 
 static int file_to_file(FILE *dst, FILE *src);
 
-static te_bool
+static bool
 trc_report_test_iter_entry_output(
     const trc_test                   *test,
     const trc_report_test_iter_entry *iter,
     unsigned int                      flags);
 
-static te_bool
+static bool
 trc_report_test_output(const trc_report_stats *stats,
                        unsigned int flags);
 
@@ -1890,7 +1890,7 @@ parse_key_attr(const char *value, char ***keys_out, unsigned int *num_out)
     unsigned int len = 0;
     unsigned int alloc_len;
     char *value_copy = NULL;
-    te_bool skip_spaces;
+    bool skip_spaces;
 
     char **keys = NULL;
 
@@ -1910,7 +1910,7 @@ parse_key_attr(const char *value, char ***keys_out, unsigned int *num_out)
     value_copy = (char *)(keys + key_num);
     keys[0] = value_copy;
 
-    skip_spaces = TRUE;
+    skip_spaces = true;
     for (i = 0, j = 0, k = 1; i < len; i++)
     {
         if (skip_spaces && value[i] == ' ')
@@ -1920,14 +1920,14 @@ parse_key_attr(const char *value, char ***keys_out, unsigned int *num_out)
         else if (value[i] == ',')
         {
             value_copy[j] = '\0';
-            skip_spaces = TRUE;
+            skip_spaces = true;
             j++;
             keys[k] = value_copy + j;
             k++;
         }
         else
         {
-            skip_spaces = FALSE;
+            skip_spaces = false;
             value_copy[j] = value[i];
             j++;
         }
@@ -2048,9 +2048,9 @@ static unsigned int
 get_key_flags(const trc_report_test_iter_data *iter_data,
               const trc_report_test_iter_entry *iter_entry)
 {
-    te_bool is_exp;
-    te_bool has_key;
-    te_bool has_verdict;
+    bool is_exp;
+    bool has_key;
+    bool has_verdict;
     unsigned int flags = 0;
 
     if (iter_data == NULL || iter_entry == NULL)
@@ -2207,7 +2207,7 @@ trc_report_keys_collect(trc_keys *keys,
                 break;
 
             default:
-                assert(FALSE);
+                assert(false);
                 break;
         }
     }
@@ -2262,7 +2262,7 @@ trc_report_keys_to_html(FILE           *f,
                         trc_report_ctx *ctx,
                         char           *keytool_fn,
                         trc_keys       *keys,
-                        te_bool         keys_only,
+                        bool keys_only,
                         trc_report_keys_type keys_type)
 {
     trc_report_key_entry *key;
@@ -2323,7 +2323,7 @@ trc_report_keys_to_html(FILE           *f,
             else
             {
                 unsigned int i = 1;
-                te_bool refs_skipped = FALSE;
+                bool refs_skipped = false;
 
                 WRITE_FILE("<a href=\"#%s\">%s</a>", key_test->key_path,
                            key_test->name);
@@ -2340,7 +2340,7 @@ trc_report_keys_to_html(FILE           *f,
                     else if (!refs_skipped)
                     {
                         WRITE_STR(",...");
-                        refs_skipped = TRUE;
+                        refs_skipped = true;
                     }
 
                     i++;
@@ -2395,13 +2395,13 @@ trc_report_stats_to_html(FILE *f, const trc_report_stats *stats)
  * @param iter  Test iteration entry in TRC report
  * @param flag  Output flags
  */
-static te_bool
+static bool
 trc_report_test_iter_entry_output(
     const trc_test                   *test,
     const trc_report_test_iter_entry *iter,
     unsigned int                      flags)
 {
-    te_bool        is_exp = (iter == NULL) ? FALSE : iter->is_exp;
+    bool is_exp = (iter == NULL) ? false : iter->is_exp;
     te_test_status status =
         (iter == NULL) ? TE_TEST_UNSPEC : iter->result.status;
 
@@ -2499,7 +2499,7 @@ trc_report_result_to_string(const trc_report_test_iter_entry *iter)
 static inline int
 trc_report_result_anchor(FILE *f, const char *test_path,
                          const trc_report_test_iter_entry *iter,
-                         te_bool new_result)
+                         bool new_result)
 {
     fprintf(f, trc_test_exp_got_row_result_anchor, test_path,
             PRINT_STR(new_result ? "aborted_new" :
@@ -2510,7 +2510,7 @@ trc_report_result_anchor(FILE *f, const char *test_path,
 #endif
 
 static inline const char *
-test_status_to_label(te_test_status status, te_bool is_expected)
+test_status_to_label(te_test_status status, bool is_expected)
 {
     switch (status)
     {
@@ -2550,7 +2550,7 @@ test_status_to_label(te_test_status status, te_bool is_expected)
  */
 static te_errno
 trc_report_test_result_to_html(FILE *f, const te_test_result *result,
-                               te_bool is_expected,
+                               bool is_expected,
                                trc_test_type test_type,
                                const char *test_path,
                                const trc_report_stats *stats,
@@ -2560,8 +2560,8 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
     const te_test_verdict  *v;
     int                     v_id = -1;
 #if TRC_USE_STATS_POPUP
-    te_bool                 obtained_link;
-    te_bool                 result_link;
+    bool obtained_link;
+    bool result_link;
 #else
     UNUSED(test_type);
 #endif
@@ -2601,7 +2601,7 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
     WRITE_FILE("</h6>\n");
 
     WRITE_FILE("<span class=\"test_result label label-%s\">",
-               result == NULL ? test_status_to_label(TE_TEST_UNSPEC, FALSE) :
+               result == NULL ? test_status_to_label(TE_TEST_UNSPEC, false) :
                test_status_to_label(result->status, is_expected));
     if (result == NULL)
     {
@@ -2679,9 +2679,9 @@ cleanup:
  *
  * @param s     Parameter name or value
  *
- * @return TRUE if name or value contain forbidden symbol, FALSE otherwise.
+ * @return @c true if name or value contain forbidden symbol, @c false otherwise.
  */
-static te_bool
+static bool
 check_forbidden_symbols(const char *s)
 {
     unsigned int i;
@@ -2690,10 +2690,10 @@ check_forbidden_symbols(const char *s)
     {
         if (s[i] == '\r' || s[i] == '\n' || s[i] == ' ' ||
             s[i] == '\t')
-            return TRUE;
+            return true;
     }
 
-    return FALSE;
+    return false;
 }
 #endif
 
@@ -2711,7 +2711,7 @@ print_iter_key(FILE *f, const trc_report_test_iter_data *iter_data,
     unsigned int count = 0;
     unsigned int i;
     unsigned int key_flags;
-    te_bool table_links = FALSE;
+    bool table_links = false;
 
     rc = parse_key_attr(iter_data->exp_result->key, &parsed_keys, &count);
     if (rc != 0)
@@ -2719,7 +2719,7 @@ print_iter_key(FILE *f, const trc_report_test_iter_data *iter_data,
 
     key_flags = get_key_flags(iter_data, iter_entry);
     if ((flags & key_flags) && (~flags & TRC_REPORT_NO_KEYS))
-        table_links = TRUE;
+        table_links = true;
 
     for (i = 0; i < count; i++)
     {
@@ -2798,7 +2798,7 @@ trc_report_exp_got_to_html(FILE             *f,
                            trc_report_ctx   *ctx,
                            te_trc_db_walker *walker,
                            unsigned int      flags,
-                           te_bool          *anchor,
+                           bool *anchor,
                            const char       *test_path,
                            const char       *level_str)
 {
@@ -2816,8 +2816,7 @@ trc_report_exp_got_to_html(FILE             *f,
 
 #if TRC_USE_LOG_URLS
     const char *night_logs_history = getenv("TE_NIGHT_LOGS_HISTORY");
-    te_bool     ref_history = (night_logs_history != NULL &&
-                               night_logs_history[0] != '\0');
+    bool ref_history = (night_logs_history != NULL && night_logs_history[0] != '\0');
 #endif
 
     assert(anchor != NULL);
@@ -2862,14 +2861,14 @@ trc_report_exp_got_to_html(FILE             *f,
             {
                 te_string     params = TE_STRING_INIT;
                 unsigned int  i;
-                te_bool       use_hash = FALSE;
+                bool use_hash = false;
 
                 for (i = 0; i < iter_entry->args_n; i++)
                 {
                     if (check_forbidden_symbols(iter_entry->args[i].name) ||
                         check_forbidden_symbols(iter_entry->args[i].value))
                     {
-                        use_hash = TRUE;
+                        use_hash = true;
                         break;
                     }
                 }
@@ -2883,7 +2882,7 @@ trc_report_exp_got_to_html(FILE             *f,
                     te_string_append(&params, "%s", ":");
                     for (i = 0; i < iter_entry->args_n; i++)
                     {
-                        te_bool         escape_comma = FALSE;
+                        bool escape_comma = false;
                         unsigned int    j;
 
                         if (iter_entry->args[i].variable)
@@ -2894,7 +2893,7 @@ trc_report_exp_got_to_html(FILE             *f,
                                          iter_entry->args[i].name);
 
                         if (strchr(iter_entry->args[i].value, ',') != NULL)
-                            escape_comma = TRUE;
+                            escape_comma = true;
 
                         if (escape_comma)
                             te_string_append(&params, "[");
@@ -2975,7 +2974,7 @@ trc_report_exp_got_to_html(FILE             *f,
 #else
                     escaped_path, test->name);
 #endif
-            *anchor = FALSE;
+            *anchor = false;
 
 #if TRC_USE_LOG_URLS
             if (test_url != NULL)
@@ -3084,7 +3083,7 @@ cleanup:
  * @param stats Statistics
  * @param flag  Output flags
  */
-static te_bool
+static bool
 trc_report_test_output(const trc_report_stats *stats, unsigned int flags)
 {
     return
@@ -3139,7 +3138,7 @@ trc_report_test_stats_to_html(FILE             *f,
     const trc_report_test_data *test_data;
     const trc_report_stats     *stats;
     char                       *escaped_path;
-    te_bool                     package_output;
+    bool package_output;
 
     escaped_path = escape_test_path(test_path);
     if (escaped_path == NULL && test_path != NULL)
@@ -3160,7 +3159,7 @@ trc_report_test_stats_to_html(FILE             *f,
          (flags & TRC_REPORT_NO_SCRIPTS)) ||
         trc_report_test_output(stats, flags))
     {
-        te_bool     name_link;
+        bool name_link;
         const char *keys = NULL;
 
         if (TRC_STATS_RUN(stats) == 0)
@@ -3261,7 +3260,7 @@ trc_report_test_stats_to_html(FILE             *f,
                                             FAIL_PASS_COUNT)),
                 TRC_STATS_FIELD_POPUP("aborted_new",
                                       stats->aborted +
-                                      stats->new_run, TRUE),
+                                      stats->new_run, true),
                 TRC_STATS_FIELD_POPUP("not_run", TRC_STATS_NOT_RUN(stats),
                                       TRC_STATS_RUN(stats) > 0),
                 stats->skip_exp, stats->skip_une,
@@ -3440,7 +3439,7 @@ trc_report_javascript_table(FILE         *f, trc_report_ctx *ctx,
                 break;
 
             default:
-                assert(FALSE);
+                assert(false);
                 break;
         }
     }
@@ -3466,13 +3465,13 @@ cleanup:
  */
 static te_errno
 trc_report_html_table(FILE    *f, trc_report_ctx *ctx,
-                      te_bool  is_stats, unsigned int flags)
+                      bool is_stats, unsigned int flags)
 {
     te_errno              rc = 0;
     te_trc_db_walker     *walker;
     trc_db_walker_motion  mv;
     unsigned int          level = 0;
-    te_bool               anchor = FALSE; /* FIXME */
+    bool anchor = false; /* FIXME */
     const char           *last_test_name = NULL;
     te_string             test_path = TE_STRING_INIT;
     te_string             level_str = TE_STRING_INIT;
@@ -3550,7 +3549,7 @@ trc_report_html_table(FILE    *f, trc_report_ctx *ctx,
                 break;
 
             default:
-                assert(FALSE);
+                assert(false);
                 break;
         }
     }
@@ -3723,7 +3722,7 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
         if (~flags & TRC_REPORT_NO_PACKAGES_ONLY)
         {
             /* Report for packages */
-            rc = trc_report_html_table(f, gctx, TRUE,
+            rc = trc_report_html_table(f, gctx, true,
                                        flags | TRC_REPORT_NO_SCRIPTS);
             if (rc != 0)
                 goto cleanup;
@@ -3735,7 +3734,7 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
              * Report with iterations of packages and
              * w/o iterations of tests
              */
-            rc = trc_report_html_table(f, gctx, TRUE, flags);
+            rc = trc_report_html_table(f, gctx, true, flags);
             if (rc != 0)
                 goto cleanup;
         }
@@ -3744,7 +3743,7 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
             (~flags & TRC_REPORT_NO_SCRIPTS))
         {
             /* Full report */
-            rc = trc_report_html_table(f, gctx, FALSE, flags);
+            rc = trc_report_html_table(f, gctx, false, flags);
             if (rc != 0)
                 goto cleanup;
         }

@@ -29,7 +29,7 @@ extern "C" {
  * Get list of neighbor table entries for a given interface.
  *
  * @param iface         Interface name.
- * @param is_static     If @c TRUE, list static (permanent) entries,
+ * @param is_static     If @c true, list static (permanent) entries,
  *                      otherwise list dynamic entries.
  * @param list          Where to save list of entries names (addresses)
  *                      as string of names separated by spaces.
@@ -37,7 +37,7 @@ extern "C" {
  * @return Status code.
  */
 extern te_errno ta_unix_conf_neigh_list_getmsg(const char *iface,
-                                               te_bool is_static,
+                                               bool is_static,
                                                char **list);
 #endif /* HAVE_INET_MIB2_H */
 

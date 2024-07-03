@@ -40,8 +40,8 @@ extern te_errno ta_vlan_get_parent(const char *ifname, char *parent);
  * @param slaves        Where to save slaves interfaces names
  * @param slaves_num    Where to save number of slaves interfaces
  *                      (may be @c NULL)
- * @param is_team       If not @c NULL, will be set to @c TRUE if
- *                      this is teaming device, and to @c FALSE
+ * @param is_team       If not @c NULL, will be set to @c true if
+ *                      this is teaming device, and to @c false
  *                      otherwise.
  *
  * @return Status code.
@@ -49,7 +49,7 @@ extern te_errno ta_vlan_get_parent(const char *ifname, char *parent);
 extern te_errno ta_bond_get_slaves(const char *ifname,
                                    tqh_strings *slaves,
                                    int *slaves_num,
-                                   te_bool *is_team);
+                                   bool *is_team);
 
 #if defined(ENABLE_FTP)
 
@@ -221,11 +221,11 @@ extern te_errno rcf_ch_register_symbol_table(
  * unsigned 32 bit integer.
  *
  * @param name          symbol name
- * @param is_func       if TRUE, function name is required
+ * @param is_func       if @c true, function name is required
  *
  * @return symbol address or NULL
  */
-extern void *rcf_ch_symbol_addr(const char *name, te_bool is_func);
+extern void *rcf_ch_symbol_addr(const char *name, bool is_func);
 
 /**
  * This function may be used by Portable Commands Handler to symbol address
@@ -301,9 +301,9 @@ extern void run_vfork_hooks(enum vfork_hook_phase phase);
  *                          or @c 0 to check both.
  * @param port              Port number in host endian
  *
- * @return @c TRUE - Port is free
+ * @return @c true - Port is free
  */
-extern te_bool agent_check_l4_port_is_free(int socket_family, int socket_type,
+extern bool agent_check_l4_port_is_free(int socket_family, int socket_type,
                                            uint16_t port);
 
 /**

@@ -59,14 +59,14 @@ rpc_rte_mempool_in_use_count(rcf_rpc_server     *rpcs,
     TAPI_RPC_LOG(rpcs, rte_mempool_in_use_count, RPC_PTR_FMT, "%u",
                  RPC_PTR_VAL(in.mp), out.retval);
 
-    TAPI_RPC_OUT(rte_mempool_in_use_count, FALSE);
+    TAPI_RPC_OUT(rte_mempool_in_use_count, false);
 
     return (out.retval);
 }
 
 static void
 rpc_rte_mempool_free_custom(rcf_rpc_server     *rpcs,
-                            te_bool             free_all,
+                            bool free_all,
                             rpc_rte_mempool_p   mp)
 {
     tarpc_rte_mempool_free_in  in;
@@ -91,11 +91,11 @@ void
 rpc_rte_mempool_free(rcf_rpc_server     *rpcs,
                      rpc_rte_mempool_p   mp)
 {
-    rpc_rte_mempool_free_custom(rpcs, FALSE, mp);
+    rpc_rte_mempool_free_custom(rpcs, false, mp);
 }
 
 void
 rpc_rte_mempool_free_all(rcf_rpc_server *rpcs)
 {
-    rpc_rte_mempool_free_custom(rpcs, TRUE, RPC_NULL);
+    rpc_rte_mempool_free_custom(rpcs, true, RPC_NULL);
 }

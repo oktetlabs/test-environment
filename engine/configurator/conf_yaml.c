@@ -37,7 +37,7 @@
       .substitution = NULL, \
       .unit = NULL, \
       .deps = SLIST_HEAD_INITIALIZER(deps), \
-      .cond = TRUE }
+      .cond = true }
 
 typedef struct parse_config_yaml_ctx {
     char            *file_path;
@@ -110,7 +110,7 @@ out:
  * @return Status code.
  */
 static te_errno
-parse_logic_expr_str(const char *str, te_bool *res, te_kvpair_h *expand_vars)
+parse_logic_expr_str(const char *str, bool *res, te_kvpair_h *expand_vars)
 {
     logic_expr *parsed = NULL;
     logic_expr_res parsed_res;
@@ -146,7 +146,7 @@ out:
 }
 
 static te_errno
-parse_config_if_expr(yaml_node_t *n, te_bool *if_expr, te_kvpair_h *expand_vars)
+parse_config_if_expr(yaml_node_t *n, bool *if_expr, te_kvpair_h *expand_vars)
 {
     const char *str = NULL;
     te_errno    rc = 0;
@@ -244,7 +244,7 @@ typedef struct cs_yaml_target_context_s {
     const xmlChar   *substitution;
     const xmlChar   *unit;
     cytc_dep_list_t  deps;
-    te_bool          cond;
+    bool cond;
 } cs_yaml_target_context_t;
 
 static te_errno
@@ -907,7 +907,7 @@ parse_config_yaml_specified_cmd(parse_config_yaml_ctx *ctx, yaml_node_t *n,
 
     xmlNodePtr  xn_cmd = NULL;
     te_errno    rc = 0;
-    te_bool     cond = FALSE;
+    bool cond = false;
 
     xn_cmd = xmlNewNode(NULL, BAD_CAST cmd);
     if (xn_cmd == NULL)
@@ -1198,9 +1198,9 @@ parse_config_yaml(const char *filename, te_kvpair_h *expand_vars,
 
     if (xn_history_root == NULL && xn_history->children != NULL)
     {
-        rcf_log_cfg_changes(TRUE);
+        rcf_log_cfg_changes(true);
         rc = parse_config_dh_sync(xn_history, expand_vars);
-        rcf_log_cfg_changes(FALSE);
+        rcf_log_cfg_changes(false);
     }
 
 out:

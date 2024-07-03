@@ -47,7 +47,7 @@ extern "C" {
  *                        address part of address set to wildcard, but
  *                        if you want to bind the socket to wildcard
  *                        address you should set @p wild parameter to
- *                        @c TRUE)
+ *                        @c true)
  *
  * @return Descriptor of created socket
  *
@@ -59,8 +59,8 @@ extern "C" {
 extern int rpc_create_and_bind_socket(rcf_rpc_server    *rpc,
                                       rpc_socket_type   sock_type,
                                       rpc_socket_proto  proto,
-                                      te_bool           wild,
-                                      te_bool           set_reuse_addr,
+                                      bool wild,
+                                      bool set_reuse_addr,
                                       const struct sockaddr  *addr);
 
 
@@ -94,7 +94,7 @@ extern int rpc_create_and_bind_socket(rcf_rpc_server    *rpc,
  * @copydetails lib-stream_server-alg
  */
 extern int rpc_stream_server(rcf_rpc_server *srvr,
-                             rpc_socket_proto proto, te_bool srvr_wild,
+                             rpc_socket_proto proto, bool srvr_wild,
                              const struct sockaddr *srvr_addr);
 
 /** @page lib-stream_client-alg Algorithm of creating a client socket of type
@@ -247,9 +247,9 @@ extern int rpc_dgram_connection_gen_wild(rcf_rpc_server *srvr,
                                          const struct sockaddr *srvr_addr,
                                          const struct sockaddr *clnt_addr,
                                          int *srvr_s, int *clnt_s,
-                                         te_bool srvr_connect,
-                                         te_bool clnt_connect,
-                                         te_bool bind_wildcard);
+                                         bool srvr_connect,
+                                         bool clnt_connect,
+                                         bool bind_wildcard);
 
 static inline int
 rpc_dgram_connection_gen(rcf_rpc_server *srvr,
@@ -258,13 +258,13 @@ rpc_dgram_connection_gen(rcf_rpc_server *srvr,
                          const struct sockaddr *srvr_addr,
                          const struct sockaddr *clnt_addr,
                          int *srvr_s, int *clnt_s,
-                         te_bool srvr_connect,
-                         te_bool clnt_connect)
+                         bool srvr_connect,
+                         bool clnt_connect)
 {
     return rpc_dgram_connection_gen_wild(srvr, clnt, proto,
                                          srvr_addr, clnt_addr,
                                          srvr_s, clnt_s, srvr_connect,
-                                         clnt_connect, FALSE);
+                                         clnt_connect, false);
 }
 
 /**
@@ -382,8 +382,8 @@ extern int rpc_gen_connection_wild(rcf_rpc_server *srvr,
                                    const struct sockaddr *srvr_addr,
                                    const struct sockaddr *clnt_addr,
                                    int *srvr_s, int *clnt_s,
-                                   te_bool srvr_connect,
-                                   te_bool bind_wildcard);
+                                   bool srvr_connect,
+                                   bool bind_wildcard);
 
 static inline int
 rpc_gen_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
@@ -395,7 +395,7 @@ rpc_gen_connection(rcf_rpc_server *srvr, rcf_rpc_server *clnt,
 {
     return rpc_gen_connection_wild(srvr, clnt, sock_type,
                                    proto, srvr_addr, clnt_addr,
-                                   srvr_s, clnt_s, TRUE, FALSE);
+                                   srvr_s, clnt_s, true, false);
 }
 
 /**

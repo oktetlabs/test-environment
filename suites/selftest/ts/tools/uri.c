@@ -131,7 +131,7 @@ check_kvpair(const char *expected, ...)
     te_kvpair_init(&kvp);
     va_start(kv, expected);
 
-    while (TRUE)
+    while (true)
     {
         const char *key = va_arg(kv, const char *);
         const char *value;
@@ -165,7 +165,7 @@ check_join_uri_path(const char *expected, ...)
 
     va_start(args, expected);
 
-    while (TRUE)
+    while (true)
     {
         const char *item = va_arg(args, const char *);
 

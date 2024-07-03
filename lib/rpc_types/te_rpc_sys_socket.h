@@ -787,7 +787,7 @@ typedef enum rpc_sockopt {
                                  corresponding connection */
     RPC_UDP_CORK,           /**< Enable/disable UDP packets coalescing */
     RPC_UDP_NOCHECKSUM,     /**< MS Windows specific.
-                                 When TRUE, UDP datagrams are sent with
+                                 When @c true, UDP datagrams are sent with
                                  the checksum of zero. Required for service
                                  providers. If a service provider does not
                                  have a mechanism to disable UDP checksum
@@ -828,7 +828,7 @@ extern rpc_sockopt sockopt_h2rpc(int opt_type, int opt);
 extern rpc_sockopt cmsg_type_h2rpc(int level, int type);
 
 /** Has socket option boolean semantic? */
-extern te_bool sockopt_is_boolean(rpc_sockopt opt);
+extern bool sockopt_is_boolean(rpc_sockopt opt);
 
 /**
  * TA-independent names of TCP socket states.

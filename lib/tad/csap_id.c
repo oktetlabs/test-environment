@@ -105,7 +105,7 @@ csap_id_destroy(void)
 csap_handle_t
 csap_id_new(void *ptr)
 {
-    te_bool         was_invalid = FALSE;
+    bool was_invalid = false;
     csap_id_entry  *curr, *prev;
     csap_handle_t   new_id;
     csap_id_entry  *new_entry;
@@ -130,7 +130,7 @@ csap_id_new(void *ptr)
                 return CSAP_INVALID_HANDLE;
             }
 
-            was_invalid = TRUE;
+            was_invalid = true;
             new_id++;
         }
     }

@@ -66,9 +66,9 @@ main(int argc, char *argv[])
     int  num_pkts;
     int  timeout;
 
-    te_bool pass_results;
-    te_bool dump_packets;
-    te_bool blocked_mode;
+    bool pass_results;
+    bool dump_packets;
+    bool blocked_mode;
 
     int      caught_num = 0;
     uint16_t eth_type = ETH_P_IP;
@@ -110,7 +110,7 @@ main(int argc, char *argv[])
     else
         VERB("csap for listen created, id: %d\n", (int)eth_listen_csap);
 
-    rc = tapi_eth_add_pdu(&pattern, NULL, TRUE, NULL, NULL, &eth_type,
+    rc = tapi_eth_add_pdu(&pattern, NULL, true, NULL, NULL, &eth_type,
                           TE_BOOL3_ANY /* tagged/untagged */,
                           TE_BOOL3_ANY /* Ethernet2/LLC */);
     if (rc != 0)

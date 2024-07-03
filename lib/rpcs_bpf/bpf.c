@@ -736,7 +736,7 @@ ta_xsk_send_simple(tarpc_xsk_send_simple_in *in,
         }
     }
 
-    while (TRUE)
+    while (true)
     {
         rc = xsk_ring_cons__peek(&sock->umem_rings->comp, 1, &idx);
         if (rc > 0)

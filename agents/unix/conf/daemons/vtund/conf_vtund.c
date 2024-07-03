@@ -91,7 +91,7 @@ typedef struct vtund_server {
     char       *cfg_file;
     char       *port;
 
-    te_bool     running;
+    bool running;
 
 } vtund_server;
 
@@ -112,7 +112,7 @@ typedef struct vtund_client {
     char   *persist;
     char   *stat;
 
-    te_bool running;
+    bool running;
 
 } vtund_client;
 
@@ -518,7 +518,7 @@ vtund_server_start(vtund_server *server)
 
     ta_system(buf);
 
-    server->running = TRUE;
+    server->running = true;
 
     return 0;
 }
@@ -560,7 +560,7 @@ vtund_server_stop(vtund_server *server)
         return err;
     }
 
-    server->running = FALSE;
+    server->running = false;
 
     return 0;
 }
@@ -891,7 +891,7 @@ vtund_client_start(vtund_client *client)
              client->server);
     ta_system(buf);
 
-    client->running = TRUE;
+    client->running = true;
 
     return 0;
 }
@@ -937,7 +937,7 @@ vtund_client_stop(vtund_client *client)
         }
     }
 
-    client->running = FALSE;
+    client->running = false;
 
     return 0;
 }

@@ -33,7 +33,7 @@ tapi_netns_add_rsrc(const char *ta, const char *ns_name)
 te_errno
 tapi_netns_del_rsrc(const char *ta, const char *ns_name)
 {
-    return cfg_del_instance_fmt(FALSE, "/agent:%s/rsrc:netns_%s",
+    return cfg_del_instance_fmt(false, "/agent:%s/rsrc:netns_%s",
                                 ta, ns_name);
 }
 
@@ -57,7 +57,7 @@ tapi_netns_del(const char *ta, const char *ns_name)
 {
     te_errno rc;
 
-    rc = cfg_del_instance_fmt(TRUE, "/agent:%s/namespace:/net:%s", ta,
+    rc = cfg_del_instance_fmt(true, "/agent:%s/namespace:/net:%s", ta,
                               ns_name);
     if (rc != 0)
         return rc;
@@ -88,7 +88,7 @@ tapi_netns_if_set(const char *ta, const char *ns_name, const char *if_name)
 te_errno
 tapi_netns_if_unset(const char *ta, const char *ns_name, const char *if_name)
 {
-    return cfg_del_instance_fmt(TRUE,
+    return cfg_del_instance_fmt(true,
                                 "/agent:%s/namespace:/net:%s/interface:%s",
                                 ta, ns_name, if_name);
 }

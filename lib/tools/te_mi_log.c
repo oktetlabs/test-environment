@@ -60,7 +60,7 @@ typedef struct te_mi_meas_ref {
 /** Data specific for line-graph view */
 typedef struct te_mi_meas_view_line_graph {
     te_mi_meas_ref axis_x; /**< Measurement used as X-coordinate */
-    te_bool axis_x_auto_seqno; /**< If @c TRUE, on axis X sequence numbers
+    bool axis_x_auto_seqno; /**< If @c true, on axis X sequence numbers
                                     are used instead of a measurement */
     te_vec axis_y;        /**< Measurement(s) used as Y-coordinate
                                (each measurement will be drawn as a
@@ -97,7 +97,7 @@ struct te_mi_logger {
     te_kvpair_h meas_keys;
     te_kvpair_h comments;
     te_mi_meas_view_h views;
-    te_bool error_ignored;
+    bool error_ignored;
 };
 
 typedef enum te_mi_meas_base_unit_type {
@@ -216,66 +216,66 @@ te_mi_meas_get_base_unit_str(te_mi_meas_type type, te_mi_meas_aggr aggr)
     return te_enum_map_from_any_value(meas_base_unit_names, base, NULL);
 }
 
-static te_bool
+static bool
 te_mi_meas_aggr_is_specified(te_mi_meas_aggr aggr)
 {
     return aggr > TE_MI_MEAS_AGGR_START && aggr < TE_MI_MEAS_AGGR_END;
 }
 
-static te_bool
+static bool
 te_mi_meas_aggr_is_special_value(te_mi_meas_aggr aggr)
 {
     return aggr > TE_MI_MEAS_AGGR_SV_START && aggr < TE_MI_MEAS_AGGR_SV_END;
 }
 
-static te_bool
+static bool
 te_mi_meas_aggr_valid(te_mi_meas_aggr aggr)
 {
     return te_mi_meas_aggr_is_specified(aggr)
            || te_mi_meas_aggr_is_special_value(aggr);
 }
 
-static te_bool
+static bool
 te_mi_meas_type_valid(te_mi_meas_type type)
 {
     return type >= 0 && type < TE_MI_MEAS_END;
 }
 
-static te_bool
+static bool
 te_mi_meas_multiplier_valid(te_mi_meas_multiplier multiplier)
 {
     return multiplier >= 0 && multiplier < TE_MI_MEAS_MULTIPLIER_END;
 }
 
-static te_bool
+static bool
 te_mi_meas_view_type_valid(te_mi_meas_view_type type)
 {
     return type >= 0 && type < TE_MI_MEAS_VIEW_MAX;
 }
 
-static te_bool
+static bool
 te_mi_graph_axis_valid(te_mi_graph_axis axis)
 {
     return axis >= 0 && axis < TE_MI_GRAPH_AXIS_MAX;
 }
 
-static te_bool
+static bool
 te_mi_check_meas_type_name(te_mi_meas_type type, const char *name)
 {
     if (type == TE_MI_MEAS_END && name == NULL)
     {
         ERROR("%s(): either measurement name or measurement type must be "
               "specified", __FUNCTION__);
-        return FALSE;
+        return false;
     }
 
     if (type != TE_MI_MEAS_END && !te_mi_meas_type_valid(type))
     {
         ERROR("%s(): invalid measurement type %d", __FUNCTION__, type);
-        return FALSE;
+        return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 static void
@@ -285,7 +285,7 @@ te_mi_set_logger_error(te_mi_logger *logger, te_errno *retval, te_errno val)
         *retval = val;
 
     if (val != 0 && logger != NULL && retval == NULL)
-        logger->error_ignored = TRUE;
+        logger->error_ignored = true;
 }
 
 static void
@@ -773,7 +773,7 @@ te_mi_meas_impl_remove(te_mi_meas_impl_h *meas_q, te_mi_meas_impl *meas)
     te_mi_meas_impl_destroy(meas);
 }
 
-static te_bool
+static bool
 te_mi_logger_is_empty(const te_mi_logger *logger)
 {
     return TAILQ_EMPTY(&logger->comments) &&
@@ -989,7 +989,7 @@ te_mi_logger_meas_graph_axis_add(te_mi_logger *logger,
     {
         if (axis == TE_MI_GRAPH_AXIS_X)
         {
-            view->data.line_graph.axis_x_auto_seqno = TRUE;
+            view->data.line_graph.axis_x_auto_seqno = true;
         }
         else
         {
@@ -1110,7 +1110,7 @@ te_mi_logger_reset(te_mi_logger *logger)
 
     te_kvpair_fini(&logger->comments);
     te_kvpair_fini(&logger->meas_keys);
-    logger->error_ignored = FALSE;
+    logger->error_ignored = false;
 
     TAILQ_FOREACH_SAFE(view, &logger->views, next, view_aux)
     {
@@ -1206,7 +1206,7 @@ te_mi_logger_meas_create(const char *tool, te_mi_logger **logger)
     TAILQ_INIT(&result->views);
     result->version = TE_MI_LOG_VERSION;
     result->type = TE_MI_TYPE_MEASUREMENT;
-    result->error_ignored = FALSE;
+    result->error_ignored = false;
 
     *logger = result;
 

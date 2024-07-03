@@ -68,7 +68,7 @@ typedef struct tapi_wrk_opt {
     /** Request headers in "Name: Value" format (note the space). */
     const char *headers[TAPI_WRK_HEADERS_MAX];
     /** Print latency statistics */
-    te_bool latency;
+    bool latency;
     /** Host to connect to */
     const char *host;
 

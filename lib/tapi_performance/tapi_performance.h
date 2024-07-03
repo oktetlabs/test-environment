@@ -293,9 +293,9 @@ typedef struct tapi_perf_opts {
                              *   processing */
     int32_t length;         /**< Length of buffer to read or write */
     int16_t streams;        /**< Number of parallel client streams */
-    te_bool reverse;        /**< Whether run in reverse mode (server sends,
+    bool reverse;        /**< Whether run in reverse mode (server sends,
                                  client receives), or not */
-    te_bool dual;           /**< Bidirectional mode */
+    bool dual;           /**< Bidirectional mode */
 } tapi_perf_opts;
 
 /**
@@ -702,9 +702,9 @@ extern void tapi_perf_log_cumulative_report(const tapi_perf_server *server[],
  * @param opts_a First object for comparison
  * @param opts_b Second object for comparison
  *
- * @return @c TRUE if objects' important properties are equal, @c FALSE if not
+ * @return @c true if objects' important properties are equal, @c false if not
  */
-extern te_bool tapi_perf_opts_cmp(const tapi_perf_opts *opts_a,
+extern bool tapi_perf_opts_cmp(const tapi_perf_opts *opts_a,
                                   const tapi_perf_opts *opts_b);
 
 /**@} <!-- END tapi_performance --> */

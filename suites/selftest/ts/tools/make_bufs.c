@@ -73,7 +73,7 @@ main(int argc, char **argv)
     unsigned int min_len;
     unsigned int max_len;
     unsigned int n_iterations;
-    te_bool embedded_zeroes = FALSE;
+    bool embedded_zeroes = false;
 
     static const char *specs[][3] = {
         {"digits", TE_FILL_SPEC_DECIMAL, "^[[:digit:]]+$"},
@@ -125,7 +125,7 @@ main(int argc, char **argv)
         {
             if (buf[j] == '\0')
             {
-                embedded_zeroes = TRUE;
+                embedded_zeroes = true;
                 break;
             }
         }

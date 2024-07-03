@@ -95,7 +95,7 @@ te_meas_stats_fill_summary_histogram(te_meas_stats_summary_t *summary,
     double *bin_edges = NULL;
     unsigned int unique_values_num;
     unsigned int bin_edges_num = 0;
-    te_bool use_sample_bucket;
+    bool use_sample_bucket;
     double *freq = NULL;
     unsigned int freq_size = 0;
     double min_sample_val;
@@ -113,13 +113,13 @@ te_meas_stats_fill_summary_histogram(te_meas_stats_summary_t *summary,
           te_meas_stats_double_cmp);
 
     unique_values_num = te_meas_stats_unique_values(sorted_sample, sample_size);
-    use_sample_bucket = TRUE;
+    use_sample_bucket = true;
 
     if ((bin_edges_num = te_meas_stats_sturges_rule(sample_size) + 1) >
         unique_values_num)
     {
         bin_edges_num = unique_values_num;
-        use_sample_bucket = FALSE;
+        use_sample_bucket = false;
     }
 
     bin_edges = TE_ALLOC(bin_edges_num * sizeof(*bin_edges));
@@ -371,7 +371,7 @@ te_meas_stats_init(te_meas_stats_t *meas_stats,
     meas_stats->summary_required = (flags &
                                     TE_MEAS_STATS_INIT_SUMMARY_REQUIRED) != 0;
     meas_stats->ignore_zeros = (flags & TE_MEAS_STATS_INIT_IGNORE_ZEROS) != 0;
-    meas_stats->nonzero_reached = FALSE;
+    meas_stats->nonzero_reached = false;
 
     if (meas_stats->stab_required)
     {
@@ -410,7 +410,7 @@ te_meas_stats_update(te_meas_stats_t *meas_stats, double new_datapoint)
     {
         if (new_datapoint != 0)
         {
-           meas_stats->nonzero_reached = TRUE;
+           meas_stats->nonzero_reached = true;
         }
         else
         {

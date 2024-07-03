@@ -23,7 +23,7 @@ te_errno
 tapi_cfg_if_feature_is_readonly(const char *ta,
                                 const char *ifname,
                                 const char *feature_name,
-                                te_bool *readonly)
+                                bool *readonly)
 {
     int val;
     te_errno rc;
@@ -38,7 +38,7 @@ tapi_cfg_if_feature_is_readonly(const char *ta,
     if (rc != 0)
         return rc;
 
-    *readonly = (val == 0 ? FALSE : TRUE);
+    *readonly = (val == 0 ? false : true);
     return 0;
 }
 
@@ -47,7 +47,7 @@ te_errno
 tapi_cfg_if_feature_is_present(const char *ta,
                                const char *ifname,
                                const char *feature_name,
-                               te_bool *present)
+                               bool *present)
 {
     te_errno rc;
     unsigned int p_num = 0;
@@ -63,9 +63,9 @@ tapi_cfg_if_feature_is_present(const char *ta,
     free(p_set);
 
     if (p_num > 0)
-        *present = TRUE;
+        *present = true;
     else
-        *present = FALSE;
+        *present = false;
 
     return 0;
 }
@@ -106,7 +106,7 @@ tapi_cfg_if_feature_set(const char *ta,
 typedef struct if_feature_set_ctx {
     const char *name;
     int         value;
-    te_bool     success;
+    bool success;
 } if_feature_set_ctx;
 
 /**
@@ -123,7 +123,7 @@ if_feature_set_cb(const char *ta, const char *ifname, void *opaque)
 {
     if_feature_set_ctx *ctx = (if_feature_set_ctx *)opaque;
     te_errno rc;
-    te_bool readonly;
+    bool readonly;
     int value;
 
     rc = tapi_cfg_if_feature_is_readonly(ta, ifname, ctx->name,
@@ -141,13 +141,13 @@ if_feature_set_cb(const char *ta, const char *ifname, void *opaque)
             return rc;
 
         if (value == ctx->value)
-            ctx->success = TRUE;
+            ctx->success = true;
     }
     else
     {
         rc = tapi_cfg_if_feature_set(ta, ifname, ctx->name, ctx->value);
         if (rc == 0)
-            ctx->success = TRUE;
+            ctx->success = true;
         else if (TE_RC_GET_ERROR(rc) != TE_EOPNOTSUPP)
             return rc;
     }
@@ -171,7 +171,7 @@ tapi_cfg_if_feature_set_all_parents(const char *ta, const char *ifname,
      * Setting of the feature failed with EOPNOTSUPP or or it was
      * read-only for all interfaces.
      */
-    if (rc == 0 && ctx.success == FALSE)
+    if (rc == 0 && ctx.success == false)
         return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
 
     return rc;
@@ -453,7 +453,7 @@ tapi_cfg_if_msglvl_set(const char *ta, const char *ifname, uint64_t msglvl)
 /* See description in the tapi_cfg_if.h */
 te_errno
 tapi_cfg_if_priv_flag_get(const char *ta, const char *if_name,
-                          const char *flag_name, te_bool *state)
+                          const char *flag_name, bool *state)
 {
     return cfg_get_bool(
                 state, "/agent:%s/interface:%s/private:/flag:%s",
@@ -463,7 +463,7 @@ tapi_cfg_if_priv_flag_get(const char *ta, const char *if_name,
 /* See description in the tapi_cfg_if.h */
 te_errno
 tapi_cfg_if_priv_flag_set(const char *ta, const char *if_name,
-                          const char *flag_name, te_bool state)
+                          const char *flag_name, bool state)
 {
     return cfg_set_instance_fmt(
               CFG_VAL(BOOL, state),

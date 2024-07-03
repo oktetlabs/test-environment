@@ -96,10 +96,10 @@ typedef struct te_meas_stats_summary_t {
 
 /** Structure for providing both summary and stabilization by request */
 typedef struct te_meas_stats_t {
-    te_bool stab_required;
-    te_bool summary_required;
-    te_bool ignore_zeros;
-    te_bool nonzero_reached;
+    bool stab_required;
+    bool summary_required;
+    bool ignore_zeros;
+    bool nonzero_reached;
     unsigned int num_zeros;
     te_meas_stats_data_t data;
     te_meas_stats_stab_t stab;
@@ -182,15 +182,15 @@ te_meas_stats_update_cv(te_meas_stats_data_t *data)
  * @param stab      Pointer to te_meas_stats_stab_t structure
  * @param data      Pointer to te_meas_stats_data_t structure
  *
- * @return      TRUE if te_meas_stats_stab_t sample is stable, FALSE otherwise
+ * @return      @c true if te_meas_stats_stab_t sample is stable, @c false otherwise
  */
-static inline te_bool
+static inline bool
 te_meas_stats_stab_is_stable(const te_meas_stats_stab_t *stab,
                              const te_meas_stats_data_t *data)
 {
     return (data->num_datapoints >= stab->min_num_datapoints &&
             stab->required_cv > stab->correct_data.cv) ?
-            TRUE : FALSE;
+            true : false;
 }
 
 /**
@@ -201,12 +201,12 @@ te_meas_stats_stab_is_stable(const te_meas_stats_stab_t *stab,
  * @param deviation         sample deviation
  * @param deviation_coeff   deviation coefficient
  *
- * @return     TRUE if datapoint may be skipped, FALSE otherwise
+ * @return     @c true if datapoint may be skipped, @c false otherwise
  *
  * @alg     Check if deviation of datapoint within deviation_coeff
  *          deviations from mean (see Chebyshev's inequality)
  */
-static inline te_bool
+static inline bool
 te_meas_stats_is_datapoint_correct(double datapoint, double mean,
                                    double deviation, double deviation_coeff)
 {

@@ -201,7 +201,7 @@ extern int iomux_mod_fd(iomux_func iomux, iomux_funcs *funcs,
 extern int iomux_fd_is_writable(int fd_exp, iomux_func iomux,
                                 iomux_state *iomux_st,
                                 iomux_return *iomux_ret, int rc,
-                                te_bool *writable);
+                                bool *writable);
 
 /**
  * Initialize a multiplexer context so that it is safe to call

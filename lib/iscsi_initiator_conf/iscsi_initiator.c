@@ -126,7 +126,7 @@ iscsi_init_default_connection_parameters(iscsi_connection_data_t *conn_data)
     strcpy(conn_data->session_type, ISCSI_DEFAULT_SESSION_TYPE);
 
     /* target's chap */
-    conn_data->chap.need_target_auth = FALSE;
+    conn_data->chap.need_target_auth = false;
     *(conn_data->chap.peer_secret) = '\0';
     *(conn_data->chap.local_name) = '\0';
     strcpy(conn_data->chap.chap, "None");
@@ -322,7 +322,7 @@ iscsi_append_to_buf(void *destination, char *what)
 /**
  * See description in iscsi_initiator.h
  */
-te_bool
+bool
 iscsi_when_tgt_auth(iscsi_target_data_t *target_data,
                     iscsi_connection_data_t *conn_data,
                     iscsi_tgt_chap_data_t *auth_data)
@@ -336,7 +336,7 @@ iscsi_when_tgt_auth(iscsi_target_data_t *target_data,
 /**
  * See description in iscsi_initiator.h
  */
-te_bool
+bool
 iscsi_when_not_tgt_auth(iscsi_target_data_t *target_data,
                         iscsi_connection_data_t *conn_data,
                         iscsi_tgt_chap_data_t *auth_data)
@@ -350,7 +350,7 @@ iscsi_when_not_tgt_auth(iscsi_target_data_t *target_data,
 /**
  * See description in iscsi_initiator.h
  */
-te_bool
+bool
 iscsi_when_chap(iscsi_target_data_t *target_data,
                 iscsi_connection_data_t *conn_data,
                 iscsi_tgt_chap_data_t *auth_data)
@@ -439,11 +439,11 @@ iscsi_change_conn_status(iscsi_target_data_t *target,
  * @param target_id     Target number
  * @param cid           Connection number
  * @param status        New status
- * @param urgent        If TRUE, the request will be put into the head
+ * @param urgent        If @c true, the request will be put into the head
  *                      of the queue, instead of the tail
  */
 te_errno
-iscsi_post_connection_request(int target_id, int cid, int status, te_bool urgent)
+iscsi_post_connection_request(int target_id, int cid, int status, bool urgent)
 {
     iscsi_connection_req *req;
 
@@ -609,7 +609,7 @@ iscsi_linux_detect_hba(void)
  */
 te_errno
 iscsi_get_device_name(iscsi_connection_data_t *conn, int target_id,
-                      te_bool is_generic, char *outbuffer)
+                      bool is_generic, char *outbuffer)
 {
     int         rc = 0;
     char        dev_pattern[RCF_MAX_PATH];
@@ -721,7 +721,7 @@ iscsi_linux_prepare_device(iscsi_connection_data_t *conn, int target_id)
 
     VERB("Call iscsi_get_device_name()");
     rc = iscsi_get_device_name(conn, target_id,
-                               FALSE, conn->device_name);
+                               false, conn->device_name);
     if (rc != 0)
         return rc;
 
@@ -793,7 +793,7 @@ iscsi_write_sample_to_device(iscsi_connection_data_t *conn)
 
 te_errno
 iscsi_get_device_name(iscsi_connection_data_t *conn, int target_id,
-                      te_bool is_generic, char *outbuffer)
+                      bool is_generic, char *outbuffer)
 {
     UNUSED(conn);
     UNUSED(target_id);
@@ -863,21 +863,26 @@ iscsi_initiator_timer_thread(void *arg)
                 {
                     case ISCSI_CONNECTION_ABNORMAL:
                         iscsi_post_connection_request(i, j,
-                                                      ISCSI_CONNECTION_REMOVED, TRUE);
+                                                      ISCSI_CONNECTION_REMOVED,
+                                                      true);
                         break;
                     case ISCSI_CONNECTION_RECOVER_DOWN:
                         iscsi_post_connection_request(i, j,
-                                                      ISCSI_CONNECTION_DOWN, TRUE);
+                                                      ISCSI_CONNECTION_DOWN,
+                                                      true);
                         break;
                     case ISCSI_CONNECTION_WAITING_DEVICE:
                         iscsi_post_connection_request(i, j,
-                                                      ISCSI_CONNECTION_UP, TRUE);
+                                                      ISCSI_CONNECTION_UP,
+                                                      true);
                         break;
                     case ISCSI_CONNECTION_RECOVER_UP:
                         iscsi_post_connection_request(i, j,
-                                                      ISCSI_CONNECTION_UP, TRUE);
+                                                      ISCSI_CONNECTION_UP,
+                                                      true);
                         iscsi_post_connection_request(i, j,
-                                                      ISCSI_CONNECTION_DOWN, TRUE);
+                                                      ISCSI_CONNECTION_DOWN,
+                                                      true);
                         break;
                     default:
                         /* do nothing */
@@ -1153,7 +1158,7 @@ iscsi_initiator_conn_request_thread(void *arg)
                     iscsi_post_connection_request(current_req->target_id,
                                                   current_req->cid,
                                                   ISCSI_CONNECTION_UP,
-                                                  TRUE);
+                                                  true);
                 }
             }
             else
@@ -1211,7 +1216,7 @@ iscsi_initiator_start_thread(void)
         if (!init_data->request_thread_started)
         {
             atexit(kill_request_thread);
-            init_data->request_thread_started = TRUE;
+            init_data->request_thread_started = true;
         }
     }
     return 0;

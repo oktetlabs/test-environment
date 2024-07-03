@@ -70,7 +70,7 @@ tapi_cfg_nginx_add(const char *ta, const char *inst_name)
 te_errno
 tapi_cfg_nginx_del(const char *ta, const char *inst_name)
 {
-    return cfg_del_instance_fmt(FALSE, TE_CFG_TA_NGINX_FMT,
+    return cfg_del_instance_fmt(false, TE_CFG_TA_NGINX_FMT,
                                 TE_CFG_TA_NGINX_ARGS(ta, inst_name));
 }
 
@@ -105,8 +105,8 @@ te_errno
 tapi_cfg_nginx_http_server_del(const char *ta, const char *inst_name,
                                const char *srv_name)
 {
-    return cfg_del_instance_fmt(FALSE, TE_CFG_TA_NGINX_SRV_FMT,
-                TE_CFG_TA_NGINX_SRV_ARGS(ta, inst_name, srv_name));
+    return cfg_del_instance_fmt(false, TE_CFG_TA_NGINX_SRV_FMT,
+                                TE_CFG_TA_NGINX_SRV_ARGS(ta, inst_name, srv_name));
 }
 
 /* See description in tapi_cfg_nginx.h */
@@ -127,8 +127,8 @@ tapi_cfg_nginx_http_listen_entry_del(const char *ta, const char *inst_name,
                                      const char *srv_name,
                                      const char *entry_name)
 {
-    return cfg_del_instance_fmt(FALSE, TE_CFG_TA_NGINX_LISTEN_FMT,
-            TE_CFG_TA_NGINX_LISTEN_ARGS(ta, inst_name, srv_name, entry_name));
+    return cfg_del_instance_fmt(false, TE_CFG_TA_NGINX_LISTEN_FMT,
+                                TE_CFG_TA_NGINX_LISTEN_ARGS(ta, inst_name, srv_name, entry_name));
 }
 
 /* See description in tapi_cfg_nginx.h */
@@ -198,8 +198,8 @@ tapi_cfg_nginx_http_loc_add(const char *ta, const char *inst_name,
             TE_CFG_TA_NGINX_LOC_ARGS(ta, inst_name, srv_name, loc_name));
     if (rc != 0)
     {
-       (void)cfg_del_instance_fmt(FALSE, TE_CFG_TA_NGINX_LOC_FMT,
-                TE_CFG_TA_NGINX_LOC_ARGS(ta, inst_name, srv_name, loc_name));
+       (void)cfg_del_instance_fmt(false, TE_CFG_TA_NGINX_LOC_FMT,
+                                  TE_CFG_TA_NGINX_LOC_ARGS(ta, inst_name, srv_name, loc_name));
     }
 
     return rc;
@@ -210,8 +210,8 @@ te_errno
 tapi_cfg_nginx_http_loc_del(const char *ta, const char *inst_name,
                             const char *srv_name, const char *loc_name)
 {
-    return cfg_del_instance_fmt(FALSE, TE_CFG_TA_NGINX_LOC_FMT,
-            TE_CFG_TA_NGINX_LOC_ARGS(ta, inst_name, srv_name, loc_name));
+    return cfg_del_instance_fmt(false, TE_CFG_TA_NGINX_LOC_FMT,
+                                TE_CFG_TA_NGINX_LOC_ARGS(ta, inst_name, srv_name, loc_name));
 }
 
 /* See description in tapi_cfg_nginx.h */
@@ -237,10 +237,10 @@ tapi_cfg_nginx_http_loc_proxy_hdr_del(const char *ta,
                                       const char *loc_name,
                                       const char *hdr_name)
 {
-    return cfg_del_instance_fmt(FALSE,
-            TE_CFG_TA_NGINX_LOC_FMT "/proxy:/set_header:%s",
-            TE_CFG_TA_NGINX_LOC_ARGS(ta, inst_name, srv_name, loc_name),
-            hdr_name);
+    return cfg_del_instance_fmt(false,
+                                TE_CFG_TA_NGINX_LOC_FMT "/proxy:/set_header:%s",
+                                TE_CFG_TA_NGINX_LOC_ARGS(ta, inst_name, srv_name, loc_name),
+                                hdr_name);
 }
 
 /* See description in tapi_cfg_nginx.h */
@@ -258,8 +258,8 @@ te_errno
 tapi_cfg_nginx_http_upstream_del(const char *ta, const char *inst_name,
                                  const char *us_name)
 {
-    return cfg_del_instance_fmt(FALSE, TE_CFG_TA_NGINX_SRV_FMT,
-                TE_CFG_TA_NGINX_US_ARGS(ta, inst_name, us_name));
+    return cfg_del_instance_fmt(false, TE_CFG_TA_NGINX_SRV_FMT,
+                                TE_CFG_TA_NGINX_US_ARGS(ta, inst_name, us_name));
 }
 
 /* See description in tapi_cfg_nginx.h */
@@ -306,8 +306,8 @@ te_errno
 tapi_cfg_nginx_http_us_server_del(const char *ta, const char *inst_name,
                                   const char *us_name, const char *srv_name)
 {
-    return cfg_del_instance_fmt(FALSE, TE_CFG_TA_NGINX_US_SRV_FMT,
-                TE_CFG_TA_NGINX_US_SRV_ARGS(ta, inst_name, us_name, srv_name));
+    return cfg_del_instance_fmt(false, TE_CFG_TA_NGINX_US_SRV_FMT,
+                                TE_CFG_TA_NGINX_US_SRV_ARGS(ta, inst_name, us_name, srv_name));
 }
 
 /* See description in tapi_cfg_nginx.h */
@@ -353,8 +353,8 @@ te_errno
 tapi_cfg_nginx_ssl_del(const char *ta, const char *inst_name,
                        const char *ssl_name)
 {
-    return cfg_del_instance_fmt(FALSE, TE_CFG_TA_NGINX_SSL_FMT,
-                TE_CFG_TA_NGINX_SSL_ARGS(ta, inst_name, ssl_name));
+    return cfg_del_instance_fmt(false, TE_CFG_TA_NGINX_SSL_FMT,
+                                TE_CFG_TA_NGINX_SSL_ARGS(ta, inst_name, ssl_name));
 }
 
 /*
@@ -388,7 +388,7 @@ NGINX_INST_PARAM_R(_subpath, _param, _arg_type, _cfg_type)              \
 NGINX_INST_PARAM_W(_subpath, _param, _arg_type, _cfg_type)
 
 #define NGINX_INST_PARAM_RW_BOOL(_subpath, _param) \
-NGINX_INST_PARAM_R(_subpath, _param, te_bool, INTEGER)                    \
+NGINX_INST_PARAM_R(_subpath, _param, bool, INTEGER)                       \
                                                                           \
 te_errno                                                                  \
 tapi_cfg_nginx_##_param##_enable(const char *ta, const char *inst_name)   \
@@ -503,7 +503,7 @@ NGINX_SRV_PARAM_R(_subpath, _param, _arg_type, _cfg_type) \
 NGINX_SRV_PARAM_W(_subpath, _param, _arg_type, _cfg_type)
 
 #define NGINX_SRV_PARAM_RW_BOOL(_subpath, _param) \
-NGINX_SRV_PARAM_R(_subpath, _param, te_bool, INTEGER)                       \
+NGINX_SRV_PARAM_R(_subpath, _param, bool, INTEGER)                          \
                                                                             \
 te_errno                                                                    \
 tapi_cfg_nginx_http_server_##_param##_enable(const char *ta,                \

@@ -148,12 +148,12 @@ tapi_rpc_namespace_get(rcf_rpc_server *rpcs, rpc_ptr ptr)
 }
 
 /* See description in tapi_rpc_internal.h */
-te_bool rpc_msghdr_msg_flags_init_check_enabled = TRUE;
+bool rpc_msghdr_msg_flags_init_check_enabled = true;
 
 /* See description in tapi_rpc_internal.h */
 te_errno
 msghdr_rpc2tarpc(const rpc_msghdr *rpc_msg, tarpc_msghdr *tarpc_msg,
-                 te_bool recv_call)
+                 bool recv_call)
 {
     int             i;
     tarpc_iovec    *iovec_arr;
@@ -420,7 +420,7 @@ msghdr_tarpc2rpc(const tarpc_msghdr *tarpc_msg, rpc_msghdr *rpc_msg)
 /* See description in tapi_rpc_internal.h */
 te_errno
 mmsghdrs_rpc2tarpc(const struct rpc_mmsghdr *rpc_mmsgs, unsigned int num,
-                   tarpc_mmsghdr **tarpc_mmsgs, te_bool recv_call)
+                   tarpc_mmsghdr **tarpc_mmsgs, bool recv_call)
 {
     unsigned int     i;
     te_errno         rc = 0;

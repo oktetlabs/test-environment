@@ -105,9 +105,9 @@ typedef struct te_socks_server {
     LIST_ENTRY(te_socks_server) list;  /**< Linked list of servers */
     char       *name;       /**< Instance name. */
 
-    te_bool     status;     /**< Daemon status. Possible values:
-                                 @c TRUE when running,
-                                 @c FALSE otherwise */
+    bool status;     /**< Daemon status. Possible values:
+                                 @c true when running,
+                                 @c false otherwise */
     char       *impl;       /**< Used daemon implementation. Currently
                                  supported: "srelay" */
     LIST_HEAD(, te_socks_cipher)    ciphers;    /**< Cipher suites used for
@@ -195,7 +195,7 @@ socks_server_create(const char *name)
     if (instance->name == NULL)
         goto error;
 
-    instance->status = FALSE;
+    instance->status = false;
     instance->impl = strdup(SOCKS_IMPLEMENTATION_SRELAY);
     if (instance->impl == NULL)
         goto error;
@@ -485,7 +485,7 @@ te_socks_cipher_free(te_socks_cipher *c)
 
 
 /** Check if currently selected implementation is srelay */
-static te_bool
+static bool
 socks_server_is_srelay(te_socks_server *instance)
 {
     return instance != NULL &&
@@ -544,7 +544,7 @@ socks_server_start(te_socks_server *instance)
 {
     te_errno    rc;
     te_string   cmd = TE_STRING_INIT;
-    te_bool     ip_at_least_one = FALSE;
+    bool ip_at_least_one = false;
     te_socks_interface *iface;
     te_socks_proto     *proto;
 
@@ -607,7 +607,7 @@ socks_server_start(te_socks_server *instance)
         if (rc != 0)
             goto cleanup;
 
-        ip_at_least_one = TRUE;
+        ip_at_least_one = true;
     }
 
     /* There should be at least one IP */
@@ -654,7 +654,7 @@ socks_server_start(te_socks_server *instance)
     }
 
     te_string_free(&cmd);
-    instance->status = TRUE;
+    instance->status = true;
 
     return 0;
 
@@ -663,7 +663,7 @@ cleanup:
     unlink(instance->config_path);
     unlink(instance->pid_path);
     te_string_free(&cmd);
-    instance->status = FALSE;
+    instance->status = false;
     return rc;
 }
 
@@ -733,7 +733,7 @@ socks_server_stop(te_socks_server *instance)
     unlink(instance->config_path);
     unlink(instance->user_pass_path);
 
-    instance->status = FALSE;
+    instance->status = false;
 
     return 0;
 }

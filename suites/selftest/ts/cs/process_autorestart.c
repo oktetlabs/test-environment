@@ -45,10 +45,10 @@ main(int argc, char *argv[])
     TEST_START;
 
     TEST_STEP("Create the processes with arguments and options");
-    CHECK_RC(tapi_cfg_ps_add(ta, date_ps, "date", FALSE));
+    CHECK_RC(tapi_cfg_ps_add(ta, date_ps, "date", false));
     CHECK_RC(tapi_cfg_ps_add_arg(ta, date_ps, 1, "+%T"));
 
-    CHECK_RC(tapi_cfg_ps_add(ta, ping_ps, "ping", FALSE));
+    CHECK_RC(tapi_cfg_ps_add(ta, ping_ps, "ping", false));
     CHECK_RC(tapi_cfg_ps_add_opt(ta, ping_ps, "w", "5"));
     CHECK_RC(tapi_cfg_ps_add_opt(ta, ping_ps, "i", "5"));
     CHECK_RC(tapi_cfg_ps_add_arg(ta, ping_ps, 1, "localhost"));

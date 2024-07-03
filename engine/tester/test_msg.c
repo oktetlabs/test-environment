@@ -45,7 +45,7 @@ struct tester_test_msg_listener {
     tester_test_results    *results;    /**< List with tests which
                                              are in progress to store
                                              data from received messages */
-    volatile te_bool        stop;       /**< Control to stop listener */
+    volatile bool stop;       /**< Control to stop listener */
 };
 
 
@@ -293,7 +293,7 @@ tester_test_msg_listener_stop(tester_test_msg_listener **ctx)
     assert(ctx != NULL);
     assert(*ctx != NULL);
 
-    (*ctx)->stop = TRUE;
+    (*ctx)->stop = true;
     ret = pthread_join((*ctx)->thread, NULL);
     if (ret != 0)
     {

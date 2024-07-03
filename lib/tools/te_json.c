@@ -228,7 +228,7 @@ te_json_add_key(te_json_ctx_t *ctx, const char *key)
 }
 
 void
-te_json_add_array_str(te_json_ctx_t *ctx, te_bool skip_null,
+te_json_add_array_str(te_json_ctx_t *ctx, bool skip_null,
                       size_t n_strs, const char *strs[n_strs])
 {
     size_t i;

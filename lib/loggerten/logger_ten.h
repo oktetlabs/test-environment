@@ -49,7 +49,7 @@ logger_server_name(void)
 #define LGR_SRV_NAME            (logger_server_name())
 
 /** Type of IPC used for Logger TEN API <-> Logger server */
-#define LOGGER_IPC              (FALSE) /* Connectionless IPC */
+#define LOGGER_IPC              (false) /* Connectionless IPC */
 
 
 /** Discover name of the Logger client for TA */
@@ -57,12 +57,12 @@ static inline const char *
 logger_ta_prefix(void)
 {
     static char    prefix[64];
-    static te_bool init = FALSE;
+    static bool init = false;
 
     if (!init)
     {
         snprintf(prefix, sizeof(prefix), "%s-ta-", LGR_SRV_NAME);
-        init = TRUE;
+        init = true;
     }
 
     return prefix;
@@ -76,12 +76,12 @@ static inline const char *
 logger_flush_name(void)
 {
     static char    name[64];
-    static te_bool init = FALSE;
+    static bool init = false;
 
     if (!init)
     {
         snprintf(name, sizeof(name), "%s-flush", LGR_SRV_NAME);
-        init = TRUE;
+        init = true;
     }
 
     return name;

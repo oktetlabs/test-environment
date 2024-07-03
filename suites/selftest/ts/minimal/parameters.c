@@ -35,8 +35,8 @@ main(int argc, char **argv)
     double dbl_param = 0.0;
     double unit_param = 0.0;
     uintmax_t bin_unit_param = 0;
-    te_bool true_param = FALSE;
-    te_bool false_param = TRUE;
+    bool true_param = false;
+    bool false_param = true;
     const char *opt_str_none_param = "";
     const char *opt_str_val_param = NULL;
     te_optional_uint_t opt_uint_none_param = TE_OPTIONAL_UINT_VAL(0);
@@ -116,10 +116,10 @@ main(int argc, char **argv)
 #undef CHECK_NUMERIC_PARAM
 
     if (!true_param)
-        TEST_VERDICT("'true_param' is FALSE");
+        TEST_VERDICT("'true_param' is false");
 
     if (false_param)
-        TEST_VERDICT("'false_param' is TRUE");
+        TEST_VERDICT("'false_param' is true");
 
     if (opt_str_none_param != NULL)
         TEST_VERDICT("'opt_str_none_param' is not null");

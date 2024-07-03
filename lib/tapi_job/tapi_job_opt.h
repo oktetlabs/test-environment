@@ -51,7 +51,7 @@ typedef struct tapi_job_opt_bind {
     /** Argument prefix */
     const char *prefix;
     /** Concatenate prefix with the argument */
-    te_bool concatenate_prefix;
+    bool concatenate_prefix;
     /** Argument suffix (always concatenated with the argument) */
     const char *suffix;
     /** Offset of a field */
@@ -69,7 +69,7 @@ typedef struct tapi_job_opt_array {
     /** The offset of the data field relative to the length */
     size_t array_offset;
     /** The data field contains a pointer to an array. */
-    te_bool is_ptr;
+    bool is_ptr;
     /** Size of an element in the array */
     size_t element_size;
     /** Separator between array elements */
@@ -92,7 +92,7 @@ typedef struct tapi_job_opt_struct {
 
 /** A convenience vector constructor to define option binds */
 #define TAPI_JOB_OPT_SET(...)                                              \
-    {__VA_ARGS__, {NULL, NULL, NULL, FALSE, 0, NULL}}
+    {__VA_ARGS__, {NULL, NULL, NULL, false, 0, NULL}}
 
 /**
  * Create a vector with command line arguments by processing option binds.
@@ -244,7 +244,7 @@ te_errno tapi_job_opt_create_double_t(const void *value, const void *priv,
 te_errno tapi_job_opt_create_string(const void *value, const void *priv,
                                     te_vec *args);
 
-/** value type: `te_bool` */
+/** value type: `bool` */
 te_errno tapi_job_opt_create_bool(const void *value, const void *priv,
                                   te_vec *args);
 
@@ -285,7 +285,7 @@ te_errno tapi_job_opt_create_sockaddr_subnet(const void *value,
 te_errno tapi_job_opt_create_enum(const void *value, const void *priv,
                                   te_vec *args);
 
-/** value type: te_bool */
+/** value type: @c bool */
 te_errno tapi_job_opt_create_enum_bool(const void *value, const void *priv,
                                        te_vec *args);
 
@@ -320,7 +320,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * Bind `tapi_job_opt_uint_t` argument.
  *
  * @param[in] _prefix         Argument prefix.
- * @param[in] _concat_prefix  Concatenate prefix with argument if @c TRUE.
+ * @param[in] _concat_prefix  Concatenate prefix with argument if @c true.
  * @param[in] _suffix         Argument suffix.
  * @param[in] _struct         Option struct.
  * @param[in] _field          Field name in option struct.
@@ -339,7 +339,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * format in command line.
  *
  * @param[in] _prefix         Argument prefix.
- * @param[in] _concat_prefix  Concatenate prefix with argument if @c TRUE.
+ * @param[in] _concat_prefix  Concatenate prefix with argument if @c true.
  * @param[in] _suffix         Argument suffix.
  * @param[in] _struct         Option struct.
  * @param[in] _field          Field name in option struct.
@@ -358,7 +358,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * format in command line.
  *
  * @param[in] _prefix         Argument prefix.
- * @param[in] _concat_prefix  Concatenate prefix with argument if @c TRUE.
+ * @param[in] _concat_prefix  Concatenate prefix with argument if @c true.
  * @param[in] _suffix         Argument suffix.
  * @param[in] _struct         Option struct.
  * @param[in] _field          Field name in option struct.
@@ -376,7 +376,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * Bind `tapi_job_opt_uintmax_t` argument.
  *
  * @param[in] _prefix         Argument prefix.
- * @param[in] _concat_prefix  Concatenate prefix with argument if @c TRUE.
+ * @param[in] _concat_prefix  Concatenate prefix with argument if @c true.
  * @param[in] _suffix         Argument suffix.
  * @param[in] _struct         Option struct.
  * @param[in] _field          Field name in option struct.
@@ -394,7 +394,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * Bind `unsigned int` argument.
  *
  * @param[in]     _prefix           Argument prefix.
- * @param[in]     _concat_prefix    Concatenate prefix with argument if @c TRUE
+ * @param[in]     _concat_prefix    Concatenate prefix with argument if @c true
  * @param[in]     _suffix           Argument suffix.
  * @param[in]     _struct           Option struct.
  * @param[in]     _field            Field name of the uint in option struct.
@@ -417,7 +417,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  *       TAPI_JOB_OPT_UINT_T() instead.
  *
  * @param[in]     _prefix           Argument prefix.
- * @param[in]     _concat_prefix    Concatenate prefix with argument if @c TRUE
+ * @param[in]     _concat_prefix    Concatenate prefix with argument if @c true
  * @param[in]     _suffix           Argument suffix.
  * @param[in]     _struct           Option struct.
  * @param[in]     _field            Field name of the uint in option struct.
@@ -435,7 +435,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * Bind `tapi_job_opt_double_t` argument.
  *
  * @param[in] _prefix         Argument prefix.
- * @param[in] _concat_prefix  Concatenate prefix with argument if @c TRUE.
+ * @param[in] _concat_prefix  Concatenate prefix with argument if @c true.
  * @param[in] _suffix         Argument suffix.
  * @param[in] _struct         Option struct.
  * @param[in] _field          Field name in option struct.
@@ -453,17 +453,17 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
 #define TAPI_JOB_OPT_OMIT_UINT 0xdeadbeef
 
 /** Value type used in TAPI_JOB_OPT_BOOL(). */
-#define TAPI_JOB_OPT_BOOL_TYPE te_bool
+#define TAPI_JOB_OPT_BOOL_TYPE bool
 
 /**
- * Bind `te_bool` argument.
+ * Bind `bool` argument.
  *
  * @param[in]     _prefix   Argument prefix.
  * @param[in]     _struct   Option struct.
  * @param[in]     _field    Field name of the bool in option struct.
  */
 #define TAPI_JOB_OPT_BOOL(_prefix, _struct, _field) \
-    { tapi_job_opt_create_bool, _prefix, FALSE, NULL,                \
+    { tapi_job_opt_create_bool, _prefix, false, NULL,                \
       TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field,                \
                                      TAPI_JOB_OPT_BOOL_TYPE), NULL }
 
@@ -474,7 +474,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * Bind `char *` argument.
  *
  * @param[in]     _prefix           Argument prefix.
- * @param[in]     _concat_prefix    Concatenate prefix with argument if @c TRUE
+ * @param[in]     _concat_prefix    Concatenate prefix with argument if @c true
  * @param[in]     _struct           Option struct.
  * @param[in]     _field            Field name of the string in option struct.
  */
@@ -497,7 +497,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  */
 #define TAPI_JOB_OPT_QUOTED_STRING(prefix_, quotation_mark_, struct_, field_) \
     { tapi_job_opt_create_string,                                             \
-      prefix_ quotation_mark_, TRUE, quotation_mark_,                         \
+      prefix_ quotation_mark_, true, quotation_mark_,                         \
       TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(struct_, field_,                         \
                                      TAPI_JOB_OPT_QUOTED_STRING_TYPE), NULL }
 
@@ -519,7 +519,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * This field can be processed as follows:
  * @code
  *     TAPI_JOB_OPT_ARRAY_PTR(binds, argc, argv,
- *         TAPI_JOB_OPT_CONTENT(TAPI_JOB_OPT_STRING(NULL, FALSE))
+ *         TAPI_JOB_OPT_CONTENT(TAPI_JOB_OPT_STRING(NULL, false))
  * @endcode
  *
  * @note New formatting macros shall define a `*_TYPE` macro for this adaptor to
@@ -578,8 +578,8 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  */
 #define TAPI_JOB_OPT_ARRAY(_struct, _lenfield, _arrfield, ...) \
     TAPI_JOB_OPT_ARRAY_GEN(tapi_job_opt_create_array,                         \
-                           NULL, FALSE, NULL, NULL,                           \
-                           _struct, _lenfield, _arrfield, FALSE, __VA_ARGS__)
+                           NULL, false, NULL, NULL,                           \
+                           _struct, _lenfield, _arrfield, false, __VA_ARGS__)
 
 
 /**
@@ -591,7 +591,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  *
  * @param[in]     _prefix           Argument prefix.
  * @param[in]     _concat_prefix    Concatenate the prefix with an argument
- *                                  if @c TRUE.
+ *                                  if @c true.
  * @param[in]     _sep              Array element separator.
  * @param[in]     _suffix           Argument suffix.
  * @param[in]     _struct           Option struct.
@@ -616,7 +616,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
                                  _struct, _lenfield, _arrfield, ...)          \
     TAPI_JOB_OPT_ARRAY_GEN(tapi_job_opt_create_embed_array,                   \
                            _prefix, _concat_prefix, _sep, _suffix,            \
-                           _struct, _lenfield, _arrfield, FALSE, __VA_ARGS__)
+                           _struct, _lenfield, _arrfield, false, __VA_ARGS__)
 
 /**
  * Bind tapi_job_opt_array argument with pointer to array.
@@ -637,8 +637,8 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  */
 #define TAPI_JOB_OPT_ARRAY_PTR(struct_, lenfield_, arrfield_, ...) \
     TAPI_JOB_OPT_ARRAY_GEN(tapi_job_opt_create_array,                        \
-                           NULL, FALSE, NULL, NULL,                          \
-                           struct_, lenfield_, arrfield_, TRUE, __VA_ARGS__)
+                           NULL, false, NULL, NULL,                          \
+                           struct_, lenfield_, arrfield_, true, __VA_ARGS__)
 
 /**
  * Bind tapi_job_opt_array argument with pointer to array.
@@ -649,7 +649,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  *
  * @param[in] prefix_           Argument prefix.
  * @param[in] concat_prefix_    Concatenate the prefix with an argument
- *                              if @c TRUE.
+ *                              if @c true.
  * @param[in] sep_              Array element separator.
  * @param[in] suffix_           Argument suffix.
  * @param[in] struct_           Option struct.
@@ -672,7 +672,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
                                      struct_, lenfield_, arrfield_, ...)     \
     TAPI_JOB_OPT_ARRAY_GEN(tapi_job_opt_create_embed_array,                  \
                            prefix_, concat_prefix_, sep_, suffix_,           \
-                           struct_, lenfield_, arrfield_, TRUE, __VA_ARGS__)
+                           struct_, lenfield_, arrfield_, true, __VA_ARGS__)
 
 /**
  * Bind `tapi_job_opt_struct` argument.
@@ -684,7 +684,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  *
  * @param[in]     _prefix           Argument prefix.
  * @param[in]     _concat_prefix    Concatenate the prefix with an argument
- *                                  if @c TRUE.
+ *                                  if @c true.
  * @param[in]     _sep              Array element separator.
  * @param[in]     _suffix           Argument suffix.
  * @param         ...               Bindings for elements
@@ -707,7 +707,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * @param[in]     _prefix           Option name.
  */
 #define TAPI_JOB_OPT_DUMMY(_prefix) \
-    { tapi_job_opt_create_dummy, _prefix, FALSE, NULL, 0, NULL }
+    { tapi_job_opt_create_dummy, _prefix, false, NULL, 0, NULL }
 
 /** Value type used in TAPI_JOB_OPT_SOCKADDR_PTR(). */
 #define TAPI_JOB_OPT_SOCKADDR_PTR_TYPE struct sockaddr *
@@ -717,7 +717,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * The argument won't be included to command line if the field is @c NULL.
  *
  * @param[in]     _prefix           Argument prefix.
- * @param[in]     _concat_prefix    Concatenate prefix with argument if @c TRUE
+ * @param[in]     _concat_prefix    Concatenate prefix with argument if @c true
  * @param[in]     _struct           Option struct.
  * @param[in]     _field            Field name of the string in option struct.
  */
@@ -734,7 +734,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * The argument won't be included in command line if the field is @c NULL.
  *
  * @param[in]   _prefix         Argument prefix.
- * @param[in]   _concat_prefix  Concatenate prefix with argument if @c TRUE.
+ * @param[in]   _concat_prefix  Concatenate prefix with argument if @c true.
  * @param[in]   _struct         Option struct.
  * @param[in]   _field          Field name of the address in option struct.
  */
@@ -751,7 +751,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * The argument won't be included in command line if the field is @c NULL.
  *
  * @param[in]   _prefix         Argument prefix.
- * @param[in]   _concat_prefix  Concatenate prefix with argument if @c TRUE.
+ * @param[in]   _concat_prefix  Concatenate prefix with argument if @c true.
  * @param[in]   _struct         Option struct.
  * @param[in]   _field          Field name of the address in option struct.
  */
@@ -773,7 +773,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * @note The argument won't be included in command line if the field is @c NULL.
  *
  * @param[in] prefix_           Argument prefix.
- * @param[in] concat_prefix_    Concatenate prefix with argument if @c TRUE.
+ * @param[in] concat_prefix_    Concatenate prefix with argument if @c true.
  * @param[in] struct_           Option struct.
  * @param[in] field_            Field name of the subnet in option struct.
  */
@@ -790,7 +790,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  * to strings.
  *
  * @param[in]   _prefix         Argument prefix.
- * @param[in]   _concat_prefix  Concatenate prefix with argument if @c TRUE.
+ * @param[in]   _concat_prefix  Concatenate prefix with argument if @c true.
  * @param[in]   _struct         Option struct.
  * @param[in]   _field          Field name of the enumeration in option struct.
  *                              The field must have the same size as int.
@@ -811,7 +811,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  *       the parameterless option depending on the booleanb value.
  *
  * @param[in]   _prefix         Argument prefix.
- * @param[in]   _concat_prefix  Concatenate prefix with argument if @c TRUE.
+ * @param[in]   _concat_prefix  Concatenate prefix with argument if @c true.
  * @param[in]   _struct         Option struct.
  * @param[in]   _field          Field name of the boolean in option struct.
  *                              The field must have the same size as int.
@@ -820,19 +820,19 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
  *                              There is a compile-check for that constraint.
  * @param[in]   _map            Enumeration mapping (te_enum_map array).
  *                              The map shall contain two elements for
- *                              `TRUE` and `FALSE`
+ *                              `true` and `false`
  *
  */
 #define TAPI_JOB_OPT_ENUM_BOOL(_prefix, _concat_prefix, _struct, _field, _map) \
     { tapi_job_opt_create_enum_bool, _prefix, _concat_prefix, NULL,            \
-      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field, te_bool), (_map) }
+      TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(_struct, _field, bool), (_map) }
 
 /**
  * Bind a ternary boolean argument using a custom mapping @p _map from values
  * to strings.
  *
  * @param[in]   _prefix         Argument prefix.
- * @param[in]   _concat_prefix  Concatenate prefix with argument if @c TRUE.
+ * @param[in]   _concat_prefix  Concatenate prefix with argument if @c true.
  * @param[in]   _struct         Option struct.
  * @param[in]   _field          Field name of the boolean in option struct.
  *                              The field must have the same size as int.

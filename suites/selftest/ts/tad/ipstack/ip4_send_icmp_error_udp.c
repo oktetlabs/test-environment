@@ -185,7 +185,7 @@ main(int argc, char *argv[])
      * port to which UDP socket is bound
      */
     CHECK_RC(tapi_udp_add_pdu(&template, NULL,
-                              FALSE,
+                              false,
                               CONST_SIN(sock_addr)->sin_port,
                               CONST_SIN(csap_addr)->sin_port));
     /*
@@ -193,7 +193,7 @@ main(int argc, char *argv[])
      * being IP to which UDP socket is bound
      */
     CHECK_RC(tapi_ip4_add_pdu(&template, NULL,
-                              FALSE,
+                              false,
                               SIN(sock_addr)->sin_addr.s_addr,
                               SIN(csap_addr)->sin_addr.s_addr,
                               IPPROTO_UDP,
@@ -201,10 +201,10 @@ main(int argc, char *argv[])
                               -1));
     /* Fill ICMP error message's type and code fields */
     CHECK_RC(tapi_icmp4_add_pdu(&template, NULL,
-                                FALSE, type, code));
+                                false, type, code));
     /* Prepare ICMP error message's IP header */
     CHECK_RC(tapi_ip4_add_pdu(&template, NULL,
-                              FALSE,
+                              false,
                               SIN(csap_addr)->sin_addr.s_addr,
                               SIN(sock_addr)->sin_addr.s_addr,
                               IPPROTO_ICMP,
@@ -212,7 +212,7 @@ main(int argc, char *argv[])
                               -1));
     /* Prepare ICMP error message's ETH header */
     CHECK_RC(tapi_eth_add_pdu(&template, NULL,
-                              FALSE,
+                              false,
                               (const uint8_t *)sock_hwaddr->sa_data,
                               (const uint8_t *)csap_hwaddr->sa_data,
                               &ip_eth,

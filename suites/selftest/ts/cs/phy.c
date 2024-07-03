@@ -66,8 +66,8 @@ main(int argc, char *argv[])
     int      tmp_speed = -1;
     int      speed_adver = -1;
     int      duplex_adver = -1;
-    te_bool  mode = FALSE;
-    te_bool  tmp_mode = FALSE;
+    bool mode = false;
+    bool tmp_mode = false;
 
     TEST_START;
 

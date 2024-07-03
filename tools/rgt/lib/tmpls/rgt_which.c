@@ -17,7 +17,7 @@
 #include "te_defs.h"
 #include "rgt_which.h"
 
-static te_bool
+static bool
 file_in_directory_is_exe(const char *file_name, const char *directory,
                          size_t directory_length)
 {
@@ -33,12 +33,12 @@ file_in_directory_is_exe(const char *file_name, const char *directory,
     }
 
     if (n < 0 || (size_t)n >= sizeof(path))
-        return FALSE;
+        return false;
 
     if (access(path, X_OK) < 0)
-        return FALSE;
+        return false;
 
-    return TRUE;
+    return true;
 }
 
 static te_errno

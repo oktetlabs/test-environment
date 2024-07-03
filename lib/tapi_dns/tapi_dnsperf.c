@@ -46,30 +46,30 @@ static const te_enum_map tapi_dnsperf_transport_mode_mapping[] = {
 
 /* Possible dnsperf command line arguments */
 static const tapi_job_opt_bind dnsperf_binds[] = TAPI_JOB_OPT_SET(
-    TAPI_JOB_OPT_STRING("-a", FALSE, tapi_dnsperf_opt, local_addr),
-    TAPI_JOB_OPT_UINT_T("-b", FALSE, NULL, tapi_dnsperf_opt, bufsize),
-    TAPI_JOB_OPT_UINT_T("-c", FALSE, NULL, tapi_dnsperf_opt, clients),
-    TAPI_JOB_OPT_STRING("-d", FALSE, tapi_dnsperf_opt, datafile),
+    TAPI_JOB_OPT_STRING("-a", false, tapi_dnsperf_opt, local_addr),
+    TAPI_JOB_OPT_UINT_T("-b", false, NULL, tapi_dnsperf_opt, bufsize),
+    TAPI_JOB_OPT_UINT_T("-c", false, NULL, tapi_dnsperf_opt, clients),
+    TAPI_JOB_OPT_STRING("-d", false, tapi_dnsperf_opt, datafile),
     TAPI_JOB_OPT_BOOL("-D", tapi_dnsperf_opt, enable_dnssec_ok),
     TAPI_JOB_OPT_BOOL("-e", tapi_dnsperf_opt, enable_edns0),
-    TAPI_JOB_OPT_STRING("-E", FALSE, tapi_dnsperf_opt, edns_opt),
-    TAPI_JOB_OPT_ENUM("-f", FALSE, tapi_dnsperf_opt, addr_family,
+    TAPI_JOB_OPT_STRING("-E", false, tapi_dnsperf_opt, edns_opt),
+    TAPI_JOB_OPT_ENUM("-f", false, tapi_dnsperf_opt, addr_family,
                       tapi_dnsperf_addr_family_mapping),
-    TAPI_JOB_OPT_UINT_T("-l", FALSE, NULL, tapi_dnsperf_opt, limit),
-    TAPI_JOB_OPT_UINT_T("-n", FALSE, NULL, tapi_dnsperf_opt, runs_through_file),
-    TAPI_JOB_OPT_UINT_T("-p", FALSE, NULL, tapi_dnsperf_opt, port),
-    TAPI_JOB_OPT_UINT_T("-q", FALSE, NULL, tapi_dnsperf_opt, num_queries),
-    TAPI_JOB_OPT_UINT_T("-Q", FALSE, NULL, tapi_dnsperf_opt, max_qps),
-    TAPI_JOB_OPT_ENUM("-m", FALSE, tapi_dnsperf_opt, transport_mode,
+    TAPI_JOB_OPT_UINT_T("-l", false, NULL, tapi_dnsperf_opt, limit),
+    TAPI_JOB_OPT_UINT_T("-n", false, NULL, tapi_dnsperf_opt, runs_through_file),
+    TAPI_JOB_OPT_UINT_T("-p", false, NULL, tapi_dnsperf_opt, port),
+    TAPI_JOB_OPT_UINT_T("-q", false, NULL, tapi_dnsperf_opt, num_queries),
+    TAPI_JOB_OPT_UINT_T("-Q", false, NULL, tapi_dnsperf_opt, max_qps),
+    TAPI_JOB_OPT_ENUM("-m", false, tapi_dnsperf_opt, transport_mode,
                       tapi_dnsperf_transport_mode_mapping),
-    TAPI_JOB_OPT_STRING("-O", FALSE, tapi_dnsperf_opt, ext_opt),
-    TAPI_JOB_OPT_STRING("-s", FALSE, tapi_dnsperf_opt, server),
-    TAPI_JOB_OPT_UINT_T("-S", FALSE, NULL, tapi_dnsperf_opt, stats_interval),
-    TAPI_JOB_OPT_UINT_T("-t", FALSE, NULL, tapi_dnsperf_opt, timeout),
-    TAPI_JOB_OPT_UINT_T("-T", FALSE, NULL, tapi_dnsperf_opt, threads),
+    TAPI_JOB_OPT_STRING("-O", false, tapi_dnsperf_opt, ext_opt),
+    TAPI_JOB_OPT_STRING("-s", false, tapi_dnsperf_opt, server),
+    TAPI_JOB_OPT_UINT_T("-S", false, NULL, tapi_dnsperf_opt, stats_interval),
+    TAPI_JOB_OPT_UINT_T("-t", false, NULL, tapi_dnsperf_opt, timeout),
+    TAPI_JOB_OPT_UINT_T("-T", false, NULL, tapi_dnsperf_opt, threads),
     TAPI_JOB_OPT_BOOL("-v", tapi_dnsperf_opt, verbose),
     TAPI_JOB_OPT_BOOL("-W", tapi_dnsperf_opt, stdout_only),
-    TAPI_JOB_OPT_UINT_T("-x", FALSE, NULL, tapi_dnsperf_opt, local_port)
+    TAPI_JOB_OPT_UINT_T("-x", false, NULL, tapi_dnsperf_opt, local_port)
 );
 
 /** Type of DNS resource records. */
@@ -90,8 +90,8 @@ const tapi_dnsperf_opt tapi_dnsperf_default_opt = {
     .bufsize            = TAPI_JOB_OPT_UINT_UNDEF,
     .clients            = TAPI_JOB_OPT_UINT_UNDEF,
     .datafile           = NULL,
-    .enable_dnssec_ok   = FALSE,
-    .enable_edns0       = FALSE,
+    .enable_dnssec_ok   = false,
+    .enable_edns0       = false,
     .edns_opt           = NULL,
     .addr_family        = TAPI_DNSPERF_ADDR_FAMILY_UNDEF,
     .limit              = TAPI_JOB_OPT_UINT_UNDEF,
@@ -105,8 +105,8 @@ const tapi_dnsperf_opt tapi_dnsperf_default_opt = {
     .stats_interval     = TAPI_JOB_OPT_UINT_UNDEF,
     .timeout            = TAPI_JOB_OPT_UINT_UNDEF,
     .threads            = TAPI_JOB_OPT_UINT_UNDEF,
-    .verbose            = FALSE,
-    .stdout_only        = FALSE,
+    .verbose            = false,
+    .stdout_only        = false,
     .local_port         = TAPI_JOB_OPT_UINT_UNDEF,
     .queries            = TE_VEC_INIT(tapi_dnsperf_query),
     .dnsperf_path       = NULL,
@@ -264,77 +264,77 @@ tapi_dnsperf_create(tapi_job_factory_t *factory,
                         .stderr_loc = &new_app->out_chs[1],
                         .filters    = TAPI_JOB_SIMPLE_FILTERS(
                             {
-                                .use_stdout = TRUE,
-                                .readable = TRUE,
+                                .use_stdout = true,
+                                .readable = true,
                                 .re = "Queries sent:\\s*([0-9.]+).*",
                                 .extract = 1,
                                 .filter_var = &new_app->flt_queries_sent,
                             },
                             {
-                                .use_stdout = TRUE,
-                                .readable = TRUE,
+                                .use_stdout = true,
+                                .readable = true,
                                 .re = "Queries completed:\\s*([0-9.]+).*",
                                 .extract = 1,
                                 .filter_var = &new_app->flt_queries_completed,
                             },
                             {
-                                .use_stdout = TRUE,
-                                .readable = TRUE,
+                                .use_stdout = true,
+                                .readable = true,
                                 .re = "Queries lost:\\s*([0-9.]+).*",
                                 .extract = 1,
                                 .filter_var = &new_app->flt_queries_lost,
                             },
                             {
-                                .use_stdout = TRUE,
-                                .readable = TRUE,
+                                .use_stdout = true,
+                                .readable = true,
                                 .re = "Response codes:\\s*NOERROR\\s*([0-9.]+)\\s*\\(([0-9.]+)%\\).*",
                                 .extract = 1,
                                 .filter_var = &new_app->flt_resp_noerror,
                             },
                             {
-                                .use_stdout = TRUE,
-                                .readable = TRUE,
+                                .use_stdout = true,
+                                .readable = true,
                                 .re = "Response codes:\\s*NOERROR\\s*([0-9.]+)\\s*\\(([0-9.]+)%\\).*",
                                 .extract = 2,
                                 .filter_var = &new_app->flt_resp_noerror_percent,
                             },
                             {
-                                .use_stdout = TRUE,
-                                .readable = TRUE,
+                                .use_stdout = true,
+                                .readable = true,
                                 .re = "Average packet size:\\s*request\\s*([0-9.]+),\\s*response\\s*([0-9.]+)",
                                 .extract = 1,
                                 .filter_var = &new_app->flt_avg_request_size,
                             },
                             {
-                                .use_stdout = TRUE,
-                                .readable = TRUE,
+                                .use_stdout = true,
+                                .readable = true,
                                 .re = "Average packet size:\\s*request\\s*([0-9.]+),\\s*response\\s*([0-9.]+)",
                                 .extract = 2,
                                 .filter_var = &new_app->flt_avg_response_size,
                             },
                             {
-                                .use_stdout = TRUE,
-                                .readable = TRUE,
+                                .use_stdout = true,
+                                .readable = true,
                                 .re = "Run time \\(s\\):\\s*([0-9.]+)",
                                 .extract = 1,
                                 .filter_var = &new_app->flt_run_time,
                             },
                             {
-                                .use_stdout = TRUE,
-                                .readable = TRUE,
+                                .use_stdout = true,
+                                .readable = true,
                                 .re = "Queries per second:\\s*([0-9.]+)",
                                 .extract = 1,
                                 .filter_var = &new_app->flt_rps,
                             },
                             {
-                                .use_stdout  = TRUE,
-                                .readable    = TRUE,
+                                .use_stdout  = true,
+                                .readable    = true,
                                 .log_level   = TE_LL_RING,
                                 .filter_name = "dnsperf stdout"
                             },
                             {
-                                .use_stderr  = TRUE,
-                                .readable    = FALSE,
+                                .use_stderr  = true,
+                                .readable    = false,
                                 .log_level   = TE_LL_WARN,
                                 .filter_name = "dnsperf stderr"
                             }
@@ -482,7 +482,7 @@ tapi_dnsperf_get_report(tapi_dnsperf_app *app, tapi_dnsperf_report *report)
             ERROR("Failed to read data from filter '%s' (%r)", #val_, rc);  \
             return rc;                                                      \
         }                                                                   \
-        if (optional_ == TRUE && buf.data.len == 0)                         \
+        if (optional_ == true && buf.data.len == 0)                         \
         {                                                                   \
             RING("%s(): no results found for the filter: flt_%s",           \
                  __func__, #val_);                                          \
@@ -505,15 +505,15 @@ tapi_dnsperf_get_report(tapi_dnsperf_app *app, tapi_dnsperf_report *report)
         }                                                                   \
     } while(0)
 
-    TAPI_DNS_PERF_READ_ONE_FILTER(queries_sent, FALSE, FALSE);
-    TAPI_DNS_PERF_READ_ONE_FILTER(queries_completed, FALSE, FALSE);
-    TAPI_DNS_PERF_READ_ONE_FILTER(queries_lost, FALSE, FALSE);
-    TAPI_DNS_PERF_READ_ONE_FILTER(resp_noerror, FALSE, TRUE);
-    TAPI_DNS_PERF_READ_ONE_FILTER(resp_noerror_percent, TRUE, TRUE);
-    TAPI_DNS_PERF_READ_ONE_FILTER(avg_request_size, TRUE, FALSE);
-    TAPI_DNS_PERF_READ_ONE_FILTER(avg_response_size, TRUE, FALSE);
-    TAPI_DNS_PERF_READ_ONE_FILTER(run_time, TRUE, FALSE);
-    TAPI_DNS_PERF_READ_ONE_FILTER(rps, TRUE, FALSE);
+    TAPI_DNS_PERF_READ_ONE_FILTER(queries_sent, false, false);
+    TAPI_DNS_PERF_READ_ONE_FILTER(queries_completed, false, false);
+    TAPI_DNS_PERF_READ_ONE_FILTER(queries_lost, false, false);
+    TAPI_DNS_PERF_READ_ONE_FILTER(resp_noerror, false, true);
+    TAPI_DNS_PERF_READ_ONE_FILTER(resp_noerror_percent, true, true);
+    TAPI_DNS_PERF_READ_ONE_FILTER(avg_request_size, true, false);
+    TAPI_DNS_PERF_READ_ONE_FILTER(avg_response_size, true, false);
+    TAPI_DNS_PERF_READ_ONE_FILTER(run_time, true, false);
+    TAPI_DNS_PERF_READ_ONE_FILTER(rps, true, false);
 
     tapi_dnsperf_args2str(&app->cmd, &report->cmd);
 

@@ -87,7 +87,7 @@ tad_send_preprocess_pdus(csap_p csap, const asn_value *tmpl_unit,
     }
 
     /* FIXME: Remove type cast */
-    rc = tad_confirm_pdus(csap, FALSE, (asn_value *)nds_pdus,
+    rc = tad_confirm_pdus(csap, false, (asn_value *)nds_pdus,
                           data->layer_opaque);
     if (rc != 0)
     {
@@ -479,7 +479,7 @@ tad_send_release(csap_p csap, tad_send_context *context)
 
 /* See description in tad_api.h */
 te_errno
-tad_send_start_prepare(csap_p csap, const char *tmpl_str, te_bool postponed,
+tad_send_start_prepare(csap_p csap, const char *tmpl_str, bool postponed,
                        const tad_reply_context *reply_ctx)
 {
     te_errno       rc;
@@ -1045,19 +1045,19 @@ tad_send_prepare_bin(csap_p csap, asn_value *nds,
                 free(data);
                 return TE_RC(TE_TAD_CH, rc);
             }
-            rc = tad_pkts_add_new_seg(pdus, TRUE, data, d_len,
+            rc = tad_pkts_add_new_seg(pdus, true, data, d_len,
                                       tad_pkt_seg_data_free);
             break;
         }
         case TAD_PLD_BYTES:
-            rc = tad_pkts_add_new_seg(pdus, TRUE,
+            rc = tad_pkts_add_new_seg(pdus, true,
                                       pld_data->plain.data,
                                       pld_data->plain.length,
                                       NULL);
             break;
 
         case TAD_PLD_LENGTH:
-            rc = tad_pkts_add_new_seg(pdus, TRUE, NULL,
+            rc = tad_pkts_add_new_seg(pdus, true, NULL,
                                       pld_data->plain.length, NULL);
             if (rc != 0)
                 break;
@@ -1097,7 +1097,7 @@ tad_send_prepare_bin(csap_p csap, asn_value *nds,
                 break;
             offset = ntohl(offset);
 
-            rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, length, NULL);
+            rc = tad_pkts_add_new_seg(pdus, true, NULL, length, NULL);
             if (rc != 0)
             {
                 ERROR(CSAP_LOG_FMT "Failed to add a new segment with "
@@ -1189,7 +1189,7 @@ tad_iterate_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
                       tad_tmpl_arg_t *arg_iterated)
 {
     int     dep = arg_specs_num - 1;
-    te_bool performed = FALSE;
+    bool performed = false;
 
     tad_tmpl_iter_spec_t *arg_spec_p;
 
@@ -1210,7 +1210,7 @@ tad_iterate_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
                 {
                     arg_iterated[dep].arg_int +=
                         arg_spec_p->simple_for.step;
-                    performed = TRUE;
+                    performed = true;
                 }
                 else
                 {
@@ -1231,7 +1231,7 @@ tad_iterate_tmpl_args(tad_tmpl_iter_spec_t *arg_specs,
                     if ((size_t)new_index == arg_spec_p->int_seq.length)
                         new_index = 0;
                     else if (arg_spec_p->type == TAD_TMPL_ITER_INT_SEQ)
-                        performed = TRUE;
+                        performed = true;
 
                     arg_iterated[dep].arg_int =
                         arg_spec_p->int_seq.ints[new_index];

@@ -428,9 +428,9 @@ rpc_transport_read_set_add(rpc_transport_handle handle)
  *
  * @param timeout       timeout in seconds
  *
- * @return TRUE is the read event is received or FALSE otherwise
+ * @return @c true is the read event is received or @c false otherwise
  */
-te_bool
+bool
 rpc_transport_read_set_wait(int timeout)
 {
     struct timeval tv;
@@ -441,10 +441,10 @@ rpc_transport_read_set_wait(int timeout)
     if (select(FD_SETSIZE, &rset, NULL, NULL, &tv) < 0)
     {
         if (errno != EINTR)
-            return FALSE;
+            return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 /**
@@ -452,9 +452,9 @@ rpc_transport_read_set_wait(int timeout)
  *
  * @param handle        connection handle
  *
- * @return TRUE is data are pending or FALSE otherwise
+ * @return @c true is data are pending or @c false otherwise
  */
-te_bool
+bool
 rpc_transport_is_readable(rpc_transport_handle handle)
 {
     return FD_ISSET((int)handle, &rset);

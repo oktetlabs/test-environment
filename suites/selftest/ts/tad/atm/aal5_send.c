@@ -82,8 +82,8 @@ main(int argc, char *argv[])
     ndn_atm_type            type = NDN_ATM_UNI; /* PARAM */
     uint16_t                vpi;
     uint16_t                vci;
-    te_bool                 congestion;
-    te_bool                 clp;
+    bool congestion;
+    bool clp;
     uint8_t                 gfc;
     uint8_t                 cpcs_uu;
     uint8_t                 cpi;
@@ -138,8 +138,8 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_tad_csap_create(iut_host->ta, 0, "aal5.atm.socket",
                                   csap_spec, &csap));
 
-    CHECK_RC(tapi_atm_aal5_add_pdu(&tmpl, FALSE, NULL, NULL));
-    CHECK_RC(tapi_atm_add_pdu(&tmpl, FALSE, &gfc, NULL, NULL, NULL, NULL));
+    CHECK_RC(tapi_atm_aal5_add_pdu(&tmpl, false, NULL, NULL));
+    CHECK_RC(tapi_atm_add_pdu(&tmpl, false, &gfc, NULL, NULL, NULL, NULL));
     CHECK_RC(asn_write_value_field(tmpl, payload, payload_len,
                                    "payload.#bytes"));
     CHECK_RC(tapi_tad_trsend_start(iut_host->ta, 0, csap, tmpl,

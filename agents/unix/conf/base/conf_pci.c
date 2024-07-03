@@ -301,7 +301,7 @@ read_pci_int_attr(const char *name, const char *attr, int *result)
     return 0;
 }
 
-static te_bool
+static bool
 populate_pci_device(pci_device *dst, const char *name)
 {
     int rc;
@@ -310,28 +310,28 @@ populate_pci_device(pci_device *dst, const char *name)
     if (rc != 0)
     {
         ERROR("Error parsing PCI device name '%s', rc = %d", name, rc);
-        return FALSE;
+        return false;
     }
 
     dst->vendor_id = read_pci_hex_attr(name, "vendor");
     if (dst->vendor_id == 0)
     {
         ERROR("Unknown vendor ID for '%s'", name);
-        return FALSE;
+        return false;
     }
 
     dst->device_id = read_pci_hex_attr(name, "device");
     if (dst->device_id == 0)
     {
         ERROR("Unknown device ID for '%s'", name);
-        return FALSE;
+        return false;
     }
 
     dst->subsystem_vendor = read_pci_hex_attr(name, "subsystem_vendor");
     dst->subsystem_device = read_pci_hex_attr(name, "subsystem_device");
     dst->device_class = read_pci_hex_attr(name, "class");
 
-    return TRUE;
+    return true;
 }
 
 static pci_device *
@@ -689,44 +689,44 @@ format_device_address(te_string *dest, const pci_address *dev)
                             dev->domain, dev->bus, dev->slot, dev->fn);
 }
 
-static te_bool
+static bool
 is_device_accessible(const pci_device *dev)
 {
     return global_pci_lock > 0 || dev->lock > 0;
 }
 
-static te_bool
+static bool
 is_vendor_device_accessible(const pci_vendor_device *devid)
 {
     pci_device *dev;
 
     if (global_pci_lock > 0 || devid->lock > 0)
-        return TRUE;
+        return true;
 
     TAILQ_FOREACH(dev, &devid->devices, next)
     {
         if (is_device_accessible(dev))
-            return TRUE;
+            return true;
     }
 
-    return FALSE;
+    return false;
 }
 
-static te_bool
+static bool
 is_vendor_accessible(const pci_vendor *vendor)
 {
     pci_vendor_device *vd;
 
     if (global_pci_lock > 0 || vendor->lock > 0)
-        return TRUE;
+        return true;
 
     LIST_FOREACH(vd, &vendor->vendor_devices, next)
     {
         if (is_vendor_device_accessible(vd))
-            return TRUE;
+            return true;
     }
 
-    return FALSE;
+    return false;
 }
 
 
@@ -738,7 +738,7 @@ pci_device_list(unsigned int gid, const char *oid,
     const pci_device *iter = all_devices;
     te_string result = TE_STRING_INIT;
     te_errno rc;
-    te_bool first = TRUE;
+    bool first = true;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -756,7 +756,7 @@ pci_device_list(unsigned int gid, const char *oid,
                 te_string_free(&result);
                 return rc;
             }
-            first = FALSE;
+            first = false;
         }
     }
     *list = result.ptr;
@@ -844,7 +844,7 @@ pci_device_instance_list(unsigned int gid, const char *oid,
     pci_vendor *vendor;
     pci_vendor_device *vd;
     pci_device *dev;
-    te_bool first = TRUE;
+    bool first = true;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -868,7 +868,7 @@ pci_device_instance_list(unsigned int gid, const char *oid,
         if (is_device_accessible(dev))
         {
             te_string_append(&result, "%s%u", first ? "" : " ", dev->devno);
-            first = FALSE;
+            first = false;
         }
     }
 
@@ -886,7 +886,7 @@ pci_vendor_device_list(unsigned int gid, const char *oid,
     unsigned vendor_id = get_hex_id(venid);
     pci_vendor *vendor;
     pci_vendor_device *vd;
-    te_bool first = TRUE;
+    bool first = true;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -907,7 +907,7 @@ pci_vendor_device_list(unsigned int gid, const char *oid,
         {
             te_string_append(&result, "%s%04x", first ? "" : " ",
                              vd->id);
-            first = FALSE;
+            first = false;
         }
     }
 
@@ -922,7 +922,7 @@ pci_vendor_list(unsigned int gid, const char *oid,
 {
     te_string result = TE_STRING_INIT;
     pci_vendor *vendor;
-    te_bool first = TRUE;
+    bool first = true;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -936,7 +936,7 @@ pci_vendor_list(unsigned int gid, const char *oid,
         {
             te_string_append(&result, "%s%04x", first ? "" : " ",
                              vendor->id);
-            first = FALSE;
+            first = false;
         }
     }
 
@@ -969,11 +969,11 @@ parse_pci_oid_base(const char *name)
 }
 
 
-static te_bool
+static bool
 check_pci_lock(void)
 {
     te_string str = TE_STRING_INIT;
-    te_bool result;
+    bool result;
 
     te_string_append(&str, "/agent:%s/hardware:/pci:", ta_name);
     result = (rcf_pch_rsrc_check_locks(str.ptr) == 0);
@@ -982,11 +982,11 @@ check_pci_lock(void)
     return result;
 }
 
-static te_bool
+static bool
 check_device_lock(const pci_device *dev)
 {
     te_string str = TE_STRING_INIT;
-    te_bool result;
+    bool result;
 
     te_string_append(&str,
                      "/agent:%s/hardware:/pci:/vendor:%04x/device:%04x/instance:%u",
@@ -999,12 +999,12 @@ check_device_lock(const pci_device *dev)
 }
 
 
-static te_bool
+static bool
 check_vd_lock(const pci_vendor *vendor, const pci_vendor_device *vd,
-              te_bool recursive)
+              bool recursive)
 {
     te_string str = TE_STRING_INIT;
-    te_bool result;
+    bool result;
 
     te_string_append(&str, "/agent:%s/hardware:/pci:/vendor:%04x/device:%04x",
                      ta_name, vendor->id, vd->id);
@@ -1018,7 +1018,7 @@ check_vd_lock(const pci_vendor *vendor, const pci_vendor_device *vd,
         TAILQ_FOREACH(dev, &vd->devices, next)
         {
             if (!check_device_lock(dev))
-                return FALSE;
+                return false;
         }
     }
 
@@ -1026,11 +1026,11 @@ check_vd_lock(const pci_vendor *vendor, const pci_vendor_device *vd,
 
 }
 
-static te_bool
-check_vendor_lock(const pci_vendor *vendor, te_bool recursive)
+static bool
+check_vendor_lock(const pci_vendor *vendor, bool recursive)
 {
     te_string str = TE_STRING_INIT;
-    te_bool result;
+    bool result;
 
     te_string_append(&str, "/agent:%s/hardware:/pci:/vendor:%04x", ta_name,
                      vendor->id);
@@ -1043,8 +1043,8 @@ check_vendor_lock(const pci_vendor *vendor, te_bool recursive)
 
         LIST_FOREACH(vd, &vendor->vendor_devices, next)
         {
-            if (!check_vd_lock(vendor, vd, TRUE))
-                return FALSE;
+            if (!check_vd_lock(vendor, vd, true))
+                return false;
         }
     }
 
@@ -1067,7 +1067,7 @@ pci_grab(const char *name)
 
         LIST_FOREACH(vendor, vendor_list, next)
         {
-            if (!check_vendor_lock(vendor, TRUE))
+            if (!check_vendor_lock(vendor, true))
             {
                 return TE_RC(TE_TA_UNIX, TE_EPERM);
             }
@@ -1165,7 +1165,7 @@ parse_pci_oid(const char *name, pci_vendor **vendor, pci_vendor_device **vd,
 }
 
 static void
-lock_vendor_device(pci_vendor_device *vd, te_bool lock)
+lock_vendor_device(pci_vendor_device *vd, bool lock)
 {
     pci_device *dev;
 
@@ -1185,7 +1185,7 @@ lock_vendor_device(pci_vendor_device *vd, te_bool lock)
 
 
 static void
-lock_vendor(pci_vendor *vendor, te_bool lock)
+lock_vendor(pci_vendor *vendor, bool lock)
 {
     pci_vendor_device *vd;
 
@@ -1219,14 +1219,14 @@ pci_vendor_grab(const char *name)
 
         LIST_FOREACH(vd, &vendor->vendor_devices, next)
         {
-            if (!check_vd_lock(vendor, vd, TRUE))
+            if (!check_vd_lock(vendor, vd, true))
             {
                 return TE_RC(TE_TA_UNIX, TE_EPERM);
             }
         }
     }
 
-    lock_vendor(vendor, TRUE);
+    lock_vendor(vendor, true);
     return 0;
 }
 
@@ -1242,7 +1242,7 @@ pci_vendor_release(const char *name)
 
     if (vendor->lock == 0)
         return TE_RC(TE_TA_UNIX, TE_EPROTO);
-    lock_vendor(vendor, FALSE);
+    lock_vendor(vendor, false);
 
     return 0;
 }
@@ -1262,7 +1262,7 @@ pci_vendor_device_grab(const char *name)
     {
         pci_device *dev;
 
-        if (!check_pci_lock() || !check_vendor_lock(vendor, FALSE))
+        if (!check_pci_lock() || !check_vendor_lock(vendor, false))
             return TE_RC(TE_TA_UNIX, TE_EPERM);
 
         TAILQ_FOREACH(dev, &vd->devices, next)
@@ -1274,7 +1274,7 @@ pci_vendor_device_grab(const char *name)
         }
     }
 
-    lock_vendor_device(vd, TRUE);
+    lock_vendor_device(vd, true);
     return 0;
 }
 
@@ -1292,7 +1292,7 @@ pci_vendor_device_release(const char *name)
     if (vd->lock == 0)
         return TE_RC(TE_TA_UNIX, TE_EPROTO);
 
-    lock_vendor_device(vd, FALSE);
+    lock_vendor_device(vd, false);
 
     return 0;
 }
@@ -1311,8 +1311,8 @@ pci_device_grab(const char *name)
 
     if (global_pci_lock == 0 && dev->lock == 0)
     {
-        if (!check_pci_lock() || !check_vendor_lock(vendor, FALSE) ||
-            !check_vd_lock(vendor, vd, FALSE))
+        if (!check_pci_lock() || !check_vendor_lock(vendor, false) ||
+            !check_vd_lock(vendor, vd, false))
         {
             return TE_RC(TE_TA_UNIX, TE_EPERM);
         }
@@ -2096,7 +2096,7 @@ pci_driver_set(unsigned int gid, const char *oid, const char *value,
     {
         const char *generic_drivers[] = {"uio_pci_generic", "igb_uio",
                                          "vfio-pci", "virtio-pci"};
-        te_bool is_gen_driver = FALSE;
+        bool is_gen_driver = false;
         unsigned int i;
 
         rc = maybe_load_driver(value);
@@ -2267,7 +2267,7 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
-    rc = get_dir_list(buf.ptr, net_list, RCF_MAX_VAL, TRUE, NULL, NULL,
+    rc = get_dir_list(buf.ptr, net_list, RCF_MAX_VAL, true, NULL, NULL,
                       alphasort);
     te_string_reset(&buf);
     if (rc != 0)
@@ -3345,7 +3345,7 @@ static te_errno add_spdk_config(const char *pattern, const char *pathname,
                                 void *data)
 {
     te_string *dest = data;
-    char *base = te_file_extract_glob(pathname, pattern, TRUE);
+    char *base = te_file_extract_glob(pathname, pattern, true);
 
     if (base == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);

@@ -49,7 +49,7 @@ static log_branch_filter branch_filter;
 static log_duration_filter duration_filter;
 static log_msg_filter msg_filter;
 
-static te_bool     initialized = FALSE;
+static bool initialized = false;
 
 /* See the description in filter.h */
 int
@@ -70,7 +70,7 @@ rgt_filter_init(const char *fltr_fname)
 
     if (fltr_fname == NULL)
     {
-        initialized = TRUE;
+        initialized = true;
         return 0;
     }
 
@@ -108,7 +108,7 @@ rgt_filter_init(const char *fltr_fname)
         cur = cur->next;
     }
 
-    initialized = TRUE;
+    initialized = true;
     return 0;
 }
 

@@ -37,7 +37,7 @@
 /* See the description in tester_conf.h */
 te_errno
 test_run_item_enum_args(const run_item *ri, test_var_arg_enum_cb callback,
-                        te_bool up_to_first_err, void *opaque)
+                        bool up_to_first_err, void *opaque)
 {
     te_errno            rc = TE_RC(TE_TESTER, TE_ENOENT);
     te_errno            rc_bad = 0;
@@ -182,7 +182,7 @@ test_run_item_find_arg(const run_item *ri, const char *name,
     data.n_iters = 1;
 
     rc = test_run_item_enum_args(ri, test_run_item_find_arg_cb,
-                                 TRUE, &data);
+                                 true, &data);
     if (TE_RC_GET_ERROR(rc) == TE_EEXIST)
     {
         if (n_values != NULL)
@@ -346,7 +346,7 @@ test_entity_value_enum_values(const run_item          *ri,
     }
     else
     {
-        assert(FALSE);
+        assert(false);
         return TE_RC(TE_TESTER, TE_EFAULT);
     }
 }

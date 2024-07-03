@@ -202,10 +202,10 @@
  */
 #define CHECK_ADDR_FAKE(addr_, fake_)     \
     do {                                        \
-        fake_ = FALSE;                          \
+        fake_ = false;                          \
         if (tapi_get_addr_type(&env, #addr_) == \
             TAPI_ENV_ADDR_FAKE_UNICAST)         \
-            fake_ = TRUE;                       \
+            fake_ = true;                       \
     } while (0)
 
 /**
@@ -428,9 +428,9 @@ typedef struct tapi_env_if {
     struct if_nameindex br_info;/**< XEN bridge info */
     struct if_nameindex ph_info;/**< XEN physical interface info */
 
-    te_bool ip4_unicast_used;   /**< Is IPv4 address assigned to
+    bool ip4_unicast_used;   /**< Is IPv4 address assigned to
                                      the host in this net used? */
-    te_bool ip6_unicast_used;   /**< Is IPv6 address assigned to
+    bool ip6_unicast_used;   /**< Is IPv6 address assigned to
                                      the host in this net used? */
 
     tapi_sniffer_id    *sniffer_id;    /**< ID of the sniffer created by
@@ -479,7 +479,7 @@ typedef struct tapi_env_pco {
     tapi_env_process   *process;        /**< Parent process */
 
     rcf_rpc_server     *rpcs;           /**< RPC server handle */
-    te_bool             created;        /**< Is created by this test */
+    bool created;        /**< Is created by this test */
 } tapi_env_pco;
 
 

@@ -53,16 +53,16 @@ typedef struct tapi_haproxy_cfg_opt {
     /** Number of threads to run HAProxy on. */
     tapi_job_opt_uint_t nbthread;
     /**
-     * If @c TRUE, HAProxy listener spreads the incoming traffic to all
+     * If @c true, HAProxy listener spreads the incoming traffic to all
      * threads a frontend "bind" line is allowed to run on instead of taking
      * them for itself.
      */
-    te_bool tune_listener_multi_queue;
+    bool tune_listener_multi_queue;
     /**
-     * If @c TRUE, idle connection pools are shared between threads for a same
+     * If @c true, idle connection pools are shared between threads for a same
      * server.
      */
-    te_bool tune_idle_pool_shared;
+    bool tune_idle_pool_shared;
 
     /** The maximum inactivity time on the client side (in milliseconds). */
     tapi_job_opt_uint_t timeout_client_ms;

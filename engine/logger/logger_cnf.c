@@ -744,7 +744,7 @@ add_rules(yaml_document_t *d, yaml_node_t *rules)
         rc = log_msg_filter_init(&filter);
         if (rc == 0)
             /* Filters should not allow any message by default */
-            rc = log_msg_filter_set_default(&filter, FALSE, (te_log_level)-1);
+            rc = log_msg_filter_set_default(&filter, false, (te_log_level)-1);
         if (rc == 0)
             rc = extract_filter_rule(d, node, &filter, &rulename);
         if (rc != 0)
@@ -955,7 +955,7 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
         return -1;
     }
 
-    current->allow_stop = FALSE;
+    current->allow_stop = false;
     allow_stop_str = te_yaml_scalar_value(allow_stop);
     if (allow_stop != NULL && allow_stop_str == NULL)
     {
@@ -964,7 +964,7 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
         return -1;
     }
     if (te_yaml_value_is_true(allow_stop_str))
-        current->allow_stop = TRUE;
+        current->allow_stop = true;
 
     current->buffer_size = 4096;
     buffer_size_str = te_yaml_scalar_value(buffer_size);
@@ -1005,7 +1005,7 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
         current->buffers_num = tmp;
     }
 
-    current->trailing_slash = FALSE;
+    current->trailing_slash = false;
     trail_slash_str = te_yaml_scalar_value(trail_slash);
     if (trail_slash != NULL && trail_slash_str == NULL)
     {
@@ -1014,7 +1014,7 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
         return -1;
     }
     if (te_yaml_value_is_true(trail_slash_str))
-        current->trailing_slash = TRUE;
+        current->trailing_slash = true;
 
     msg_buffer_init(&current->buffer);
     current->state = LISTENER_INIT;
@@ -1150,7 +1150,7 @@ handle_listeners(yaml_document_t *d, yaml_node_t *section)
         return -1;
     }
 
-    listeners_enabled = TRUE;
+    listeners_enabled = true;
 
     for (item = section->data.sequence.items.start;
          item < section->data.sequence.items.top; item++)

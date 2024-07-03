@@ -50,7 +50,7 @@
  * Description see in tad_utils.h
  */
 int
-tad_confirm_pdus(csap_p csap, te_bool recv, asn_value *pdus,
+tad_confirm_pdus(csap_p csap, bool recv, asn_value *pdus,
                  void **layer_opaque)
 {
     unsigned int layer;
@@ -2041,7 +2041,7 @@ tad_payload_spec_clear(tad_payload_spec_t *pld_spec)
             break;
 
         default:
-            assert(FALSE);
+            assert(false);
     }
     memset(pld_spec, 0, sizeof(*pld_spec));
     pld_spec->type = TAD_PLD_UNKNOWN;

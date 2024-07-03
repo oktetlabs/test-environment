@@ -20,8 +20,8 @@
 #define NAMED_CONF           "named.conf"
 
 static int     dns_index;
-static te_bool dns_recursive;
-static te_bool named_conf_was_running;
+static bool dns_recursive;
+static bool named_conf_was_running;
 static char    dns_forwarder[64] = "0.0.0.0";
 static char    dns_directory[PATH_MAX];
 

@@ -30,7 +30,7 @@ extern te_errno trc_tools_filter_db(te_trc_db *db,
                                     tqh_strings *tests_exclude);
 
 extern te_errno trc_tools_cut_db(te_trc_db *db, unsigned int db_uid,
-                                 const char *path_pattern, te_bool inverse);
+                                 const char *path_pattern, bool inverse);
 
 extern te_errno trc_tools_merge_db(te_trc_db *db, int dst_uid,
                                    int src_uid1, int src_uid2);

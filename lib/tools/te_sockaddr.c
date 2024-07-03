@@ -259,7 +259,7 @@ te_sockaddr_set_multicast(struct sockaddr *addr)
 }
 
 /* See the description in te_sockaddr.h */
-te_bool
+bool
 te_sockaddr_is_wildcard(const struct sockaddr *addr)
 {
     switch (addr->sa_family)
@@ -273,12 +273,12 @@ te_sockaddr_is_wildcard(const struct sockaddr *addr)
         default:
             ERROR("%s(): Address family %d is not supported, ",
                   "operation has no effect", __FUNCTION__, addr->sa_family);
-            return FALSE;
+            return false;
     }
 }
 
 /* See the description in te_sockaddr.h */
-te_bool
+bool
 te_sockaddr_is_multicast(const struct sockaddr *addr)
 {
     switch (addr->sa_family)
@@ -295,7 +295,7 @@ te_sockaddr_is_multicast(const struct sockaddr *addr)
         default:
             ERROR("%s(): Address family %d is not supported, ",
                   "operation has no effect", __FUNCTION__, addr->sa_family);
-            return FALSE;
+            return false;
     }
 }
 

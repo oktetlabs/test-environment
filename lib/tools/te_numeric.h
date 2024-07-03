@@ -79,7 +79,7 @@ extern "C" {
     HANDLER_(TE_SCALAR_TYPE_UINTPTR_T, uintptr_t, 0, UINTPTR_MAX)       \
     HANDLER_(TE_SCALAR_TYPE_INTMAX_T, intmax_t, INTMAX_MIN, INTMAX_MAX) \
     HANDLER_(TE_SCALAR_TYPE_UINTMAX_T, uintmax_t, 0, UINTMAX_MAX)       \
-    HANDLER_(TE_SCALAR_TYPE_TE_BOOL, te_bool, FALSE, TRUE)
+    HANDLER_(TE_SCALAR_TYPE_BOOL, bool, false, true)
 
 /** Scalar types enumeration */
 typedef enum te_scalar_type {
@@ -123,9 +123,9 @@ extern size_t te_scalar_type_sizeof(te_scalar_type type);
  *
  * @param type  Scalar type.
  *
- * @return TRUE if the @p type is signed.
+ * @return @c true if the @p type is signed.
  */
-extern te_bool te_scalar_type_is_signed(te_scalar_type type);
+extern bool te_scalar_type_is_signed(te_scalar_type type);
 
 /**
  * Return a type spec than can hold values of given size.
@@ -137,7 +137,7 @@ extern te_bool te_scalar_type_is_signed(te_scalar_type type);
  * @return Status code.
  * @retval TE_ERANGE    There is no scalar type of the requested size and sign.
  */
-extern te_errno te_scalar_type_fit_size(te_bool is_signed, size_t size,
+extern te_errno te_scalar_type_fit_size(bool is_signed, size_t size,
                                         te_scalar_type *type);
 
 /**

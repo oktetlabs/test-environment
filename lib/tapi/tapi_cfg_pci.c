@@ -75,7 +75,7 @@ tapi_cfg_pci_get_max_vfs_of_pf(const char *pf_oid, unsigned int *n_vfs)
 }
 
 te_errno
-tapi_cfg_pci_get_vfs_of_pf(const char *pf_oid, te_bool pci_device,
+tapi_cfg_pci_get_vfs_of_pf(const char *pf_oid, bool pci_device,
                            unsigned int *n_pci_vfs, cfg_oid ***pci_vfs,
                            unsigned int **pci_vf_ids)
 {
@@ -429,7 +429,7 @@ tapi_cfg_pci_bind_ta_driver_on_device(const char *ta,
          * Synchronize possible changes in PCI device configuration after
          * driver bind.
          */
-        rc = cfg_synchronize(pci_oid, TRUE);
+        rc = cfg_synchronize(pci_oid, true);
         if (rc != 0)
             goto out;
     }
@@ -751,9 +751,9 @@ pci_oid_do_resolve(const char *pci_oid, const cfg_oid *parsed_oid, void *ctx)
 }
 
 static cfg_oid_rule pci_oid_resolve_rules[] = {
-    CFG_OID_RULE(FALSE, pci_oid_copy, {"agent"}, {"hardware"},
+    CFG_OID_RULE(false, pci_oid_copy, {"agent"}, {"hardware"},
                  {"pci"}, {"device"}),
-    CFG_OID_RULE(FALSE, pci_oid_do_resolve, {"agent"}, {"hardware"},
+    CFG_OID_RULE(false, pci_oid_do_resolve, {"agent"}, {"hardware"},
                  {"pci"}, {"vendor"}, {"device"}, {"instance"}),
     CFG_OID_RULE_END
 };
@@ -952,7 +952,7 @@ cmode_to_str(tapi_cfg_pci_param_cmode cmode)
 te_errno
 tapi_cfg_pci_param_is_present(const char *pci_oid,
                               const char *param_name,
-                              te_bool *present)
+                              bool *present)
 {
     cfg_handle handle;
     te_errno rc;
@@ -960,11 +960,11 @@ tapi_cfg_pci_param_is_present(const char *pci_oid,
     rc = cfg_find_fmt(&handle, "%s/param:%s", pci_oid, param_name);
     if (rc == 0)
     {
-        *present = TRUE;
+        *present = true;
     }
     else if (rc == TE_RC(TE_CS, TE_ENOENT))
     {
-        *present = FALSE;
+        *present = false;
         rc = 0;
     }
 
@@ -1088,7 +1088,7 @@ tapi_cfg_pci_get_vendor_dev_ids(const char *pci_oid,
 /* See description in tapi_cfg_pci.h */
 te_errno
 tapi_cfg_pci_get_spdk_config_filename(const char *pci_oid, const char *cfg_name,
-                                      te_bool create, char **filename)
+                                      bool create, char **filename)
 {
     char *resolved_oid = NULL;
     te_errno rc;

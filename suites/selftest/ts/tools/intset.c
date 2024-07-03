@@ -47,11 +47,10 @@ check_parse_unparse(const char *str, uint64_t expect)
 static void
 check_subset(uint64_t sub, uint64_t super)
 {
-    te_bool result = te_intset_generic_is_subset(&te_bits_intset,
-                                                 0, sizeof(uint64_t) *
-                                                 CHAR_BIT - 1,
-                                                 &sub, &super);
-    te_bool expected = (sub & ~super) == 0;
+    bool result = te_intset_generic_is_subset(&te_bits_intset, 0,
+                                              sizeof(uint64_t) * CHAR_BIT - 1,
+                                              &sub, &super);
+    bool expected = (sub & ~super) == 0;
 
     if (result != expected)
     {

@@ -166,12 +166,12 @@ extern char *tapi_file_create_pattern(size_t len, char c);
  *
  * @param len     file length
  * @param buf     buffer with the file content
- * @param random  if TRUE, fill buffer with random data
+ * @param random  if @c true, fill buffer with random data
  *
  * @return name (memory is allocated) of the file or
  *         @c NULL in the case of failure
  */
-extern char *tapi_file_create(size_t len, char *buf, te_bool random);
+extern char *tapi_file_create(size_t len, char *buf, bool random);
 
 /**
  * Create file in the specified directory on the TA.

@@ -62,7 +62,7 @@ extern te_errno tad_send_preprocess_args(csap_p                      csap,
  */
 extern te_errno tad_send_start_prepare(csap_p                   csap,
                                        const char              *tmpl_str,
-                                       te_bool                  postponed,
+                                       bool postponed,
                                        const tad_reply_context *reply_ctx);
 
 /**
@@ -138,7 +138,7 @@ extern te_errno tad_recv_do(csap_p csap);
  */
 extern te_errno tad_recv_get_packets(csap_p              csap,
                                      tad_reply_context  *reply_ctx,
-                                     te_bool             wait,
+                                     bool wait,
                                      unsigned int       *got);
 
 #ifdef __cplusplus

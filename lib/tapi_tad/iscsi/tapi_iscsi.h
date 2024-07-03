@@ -67,7 +67,7 @@
                                                     (_cid_),            \
                                                     param_id,           \
                                                     (_value_),          \
-                                                    TRUE));             \
+                                                    true));             \
         RING("%s: Initiator: set %s for session ID %d, CID=%d to %s, "  \
              "with advertizing",                                        \
              (_ta_), (_param_name_),                                    \
@@ -96,7 +96,7 @@
                                                     (_cid_),            \
                                                     param_id,           \
                                                     (_value_),          \
-                                                    FALSE));            \
+                                                    false));            \
         RING("%s: Initiator: set %s for session ID %d, CID=%d to %s, "  \
              "without advertizing",                                     \
              (_ta_), (_param_name_),                                    \
@@ -649,7 +649,7 @@ extern int tapi_iscsi_target_cause_renegotiate(const char *ta, int id,
                                                int timeout);
 
 extern int tapi_iscsi_target_will_drop(const char *ta, int id,
-                                       te_bool drop_all,
+                                       bool drop_all,
                                        int time2wait, int time2retain);
 
 extern int tapi_iscsi_target_set_failure_state(const char *ta, int id,
@@ -674,7 +674,7 @@ extern int tapi_iscsi_initiator_advertize_set(const char *ta,
                                               iscsi_target_id target_id,
                                               iscsi_cid cid,
                                               tapi_iscsi_parameter param,
-                                              te_bool advertize);
+                                              bool advertize);
 /**
  * Function configures parameters of the Initiator.
  *
@@ -690,7 +690,7 @@ extern int tapi_iscsi_initiator_set_parameter(const char *ta,
                                               iscsi_cid cid,
                                               tapi_iscsi_parameter param,
                                               const char *value,
-                                              te_bool advertize);
+                                              bool advertize);
 
 #ifdef ISCSI_INITIATOR_GET_SUPPORT
 /**
@@ -1046,7 +1046,7 @@ extern te_errno tapi_iscsi_target_raw_read(const char *ta, off_t offset,
  *    the task id of the last task
  * -# proceed with passing iSCSI packets to/from the target,
  *    performing the necessary checks etc, until
- *    tapi_iscsi_io_is_complete() returns TRUE
+ *    tapi_iscsi_io_is_complete() returns @c true
  * -# destroy the handler with tapi_iscsi_io_finish()
  *
  * Note: the processing thread will send a signal to the main thread,
@@ -1065,7 +1065,7 @@ typedef unsigned iscsi_io_taskid;
  * @param id            target id to connect
  * @param use_signal    Should a signal be sent after
  *                      an I/O operation is complete
- * @param use_fs        TRUE if using a filesystem on
+ * @param use_fs        @c true if using a filesystem on
  *                      an ISCSI device
  * @param bufsize       Buffer size for file copying operations,
  *                      that is, tapi_iscsi_initiator_read_file() and
@@ -1076,8 +1076,8 @@ typedef unsigned iscsi_io_taskid;
  */
 extern te_errno tapi_iscsi_io_prepare(const char *ta,
                                       iscsi_target_id id,
-                                      te_bool use_signal,
-                                      te_bool use_fs,
+                                      bool use_signal,
+                                      bool use_fs,
                                       size_t  bufsize,
                                       iscsi_io_handle_t **ioh);
 
@@ -1111,8 +1111,8 @@ extern te_errno tapi_iscsi_io_finish(iscsi_io_handle_t *ioh);
  *
  * @return Previous state
  */
-extern te_bool tapi_iscsi_io_enable_signal(iscsi_io_handle_t *ioh,
-                                           te_bool enable);
+extern bool tapi_iscsi_io_enable_signal(iscsi_io_handle_t *ioh,
+                                           bool enable);
 
 /**
  *  Gets the status code of a task of a I/O handler
@@ -1133,9 +1133,9 @@ extern te_errno tapi_iscsi_io_get_status(iscsi_io_handle_t *ioh,
  * @param ioh           I/O handle
  * @param taskid        Task ID
  *
- * @return TRUE if the task has completed
+ * @return @c true if the task has completed
  */
-extern te_bool tapi_iscsi_io_is_complete(iscsi_io_handle_t *ioh,
+extern bool tapi_iscsi_io_is_complete(iscsi_io_handle_t *ioh,
                                          iscsi_io_taskid taskid);
 
 
@@ -1145,14 +1145,14 @@ extern te_bool tapi_iscsi_io_is_complete(iscsi_io_handle_t *ioh,
  * @param ta  Test Agent
  * @param id  Target id
  *
- * @return TRUE if the device is ready
+ * @return @c true if the device is ready
  */
-extern te_bool tapi_iscsi_initiator_is_device_ready(const char *ta,
+extern bool tapi_iscsi_initiator_is_device_ready(const char *ta,
                                                     iscsi_target_id id);
 
 /**
  * Request mounting an iSCSI device on the TA, if the I/O handler
- * has been created with "use_fs" == TRUE. Otherwise a no-op.
+ * has been created with "use_fs" == @c true. Otherwise a no-op.
  *
  * Note: you need to call tapi_iscsi_target_mount() before this
  * function to create a filesystem on a target backing store.
@@ -1167,7 +1167,7 @@ extern te_errno tapi_iscsi_initiator_mount(iscsi_io_handle_t *ioh,
 
 /**
  * Request unmounting an iSCSI device on the TA.
- * No-op if "use_fs" is not TRUE for the I/O handler.
+ * No-op if "use_fs" is not @c true for the I/O handler.
  *
  * @param ioh           I/O handler
  * @param taskid        A pointer to store a task ID or NULL (OUT)

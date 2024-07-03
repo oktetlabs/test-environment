@@ -63,7 +63,7 @@ extern size_t universal_read(FILE *fd, void *buf, size_t count,
  * @param attr_val  Whether the string is an attribute value of some TAG?
  */
 extern void write_xml_string(struct obstack *obstk, const char *str,
-                             te_bool attr_val);
+                             bool attr_val);
 
 #ifdef __cplusplus
 }

@@ -30,7 +30,7 @@
 
 /* See description in tapi_network.h. */
 void
-tapi_network_setup(te_bool ipv6_supp)
+tapi_network_setup(bool ipv6_supp)
 {
     unsigned int    i, j, k;
     cfg_nets_t      nets;
@@ -50,7 +50,7 @@ tapi_network_setup(te_bool ipv6_supp)
                   "configuration: %r", rc);
     }
 
-    rc = tapi_cfg_net_all_up(FALSE);
+    rc = tapi_cfg_net_all_up(false);
     if (rc != 0)
     {
         TEST_FAIL("Failed to up all interfaces mentioned in networks "
@@ -220,7 +220,7 @@ tapi_network_setup(te_bool ipv6_supp)
                 /* Add static ARP entry */
                 rc = tapi_cfg_add_neigh_entry(CFG_OID_GET_INST_NAME(oid, 1),
                                               CFG_OID_GET_INST_NAME(oid, 2),
-                                              ip4_addr, mac, TRUE);
+                                              ip4_addr, mac, true);
                 if (rc != 0)
                 {
                     ERROR("Failed to add static ARP entry to TA '%s': %r",

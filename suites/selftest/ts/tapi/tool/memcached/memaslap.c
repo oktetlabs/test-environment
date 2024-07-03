@@ -92,7 +92,7 @@ main(int argc, char **argv)
 
     /* Set work time for memaslap. */
     memaslap_opts.time.value   = MEMASLAP_RUN_TIMEOUT;
-    memaslap_opts.time.defined = TRUE;
+    memaslap_opts.time.defined = true;
 
     /* Set servers = 127.0.0.1:11212 and number of servers = 1. */
     memaslap_opts.servers[0]   = (const struct sockaddr *)iut_addr;

@@ -388,7 +388,7 @@ socket_csap_handler(const char *pkt_fname, void *user_param)
 te_errno
 tapi_socket_recv(const char *ta_name, int sid, csap_handle_t csap,
                  unsigned int timeout, csap_handle_t forward,
-                 te_bool len_exact, uint8_t *buf, size_t *length)
+                 bool len_exact, uint8_t *buf, size_t *length)
 {
     asn_value *pattern = NULL;
     struct data_message msg;

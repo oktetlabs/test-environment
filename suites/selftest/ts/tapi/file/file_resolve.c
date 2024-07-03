@@ -41,7 +41,7 @@ main(int argc, char **argv)
 
     TEST_STEP("Prepare a file");
     buf = te_make_printable_buf_by_len(len);
-    CHECK_NOT_NULL(lfile = tapi_file_create(len, buf, FALSE));
+    CHECK_NOT_NULL(lfile = tapi_file_create(len, buf, false));
 
     tapi_file_make_name(&rfile);
     if ((rc = tapi_file_copy_ta(NULL, lfile, pco_iut->ta, rfile.ptr)) != 0)

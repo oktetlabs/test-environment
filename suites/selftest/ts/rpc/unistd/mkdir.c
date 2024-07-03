@@ -48,7 +48,7 @@ remove_files(rcf_rpc_server *rpcs, const char *path)
     rpc_dir_p   dirp = rpc_opendir(rpcs, path);
     rpc_dirent *dent = NULL;
 
-    while (TRUE)
+    while (true)
     {
         dent = rpc_readdir(rpcs, dirp);
         if (dent == NULL)

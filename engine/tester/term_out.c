@@ -440,7 +440,7 @@ tester_term_out_done(tester_flags flags,
                 break;
 
             default:
-                assert(FALSE);
+                assert(false);
         }
     }
 

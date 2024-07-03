@@ -125,19 +125,19 @@ typedef struct te_openvpn_server {
     char              *name;            /**< Instance name. */
     te_openvpn_server *next;            /**< Next instance. */
 
-    te_bool     status;                 /**< Daemon status.
+    bool status;                 /**< Daemon status.
                                              Possible values:
-                                             @c TRUE when running,
-                                             @c FALSE otherwise */
+                                             @c true when running,
+                                             @c false otherwise */
 
     int         lzo;                    /**< Enable LZO compression or not */
     uint16_t    port;                   /**< Port to bind to */
     uint32_t    dh_size;                /**< Default Diffie-Hellman parameters
                                              size (in bits) */
-    te_bool     is_server;              /**< Is this instance running as server?
+    bool is_server;              /**< Is this instance running as server?
                                              Possible values:
-                                             @c TRUE if as server,
-                                             @c FALSE if as client */
+                                             @c true if as server,
+                                             @c false if as client */
     char        mode[AUX_BUF_LEN];      /**< Current operation mode based
                                              on device type.
                                              Possible values: "tun", "tap" */
@@ -168,10 +168,10 @@ typedef struct te_openvpn_server {
                                                  "internal", "external" */
 
     /* Server parameters */
-    te_bool require_certs;              /**< Should server require certificates?
+    bool require_certs;              /**< Should server require certificates?
                                              Possible values:
-                                             @c TRUE if yes,
-                                             @c FALSE otherwise */
+                                             @c true if yes,
+                                             @c false otherwise */
     char    ip[AUX_BUF_LEN];            /**< Server's own IP address.
                                              Must be a valid IP */
     char    subnet_mask[AUX_BUF_LEN];   /**< Server's own subnet mask. */
@@ -265,11 +265,11 @@ openvpn_server_create(const char *name)
     if (instance->name == NULL)
         goto error;
 
-    instance->status = FALSE;
+    instance->status = false;
     instance->lzo = 0;
     instance->port = 1194;
     instance->dh_size = 1024;
-    instance->is_server = FALSE;
+    instance->is_server = false;
     strcpy(instance->mode, "tun");
     strcpy(instance->key_direction, "bidirectional");
     strcpy(instance->cipher, "BF-CBC");
@@ -281,7 +281,7 @@ openvpn_server_create(const char *name)
     strcpy(instance->proto, "udp");
     strcpy(instance->interface_behind, "");
     strcpy(instance->ip_facility, "internal");
-    instance->require_certs = TRUE;
+    instance->require_certs = true;
     strcpy(instance->dh, "");
     strcpy(instance->pool_start, "");
     strcpy(instance->pool_end, "");
@@ -1155,7 +1155,7 @@ openvpn_server_start(te_openvpn_server *instance)
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
-    instance->status = TRUE;
+    instance->status = true;
     return 0;
 }
 
@@ -1199,7 +1199,7 @@ openvpn_server_stop(te_openvpn_server *instance)
     unlink(instance->status_path);
     unlink(instance->user_pass_path);
 
-    instance->status = FALSE;
+    instance->status = false;
 
     return 0;
 }
@@ -1476,7 +1476,7 @@ openvpn_write_config(te_openvpn_server *instance)
     FPRINTF(f, "dh %s\n", instance->dh);
 
     /*
-     * CA must be present even with require_certs = FALSE, so we check
+     * CA must be present even with require_certs = false, so we check
      * access directly.
      */
     if (strlen(instance->ca) > 0)

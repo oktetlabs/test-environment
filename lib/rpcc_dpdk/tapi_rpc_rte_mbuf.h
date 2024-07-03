@@ -489,7 +489,7 @@ extern int rpc_rte_vlan_strip(rcf_rpc_server *rpcs, rpc_rte_mbuf_p m);
  */
 extern int rpc_rte_pktmbuf_calc_packet_crc(rcf_rpc_server *rpcs,
                                            rpc_rte_mbuf_p m,
-                                           te_bool crc_in_data,
+                                           bool crc_in_data,
                                            uint32_t *crc);
 
 /**@} <!-- END te_lib_rpc_rte_mbuf --> */

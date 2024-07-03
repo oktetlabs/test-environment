@@ -65,7 +65,7 @@ log_branch_filter_init(log_branch_filter *filter)
 /* See description in flow_filter.h */
 te_errno
 log_branch_filter_add(log_branch_filter *filter,
-                      const char *path, te_bool include)
+                      const char *path, bool include)
 {
     log_branch_filter_rule  *rule;
     log_branch_filter_rule **prev;
@@ -165,7 +165,7 @@ log_duration_filter_rules_init(log_duration_filter_rules *rules)
 static te_errno
 log_duration_filter_rules_add(log_duration_filter_rules *rules,
                               uint32_t min, uint32_t max,
-                              te_bool include)
+                              bool include)
 {
     log_duration_filter_rule  *rule;
     log_duration_filter_rule  *tmp1, *tmp2;
@@ -326,7 +326,7 @@ log_duration_filter_init(log_duration_filter *filter)
 /* See description in flow_filter.h */
 te_errno
 log_duration_filter_add(log_duration_filter *filter, const char *type,
-                        uint32_t min, uint32_t max, te_bool include)
+                        uint32_t min, uint32_t max, bool include)
 {
     te_errno     rc;
     node_type_t  node_type;

@@ -162,7 +162,7 @@ handler_test_progress(const log_msg_view *view, refcnt_buffer *str)
     te_string     body = TE_STRING_INIT;
     int           test_id;
     const char   *node_type;
-    te_bool       start;
+    bool start;
     json_t       *json;
     json_t       *msg;
     json_t       *type;

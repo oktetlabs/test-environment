@@ -208,7 +208,7 @@ kvpairs_check(const char *key, const char *value, void *user)
 }
 
 /* See the description in te_kvpair.h */
-te_bool
+bool
 te_kvpairs_has_kv(const te_kvpair_h *head, const char *key, const char *value)
 {
     te_errno rc = te_kvpairs_foreach(head, kvpairs_check, key, &value);
@@ -228,7 +228,7 @@ kvpairs_check_submap(const char *key, const char *value, void *user)
 }
 
 /* See the description in te_kvpair.h */
-te_bool
+bool
 te_kvpairs_is_submap(const te_kvpair_h *submap, const te_kvpair_h *supermap)
 {
     te_errno rc = te_kvpairs_foreach(submap, kvpairs_check_submap, NULL,
@@ -324,7 +324,7 @@ te_errno
 te_kvpair_to_str_gen(const te_kvpair_h *head, const char *delim, te_string *str)
 {
     te_kvpair *p;
-    te_bool    first = TRUE;
+    bool first = true;
 
     assert(head != NULL);
     assert(delim != NULL);
@@ -334,7 +334,7 @@ te_kvpair_to_str_gen(const te_kvpair_h *head, const char *delim, te_string *str)
     {
         te_string_append(str, "%s%s=%s", first ? "" : delim,
                          p->key, p->value);
-        first = FALSE;
+        first = false;
     }
     return 0;
 }

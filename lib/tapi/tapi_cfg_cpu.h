@@ -41,7 +41,7 @@ typedef struct tapi_cpu_index_t {
 
 /** CPU properties that can be requested when looking for a CPU */
 typedef struct tapi_cpu_prop_t {
-    te_bool isolated;
+    bool isolated;
 } tapi_cpu_prop_t;
 
 /**

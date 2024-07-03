@@ -82,7 +82,7 @@ https_get(unsigned int gid, const char *oid, char *value)
 static te_errno
 https_set(unsigned int gid, const char *oid, const char *value)
 {
-    te_bool tmp;
+    bool tmp;
     te_errno rc;
 
     UNUSED(gid);

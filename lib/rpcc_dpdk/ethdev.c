@@ -638,7 +638,7 @@ tarpc_rte_eth_txmode2str(te_log_buf *tlbp,
 static const char *
 tarpc_rss_hash_protos2str(te_log_buf *tlbp, tarpc_rss_hash_protos_t protos)
 {
-    te_bool             added = FALSE;
+    bool added = false;
 
 #define TARPC_RSS_HASH_PROTO2STR(_proto)                                     \
     do {                                                                     \
@@ -648,7 +648,7 @@ tarpc_rss_hash_protos2str(te_log_buf *tlbp, tarpc_rss_hash_protos_t protos)
         if ((protos & proto) == proto)                                       \
         {                                                                    \
             te_log_buf_append(tlbp, "%s%s", added ? "|" : "", #_proto);      \
-            added = TRUE;                                                    \
+            added = true;                                                    \
             protos &= ~proto;                                                \
         }                                                                    \
     } while (0)
@@ -1741,7 +1741,7 @@ rpc_rte_eth_rx_descriptor_status(rcf_rpc_server *rpcs,
     }
     else
     {
-        TAPI_RPC_OUT(rte_eth_rx_descriptor_status, TRUE);
+        TAPI_RPC_OUT(rte_eth_rx_descriptor_status, true);
     }
 
     RETVAL_INT(rte_eth_rx_descriptor_status, out.retval);
@@ -1797,7 +1797,7 @@ rpc_rte_eth_tx_descriptor_status(rcf_rpc_server *rpcs,
     }
     else
     {
-        TAPI_RPC_OUT(rte_eth_tx_descriptor_status, TRUE);
+        TAPI_RPC_OUT(rte_eth_tx_descriptor_status, true);
     }
 
     RETVAL_INT(rte_eth_tx_descriptor_status, out.retval);
@@ -2367,7 +2367,7 @@ rpc_rte_eth_xstats_get_names(rcf_rpc_server *rpcs, uint16_t port_id,
     rcf_rpc_call(rpcs, "rte_eth_xstats_get_names", &in, &out);
 
     CHECK_RETVAL_VAR_ERR_COND(rte_eth_xstats_get_names,
-                              out.retval, FALSE,
+                              out.retval, false,
                               -TE_RC(TE_TAPI, TE_ECORRUPTED),
                               (out.retval < 0));
 
@@ -2422,7 +2422,7 @@ rpc_rte_eth_xstats_get(rcf_rpc_server *rpcs, uint16_t port_id,
     rcf_rpc_call(rpcs, "rte_eth_xstats_get", &in, &out);
 
     CHECK_RETVAL_VAR_ERR_COND(rpc_rte_eth_xstats_get,
-                              out.retval, FALSE,
+                              out.retval, false,
                               -TE_RC(TE_TAPI, TE_ECORRUPTED),
                               (out.retval < 0));
 
@@ -2530,7 +2530,7 @@ rpc_rte_eth_xstats_get_by_id(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "rte_eth_xstats_get_by_id", &in, &out);
 
-    CHECK_RETVAL_VAR_ERR_COND(rte_eth_xstats_get_by_id, out.retval, FALSE,
+    CHECK_RETVAL_VAR_ERR_COND(rte_eth_xstats_get_by_id, out.retval, false,
                               -TE_RC(TE_TAPI, TE_ECORRUPTED), (out.retval < 0));
 
     tlbp_ids = te_log_buf_alloc();
@@ -2600,7 +2600,8 @@ rpc_rte_eth_xstats_get_names_by_id(rcf_rpc_server                  *rpcs,
 
     rcf_rpc_call(rpcs, "rte_eth_xstats_get_names_by_id", &in, &out);
 
-    CHECK_RETVAL_VAR_ERR_COND(rte_eth_xstats_get_names_by_id, out.retval, FALSE,
+    CHECK_RETVAL_VAR_ERR_COND(rte_eth_xstats_get_names_by_id, out.retval,
+                              false,
                               -TE_RC(TE_TAPI, TE_ECORRUPTED), (out.retval < 0));
 
     tlbp_ids = te_log_buf_alloc();
@@ -3011,7 +3012,7 @@ rpc_rte_eth_dev_get_supported_ptypes(rcf_rpc_server *rpcs, uint16_t port_id,
     rcf_rpc_call(rpcs, "rte_eth_dev_get_supported_ptypes", &in, &out);
 
     CHECK_RETVAL_VAR_ERR_COND(rte_eth_dev_get_supported_ptypes,
-                              out.retval, FALSE,
+                              out.retval, false,
                               -TE_RC(TE_TAPI, TE_ECORRUPTED),
                               (out.retval < 0));
     tlbp_arg = te_log_buf_alloc();
@@ -3623,7 +3624,7 @@ rpc_rte_eth_fec_set(rcf_rpc_server *rpcs,
 static const char *
 tarpc_rte_dev_reg_info2str(te_log_buf                     *tlbp,
                             struct tarpc_rte_dev_reg_info *info,
-                            te_bool                        log_data)
+                            bool log_data)
 {
     if (info == NULL)
     {
@@ -3707,9 +3708,9 @@ rpc_rte_eth_dev_get_reg_info(rcf_rpc_server                *rpcs,
                  "%" PRIu16 ", %s",
                  "info=%s, " NEG_ERRNO_FMT,
                  in.port_id,
-                 tarpc_rte_dev_reg_info2str(tlbp_in, info, FALSE),
+                 tarpc_rte_dev_reg_info2str(tlbp_in, info, false),
                  tarpc_rte_dev_reg_info2str(tlbp_out, out.info.info_val,
-                                            TRUE),
+                                            true),
                  NEG_ERRNO_ARGS(out.retval));
     te_log_buf_free(tlbp_out);
     te_log_buf_free(tlbp_in);

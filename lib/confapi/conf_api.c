@@ -127,8 +127,8 @@ const te_enum_map cfg_cva_mapping[] = {
 static te_errno cfg_get_family_member(cfg_handle handle,
                                       uint8_t who,
                                       cfg_handle *member);
-static te_errno kill_all(cfg_handle handle, te_bool local);
-static te_errno kill(cfg_handle handle, te_bool local);
+static te_errno kill_all(cfg_handle handle, bool local);
+static te_errno kill(cfg_handle handle, bool local);
 
 
 /* See description in conf_api.h */
@@ -253,7 +253,7 @@ cfg_get_object_descr(cfg_handle handle, cfg_obj_descr *descr)
 
     cfg_oid    *oid;
     cfg_handle  object;
-    te_bool     inst;
+    bool inst;
 
     if (handle == CFG_HANDLE_INVALID)
     {
@@ -269,7 +269,7 @@ cfg_get_object_descr(cfg_handle handle, cfg_obj_descr *descr)
     inst = oid->inst;
     cfg_free_oid(oid);
 
-    if (inst == TRUE)
+    if (inst == true)
     {
         ret_val = cfg_find_object_by_instance(handle, &object);
         if (ret_val != 0)
@@ -692,7 +692,7 @@ cfg_find_object_by_instance(cfg_handle instance, cfg_handle *object)
 
     len = instance_oid->len;
 
-    object_oid = cfg_allocate_oid(len, FALSE);
+    object_oid = cfg_allocate_oid(len, false);
     if (object_oid == NULL)
     {
         fprintf(stderr, "Memory allocation failure\n");
@@ -987,7 +987,7 @@ cfg_get_father(cfg_handle handle, cfg_handle *father)
  * @return status code (see te_errno.h)
  */
 static te_errno
-cfg_add_instance_gen(const char *oid, cfg_handle *handle, te_bool local,
+cfg_add_instance_gen(const char *oid, cfg_handle *handle, bool local,
                      cfg_val_type type, va_list list)
 {
     cfg_add_msg  *msg;
@@ -1027,7 +1027,7 @@ cfg_add_instance_gen(const char *oid, cfg_handle *handle, te_bool local,
 
     switch (type)
     {
-        CASE_INTEGER_TYPE(bool, CVT_BOOL, te_bool, unsigned int);
+        CASE_INTEGER_TYPE(bool, CVT_BOOL, bool, unsigned int);
         CASE_INTEGER_TYPE(int8, CVT_INT8, int8_t, int);
         CASE_INTEGER_TYPE(uint8, CVT_UINT8, uint8_t, unsigned int);
         CASE_INTEGER_TYPE(int16, CVT_INT16, int16_t, int);
@@ -1053,7 +1053,7 @@ cfg_add_instance_gen(const char *oid, cfg_handle *handle, te_bool local,
             break;
 
         case CVT_UNSPECIFIED:
-            assert(FALSE);
+            assert(false);
     }
 #undef CASE_INTEGER_TYPE
 
@@ -1110,7 +1110,7 @@ cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
         return TE_RC(TE_CONF_API, TE_ENOMEM);
 
     va_start(list, type);
-    ret_val = cfg_add_instance_gen(oid2str, handle, FALSE, type, list);
+    ret_val = cfg_add_instance_gen(oid2str, handle, false, type, list);
     va_end(list);
 
     free(oid2str);
@@ -1127,7 +1127,7 @@ cfg_add_instance_str(const char *oid, cfg_handle *handle,
     va_list list;
 
     va_start(list, type);
-    ret_val = cfg_add_instance_gen(oid, handle, FALSE, type, list);
+    ret_val = cfg_add_instance_gen(oid, handle, false, type, list);
     va_end(list);
 
     return TE_RC(TE_CONF_API, ret_val);
@@ -1164,7 +1164,7 @@ cfg_add_instance_local(const cfg_oid *oid, cfg_handle *handle,
         return TE_RC(TE_CONF_API, TE_ENOMEM);
 
     va_start(list, type);
-    ret_val = cfg_add_instance_gen(oid2str, handle, TRUE, type, list);
+    ret_val = cfg_add_instance_gen(oid2str, handle, true, type, list);
     va_end(list);
 
     free(oid2str);
@@ -1181,7 +1181,7 @@ cfg_add_instance_local_str(const char *oid, cfg_handle *handle,
     va_list list;
 
     va_start(list, type);
-    ret_val = cfg_add_instance_gen(oid, handle, TRUE, type, list);
+    ret_val = cfg_add_instance_gen(oid, handle, true, type, list);
     va_end(list);
 
     return TE_RC(TE_CONF_API, ret_val);
@@ -1257,12 +1257,12 @@ cfg_add_instance_child_fmt(cfg_handle *p_handle, cfg_val_type type,
  * Delete an object instance with it's subtree
  *
  * @param handle    object instance handle
- * @param local     if @c TRUE, it is local delete
+ * @param local     if @c true, it is local delete
  *
  * @return Status code
  */
 static te_errno
-kill_all(cfg_handle handle, te_bool local)
+kill_all(cfg_handle handle, bool local)
 {
     te_errno    ret_val;
     cfg_handle  son;
@@ -1314,12 +1314,12 @@ kill_all(cfg_handle handle, te_bool local)
  * Delete an object instance
  *
  * @param handle    Object instance handle
- * @param local     if @c TRUE, it is local delete
+ * @param local     if @c true, it is local delete
  *
  * @return Status code
  */
 static te_errno
-kill(cfg_handle handle, te_bool local)
+kill(cfg_handle handle, bool local)
 {
     cfg_del_msg *msg;
 
@@ -1379,15 +1379,15 @@ kill(cfg_handle handle, te_bool local)
  * Remove instance locally or on the agent.
  *
  * @param handle          Instance handle.
- * @param with_children   If @c TRUE, remove children subtree.
- * @param local           If @c TRUE, remove locally (should be
+ * @param with_children   If @c true, remove children subtree.
+ * @param local           If @c true, remove locally (should be
  *                        committed later).
  *
  * @return Status code.
  */
 static te_errno
-cfg_del_instance_gen(cfg_handle handle, te_bool with_children,
-                     te_bool local)
+cfg_del_instance_gen(cfg_handle handle, bool with_children,
+                     bool local)
 {
     cfg_handle  son;
     te_errno    ret_val;
@@ -1397,7 +1397,7 @@ cfg_del_instance_gen(cfg_handle handle, te_bool with_children,
         return TE_RC(TE_CONF_API, TE_EINVAL);
     }
 
-    if (with_children == TRUE)
+    if (with_children == true)
     {
         ret_val = cfg_get_son(handle, &son);
         if (ret_val == 0 && son != CFG_HANDLE_INVALID)
@@ -1413,14 +1413,14 @@ cfg_del_instance_gen(cfg_handle handle, te_bool with_children,
 
 /* See description in conf_api.h */
 te_errno
-cfg_del_instance(cfg_handle handle, te_bool with_children)
+cfg_del_instance(cfg_handle handle, bool with_children)
 {
-    return cfg_del_instance_gen(handle, with_children, FALSE);
+    return cfg_del_instance_gen(handle, with_children, false);
 }
 
 /* See description in conf_api.h */
 te_errno
-cfg_del_instance_fmt(te_bool with_children, const char *oid_fmt, ...)
+cfg_del_instance_fmt(bool with_children, const char *oid_fmt, ...)
 {
     _CFG_HANDLE_BY_FMT;
     return cfg_del_instance(handle, with_children);
@@ -1428,14 +1428,14 @@ cfg_del_instance_fmt(te_bool with_children, const char *oid_fmt, ...)
 
 /* See description in conf_api.h */
 te_errno
-cfg_del_instance_local(cfg_handle handle, te_bool with_children)
+cfg_del_instance_local(cfg_handle handle, bool with_children)
 {
-    return cfg_del_instance_gen(handle, with_children, TRUE);
+    return cfg_del_instance_gen(handle, with_children, true);
 }
 
 /* See description in conf_api.h */
 te_errno
-cfg_del_instance_local_fmt(te_bool with_children, const char *oid_fmt, ...)
+cfg_del_instance_local_fmt(bool with_children, const char *oid_fmt, ...)
 {
     _CFG_HANDLE_BY_FMT;
     return cfg_del_instance_local(handle, with_children);
@@ -1455,7 +1455,7 @@ cfg_del_instance_local_fmt(te_bool with_children, const char *oid_fmt, ...)
  * @return status code (see te_errno.h)
  */
 static te_errno
-cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
+cfg_set_instance_gen(cfg_handle handle, bool local, cfg_val_type type,
                      va_list list)
 {
     cfg_set_msg    *msg;
@@ -1491,7 +1491,7 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
 
     switch (type)
     {
-        CASE_INTEGER_TYPE(bool, CVT_BOOL, te_bool, unsigned int);
+        CASE_INTEGER_TYPE(bool, CVT_BOOL, bool, unsigned int);
         CASE_INTEGER_TYPE(int8, CVT_INT8, int8_t, int);
         CASE_INTEGER_TYPE(uint8, CVT_UINT8, uint8_t, unsigned int);
         CASE_INTEGER_TYPE(int16, CVT_INT16, int16_t, int);
@@ -1562,7 +1562,7 @@ cfg_set_instance(cfg_handle handle, cfg_val_type type, ...)
     va_list list;
 
     va_start(list, type);
-    ret_val = cfg_set_instance_gen(handle, FALSE, type, list);
+    ret_val = cfg_set_instance_gen(handle, false, type, list);
     va_end(list);
 
     return TE_RC(TE_CONF_API, ret_val);
@@ -1594,7 +1594,7 @@ cfg_set_instance_local(cfg_handle handle, cfg_val_type type, ...)
     va_list list;
 
     va_start(list, type);
-    ret_val = cfg_set_instance_gen(handle, TRUE, type, list);
+    ret_val = cfg_set_instance_gen(handle, true, type, list);
     va_end(list);
 
     return TE_RC(TE_CONF_API, ret_val);
@@ -1699,7 +1699,7 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
 
     memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_get_msg *)cfgl_msg_buf;
-    rc = cfg_ipc_mk_get(msg, CFG_MSG_MAX, handle, FALSE);
+    rc = cfg_ipc_mk_get(msg, CFG_MSG_MAX, handle, false);
     if (rc != 0)
         return rc;
 
@@ -1740,7 +1740,7 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
 
     switch (msg->val_type)
     {
-        CASE_INTEGER_TYPE(bool, CVT_BOOL, te_bool);
+        CASE_INTEGER_TYPE(bool, CVT_BOOL, bool);
         CASE_INTEGER_TYPE(int8, CVT_INT8, int8_t);
         CASE_INTEGER_TYPE(uint8, CVT_UINT8, uint8_t);
         CASE_INTEGER_TYPE(int16, CVT_INT16, int16_t);
@@ -1838,7 +1838,7 @@ cfg_get_ ## variant_ (type_ *val, const char *oid_fmt, ...)                  \
 }                                                                            \
 struct noop
 
-DEFINE_CFG_GET_INT_TYPE(bool, CVT_BOOL, te_bool);
+DEFINE_CFG_GET_INT_TYPE(bool, CVT_BOOL, bool);
 DEFINE_CFG_GET_INT_TYPE(int8, CVT_INT8, int8_t);
 DEFINE_CFG_GET_INT_TYPE(uint8, CVT_UINT8, uint8_t);
 DEFINE_CFG_GET_INT_TYPE(int16, CVT_INT16, int16_t);
@@ -1925,7 +1925,7 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
 
     memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_get_msg *)cfgl_msg_buf;
-    ret_val = cfg_ipc_mk_get(msg, CFG_MSG_MAX, handle, TRUE);
+    ret_val = cfg_ipc_mk_get(msg, CFG_MSG_MAX, handle, true);
     if (ret_val != 0)
         return ret_val;
 
@@ -1965,7 +1965,7 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
 
     switch (msg->val_type)
     {
-        CASE_INTEGER_TYPE(bool, CVT_BOOL, te_bool);
+        CASE_INTEGER_TYPE(bool, CVT_BOOL, bool);
         CASE_INTEGER_TYPE(int8, CVT_INT8, int8_t);
         CASE_INTEGER_TYPE(uint8, CVT_UINT8, uint8_t);
         CASE_INTEGER_TYPE(int16, CVT_INT16, int16_t);
@@ -2051,7 +2051,7 @@ cfg_get_ ## variant_ ## _sync(type_ *val, const char *oid_fmt, ...)            \
 }                                                                              \
 struct noop
 
-DEFINE_CFG_GET_INT_TYPE_SYNC(bool, CVT_BOOL, te_bool);
+DEFINE_CFG_GET_INT_TYPE_SYNC(bool, CVT_BOOL, bool);
 DEFINE_CFG_GET_INT_TYPE_SYNC(int8, CVT_INT8, int8_t);
 DEFINE_CFG_GET_INT_TYPE_SYNC(uint8, CVT_UINT8, uint8_t);
 DEFINE_CFG_GET_INT_TYPE_SYNC(int16, CVT_INT16, int16_t);
@@ -2100,7 +2100,7 @@ cfg_get_addr_sync(struct sockaddr **val, const char *oid_fmt, ...)
 
 /* See description in conf_api.h */
 te_errno
-cfg_synchronize(const char *oid, te_bool subtree)
+cfg_synchronize(const char *oid, bool subtree)
 {
     cfg_sync_msg *msg;
 
@@ -2148,7 +2148,7 @@ cfg_synchronize(const char *oid, te_bool subtree)
 
 /* See description in conf_api.h */
 te_errno
-cfg_synchronize_fmt(te_bool subtree, const char *oid_fmt, ...)
+cfg_synchronize_fmt(bool subtree, const char *oid_fmt, ...)
 {
     va_list ap;
     char    oid[CFG_OID_MAX];
@@ -2194,7 +2194,7 @@ cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
     }
 
     length = oid->len;
-    pattern = cfg_allocate_oid(length, TRUE);
+    pattern = cfg_allocate_oid(length, true);
     if (pattern == NULL)
     {
         cfg_free_oid(oid);
@@ -2256,7 +2256,7 @@ cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
 
 /* See description in conf_api.h */
 te_errno
-cfg_reboot_ta(const char *ta_name, te_bool restore,
+cfg_reboot_ta(const char *ta_name, bool restore,
               rcf_reboot_type reboot_type)
 {
     cfg_reboot_msg *msg;
@@ -2488,7 +2488,7 @@ cfg_restore_backup_nohistory(const char *name)
 
 /* See description in conf_api.h */
 te_errno
-cfg_create_config(const char *name, te_bool history)
+cfg_create_config(const char *name, bool history)
 {
     cfg_config_msg *msg;
 
@@ -2876,7 +2876,7 @@ cfg_copy_subtree_fmt(const char *dst_oid,
     msg = (cfg_copy_msg *)cfgl_msg_buf;
     msg->type = CFG_COPY;
     msg->src_handle = src_handle;
-    msg->is_obj = (strchr(dst_oid, ':') == NULL) ? TRUE : FALSE;
+    msg->is_obj = (strchr(dst_oid, ':') == NULL) ? true : false;
     msg->len = sizeof(cfg_copy_msg);
 
     dst_oid_len = strlen(dst_oid);

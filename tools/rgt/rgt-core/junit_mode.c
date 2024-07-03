@@ -152,7 +152,7 @@ junit_process_pkg_start(node_info_t *node, ctrl_msg_data *data)
  *
  * @param data        Pointer to log_msg_ptr.
  * @param user_data   Pointer to boolean value which should be
- *                    set to @c TRUE initially.
+ *                    set to @c true initially.
  */
 static void
 print_verdicts_in_attr_cb(gpointer data, gpointer user_data)
@@ -160,16 +160,16 @@ print_verdicts_in_attr_cb(gpointer data, gpointer user_data)
     log_msg_ptr *msg_ptr = (log_msg_ptr *)data;
     log_msg     *msg = NULL;
 
-    te_bool     *first = (te_bool *)user_data;
+    bool        *first = (bool *)user_data;
 
     msg = log_msg_read(msg_ptr);
     rgt_expand_log_msg(msg);
     if (!*first)
         fputs("; ", rgt_ctx.out_fd);
-    write_xml_string(NULL, msg->txt_msg, TRUE);
+    write_xml_string(NULL, msg->txt_msg, true);
     free_log_msg(msg);
 
-    *first = FALSE;
+    *first = false;
 }
 
 /**
@@ -182,7 +182,7 @@ process_skipped(ctrl_msg_data *data)
 {
     if (!msg_queue_is_empty(&data->verdicts))
     {
-        te_bool first = TRUE;
+        bool first = true;
 
         fputs("<skipped message=\"", rgt_ctx.out_fd);
         msg_queue_foreach(&data->verdicts, print_verdicts_in_attr_cb,
@@ -196,7 +196,7 @@ process_skipped(ctrl_msg_data *data)
 }
 
 /** Check whether string is empty. */
-static te_bool string_empty(const char *str)
+static bool string_empty(const char *str)
 {
     return (str == NULL || str[0] == '\0');
 }
@@ -236,7 +236,7 @@ process_result_cb(gpointer data, gpointer user_data)
 
     msg = log_msg_read(msg_ptr);
     rgt_expand_log_msg(msg);
-    write_xml_string(NULL, msg->txt_msg, FALSE);
+    write_xml_string(NULL, msg->txt_msg, false);
     fputs("\n", rgt_ctx.out_fd);
     free_log_msg(msg);
 }
@@ -306,7 +306,7 @@ process_failure(node_info_t *node, ctrl_msg_data *data)
     for (p = node->params; p != NULL; p = p->next)
     {
         fprintf(rgt_ctx.out_fd, "  %s = ", p->name);
-        write_xml_string(NULL, p->val, FALSE);
+        write_xml_string(NULL, p->val, false);
         fputc('\n', rgt_ctx.out_fd);
     }
 
@@ -369,7 +369,7 @@ junit_process_regular_msg(log_msg *log)
 
     obstack_printf(ew_log_obstk, "%s %s %s\n",
                    log->level_str, log->entity, log->user);
-    write_xml_string(ew_log_obstk, log->txt_msg, FALSE);
+    write_xml_string(ew_log_obstk, log->txt_msg, false);
     obstack_grow(ew_log_obstk, "\n\n", strlen("\n\n"));
 
     return 0;

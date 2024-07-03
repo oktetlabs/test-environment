@@ -45,16 +45,16 @@ tq_strings_free(tqh_strings *head, void (*value_free)(void *))
 }
 
 /* See the description in tq_string.h */
-te_bool
+bool
 tq_strings_equal(const tqh_strings *s1, const tqh_strings *s2)
 {
     const tqe_string *p1;
     const tqe_string *p2;
 
     if (s1 == s2)
-        return TRUE;
+        return true;
     if (s1 == NULL || s2 == NULL)
-        return FALSE;
+        return false;
 
     for (p1 = TAILQ_FIRST(s1), p2 = TAILQ_FIRST(s2);
          p1 != NULL && p2 != NULL && strcmp(p1->v, p2->v) == 0;
@@ -66,7 +66,7 @@ tq_strings_equal(const tqh_strings *s1, const tqh_strings *s2)
 /* See the description in tq_string.h */
 te_errno
 tq_strings_add_uniq_gen(tqh_strings *list, const char *value,
-                        te_bool duplicate)
+                        bool duplicate)
 {
     tqe_string *p;
 
@@ -98,14 +98,14 @@ tq_strings_add_uniq_gen(tqh_strings *list, const char *value,
 te_errno
 tq_strings_add_uniq(tqh_strings *list, const char *value)
 {
-    return tq_strings_add_uniq_gen(list, value, FALSE);
+    return tq_strings_add_uniq_gen(list, value, false);
 }
 
 /* See the description in tq_string.h */
 te_errno
 tq_strings_add_uniq_dup(tqh_strings *list, const char *value)
 {
-    return tq_strings_add_uniq_gen(list, value, TRUE);
+    return tq_strings_add_uniq_gen(list, value, true);
 }
 
 /**
@@ -120,7 +120,7 @@ tq_strings_add_uniq_dup(tqh_strings *list, const char *value)
 static void
 tq_strings_copy_internal(tqh_strings *dst,
                          const tqh_strings *src,
-                         te_bool is_shallow_copy)
+                         bool is_shallow_copy)
 {
     tqe_string *str;
     tqe_string *str_aux;
@@ -153,7 +153,7 @@ te_errno
 tq_strings_copy(tqh_strings *dst,
                 const tqh_strings *src)
 {
-    tq_strings_copy_internal(dst, src, FALSE);
+    tq_strings_copy_internal(dst, src, false);
     return 0;
 }
 
@@ -162,6 +162,6 @@ te_errno
 tq_strings_shallow_copy(tqh_strings *dst,
                         const tqh_strings *src)
 {
-    tq_strings_copy_internal(dst, src, TRUE);
+    tq_strings_copy_internal(dst, src, true);
     return 0;
 }

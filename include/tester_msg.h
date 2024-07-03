@@ -14,7 +14,7 @@
 #define TESTER_IPC_SERVER_ENV   "TE_TESTER"
 
 /** Type of IPC used by Tester IPC */
-#define TESTER_IPC              (TRUE)  /** Connection-oriented */
+#define TESTER_IPC              (true)  /** Connection-oriented */
 
 
 /** Initial test ID (assigned to root package) */

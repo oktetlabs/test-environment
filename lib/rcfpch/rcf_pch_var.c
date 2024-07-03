@@ -181,11 +181,11 @@ rcf_pch_vread(struct rcf_comm_connection *conn,
             }
 
         default:
-            assert(FALSE);
+            assert(false);
     }
 
     /* Unreachable */
-    assert(FALSE);
+    assert(false);
     return 0;
 }
 
@@ -287,7 +287,7 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
             break;
 
         default:
-            assert(FALSE);
+            assert(false);
     }
 
     va_end(ap);
@@ -298,7 +298,7 @@ rcf_pch_vwrite(struct rcf_comm_connection *conn,
 int
 rcf_pch_call(struct rcf_comm_connection *conn,
              char *cbuf, size_t buflen, size_t answer_plen,
-             const char *rtn, te_bool is_argv, int argc,
+             const char *rtn, bool is_argv, int argc,
              void **params)
 {
     void     *addr;

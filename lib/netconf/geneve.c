@@ -19,7 +19,7 @@
 /* Geneve link kind to pass in IFLA_INFO_KIND. */
 #define NETCONF_LINK_KIND_GENEVE "geneve"
 
-static te_bool
+static bool
 geneve_link_is_geneve(struct rtattr **linkgen)
 {
     struct rtattr *linkinfo[IFLA_INFO_MAX + 1];
@@ -46,7 +46,7 @@ geneve_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
     netconf_parse_link(h, linkgen, IFLA_MAX);
 
     if (linkgen[IFLA_LINKINFO] == NULL || linkgen[IFLA_IFNAME] == NULL ||
-        geneve_link_is_geneve(linkgen) == FALSE)
+        geneve_link_is_geneve(linkgen) == false)
         return 0;
 
     geneve.generic.ifname = netconf_dup_rta(linkgen[IFLA_IFNAME]);

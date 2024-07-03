@@ -102,11 +102,11 @@ typedef struct {
     yaml_node_pair_t *last;
 } miter_t;
 
-static te_bool
+static bool
 miter_init(miter_t *iter, yaml_document_t *doc, yaml_node_t *node)
 {
     if (node == NULL || node->type != YAML_MAPPING_NODE)
-        return FALSE;
+        return false;
 
     *iter = (miter_t) {
         .doc = doc,
@@ -114,30 +114,30 @@ miter_init(miter_t *iter, yaml_document_t *doc, yaml_node_t *node)
         .last = node->data.mapping.pairs.top,
     };
 
-    return TRUE;
+    return true;
 }
 
-static te_bool
+static bool
 miter_next(miter_t *iter, const char **name, yaml_node_t **node)
 {
     yaml_node_t *key;
 
     if (iter->next == iter->last)
-        return FALSE;
+        return false;
 
     key = yaml_document_get_node(iter->doc, iter->next->key);
     if (key == NULL || key->type != YAML_SCALAR_NODE)
-        return FALSE;
+        return false;
 
     *name = (const char *)key->data.scalar.value;
     *node = yaml_document_get_node(iter->doc, iter->next->value);
 
     iter->next++;
 
-    return TRUE;
+    return true;
 }
 
-static te_bool
+static bool
 miter_find(miter_t *iter, const char *name, yaml_node_t **node)
 {
     const char *key;
@@ -145,10 +145,10 @@ miter_find(miter_t *iter, const char *name, yaml_node_t **node)
     while (miter_next(iter, &key, node))
     {
         if (strcmp(name, key) == 0)
-            return TRUE;
+            return true;
     }
 
-    return FALSE;
+    return false;
 }
 
 const char *

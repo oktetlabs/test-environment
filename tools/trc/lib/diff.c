@@ -34,7 +34,7 @@ typedef struct trc_diff_state {
     SLIST_ENTRY(trc_diff_state) links;  /**< List links */
     trc_diff_entry     *entry;      /**< Pointer to the entry in
                                          result list */
-    te_bool             has_diff;   /**< Have children differences? */
+    bool has_diff;   /**< Have children differences? */
     unsigned int        children;   /**< Number of children */
 } trc_diff_state;
 
@@ -46,7 +46,7 @@ typedef struct trc_diff_state {
  * @param is_iter       Is a test or an iteration?
  */
 static void
-trc_diff_entry_init(trc_diff_entry *entry, te_bool is_iter)
+trc_diff_entry_init(trc_diff_entry *entry, bool is_iter)
 {
     unsigned int    i;
 
@@ -136,7 +136,7 @@ trc_diff_entry_new(const trc_diff_entry *parent)
 
     if (parent == NULL)
     {
-        trc_diff_entry_init(p, FALSE);
+        trc_diff_entry_init(p, false);
     }
     else
     {
@@ -210,7 +210,7 @@ str_or_null_cmp(const char *s1, const char *s2)
  * @param lhv   Left hand value
  * @param rhv   Right hand value
  */
-te_bool
+bool
 trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
                              const trc_exp_result *rhv)
 {
@@ -221,11 +221,11 @@ trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
     assert(rhv != NULL);
 
     if (lhv == rhv)
-        return TRUE;
+        return true;
 
     if ((str_or_null_cmp(lhv->key, rhv->key) != 0) ||
         (str_or_null_cmp(lhv->notes, rhv->notes) != 0))
-        return FALSE;
+        return false;
 
     /*
      * Check that each entry in left-hand value has equal entry in
@@ -242,7 +242,7 @@ trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
              * The expected result entry does not correspond to any
              * in another expected result or key/notes do not match.
              */
-            return FALSE;
+            return false;
         }
     }
 
@@ -261,11 +261,11 @@ trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
              * The expected result entry does not correspond to any
              * in another expected result or key/notes do not match.
              */
-            return FALSE;
+            return false;
         }
     }
 
-    return TRUE;
+    return true;
 }
 
 /**
@@ -278,14 +278,14 @@ trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
  *
  * @return      Is group homogeneous?
  */
-static te_bool
+static bool
 trc_diff_group_exp_result(const trc_diff_sets  *sets,
                           trc_diff_entry       *group,
                           const trc_diff_entry *item,
-                          te_bool               init)
+                          bool init)
 {
     const trc_diff_set *p;
-    te_bool             all_equal = TRUE;
+    bool all_equal = true;
 
     assert(sets != NULL);
     assert(group != NULL);
@@ -361,11 +361,11 @@ tad_diff_key_stat_inc(trc_diff_keys_stats *keys_stats, const char *key)
  *
  * @return      Should the difference be ignored?
  */
-static te_bool
+static bool
 trc_diff_check_key(trc_diff_set *set, const char *key)
 {
     tqe_string *p;
-    te_bool     ignore = FALSE;
+    bool ignore = false;
 
     if (key == NULL)
         key = "";
@@ -403,7 +403,7 @@ test_status_te2trc(const te_test_status status)
             return TRC_TEST_UNSPECIFIED;
 
         default:
-            assert(FALSE);
+            assert(false);
             return TRC_TEST_STATUS_MAX;
     }
 }
@@ -470,7 +470,7 @@ trc_test_status_merge(trc_test_status result, trc_test_status add)
     else
     {
         /* Really unexpected situation */
-        assert(FALSE);
+        assert(false);
         return TRC_TEST_STATUS_MAX;
     }
 }
@@ -624,14 +624,14 @@ trc_diff_stats_inc(trc_diff_stats  *stats,
             iter_el->hash =
                 trc_diff_iter_hash_get(entry->ptr.iter,
                                        trc_diff_find_set(sets, set_i,
-                                                         TRUE)->db_uid);
+                                                         true)->db_uid);
         }
         if (iter_el->hash == NULL)
         {
             iter_el->hash =
                 trc_diff_iter_hash_get(entry->ptr.iter,
                                        trc_diff_find_set(sets, set_j,
-                                                         TRUE)->db_uid);
+                                                         true)->db_uid);
         }
     }
 
@@ -672,17 +672,17 @@ trc_diff_compare(trc_diff_sets  *sets,
     trc_test_status             status1 = TRC_TEST_STATUS_MAX;
     trc_test_status             status2 = TRC_TEST_STATUS_MAX;
     trc_diff_status             diff    = TRC_DIFF_MATCH;
-    te_bool                     ignore;
-    te_bool                     main_key_used;
+    bool ignore;
+    bool main_key_used;
 
     assert(sets != NULL);
 
-    set1 = trc_diff_find_set(sets, id1, TRUE);
+    set1 = trc_diff_find_set(sets, id1, true);
     if (set1 == NULL)
     {
         return -1;
     }
-    set2 = trc_diff_find_set(sets, id2, TRUE);
+    set2 = trc_diff_find_set(sets, id2, true);
     if (set2 == NULL)
     {
         return -1;
@@ -698,7 +698,7 @@ trc_diff_compare(trc_diff_sets  *sets,
      * Check that each entry in the expecred result for the first set
      * has equal entry in the expected result for the second set.
      */
-    main_key_used = FALSE;
+    main_key_used = false;
     TAILQ_FOREACH(p, &result1->results, links)
     {
         /*
@@ -724,7 +724,7 @@ trc_diff_compare(trc_diff_sets  *sets,
                 }
                 else if (!main_key_used)
                 {
-                    main_key_used = TRUE;
+                    main_key_used = true;
                     tad_diff_key_stat_inc(&set1->keys_stats, result1->key);
                     if (result1->key != NULL)
                         tq_strings_add_uniq(keys1, result1->key);
@@ -769,7 +769,7 @@ trc_diff_compare(trc_diff_sets  *sets,
      * Check that each entry in the expecred result for the second set
      * has equal entry in the expected result for the first set.
      */
-    main_key_used = FALSE;
+    main_key_used = false;
     TAILQ_FOREACH(p, &result2->results, links)
     {
         if (trc_is_result_expected(result1, &p->result) == NULL)
@@ -790,7 +790,7 @@ trc_diff_compare(trc_diff_sets  *sets,
                 }
                 else if (!main_key_used)
                 {
-                    main_key_used = TRUE;
+                    main_key_used = true;
                     tad_diff_key_stat_inc(&set2->keys_stats, result2->key);
                     if (result2->key != NULL)
                         tq_strings_add_uniq(keys2, result2->key);
@@ -845,8 +845,8 @@ trc_diff_compare_iter(trc_diff_sets  *sets,
     const trc_diff_set *set1;
     const trc_diff_set *set2;
 
-    te_bool is_exp1 = TRUE;
-    te_bool is_exp2 = TRUE;
+    bool is_exp1 = true;
+    bool is_exp2 = true;
 
     trc_report_test_iter_data *iter_data1;
     trc_report_test_iter_data *iter_data2;
@@ -857,7 +857,7 @@ trc_diff_compare_iter(trc_diff_sets  *sets,
     trc_test_status status1 = TRC_TEST_STATUS_MAX;
     trc_test_status status2 = TRC_TEST_STATUS_MAX;
     trc_diff_status diff    = TRC_DIFF_MATCH;
-    te_bool         is_equal;
+    bool is_equal;
 
     assert(entry != NULL);
     test_iter = entry->ptr.iter;
@@ -867,12 +867,12 @@ trc_diff_compare_iter(trc_diff_sets  *sets,
     }
 
     assert(sets != NULL);
-    set1 = trc_diff_find_set(sets, id1, TRUE);
+    set1 = trc_diff_find_set(sets, id1, true);
     if (set1 == NULL)
     {
         return -1;
     }
-    set2 = trc_diff_find_set(sets, id2, TRUE);
+    set2 = trc_diff_find_set(sets, id2, true);
     if (set2 == NULL)
     {
         return -1;
@@ -920,7 +920,7 @@ trc_diff_compare_iter(trc_diff_sets  *sets,
         goto cleanup;
     }
 
-    is_equal = TRUE;
+    is_equal = true;
     TAILQ_FOREACH(iter_entry1, &iter_data1->runs, links)
     {
         TAILQ_FOREACH(iter_entry2, &iter_data2->runs, links)
@@ -928,7 +928,7 @@ trc_diff_compare_iter(trc_diff_sets  *sets,
             if (!te_test_results_equal(&iter_entry1->result,
                                        &iter_entry2->result))
             {
-                is_equal = FALSE;
+                is_equal = false;
                 break;
             }
         }
@@ -947,7 +947,7 @@ cleanup:
     if (status2 == TRC_TEST_STATUS_MAX)
         status2 = TRC_TEST_UNSPECIFIED;
 
-    if (is_exp1 != TRUE)
+    if (is_exp1 != true)
     {
         if (status1 == TRC_TEST_PASSED)
             status1 = TRC_TEST_PASSED_UNE;
@@ -955,7 +955,7 @@ cleanup:
             status1 = TRC_TEST_FAILED_UNE;
     }
 
-    if (is_exp2 != TRUE)
+    if (is_exp2 != true)
     {
         if (status2 == TRC_TEST_PASSED)
             status2 = TRC_TEST_PASSED_UNE;
@@ -994,7 +994,7 @@ trc_diff_entry_has_diff(const trc_diff_sets *sets,
 {
     trc_diff_set   *p;
     trc_diff_set   *q;
-    te_bool         diff = FALSE;
+    bool diff = false;
 
     assert(sets != NULL);
     assert(parent != NULL);
@@ -1010,14 +1010,14 @@ trc_diff_entry_has_diff(const trc_diff_sets *sets,
                                       parent, entry,
                                       p->id, q->id,
                                       stats) != TRC_DIFF_MATCH)
-                    diff = TRUE;
+                    diff = true;
             }
             else
             {
                 if (trc_diff_compare_iter((trc_diff_sets *)sets, entry,
                                            p->id, q->id, stats) !=
                      TRC_DIFF_MATCH)
-                    diff = TRUE;
+                    diff = true;
             }
 
             /*
@@ -1061,18 +1061,18 @@ trc_diff_do(trc_diff_ctx *ctx)
     SLIST_HEAD(, trc_diff_state) states;
 
     te_errno                rc;
-    te_bool                 start;
+    bool start;
     unsigned int            level;
     trc_diff_state         *state;
     te_trc_db_walker       *walker;
     trc_db_walker_motion    motion;
     trc_diff_entry         *parent;
     unsigned int            children;
-    te_bool                 has_diff;
-    te_bool                 hide_children = FALSE; /* Just to make
+    bool has_diff;
+    bool hide_children = false; /* Just to make
                                                       compiler happy */
     trc_diff_entry         *entry;
-    te_bool                 entry_to_result = FALSE; /* Just to make
+    bool entry_to_result = false; /* Just to make
                                                         compiler happy */
 
     if (ctx == NULL || ctx->db == NULL)
@@ -1086,10 +1086,10 @@ trc_diff_do(trc_diff_ctx *ctx)
 
     /* Traverse the tree */
     rc = 0;
-    start = TRUE;
+    start = true;
     level = 0;
     parent = entry = NULL;
-    has_diff = FALSE;
+    has_diff = false;
     children = 0;
     while ((rc == 0) &&
            ((motion = trc_db_walker_move(walker)) != TRC_DB_WALKER_ROOT))
@@ -1103,7 +1103,7 @@ trc_diff_do(trc_diff_ctx *ctx)
             case TRC_DB_WALKER_SON:
                 if (start)
                 {
-                    start = FALSE;
+                    start = false;
                 }
                 else
                 {
@@ -1125,16 +1125,16 @@ trc_diff_do(trc_diff_ctx *ctx)
                     parent->level = level;
                     TAILQ_INSERT_TAIL(&ctx->result, parent, links);
                     /* Ignore 'entry_to_result' for non-leaf nodes */
-                    has_diff = FALSE;
+                    has_diff = false;
                     children = 0;
                     /* May be its children are leaves of the tree */
-                    hide_children = TRUE;
+                    hide_children = true;
                     /* Moved to the next level */
                     level++;
                 }
                 /* Fake 'entry_to_result' condition to force allocation */
                 assert(entry == NULL);
-                entry_to_result = TRUE;
+                entry_to_result = true;
                 /*@fallthrough@*/
 
             case TRC_DB_WALKER_BROTHER:
@@ -1153,7 +1153,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                         rc = TE_ENOMEM;
                         break;
                     }
-                    entry_to_result = FALSE;
+                    entry_to_result = false;
                 }
                 else
                 {
@@ -1191,24 +1191,24 @@ trc_diff_do(trc_diff_ctx *ctx)
                                  * Therefore, it is necessary to show which
                                  * one has differences.
                                  */
-                                hide_children = FALSE;
+                                hide_children = false;
                                 break;
 
                             case 1:
                                 entry->ptr.iter =
                                     trc_db_walker_get_iter(walker);
-                                entry_to_result = has_diff = TRUE;
+                                entry_to_result = has_diff = true;
                                 if (!trc_diff_group_exp_result(&ctx->sets,
                                          parent, entry,
                                          motion == TRC_DB_WALKER_SON))
                                 {
                                     /* Group is not homogeneous */
-                                    hide_children = FALSE;
+                                    hide_children = false;
                                 }
                                 break;
 
                             default:
-                                assert(FALSE);
+                                assert(false);
                         }
                     }
                 }
@@ -1264,7 +1264,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                         free(entry);
                         entry = NULL;
                     }
-                    entry_to_result = TRUE;
+                    entry_to_result = true;
                 }
                 else
                 {
@@ -1286,7 +1286,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                 has_diff = has_diff || state->has_diff;
                 children = state->children;
                 /* Never hide children who have own children */
-                hide_children = FALSE;
+                hide_children = false;
                 free(state);
                 /* Previous level */
                 assert(level > 0);
@@ -1294,7 +1294,7 @@ trc_diff_do(trc_diff_ctx *ctx)
                 break;
 
             default:
-                assert(FALSE);
+                assert(false);
         }
     }
 

@@ -94,13 +94,13 @@ init_test(const char **init_inst, int num_init_inst,
     }
 }
 
-static te_bool
+static bool
 test_act(const char **init_inst, int num_init_inst,
          const char **init_subinst, int num_init_subinst,
          const char **methods, int num_methods,
          const char **expected_act, int num_expected_act)
 {
-    te_bool  success = TRUE;
+    bool success = true;
     unsigned foo_expected = TE_ENOENT;
     unsigned foo_bar_expected = TE_ENOENT;
     unsigned foo1_expected = TE_ENOENT;
@@ -135,7 +135,7 @@ test_act(const char **init_inst, int num_init_inst,
                               init_inst[i], methods[k]);
             if (TE_RC_GET_ERROR(rc) != foo_expected)
             {
-                success = FALSE;
+                success = false;
                 ERROR_VERDICT("Unexpected status of instance 'foo:%s/baz:%s': "
                               "%r", init_inst[i], methods[k], rc);
             }
@@ -144,7 +144,7 @@ test_act(const char **init_inst, int num_init_inst,
                               init_inst[i], methods[k]);
             if (TE_RC_GET_ERROR(rc) != foo1_expected)
             {
-                success = FALSE;
+                success = false;
                 ERROR_VERDICT("Unexpected status of instance 'foo1:%s/baz:%s': "
                               "%r", init_inst[i], methods[k], rc);
             }
@@ -159,7 +159,7 @@ test_act(const char **init_inst, int num_init_inst,
                                   init_inst[i], init_subinst[j], methods[k]);
                 if (TE_RC_GET_ERROR(rc) != foo_bar_expected)
                 {
-                    success = FALSE;
+                    success = false;
                     ERROR_VERDICT("Unexpected status of instance "
                                   "'%s/foo:%s/bar:%s/baz:%s': %r",
                                  init_inst[i], init_subinst[j], methods[k], rc);
@@ -188,7 +188,7 @@ main(int argc, char **argv)
     const char  *area_act;
     size_t   i, j;
     unsigned expected_error;
-    te_bool  test_ok = TRUE;
+    bool test_ok = true;
 
     TEST_START;
     TEST_GET_STRING_LIST_PARAM(init_inst, num_init_inst);
@@ -228,7 +228,7 @@ main(int argc, char **argv)
         {
             ERROR_VERDICT("Unexpected actualization error: method '%s'",
                           methods[i]);
-            test_ok = FALSE;
+            test_ok = false;
         }
         if (TE_RC_GET_ERROR(rc) != TE_ENOENT &&
             TE_RC_GET_ERROR(rc) != TE_ECHILD)

@@ -36,13 +36,13 @@
  * @param[in]  ctx    parameter expansion context
  * @param[out] dest   destination string
  *
- * @return @c TRUE if @p dest has been appended to
+ * @return @c true if @p dest has been appended to
  *
- * @note The function is allowed to return @c TRUE without
+ * @note The function is allowed to return @c true without
  *       actually modifying @p dest meaning that @p name is
  *       associated with an "explicitly empty" value.
  */
-typedef te_bool (*te_expand_param_func)(const char *name, const void *ctx,
+typedef bool (*te_expand_param_func)(const char *name, const void *ctx,
                                         te_string *dest);
 
 /**

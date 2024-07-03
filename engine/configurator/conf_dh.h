@@ -30,7 +30,7 @@ extern "C" {
  * @return status code (errno.h)
  */
 extern int cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
-                               te_bool postsync);
+                               bool postsync);
 
 /**
  * Create "history" configuration file with specified name.
@@ -65,7 +65,7 @@ extern int cfg_dh_attach_backup(char *filename);
  * @retval TE_ENOENT       there is not command in dynamic history to which
  *                      the specified backup is attached
  */
-extern int cfg_dh_restore_backup(char *filename, te_bool hard_check);
+extern int cfg_dh_restore_backup(char *filename, bool hard_check);
 
 /**
  * Restore backup when the configurator shuts down reversing the dynamic
@@ -85,7 +85,7 @@ extern int cfg_dh_restore_backup_on_shutdown();
  *
  * @return 0 (success) or TE_ENOMEM
  */
-extern int cfg_dh_push_command(cfg_msg *msg, te_bool local,
+extern int cfg_dh_push_command(cfg_msg *msg, bool local,
                                const cfg_inst_val *old_val);
 
 /**

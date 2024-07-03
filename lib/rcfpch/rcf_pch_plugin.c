@@ -39,7 +39,7 @@ typedef struct rpcserver_plugin {
 
     char    name[RCF_MAX_ID];           /**< RPC server plugin name */
 
-    te_bool enable;                     /**< Status of plugin */
+    bool enable;                     /**< Status of plugin */
 
     /** Function name for install callback */
     char    install[RCF_MAX_ID];
@@ -165,7 +165,7 @@ rpcserver_plugin_add(unsigned int gid, const char *oid, const char *value,
     }
 
     strcpy(plugin->name, name);
-    plugin->enable = FALSE;
+    plugin->enable = false;
     LIST_INSERT_HEAD(&plugins, plugin, next);
 
     pthread_mutex_unlock(lock);
@@ -516,12 +516,12 @@ rpcserver_plugin_enable_set(unsigned int gid, const char *oid, char *value,
                             const char *name)
 {
     te_errno    rc = 0;
-    te_bool     enable;
+    bool enable;
 
     if (strcmp(value, "1") == 0)
-        enable = TRUE;
+        enable = true;
     else if (strcmp(value, "0") == 0)
-        enable = FALSE;
+        enable = false;
     else
         return TE_RC(TE_RCF_PCH, TE_EINVAL);
 

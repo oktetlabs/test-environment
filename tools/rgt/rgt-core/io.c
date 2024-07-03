@@ -86,9 +86,9 @@ universal_read(FILE *fd, void *buf, size_t count, rgt_io_mode_t io_mode, const c
 
 /* See description in io.h */
 void
-write_xml_string(struct obstack *obstk, const char *str, te_bool attr_val)
+write_xml_string(struct obstack *obstk, const char *str, bool attr_val)
 {
-    te_bool br_cntrl_start = TRUE;
+    bool br_cntrl_start = true;
     int     i = 0;
 
     while (str[i] != '\0')
@@ -110,12 +110,12 @@ write_xml_string(struct obstack *obstk, const char *str, te_bool attr_val)
                  * In case of \r\n\r or \n\r\r -> <br/><br/>
                  * In case of \n\r\r\n or \r\n\n\r -> <br/><br/>
                  *
-                 * If br_cntrl_start is TRUE, we output </BR>
+                 * If br_cntrl_start is @c true, we output </BR>
                  * just after we meet '\n' ('\r') checking that there
                  * was no '\r' ('\n') as the previous character.
                  */
                 if (i > 0 && str[i - 1] != '\n' && str[i - 1] != '\r')
-                    br_cntrl_start = TRUE;
+                    br_cntrl_start = true;
 
 /* Returns '\r' ('\n') when ch_ is '\n' ('\r') */
 #define BR_CTRL_INVERT(ch_) (((ch_) == '\n') ? '\r' : '\n')
@@ -124,12 +124,12 @@ write_xml_string(struct obstack *obstk, const char *str, te_bool attr_val)
                     str[i - 1] == BR_CTRL_INVERT(str[i]))
                 {
                     /* Skip this character */
-                    br_cntrl_start = FALSE;
+                    br_cntrl_start = false;
                     break;
                 }
 #undef BR_CTRL_INVERT
 
-                br_cntrl_start = TRUE;
+                br_cntrl_start = true;
 
                 if (attr_val)
                 {

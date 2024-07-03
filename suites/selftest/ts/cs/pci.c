@@ -66,26 +66,26 @@ check_spdk_config(const char *ta, const char *pci_oid, const char *vnd_oid)
     if (class_id != TE_PCI_CLASS_MASS_STORAGE_CONTROLLER)
     {
         rc = tapi_cfg_pci_get_spdk_config_filename(pci_oid, "Test",
-                                                   TRUE, &filename);
+                                                   true, &filename);
         if (rc != TE_RC(TE_TA_UNIX, TE_ENOTBLK))
             TEST_VERDICT("SPDK config added to a non-storage device");
 
         rc = tapi_cfg_pci_get_spdk_config_filename(vnd_oid, "Test",
-                                                   TRUE, &filename);
+                                                   true, &filename);
         if (rc != TE_RC(TE_TA_UNIX, TE_ENOTBLK))
             TEST_VERDICT("SPDK config added to a non-storage device");
         return;
     }
 
     CHECK_RC(tapi_cfg_pci_get_spdk_config_filename(pci_oid, "Test",
-                                                   TRUE, &filename));
+                                                   true, &filename));
     rc = tapi_cfg_pci_get_spdk_config_filename(pci_oid, "Test",
-                                               TRUE, &filename);
+                                               true, &filename);
     if (rc != TE_RC(TE_CS, TE_EEXIST))
         TEST_VERDICT("Duplicate SPDK config was added");
 
     CHECK_RC(tapi_cfg_pci_get_spdk_config_filename(vnd_oid, "Test",
-                                                   FALSE, &filename2));
+                                                   false, &filename2));
     if (strcmp(filename, filename2) != 0)
     {
         ERROR("Two filenames of the same SPDK config differ: '%s' vs '%s'",
@@ -94,11 +94,11 @@ check_spdk_config(const char *ta, const char *pci_oid, const char *vnd_oid)
     }
 
     rc = tapi_cfg_pci_get_spdk_config_filename(vnd_oid, "Test1",
-                                               FALSE, &filename3);
+                                               false, &filename3);
     if (rc != TE_RC(TE_CS, TE_ENOENT))
         TEST_VERDICT("Non-existing SPDK config file was retrieved", rc);
     CHECK_RC(tapi_cfg_pci_get_spdk_config_filename(vnd_oid, "Test1",
-                                                   TRUE, &filename3));
+                                                   true, &filename3));
     if (strcmp(filename, filename3) == 0)
     {
         ERROR("Two filenames of different SPDK configs are the same '%s'",

@@ -89,10 +89,10 @@ typedef struct tapi_sfnt_pp_opt {
     int max_iter;
     /**
      * Making non-blocking calls.
-     * @p spin is @c TRUE means
+     * @p spin is @c true means
      * @p timeout equal to zero.
      */
-    te_bool spin;
+    bool spin;
     /**
      * Type of iomux call. poll, epoll, select, none.
      */

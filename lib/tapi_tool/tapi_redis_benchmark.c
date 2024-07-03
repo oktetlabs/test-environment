@@ -21,23 +21,23 @@ static const char *redis_benchmark_path = "redis-benchmark";
 
 /* Supported redis-benchmark command line arguments. */
 static const tapi_job_opt_bind redis_benchmark_binds[] = TAPI_JOB_OPT_SET(
-    TAPI_JOB_OPT_SOCKADDR_PTR("-h", FALSE, tapi_redis_benchmark_opt, server),
-    TAPI_JOB_OPT_SOCKPORT_PTR("-p", FALSE, tapi_redis_benchmark_opt, server),
-    TAPI_JOB_OPT_STRING("-s", FALSE, tapi_redis_benchmark_opt, socket),
-    TAPI_JOB_OPT_UINT_T("-c", FALSE, NULL, tapi_redis_benchmark_opt, clients),
-    TAPI_JOB_OPT_UINT_T("-n", FALSE, NULL, tapi_redis_benchmark_opt, requests),
-    TAPI_JOB_OPT_UINT_T("-d", FALSE, NULL, tapi_redis_benchmark_opt, size),
-    TAPI_JOB_OPT_UINT_T("--dbnum", FALSE, NULL, tapi_redis_benchmark_opt,
+    TAPI_JOB_OPT_SOCKADDR_PTR("-h", false, tapi_redis_benchmark_opt, server),
+    TAPI_JOB_OPT_SOCKPORT_PTR("-p", false, tapi_redis_benchmark_opt, server),
+    TAPI_JOB_OPT_STRING("-s", false, tapi_redis_benchmark_opt, socket),
+    TAPI_JOB_OPT_UINT_T("-c", false, NULL, tapi_redis_benchmark_opt, clients),
+    TAPI_JOB_OPT_UINT_T("-n", false, NULL, tapi_redis_benchmark_opt, requests),
+    TAPI_JOB_OPT_UINT_T("-d", false, NULL, tapi_redis_benchmark_opt, size),
+    TAPI_JOB_OPT_UINT_T("--dbnum", false, NULL, tapi_redis_benchmark_opt,
                         dbnum),
-    TAPI_JOB_OPT_UINT_T("-k", FALSE, NULL, tapi_redis_benchmark_opt,
+    TAPI_JOB_OPT_UINT_T("-k", false, NULL, tapi_redis_benchmark_opt,
                         keep_alive),
-    TAPI_JOB_OPT_UINT_T("-r", FALSE, NULL, tapi_redis_benchmark_opt,
+    TAPI_JOB_OPT_UINT_T("-r", false, NULL, tapi_redis_benchmark_opt,
                         keyspacelen),
-    TAPI_JOB_OPT_UINT_T("-P", FALSE, NULL, tapi_redis_benchmark_opt, pipelines),
+    TAPI_JOB_OPT_UINT_T("-P", false, NULL, tapi_redis_benchmark_opt, pipelines),
     TAPI_JOB_OPT_BOOL("-e", tapi_redis_benchmark_opt, show_srv_errors),
-    TAPI_JOB_OPT_UINT_T("--threads", FALSE, NULL, tapi_redis_benchmark_opt,
+    TAPI_JOB_OPT_UINT_T("--threads", false, NULL, tapi_redis_benchmark_opt,
                         threads),
-    TAPI_JOB_OPT_STRING("-t", FALSE, tapi_redis_benchmark_opt, tests),
+    TAPI_JOB_OPT_STRING("-t", false, tapi_redis_benchmark_opt, tests),
     TAPI_JOB_OPT_BOOL("-I", tapi_redis_benchmark_opt, idle)
 );
 
@@ -52,10 +52,10 @@ const tapi_redis_benchmark_opt tapi_redis_benchmark_default_opt = {
     .keep_alive         = TAPI_JOB_OPT_UINT_UNDEF,
     .keyspacelen        = TAPI_JOB_OPT_UINT_UNDEF,
     .pipelines          = TAPI_JOB_OPT_UINT_UNDEF,
-    .show_srv_errors    = TRUE,
+    .show_srv_errors    = true,
     .threads            = TAPI_JOB_OPT_UINT_UNDEF,
     .tests              = NULL,
-    .idle               = FALSE,
+    .idle               = false,
     .exec_path          = NULL
 };
 
@@ -97,35 +97,35 @@ tapi_redis_benchmark_create(tapi_job_factory_t *factory,
                             .stderr_loc = &new_app->out_chs[1],
                             .filters    = TAPI_JOB_SIMPLE_FILTERS(
                                 {
-                                    .use_stdout = TRUE,
-                                    .readable = TRUE,
+                                    .use_stdout = true,
+                                    .readable = true,
                                     .re = "======\\s*([^=]*)\\s======",
                                     .extract = 1,
                                     .filter_var = &new_app->filter_test_name,
                                 },
                                 {
-                                    .use_stdout = TRUE,
-                                    .readable = TRUE,
+                                    .use_stdout = true,
+                                    .readable = true,
                                     .re = "completed in ([0-9.]*) seconds",
                                     .extract = 1,
                                     .filter_var = &new_app->filter_time,
                                 },
                                 {
-                                    .use_stdout = TRUE,
-                                    .readable = TRUE,
+                                    .use_stdout = true,
+                                    .readable = true,
                                     .re = "([0-9.]*) requests per second",
                                     .extract = 1,
                                     .filter_var = &new_app->filter_rps,
                                 },
                                 {
-                                    .use_stdout  = TRUE,
-                                    .readable    = TRUE,
+                                    .use_stdout  = true,
+                                    .readable    = true,
                                     .log_level   = TE_LL_RING,
                                     .filter_name = "redis-benchmark stdout"
                                 },
                                 {
-                                    .use_stderr  = TRUE,
-                                    .readable    = FALSE,
+                                    .use_stderr  = true,
+                                    .readable    = false,
                                     .log_level   = TE_LL_WARN,
                                     .filter_name = "redis-benchmark stderr"
                                 }

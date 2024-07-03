@@ -45,7 +45,7 @@ tapi_cfg_iptables_chain_set(const char *ta,
                             unsigned int af,
                             const char *table,
                             const char *chain,
-                            te_bool     enable)
+                            bool enable)
 {
     int rc;
 
@@ -67,7 +67,7 @@ tapi_cfg_iptables_chain_set(const char *ta,
         return rc;
     }
 
-    if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s"
+    if ((rc = cfg_synchronize_fmt(true, "/agent:%s/interface:%s"
                                   "/iptables:%s/table:%s",
                                   ta, ifname, af_str(af), table)) != 0)
     {
@@ -86,7 +86,7 @@ tapi_cfg_iptables_chain_add(const char *ta,
                             unsigned int af,
                             const char *table,
                             const char *chain,
-                            te_bool     enable)
+                            bool enable)
 {
     int rc;
     cfg_handle handle;
@@ -115,7 +115,7 @@ tapi_cfg_iptables_chain_add(const char *ta,
         return rc;
     }
 
-    if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s"
+    if ((rc = cfg_synchronize_fmt(true, "/agent:%s/interface:%s"
                                   "/iptables:%s/table:%s",
                                   ta, ifname, af_str(af), table)) != 0)
     {
@@ -140,7 +140,7 @@ tapi_cfg_iptables_chain_del(const char *ta,
     INFO("Delete iptables chain (TA:%s, ifname:%s, table:%s, chain:%s)",
          ta, ifname, table, chain);
 
-    if ((rc = cfg_del_instance_fmt(FALSE,
+    if ((rc = cfg_del_instance_fmt(false,
                                    "/agent:%s/interface:%s/iptables:%s"
                                    "/table:%s/chain:%s",
                                    ta, ifname, af_str(af), table, chain)) != 0)
@@ -149,7 +149,7 @@ tapi_cfg_iptables_chain_del(const char *ta,
         return rc;
     }
 
-    if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s"
+    if ((rc = cfg_synchronize_fmt(true, "/agent:%s/interface:%s"
                                   "/iptables:%s/table:%s",
                                   ta, ifname, af_str(af), table)) != 0)
     {
@@ -193,7 +193,7 @@ tapi_cfg_iptables_cmd(const char *ta,
         return rc;
     }
 
-    if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s"
+    if ((rc = cfg_synchronize_fmt(true, "/agent:%s/interface:%s"
                                   "/iptables:%s/table:%s/chain:%s",
                                   ta, ifname, af_str(af), table, chain)) != 0)
     {
@@ -268,7 +268,7 @@ tapi_cfg_iptables_rules(const char *ta,
         return rc;
     }
 
-    if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s"
+    if ((rc = cfg_synchronize_fmt(true, "/agent:%s/interface:%s"
                                   "/iptables:%s/table:%s/chain:%s",
                                   ta, ifname, af_str(af), table, chain)) != 0)
     {

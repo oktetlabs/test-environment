@@ -224,7 +224,7 @@
         if ((sockd_) >= 0 && (rpcs_) != NULL)                       \
         {                                                           \
             if (TEST_BEHAVIOUR(cleanup_fd_close_enforce_libc))      \
-                (rpcs_)->use_libc_once = TRUE;                      \
+                (rpcs_)->use_libc_once = true;                      \
                                                                     \
             RPC_AWAIT_IUT_ERROR(rpcs_);                             \
             if (rpc_close((rpcs_), (sockd_)) != 0)                  \
@@ -235,14 +235,14 @@
                 if (rpc_fstat((rpcs_), (sockd_), &buf) != -1 ||     \
                     RPC_ERRNO(rpcs_) != RPC_EBADF)                  \
                 {                                                   \
-                    if ((rpcs_)->timed_out == FALSE)                \
+                    if ((rpcs_)->timed_out == false)                \
                     {                                               \
                         if (!fd_not_closed_verdict)                 \
                             ERROR_VERDICT("FD is not closed.");     \
                         else                                        \
                             ERROR("FD is not closed");              \
                                                                     \
-                        fd_not_closed_verdict = TRUE;               \
+                        fd_not_closed_verdict = true;               \
                     }                                               \
                     MACRO_TEST_ERROR;                               \
                 }                                                   \
@@ -272,12 +272,12 @@
  *
  * @param rpcs_        RPC server handle
  * @param exp_errno_   Expected value of errno on the server
- * @param failed_      Variable to store result of checking (@c TRUE
- *                     or @c FALSE)
+ * @param failed_      Variable to store result of checking (@c true
+ *                     or @c false)
  * @param err_msg_     Error message that should be used in case of failure
  * @param args_        Arguments of err_msg_
  *
- * @se In case of failure it set failed_ to @c TRUE, otherwise to @c FALSE
+ * @se In case of failure it set failed_ to @c true, otherwise to @c false
  */
 #define CHECK_RPC_ERRNO_NOEXIT(rpcs_, exp_errno_, failed_, err_msg_, \
                                args_...) \
@@ -298,10 +298,10 @@
                               "of %s", errno_rpc2str(err_),             \
                               errno_rpc2str(exp_errno_));               \
             }                                                           \
-            failed_ = TRUE;                                             \
+            failed_ = true;                                             \
         }                                                               \
         else                                                            \
-            failed_ = FALSE;                                            \
+            failed_ = false;                                            \
     } while (0)
 
 /**
@@ -317,7 +317,7 @@
  */
 #define CHECK_RPC_ERRNO(rpcs_, exp_errno_, err_msg_, args_...) \
     do {                                                                \
-        te_bool failed_;                                                \
+        bool failed_;                                                \
                                                                         \
         CHECK_RPC_ERRNO_NOEXIT(rpcs_, exp_errno_, failed_, err_msg_,    \
                                args_);                                  \
@@ -332,7 +332,7 @@
  * Get readability of a particular socket.
  *
  * @param answer_    variable where stored is readable or not
- *                   (it should be of type 'te_bool')
+ *                   (it should be of type @c bool)
  * @param rpcs_      RPC server handle
  * @param sockd_     Socket to be checked on readabilty
  * @param timeout_   timeout in milliseconds
@@ -351,7 +351,7 @@
  * Get writability of a particular socket.
  *
  * @param answer_    variable where stored is readable or not
- *                   (it should be of type 'te_bool')
+ *                   (it should be of type @c bool)
  * @param rpcs_      RPC server handle
  * @param sockd_     Socket to be checked on writability
  * @param timeout_   timeout in milliseconds
@@ -372,22 +372,22 @@
  * @param rpcs_                RPC server handle
  * @param sockd_               Socket to be checked on readabilty
  * @param should_be_readable_  Whether it should be readable or not
- *                             (it should be of type 'te_bool')
+ *                             (it should be of type @c bool)
  *
  * @note In case of failure it calls TEST_FAIL macro, otherwise it
  * gets back just after the checking
  */
 #define RPC_CHECK_READABILITY(rpcs_, sockd_, should_be_readable_) \
     do {                                                                \
-        te_bool         answer_ = !(should_be_readable_);               \
+        bool answer_ = !(should_be_readable_);               \
                                                                         \
         RPC_GET_READABILITY(answer_, rpcs_, sockd_, 1);                 \
-        if (should_be_readable_ == TRUE && answer_ == FALSE)            \
+        if (should_be_readable_ == true && answer_ == false)            \
         {                                                               \
             TEST_VERDICT("Socket '" #sockd_ "' is expected to be "         \
                       "readable, but it is not");                       \
         }                                                               \
-        else if (should_be_readable_ == FALSE && answer_ == TRUE)       \
+        else if (should_be_readable_ == false && answer_ == true)       \
         {                                                               \
             TEST_VERDICT("Socket '" #sockd_ "' is not expected to be "     \
                       "readable, but it is");                           \
@@ -400,22 +400,22 @@
  * @param rpcs_                 RPC server handle
  * @param sockd_                Socket to be checked on writabilty
  * @param should_be_writable_  Whether it should be writable or not
- *                              (it should be of type 'te_bool')
+ *                              (it should be of type @c bool)
  *
  * @note In case of failure it calls TEST_FAIL macro, otherwise it
  * gets back just after the checking
  */
 #define RPC_CHECK_WRITABILITY(rpcs_, sockd_, should_be_writable_) \
     do {                                                                \
-        te_bool         answer_;                                        \
+        bool answer_;                                        \
                                                                         \
         RPC_GET_WRITABILITY(answer_, rpcs_, sockd_, 1);                 \
-        if (should_be_writable_ == TRUE && answer_ == FALSE)            \
+        if (should_be_writable_ == true && answer_ == false)            \
         {                                                               \
             TEST_FAIL("Socket '" #sockd_ "' is expected to be "         \
                       "writable, but it is not");                       \
         }                                                               \
-        else if (should_be_writable_ == FALSE && answer_ == TRUE)       \
+        else if (should_be_writable_ == false && answer_ == true)       \
         {                                                               \
             TEST_FAIL("Socket '" #sockd_ "' is not expected to be "     \
                       "writable, but it is");                           \

@@ -129,7 +129,7 @@ typedef struct te_l2tp_opt_auth {
     SLIST_ENTRY(te_l2tp_opt_auth)    list;
     SLIST_HEAD(, te_l2tp_secret)     secret;     /**< CHAP|PAP secret */
     enum l2tp_auth_policy            policy;     /**< refuse or require secrets */
-    te_bool                          is_enabled; /**< TRUE(yes) or FALSE(no) */
+    bool is_enabled; /**< @c true (yes) or @c false (no) */
     char                            *name;       /**< Authentication option name:
                                                       chap|pap */
 } te_l2tp_opt_auth;
@@ -154,22 +154,22 @@ typedef struct te_l2tp_server {
                                                       server structure */
     SLIST_HEAD(, te_l2tp_connected) client;      /**< Connected clients to
                                                       the L2TP server */
-    te_bool                         initialized; /**< Flag to determine whether
+    bool initialized; /**< Flag to determine whether
                                                       the structure is initialized */
-    te_bool                         started;     /**< Admin status for the
+    bool started;     /**< Admin status for the
                                                       L2TP server */
-    te_bool                         changed;     /**< Configuration changed flag,
+    bool changed;     /**< Configuration changed flag,
                                                       used to detect if
                                                       L2TP-server restart
                                                       is required */
-    te_bool chap_changed;   /**< Whether CHAP secrets file was updated, or not */
-    te_bool pap_changed;    /**< Whether PAP secrets file was updated, or not */
+    bool chap_changed;   /**< Whether CHAP secrets file was updated, or not */
+    bool pap_changed;    /**< Whether PAP secrets file was updated, or not */
     int     pid;            /**< PID of xl2tpd */
     char   *conf_file;      /**< Config file name */
     char   *pid_file;       /**< pid file name */
 } te_l2tp_server;
 
-static te_bool
+static bool
 l2tp_is_running(te_l2tp_server *l2tp);
 
 /** Static L2TP server structure */
@@ -281,12 +281,12 @@ l2tp_server_init(te_l2tp_server *l2tp)
     SLIST_INIT(&l2tp->client);
     l2tp->started = l2tp_is_running(l2tp);
     l2tp->changed = l2tp->started;
-    l2tp->chap_changed = FALSE;
-    l2tp->pap_changed = FALSE;
+    l2tp->chap_changed = false;
+    l2tp->pap_changed = false;
     l2tp->pid = -1;
     l2tp->conf_file = NULL;
     l2tp->pid_file = NULL;
-    l2tp->initialized = TRUE;
+    l2tp->initialized = true;
 }
 
 /**
@@ -452,9 +452,9 @@ l2tp_server_save_secrets_mode(FILE *l2tp_file,
  * @param l2tp          L2TP server context.
  * @param protocol      Authentication protocol.
  *
- * @return @c TRUE if secrets are set, @c FALSE otherwise.
+ * @return @c true if secrets are set, @c false otherwise.
  */
-static te_bool
+static bool
 l2tp_secret_is_set(te_l2tp_server *l2tp, enum l2tp_secret_prot protocol)
 {
     te_l2tp_section  *section;
@@ -464,10 +464,10 @@ l2tp_secret_is_set(te_l2tp_server *l2tp, enum l2tp_secret_prot protocol)
     {
         auth = l2tp_find_auth_opt(section, l2tp_secret_prot2str[protocol]);
         if (auth != NULL && !SLIST_EMPTY(&auth->secret))
-            return TRUE;
+            return true;
     }
 
-    return FALSE;
+    return false;
 }
 
 /**
@@ -540,7 +540,7 @@ static te_errno
 l2tp_secrets_copy(FILE *dst, const char *src)
 {
     FILE    *src_file;
-    te_bool  skip_line = FALSE;
+    bool skip_line = false;
     char     line[L2TP_SECRETS_LENGTH];
 
     ENTRY("copy data of file %s", src);
@@ -687,7 +687,7 @@ l2tp_secrets_tmp_open(const char *secrets_fname, char *fname, FILE **file)
  */
 static te_errno
 l2tp_secrets_tmp_close(const char *secrets_fname, char *fname, FILE *file,
-                       te_errno error, te_bool *secrets_changed)
+                       te_errno error, bool *secrets_changed)
 {
     if (file != NULL)
     {
@@ -702,7 +702,7 @@ l2tp_secrets_tmp_close(const char *secrets_fname, char *fname, FILE *file,
             error = l2tp_move_file(fname, secrets_fname);
 
             if (error == 0)
-                *secrets_changed = TRUE;
+                *secrets_changed = true;
         }
     }
 
@@ -827,10 +827,10 @@ l2tp_server_save_conf_cleanup:
  *
  * @return l2tp server status
  */
-static te_bool
+static bool
 l2tp_is_running(te_l2tp_server *l2tp)
 {
-    te_bool  is_running;
+    bool is_running;
     FILE    *f;
     int      l2tp_pid = l2tp->pid;
 
@@ -1009,7 +1009,7 @@ l2tp_server_set(unsigned int gid, const char *oid, const char *value)
     l2tp->started = (strcmp(value, "1") == 0);
     if (l2tp->started != l2tp_is_running(l2tp))
     {
-        l2tp->changed = TRUE;
+        l2tp->changed = true;
     }
 
     return 0;
@@ -1280,7 +1280,7 @@ l2tp_lns_section_del(unsigned int gid, const char *oid,
     SLIST_REMOVE(&l2tp->section, l2tp_section, te_l2tp_section, list);
     free(l2tp_section->secname);
     free(l2tp_section);
-    l2tp->changed = TRUE;
+    l2tp->changed = true;
     return 0;
 }
 
@@ -1327,7 +1327,7 @@ l2tp_lns_section_add(unsigned int gid, const char *oid, const char *value,
     SLIST_INIT(&l2tp_section->auth_opts);
 
     SLIST_INSERT_HEAD(&l2tp->section, l2tp_section, list);
-    l2tp->changed = TRUE;
+    l2tp->changed = true;
 
     return 0;
 
@@ -1927,7 +1927,7 @@ l2tp_lns_bit_add(unsigned int gid, const char *oid, const char *value,
     else
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     SLIST_INSERT_HEAD(&l2tp_section->l2tp_option, l2tp_option, list);
-    l2tp->changed = TRUE;
+    l2tp->changed = true;
 
     return 0;
 }
@@ -1971,7 +1971,7 @@ l2tp_lns_bit_del(unsigned int gid, const char *oid,
     free(l2tp_option->name);
     free(l2tp_option->value);
     free(l2tp_option);
-    l2tp->changed = TRUE;
+    l2tp->changed = true;
     return 0;
 }
 
@@ -2068,7 +2068,7 @@ static te_errno
 l2tp_lns_policy_set_routine(te_l2tp_section *section,
                             const char *auth_type,
                             enum l2tp_auth_policy policy,
-                            te_bool value)
+                            bool value)
 {
     te_l2tp_opt_auth *auth;
 
@@ -2137,7 +2137,7 @@ l2tp_lns_require_set(unsigned int gid, const char *oid, char *value,
 
     return l2tp_lns_policy_set_routine(section, auth_type,
                                        L2TP_AUTH_POLICY_REQUIRE,
-                                       strcmp(value, "1") == 0 ? TRUE : FALSE);
+                                       strcmp(value, "1") == 0 ? true : false);
 }
 
 /**
@@ -2195,7 +2195,7 @@ l2tp_lns_refuse_set(unsigned int gid, const char *oid, char *value,
 
     return l2tp_lns_policy_set_routine(section, auth_type,
                                        L2TP_AUTH_POLICY_REFUSE,
-                                       strcmp(value, "1") == 0 ? TRUE : FALSE);
+                                       strcmp(value, "1") == 0 ? true : false);
 }
 
 /**
@@ -2326,7 +2326,7 @@ l2tp_lns_range_add_routine(const char *lns_name, const char *option_name,
     }
 
     SLIST_INSERT_HEAD(&l2tp_option->l2tp_range, l2tp_range, list);
-    l2tp->changed = TRUE;
+    l2tp->changed = true;
 
     return 0;
 }
@@ -2615,7 +2615,7 @@ l2tp_lns_range_del_routine(const char *lns_name, const char *option_name,
     free(l2tp_range->start);
     free(l2tp_range->end);
 
-    l2tp->changed = TRUE;
+    l2tp->changed = true;
     return 0;
 }
 
@@ -2718,7 +2718,7 @@ l2tp_lns_pppopt_add(unsigned int gid, const char *oid, const char *value,
     l2tp_option->value = NULL;
     l2tp_option->type = L2TP_OPTION_TYPE_PPP;
     SLIST_INSERT_HEAD(&l2tp_section->l2tp_option, l2tp_option, list);
-    l2tp->changed = TRUE;
+    l2tp->changed = true;
     return 0;
 }
 
@@ -2758,7 +2758,7 @@ l2tp_lns_pppopt_del(unsigned int gid, const char *oid,
     free(l2tp_option->name);
     free(l2tp_option->value);
     free(l2tp_option);
-    l2tp->changed = TRUE;
+    l2tp->changed = true;
     return 0;
 }
 
@@ -2850,7 +2850,7 @@ l2tp_lns_client_add(unsigned int gid, const char *oid, const char *value,
     client->server = strdup("*");
 
     SLIST_INSERT_HEAD(&auth->secret, client, list);
-    l2tp->changed = TRUE;
+    l2tp->changed = true;
     return 0;
 }
 
@@ -2889,7 +2889,7 @@ l2tp_lns_client_del(unsigned int gid, const char *oid,
     l2tp_secret_free(client);
     free(client);
 
-    l2tp->changed = TRUE;
+    l2tp->changed = true;
 
     return 0;
 }
@@ -2981,7 +2981,7 @@ l2tp_lns_auth_add(unsigned int gid, const char *oid, const char *value,
     }
     SLIST_INIT(&auth->secret);
     auth->policy = L2TP_AUTH_POLICY_NONE;
-    auth->is_enabled = FALSE;
+    auth->is_enabled = false;
 
     SLIST_INSERT_HEAD(&l2tp_section->auth_opts, auth, list);
 
@@ -3019,7 +3019,7 @@ l2tp_lns_auth_del(unsigned int gid, const char *oid, const char *l2tp_name,
     l2tp_auth_free(auth);
     free(auth);
 
-    l2tp->changed = TRUE;
+    l2tp->changed = true;
 
     return 0;
 }
@@ -3346,10 +3346,10 @@ l2tp_lns_secret_set_ipv4(unsigned int gid, const char *oid, const char *ipv4,
  *  @param l2tp     l2tp server structure
  *  @param cip      address for checking
  *
- *  @return         TRUE if belong
-                    otherwise FALSE
+ *  @return         @c true if belong
+ *                  otherwise @c false
  */
-static te_bool
+static bool
 te_l2tp_check_accessory(te_l2tp_server *l2tp, char *cip)
 {
     te_l2tp_option     *option;
@@ -3375,18 +3375,18 @@ te_l2tp_check_accessory(te_l2tp_server *l2tp, char *cip)
                         if (ntohl(start.s_addr) <= ntohl(center.s_addr) &&
                             ntohl(center.s_addr) <= ntohl(end.s_addr))
                         {
-                            return TRUE;
+                            return true;
                         }
                     }
                     else if (ntohl(start.s_addr) == ntohl(center.s_addr))
                     {
-                        return TRUE;
+                        return true;
                     }
                 }
             }
         }
     }
-    return FALSE;
+    return false;
 }
 
 /**
@@ -3395,10 +3395,10 @@ te_l2tp_check_accessory(te_l2tp_server *l2tp, char *cip)
  * @param addr          Address to check.
  * @param l2tp          L2TP server context.
  *
- * @return @c TRUE if @p addr is equal to local ip from ranges' array,
- *         otherwise it returns @c FALSE.
+ * @return @c true if @p addr is equal to local ip from ranges' array,
+ *         otherwise it returns @c false.
  */
-static te_bool
+static bool
 l2tp_check_lns_ip(const struct sockaddr *addr, te_l2tp_server *l2tp)
 {
     te_l2tp_section *section;
@@ -3411,10 +3411,10 @@ l2tp_check_lns_ip(const struct sockaddr *addr, te_l2tp_server *l2tp)
         {
             if (strcmp(opt->name, "local ip") == 0 &&
                 strcmp(opt->value, addr_str) == 0)
-                return TRUE;
+                return true;
         }
     }
-    return FALSE;
+    return false;
 }
 
 /**
@@ -3476,7 +3476,7 @@ te_l2tp_clients_add(te_l2tp_server *l2tp)
     freeifaddrs(perm);
 
     if (rc == 0)
-        l2tp->changed = TRUE;
+        l2tp->changed = true;
     else
         l2tp_clients_free(l2tp);
 
@@ -3724,7 +3724,7 @@ l2tp_grab(const char *name)
         return retval;
     }
 
-    l2tp->started = FALSE;
+    l2tp->started = false;
 
     return 0;
 }

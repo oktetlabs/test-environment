@@ -44,7 +44,7 @@ rule_list_cb_internal(struct nlmsghdr *h, netconf_list *list)
     rule = &(list->tail->data.rule);
 
     if (rtm->rtm_flags & FIB_RULE_INVERT)
-        te_conf_ip_rule_set_invert(rule, TRUE);
+        te_conf_ip_rule_set_invert(rule, true);
 
 /**
  * Set a value field in @b rule and set a flag in field @b mask

@@ -29,7 +29,7 @@
 
 #define MIN_BUF_SIZE    16384
 
-te_bool
+bool
 read_whole_fd(int fd, void **pbuf, size_t *psize)
 {
     void       *buf;
@@ -42,9 +42,9 @@ read_whole_fd(int fd, void **pbuf, size_t *psize)
     alloc = MIN_BUF_SIZE;
     buf = malloc(alloc);
     if (buf == NULL)
-        return FALSE;
+        return false;
 
-    while (TRUE)
+    while (true)
     {
         rc = read(fd, buf + size, alloc - size);
         if (rc <= 0)
@@ -52,7 +52,7 @@ read_whole_fd(int fd, void **pbuf, size_t *psize)
             if (rc == 0)
                 break;
             free(buf);
-            return FALSE;
+            return false;
         }
 
         size += rc;
@@ -63,7 +63,7 @@ read_whole_fd(int fd, void **pbuf, size_t *psize)
             if (new_buf == NULL)
             {
                 free(buf);
-                return FALSE;
+                return false;
             }
             buf = new_buf;
         }
@@ -75,14 +75,14 @@ read_whole_fd(int fd, void **pbuf, size_t *psize)
     *pbuf = buf;
     *psize = size;
 
-    return TRUE;
+    return true;
 }
 
 
-te_bool
+bool
 read_whole_file(const char *name, void **pbuf, size_t *psize)
 {
-    te_bool result;
+    bool result;
 
     if (name[0] == '-' && name[1] == '\0')
         result = read_whole_fd(STDIN_FILENO, pbuf, psize);
@@ -92,7 +92,7 @@ read_whole_file(const char *name, void **pbuf, size_t *psize)
 
         fd = open(name, O_RDONLY);
         if (fd < 0)
-            return FALSE;
+            return false;
 
         result = read_whole_fd(fd, pbuf, psize);
 
@@ -103,7 +103,7 @@ read_whole_file(const char *name, void **pbuf, size_t *psize)
 }
 
 
-te_bool
+bool
 write_whole_fd(int fd, void *buf, size_t size)
 {
     ssize_t     rc;
@@ -112,19 +112,19 @@ write_whole_fd(int fd, void *buf, size_t size)
     {
         rc = write(fd, buf, size);
         if (rc < 0)
-            return FALSE;
+            return false;
         buf += rc;
         size -= rc;
     }
 
-    return TRUE;
+    return true;
 }
 
 
-te_bool
+bool
 write_whole_file(const char *name, void *buf, size_t size)
 {
-    te_bool result;
+    bool result;
 
     if (name[0] == '-' && name[1] == '\0')
         result = write_whole_fd(STDOUT_FILENO, buf, size);
@@ -138,7 +138,7 @@ write_whole_file(const char *name, void *buf, size_t size)
                   S_IRGRP | S_IWGRP |
                   S_IROTH | S_IWOTH);
         if (fd < 0)
-            return FALSE;
+            return false;
 
         result = write_whole_fd(fd, buf, size);
 

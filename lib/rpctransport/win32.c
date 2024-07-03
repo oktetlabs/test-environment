@@ -53,10 +53,10 @@ rpc_transport_log(char *str)
 #define PIPE_PREFIX     "\\\\.\\pipe\\"
 
 typedef struct winpipe {
-    te_bool    busy;       /**< The pipe entry in pipes array is busy */
-    te_bool    valid;      /**< The pipe is valid */
-    te_bool    wait;       /**< The pipe is scheduled for waiting */
-    te_bool    read;       /**< The pipe is read now */
+    bool busy;       /**< The pipe entry in pipes array is busy */
+    bool valid;      /**< The pipe is valid */
+    bool wait;       /**< The pipe is scheduled for waiting */
+    bool read;       /**< The pipe is read now */
     HANDLE     in_handle;  /**< Pipe handle */
     HANDLE     out_handle; /**< Pipe handle */
     OVERLAPPED ov;         /**< Overlapped object with event inside */
@@ -96,7 +96,7 @@ rpc_transport_init(const char *tmp_path)
     for (i = 0; i < (int)(sizeof(pipes) / sizeof(winpipe)); i++)
         pipes[i].in_handle = pipes[i].out_handle = INVALID_HANDLE_VALUE;
 
-    conn_mutex = CreateMutex(NULL, FALSE, NULL);
+    conn_mutex = CreateMutex(NULL, false, NULL);
 
     sprintf(port, PIPE_PREFIX "tarpc_%lu_%u",
             GetCurrentProcessId(), (unsigned)time(NULL));
@@ -114,7 +114,7 @@ rpc_transport_init(const char *tmp_path)
         return TE_RC(TE_RCF_PCH, TE_EWIN);
     }
 
-    if ((lov.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL)) == NULL)
+    if ((lov.hEvent = CreateEvent(NULL, true, false, NULL)) == NULL)
     {
         ERROR("Failed to create event: %d", GetLastError());
         CloseHandle(lpipe);
@@ -159,8 +159,8 @@ get_free_pipe(int *p_handle)
         if (max_pipe == (int)(sizeof(pipes) / sizeof(winpipe)))
             return TE_RC(TE_RCF_PCH, TE_ENOMEM);
 
-        if ((pipes[i].ov.hEvent = CreateEvent(NULL, TRUE,
-                                              FALSE, NULL)) == NULL)
+        if ((pipes[i].ov.hEvent = CreateEvent(NULL, true,
+                                              false, NULL)) == NULL)
         {
             return TE_RC(TE_RCF_PCH, TE_ENOMEM);
         }
@@ -169,9 +169,9 @@ get_free_pipe(int *p_handle)
     }
 
     pipes[i].in_handle = pipes[i].out_handle = INVALID_HANDLE_VALUE;
-    pipes[i].wait = FALSE;
-    pipes[i].read = FALSE;
-    pipes[i].busy = TRUE;
+    pipes[i].wait = false;
+    pipes[i].read = false;
+    pipes[i].busy = true;
 
     *p_handle = i;
 
@@ -224,7 +224,7 @@ rpc_transport_send_pname(const char *pname)
             ERROR("CreateFile() failed: %d", GetLastError());
             return TE_RC(TE_RCF_PCH, TE_EWIN);
         }
-        SleepEx(10, FALSE);
+        SleepEx(10, false);
     }
 
     if (handle == INVALID_HANDLE_VALUE)
@@ -276,7 +276,7 @@ rpc_transport_recv_pname(char *pname, int len)
         }
 
         if (WaitForSingleObject(lov.hEvent, RPC_TIMEOUT) == WAIT_TIMEOUT ||
-            !GetOverlappedResult(lpipe, &lov, &num, FALSE))
+            !GetOverlappedResult(lpipe, &lov, &num, false))
         {
             ERROR("Failed to connect auxiliary pipe\n");
             return TE_RC(TE_RCF_PCH, TE_EWIN);
@@ -287,7 +287,7 @@ rpc_transport_recv_pname(char *pname, int len)
     {
         if (GetLastError() != ERROR_IO_PENDING ||
             (WaitForSingleObject(lov.hEvent, RPC_TIMEOUT) == WAIT_TIMEOUT ||
-             !GetOverlappedResult(lpipe, &lov, &num, FALSE)))
+             !GetOverlappedResult(lpipe, &lov, &num, false)))
         {
             ERROR("Failed to read from the auxiliary pipe: %d",
                   GetLastError());
@@ -345,7 +345,7 @@ open_in(const char *pname, const char *postfix, LPOVERLAPPED pov,
         }
         if (WaitForSingleObject(pov->hEvent,
                                 RPC_TIMEOUT) == WAIT_TIMEOUT ||
-            !GetOverlappedResult(handle, pov, &num, FALSE))
+            !GetOverlappedResult(handle, pov, &num, false))
         {
             ERROR("Failed to connect pipe\n");
             CloseHandle(handle);
@@ -391,7 +391,7 @@ open_out(const char *pname, const char *postfix, HANDLE *p_handle)
             ERROR("CreateFile() failed: %d", GetLastError());
             return TE_RC(TE_RCF_PCH, TE_EWIN);
         }
-        SleepEx(10, FALSE);
+        SleepEx(10, false);
     }
 
     if (handle == INVALID_HANDLE_VALUE)
@@ -459,7 +459,7 @@ rpc_transport_connect_rpcserver(const char *name,
 
     pipes[i].in_handle = in_handle;
     pipes[i].out_handle = out_handle;
-    pipes[i].valid = TRUE;
+    pipes[i].valid = true;
     *p_handle = i;
 
     return 0;
@@ -491,7 +491,7 @@ rpc_transport_connect_ta(const char *name, rpc_transport_handle *p_handle)
     HANDLE   in_handle = INVALID_HANDLE_VALUE;
     HANDLE   out_handle = INVALID_HANDLE_VALUE;
 
-    SleepEx(500, TRUE); /* Let other thread send the response
+    SleepEx(500, true); /* Let other thread send the response
                          on server creation */
 
     sprintf(pipename, PIPE_PREFIX "%s_%lu_%lu_%u",
@@ -525,7 +525,7 @@ rpc_transport_connect_ta(const char *name, rpc_transport_handle *p_handle)
 
     pipes[i].in_handle = in_handle;
     pipes[i].out_handle = out_handle;
-    pipes[i].valid = TRUE;
+    pipes[i].valid = true;
     *p_handle = i;
 
     return 0;
@@ -542,14 +542,14 @@ rpc_transport_close(rpc_transport_handle handle)
     assert(handle < max_pipe);
 
     WaitForSingleObject(conn_mutex, INFINITE);
-    pipes[handle].busy = FALSE;
+    pipes[handle].busy = false;
 
     if (pipes[handle].valid)
     {
       CloseHandle(pipes[handle].in_handle);
       CloseHandle(pipes[handle].out_handle);
     }
-    pipes[handle].valid = FALSE;
+    pipes[handle].valid = false;
 
     pipes[handle].in_handle = pipes[handle].out_handle =
     INVALID_HANDLE_VALUE;
@@ -582,7 +582,7 @@ rpc_transport_read_set_add(rpc_transport_handle handle)
         ResetEvent(pipes[handle].ov.hEvent);
         ReadFile(pipes[handle].in_handle, NULL, 0, &tmp, &pipes[handle].ov);
         events[events_num++] = pipes[handle].ov.hEvent;
-        pipes[handle].wait = TRUE;
+        pipes[handle].wait = true;
     }
 }
 
@@ -591,9 +591,9 @@ rpc_transport_read_set_add(rpc_transport_handle handle)
  *
  * @param timeout       timeout in seconds
  *
- * @return TRUE is the read event is received or FALSE otherwise
+ * @return @c true is the read event is received or @c false otherwise
  */
-te_bool
+bool
 rpc_transport_read_set_wait(int timeout)
 {
     int   i;
@@ -601,11 +601,11 @@ rpc_transport_read_set_wait(int timeout)
 
     if (events_num == 0)
     {
-        SleepEx(timeout * 100, TRUE);
-        return FALSE;
+        SleepEx(timeout * 100, true);
+        return false;
     }
 
-    rc = WaitForMultipleObjects(events_num, events, FALSE, timeout * 1000);
+    rc = WaitForMultipleObjects(events_num, events, false, timeout * 1000);
 
     for (i = 0; i < max_pipe; i++)
     {
@@ -613,7 +613,7 @@ rpc_transport_read_set_wait(int timeout)
         {
             CancelIo(pipes[i].in_handle);
         }
-        pipes[i].wait = FALSE;
+        pipes[i].wait = false;
     }
 
     return rc != WAIT_TIMEOUT;
@@ -624,12 +624,12 @@ rpc_transport_read_set_wait(int timeout)
  *
  * @param handle        connection handle
  *
- * @return TRUE is data are pending or FALSE otherwise
+ * @return @c true is data are pending or @c false otherwise
  */
-te_bool
+bool
 rpc_transport_is_readable(rpc_transport_handle handle)
 {
-    te_bool  rc = FALSE;
+    bool rc = false;
 
     if (pipes[handle].valid)
     {
@@ -669,12 +669,12 @@ rpc_transport_recv(rpc_transport_handle handle, uint8_t *buf,
         return TE_RC(TE_RCF_PCH, TE_ECONNRESET);
 
     memset(&ov, 0, sizeof(ov));
-    ov.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+    ov.hEvent = CreateEvent(NULL, true, false, NULL);
 
-    pipes[handle].read = TRUE;
+    pipes[handle].read = true;
     if (pipes[handle].wait)
     {
-        pipes[handle].wait = FALSE;
+        pipes[handle].wait = false;
         CancelIo(pipes[handle].in_handle);
     }
 
@@ -686,19 +686,19 @@ rpc_transport_recv(rpc_transport_handle handle, uint8_t *buf,
             ERROR("Failed to read from the pipe: %d", GetLastError());
             if (*log != 0)
                 RING("Dead log:\n%s", log);
-            pipes[handle].read = FALSE;
+            pipes[handle].read = false;
             CloseHandle(ov.hEvent);
             return TE_RC(TE_RCF_PCH, TE_ECONNRESET);
         }
 
-        while (TRUE)
+        while (true)
         {
             num = WaitForSingleObjectEx(ov.hEvent,
-                                        timeout * 1000, TRUE);
+                                        timeout * 1000, true);
             if (num == WAIT_TIMEOUT)
             {
                 CancelIo(pipes[handle].in_handle);
-                pipes[handle].read = FALSE;
+                pipes[handle].read = false;
                 CloseHandle(ov.hEvent);
                 return TE_RC(TE_RCF_PCH, TE_ETIMEDOUT);
             }
@@ -708,12 +708,12 @@ rpc_transport_recv(rpc_transport_handle handle, uint8_t *buf,
         CloseHandle(ov.hEvent);
 
         if (!GetOverlappedResult(pipes[handle].in_handle,
-                                 &ov, &num, FALSE))
+                                 &ov, &num, false))
         {
             ERROR("Failed to read from the pipe: %d", GetLastError());
             if (*log != 0)
                 RING("Dead log:\n%s", log);
-            pipes[handle].read = FALSE;
+            pipes[handle].read = false;
             return TE_RC(TE_RCF_PCH, TE_ECONNRESET);
         }
 
@@ -724,7 +724,7 @@ rpc_transport_recv(rpc_transport_handle handle, uint8_t *buf,
         }
     }
 
-    pipes[handle].read = FALSE;
+    pipes[handle].read = false;
 
     *p_len = num;
     return 0;
@@ -749,7 +749,7 @@ rpc_transport_send(rpc_transport_handle handle, const uint8_t *buf,
     if (handle >= max_pipe || !pipes[handle].valid)
         return TE_RC(TE_RCF_PCH, TE_ECONNRESET);
 
-    SleepEx(1, TRUE); /* windows bug work-around: sometimes
+    SleepEx(1, true); /* windows bug work-around: sometimes
                          datagram is lost without this */
 
     if (!WriteFile(pipes[handle].out_handle, buf, len, &num, NULL))

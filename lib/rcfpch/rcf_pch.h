@@ -165,7 +165,7 @@ extern te_errno rcf_pch_agent_list(unsigned int gid, const char *oid,
  * @param cmdlen        full length of the command including binary
  *                      attachment
  *
- * @param op            if TRUE, file should be put
+ * @param op            if @c true, file should be put
  * @param filename      full name of the file in TA or NUT file system
  *
  *
@@ -186,7 +186,7 @@ extern int rcf_pch_file(struct rcf_comm_connection *conn,
  *                      copied to the answer
  *
  * @param rtn           routine entry point name
- * @param is_argv       if TRUE, then routine prototype is
+ * @param is_argv       if @c true, then routine prototype is
  *                      (int argc, char **argv)
  * @param argc          number of arguments
  * @param params        pointer to array of RCF_MAX_PARAMS length
@@ -197,7 +197,7 @@ extern int rcf_pch_file(struct rcf_comm_connection *conn,
  */
 extern int rcf_pch_call(struct rcf_comm_connection *conn,
                         char *cbuf, size_t buflen, size_t answer_plen,
-                        const char *rtn, te_bool is_argv, int argc,
+                        const char *rtn, bool is_argv, int argc,
                         void **params);
 
 /**
@@ -425,22 +425,22 @@ extern te_errno rcf_pch_rsrc_release_dummy(const char *name);
  *
  * @param fmt   format string for resource name
  *
- * @return TRUE is the resource is accessible in exclusive mode
+ * @return @c true is the resource is accessible in exclusive mode
  *
  * @note The function should be called from TA main thread only.
  */
-extern te_bool rcf_pch_rsrc_accessible(const char *fmt, ...);
+extern bool rcf_pch_rsrc_accessible(const char *fmt, ...);
 
 /**
  * Check if the resource is accessible in shared or exclusive mode.
  *
  * @param fmt   format string for resource name
  *
- * @return TRUE is the resource is accessible in shared or exclusive mode
+ * @return @c true is the resource is accessible in shared or exclusive mode
  *
  * @note The function should be called from TA main thread only.
  */
-extern te_bool rcf_pch_rsrc_accessible_may_share(const char *fmt, ...);
+extern bool rcf_pch_rsrc_accessible_may_share(const char *fmt, ...);
 
 /**
  * Check if one of resources specified by glob pattern is locked by other

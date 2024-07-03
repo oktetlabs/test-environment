@@ -55,7 +55,7 @@ extern te_errno write_sys_value(const char *value, const char *format, ...);
  *
  * @param value           Where to save the value.
  * @param len             Expected length, including null byte.
- * @param ignore_eaccess  If @c TRUE, return success saving
+ * @param ignore_eaccess  If @c true, return success saving
  *                        empty string in @p value if the file
  *                        cannot be opened due to @c EACCES error.
  * @param format          Format string for path to the system file.
@@ -64,7 +64,7 @@ extern te_errno write_sys_value(const char *value, const char *format, ...);
  * @return Status code.
  */
 extern te_errno read_sys_value(char *value, size_t len,
-                               te_bool ignore_eaccess,
+                               bool ignore_eaccess,
                                const char *format, ...);
 
 /**
@@ -72,7 +72,7 @@ extern te_errno read_sys_value(char *value, size_t len,
  * It is used to check whether a given item should be included
  * in the list.
  */
-typedef te_bool (*include_callback_func)(const char *name, void *data);
+typedef bool (*include_callback_func)(const char *name, void *data);
 
 /**
  * Obtain list of files in a given directory.
@@ -80,14 +80,14 @@ typedef te_bool (*include_callback_func)(const char *name, void *data);
  * @param path              Filesystem path.
  * @param buffer            Where to save the list.
  * @param length            Available space in @p buffer.
- * @param ignore_absence    If @c TRUE, return success and
+ * @param ignore_absence    If @c true, return success and
  *                          save empty string to @p buffer
  *                          if @p path does not exist.
  * @param include_callback  If not @c NULL, will be called for
  *                          each file name before including it
  *                          in the list. The file name will be
  *                          included only if this callback
- *                          returns @c TRUE.
+ *                          returns @c true.
  * @param callback_data     Pointer which should be passed
  *                          to the callback as the second argument.
  * @param compar            Comparison function for sorting directory
@@ -96,7 +96,7 @@ typedef te_bool (*include_callback_func)(const char *name, void *data);
  * @return Status code.
  */
 extern te_errno get_dir_list(const char *path, char *buffer, size_t length,
-                             te_bool ignore_absence,
+                             bool ignore_absence,
                              include_callback_func include_callback,
                              void *callback_data,
                              int (*compar)(const struct dirent **,

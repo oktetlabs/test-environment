@@ -24,7 +24,7 @@
 #include "te_vector.h"
 
 static void
-check_split(const char *input, te_bool empty_is_none,
+check_split(const char *input, bool empty_is_none,
             unsigned int n_chunks, const char **chunks)
 {
     te_vec strvec = TE_VEC_INIT(char *);
@@ -94,23 +94,23 @@ main(int argc, char **argv)
     TEST_START;
 
     TEST_STEP("Test splitting of an empty string");
-    check_split(NULL, FALSE, 0, NULL);
-    check_split("", TRUE, 0, NULL);
+    check_split(NULL, false, 0, NULL);
+    check_split("", true, 0, NULL);
 
     TEST_STEP("Test splitting of non-empty string");
-    check_split("a:b:c:d", FALSE, 4, (const char *[]){"a", "b", "c", "d"});
-    check_split("abcd", FALSE, 1, (const char *[]){"abcd"});
+    check_split("a:b:c:d", false, 4, (const char *[]){"a", "b", "c", "d"});
+    check_split("abcd", false, 1, (const char *[]){"abcd"});
 
     TEST_STEP("Test splitting string with empty chunks");
-    check_split("a:b:c:", FALSE, 4, (const char *[]){"a", "b", "c", ""});
-    check_split(":a:b:c", FALSE, 4, (const char *[]){"", "a", "b", "c"});
-    check_split(":::", FALSE, 4, (const char *[]){"", "", "", ""});
-    check_split("a:b:c:", TRUE, 4, (const char *[]){"a", "b", "c", ""});
-    check_split(":a:b:c", TRUE, 4, (const char *[]){"", "a", "b", "c"});
-    check_split(":::", TRUE, 4, (const char *[]){"", "", "", ""});
+    check_split("a:b:c:", false, 4, (const char *[]){"a", "b", "c", ""});
+    check_split(":a:b:c", false, 4, (const char *[]){"", "a", "b", "c"});
+    check_split(":::", false, 4, (const char *[]){"", "", "", ""});
+    check_split("a:b:c:", true, 4, (const char *[]){"a", "b", "c", ""});
+    check_split(":a:b:c", true, 4, (const char *[]){"", "a", "b", "c"});
+    check_split(":::", true, 4, (const char *[]){"", "", "", ""});
 
     TEST_STEP("Test splitting an empty string as a single chunk");
-    check_split("", FALSE, 1, (const char *[]){""});
+    check_split("", false, 1, (const char *[]){""});
 
     TEST_SUCCESS;
 

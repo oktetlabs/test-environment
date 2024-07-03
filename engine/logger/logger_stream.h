@@ -28,7 +28,7 @@ extern "C" {
 typedef struct msg_queue {
     refcnt_buffer_list items; /**< Messages */
 
-    te_bool         shutdown; /**< Whether the queue is being shutdown */
+    bool shutdown; /**< Whether the queue is being shutdown */
     pthread_mutex_t mutex;    /**< Mutex for consumer-producer synchronization */
     int             eventfd;  /**< File descriptor for consumer to poll on */
 } msg_queue;
@@ -67,7 +67,7 @@ extern te_errno msg_queue_post(msg_queue *queue, const char *buf, size_t len);
  * @param shutdown      Whether the queue is currently being shutdown
  */
 extern void msg_queue_extract(msg_queue *queue, refcnt_buffer_list *list,
-                              te_bool *shutdown);
+                              bool *shutdown);
 
 /** Notify the consumer that there will not be any new messages */
 extern void msg_queue_shutdown(msg_queue *queue);
@@ -90,7 +90,7 @@ extern void *listeners_thread(void *);
 /** Message queue instance to be used by Logger threads */
 extern msg_queue       listener_queue;
 /** Whether there are active listeners */
-extern te_bool         listeners_enabled;
+extern bool listeners_enabled;
 
 #ifdef __cplusplus
 } /* extern "C" */

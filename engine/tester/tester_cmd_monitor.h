@@ -31,9 +31,9 @@ typedef struct cmd_monitor_descr {
     int   time_to_wait;                      /**< Time to wait before
                                                   executing command the
                                                   next time */
-    te_bool   enabled;                       /**< Whether command monitor
+    bool enabled;                       /**< Whether command monitor
                                                   is enabled or not */
-    te_bool   run_monitor;                   /**< Whether we should run
+    bool run_monitor;                   /**< Whether we should run
                                                   this monitor or not */
     char     *ta;                            /**< Name of test agent on
                                                   which to run this

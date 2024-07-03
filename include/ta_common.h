@@ -58,6 +58,6 @@ extern void thread_mutex_unlock(void *mutex);
  * @retval 0      interface is not locked
  * @retval other  interface is locked
  */
-extern te_bool ta_interface_is_mine(const char *ifname);
+extern bool ta_interface_is_mine(const char *ifname);
 
 #endif /* !__TE_TA_COMMON_H__ */

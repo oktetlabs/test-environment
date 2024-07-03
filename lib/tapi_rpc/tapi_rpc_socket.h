@@ -354,7 +354,7 @@ typedef struct rpc_msghdr {
                                                     passed as raw value for
                                                     receive calls on input).
                                                     */
-    te_bool               msg_namelen_exact;  /**< If @c TRUE, use specified
+    bool msg_namelen_exact;  /**< If @c true, use specified
                                                    msg_namelen value on a
                                                    remote host; otherwise
                                                    compute it on remote
@@ -464,9 +464,9 @@ tapi_send_recv_flags_rand(void)
  * @note By default the flags value is initialized and checked in all RPCs
  * where @b rpc_msg is used.
  *
- * @param enable    Set @c TRUE to enable init and check
+ * @param enable    Set @c true to enable init and check
  */
-extern void tapi_rpc_msghdr_msg_flags_init_check(te_bool enable);
+extern void tapi_rpc_msghdr_msg_flags_init_check(bool enable);
 
 /**
  * Send message to a connected or non-connected socket.
@@ -583,7 +583,7 @@ extern ssize_t rpc_send_msg_more(rcf_rpc_server *rpcs, int s, rpc_ptr buf,
  *                      without @c MSG_MORE).
  * @param first_func    Sending function for the first data portion.
  * @param second_func   Sending function for the second data portion.
- * @param set_nodelay   If @c TRUE, set @c TCP_NODELAY socket option after
+ * @param set_nodelay   If @c true, set @c TCP_NODELAY socket option after
  *                      sending the first data portion.
  *
  * @return On success, number of bytes actually sent, otherwise @c -1.
@@ -593,7 +593,7 @@ extern ssize_t rpc_send_msg_more_ext(rcf_rpc_server *rpcs, int s,
                                      size_t second_len,
                                      tarpc_send_function first_func,
                                      tarpc_send_function second_func,
-                                     te_bool set_nodelay);
+                                     bool set_nodelay);
 
 
 /**

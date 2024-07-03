@@ -28,9 +28,9 @@ extern "C" {
  * Consider this API is enabled if Configurator object @b /local/host is
  * registered.
  *
- * @return @c TRUE if the test API is enabled.
+ * @return @c true if the test API is enabled.
  */
-extern te_bool tapi_host_ns_enabled(void);
+extern bool tapi_host_ns_enabled(void);
 
 /**
  * Get hostname of test agent @p ta.
@@ -80,12 +80,12 @@ extern te_errno tapi_host_ns_if_add(const char *ta, const char *ifname,
  *
  * @param ta        Test agent name
  * @param ifname    Interface name
- * @param del_refs  Delete all parent referencesto this interface if @c TRUE
+ * @param del_refs  Delete all parent referencesto this interface if @c true
  *
  * @return Status code.
  */
 extern te_errno tapi_host_ns_if_del(const char *ta, const char *ifname,
-                                    te_bool del_refs);
+                                    bool del_refs);
 
 /**
  * Add reference to a parent interface.

@@ -114,13 +114,13 @@ release_media_file(tapi_media_file *media_file)
 
 
 /* See description in tapi_media_dlna.h. */
-te_bool
+bool
 tapi_media_dlna_cmp_with_local(const tapi_upnp_cd_container_node *dlna_file,
                                const tapi_media_file *local_file)
 {
     const tapi_media_file *l = local_file;
     tapi_media_file       *r = dlna_file_to_local(dlna_file);
-    te_bool                result;
+    bool result;
     size_t                 l_dirname_len;
     size_t                 r_dirname_len;
 

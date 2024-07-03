@@ -123,7 +123,7 @@ tapi_job_opt_create_bool(const void *value, const void *priv, te_vec *args)
     UNUSED(args);
     UNUSED(priv);
 
-    return (*(const te_bool *)value) ? 0 : TE_ENOENT;
+    return (*(const bool *)value) ? 0 : TE_ENOENT;
 }
 
 te_errno
@@ -216,7 +216,7 @@ tapi_job_opt_create_enum(const void *value, const void *priv, te_vec *args)
 te_errno
 tapi_job_opt_create_enum_bool(const void *value, const void *priv, te_vec *args)
 {
-    te_bool bval = *(const te_bool *)value;
+    bool bval = *(const bool *)value;
 
     return te_vec_append_str_fmt(args, "%s",
                                  te_enum_map_from_value(priv, bval));
@@ -252,7 +252,7 @@ static te_errno
 tapi_job_opt_append_arg_with_affixes(const tapi_job_opt_bind *bind,
                                       te_vec *arg, te_vec *args)
 {
-    te_bool do_concat_prefix = bind->concatenate_prefix && bind->prefix != NULL;
+    bool do_concat_prefix = bind->concatenate_prefix && bind->prefix != NULL;
     size_t size;
     te_errno rc;
     size_t i;

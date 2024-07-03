@@ -101,7 +101,7 @@ tad_poll_thread(void *arg)
         else
         {
             context->status = TE_RC(TE_TAD_CH, TE_ETADCSAPSTATE);
-            assert(FALSE);
+            assert(false);
         }
     }
     else
@@ -169,7 +169,7 @@ tad_poll_enqueue(csap_p csap, unsigned int timeout,
     else
     {
         if (sem_wait(&context->sem) != 0)
-            assert(FALSE);
+            assert(false);
 
         rc = tad_reply_poll(&context->reply_ctx, 0,  context->id);
         if (rc != 0)

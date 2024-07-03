@@ -149,7 +149,7 @@ handle_layer_info(const tad_pkt      *pkt,
                   uint64_t           *ol_flags_inner,
                   uint64_t           *ol_flags_outer)
 {
-    te_bool  encap_header_detected = FALSE;
+    bool encap_header_detected = false;
     size_t   gre_hdr_offset;
     uint8_t  gre_hdr_first_word[WORD_4BYTE];
     uint16_t gre_hdr_protocol_type;
@@ -183,17 +183,17 @@ handle_layer_info(const tad_pkt      *pkt,
             break;
 
         case TE_PROTO_VXLAN:
-            encap_header_detected = TRUE;
+            encap_header_detected = true;
             m->ol_flags |= RTE_MBUF_F_TX_TUNNEL_VXLAN;
             break;
 
         case TE_PROTO_GENEVE:
-            encap_header_detected = TRUE;
+            encap_header_detected = true;
             m->ol_flags |= RTE_MBUF_F_TX_TUNNEL_GENEVE;
             break;
 
         case TE_PROTO_GRE:
-            encap_header_detected = TRUE;
+            encap_header_detected = true;
             /*
              * At this point m->l2_len and m->l3_len describe outer header.
              * These will become m->outer_l2_len and m->outer_l3_len below.

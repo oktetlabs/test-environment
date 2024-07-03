@@ -33,15 +33,15 @@
 
 /** Packetdrill specific macro to bind 'unsigned int' argument. */
 #define TAPI_PACKETDRILL_OPT_UINT(_prefix, _field) \
-    TAPI_JOB_OPT_UINT(_prefix, TRUE, NULL, tapi_packetdrill_opts, _field)
+    TAPI_JOB_OPT_UINT(_prefix, true, NULL, tapi_packetdrill_opts, _field)
 
 /** Packetdrill specific macro to bind 'char *' argument. */
 #define TAPI_PACKETDRILL_OPT_STRING(_prefix, _field) \
-    TAPI_JOB_OPT_STRING(_prefix, TRUE, tapi_packetdrill_opts, _field)
+    TAPI_JOB_OPT_STRING(_prefix, true, tapi_packetdrill_opts, _field)
 
 /** Packetdrill specific macro to bind 'struct sockaddr *' argument. */
 #define TAPI_PACKETDRILL_OPT_SOCKADDR(_prefix, _field) \
-    TAPI_JOB_OPT_SOCKADDR_PTR(_prefix, TRUE, tapi_packetdrill_opts, _field)
+    TAPI_JOB_OPT_SOCKADDR_PTR(_prefix, true, tapi_packetdrill_opts, _field)
 
 /* See description in tapi_packetdrill.h */
 struct tapi_packetdrill_app {
@@ -55,7 +55,7 @@ struct tapi_packetdrill_app {
     char                pd_script_path[PATH_MAX]; /**< Full script path on
                                                        agent side. */
     char                pd_script_name[PATH_MAX]; /**< Script name. */
-    te_bool             is_client;  /**< Flag displaying whether the app is
+    bool is_client;  /**< Flag displaying whether the app is
                                          running in a client mode. */
 };
 
@@ -348,10 +348,10 @@ tapi_packetdrill_app_init(tapi_job_factory_t *factory,
                  * socket syscall: 1544162535.818347
                  */
                 {
-                    .use_stdout  = TRUE,
-                    .use_stderr  = FALSE,
+                    .use_stdout  = true,
+                    .use_stderr  = false,
                     .filter_name = NULL,
-                    .readable    = TRUE,
+                    .readable    = true,
                     .log_level   = 0,
                     .re          = ".*syscall.*",
                     .extract     = 0,
@@ -363,10 +363,10 @@ tapi_packetdrill_app_init(tapi_job_factory_t *factory,
                  * - XX: warning handling packet: bad value outbound TCP option
                  */
                 {
-                    .use_stdout  = FALSE,
-                    .use_stderr  = TRUE,
+                    .use_stdout  = false,
+                    .use_stderr  = true,
                     .filter_name = NULL,
-                    .readable    = TRUE,
+                    .readable    = true,
                     .log_level   = 0,
                     .re          = "\\d+: warning.*",
                     .extract     = 0,
@@ -382,10 +382,10 @@ tapi_packetdrill_app_init(tapi_job_factory_t *factory,
                  * - XX: warning handling packet: timing error: ...
                  */
                 {
-                    .use_stdout  = FALSE,
-                    .use_stderr  = TRUE,
+                    .use_stdout  = false,
+                    .use_stderr  = true,
                     .filter_name = NULL,
-                    .readable    = TRUE,
+                    .readable    = true,
                     .log_level   = 0,
                     .re          = "\\d+:(?!.*warning.*).*error.*",
                     .extract     = 0,
@@ -393,10 +393,10 @@ tapi_packetdrill_app_init(tapi_job_factory_t *factory,
                 },
                 /* Filter to catch assertions in scripts or packetdrill code. */
                 {
-                    .use_stdout  = FALSE,
-                    .use_stderr  = TRUE,
+                    .use_stdout  = false,
+                    .use_stderr  = true,
                     .filter_name = NULL,
-                    .readable    = TRUE,
+                    .readable    = true,
                     .log_level   = 0,
                     .re          = "[Aa]ssert.*",
                     .extract     = 0,
@@ -404,10 +404,10 @@ tapi_packetdrill_app_init(tapi_job_factory_t *factory,
                 },
                 /* Filter used just for printing stderr stream as TE warnings. */
                 {
-                    .use_stdout  = FALSE,
-                    .use_stderr  = TRUE,
+                    .use_stdout  = false,
+                    .use_stderr  = true,
                     .filter_name = "stderr_client",
-                    .readable    = TRUE,
+                    .readable    = true,
                     .log_level   = TE_LL_WARN,
                     .re          = NULL,
                     .extract     = 0,
@@ -420,10 +420,10 @@ tapi_packetdrill_app_init(tapi_job_factory_t *factory,
         job_descr.filters = TAPI_JOB_SIMPLE_FILTERS(
                 /* Filter used just for printing stderr stream as TE warnings. */
                 {
-                    .use_stdout  = FALSE,
-                    .use_stderr  = TRUE,
+                    .use_stdout  = false,
+                    .use_stderr  = true,
                     .filter_name = "stderr_server",
-                    .readable    = TRUE,
+                    .readable    = true,
                     .log_level   = TE_LL_WARN,
                     .re          = NULL,
                     .extract     = 0,

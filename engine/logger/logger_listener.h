@@ -61,10 +61,10 @@ typedef struct log_listener {
     char               url[LOG_MAX_LISTENER_URL];   /**< URL */
     char               runid[LOG_MAX_LISTENER_URL]; /**< Run ID */
     listener_state     state;       /**< Current state */
-    te_bool            need_retry;  /**< The last HTTP request failed */
+    bool need_retry;  /**< The last HTTP request failed */
     struct timeval     next_tv;     /**< Timestamp of the next dump */
     int                interval;    /**< Time interval between dumps, seconds */
-    te_bool            allow_stop;  /**< The listener is allowed to stop TE */
+    bool allow_stop;  /**< The listener is allowed to stop TE */
     CURL              *curl_handle; /**< File to dump to */
     msg_buffer         buffer;      /**< Message buffer */
     size_t             buffer_size; /**< Virtual buffer size */
@@ -73,7 +73,7 @@ typedef struct log_listener {
 
     te_dbuf            buffer_in;   /**< Buffer for HTTP responses */
     te_string          buffer_out;  /**< Buffer for outgoing data */
-    te_bool            trailing_slash; /**< Whether to add a trailing slash to
+    bool trailing_slash; /**< Whether to add a trailing slash to
                                             URLs (for Django compatibility) */
 } log_listener;
 

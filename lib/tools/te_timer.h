@@ -40,12 +40,12 @@ extern "C" {
 
 /** Timer context */
 typedef struct te_timer_t {
-    te_bool is_valid;   /**< @c TRUE if timer is created */
+    bool is_valid;   /**< @c true if timer is created */
     timer_t id;         /**< POSIX.1 timer ID */
 } te_timer_t;
 
 /** On-stack timer context initializer */
-#define TE_TIMER_INIT { .is_valid = FALSE }
+#define TE_TIMER_INIT { .is_valid = false }
 
 /**
  * Start timer

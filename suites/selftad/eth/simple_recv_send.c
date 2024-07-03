@@ -80,8 +80,8 @@ main(int argc, char *argv[])
     char *ta_A;
     char *ta_B;
 
-    te_bool send_src_csap;
-    te_bool send_src_tmpl;
+    bool send_src_csap;
+    bool send_src_tmpl;
 
     csap_handle_t eth_csap = CSAP_INVALID_HANDLE;
     csap_handle_t eth_listen_csap = CSAP_INVALID_HANDLE;

@@ -380,11 +380,11 @@ hwtstamp_tx_types_flags_rpc2te_str(unsigned int flags, te_string *str)
             if (rc != 0)                                              \
                 return rc;                                            \
                                                                       \
-            flag_added = TRUE;                                        \
+            flag_added = true;                                        \
         }                                                             \
     } while (0)
 
-    te_bool flag_added = FALSE;
+    bool flag_added = false;
     te_errno rc;
 
     CHECK_FLAG(OFF);
@@ -416,11 +416,11 @@ hwtstamp_rx_filters_flags_rpc2te_str(unsigned int flags, te_string *str)
             if (rc != 0)                                                  \
                 return rc;                                                \
                                                                           \
-            flag_added = TRUE;                                            \
+            flag_added = true;                                            \
         }                                                                 \
     } while (0)
 
-    te_bool flag_added = FALSE;
+    bool flag_added = false;
     te_errno rc;
 
     CHECK_FLAG(NONE);

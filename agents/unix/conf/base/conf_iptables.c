@@ -263,7 +263,7 @@ iptables_table_list(unsigned int  gid, const char *oid,
  *
  * @return              Check status (boolean value)
  */
-static te_bool
+static bool
 iptables_is_chain_output(const char *chain)
 {
     return ((strcmp(chain, "POSTROUTING") == 0) ||
@@ -281,14 +281,14 @@ iptables_is_chain_output(const char *chain)
  *
  * @return              Check status (boolean value)
  */
-static te_bool
+static bool
 iptables_perif_chain_is_enabled(const char *ifname, const char *ip,
                                 const char *table, const char *chain)
 {
     FILE    *fp;
     int      out_fd;
     char     buf[IPTABLES_CMD_BUF_SIZE];
-    te_bool  enabled = FALSE;
+    bool enabled = false;
     pid_t    pid;
     int      status;
 
@@ -304,7 +304,7 @@ iptables_perif_chain_is_enabled(const char *ifname, const char *ip,
     {
         ERROR("failed to execute command line while getting: %s: "
               "rc=%r (%s)", buf, pid, strerror(errno));
-        return FALSE;
+        return false;
     }
 
     if ((fp = fdopen(out_fd, "r")) == NULL)
@@ -330,7 +330,7 @@ cleanup:
  * @param ifname        interface name to operate the chain linked to
  * @param table         table name to operate chains in
  * @param chain         chain name to work with
- * @param enable        state of chain jumping rule (if TRUE, jumping rule
+ * @param enable        state of chain jumping rule (if @c true, jumping rule
  *                      should be installed)
  *
  * @return              Status code
@@ -340,7 +340,7 @@ iptables_perif_chain_set(const char *ifname,
                          const char *ip,
                          const char *table,
                          const char *chain,
-                         te_bool enable)
+                         bool enable)
 {
     int  rc;
     char cmd_buf[IPTABLES_CMD_BUF_SIZE];
@@ -417,7 +417,7 @@ iptables_chain_add(unsigned int  gid, const char *oid,
     if (enable)
     {
         if ((rc = iptables_perif_chain_set(ifname, ip, table,
-                                           chain, TRUE)) != 0)
+                                           chain, true)) != 0)
         {
             ERROR("Failed to add jumping rule for chain %s_%s",
                   chain, ifname);
@@ -458,7 +458,7 @@ iptables_chain_del(unsigned int  gid, const char *oid,
     if (iptables_perif_chain_is_enabled(ifname, ip, table, chain))
     {
         if ((rc = iptables_perif_chain_set(ifname, ip, table,
-                                           chain, FALSE)) != 0)
+                                           chain, false)) != 0)
         {
             ERROR("Failed to remove jumping rule for chain %s_%s, rc=%r",
                   chain, ifname, rc);
@@ -954,7 +954,7 @@ iptables_cmd_set(unsigned int  gid, const char *oid,
     parameter_j_p = strstr(value, parameter_j);
     if (parameter_j_p != NULL)
     {
-        te_bool contain_space;
+        bool contain_space;
 
         val_p = parameter_j_p + strlen(parameter_j);
 

@@ -467,7 +467,7 @@ ndn_match_mask(const asn_value *mask_pat, const uint8_t *data, size_t d_len)
     int exact_len_index = -1, pat_index, val_index;
     int rc = 0;
 
-    te_bool exact_len = FALSE;
+    bool exact_len = false;
 
     size_t           mask_len;
     size_t           cmp_len;
@@ -513,7 +513,7 @@ ndn_match_mask(const asn_value *mask_pat, const uint8_t *data, size_t d_len)
 
     if ((leaf_el = mask_pat->data.array[exact_len_index]) != NULL &&
          leaf_el->data.integer != 0)
-        exact_len = TRUE;
+        exact_len = true;
 
     if (exact_len && mask_len != d_len)
     {

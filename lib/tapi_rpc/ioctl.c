@@ -846,7 +846,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 break;
 
             default:
-                assert(FALSE);
+                assert(false);
         }
     }
 

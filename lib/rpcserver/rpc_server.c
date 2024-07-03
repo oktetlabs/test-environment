@@ -177,7 +177,7 @@ te_rpc_error_set(te_errno err, const char *msg, ...)
 
         te_rpc_err.err = err;
         out_common->_errno = err;
-        out_common->errno_changed = TRUE;
+        out_common->errno_changed = true;
 
         va_start(ap, msg);
         ret = te_string_append_va(&str, msg, ap);
@@ -298,19 +298,19 @@ tarpc_defer_call(deferred_call_list *list,
     return 0;
 }
 
-te_bool
+bool
 tarpc_has_deferred_calls(const deferred_call_list *list)
 {
     deferred_call *defer = NULL;
     TAILQ_FOREACH(defer, list, next)
         if (!defer->call->done)
-            return TRUE;
-    return FALSE;
+            return true;
+    return false;
 }
 
 static rpc_call_data *
 tarpc_find_deferred(deferred_call_list *list,
-                    uintptr_t jobid, te_bool complete)
+                    uintptr_t jobid, bool complete)
 {
     rpc_call_data *call;
     deferred_call *defer = NULL;
@@ -349,15 +349,15 @@ tarpc_run_deferred(deferred_call_list *list, rpc_transport_handle handle)
         if (!defer->call->done)
         {
             defer->call->info->wrapper(defer->call);
-            defer->call->done = TRUE;
+            defer->call->done = true;
 
             enc_len = sizeof(enc_result);
             memset(&result, 0, sizeof(result));
             result.common.jobid = defer->jobid;
-            result.common.unsolicited = TRUE;
-            result.done = TRUE;
+            result.common.unsolicited = true;
+            result.done = true;
 
-            rc = rpc_xdr_encode_result("rpc_is_op_done", TRUE,
+            rc = rpc_xdr_encode_result("rpc_is_op_done", true,
                                        enc_result, &enc_len,
                                        &result);
             if (rc != 0)
@@ -464,7 +464,7 @@ tarpc_generic_service(deferred_call_list *async_list, rpc_call_data *call)
             VERB("%s(): WAIT", call->info->funcname);
 
             copy_call = tarpc_find_deferred(async_list, in_common->jobid,
-                                            TRUE);
+                                            true);
 
             if (copy_call == NULL)
             {
@@ -501,8 +501,8 @@ tarpc_generic_service(deferred_call_list *async_list, rpc_call_data *call)
 typedef struct rpcserver_plugin_context {
     int     pid;    /**< Process ID */
     int     tid;    /**< Thread ID */
-    te_bool enable; /**< Status of enabling of the plugin */
-    te_bool installed; /**< Status of installation of the plugin */
+    bool enable; /**< Status of enabling of the plugin */
+    bool installed; /**< Status of installation of the plugin */
 
     void       *context; /**< Plugin context */
 
@@ -521,15 +521,15 @@ typedef struct rpcserver_plugin_context {
 
 /** The data of current RPC server plugin */
 static __thread rpcserver_plugin_context plugin = {
-    .enable = FALSE
+    .enable = false
 };
 
 /**
  * Detect if connection with TA is broken.
  *
- * @return @c TRUE in case connection with TA is broken
+ * @return @c true in case connection with TA is broken
  */
-static te_bool
+static bool
 plugin_timeout(void)
 {
     static struct timeval now;
@@ -562,7 +562,7 @@ plugin_action(deferred_call_list *call_list)
         ERROR("RPC server plugin disabled "
               "(Unexpected pid=%d, tid=%d, expected %d/%d)",
               pid, tid, plugin.pid, plugin.tid);
-        plugin.enable = FALSE;
+        plugin.enable = false;
         return;
     }
 
@@ -577,10 +577,10 @@ plugin_action(deferred_call_list *call_list)
         {
             ERROR("Failed to install RPC server plugin: %r",
                   rc);
-            plugin.enable = FALSE;
+            plugin.enable = false;
             return;
         }
-        plugin.installed = TRUE;
+        plugin.installed = true;
     }
 
     if (plugin.action == NULL)
@@ -594,7 +594,7 @@ plugin_action(deferred_call_list *call_list)
         ERROR("RPC server plugin disabled "
               "(Action fail with exit code: %r)",
               rc);
-        plugin.enable = FALSE;
+        plugin.enable = false;
     }
 }
 
@@ -622,7 +622,7 @@ rpcserver_plugin_enable(
             plugin._name = NULL;                                        \
         else                                                            \
         {                                                               \
-            plugin._name = rcf_ch_symbol_addr(_name, TRUE);             \
+            plugin._name = rcf_ch_symbol_addr(_name, true);             \
             if (plugin._name == NULL)                                   \
             {                                                           \
                 ERROR("Failed to enable the RPC server plugin. "        \
@@ -650,7 +650,7 @@ rpcserver_plugin_enable(
         return TE_RC(TE_RCF_API, TE_EFAULT);
     }
 
-    plugin.enable = TRUE;
+    plugin.enable = true;
     plugin.installed = plugin.install == NULL;
     plugin.pid = getpid();
     plugin.tid = thread_self();
@@ -669,8 +669,8 @@ rpcserver_plugin_disable(void)
     if (plugin.enable && plugin.installed && plugin.uninstall != NULL)
         rc = plugin.uninstall(&plugin.context);
 
-    plugin.enable    = FALSE;
-    plugin.installed = FALSE;
+    plugin.enable    = false;
+    plugin.installed = false;
     plugin.install   = NULL;
     plugin.action    = NULL;
     plugin.uninstall = NULL;
@@ -772,7 +772,7 @@ rcf_pch_rpc_server(const char *name)
 
     rcf_pch_mem_init();
 
-    while (TRUE)
+    while (true)
     {
         const char *reply = "OK";
         char      rpc_name[RCF_RPC_MAX_NAME];
@@ -780,7 +780,7 @@ rcf_pch_rpc_server(const char *name)
         void     *in = NULL;            /* Input parameter C structure */
         void     *out = NULL;           /* Output parameter C structure */
         rpc_info *info = NULL;          /* RPC information */
-        te_bool   result = FALSE;       /* "rc" attribute */
+        bool result = false;       /* "rc" attribute */
         size_t    len = RCF_RPC_HUGE_BUF_LEN;
         te_errno  rc;
 

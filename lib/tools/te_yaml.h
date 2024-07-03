@@ -33,7 +33,7 @@ te_yaml_scalar_value(const yaml_node_t *node)
 }
 
 /** Check if a value is defined and is a possible YAML value for "true" */
-static inline te_bool
+static inline bool
 te_yaml_value_is_true(const char *value)
 {
     return value != NULL &&

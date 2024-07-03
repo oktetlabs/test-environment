@@ -1817,16 +1817,16 @@ asn_parse_dvalue_in_file(const char *filename, const asn_type *type,
     return rc;
 }
 
-te_bool
+bool
 asn_clean_count(asn_value *value)
 {
-    te_bool need = FALSE;
+    bool need = false;
     asn_value *sval;
 
     unsigned int i;
 
     if (value == NULL || !(value->syntax & COMPOUND))
-        return FALSE;
+        return false;
 
     switch (value->syntax)
     {
@@ -1836,7 +1836,7 @@ asn_clean_count(asn_value *value)
         case SET_OF:
         case CHOICE:
         case TAGGED:
-            need = TRUE;
+            need = true;
 
         default:
             break;
@@ -1844,7 +1844,7 @@ asn_clean_count(asn_value *value)
     for (i = 0; i < value->len; i++)
         if ((sval = value->data.array[i]) != NULL)
             if (asn_clean_count(sval))
-                need = TRUE;
+                need = true;
     if (need)
         value->txt_len = -1;
     return need;

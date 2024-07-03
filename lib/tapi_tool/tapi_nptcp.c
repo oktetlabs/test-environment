@@ -33,38 +33,38 @@ enum entry_fields {
 const tapi_nptcp_opt tapi_nptcp_default_opt = {
     .tcp_buffer_size = TAPI_JOB_OPT_OMIT_UINT,
     .host = NULL,
-    .invalidate_cache = FALSE,
+    .invalidate_cache = false,
     .starting_msg_size = TAPI_JOB_OPT_OMIT_UINT,
     .nrepeats = TAPI_JOB_OPT_OMIT_UINT,
     .offsets = NULL,
     .output_filename = NULL,
     .perturbation_size = TAPI_JOB_OPT_OMIT_UINT,
-    .reset_sockets = FALSE,
-    .streaming_mode = FALSE,
+    .reset_sockets = false,
+    .streaming_mode = false,
     .upper_bound = TAPI_JOB_OPT_OMIT_UINT,
-    .bi_directional_mode = FALSE,
+    .bi_directional_mode = false,
 };
 
 static const tapi_job_opt_bind nptcp_binds[] = TAPI_JOB_OPT_SET(
-    TAPI_JOB_OPT_UINT_OMITTABLE("-b", FALSE, NULL,
+    TAPI_JOB_OPT_UINT_OMITTABLE("-b", false, NULL,
                                 tapi_nptcp_opt, tcp_buffer_size),
 
-    TAPI_JOB_OPT_STRING("-h", FALSE, tapi_nptcp_opt, host),
+    TAPI_JOB_OPT_STRING("-h", false, tapi_nptcp_opt, host),
     TAPI_JOB_OPT_BOOL("-I", tapi_nptcp_opt, invalidate_cache),
-    TAPI_JOB_OPT_UINT_OMITTABLE("-l", FALSE, NULL,
+    TAPI_JOB_OPT_UINT_OMITTABLE("-l", false, NULL,
                                 tapi_nptcp_opt, starting_msg_size),
 
-    TAPI_JOB_OPT_UINT_OMITTABLE("-n", FALSE, NULL,
+    TAPI_JOB_OPT_UINT_OMITTABLE("-n", false, NULL,
                                 tapi_nptcp_opt, nrepeats),
 
-    TAPI_JOB_OPT_STRING("-O", FALSE, tapi_nptcp_opt, offsets),
-    TAPI_JOB_OPT_STRING("-o", FALSE, tapi_nptcp_opt, output_filename),
-    TAPI_JOB_OPT_UINT_OMITTABLE("-p", FALSE, NULL,
+    TAPI_JOB_OPT_STRING("-O", false, tapi_nptcp_opt, offsets),
+    TAPI_JOB_OPT_STRING("-o", false, tapi_nptcp_opt, output_filename),
+    TAPI_JOB_OPT_UINT_OMITTABLE("-p", false, NULL,
                                 tapi_nptcp_opt, perturbation_size),
 
     TAPI_JOB_OPT_BOOL("-r", tapi_nptcp_opt, reset_sockets),
     TAPI_JOB_OPT_BOOL("-s", tapi_nptcp_opt, streaming_mode),
-    TAPI_JOB_OPT_UINT_OMITTABLE("-u", FALSE, NULL,
+    TAPI_JOB_OPT_UINT_OMITTABLE("-u", false, NULL,
                                 tapi_nptcp_opt, upper_bound),
 
     TAPI_JOB_OPT_BOOL("-2", tapi_nptcp_opt, bi_directional_mode)
@@ -102,8 +102,8 @@ create_jobs(tapi_job_factory_t *factory_receiver,
         .stderr_loc = &result->out_chs[0],
         .filters = TAPI_JOB_SIMPLE_FILTERS(
             {
-                .use_stderr = TRUE,
-                .readable = TRUE,
+                .use_stderr = true,
+                .readable = true,
                 .re = "Send and receive buffers are",
                 .extract = 0,
                 .filter_var = &result->receiver_listens_filter,
@@ -119,44 +119,44 @@ create_jobs(tapi_job_factory_t *factory_receiver,
         .stderr_loc = &result->out_chs[2],
         .filters = TAPI_JOB_SIMPLE_FILTERS(
             {
-                .use_stderr = TRUE,
-                .readable = TRUE,
+                .use_stderr = true,
+                .readable = true,
                 .re = "[0-9]+(?=:)",
                 .extract = 0,
                 .filter_var = &result->num_filter,
             },
             {
-                .use_stderr = TRUE,
-                .readable = TRUE,
+                .use_stderr = true,
+                .readable = true,
                 .re = ":\\s*([0-9]+)(?= bytes)",
                 .extract = 1,
                 .filter_var = &result->bytes_filter,
             },
             {
-                .use_stderr = TRUE,
-                .readable = TRUE,
+                .use_stderr = true,
+                .readable = true,
                 .re = "[0-9]+(?= times)",
                 .extract = 0,
                 .filter_var = &result->times_filter,
             },
             {
-                .use_stderr = TRUE,
-                .readable = TRUE,
+                .use_stderr = true,
+                .readable = true,
                 .re = "[0-9]+\\.[0-9]+(?= Mbps)",
                 .extract = 0,
                 .filter_var = &result->throughput_filter,
             },
             {
-                .use_stderr = TRUE,
-                .readable = TRUE,
+                .use_stderr = true,
+                .readable = true,
                 .re = "[0-9]+\\.[0-9]+(?= usec)",
                 .extract = 0,
                 .filter_var = &result->rtt_filter,
             },
             {
-                .use_stdout = TRUE,
+                .use_stdout = true,
                 .log_level = TE_LL_RING,
-                .readable = FALSE,
+                .readable = false,
                 .filter_name = "transmitter's stdout",
             }
         )
@@ -426,19 +426,19 @@ read_all_filters(tapi_nptcp_app *app, te_vec *stats)
  * in 'stats' array.
  */
 static size_t
-get_num_of_complete_entries(te_vec *stats, te_bool *incomplete)
+get_num_of_complete_entries(te_vec *stats, bool *incomplete)
 {
     size_t min_size;
     size_t cur_size;
     size_t i;
 
-    *incomplete = FALSE;
+    *incomplete = false;
     min_size = te_vec_size(&stats[0]);
     for (i = 1; i < ENTRY_MAX; i++)
     {
         cur_size = te_vec_size(&stats[i]);
         if (cur_size != min_size && !(*incomplete))
-            *incomplete = TRUE;
+            *incomplete = true;
 
         min_size = MIN(min_size, cur_size);
     }
@@ -453,7 +453,7 @@ fill_report_with_entries(te_vec *report, te_vec *stats)
     tapi_nptcp_report_entry entry;
     size_t i;
     size_t entries_cnt;
-    te_bool incomplete;
+    bool incomplete;
 
     entries_cnt = get_num_of_complete_entries(stats, &incomplete);
     if (incomplete)

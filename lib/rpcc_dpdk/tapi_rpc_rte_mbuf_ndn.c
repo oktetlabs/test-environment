@@ -77,8 +77,8 @@ tapi_rte_mbuf_match_pattern_call(rcf_rpc_server *rpcs,
                                  char *ptrn,
                                  rpc_rte_mbuf_p *mbufs,
                                  unsigned int n_mbufs,
-                                 te_bool seq_match,
-                                 te_bool need_pkts,
+                                 bool seq_match,
+                                 bool need_pkts,
                                  asn_value ***packets,
                                  unsigned int *n_packets)
 {
@@ -100,7 +100,7 @@ tapi_rte_mbuf_match_pattern_call(rcf_rpc_server *rpcs,
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_mbuf_match_pattern,
                  "%s\n%s,\n%s", "%u, " NEG_ERRNO_FMT,
-                 (in.seq_match == TRUE) ? "(sequence matching)" : "",
+                 (in.seq_match == true) ? "(sequence matching)" : "",
                  in.pattern,
                  rpc_rte_mbufs2str(tlbp, in.mbufs.mbufs_val,
                                    in.mbufs.mbufs_len, rpcs),
@@ -137,7 +137,7 @@ tapi_rte_mbuf_match_pattern_call(rcf_rpc_server *rpcs,
 static int
 tapi_rte_mbuf_match_pattern(rcf_rpc_server *rpcs,
                             const asn_value *pattern,
-                            te_bool seq_match,
+                            bool seq_match,
                             rpc_rte_mbuf_p *mbufs,
                             unsigned int count,
                             asn_value ***packets,
@@ -150,7 +150,7 @@ tapi_rte_mbuf_match_pattern(rcf_rpc_server *rpcs,
 
     char *ptrn;
     unsigned int ptrn_len;
-    te_bool need_pkts = packets != NULL;
+    bool need_pkts = packets != NULL;
     unsigned int mbufs_len = 0;
     asn_value **pktbuf = NULL;
     unsigned int pktbuf_size = 0;
@@ -209,7 +209,7 @@ rpc_rte_mbuf_match_pattern(rcf_rpc_server     *rpcs,
                            asn_value        ***packets,
                            unsigned int       *matched)
 {
-    return tapi_rte_mbuf_match_pattern(rpcs, pattern, FALSE, mbufs,
+    return tapi_rte_mbuf_match_pattern(rpcs, pattern, false, mbufs,
                                        count, packets, matched);
 }
 
@@ -221,7 +221,7 @@ tapi_rte_mbuf_match_pattern_seq(rcf_rpc_server    *rpcs,
                                 asn_value       ***packets,
                                 unsigned int      *matched)
 {
-    return tapi_rte_mbuf_match_pattern(rpcs, pattern, TRUE, mbufs,
+    return tapi_rte_mbuf_match_pattern(rpcs, pattern, true, mbufs,
                                        count, packets, matched);
 }
 

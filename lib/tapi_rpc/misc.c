@@ -51,7 +51,7 @@
 
 /* See description in tapi_rpc_misc.h */
 
-te_bool
+bool
 rpc_find_func(rcf_rpc_server *rpcs, const char * func_name)
 {
     struct tarpc_rpc_find_func_in  in;
@@ -193,7 +193,7 @@ rpc_bond_get_slaves(rcf_rpc_server *rpcs, const char *bond_ifname,
     {
         rc = tq_strings_add_uniq_gen(slaves,
                                      out.slaves.slaves_val[i].ifname,
-                                     TRUE);
+                                     true);
         if (rc == 0)
             rc = te_string_append(&str, "%s%s", (i == 0) ? "" : ", ",
                                   out.slaves.slaves_val[i].ifname);
@@ -258,7 +258,7 @@ rpc_get_sizeof(rcf_rpc_server *rpcs, const char *type_name)
 }
 
 /* See description in tapi_rpc_misc.h */
-te_bool
+bool
 rpc_protocol_info_cmp(rcf_rpc_server *rpcs,
                       const uint8_t *buf1,
                       const uint8_t *buf2,
@@ -534,8 +534,8 @@ rpc_iovec_cmp(size_t v1len, const struct rpc_iovec *v1, size_t v1cnt,
  * @param ignore_err        Ignore errors while run
  *
  * @return Number of sent bytes or -1 in the case of failure if
- *         ignore_err set to FALSE or number of sent bytes or 0 if
- *         ignore_err set to TRUE
+ *         ignore_err set to @c false or number of sent bytes or 0 if
+ *         ignore_err set to @c true
  */
 int
 rpc_simple_sender(rcf_rpc_server *rpcs,
@@ -1405,7 +1405,7 @@ rpc_copy_fd2fd(rcf_rpc_server *rpcs, int out_fd, int in_fd, int timeout,
 
 int
 rpc_ftp_open(rcf_rpc_server *rpcs,
-             char *uri, te_bool rdonly, te_bool passive, int offset,
+             char *uri, bool rdonly, bool passive, int offset,
              int *sock)
 {
     tarpc_ftp_open_in  in;
@@ -1487,10 +1487,10 @@ rpc_overfill_buffers_data(rcf_rpc_server *rpcs, int sock,
     memset(&out, 0, sizeof(out));
 
     in.sock = sock;
-    in.is_nonblocking = FALSE;
+    in.is_nonblocking = false;
     in.iomux = iomux;
     if (sent_data != NULL)
-        in.return_data = TRUE;
+        in.return_data = true;
 
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
         rpcs->timeout = RCF_RPC_DEFAULT_TIMEOUT * 4;
@@ -1690,12 +1690,12 @@ rpc_memcmp(rcf_rpc_server *rpcs, rpc_ptr_off *s1, rpc_ptr_off *s2, size_t n)
     TAPI_RPC_LOG(rpcs, memcmp, "%u (off %u), %u (off %u), %u", "%d",
                  s1->base, s1->offset, s2->base, s2->offset,
                  n, out.retval);
-    TAPI_RPC_OUT(memcmp, FALSE);
+    TAPI_RPC_OUT(memcmp, false);
     return (int)out.retval;
 }
 
 void
-rpc_vm_trasher(rcf_rpc_server *rpcs, te_bool start)
+rpc_vm_trasher(rcf_rpc_server *rpcs, bool start)
 {
     tarpc_vm_trasher_in  in;
     tarpc_vm_trasher_out out;
@@ -1821,7 +1821,7 @@ rpc_create_child_process_socket(const char *method,
  * @return status code
  */
 int
-rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
+rpc_get_rw_ability(bool *answer, rcf_rpc_server *rpcs,
                    int s, int timeout, char *type)
 {
     struct tarpc_get_rw_ability_in  in;
@@ -1839,7 +1839,7 @@ rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
 
     in.sock = s;
     in.timeout = timeout;
-    in.check_rd = (type[0] == 'R') ? TRUE : FALSE;
+    in.check_rd = (type[0] == 'R') ? true : false;
 
     if ((timeout > 0) && (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT))
     {
@@ -1900,7 +1900,7 @@ tapi_sigaction_simple(rcf_rpc_server *rpcs,
  * @param  s           socket descriptor
  * @param  mcast_addr  multicast address (IPv4 or IPv6).
  * @param  if_index    interface index
- * @param  leave_group if @c TRUE, leave a multicasting group,
+ * @param  leave_group if @c true, leave a multicasting group,
  *                     join otherwise
  * @param  how         joining method:
  *
@@ -1913,7 +1913,7 @@ tapi_sigaction_simple(rcf_rpc_server *rpcs,
 static int
 rpc_mcast_join_leave(rcf_rpc_server *rpcs, int s,
                      const struct sockaddr *mcast_addr,
-                     int if_index, te_bool leave_group,
+                     int if_index, bool leave_group,
                      tarpc_joining_method how)
 {
     struct tarpc_mcast_join_leave_in    in;
@@ -1973,7 +1973,7 @@ rpc_mcast_join(rcf_rpc_server *rpcs, int s,
                const struct sockaddr *mcast_addr, int if_index,
                tarpc_joining_method how)
 {
-    return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index, FALSE, how);
+    return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index, false, how);
 }
 
 int
@@ -1981,7 +1981,7 @@ rpc_mcast_leave(rcf_rpc_server *rpcs, int s,
                 const struct sockaddr *mcast_addr, int if_index,
                 tarpc_joining_method how)
 {
-    return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index, TRUE, how);
+    return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index, true, how);
 }
 
 /*
@@ -1992,7 +1992,7 @@ int
 rpc_mcast_source_join_leave(rcf_rpc_server *rpcs, int s,
                             const struct sockaddr *mcast_addr,
                             const struct sockaddr *source_addr,
-                            int if_index, te_bool leave_group,
+                            int if_index, bool leave_group,
                             tarpc_joining_method how)
 {
     struct tarpc_mcast_source_join_leave_in    in;
@@ -2076,7 +2076,7 @@ rpc_mcast_source_join(rcf_rpc_server *rpcs, int s,
                       int if_index, tarpc_joining_method how)
 {
     return rpc_mcast_source_join_leave(rpcs, s, mcast_addr, source_addr,
-                                       if_index, FALSE, how);
+                                       if_index, false, how);
 }
 int
 rpc_mcast_source_leave(rcf_rpc_server *rpcs, int s,
@@ -2085,7 +2085,7 @@ rpc_mcast_source_leave(rcf_rpc_server *rpcs, int s,
                        int if_index, tarpc_joining_method how)
 {
     return rpc_mcast_source_join_leave(rpcs, s, mcast_addr, source_addr,
-                                       if_index, TRUE, how);
+                                       if_index, true, how);
 }
 
 int
@@ -2096,10 +2096,10 @@ rpc_common_mcast_join(rcf_rpc_server *rpcs, int s,
 {
     if (how == TARPC_MCAST_ADD_DROP || how == TARPC_MCAST_JOIN_LEAVE)
         return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index,
-                                    FALSE, how);
+                                    false, how);
     else
         return rpc_mcast_source_join_leave(rpcs, s, mcast_addr, source_addr,
-                                           if_index, FALSE, how);
+                                           if_index, false, how);
 }
 
 int
@@ -2110,10 +2110,10 @@ rpc_common_mcast_leave(rcf_rpc_server *rpcs, int s,
 {
     if (how == TARPC_MCAST_ADD_DROP || how == TARPC_MCAST_JOIN_LEAVE)
         return rpc_mcast_join_leave(rpcs, s, mcast_addr, if_index,
-                                    TRUE, how);
+                                    true, how);
     else
         return rpc_mcast_source_join_leave(rpcs, s, mcast_addr, source_addr,
-                                           if_index, TRUE, how);
+                                           if_index, true, how);
 }
 
 #if HAVE_LINUX_ETHTOOL_H
@@ -2378,7 +2378,7 @@ rpc_integer2raw(rcf_rpc_server *rpcs, uint64_t number,
 }
 
 int
-rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, te_bool use_exec)
+rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, bool use_exec)
 {
     tarpc_vfork_pipe_exec_in    in;
     tarpc_vfork_pipe_exec_out   out;
@@ -2597,13 +2597,13 @@ te_saved_mtus_put(te_saved_mtus *mtus,
 static te_errno save_descendants_mtus(const char *ta,
                                       const char *if_name,
                                       te_saved_mtus *mtus,
-                                      te_bool save_target);
+                                      bool save_target);
 static te_errno tapi_set_if_mtu_smart_aux(const char *ta,
                                           const char *if_name,
                                           int mtu, int *old_mtu_p,
                                           te_saved_mtus *mtus,
-                                          te_bool ancestor,
-                                          te_bool skip_target);
+                                          bool ancestor,
+                                          bool skip_target);
 
 /**
  * Callback function to iterate an interface descendants.
@@ -2617,7 +2617,7 @@ static te_errno tapi_set_if_mtu_smart_aux(const char *ta,
 static te_errno
 save_descendant_cb(const char *ta, const char *ifname, void *opaque)
 {
-    return save_descendants_mtus(ta, ifname, (te_saved_mtus *)opaque, TRUE);
+    return save_descendants_mtus(ta, ifname, (te_saved_mtus *)opaque, true);
 }
 
 /**
@@ -2627,7 +2627,7 @@ save_descendant_cb(const char *ta, const char *ifname, void *opaque)
  * @param ta            Test agent name
  * @param if_name       Interface name.
  * @param mtus          Where to store MTU values.
- * @param save_target   If @c TRUE, save MTU value
+ * @param save_target   If @c true, save MTU value
  *                      for the interface itself too.
  *
  * @return Status code.
@@ -2636,7 +2636,7 @@ static te_errno
 save_descendants_mtus(const char *ta,
                       const char *if_name,
                       te_saved_mtus *mtus,
-                      te_bool save_target)
+                      bool save_target)
 {
     int       old_mtu;
     te_errno  rc = 0;
@@ -2671,7 +2671,7 @@ save_descendants_mtus(const char *ta,
  * set_parent_mtu_cb(). */
 typedef struct parent_mtu_ctx {
     int            mtu;
-    te_bool        aggr;
+    bool aggr;
     te_saved_mtus *mtus;
 } parent_mtu_ctx;
 
@@ -2690,7 +2690,7 @@ set_parent_mtu_cb(const char *ta, const char *ifname, void *opaque)
     parent_mtu_ctx *ctx = (parent_mtu_ctx *)opaque;
 
     return tapi_set_if_mtu_smart_aux(ta, ifname, ctx->mtu, NULL, ctx->mtus,
-                                     TRUE, ctx->aggr);
+                                     true, ctx->aggr);
 }
 
 /**
@@ -2703,8 +2703,8 @@ set_parent_mtu_cb(const char *ta, const char *ifname, void *opaque)
  * @param mtu           MTU value
  * @param old_mtu_p     Where to save old MTU value for target interface
  *                      (may be @c NULL)
- * @param ancestor      If @c TRUE, this is an ancestor interface
- * @param skip_target   If @c TRUE, do not try to change MTU of
+ * @param ancestor      If @c true, this is an ancestor interface
+ * @param skip_target   If @c true, do not try to change MTU of
  *                      the passed interface, only change MTU of
  *                      its ancestors if required. This is useful
  *                      when the target is a slave of an aggregation
@@ -2719,8 +2719,8 @@ tapi_set_if_mtu_smart_aux(const char *ta,
                           const char *if_name,
                           int mtu, int *old_mtu_p,
                           te_saved_mtus *mtus,
-                          te_bool ancestor,
-                          te_bool skip_target)
+                          bool ancestor,
+                          bool skip_target)
 {
     int           rc;
     int           old_mtu;
@@ -2731,7 +2731,7 @@ tapi_set_if_mtu_smart_aux(const char *ta,
         return TE_RC(TE_TAPI, TE_EPERM);
     }
 
-    rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s/mtu:",
+    rc = cfg_synchronize_fmt(true, "/agent:%s/interface:%s/mtu:",
                              ta, if_name);
     if (rc != 0)
         return rc;
@@ -2750,14 +2750,14 @@ tapi_set_if_mtu_smart_aux(const char *ta,
 
     if (mtu > old_mtu)
     {
-        parent_mtu_ctx ctx = {.mtu = mtu, .aggr = FALSE, .mtus = mtus};
+        parent_mtu_ctx ctx = {.mtu = mtu, .aggr = false, .mtus = mtus};
         te_interface_kind kind;
 
         rc = tapi_cfg_get_if_kind(ta, if_name, &kind);
         if (rc != 0)
             return rc;
         if (kind == TE_INTERFACE_KIND_BOND || kind == TE_INTERFACE_KIND_TEAM)
-            ctx.aggr = TRUE;
+            ctx.aggr = true;
 
         rc = tapi_host_ns_if_parent_iter(ta, if_name,
                                          &set_parent_mtu_cb, &ctx);
@@ -2795,7 +2795,7 @@ tapi_set_if_mtu_smart(const char *ta, const struct if_nameindex *interface,
                       int mtu, int *old_mtu)
 {
     return tapi_set_if_mtu_smart_aux(ta, interface->if_name,
-                                     mtu, old_mtu, NULL, FALSE, FALSE);
+                                     mtu, old_mtu, NULL, false, false);
 }
 
 /* See description in tapi_rpc_misc.h */
@@ -2805,12 +2805,12 @@ tapi_set_if_mtu_smart2(const char *ta, const char *if_name,
 {
     te_errno  rc = 0;
 
-    rc = save_descendants_mtus(ta, if_name, backup, FALSE);
+    rc = save_descendants_mtus(ta, if_name, backup, false);
     if (rc != 0)
         return rc;
 
     return tapi_set_if_mtu_smart_aux(ta, if_name, mtu, NULL,
-                                     backup, FALSE, FALSE);
+                                     backup, false, false);
 }
 
 /* See description in tapi_rpc_misc.h */
@@ -2824,7 +2824,7 @@ tapi_set_if_mtu_smart2_rollback(te_saved_mtus *backup)
     {
         rc = tapi_set_if_mtu_smart_aux(saved_mtu->ta, saved_mtu->if_name,
                                        saved_mtu->mtu, NULL,
-                                       NULL, FALSE, FALSE);
+                                       NULL, false, false);
         if (rc != 0)
             break;
     }
@@ -2919,7 +2919,7 @@ cleanup:
 }
 
 /* See description in tapi_rpc_misc.h */
-te_bool
+bool
 tapi_stored_mtus_exist(const char *ta,
                        const char *name)
 {
@@ -2927,9 +2927,9 @@ tapi_stored_mtus_exist(const char *ta,
 
     rc = cfg_get_instance_string_fmt(NULL, "/local:%s/saved_mtus:%s", ta, name);
     if (rc == 0)
-        return TRUE;
+        return true;
 
-    return FALSE;
+    return false;
 }
 
 /* See description in tapi_rpc_misc.h */
@@ -3000,7 +3000,7 @@ cleanup:
         }
     }
 
-    rc2 = cfg_del_instance_fmt(FALSE,
+    rc2 = cfg_del_instance_fmt(false,
                                "/local:%s/saved_mtus:%s",
                                ta, name);
     if (rc2 != 0)
@@ -3031,18 +3031,18 @@ cleanup:
 }
 
 /* See description in tapi_rpc_misc.h */
-te_bool
+bool
 tapi_interface_is_vlan(rcf_rpc_server *rpcs,
                        const struct if_nameindex *interface)
 {
     char     if_name[IFNAMSIZ];
     char    *val = NULL;
-    te_bool  result = FALSE;
+    bool result = false;
     te_errno rc;
 
     te_strlcpy(if_name, interface->if_name, IFNAMSIZ);
 
-    while (TRUE)
+    while (true)
     {
         rc = cfg_get_instance_string_fmt(&val,
                                          "/agent:%s/interface:%s/kind:",
@@ -3050,16 +3050,16 @@ tapi_interface_is_vlan(rcf_rpc_server *rpcs,
         if (rc != 0)
         {
             ERROR("Failed to get kind of %s interface: %r", if_name, rc);
-            return FALSE;
+            return false;
         }
         if (strcmp(val, "vlan") == 0)
         {
-            result = TRUE;
+            result = true;
             break;
         }
         else if (strcmp(val, "") == 0)
         {
-            result = FALSE;
+            result = false;
             break;
         }
         free(val);
@@ -3070,7 +3070,7 @@ tapi_interface_is_vlan(rcf_rpc_server *rpcs,
         if (rc != 0)
         {
             ERROR("Failed to get parent of %s interface: %r", if_name, rc);
-            return FALSE;
+            return false;
         }
         te_strlcpy(if_name, val, IFNAMSIZ);
         free(val);
@@ -3138,7 +3138,7 @@ rpc_release_rpc_ptr(rcf_rpc_server *rpcs, rpc_ptr ptr, char *ns_string)
 int
 rpc_send_flooder_iomux(rcf_rpc_server *rpcs, int sock, iomux_func iomux,
                        tarpc_send_function send_func,
-                       te_bool msg_dontwait, int packet_size,
+                       bool msg_dontwait, int packet_size,
                        int duration, uint64_t *packets, uint32_t *errors)
 {
     tarpc_send_flooder_iomux_in  in;
@@ -3304,7 +3304,7 @@ rpc_read_fd2te_dbuf_append(rcf_rpc_server *rpcs, int fd, int time2wait,
     void *buf = NULL;
     size_t len;
 
-    te_bool awaiting_error;
+    bool awaiting_error;
 
     awaiting_error = RPC_AWAITING_ERROR(rpcs);
 
@@ -3348,7 +3348,7 @@ rpc_read_fd2te_string_append(rcf_rpc_server *rpcs, int fd, int time2wait,
     void *buf = NULL;
     size_t len;
 
-    te_bool awaiting_error;
+    bool awaiting_error;
 
     awaiting_error = RPC_AWAITING_ERROR(rpcs);
 
@@ -3409,7 +3409,7 @@ rpc_remove_dir_with_files(rcf_rpc_server *rpcs, const char *path)
     rcf_rpc_call(rpcs, "remove_dir_with_files", &in, &out);
 
     /* This function should not check errno */
-    out.common.errno_changed = FALSE;
+    out.common.errno_changed = false;
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(remove_dir_with_files, out.retval);
 
     free(in.path.path_val);
@@ -3444,7 +3444,7 @@ rpc_te_file_check_executable(rcf_rpc_server *rpcs,
     in.path = strdup(path);
 
     rcf_rpc_call(rpcs, "te_file_check_executable", &in, &out);
-    out.common.errno_changed = FALSE;
+    out.common.errno_changed = false;
 
     free(in.path);
 

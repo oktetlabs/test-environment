@@ -39,7 +39,7 @@ create_directories(rcf_rpc_server *rpcs, tapi_nvme_subnqn nqn, int nvmet_port)
 #define MKDIR(_fmt, _args...)                           \
     do {                                                \
         if (tapi_nvme_internal_mkdir(rpcs,              \
-            BASE_NVMET_CONFIG _fmt, _args) == FALSE)    \
+            BASE_NVMET_CONFIG _fmt, _args) == false)    \
             return rpcs->_errno;                        \
     } while (0)
 

@@ -425,7 +425,7 @@ we can have the following test scenario:
 	int main(int argc, char **argv)
 	{
 	    int      size;
-	    te_bool  oob;
+	    bool  oob;
 	    char    *msg;
 
 	    TEST_START;

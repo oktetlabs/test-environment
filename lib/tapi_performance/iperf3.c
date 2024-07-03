@@ -486,7 +486,7 @@ get_report(const json_t *jrpt, tapi_perf_report_kind kind,
                 jval = json_object_get(jsum, "sender");
                 if (json_is_boolean(jval))
                 {
-                    te_bool sender;
+                    bool sender;
 
                     sender = json_boolean_value(jval);
                     if (sender ==

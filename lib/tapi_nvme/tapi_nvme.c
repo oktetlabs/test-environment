@@ -199,9 +199,9 @@ initiator_dev_ns_str(const initiator_dev *dev)
     return ns_str;
 }
 
-static te_bool
+static bool
 parse_with_prefix(const char *prefix, const char **str, int *result,
-                  te_bool is_optional)
+                  bool is_optional)
 {
     size_t prefix_len = strlen(prefix);
 
@@ -213,15 +213,15 @@ parse_with_prefix(const char *prefix, const char **str, int *result,
 
         value = strtol(value_str, &end, 10);
         if (value > INT_MAX || value < INT_MIN || end == value_str)
-            return FALSE;
+            return false;
 
         *result = (int)value;
         *str = end;
     }
     else if (!is_optional)
-        return FALSE;
+        return false;
 
-    return TRUE;
+    return true;
 }
 
 static te_errno
@@ -238,9 +238,9 @@ initiator_dev_from_string(const char *str, initiator_dev *namespace_info)
             return TE_EINVAL;                                           \
     } while (0)
 
-    PARSE("nvme", result.admin_index, FALSE);
-    PARSE("c", result.controller_index, TRUE);
-    PARSE("n", result.namespace_index, FALSE);
+    PARSE("nvme", result.admin_index, false);
+    PARSE("c", result.controller_index, true);
+    PARSE("n", result.namespace_index, false);
 
 #undef PARSE
 
@@ -471,7 +471,7 @@ initiator_dev_info_get(rcf_rpc_server *rpcs, const initiator_dev *dev,
     return 0;
 }
 
-static te_bool
+static bool
 initiator_dev_equal(const initiator_dev *first, const initiator_dev *second)
 {
     return first->admin_index == second->admin_index &&
@@ -479,7 +479,7 @@ initiator_dev_equal(const initiator_dev *first, const initiator_dev *second)
            first->namespace_index == second->namespace_index;
 }
 
-static te_bool
+static bool
 initiator_dev_contains(const te_vec *devs, const initiator_dev *dev)
 {
     const initiator_dev *current_dev;
@@ -487,10 +487,10 @@ initiator_dev_contains(const te_vec *devs, const initiator_dev *dev)
     TE_VEC_FOREACH(devs, current_dev)
     {
         if (initiator_dev_equal(current_dev, dev))
-            return TRUE;
+            return true;
     }
 
-    return FALSE;
+    return false;
 }
 
 static te_errno
@@ -529,7 +529,7 @@ nvme_target2initiator_dev_info(const tapi_nvme_target *target,
     strncpy(info->subnqn, target->subnqn, sizeof(info->subnqn));
 }
 
-static te_bool
+static bool
 initiator_dev_info_equal(initiator_dev_info *first, initiator_dev_info *second)
 {
     return first->transport == second->transport &&
@@ -635,13 +635,13 @@ nvme_connect_build_specific_opts(te_string *str_opts,
     if (opts == NULL)
         return 0;
 
-    if (opts->hdr_digest == TRUE)
+    if (opts->hdr_digest == true)
         NVME_ADD_OPT(str_opts, "--hdr_digest ");
 
-    if (opts->data_digest == TRUE)
+    if (opts->data_digest == true)
         NVME_ADD_OPT(str_opts, "--data_digest ");
 
-    if (opts->duplicate_connection == TRUE)
+    if (opts->duplicate_connection == true)
         NVME_ADD_OPT(str_opts, "--duplicate_connect ");
 
     return 0;
@@ -937,7 +937,7 @@ tapi_nvme_initiator_discover_from(tapi_nvme_host_ctrl *host_ctrl)
         host_ctrl->rpcs, RUN_COMMAND_DEF_TIMEOUT, "%s", cmd.ptr);
 }
 
-static te_bool
+static bool
 is_disconnected(rcf_rpc_server *rpcs, const char *admin_dev)
 {
     char path[NAME_MAX];

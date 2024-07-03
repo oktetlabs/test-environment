@@ -71,7 +71,7 @@ static unsigned long long  absolute_offset;   /**< Absolute offset of the
                                                    packet */
 static size_t              total_filled_mem;   /**< Total filled memory */
 static pcap_t             *handle = NULL;      /**< Session handle. */
-static te_bool             fstop;              /**< Stop flag */
+static bool fstop;              /**< Stop flag */
 static dump_info           dumpinfo;           /**< Dump files info */
 
 /** Capture files list */
@@ -544,7 +544,7 @@ te_sniffer_process(int argc, char *argv[])
     struct timeval ts;
 
     struct bpf_program   fp;                  /* The compiled filter */
-    te_bool              pflag          = 0;  /* Promiscuous mode flag */
+    bool pflag = 0;  /* Promiscuous mode flag */
     int                  op;
 
     struct sigaction act;

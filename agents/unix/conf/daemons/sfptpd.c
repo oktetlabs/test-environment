@@ -70,7 +70,7 @@ sfptpd_enable_get(unsigned int gid, const char *oid, char *value)
 static te_errno
 sfptpd_enable_set(unsigned int gid, const char *oid, char *value)
 {
-    te_bool en = atoi(value);
+    bool en = atoi(value);
     char *s_argv[RCF_MAX_PARAMS] = {"-i", sfptpd_ifname, "-f", sfptpd_config, NULL};
     int rc;
 
@@ -80,7 +80,7 @@ sfptpd_enable_set(unsigned int gid, const char *oid, char *value)
     if ((en && sfptpd_pid != -1) || (!en && sfptpd_pid == -1))
         return 0;
 
-    if (en == FALSE)
+    if (en == false)
     {
         if ((rc = rcf_ch_kill_process(sfptpd_pid)) != 0)
             ERROR("Failed to kill sfptpd process with pid %d", sfptpd_pid);
@@ -100,7 +100,7 @@ sfptpd_enable_set(unsigned int gid, const char *oid, char *value)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    if ((rc = rcf_ch_start_process(&sfptpd_pid, -1, sfptpd_path, TRUE,
+    if ((rc = rcf_ch_start_process(&sfptpd_pid, -1, sfptpd_path, true,
                                    RCF_MAX_PARAMS, (void **)s_argv)) != 0)
         ERROR("sfptpd process starting failed.");
 

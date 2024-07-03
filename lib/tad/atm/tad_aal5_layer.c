@@ -50,13 +50,13 @@ typedef struct tad_aal5_proto_tmpl_data {
 static const tad_bps_pkt_frag tad_all5_bps_cpcs_trailer[] =
 {
     { "cpcs-uu",    8,  BPS_FLD_CONST_DEF(NDN_TAG_AAL5_CPCS_UU, 0),
-                        TAD_DU_I32, FALSE },
+                        TAD_DU_I32, false },
     { "cpi",        8,  BPS_FLD_CONST_DEF(NDN_TAG_AAL5_CPI, 0),
-                        TAD_DU_I32, FALSE },
+                        TAD_DU_I32, false },
     { "length",     16, NDN_TAG_AAL5_LENGTH,
-                        ASN_TAG_CONST, ASN_TAG_USER, 0, TAD_DU_I32, TRUE },
+                        ASN_TAG_CONST, ASN_TAG_USER, 0, TAD_DU_I32, true },
     { "crc",        32, NDN_TAG_AAL5_CRC,
-                        ASN_TAG_CONST, ASN_TAG_USER, 0, TAD_DU_I32, TRUE },
+                        ASN_TAG_CONST, ASN_TAG_USER, 0, TAD_DU_I32, true },
 };
 
 /** Array filled in with zeros to be used as padding */
@@ -261,8 +261,8 @@ typedef struct tad_aal5_prepare_pdus_data {
     csap_p      csap;       /**< CSAP */
     tad_pkts   *pdus;       /**< List to put PDUs */
     uint8_t    *trailer;    /**< CPCS PDU trailer template */
-    te_bool     write_crc;  /**< Calculate and write CRC to trailer */
-    te_bool     write_len;  /**< Calculate and write payload length
+    bool write_crc;  /**< Calculate and write CRC to trailer */
+    bool write_len;  /**< Calculate and write payload length
                                  to trailer */
 } tad_aal5_prepare_pdus_data;
 
@@ -334,7 +334,7 @@ tad_aal5_prepare_pdus(tad_pkt *pkt, void *opaque)
      */
     rc = tad_pkt_fragment(pkt, ATM_PAYLOAD_LEN,
                           -1 /* no additional segment */,
-                          FALSE /* meaningless with -1 */,
+                          false /* meaningless with -1 */,
                           data->pdus);
     if (rc != 0)
     {
@@ -347,7 +347,7 @@ tad_aal5_prepare_pdus(tad_pkt *pkt, void *opaque)
         cell_ctrl = malloc(sizeof(*cell_ctrl));
         if (cell_ctrl == NULL)
             return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-        cell_ctrl->indication = TRUE;
+        cell_ctrl->indication = true;
         tad_pkt_set_opaque(data->pdus->pkts.cqh_last, cell_ctrl, free);
     }
 
@@ -390,7 +390,7 @@ tad_aal5_gen_bin_cb(csap_p                csap,
     assert(bitoff == (sizeof(trailer) << 3));
 
     /* Add space for AAL5 padding segment to each PDU */
-    rc = tad_pkts_add_new_seg(sdus, FALSE, tad_all5_pad, 0, NULL);
+    rc = tad_pkts_add_new_seg(sdus, false, tad_all5_pad, 0, NULL);
     if (rc != 0)
     {
         ERROR(CSAP_LOG_FMT "Failed to add AAL5 padding segment: %r",
@@ -398,7 +398,7 @@ tad_aal5_gen_bin_cb(csap_p                csap,
         return rc;
     }
     /* Add space for AAL5 CPCS PDU trailer segment to each PDU */
-    rc = tad_pkts_add_new_seg(sdus, FALSE, NULL, AAL5_TRAILER_LEN, NULL);
+    rc = tad_pkts_add_new_seg(sdus, false, NULL, AAL5_TRAILER_LEN, NULL);
     if (rc != 0)
     {
         ERROR(CSAP_LOG_FMT "Failed to add AAL5 CPCS PDU trailer "

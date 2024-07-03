@@ -76,7 +76,7 @@ tad_frame_gen_bin_cb(csap_p                csap,
     tad_pkts_move(pdus, sdus);
 
     /* Add header segment to each PDU. */
-    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, sizeof(uint32_t), NULL);
+    rc = tad_pkts_add_new_seg(pdus, true, NULL, sizeof(uint32_t), NULL);
     if (rc != 0)
     {
         return rc;

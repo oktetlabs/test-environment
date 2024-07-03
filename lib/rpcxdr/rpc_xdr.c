@@ -102,7 +102,7 @@ rpc_xdr_encode_call(const char *name, void *buf, size_t *buflen, void *objp)
 
 #ifdef RPC_XML
     xdrxml_create(&xdrs, buf, *buflen, rpc_xml_call,
-                  TRUE, name, XDR_ENCODE);
+                  true, name, XDR_ENCODE);
     /* Put header */
 #else
     /* Encode routine name */
@@ -131,7 +131,7 @@ decode_result_start(XDR *xdrp, const void *buf, size_t buflen)
     x_int32_arg_t   rc;
 #ifdef RPC_XML
     xdrxml_create(xdrp, (void *)buf, buflen, rpc_xml_result,
-                  TRUE, name, XDR_DECODE);
+                  true, name, XDR_DECODE);
     /* Decode  - how can we get the routine name? */
     rc = xdrxml_return_code(xdrp);
 #else
@@ -153,7 +153,7 @@ decode_result_start(XDR *xdrp, const void *buf, size_t buflen)
  * @param buflen  length of the data
  * @param objp    C structure for input parameters to be filled
  *
- * @return Status code (if rc attribute of result is FALSE, an error should
+ * @return Status code (if rc attribute of result is @c false, an error should
  *         be returned)
  */
 int
@@ -207,7 +207,7 @@ decode_call_start(XDR *xdrp, char *name, const void *buf, size_t buflen)
     char     *tmp;
     int       n;
 
-    xdrxml_create(xdrp, (void *)buf, buflen, rpc_xml_call, TRUE,
+    xdrxml_create(xdrp, (void *)buf, buflen, rpc_xml_call, true,
                   name, XDR_DECODE);
     if (strncmp(XML_CALL_PREFIX, buf, XML_CALL_PREFIX_LEN) != 0 ||
         (tmp = strchr(buf + XML_CALL_PREFIX_LEN, '"')) == NULL ||
@@ -298,7 +298,7 @@ rpc_xdr_decode_call(void *buf, size_t buflen, char *name, void **objp_p)
  *                      ocurred
  */
 int
-rpc_xdr_encode_result(const char *name, te_bool rc,
+rpc_xdr_encode_result(const char *name, bool rc,
                       void *buf, size_t *buflen, void *objp)
 {
     XDR xdrs;
@@ -309,7 +309,7 @@ rpc_xdr_encode_result(const char *name, te_bool rc,
     {
         printf("%s %d: Cannot find info for %s\n",
                __FUNCTION__, __LINE__, name);
-        rc = FALSE;
+        rc = false;
     }
 
 #ifdef RPC_XML

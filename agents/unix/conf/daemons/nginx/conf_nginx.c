@@ -85,7 +85,7 @@ static const char *nginx_server_tokens_mode2str[] = {
 
 /* Helper for writing booleans parameters in nginx config */
 static inline const char *
-bool2str(te_bool par)
+bool2str(bool par)
 {
     return par ? "on" : "off";
 }
@@ -104,7 +104,7 @@ bool2str(te_bool par)
 static te_errno
 nginx_inst_write_config_ssl_entry(nginx_inst *inst, FILE *f,
                                   const char *indent, const char *ssl_name,
-                                  te_bool is_proxy)
+                                  bool is_proxy)
 {
     te_errno             rc = 0;
     nginx_ssl_entry     *ssl_entry;
@@ -242,7 +242,7 @@ nginx_inst_write_config(nginx_inst *inst)
                 nginx_server_tokens_mode2str[srv->tokens_mode]);
 
         rc = nginx_inst_write_config_ssl_entry(inst, f, IND2, srv->ssl_name,
-                                               FALSE);
+                                               false);
         if (rc != 0)
             goto cleanup;
 
@@ -337,12 +337,12 @@ nginx_inst_write_config(nginx_inst *inst)
             }
 
             rc = nginx_inst_write_config_ssl_entry(inst, f, IND3,
-                                                   loc->ssl_name, FALSE);
+                                                   loc->ssl_name, false);
             if (rc != 0)
                 goto cleanup;
 
             rc = nginx_inst_write_config_ssl_entry(inst, f, IND3,
-                                                   loc->proxy_ssl_name, TRUE);
+                                                   loc->proxy_ssl_name, true);
             if (rc != 0)
                 goto cleanup;
 
@@ -510,7 +510,7 @@ nginx_attach_filter(const nginx_inst *inst, const char *filter,
 
     TE_SPRINTF(filter_name, "%s %s", inst->name, filter);
     rc = ta_job_attach_filter(manager, filter_name, 1, &channel_id,
-                              TRUE, level, filter_id);
+                              true, level, filter_id);
     if (rc != 0)
     {
         ERROR("Failed to attach %s filter to NGINX instance '%s': %r",
@@ -538,7 +538,7 @@ nginx_enable_logging(nginx_inst *inst)
     unsigned int stdout_filter_id;
     unsigned int stderr_filter_id;
 
-    rc = ta_job_allocate_channels(manager, inst->id, FALSE, 2, channel_ids);
+    rc = ta_job_allocate_channels(manager, inst->id, false, 2, channel_ids);
     if (rc != 0)
     {
         ERROR("Failed to allocate output channels for NGINX instance '%s': %r",
@@ -602,7 +602,7 @@ nginx_inst_start(nginx_inst *inst)
         goto cleanup;
     }
 
-    inst->is_created = TRUE;
+    inst->is_created = true;
 
     rc = nginx_enable_logging(inst);
     if (rc != 0)
@@ -622,7 +622,7 @@ nginx_inst_start(nginx_inst *inst)
         goto cleanup;
     }
 
-    inst->is_running = TRUE;
+    inst->is_running = true;
 
     return 0;
 
@@ -634,7 +634,7 @@ cleanup:
     te_str_free_array(argv);
     te_string_free(&args);
 
-    inst->is_running = FALSE;
+    inst->is_running = false;
     return rc;
 }
 
@@ -722,7 +722,7 @@ nginx_inst_stop(nginx_inst *inst)
         unlink(srv->access_log_path);
     }
 
-    inst->is_running = FALSE;
+    inst->is_running = false;
 
     return rc;
 }
@@ -768,14 +768,14 @@ nginx_param_set_uint(unsigned int *param, const char *value)
 
 /* See description in conf_nginx.h */
 te_errno
-nginx_param_get_boolean(char *value, te_bool param)
+nginx_param_get_boolean(char *value, bool param)
 {
     return te_snprintf(value, RCF_MAX_VAL, "%d", param);
 }
 
 /* Generic types helpers for get/set accessors */
 te_errno
-nginx_param_set_boolean(te_bool *param, const char *value)
+nginx_param_set_boolean(bool *param, const char *value)
 {
     if (te_strtol_bool(value, param) != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -918,11 +918,11 @@ nginx_status_get(unsigned int gid, const char *oid,
         {
             case 0:
             case TE_ECHILD:
-                inst->is_running = FALSE;
+                inst->is_running = false;
                 break;
 
             case TE_EINPROGRESS:
-                inst->is_running = TRUE;
+                inst->is_running = true;
                 status_local = 1;
                 break;
 
@@ -931,7 +931,7 @@ nginx_status_get(unsigned int gid, const char *oid,
                      "is running, ta_job_wait() exited with error %r.\n"
                      "Considering that the job is not running.",
                      inst->name, rc);
-                inst->is_running = FALSE;
+                inst->is_running = false;
                 break;
         }
     }
@@ -945,7 +945,7 @@ nginx_status_set(unsigned int gid, const char *oid,
                  const char *value, const char *inst_name)
 {
     nginx_inst  *inst = nginx_inst_find(inst_name);
-    te_bool      status;
+    bool status;
     te_errno     rc;
 
     UNUSED(gid);
@@ -1120,8 +1120,8 @@ nginx_add(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
-    inst->error_log_enable = TRUE;
-    inst->is_running = FALSE;
+    inst->error_log_enable = true;
+    inst->is_running = false;
     inst->wrk_ps_num = NGINX_WRK_PS_NUM_DEF;
     inst->wrk_conn_num = NGINX_WRK_CONN_NUM_DEF;
 
@@ -1135,11 +1135,11 @@ nginx_add(unsigned int gid, const char *oid,
     }
 
     inst->rlimit_nofile = 0;
-    inst->multi_accept = FALSE;
-    inst->accept_mutex = FALSE;
+    inst->multi_accept = false;
+    inst->accept_mutex = false;
 
-    inst->to_be_deleted = FALSE;
-    inst->is_created = FALSE;
+    inst->to_be_deleted = false;
+    inst->is_created = false;
 
     LIST_INIT(&inst->http_servers);
     LIST_INIT(&inst->http_upstreams);
@@ -1160,7 +1160,7 @@ nginx_del(unsigned int gid, const char *oid, const char *inst_name)
     if (inst == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    inst->to_be_deleted = TRUE;
+    inst->to_be_deleted = true;
 
     return 0;
 }
@@ -1229,7 +1229,7 @@ nginx_commit(unsigned int gid, const cfg_oid *p_oid)
                       " error: %r", inst->name, rc);
             }
 
-            inst->is_created = FALSE;
+            inst->is_created = false;
 
             LIST_REMOVE(inst, links);
             nginx_inst_free(inst);

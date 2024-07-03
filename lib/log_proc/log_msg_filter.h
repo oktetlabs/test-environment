@@ -85,7 +85,7 @@ extern te_errno log_msg_filter_init(log_msg_filter *filter);
  * @returns Status code
  */
 extern te_errno log_msg_filter_set_default(log_msg_filter *filter,
-                                           te_bool include,
+                                           bool include,
                                            te_log_level level_mask);
 
 /**
@@ -102,8 +102,8 @@ extern te_errno log_msg_filter_set_default(log_msg_filter *filter,
  * @returns Status code
  */
 extern te_errno log_msg_filter_add_entity(log_msg_filter *filter,
-                                          te_bool include,
-                                          const char *name, te_bool regex,
+                                          bool include,
+                                          const char *name, bool regex,
                                           te_log_level level_mask);
 
 /**
@@ -121,9 +121,9 @@ extern te_errno log_msg_filter_add_entity(log_msg_filter *filter,
  *
  * @returns Status code
  */
-extern te_errno log_msg_filter_add_user(log_msg_filter *filter, te_bool include,
-                                        const char *entity, te_bool entity_regex,
-                                        const char *user, te_bool user_regex,
+extern te_errno log_msg_filter_add_user(log_msg_filter *filter, bool include,
+                                        const char *entity, bool entity_regex,
+                                        const char *user, bool user_regex,
                                         te_log_level level_mask);
 
 /**
@@ -143,7 +143,7 @@ extern log_filter_result log_msg_filter_check(const log_msg_filter *filter,
  * @param a             message filter 1
  * @param b             message filter 2
  */
-extern te_bool log_msg_filter_equal(const log_msg_filter *a,
+extern bool log_msg_filter_equal(const log_msg_filter *a,
                                     const log_msg_filter *b);
 
 /**

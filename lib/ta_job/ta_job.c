@@ -70,7 +70,7 @@ typedef struct message_t {
 
     char *data;
     size_t size;
-    te_bool eos;
+    bool eos;
     unsigned int channel_id;
     unsigned int filter_id;
     size_t dropped;
@@ -95,8 +95,8 @@ typedef struct regexp_data_t {
     pcre *re;
     pcre_extra *sd;
     unsigned int extract;
-    te_bool utf8;
-    te_bool crlf_is_newline;
+    bool utf8;
+    bool crlf_is_newline;
     int max_lookbehind;
 } regexp_data_t;
 
@@ -110,11 +110,11 @@ typedef struct filter_t {
     /* String to which the next read segment should be appended  */
     te_string saved_string;
     int start_offset;
-    te_bool line_begin;
+    bool line_begin;
 
     int ref_count;
-    te_bool signal_on_data;
-    te_bool readable;
+    bool signal_on_data;
+    bool readable;
     te_log_level log_level;
     char *name;
     message_queue_t queue;
@@ -129,10 +129,10 @@ typedef struct channel_t {
     unsigned int id;
 
     struct ta_job_t *job;
-    te_bool closed;
+    bool closed;
     int fd;
 
-    te_bool is_input_channel;
+    bool is_input_channel;
 
     union {
         /* Regarding output channel */
@@ -142,8 +142,8 @@ typedef struct channel_t {
         };
         /* Regarding input channel */
         struct {
-            te_bool input_ready;
-            te_bool signal_on_data;
+            bool input_ready;
+            bool signal_on_data;
         };
     };
 } channel_t;
@@ -172,7 +172,7 @@ typedef struct ta_job_t {
 
     pid_t pid;
     /* A job has started once */
-    te_bool has_started;
+    bool has_started;
     ta_job_status_t last_status;
     char *spawner;
     char *tool;
@@ -198,7 +198,7 @@ struct ta_job_manager_t {
     int abandoned_descriptors[FD_SETSIZE];
     size_t n_abandoned_descriptors;
 
-    te_bool thread_is_running;
+    bool thread_is_running;
     pthread_t service_thread;
 };
 
@@ -210,14 +210,11 @@ static const ta_job_manager_t ta_job_manager_initializer = {
     .channels_lock = PTHREAD_MUTEX_INITIALIZER,
     .data_cond = PTHREAD_COND_INITIALIZER,
     .ctrl_pipe = CTRL_PIPE_INITIALIZER,
-    .thread_is_running = FALSE,
+    .thread_is_running = false,
 };
 
 /** Whether currently used PCRE version supports parial matching */
-static const te_bool ta_job_pcre_partial_matching_supported =
-    (PCRE_MAJOR > TA_JOB_PCRE_PARTIAL_MATCHING_MAJOR) ||
-    (PCRE_MAJOR == TA_JOB_PCRE_PARTIAL_MATCHING_MAJOR &&
-     PCRE_MINOR >= TA_JOB_PCRE_PARTIAL_MATCHING_MINOR);
+static const bool ta_job_pcre_partial_matching_supported = (PCRE_MAJOR > TA_JOB_PCRE_PARTIAL_MATCHING_MAJOR) || (PCRE_MAJOR == TA_JOB_PCRE_PARTIAL_MATCHING_MAJOR && PCRE_MINOR >= TA_JOB_PCRE_PARTIAL_MATCHING_MINOR);
 
 /* See description in ta_job.h */
 te_errno
@@ -307,7 +304,7 @@ regexp_data_create(char *pattern, unsigned int extract,
     const char *error;
     te_errno rc = 0;
     int erroffset;
-    te_bool utf8;
+    bool utf8;
 
     if ((result = calloc(1, sizeof(*result))) == NULL)
     {
@@ -493,7 +490,7 @@ init_message_queue(message_queue_t *queue)
     return 0;
 }
 
-static te_bool
+static bool
 queue_drop_oldest(message_queue_t *queue)
 {
     message_t *msg = TAILQ_FIRST(&queue->messages);
@@ -506,14 +503,14 @@ queue_drop_oldest(message_queue_t *queue)
         free(msg->data);
         free(msg);
 
-        return TRUE;
+        return true;
     }
 
-    return FALSE;
+    return false;
 }
 
 static te_errno
-queue_put(const char *buf, size_t size, te_bool eos, unsigned int channel_id,
+queue_put(const char *buf, size_t size, bool eos, unsigned int channel_id,
           unsigned int filter_id, message_queue_t *queue)
 {
     message_t *msg;
@@ -570,7 +567,7 @@ queue_put(const char *buf, size_t size, te_bool eos, unsigned int channel_id,
     return 0;
 }
 
-static te_bool
+static bool
 queue_has_data(message_queue_t *queue)
 {
     return !TAILQ_EMPTY(&queue->messages);
@@ -665,7 +662,7 @@ channel_add_filter(channel_t *channel, filter_t *filter)
 }
 
 static te_errno
-channel_alloc(ta_job_t *job, channel_t **channel, te_bool is_input_channel)
+channel_alloc(ta_job_t *job, channel_t **channel, bool is_input_channel)
 {
     channel_t *result = calloc(1, sizeof(*result));
 
@@ -678,10 +675,10 @@ channel_alloc(ta_job_t *job, channel_t **channel, te_bool is_input_channel)
     result->n_filters = 0;
     result->job = job;
     result->fd = -1;
-    result->closed = FALSE;
+    result->closed = false;
     result->is_input_channel = is_input_channel;
-    result->input_ready = FALSE;
-    result->signal_on_data = FALSE;
+    result->input_ready = false;
+    result->signal_on_data = false;
 
     *channel = result;
 
@@ -689,7 +686,7 @@ channel_alloc(ta_job_t *job, channel_t **channel, te_bool is_input_channel)
 }
 
 static te_errno
-filter_alloc(const char *filter_name, te_bool readable, te_log_level log_level,
+filter_alloc(const char *filter_name, bool readable, te_log_level log_level,
              filter_t **filter)
 {
     filter_t *result = calloc(1, sizeof(*result));
@@ -719,9 +716,9 @@ filter_alloc(const char *filter_name, te_bool readable, te_log_level log_level,
     }
     result->saved_string = (te_string)TE_STRING_INIT;
     result->start_offset = 0;
-    result->line_begin = TRUE;
+    result->line_begin = true;
     result->ref_count = 0;
-    result->signal_on_data = FALSE;
+    result->signal_on_data = false;
     result->readable = readable;
     result->log_level = log_level;
     result->regexp_data = NULL;
@@ -853,7 +850,7 @@ ta_job_alloc(const char *spawner, const char *tool, char **argv,
         return TE_ENOMEM;
     }
 
-    result->has_started = FALSE;
+    result->has_started = false;
     result->pid = (pid_t)-1;
     result->argv = argv;
     result->env = env;
@@ -1014,7 +1011,7 @@ proc_kill(pid_t pid, int signo, int term_timeout_ms)
 static te_errno
 match_callback(ta_job_manager_t *manager, filter_t *filter,
                unsigned int channel_id, pid_t pid, size_t size,
-               char *buf, te_bool eos)
+               char *buf, bool eos)
 {
     int log_size = size > (size_t)INT_MAX ? INT_MAX : (int)size;
     te_errno rc;
@@ -1071,11 +1068,11 @@ match_callback(ta_job_manager_t *manager, filter_t *filter,
 static void
 warn_on_unsupported_pcre_partial_matching(void)
 {
-    static te_bool checked = FALSE;
+    static bool checked = false;
 
     if (!checked)
     {
-        checked = TRUE;
+        checked = true;
 
         if (!ta_job_pcre_partial_matching_supported)
         {
@@ -1090,13 +1087,13 @@ warn_on_unsupported_pcre_partial_matching(void)
 static te_errno
 filter_regexp_exec(ta_job_manager_t *manager, filter_t *filter,
                    unsigned int channel_id, pid_t pid, int segment_length,
-                   char *segment, te_bool eos,
+                   char *segment, bool eos,
                    te_errno (*fun_ptr)(ta_job_manager_t *, filter_t *,
                                        unsigned int, pid_t,
-                                       size_t, char *, te_bool))
+                                       size_t, char *, bool))
 {
     int start_offset;
-    te_bool first_exec;
+    bool first_exec;
     int ovector[OVECCOUNT];
     int rc;
     te_errno te_rc;
@@ -1123,8 +1120,8 @@ filter_regexp_exec(ta_job_manager_t *manager, filter_t *filter,
     subject_length = filter->saved_string.len;
     future_start_offset = subject_length;
 
-    for (start_offset = filter->start_offset, first_exec = TRUE; ;
-         start_offset = ovector[1], first_exec = FALSE)
+    for (start_offset = filter->start_offset, first_exec = true; ;
+         start_offset = ovector[1], first_exec = false)
     {
         char *substring_start;
         size_t substring_length;
@@ -1228,7 +1225,7 @@ filter_regexp_exec(ta_job_manager_t *manager, filter_t *filter,
                                ovector[2 * regexp->extract];
 
         if ((te_rc = fun_ptr(manager, filter, channel_id, pid, substring_length,
-                             substring_start, FALSE)) != 0)
+                             substring_start, false)) != 0)
         {
             goto out;
         }
@@ -1239,7 +1236,7 @@ out:
     {
         te_string_free(&filter->saved_string);
         filter->start_offset = 0;
-        filter->line_begin = TRUE;
+        filter->line_begin = true;
 
         return te_rc;
     }
@@ -1259,7 +1256,7 @@ static te_errno
 filter_exec(ta_job_manager_t *manager, filter_t *filter,
             unsigned int channel_id, pid_t pid, size_t size, char *buf)
 {
-    te_bool eos = (size == 0);
+    bool eos = (size == 0);
     te_errno rc;
 
     if (filter->regexp_data != NULL)
@@ -1297,7 +1294,7 @@ channel_read(ta_job_manager_t *manager, channel_t *channel)
     }
 
     if (read_c == 0)
-        channel->closed = TRUE;
+        channel->closed = true;
 
     return 0;
 }
@@ -1358,7 +1355,7 @@ thread_mark_selected_ready(ta_job_manager_t *manager, fd_set *wfds,
     {
         if (FD_ISSET(channel->fd, wfds))
         {
-            channel->input_ready = TRUE;
+            channel->input_ready = true;
             if (channel->signal_on_data)
                 pthread_cond_signal(&manager->data_cond);
         }
@@ -1377,7 +1374,7 @@ thread_work_loop(void *arg)
     UNUSED(arg);
 
     logfork_register_user("JOB CONTROL");
-    logfork_set_id_logging(FALSE);
+    logfork_set_id_logging(false);
 
     while (1)
     {
@@ -1428,7 +1425,7 @@ thread_work_loop(void *arg)
         }
         else if (select_rc)
         {
-            te_bool channel_process_needed = TRUE;
+            bool channel_process_needed = true;
 
             pthread_mutex_lock(&manager->channels_lock);
 
@@ -1440,7 +1437,7 @@ thread_work_loop(void *arg)
                 if (read_c <= 0)
                     WARN("Control pipe read failed, continuing");
 
-                channel_process_needed = FALSE;
+                channel_process_needed = false;
             }
 
             thread_destroy_unused_channels(&manager->all_channels);
@@ -1584,7 +1581,7 @@ ta_job_start(ta_job_manager_t *manager, unsigned int id)
         if ((rc = thread_start(manager)) != 0)
             return rc;
 
-        manager->thread_is_running = TRUE;
+        manager->thread_is_running = true;
     }
 
     if (job->n_out_channels < 2)
@@ -1665,22 +1662,22 @@ ta_job_start(ta_job_manager_t *manager, unsigned int id)
     if (job->n_out_channels > 0)
     {
         job->out_channels[0]->fd = stdout_fd;
-        job->out_channels[0]->closed = FALSE;
+        job->out_channels[0]->closed = false;
     }
     if (job->n_out_channels > 1)
     {
         job->out_channels[1]->fd = stderr_fd;
-        job->out_channels[1]->closed = FALSE;
+        job->out_channels[1]->closed = false;
     }
     if (job->n_in_channels > 0)
     {
         job->in_channels[0]->fd = stdin_fd;
-        job->in_channels[0]->closed = FALSE;
+        job->in_channels[0]->closed = false;
     }
 
     pthread_mutex_unlock(&manager->channels_lock);
 
-    job->has_started = TRUE;
+    job->has_started = true;
     job->pid = pid;
 
     return 0;
@@ -1689,7 +1686,7 @@ ta_job_start(ta_job_manager_t *manager, unsigned int id)
 static te_errno
 ta_job_add_allocated_channels(ta_job_manager_t *manager, ta_job_t *job,
                               channel_t **allocated_channels,
-                              unsigned int n_channels, te_bool input_channels)
+                              unsigned int n_channels, bool input_channels)
 {
     te_errno rc;
     unsigned int i;
@@ -1731,7 +1728,7 @@ ta_job_add_allocated_channels(ta_job_manager_t *manager, ta_job_t *job,
 /* See description in ta_job.h */
 te_errno
 ta_job_allocate_channels(ta_job_manager_t *manager, unsigned int job_id,
-                         te_bool input_channels, unsigned int n_channels,
+                         bool input_channels, unsigned int n_channels,
                          unsigned int *channels)
 {
     channel_t **allocated_channels = NULL;
@@ -1858,7 +1855,7 @@ channel_accepts_filters(channel_t *channel)
 static te_errno
 ta_job_attach_filter_unsafe(ta_job_manager_t *manager, const char *filter_name,
                             unsigned int n_channels, unsigned int *channels,
-                            te_bool readable, te_log_level log_level,
+                            bool readable, te_log_level log_level,
                             unsigned int *filter_id)
 {
     filter_t *filter;
@@ -1894,7 +1891,7 @@ ta_job_attach_filter_unsafe(ta_job_manager_t *manager, const char *filter_name,
 te_errno
 ta_job_attach_filter(ta_job_manager_t *manager, const char *filter_name,
                      unsigned int n_channels, unsigned int *channels,
-                     te_bool readable, te_log_level log_level,
+                     bool readable, te_log_level log_level,
                      unsigned int *filter_id)
 {
     te_errno rc;
@@ -2054,7 +2051,7 @@ ta_job_filter_remove_channels(ta_job_manager_t *manager, unsigned int filter_id,
 
 static te_errno
 move_or_copy_message_to_buffer(const message_t *msg, ta_job_buffer_t *buffer,
-                               te_bool move)
+                               bool move)
 {
     buffer->channel_id = msg->channel_id;
     buffer->filter_id = msg->filter_id;
@@ -2135,7 +2132,7 @@ filter_receive_common(ta_job_manager_t *manager, unsigned int filter_id,
 
 static void
 switch_signal_on_data(ta_job_manager_t *manager, unsigned int channel_id,
-                      te_bool on)
+                      bool on)
 {
 
     channel_t *channel = NULL;
@@ -2150,7 +2147,7 @@ switch_signal_on_data(ta_job_manager_t *manager, unsigned int channel_id,
 
 static te_errno
 channel_or_filter_ready(ta_job_manager_t *manager, unsigned int id,
-                        te_bool filter_only, te_bool *ready)
+                        bool filter_only, bool *ready)
 {
     channel_t *channel = NULL;
     filter_t *filter = NULL;
@@ -2196,7 +2193,7 @@ channel_or_filter_ready(ta_job_manager_t *manager, unsigned int id,
 /* See description in ta_job.h */
 te_errno
 ta_job_poll(ta_job_manager_t *manager, unsigned int n_channels,
-            unsigned int *channel_ids, int timeout_ms, te_bool filter_only)
+            unsigned int *channel_ids, int timeout_ms, bool filter_only)
 {
     unsigned int i;
     te_errno rc = 0;
@@ -2204,14 +2201,14 @@ ta_job_poll(ta_job_manager_t *manager, unsigned int n_channels,
     struct timeval now;
     struct timespec timeout;
     uint64_t nanoseconds;
-    te_bool ready = FALSE;
+    bool ready = false;
 
     pthread_mutex_lock(&manager->channels_lock);
 
     /* After this loop all channel ids are checked to be valid */
     for (i = 0; i < n_channels; i++)
     {
-        te_bool ready_tmp = FALSE;
+        bool ready_tmp = false;
 
         if ((rc = channel_or_filter_ready(manager, channel_ids[i], filter_only,
                                           &ready_tmp)) != 0)
@@ -2221,7 +2218,7 @@ ta_job_poll(ta_job_manager_t *manager, unsigned int n_channels,
             return rc;
         }
         if (ready_tmp)
-            ready = TRUE;
+            ready = true;
     }
 
     if (ready)
@@ -2231,7 +2228,7 @@ ta_job_poll(ta_job_manager_t *manager, unsigned int n_channels,
     }
 
     for (i = 0; i < n_channels; i++)
-        switch_signal_on_data(manager, channel_ids[i], TRUE);
+        switch_signal_on_data(manager, channel_ids[i], true);
 
     if (timeout_ms >= 0)
     {
@@ -2260,7 +2257,7 @@ ta_job_poll(ta_job_manager_t *manager, unsigned int n_channels,
     }
 
     for (i = 0; i < n_channels; i++)
-        switch_signal_on_data(manager, channel_ids[i], FALSE);
+        switch_signal_on_data(manager, channel_ids[i], false);
 
     pthread_mutex_unlock(&manager->channels_lock);
 
@@ -2269,7 +2266,7 @@ ta_job_poll(ta_job_manager_t *manager, unsigned int n_channels,
 
 static te_errno
 ta_job_receive_common(ta_job_manager_t *manager, unsigned int n_filters,
-                      unsigned int *filters, te_bool do_poll, int timeout_ms,
+                      unsigned int *filters, bool do_poll, int timeout_ms,
                       ta_job_buffer_t *buffer, queue_action_t action)
 {
     unsigned int i;
@@ -2283,7 +2280,7 @@ ta_job_receive_common(ta_job_manager_t *manager, unsigned int n_filters,
 
     if (do_poll)
     {
-        rc = ta_job_poll(manager, n_filters, filters, timeout_ms, TRUE);
+        rc = ta_job_poll(manager, n_filters, filters, timeout_ms, true);
         if (rc != 0)
             return rc;
     }
@@ -2319,7 +2316,8 @@ te_errno
 ta_job_receive(ta_job_manager_t *manager, unsigned int n_filters,
                unsigned int *filters, int timeout_ms, ta_job_buffer_t *buffer)
 {
-    return ta_job_receive_common(manager, n_filters, filters, TRUE, timeout_ms,
+    return ta_job_receive_common(manager, n_filters, filters, true,
+                                 timeout_ms,
                                  buffer, EXTRACT_FIRST);
 }
 
@@ -2329,7 +2327,8 @@ ta_job_receive_last(ta_job_manager_t *manager, unsigned int n_filters,
                     unsigned int *filters, int timeout_ms,
                     ta_job_buffer_t *buffer)
 {
-    return ta_job_receive_common(manager, n_filters, filters, TRUE, timeout_ms,
+    return ta_job_receive_common(manager, n_filters, filters, true,
+                                 timeout_ms,
                                  buffer, GET_LAST);
 }
 
@@ -2344,7 +2343,7 @@ ta_job_receive_many(ta_job_manager_t *manager, unsigned int n_filters,
     te_errno rc;
     int i;
 
-    if ((rc = ta_job_poll(manager, n_filters, filters, timeout_ms, TRUE)) != 0)
+    if ((rc = ta_job_poll(manager, n_filters, filters, timeout_ms, true)) != 0)
     {
         *count = 0;
         return rc;
@@ -2354,7 +2353,8 @@ ta_job_receive_many(ta_job_manager_t *manager, unsigned int n_filters,
     {
         memset(&buf, 0, sizeof(buf));
 
-        rc = ta_job_receive_common(manager, n_filters, filters, FALSE, 0, &buf,
+        rc = ta_job_receive_common(manager, n_filters, filters, false, 0,
+                                   &buf,
                                    EXTRACT_FIRST);
         if (rc != 0)
         {
@@ -2437,7 +2437,7 @@ ta_job_send_unsafe(ta_job_manager_t *manager, unsigned int channel_id,
         if (rc == TE_EPIPE)
         {
             WARN("Attempt to write to closed descriptor");
-            channel->closed = TRUE;
+            channel->closed = true;
         }
         else
         {
@@ -2446,7 +2446,7 @@ ta_job_send_unsafe(ta_job_manager_t *manager, unsigned int channel_id,
         return te_rc_os2te(errno);
     }
 
-    channel->input_ready = FALSE;
+    channel->input_ready = false;
 
     if ((size_t)write_rc != count)
     {

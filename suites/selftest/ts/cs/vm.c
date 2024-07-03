@@ -48,7 +48,7 @@ main(int argc, char *argv[])
     TEST_START;
 
     TEST_STEP("Add a virtual machine");
-    CHECK_RC(tapi_cfg_vm_add(ta, vm_name, "/local:/vm:testvm", FALSE));
+    CHECK_RC(tapi_cfg_vm_add(ta, vm_name, "/local:/vm:testvm", false));
 
     vendor_str = getenv("TE_VM_PCI_PT_VENDOR");
     if (vendor_str != NULL)
@@ -71,7 +71,7 @@ main(int argc, char *argv[])
                                       vendor, device, instance));
     }
 
-    CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s/vm:%s", ta, vm_name));
+    CHECK_RC(rc = cfg_synchronize_fmt(true, "/agent:%s/vm:%s", ta, vm_name));
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/agent:%s/vm:%s", ta, vm_name));
 
     TEST_STEP("Start the virtual machine");
@@ -93,7 +93,7 @@ main(int argc, char *argv[])
                  RCF_TA_REBOOTABLE | RCF_TA_NO_SYNC_TIME | RCF_TA_NO_HKEY_CHK));
 
     TEST_STEP("Sync the VM test agent configuration tree");
-    CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s", ta_vm));
+    CHECK_RC(rc = cfg_synchronize_fmt(true, "/agent:%s", ta_vm));
 
     TEST_STEP("Log the VM test agent configuration tree");
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/agent:%s", ta_vm));
@@ -102,7 +102,7 @@ main(int argc, char *argv[])
     CHECK_RC(rcf_del_ta(ta_vm));
 
     TEST_STEP("Sync the VM test agent configuration tree after the TA removal");
-    CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s", ta_vm));
+    CHECK_RC(rc = cfg_synchronize_fmt(true, "/agent:%s", ta_vm));
 
     TEST_STEP("Delete the virtual machine");
     CHECK_RC(tapi_cfg_vm_del(ta, vm_name));

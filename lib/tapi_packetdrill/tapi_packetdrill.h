@@ -79,7 +79,7 @@ typedef struct tapi_packetdrill_opts {
     char                   *non_fatal;         /**< treat asserts as non-fatal:
                                                     packet,syscall */
     /* For remote on-the-wire testing using a real NIC. */
-    te_bool                is_client;                  /**< be client or server */
+    bool is_client;                  /**< be client or server */
     const char            *wire_device;                /**< iface name */
     const struct sockaddr *wire_server_ip;             /**< IP of on-the-wire
                                                             server */

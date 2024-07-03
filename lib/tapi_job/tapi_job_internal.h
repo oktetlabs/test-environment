@@ -117,7 +117,7 @@ extern void tapi_job_set_name(tapi_job_t *job, const char *name);
  * @return          Status code
  * @exception       TEST_FAIL
  */
-extern te_bool tapi_job_get_silent_pass(const tapi_job_t *job);
+extern bool tapi_job_get_silent_pass(const tapi_job_t *job);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -79,7 +79,7 @@ typedef enum tapi_cfg_qdisc_kind_t {
  */
 extern te_errno tapi_cfg_qdisc_get_enabled(const char *ta,
                                            const char *if_name,
-                                           te_bool *enabled);
+                                           bool *enabled);
 
 /**
  * Set status: activated or deactivated
@@ -92,7 +92,7 @@ extern te_errno tapi_cfg_qdisc_get_enabled(const char *ta,
  */
 extern te_errno tapi_cfg_qdisc_set_enabled(const char *ta,
                                            const char *if_name,
-                                           te_bool enabled);
+                                           bool enabled);
 
 /**
  * Activate qdisc for interface
@@ -105,7 +105,7 @@ extern te_errno tapi_cfg_qdisc_set_enabled(const char *ta,
 static inline te_errno
 tapi_cfg_qdisc_enable(const char *ta, const char *if_name)
 {
-    return tapi_cfg_qdisc_set_enabled(ta, if_name, TRUE);
+    return tapi_cfg_qdisc_set_enabled(ta, if_name, true);
 }
 
 /**
@@ -119,7 +119,7 @@ tapi_cfg_qdisc_enable(const char *ta, const char *if_name)
 static inline te_errno
 tapi_cfg_qdisc_disable(const char *ta, const char *if_name)
 {
-    return tapi_cfg_qdisc_set_enabled(ta, if_name, FALSE);
+    return tapi_cfg_qdisc_set_enabled(ta, if_name, false);
 }
 
 /**

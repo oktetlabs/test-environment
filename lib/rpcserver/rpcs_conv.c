@@ -12,7 +12,7 @@
 
 void
 rpcs_iovec_tarpc2h(const struct tarpc_iovec *tarpc_iov, struct iovec *iov,
-                   size_t count, te_bool may_change,
+                   size_t count, bool may_change,
                    checked_arg_list *arglist)
 {
     size_t i;

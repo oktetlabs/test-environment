@@ -45,7 +45,7 @@
 
 /* See description in conf_oid.h */
 cfg_oid *
-cfg_allocate_oid(int length, te_bool inst)
+cfg_allocate_oid(int length, bool inst)
 {
     int size;
     cfg_oid * oid;
@@ -79,7 +79,7 @@ cfg_convert_oid_str(const char *str)
     char     oid_buf[CFG_OID_MAX] = { 0, };
     char     str_buf[CFG_OID_MAX];
     char    *token;
-    te_bool  inst;
+    bool inst;
     int      depth = 1;
     int      size;
 
@@ -272,9 +272,9 @@ cfg_oid_cmp(const cfg_oid *o1, const cfg_oid *o2)
 }
 
 /* See description in conf_oid.h */
-te_bool
+bool
 cfg_oid_match(const cfg_oid *inst_oid, const cfg_oid *obj_oid,
-              te_bool match_prefix)
+              bool match_prefix)
 {
     unsigned int i;
     const cfg_object_subid *obj_subids;
@@ -287,18 +287,18 @@ cfg_oid_match(const cfg_oid *inst_oid, const cfg_oid *obj_oid,
     inst_subids = inst_oid->ids;
 
     if (inst_oid->len < obj_oid->len)
-        return FALSE;
+        return false;
 
     if (!match_prefix && (obj_oid->len != inst_oid->len))
-        return FALSE;
+        return false;
 
     for (i = 0; i < obj_oid->len; i++)
     {
         if (strcmp(inst_subids[i].subid, obj_subids[i].subid) != 0)
-            return FALSE;
+            return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 /* See description in conf_oid.h */
@@ -361,7 +361,7 @@ cfg_oid_common_root(const cfg_oid *oid1, const cfg_oid *oid2)
         unsigned i;
         cfg_inst_subid *subids;
 
-        result = cfg_allocate_oid(oid1->len, TRUE);
+        result = cfg_allocate_oid(oid1->len, true);
         subids = result->ids;
         for (i = 0; i < common; i++)
         {
@@ -380,7 +380,7 @@ cfg_oid_common_root(const cfg_oid *oid1, const cfg_oid *oid2)
         unsigned i;
         cfg_object_subid *subids;
 
-        result = cfg_allocate_oid(oid1->len, TRUE);
+        result = cfg_allocate_oid(oid1->len, true);
         subids = oid1->ids;
         for (i = 0; i < common; i++)
         {

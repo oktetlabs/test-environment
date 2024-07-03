@@ -427,9 +427,9 @@ extern void *te_calloc_fill(size_t num, size_t size, int byte);
  * @param log_level   Log level for diff dumps.
  *                    If zero, no logging is done.
  *
- * @return @c TRUE if the lengths and the content of buffers are the same.
+ * @return @c true if the lengths and the content of buffers are the same.
  */
-extern te_bool te_compare_bufs(const void *exp_buf, size_t exp_len,
+extern bool te_compare_bufs(const void *exp_buf, size_t exp_len,
                                unsigned int n_copies,
                                const void *actual_buf, size_t actual_len,
                                unsigned int log_level);

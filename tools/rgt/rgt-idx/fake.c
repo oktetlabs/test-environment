@@ -31,9 +31,9 @@
  * @param offset        Message offset.
  * @param timestamp     Message timestamp.
  *
- * @return TRUE if the entry was written successfully, FALSE otherwise.
+ * @return @c true if the entry was written successfully, @c false otherwise.
  */
-static te_bool
+static bool
 write_entry(FILE *output, uint64_t offset, uint64_t timestamp)
 {
     uint8_t buf[sizeof(offset) + sizeof(timestamp)];
@@ -45,9 +45,9 @@ write_entry(FILE *output, uint64_t offset, uint64_t timestamp)
         buf[i] = offset & 0xFF;
 
     if (fwrite(&buf, sizeof(buf), 1, output) != 1)
-        return FALSE;
+        return false;
 
-    return TRUE;
+    return true;
 }
 
 

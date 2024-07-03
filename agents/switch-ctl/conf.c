@@ -58,7 +58,7 @@
                        __FILE__, __LINE__);      \
             return TE_RC(TE_TA_SWITCH_CTL, _rc); \
         }                                        \
-    } while (FALSE)
+    } while (false)
 
 
 /** TA name pointer */
@@ -107,17 +107,17 @@ snprintf_rc(char *s, size_t len, const char *fmt, ...)
  * @return "true", "false" or printed number, if value is unknown
  */
 static const char *
-boolean_to_string(te_bool value)
+boolean_to_string(bool value)
 {
     int rc;
 
     switch (value)
     {
 #ifdef ENUM_TO_STRINGS
-        case FALSE:
+        case false :
             return "false";
 
-        case TRUE:
+        case true :
             return "true";
 #endif
 
@@ -137,15 +137,15 @@ boolean_to_string(te_bool value)
  *
  * @param str       - boolean value in string
  * @param p_val     - location for boolean value (OUT):
- *                      TRUE    - "true"
- *                      FALSE   - "false"
+ *                      true    - "true"
+ *                      false   - "false"
  *                      other   - unknown
  *
  * @retval 0        - success
  * @retval TE_EINVAL   - conversion failed
  */
 static int
-boolean_to_number(const char *str, te_bool *p_val)
+boolean_to_number(const char *str, bool *p_val)
 {
     long int    val;
     char       *end;
@@ -153,12 +153,12 @@ boolean_to_number(const char *str, te_bool *p_val)
 #ifdef ENUM_TO_STRINGS
     if (strcmp(str, "true") == 0)
     {
-        *p_val = TRUE;
+        *p_val = true;
         return 0;
     }
     if (strcmp(str, "false") == 0)
     {
-        *p_val = FALSE;
+        *p_val = false;
         return 0;
     }
 #endif
@@ -171,12 +171,12 @@ boolean_to_number(const char *str, te_bool *p_val)
         return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
 
-    if ((val != TRUE) && (val != FALSE))
+    if ((val != true) && (val != false))
     {
         ERROR("Invalid boolean value %d", val);
     }
 
-    *p_val = (te_bool)val;
+    *p_val = (bool)val;
 
     return 0;
 }
@@ -960,7 +960,7 @@ static te_errno
 port_set_autonegotiation(unsigned int gid, const char *oid,
                          const char *value, const char *pid_str)
 {
-    te_bool     val;
+    bool val;
     poe_port   *port;
 
     UNUSED(oid);
@@ -1659,7 +1659,7 @@ arl_parse_inst_name(const char *inst_name, poe_arl *arl_entry)
     {
         return TE_RC(TE_TA_SWITCH_CTL, TE_EINVAL);
     }
-    arl_entry->is_static = (te_bool)entry_type;
+    arl_entry->is_static = (bool)entry_type;
     inst_name = end + 1;
 
     arl_entry->port = (poe_pid)strtol(inst_name, &end, 10);
@@ -1765,7 +1765,7 @@ arl_get_type(unsigned int gid, const char *oid, char *value,
 
     /* @todo Fix 1 and 0 hard code */
     return snprintf_rc(value, RCF_MAX_VAL, "%d",
-                       arl_entry->is_static == TRUE ? 1 : 0);
+                       arl_entry->is_static == true ? 1 : 0);
 }
 
 /**
@@ -2042,15 +2042,15 @@ static int stp_port_table_num = 0;
  *
  * @param stp_port_entry  - entry to check
  *
- * @return TRUE if the STP port entry has been already committed,
- * and FALSE otherwise
+ * @return @c true if the STP port entry has been already committed,
+ * and @c false otherwise
  */
-static te_bool
+static bool
 stp_port_entry_committed(const poe_stp_port *stp_port_entry)
 {
     assert(stp_port_entry != NULL);
 
-    return ((stp_port_entry == &local_stp_port_entry) ? FALSE : TRUE);
+    return ((stp_port_entry == &local_stp_port_entry) ? false : true);
 }
 
 /**
@@ -2089,10 +2089,10 @@ local_stp_port_entry_add_flags(const poe_stp_port *stp_port_entry,
  *
  * @param stp_port_entry  - local STP port entry
  *
- * @return TRUE if all the fields of the entry are filled in,
- * and FALSE otherwise
+ * @return @c true if all the fields of the entry are filled in,
+ * and @c false otherwise
  */
-static te_bool
+static bool
 local_stp_port_entry_ready(const poe_stp_port *stp_port_entry)
 {
     UNUSED(stp_port_entry);
@@ -2316,7 +2316,7 @@ stp_set(unsigned int gid, const char *oid, const char *value)
     CHECK_RC(update_poe_stp(gid));
     CHECK_RC(ulong_to_number(value, &val));
 
-    poe_stp_data.admin.enabled = (te_bool)val;
+    poe_stp_data.admin.enabled = (bool)val;
 
     return 0;
 }
@@ -3366,11 +3366,11 @@ vlan_set(int gid, char *oid, char *value, char *vid)
     switch (*value)
     {
         case '0':
-            vlan.up = FALSE;
+            vlan.up = false;
             break;
 
         case '1':
-            vlan.up = TRUE;
+            vlan.up = true;
             break;
 
         default:
@@ -3423,11 +3423,11 @@ vlan_add(int gid, char *oid, char *value, char *vid)
     switch (*value)
     {
         case '0':
-            vlan.up = FALSE;
+            vlan.up = false;
             break;
 
         case '1':
-            vlan.up = TRUE;
+            vlan.up = true;
             break;
 
         default:

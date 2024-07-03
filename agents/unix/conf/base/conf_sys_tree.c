@@ -180,14 +180,14 @@ ta_unix_conf_sys_tree_fini(void)
  * @param data            Pointer to object name
  *                        (a prefix like "ipv4:/<sub_id>").
  *
- * @return @c TRUE if directory name should be included in the list,
- *         @c FALSE otherwise.
+ * @return @c true if directory name should be included in the list,
+ *         @c false otherwise.
  */
-static te_bool
+static bool
 sys_if_list_include_callback(const char *dir_name, void *data)
 {
     const char *prefix = (const char *)data;
-    te_bool     grabbed = FALSE;
+    bool grabbed = false;
 
     UNUSED(data);
 
@@ -315,7 +315,7 @@ sys_if_dir_list(const char *oid, const char *prefix, const char *sub_id,
     if (rc != 0)
         return rc;
 
-    rc = get_dir_list(path, buf, sizeof(buf), TRUE,
+    rc = get_dir_list(path, buf, sizeof(buf), true,
                       &sys_if_list_include_callback, (void *)prefix_ext.ptr,
                       NULL);
     te_string_free(&prefix_ext);
@@ -406,7 +406,7 @@ sys_opt_list(unsigned int gid, const char *oid,
     if (access(path, R_OK) != 0)
         return 0;
 
-    rc = read_sys_value(buf, sizeof(buf), FALSE, "%s", path);
+    rc = read_sys_value(buf, sizeof(buf), false, "%s", path);
     if (rc != 0)
         return rc;
 
@@ -544,7 +544,7 @@ sys_opt_get(unsigned int gid, const char *oid, char *value)
     if (rc != 0)
         return rc;
 
-    rc = read_sys_value(buf, sizeof(buf), FALSE, "%s", path);
+    rc = read_sys_value(buf, sizeof(buf), false, "%s", path);
     if (rc != 0)
         return rc;
 
@@ -626,7 +626,7 @@ sys_opt_set(unsigned int gid, const char *oid, const char *value)
     int          j = 0;
     int          k = 0;
     te_errno     rc = 0;
-    te_bool      pasted = FALSE;
+    bool pasted = false;
 
     UNUSED(gid);
 
@@ -649,7 +649,7 @@ sys_opt_set(unsigned int gid, const char *oid, const char *value)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
 
-        rc = read_sys_value(buf, sizeof(buf), FALSE, "%s", path);
+        rc = read_sys_value(buf, sizeof(buf), false, "%s", path);
         if (rc != 0)
             return rc;
 
@@ -685,7 +685,7 @@ sys_opt_set(unsigned int gid, const char *oid, const char *value)
 
                 for ( ; !isspace(buf[i]) && buf[i] != '\0'; i++);
 
-                pasted = TRUE;
+                pasted = true;
                 break;
             }
         }

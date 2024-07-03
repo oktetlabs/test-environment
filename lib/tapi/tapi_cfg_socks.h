@@ -96,27 +96,27 @@ extern te_errno tapi_cfg_socks_disable(const char         *ta,
  *
  * @param       ta        Test Agent.
  * @param       id        Instance ID.
- * @param[out]  value     Current state. @c TRUE if enabled, @c FALSE if
+ * @param[out]  value     Current state. @c true if enabled, @c false if
  *                        disabled.
  *
  * @return Status code
  */
 extern te_errno tapi_cfg_socks_status_get(const char      *ta,
                                           tapi_socks_id    id,
-                                          te_bool         *value);
+                                          bool *value);
 
 /**
  * Set Socks status.
  *
  * @param ta        Test Agent.
  * @param id        Instance ID.
- * @param value     New value to set. @c TRUE to enable, @c FALSE to disable.
+ * @param value     New value to set. @c true to enable, @c false to disable.
  *
  * @return Status code
  */
 extern te_errno tapi_cfg_socks_status_set(const char      *ta,
                                           tapi_socks_id    id,
-                                          te_bool          value);
+                                          bool value);
 
 /**
  * Obtain used SOCKS server implementation.

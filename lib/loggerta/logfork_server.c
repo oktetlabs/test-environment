@@ -65,7 +65,7 @@ typedef struct list {
     char     name[LOGFORK_MAXLEN];
     pid_t    pid;
     uint32_t tid;
-    te_bool  disable_id_logging;
+    bool disable_id_logging;
 } list;
 
 /** LogFork server data */
@@ -128,7 +128,7 @@ logfork_list_add(list **proc_list, char *name,
     TE_STRLCPY(item->name, name, sizeof(item->name));
     item->pid = pid;
     item->tid = tid;
-    item->disable_id_logging = FALSE;
+    item->disable_id_logging = false;
     if (*proc_list == NULL)
     {
         *proc_list = item;
@@ -311,7 +311,7 @@ logfork_entry(void)
             {
                 case LOGFORK_MSG_LOG:
                 {
-                    te_bool disable_id_logging = FALSE;
+                    bool disable_id_logging = false;
 
                     if (logfork_find_proc_by_pid(&data.proc_list, &proc,
                                                  msg.pid, msg.tid) == 0)

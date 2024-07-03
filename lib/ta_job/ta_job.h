@@ -54,8 +54,8 @@ typedef struct ta_job_buffer_t {
     unsigned int channel_id;
     /** Filter from which the message was received */
     unsigned int filter_id;
-    /** @c TRUE if the stream behind the filter has been closed */
-    te_bool eos;
+    /** @c true if the stream behind the filter has been closed */
+    bool eos;
     /** Number of dropped messages */
     unsigned int dropped;
     /** Size of message content */
@@ -144,8 +144,8 @@ extern te_errno ta_job_start(ta_job_manager_t *manager, unsigned int id);
  *
  * @param[in]  manager         Job manager handle
  * @param[in]  job_id          ID of the job for which to allocate the channels
- * @param[in]  input_channels  @c TRUE to allocate input channels,
- *                             @c FALSE to allocate output channels
+ * @param[in]  input_channels  @c true to allocate input channels,
+ *                             @c false to allocate output channels
  * @param[in]  n_channels      Number of channels to allocate
  * @param[out] channels        Array of channels to be filled with ids of
  *                             the allocated channels
@@ -157,7 +157,7 @@ extern te_errno ta_job_start(ta_job_manager_t *manager, unsigned int id);
  */
 extern te_errno ta_job_allocate_channels(ta_job_manager_t *manager,
                                          unsigned int job_id,
-                                         te_bool input_channels,
+                                         bool input_channels,
                                          unsigned int n_channels,
                                          unsigned int *channels);
 
@@ -191,7 +191,7 @@ extern te_errno ta_job_attach_filter(ta_job_manager_t *manager,
                                      const char *filter_name,
                                      unsigned int n_channels,
                                      unsigned int *channels,
-                                     te_bool readable,
+                                     bool readable,
                                      te_log_level log_level,
                                      unsigned int *filter_id);
 
@@ -265,7 +265,7 @@ extern te_errno ta_job_filter_remove_channels(ta_job_manager_t *manager,
  * @param      n_channels      Number of channels to poll
  * @param      channel_ids     IDs of channels to poll
  * @param      timeout_ms      Timeout to wait for readiness
- * @param      filter_only     @c TRUE if only channels are provided.
+ * @param      filter_only     @c true if only channels are provided.
  *                             In this case, if one of ids is actually
  *                             an id of a channel, not a filter, TE_EPERM
  *                             will be returned.
@@ -277,7 +277,7 @@ extern te_errno ta_job_filter_remove_channels(ta_job_manager_t *manager,
  */
 extern te_errno ta_job_poll(ta_job_manager_t *manager, unsigned int n_channels,
                             unsigned int *channel_ids, int timeout_ms,
-                            te_bool filter_only);
+                            bool filter_only);
 
 /**
  * Receive the first message from one of the filters and remove it from

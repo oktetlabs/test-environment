@@ -39,7 +39,7 @@ system_read_file(const char *pathname, te_string *dest)
                   pathname, te_rc_os2te(errno));
     }
 
-    while (TRUE)
+    while (true)
     {
         size_t actual = fread(buf, 1, sizeof(buf), f);
 
@@ -74,7 +74,7 @@ main(int argc, char **argv)
     system_read_file(pathname, &expected);
 
     TEST_STEP("Reading from a file via TE");
-    CHECK_RC(te_file_read_string(&inbuf, FALSE, 0, "%s", pathname));
+    CHECK_RC(te_file_read_string(&inbuf, false, 0, "%s", pathname));
 
     if (!te_compare_bufs(expected.ptr, expected.len, 1,
                          inbuf.ptr, inbuf.len, TE_LL_ERROR))
@@ -84,7 +84,7 @@ main(int argc, char **argv)
     }
 
     TEST_STEP("Checking for maxsize limit");
-    chk_rc = te_file_read_string(&inbuf, FALSE, inbuf.len / 2, "%s",
+    chk_rc = te_file_read_string(&inbuf, false, inbuf.len / 2, "%s",
                                  pathname);
     if (chk_rc != TE_EFBIG)
         TEST_VERDICT("The maximum size of a file is not detected: %r", chk_rc);

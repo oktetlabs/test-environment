@@ -59,7 +59,7 @@ extern int tapi_nvme_internal_file_read(rcf_rpc_server *rpcs,
  *
  * @return existence of the directory
  */
-extern te_bool tapi_nvme_internal_isdir_exist(rcf_rpc_server *rpcs,
+extern bool tapi_nvme_internal_isdir_exist(rcf_rpc_server *rpcs,
                                               const char *path);
 
 /**
@@ -71,7 +71,7 @@ extern te_bool tapi_nvme_internal_isdir_exist(rcf_rpc_server *rpcs,
  *
  * @return Success of creation
  */
-extern te_bool tapi_nvme_internal_mkdir(rcf_rpc_server *rpcs,
+extern bool tapi_nvme_internal_mkdir(rcf_rpc_server *rpcs,
     const char *fmt, ...) TE_LIKE_PRINTF(2, 3);
 
 /**
@@ -83,7 +83,7 @@ extern te_bool tapi_nvme_internal_mkdir(rcf_rpc_server *rpcs,
  *
  * @return Success of creation
  */
-extern te_bool tapi_nvme_internal_rmdir(rcf_rpc_server *rpcs,
+extern bool tapi_nvme_internal_rmdir(rcf_rpc_server *rpcs,
     const char *fmt, ...) TE_LIKE_PRINTF(2, 3);
 
 /** Directory info */

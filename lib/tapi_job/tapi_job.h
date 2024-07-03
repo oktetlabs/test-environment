@@ -178,13 +178,13 @@ extern te_errno tapi_job_recreate(tapi_job_factory_t *factory,
  */
 typedef struct tapi_job_simple_filter_t {
     /** Attach to the job's stdout */
-    te_bool use_stdout;
+    bool use_stdout;
     /** Attach to the job's stderr */
-    te_bool use_stderr;
+    bool use_stderr;
     /** Filter name (default if @c NULL) */
     const char *filter_name;
     /** Whether the filter is readable by the test */
-    te_bool readable;
+    bool readable;
     /** Log level (if 0, output is not logged) */
     te_log_level log_level;
     /** Regexp to match */
@@ -225,7 +225,7 @@ typedef struct tapi_job_simple_desc_t {
     tapi_job_channel_t **stderr_loc;
     /** Vector of filters.
      * If not @c NULL, the last element should have
-     * @a use_stdout and @a use_stderr set to @c FALSE
+     * @a use_stdout and @a use_stderr set to @c false
      */
     tapi_job_simple_filter_t *filters;
 } tapi_job_simple_desc_t;
@@ -236,7 +236,7 @@ typedef struct tapi_job_simple_desc_t {
 #define TAPI_JOB_SIMPLE_FILTERS(...)                \
     ((tapi_job_simple_filter_t [])                  \
     {__VA_ARGS__,                                   \
-        {.use_stdout = FALSE, .use_stderr = FALSE}  \
+        {.use_stdout = false, .use_stderr = false}  \
     })
 
 /**
@@ -347,10 +347,10 @@ extern te_errno tapi_job_wait(tapi_job_t *job, int timeout_ms,
  *
  * @param      job        Job instance handle
  *
- * @return                @c TRUE if @p job is running
+ * @return                @c true if @p job is running
  * @exception TEST_FAIL
  */
-extern te_bool tapi_job_is_running(tapi_job_t *job);
+extern bool tapi_job_is_running(tapi_job_t *job);
 
 /**
  * Allocate @p n_channels input channels.
@@ -415,7 +415,7 @@ extern te_errno tapi_job_dealloc_channels(tapi_job_channel_set_t channels);
  * @param channels      Output channels to attach the filter to.
  * @param filter_name   Filter name (may be @c NULL,
  *                      then the default filter is used) *
- * @param readable      If @c TRUE, the output of the filter is
+ * @param readable      If @c true, the output of the filter is
  *                      sent to the test, that is, it can be read with
  *                      tapi_job_receive(); otherwise, it is discarded,
  *                      possibly after being logged.
@@ -432,7 +432,7 @@ extern te_errno tapi_job_dealloc_channels(tapi_job_channel_set_t channels);
  */
 extern te_errno tapi_job_attach_filter(tapi_job_channel_set_t channels,
                                        const char *filter_name,
-                                       te_bool readable,
+                                       bool readable,
                                        te_log_level log_level,
                                        tapi_job_channel_t **filter);
 
@@ -564,8 +564,8 @@ typedef struct tapi_job_buffer_t {
     tapi_job_channel_t *channel; /**< Last message channel */
     tapi_job_channel_t *filter; /**< Last message filter */
     unsigned int dropped; /**< Number of dropped messages */
-    te_bool eos; /**<
-                  * @c TRUE if the stream behind the filter has been closed.
+    bool eos; /**<
+                  * @c true if the stream behind the filter has been closed.
                   * If #eos is received and a job is not started again,
                   * the next tapi_job_receive() will time out.
                   * The stream behind the filter is re-opened when a job
@@ -669,9 +669,9 @@ extern void tapi_job_buffers_free(tapi_job_buffer_t *buffers,
  * @param filters     Set of filters to read from.
  * @param timeout_ms  Timeout to wait (negative means tapi_job_get_timeout())
  *
- * @return            @c TRUE if there is a non-eos message
+ * @return            @c true if there is a non-eos message
  */
-extern te_bool tapi_job_filters_have_data(const tapi_job_channel_set_t filters,
+extern bool tapi_job_filters_have_data(const tapi_job_channel_set_t filters,
                                           int timeout_ms);
 
 /**
@@ -960,11 +960,11 @@ extern te_errno tapi_job_get_autorestart(tapi_job_t *job, unsigned int *value);
  *       has to be called after creation of the job.
  *
  * @param  job              Job instance handle.
- * @param  trace            If @c TRUE, turns on the RPC calls logging,
+ * @param  trace            If @c true, turns on the RPC calls logging,
  *                          othervise turns it off, anyway error log still
  *                          will be logged.
  */
-extern void tapi_job_set_tracing(tapi_job_t *job, te_bool trace);
+extern void tapi_job_set_tracing(tapi_job_t *job, bool trace);
 
 /**
  * @page tapi-job-factory Creating tapi_job_t instances
@@ -1020,7 +1020,7 @@ extern void tapi_job_set_tracing(tapi_job_t *job, te_bool trace);
  * CHECK_RC(tapi_job_alloc_output_channels(job, 2, out_channels));
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channels[0],
  *                                                      out_channels[1]),
- *                                 "Filter", FALSE, TE_LL_INFO, NULL));
+ *                                 "Filter", false, TE_LL_INFO, NULL));
  * CHECK_RC(tapi_job_start(job));
  * ...
  * CHECK_RC(tapi_job_wait(job, -1, &status));
@@ -1049,9 +1049,9 @@ extern void tapi_job_set_tracing(tapi_job_t *job, te_bool trace);
  *                          NULL}, NULL, &job));
  * CHECK_RC(tapi_job_alloc_output_channels(job, 2, out_channels));
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channels[0]),
- *                                 "Out filter", TRUE, 0, &out_filter));
+ *                                 "Out filter", true, 0, &out_filter));
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channels[1]),
- *                                 "Error filter", FALSE, TE_LL_INFO, NULL));
+ *                                 "Error filter", false, TE_LL_INFO, NULL));
  * CHECK_RC(tapi_job_start(job));
  * while (!buf.eos)
  * {
@@ -1085,10 +1085,10 @@ extern void tapi_job_set_tracing(tapi_job_t *job, te_bool trace);
  *                          NULL}, NULL, &job));
  * CHECK_RC(tapi_job_alloc_output_channels(job, 2, out_channels));
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channels[0]),
- *                                 "Out filter", TRUE, 0, &out_filters[0]));
+ *                                 "Out filter", true, 0, &out_filters[0]));
  * CHECK_RC(tapi_job_filter_add_regexp(out_filters[0], "Completed", 0));
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channels[1]),
- *                                 "Error filter", FALSE, TE_LL_ERROR,
+ *                                 "Error filter", false, TE_LL_ERROR,
  *                                 &out_filters[1]));
  * CHECK_RC(tapi_job_filter_add_regexp(out_filters[1],
  *                                    "^ERROR:(.*)$", 1);
@@ -1126,10 +1126,10 @@ extern void tapi_job_set_tracing(tapi_job_t *job, te_bool trace);
  * CHECK_RC(tapi_job_alloc_output_channels(job, 1, &out_channel));
  * CHECK_RC(tapi_job_alloc_input_channels(job, 1, &in_channel));
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channel),
- *                                 "Readable filter", TRUE, 0, &prompt_filter));
+ *                                 "Readable filter", true, 0, &prompt_filter));
  * CHECK_RC(tapi_job_filter_add_regexp(prompt_filter, "^\\$ ", 0));
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channel),
- *                                 "Log filter", FALSE, TE_LL_RING, NULL));
+ *                                 "Log filter", false, TE_LL_RING, NULL));
  *
  * CHECK_RC(tapi_job_start(job));
  *
@@ -1177,9 +1177,9 @@ extern void tapi_job_set_tracing(tapi_job_t *job, te_bool trace);
  *                          NULL}, NULL, &job));
  * CHECK_RC(tapi_job_alloc_output_channels(job, 1, &out_channel));
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channel),
- *                                 "Readable filter", TRUE, 0, &out_filter));
+ *                                 "Readable filter", true, 0, &out_filter));
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channel),
- *                                 "Readable filter2", TRUE, 0, &out_filter2));
+ *                                 "Readable filter2", true, 0, &out_filter2));
  *
  * CHECK_RC(tapi_job_start(job));
  * CHECK_RC(tapi_job_wait(job, BIG_TIMEOUT, NULL));

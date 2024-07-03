@@ -376,7 +376,7 @@ tad_iscsi_dump_iscsi_pdu(const uint8_t *data, iscsi_dump_mode_t mode)
     char *current_key;
 
     uint8_t opcode;
-    te_bool dir_t_i;
+    bool dir_t_i;
 
     if (data == NULL)
         return TE_EWRONGPTR;

@@ -150,7 +150,7 @@ tapi_nvme_onvme_target_setup(tapi_nvme_target *target)
 
     rc = tapi_job_attach_filter(
         TAPI_JOB_CHANNEL_SET(proc->out_chs[0], proc->out_chs[1]),
-        "ONVMe", FALSE, TE_LL_WARN, NULL);
+        "ONVMe", false, TE_LL_WARN, NULL);
     if (rc != 0)
         return rc;
 

@@ -57,7 +57,7 @@ typedef struct depth_ctx_user {
                        on the particular depth */
     char *name;   /**< Value of name XML attribute */
     char *fname;  /**< File name of HTML log */
-    te_bool is_test; /**< Is this test iteration? */
+    bool is_test; /**< Is this test iteration? */
     char *log_level; /**< Log level value in string representation */
 
     GHashTable *depth_log_names; /**< Hash table for log names for
@@ -69,7 +69,7 @@ typedef struct depth_ctx_user {
     te_dbuf json_data;    /**< Buffer for collecting JSON before it can
                                be parsed */
 
-    te_bool no_logs;      /**< No logs were added yet */
+    bool no_logs;      /**< No logs were added yet */
 } depth_ctx_user_t;
 
 /**< Struct to keep values related to log message name JS callback */
@@ -142,16 +142,16 @@ RGT_DEF_FUNC(proc_document_start)
     ctx->user_data = gen_user = &user_ctx;
 
     /* Leave XML entities as they are, without any substitution */
-    ctx->expand_entities = FALSE;
+    ctx->expand_entities = false;
 
     /* Set up output directory */
-    rgt_xml2multi_setup_outdir(ctx, &multi_opts, TRUE);
+    rgt_xml2multi_setup_outdir(ctx, &multi_opts, true);
 
     /* Initialize depth-specific user data pointer */
     depth_ctx->user_data = alloc_depth_user_data(ctx->depth);
     depth_user = depth_ctx->user_data;
     depth_user->depth_log_names = NULL;
-    depth_user->is_test = FALSE;
+    depth_user->is_test = false;
     depth_user->name = strdup("SUITE");
 
     lf_start(ctx, depth_ctx, NULL, NULL, NULL);
@@ -287,7 +287,7 @@ log_entity_out(gpointer data, gpointer user_data)
         rgt_tmpls_output(fd, &xml2fmt_tmpls[JS_LOG_NAMES_USER], attrs);
         rgt_tmpls_attrs_free(attrs);
     }
-    g_ptr_array_free(users, TRUE);
+    g_ptr_array_free(users, true);
     g_hash_table_destroy(user_hash);
 
     /* Output line about entity entry */
@@ -349,7 +349,7 @@ output_log_names(GHashTable **entity_hash, uint32_t depth, uint32_t seq)
 
     /* Now we have sorted array of entity names */
     g_ptr_array_foreach(entries, log_entity_out, &cb_data);
-    g_ptr_array_free(entries, TRUE);
+    g_ptr_array_free(entries, true);
 
     g_hash_table_destroy(cb_data.entity_hash);
     *entity_hash = NULL;
@@ -395,7 +395,7 @@ lf_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx, const char *result,
      const char *node_class, rgt_depth_ctx_t *prev_depth_ctx)
 {
     depth_ctx_user_t *depth_user = depth_ctx->user_data;
-    te_bool           is_test = depth_user->is_test;
+    bool is_test = depth_user->is_test;
     char              fname[255];
     rgt_attrs_t      *attrs;
     unsigned int      i;
@@ -515,7 +515,7 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     const char       *node_class;
     char              fname[500] = "";
     rgt_attrs_t      *attrs;
-    te_bool           matched = TRUE;
+    bool matched = true;
 
     const char *node_type_str = rgt_node2str(depth_ctx->type);
 
@@ -774,7 +774,7 @@ static void
 print_mi_meas_param_vals_array(FILE *fd, te_rgt_mi_meas_param *param)
 {
     size_t j;
-    te_bool first_val = TRUE;
+    bool first_val = true;
 
     for (j = 0; j < param->values_num; j++)
     {
@@ -805,7 +805,7 @@ print_mi_meas_param_vals_array(FILE *fd, te_rgt_mi_meas_param *param)
             }
 
             fprintf(fd, "%f * %f", value->value, multiplier_value);
-            first_val = FALSE;
+            first_val = false;
         }
     }
 }
@@ -830,7 +830,7 @@ print_mi_meas_line_graph(FILE *fd, te_rgt_mi_meas *meas,
     size_t i;
     ssize_t j;
     size_t axis_y_num;
-    te_bool first_y = TRUE;
+    bool first_y = true;
 
     ssize_t check_len;
     te_string warns = TE_STRING_INIT;
@@ -914,7 +914,7 @@ print_mi_meas_line_graph(FILE *fd, te_rgt_mi_meas *meas,
         if (!first_y)
             fprintf(fd, ",\n");
 
-        first_y = FALSE;
+        first_y = false;
 
         fprintf(fd, "{ label: \"%s\", color: \"%s\", "
                 "values: param_%u_%zd }",
@@ -1236,7 +1236,7 @@ RGT_DEF_FUNC(proc_logs_start)
 
             rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOGS_FILTER],
                              attrs);
-            depth_user->no_logs = FALSE;
+            depth_user->no_logs = false;
         }
         rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOGS_START], attrs);
         rgt_tmpls_attrs_free(attrs);
@@ -1419,7 +1419,7 @@ write_chars_preserve_spaces(FILE *fd, const rgt_xmlChar *ch, size_t len)
     te_dbuf chars_dbuf = TE_DBUF_INIT(50);
     size_t i;
     size_t processed_len;
-    te_bool prev_space = FALSE;
+    bool prev_space = false;
     static const char nbsp[] = "&nbsp;";
 
     for (i = 0, processed_len = 0; i < len; i++)
@@ -1435,7 +1435,7 @@ write_chars_preserve_spaces(FILE *fd, const rgt_xmlChar *ch, size_t len)
         if (ch[i] == ' ')
             prev_space = !prev_space;
         else
-            prev_space = FALSE;
+            prev_space = false;
     }
 
     if (chars_dbuf.len == 0)
@@ -1526,10 +1526,10 @@ proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
 #endif
 }
 
-te_bool
+bool
 proc_expand_entities(void)
 {
-    return FALSE;
+    return false;
 }
 
 /**
@@ -1605,14 +1605,14 @@ static depth_ctx_user_t *
 alloc_depth_user_data(uint32_t depth)
 {
     depth_ctx_user_t *depth_user;
-    te_bool reused = FALSE;
+    bool reused = false;
 
     assert(depth >= 1);
 
     depth_user = rgt_xml2fmt_alloc_depth_data(&depth_data, depth, &reused);
 
     depth_user->log_level = NULL;
-    depth_user->no_logs = TRUE;
+    depth_user->no_logs = true;
     depth_user->linum = 1;
 
     if (!reused)

@@ -108,46 +108,46 @@ extern te_errno tapi_cfg_base_get_ta_uname(const char *ta,
  * Enable/disable IPv4 forwarding on a Test Agent.
  *
  * @param ta        TA name
- * @param enable    @c TRUE - enable, @c FALSE - disable
+ * @param enable    @c true - enable, @c false - disable
  *
  * @return Status code.
  */
-extern te_errno tapi_cfg_base_ipv4_fw(const char *ta, te_bool enable);
+extern te_errno tapi_cfg_base_ipv4_fw(const char *ta, bool enable);
 
 /**
  * Get IPv4 forwarding status on a Test Agent.
  *
  * @param ta            TA name
- * @param[out] enabled  @c TRUE - enabled, @c FALSE - disabled
+ * @param[out] enabled  @c true - enabled, @c false - disabled
  *
  * @return Status code.
  */
 extern te_errno tapi_cfg_base_ipv4_fw_enabled(const char *ta,
-                                              te_bool *enabled);
+                                              bool *enabled);
 
 /**
  * Enable/disable IPv4 forwarding on a specified network interface
  *
  * @param ta            TA name
  * @param ifname        Name of network interface
- * @param enable        @c TRUE - enable, @c FALSE - disable
+ * @param enable        @c true - enable, @c false - disable
  *
  * @return Status code
  */
 extern te_errno tapi_cfg_ipv4_fw_set(const char *ta, const char *ifname,
-                                     te_bool enable);
+                                     bool enable);
 
 /**
  * Get IPv4 forwarding status of a specified network interface
  *
  * @param ta            TA name
  * @param ifname        Name of network interface
- * @param[out] enabled  @c TRUE - enabled, @c FALSE - disabled
+ * @param[out] enabled  @c true - enabled, @c false - disabled
  *
  * @return Status code
  */
 extern te_errno tapi_cfg_ipv4_fw_get(const char *ta, const char *ifname,
-                                     te_bool *enabled);
+                                     bool *enabled);
 
 /**
  * It's a wrapper for tapi_cfg_ipv4_fw_set() to enable IPv4 forwarding
@@ -156,7 +156,7 @@ extern te_errno tapi_cfg_ipv4_fw_get(const char *ta, const char *ifname,
 static inline te_errno
 tapi_cfg_ipv4_fw_enable(const char *ta, const char *ifname)
 {
-    return tapi_cfg_ipv4_fw_set(ta, ifname, TRUE);
+    return tapi_cfg_ipv4_fw_set(ta, ifname, true);
 }
 
 /**
@@ -166,7 +166,7 @@ tapi_cfg_ipv4_fw_enable(const char *ta, const char *ifname)
 static inline te_errno
 tapi_cfg_ipv4_fw_disable(const char *ta, const char *ifname)
 {
-    return tapi_cfg_ipv4_fw_set(ta, ifname, FALSE);
+    return tapi_cfg_ipv4_fw_set(ta, ifname, false);
 }
 
 /**
@@ -174,24 +174,24 @@ tapi_cfg_ipv4_fw_disable(const char *ta, const char *ifname)
  *
  * @param ta            TA name
  * @param ifname        Name of network interface
- * @param enable        @c TRUE - enable, @c FALSE - disable
+ * @param enable        @c true - enable, @c false - disable
  *
  * @return Status code
  */
 extern te_errno tapi_cfg_ipv6_fw_set(const char *ta, const char *ifname,
-                                     te_bool enable);
+                                     bool enable);
 
 /**
  * Get IPv6 forwarding status of a specified network interface
  *
  * @param ta            TA name
  * @param ifname        Name of network interface
- * @param[out] enabled  @c TRUE - enabled, @c FALSE - disabled
+ * @param[out] enabled  @c true - enabled, @c false - disabled
  *
  * @return Status code
  */
 extern te_errno tapi_cfg_ipv6_fw_get(const char *ta, const char *ifname,
-                                     te_bool *enabled);
+                                     bool *enabled);
 
 /**
  * It's a wrapper for tapi_cfg_ipv6_fw_set() to enable IPv6 forwarding
@@ -200,7 +200,7 @@ extern te_errno tapi_cfg_ipv6_fw_get(const char *ta, const char *ifname,
 static inline te_errno
 tapi_cfg_ipv6_fw_enable(const char *ta, const char *ifname)
 {
-    return tapi_cfg_ipv6_fw_set(ta, ifname, TRUE);
+    return tapi_cfg_ipv6_fw_set(ta, ifname, true);
 }
 
 /**
@@ -210,7 +210,7 @@ tapi_cfg_ipv6_fw_enable(const char *ta, const char *ifname)
 static inline te_errno
 tapi_cfg_ipv6_fw_disable(const char *ta, const char *ifname)
 {
-    return tapi_cfg_ipv6_fw_set(ta, ifname, FALSE);
+    return tapi_cfg_ipv6_fw_set(ta, ifname, false);
 }
 
 /**
@@ -218,7 +218,7 @@ tapi_cfg_ipv6_fw_disable(const char *ta, const char *ifname)
  * on a Test Agent. It sets forwarding to the interface "all".
  */
 static inline te_errno
-tapi_cfg_base_ipv6_fw(const char *ta, te_bool enable)
+tapi_cfg_base_ipv6_fw(const char *ta, bool enable)
 {
     return tapi_cfg_ipv6_fw_set(ta, "all", enable);
 }
@@ -228,7 +228,7 @@ tapi_cfg_base_ipv6_fw(const char *ta, te_bool enable)
  * on a Test Agent, i.e. forwarding status of the interface "all".
  */
 static inline te_errno
-tapi_cfg_base_ipv6_fw_enabled(const char *ta, te_bool *enabled)
+tapi_cfg_base_ipv6_fw_enabled(const char *ta, bool *enabled)
 {
     return tapi_cfg_ipv6_fw_get(ta, "all", enabled);
 }
@@ -353,7 +353,7 @@ extern int tapi_cfg_base_if_get_mtu(const char *oid, unsigned int *p_mtu);
 extern int tapi_cfg_base_add_net_addr(const char            *oid,
                                       const struct sockaddr *addr,
                                       int                    prefix,
-                                      te_bool                set_bcast,
+                                      bool set_bcast,
                                       cfg_handle            *cfg_hndl);
 
 /**
@@ -371,7 +371,7 @@ extern int tapi_cfg_base_add_net_addr(const char            *oid,
 static inline int
 tapi_cfg_base_if_add_net_addr(const char *ta, const char *ifname,
                               const struct sockaddr *addr,
-                              int prefix, te_bool set_bcast,
+                              int prefix, bool set_bcast,
                               cfg_handle *cfg_hndl)
 {
     char inst_name[CFG_OID_MAX];
@@ -417,7 +417,7 @@ extern te_errno tapi_cfg_del_if_ip4_addresses(const char *ta,
  *                          the interface, one should pass sockaddr with family
  *                          from @p addr_fam and address @c INADDR_ANY.
  * @param save_first        If @p addr_to_save is @c NULL but @p save_first is
- *                          @c TRUE, do not delete first address from acquired
+ *                          @c true, do not delete first address from acquired
  *                          list.
  * @param saved_addrs       Where address of array of deleted addresses
  *                          should be placed
@@ -434,17 +434,17 @@ extern te_errno tapi_cfg_del_if_ip4_addresses(const char *ta,
 extern te_errno tapi_cfg_save_del_if_addresses(const char *ta,
                                       const char *if_name,
                                       const struct sockaddr *addr_to_save,
-                                      te_bool save_first,
+                                      bool save_first,
                                       struct sockaddr **saved_addrs,
                                       int **saved_prefixes,
-                                      te_bool **saved_broadcasts,
+                                      bool **saved_broadcasts,
                                       int *saved_count,
                                       int addr_fam);
 
 /**
  * Save and delete all IPv4 addresses on a given interface, except of
  * addr_to_save or the first address in acquired list (if save_first
- * is TRUE).
+ * is @c true).
  *
  * @param ta                Test Agent name
  * @param if_name           interface name
@@ -457,7 +457,7 @@ extern te_errno tapi_cfg_save_del_if_addresses(const char *ta,
  *                          'AF_INET'
  *                          and address 'INADDR_ANY'.
  * @param save_first        If addr_to_save is NULL but save_first is
- *                          TRUE, do not delete first address from acquired
+ *                          @c true, do not delete first address from acquired
  *                          list.
  * @param saved_addrs       Where address of array of deleted addresses
  *                          should be placed
@@ -474,12 +474,11 @@ extern te_errno tapi_cfg_save_del_if_ip4_addresses(const char *ta,
                                                   const char *if_name,
                                                   const struct sockaddr
                                                     *addr_to_save,
-                                                  te_bool save_first,
+                                                  bool save_first,
                                                   struct sockaddr
                                                     **saved_addrs,
                                                   int **saved_prefixes,
-                                                  te_bool
-                                                    **saved_broadcasts,
+                                                  bool **saved_broadcasts,
                                                   int *saved_count);
 
 /**
@@ -506,7 +505,7 @@ extern te_errno tapi_cfg_del_if_ip6_addresses(
 /**
  * Save and delete all IPv6 addresses on a given interface, except for
  * @p addr_to_save or the first address in acquired list (if save_first
- * is TRUE).
+ * is @c true).
  *
  * @param ta                Test Agent name
  * @param if_name           interface name
@@ -518,7 +517,7 @@ extern te_errno tapi_cfg_del_if_ip6_addresses(
  *                          interface, he has to pass sockaddr with family
  *                          @c AF_INET6 and address @c INADDR_ANY.
  * @param save_first        If addr_to_save is NULL but save_first is
- *                          TRUE, do not delete first address from acquired
+ *                          @c true, do not delete first address from acquired
  *                          list.
  * @param saved_addrs       Where address of array of deleted addresses
  *                          should be placed
@@ -534,10 +533,10 @@ extern te_errno tapi_cfg_save_del_if_ip6_addresses(
                     const char *ta,
                     const char *if_name,
                     const struct sockaddr *addr_to_save,
-                    te_bool save_first,
+                    bool save_first,
                     struct sockaddr **saved_addrs,
                     int **saved_prefixes,
-                    te_bool **saved_broadcasts,
+                    bool **saved_broadcasts,
                     int *saved_count);
 
 /**
@@ -563,7 +562,7 @@ extern te_errno tapi_cfg_restore_if_ip4_addresses(const char *ta,
                                                   struct sockaddr
                                                     *saved_addrs,
                                                   int *saved_prefixes,
-                                                  te_bool *saved_broadcasts,
+                                                  bool *saved_broadcasts,
                                                   int saved_count);
 
 /**
@@ -583,7 +582,7 @@ extern te_errno tapi_cfg_restore_if_addresses(
                     const char *if_name,
                     struct sockaddr *saved_addrs,
                     int *saved_prefixes,
-                    te_bool *saved_broadcasts,
+                    bool *saved_broadcasts,
                     int saved_count);
 
 static inline te_errno
@@ -657,7 +656,7 @@ tapi_cfg_base_if_arp_disable(const char *ta, const char * iface)
 static inline te_errno
 tapi_cfg_base_if_set_promisc(const char *ta,
                              const char *ifname,
-                             te_bool enable)
+                             bool enable)
 {
     int val = (enable ? 1 : 0);
 
@@ -671,15 +670,15 @@ tapi_cfg_base_if_set_promisc(const char *ta,
  *
  * @param ta          Test Agent name.
  * @param ifname      Interface name.
- * @param enabled     Will be set to @c TRUE if promiscuous mode is enabled
- *                    and to @c FALSE otherwise.
+ * @param enabled     Will be set to @c true if promiscuous mode is enabled
+ *                    and to @c false otherwise.
  *
  * @return Status code.
  */
 static inline te_errno
 tapi_cfg_base_if_get_promisc(const char *ta,
                              const char *ifname,
-                             te_bool *enabled)
+                             bool *enabled)
 {
     te_errno rc;
     int val;
@@ -996,7 +995,7 @@ extern te_errno tapi_cfg_base_if_get_mtu_u(const char *agent,
  * @param interface Interface name
  * @param mtu       MTU value
  * @param old_mtu   Location for old MTU value or @c NULL
- * @param fast      Don't sleep long time after interface restart if @c TRUE
+ * @param fast      Don't sleep long time after interface restart if @c true
  *
  * @note Consider using @c tapi_cfg_base_if_set_mtu_leastwise() instead.
  *
@@ -1004,7 +1003,7 @@ extern te_errno tapi_cfg_base_if_get_mtu_u(const char *agent,
  */
 extern te_errno tapi_cfg_base_if_set_mtu_ext(const char *agent,
                                              const char *interface, int mtu,
-                                             int *old_mtu, te_bool fast);
+                                             int *old_mtu, bool fast);
 
 /**
  * Set new MTU value.
@@ -1023,7 +1022,7 @@ tapi_cfg_base_if_set_mtu(const char *agent, const char *interface, int mtu,
                          int *old_mtu)
 {
     return tapi_cfg_base_if_set_mtu_ext(agent, interface, mtu, old_mtu,
-                                        FALSE);
+                                        false);
 }
 
 /**

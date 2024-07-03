@@ -36,7 +36,7 @@ iut_syn_csap_handler(tsa_session *ss)
                              TAPI_TCP_SERVER);
     if (rc != 0)
         return rc;
-    ss->state.tst_wait_connect = TRUE;
+    ss->state.tst_wait_connect = true;
 
     RPC_AWAIT_ERROR(ss->config.pco_iut);
     if (rpc_connect(ss->config.pco_iut, ss->state.iut_s,
@@ -44,7 +44,7 @@ iut_syn_csap_handler(tsa_session *ss)
         RPC_ERRNO(ss->config.pco_iut) != RPC_EINPROGRESS)
         return RPC_ERRNO(ss->config.pco_iut);
 
-    ss->state.iut_wait_connect = TRUE;
+    ss->state.iut_wait_connect = true;
 
     rc = tsa_update_cur_state(ss);
     if (rc != 0)
@@ -72,7 +72,7 @@ tst_syn_csap_handler(tsa_session *ss)
     rc = tapi_tcp_start_conn(ss->state.csap.csap_tst_s,
                              TAPI_TCP_CLIENT);
 
-    ss->state.tst_wait_connect = TRUE;
+    ss->state.tst_wait_connect = true;
     return rc;
 }
 
@@ -115,7 +115,7 @@ tst_syn_ack_csap_handler(tsa_session *ss)
                             MAX_CHANGE_TIMEOUT);
     if (rc != 0)
         ss->state.csap.csap_tst_s = -1;
-    ss->state.tst_wait_connect = FALSE;
+    ss->state.tst_wait_connect = false;
 
     RPC_AWAIT_ERROR(ss->config.pco_iut);
     if (rpc_connect(ss->config.pco_iut, ss->state.iut_s,
@@ -123,7 +123,7 @@ tst_syn_ack_csap_handler(tsa_session *ss)
         RPC_ERRNO(ss->config.pco_iut) != RPC_EALREADY &&
         RPC_ERRNO(ss->config.pco_iut) != RPC_EINPROGRESS)
         rc = RPC_ERRNO(ss->config.pco_iut);
-    ss->state.iut_wait_connect = FALSE;
+    ss->state.iut_wait_connect = false;
 
     return rc;
 }
@@ -155,7 +155,7 @@ tst_ack_csap_handler(tsa_session *ss)
 {
     te_errno rc = 0;
 
-    if (ss->state.tst_wait_connect == TRUE)
+    if (ss->state.tst_wait_connect == true)
     {
         rc = tapi_tcp_wait_open(ss->state.csap.csap_tst_s,
                                 MAX_CHANGE_TIMEOUT);
@@ -165,14 +165,14 @@ tst_ack_csap_handler(tsa_session *ss)
             ss->state.csap.csap_tst_s = -1;
             return rc;
         }
-        ss->state.tst_wait_connect = FALSE;
+        ss->state.tst_wait_connect = false;
 
         if (tsa_state_cur(ss) == RPC_TCP_LISTEN)
         {
             ss->state.iut_s_aux = ss->state.iut_s;
 
             INFINITE_LOOP_BEGIN(loop);
-            while (TRUE)
+            while (true)
             {
                 RPC_AWAIT_ERROR(ss->config.pco_iut);
                 ss->state.iut_s = rpc_accept(ss->config.pco_iut,
@@ -229,7 +229,7 @@ tst_ack_csap_handler(tsa_session *ss)
                             ss->config.tst_addr) != 0 &&
                 RPC_ERRNO(ss->config.pco_iut) != RPC_EALREADY)
                 rc = RPC_ERRNO(ss->config.pco_iut);
-            ss->state.iut_wait_connect = FALSE;
+            ss->state.iut_wait_connect = false;
         }
     }
     else

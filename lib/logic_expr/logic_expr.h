@@ -57,7 +57,7 @@ typedef struct logic_expr_res {
     logic_expr_res_type res_type;
     union {
         char       *simple;
-        te_bool     boolean;
+        bool        boolean;
     } value;
 } logic_expr_res;
 

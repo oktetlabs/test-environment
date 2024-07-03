@@ -49,7 +49,7 @@ static pthread_once_t   jmp_once_control = PTHREAD_ONCE_INIT;
 static pthread_key_t    jmp_key;
 
 
-static tapi_jmp_ctx *tapi_jmp_get_ctx(te_bool create);
+static tapi_jmp_ctx *tapi_jmp_get_ctx(bool create);
 
 
 /**
@@ -100,7 +100,7 @@ tapi_jmp_thread_ctx_destroy(void *handle)
 static void
 tapi_jmp_atexit_callback(void)
 {
-    tapi_jmp_thread_ctx_destroy(tapi_jmp_get_ctx(FALSE));
+    tapi_jmp_thread_ctx_destroy(tapi_jmp_get_ctx(false));
 }
 
 /**
@@ -123,7 +123,7 @@ tapi_jmp_key_create(void)
  * @return Context handle or NULL if some error occurred
  */
 static tapi_jmp_ctx *
-tapi_jmp_get_ctx(te_bool create)
+tapi_jmp_get_ctx(bool create)
 {
     tapi_jmp_ctx   *ctx;
 
@@ -163,7 +163,7 @@ tapi_jmp_get_ctx(te_bool create)
 tapi_jmp_point *
 tapi_jmp_push(const char *file, unsigned int lineno)
 {
-    tapi_jmp_ctx   *ctx = tapi_jmp_get_ctx(TRUE);
+    tapi_jmp_ctx   *ctx = tapi_jmp_get_ctx(true);
     tapi_jmp_point *p;
 
     if (ctx == NULL)
@@ -194,7 +194,7 @@ tapi_jmp_pop(const char *file, unsigned int lineno)
     tapi_jmp_ctx   *ctx;
     tapi_jmp_point *p;
 
-    ctx = tapi_jmp_get_ctx(FALSE);
+    ctx = tapi_jmp_get_ctx(false);
     if (ctx == NULL)
     {
         ERROR("%s(): No context", __FUNCTION__);
@@ -236,7 +236,7 @@ tapi_jmp_do(int val, const char *file, unsigned int lineno)
         val = TE_EOK;
     }
 
-    ctx = tapi_jmp_get_ctx(FALSE);
+    ctx = tapi_jmp_get_ctx(false);
     if (ctx == NULL)
     {
         ERROR("%s(): No context", __FUNCTION__);
@@ -264,16 +264,16 @@ tapi_jmp_do(int val, const char *file, unsigned int lineno)
     longjmp(p->env, val);
 
     /* Unreachable */
-    assert(FALSE);
+    assert(false);
 }
 
 /* See description in tapi_jmp.h */
-te_bool
+bool
 tapi_jmp_stack_is_empty(void)
 {
     tapi_jmp_ctx   *ctx;
 
-    ctx = tapi_jmp_get_ctx(FALSE);
+    ctx = tapi_jmp_get_ctx(false);
 
     return (ctx == NULL) || SLIST_EMPTY(&ctx->stack);
 }

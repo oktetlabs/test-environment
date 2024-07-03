@@ -32,7 +32,7 @@
 /** Internal data of the TRC database walker */
 struct te_trc_db_walker {
     te_trc_db           *db;        /**< TRC database pointer */
-    te_bool              is_iter;   /**< Is current position an
+    bool is_iter;   /**< Is current position an
                                          iteration? */
     trc_test            *test;      /**< Test entry */
     trc_test_iter       *iter;      /**< Test iteration */
@@ -57,7 +57,7 @@ trc_db_walker_copy(const te_trc_db_walker *walker)
 }
 
 /* See the description in te_trc.h */
-te_bool
+bool
 trc_db_walker_is_iter(const te_trc_db_walker *walker)
 {
     return walker->is_iter;
@@ -108,7 +108,7 @@ trc_db_new_walker(te_trc_db *trc_db)
     walker = TE_ALLOC(sizeof(*walker));
 
     walker->db = trc_db;
-    walker->is_iter = TRUE;
+    walker->is_iter = true;
     walker->test = NULL;
     walker->iter = NULL;
     walker->motion = TRC_DB_WALKER_ROOT;
@@ -131,7 +131,7 @@ trc_db_test_params_normalise(char *param)
     char *p;
     char *q;
     char *str = NULL;
-    te_bool skip_spaces = TRUE;
+    bool skip_spaces = true;
 
     if (param == NULL)
         return NULL;
@@ -147,13 +147,13 @@ trc_db_test_params_normalise(char *param)
             if (!skip_spaces)
             {
                 *q++ = ' ';
-                skip_spaces = TRUE;
+                skip_spaces = true;
             }
         }
         else
         {
             *q++ = *p;
-            skip_spaces = FALSE;
+            skip_spaces = false;
         }
     }
 
@@ -256,15 +256,15 @@ trc_db_walker_go_to_test(te_trc_db_walker *walker, trc_test *test)
 {
     walker->test = test;
     walker->iter = test->parent;
-    walker->is_iter = FALSE;
+    walker->is_iter = false;
     walker->unknown = 0;
     walker->motion = TRC_DB_WALKER_SON;
 }
 
 /* See the description in te_trc.h */
-te_bool
+bool
 trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name,
-                        te_bool force)
+                        bool force)
 {
     assert(walker->is_iter);
 
@@ -296,7 +296,7 @@ trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name,
                 if (walker->test == NULL)
                 {
                     ERROR("Cannot allocate a new test '%s'", test_name);
-                    return FALSE;
+                    return false;
                 }
 
                 if (walker->iter != NULL &&
@@ -319,7 +319,7 @@ trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name,
         }
     }
 
-    walker->is_iter = FALSE;
+    walker->is_iter = false;
 
     return (walker->unknown == 0);
 }
@@ -328,11 +328,11 @@ int (*trc_db_compare_values)(const char *s1, const char *s2) =
     trc_db_strcmp_normspace;
 
 static unsigned
-next_token(const char *pos, const char **start, te_bool *is_numeric)
+next_token(const char *pos, const char **start, bool *is_numeric)
 {
     unsigned len = 0;
 
-    *is_numeric = FALSE;
+    *is_numeric = false;
     while(isspace(*pos))
         pos++;
     *start = pos;
@@ -350,7 +350,7 @@ next_token(const char *pos, const char **start, te_bool *is_numeric)
             char *tmp;
             strtol(*start, &tmp, 0); // scanning only
             if (tmp == pos)
-                *is_numeric = TRUE;
+                *is_numeric = true;
         }
     }
     return len;
@@ -360,9 +360,9 @@ int
 trc_db_strcmp_tokens(const char *s1, const char *s2)
 {
     unsigned wlen1 = 0;
-    te_bool numeric1 = FALSE;
+    bool numeric1 = false;
     unsigned wlen2 = 0;
-    te_bool numeric2 = FALSE;
+    bool numeric2 = false;
     int rc;
 
     do
@@ -441,11 +441,11 @@ int
 test_iter_args_match(const trc_test_iter_args  *db_args,
                      unsigned int               n_args,
                      trc_report_argument       *args,
-                     te_bool                    is_strict)
+                     bool is_strict)
 {
     trc_test_iter_arg  *arg;
     unsigned int        i;
-    te_bool             is_wildcard = FALSE;
+    bool is_wildcard = false;
 
 #if VERB_CMP
     fprintf(stderr, "Args compare: \n");
@@ -488,7 +488,7 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
 
         /* argument w/o a value */
         if (strlen(arg->value) == 0)
-            is_wildcard = TRUE;
+            is_wildcard = true;
         else if (strncmp(args[i].value, TEST_ARG_VAR_PREFIX,
                          strlen(TEST_ARG_VAR_PREFIX)) != 0)
         {
@@ -570,7 +570,7 @@ trc_report_argument_compare (const void *arg1, const void *arg2)
 
 
 /* See the description in te_trc.h */
-te_bool
+bool
 trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
                         trc_report_argument *args,
                         uint32_t flags,
@@ -596,9 +596,9 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
         trc_test_iter *new_exact_iter = NULL;
         trc_test_iter *wild_iter = NULL;
         trc_test_iter *iter_to_copy = NULL;
-        te_bool        dup_detected = FALSE;
+        bool dup_detected = false;
 
-        te_bool user_match = FALSE;
+        bool user_match = false;
         const char *arg_names[n_args];
         unsigned int i;
 
@@ -617,13 +617,13 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
             if (func_args_match == NULL || walker->iter->log_found)
             {
                 match_result = test_iter_args_match(&walker->iter->args,
-                                                    n_args, args, TRUE);
+                                                    n_args, args, true);
             }
             else
             {
                 match_result = func_args_match(walker->iter,
-                                               n_args, args, FALSE);
-                user_match = TRUE;
+                                               n_args, args, false);
+                user_match = true;
             }
 
             if (match_result != ITER_NO_MATCH)
@@ -641,14 +641,14 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
                      */
                     if (wild_iter != NULL ||
                         old_exact_iter != NULL)
-                        dup_detected = TRUE;
+                        dup_detected = true;
                     wild_iter = walker->iter;
                 }
                 else if (iter->log_found)
                 {
                     if (new_exact_iter != NULL)
                     {
-                        dup_detected = TRUE;
+                        dup_detected = true;
                         ERROR("TRC Update generates duplicates!");
                     }
                     new_exact_iter = walker->iter;
@@ -657,7 +657,7 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
                 {
                     if (old_exact_iter != NULL ||
                         wild_iter != NULL)
-                        dup_detected = TRUE;
+                        dup_detected = true;
                     old_exact_iter = walker->iter;
                 }
             }
@@ -710,7 +710,7 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
                 {
                     ERROR("Cannot allocate a new test '%s' iteration",
                           walker->test->name);
-                    return FALSE;
+                    return false;
                 }
 
                 if (iter_to_copy != NULL && iter_to_copy->filename != NULL)
@@ -780,7 +780,7 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
             VERB("Step iteration - OK", walker->unknown);
     }
 
-    walker->is_iter = TRUE;
+    walker->is_iter = true;
 
     if ((flags & STEP_ITER_SPLIT_RESULTS) && (walker->unknown == 0))
         trc_db_test_iter_res_split(walker->iter);
@@ -802,14 +802,14 @@ trc_db_walker_step_back(te_trc_db_walker *walker)
     {
         assert(walker->iter != NULL);
         walker->test = walker->iter->parent;
-        walker->is_iter = FALSE;
+        walker->is_iter = false;
         VERB("Step back from iteration");
     }
     else
     {
         assert(walker->test != NULL);
         walker->iter = walker->test->parent;
-        walker->is_iter = TRUE;
+        walker->is_iter = true;
         VERB("Step back from test");
     }
 }
@@ -829,7 +829,7 @@ trc_db_walker_move(te_trc_db_walker *walker)
             }
             else
             {
-                walker->is_iter = FALSE;
+                walker->is_iter = false;
                 return (walker->motion = TRC_DB_WALKER_SON);
             }
             break;
@@ -841,7 +841,7 @@ trc_db_walker_move(te_trc_db_walker *walker)
                 walker->test = TAILQ_FIRST(&walker->iter->tests.head);
                 if (walker->test != NULL)
                 {
-                    walker->is_iter = FALSE;
+                    walker->is_iter = false;
                     return (walker->motion = TRC_DB_WALKER_SON);
                 }
             }
@@ -850,7 +850,7 @@ trc_db_walker_move(te_trc_db_walker *walker)
                 walker->iter = TAILQ_FIRST(&walker->test->iters.head);
                 if (walker->iter != NULL)
                 {
-                    walker->is_iter = TRUE;
+                    walker->is_iter = true;
                     return (walker->motion = TRC_DB_WALKER_SON);
                 }
             }
@@ -868,7 +868,7 @@ trc_db_walker_move(te_trc_db_walker *walker)
                 {
                     walker->test = walker->iter->parent;
                     assert(walker->test != NULL);
-                    walker->is_iter = FALSE;
+                    walker->is_iter = false;
                     return (walker->motion = TRC_DB_WALKER_FATHER);
                 }
             }
@@ -881,7 +881,7 @@ trc_db_walker_move(te_trc_db_walker *walker)
                 }
                 else
                 {
-                    walker->is_iter = TRUE;
+                    walker->is_iter = true;
                     return (walker->motion =
                         ((walker->iter = walker->test->parent) == NULL) ?
                             TRC_DB_WALKER_ROOT : TRC_DB_WALKER_FATHER);
@@ -890,11 +890,11 @@ trc_db_walker_move(te_trc_db_walker *walker)
             break;
 
         default:
-            assert(FALSE);
+            assert(false);
             return (walker->motion = TRC_DB_WALKER_ROOT);
     }
     /* Unreachable */
-    assert(FALSE);
+    assert(false);
 }
 
 /* See the description in te_trc.h */

@@ -135,37 +135,37 @@ static const te_enum_map tapi_fio_rwtype_mapping[] = {
 };
 
 static const tapi_job_opt_bind fio_binds[] = TAPI_JOB_OPT_SET(
-    TAPI_JOB_OPT_STRING("--name=", TRUE, tapi_fio_opts, name),
-    TAPI_JOB_OPT_STRING("--filename=", TRUE, tapi_fio_opts, filename),
-    TAPI_JOB_OPT_UINT("--blocksize=", TRUE, NULL, tapi_fio_opts, blocksize),
-    TAPI_JOB_OPT_UINT("--iodepth=", TRUE, NULL, tapi_fio_opts, iodepth),
+    TAPI_JOB_OPT_STRING("--name=", true, tapi_fio_opts, name),
+    TAPI_JOB_OPT_STRING("--filename=", true, tapi_fio_opts, filename),
+    TAPI_JOB_OPT_UINT("--blocksize=", true, NULL, tapi_fio_opts, blocksize),
+    TAPI_JOB_OPT_UINT("--iodepth=", true, NULL, tapi_fio_opts, iodepth),
     {
-        runtime_argument, "--runtime=", TRUE, NULL,
+        runtime_argument, "--runtime=", true, NULL,
         TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(tapi_fio_opts, runtime_sec, int), NULL
     },
-    TAPI_JOB_OPT_UINT("--rwmixread=", TRUE, NULL, tapi_fio_opts, rwmixread),
+    TAPI_JOB_OPT_UINT("--rwmixread=", true, NULL, tapi_fio_opts, rwmixread),
     TAPI_JOB_OPT_DUMMY("--output-format=json"),
     TAPI_JOB_OPT_DUMMY("--group_reporting"),
-    TAPI_JOB_OPT_STRING("--output=", TRUE, tapi_fio_opts, output_path.ptr),
+    TAPI_JOB_OPT_STRING("--output=", true, tapi_fio_opts, output_path.ptr),
     TAPI_JOB_OPT_BOOL("--direct=1", tapi_fio_opts, direct),
     TAPI_JOB_OPT_BOOL("--exitall_on_error=1", tapi_fio_opts, exit_on_error),
     {
-        rand_generator_argument, "--random_generator=", TRUE, NULL,
+        rand_generator_argument, "--random_generator=", true, NULL,
         TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(tapi_fio_opts, rand_gen, char *), NULL
     },
-    TAPI_JOB_OPT_ENUM("--readwrite=", TRUE, tapi_fio_opts, rwtype,
+    TAPI_JOB_OPT_ENUM("--readwrite=", true, tapi_fio_opts, rwtype,
                       tapi_fio_rwtype_mapping),
-    TAPI_JOB_OPT_ENUM("--ioengine=", TRUE, tapi_fio_opts, ioengine,
+    TAPI_JOB_OPT_ENUM("--ioengine=", true, tapi_fio_opts, ioengine,
                       tapi_fio_ioengine_mapping),
-    TAPI_JOB_OPT_UINT("--numjobs=", TRUE, NULL, tapi_fio_opts, numjobs.value),
+    TAPI_JOB_OPT_UINT("--numjobs=", true, NULL, tapi_fio_opts, numjobs.value),
     TAPI_JOB_OPT_DUMMY("--thread"),
     {
-        user_argument, NULL, FALSE, NULL,
+        user_argument, NULL, false, NULL,
         TAPI_JOB_OPT_OFFSETOF_CHK_SIZE(tapi_fio_opts, user, char *), NULL
     },
-    TAPI_JOB_OPT_STRING("--rbdname=", TRUE, tapi_fio_opts, rbdname),
-    TAPI_JOB_OPT_STRING("--pool=", TRUE, tapi_fio_opts, pool),
-    TAPI_JOB_OPT_UINTMAX_T("--size=", TRUE, NULL, tapi_fio_opts, size)
+    TAPI_JOB_OPT_STRING("--rbdname=", true, tapi_fio_opts, rbdname),
+    TAPI_JOB_OPT_STRING("--pool=", true, tapi_fio_opts, pool),
+    TAPI_JOB_OPT_UINTMAX_T("--size=", true, NULL, tapi_fio_opts, size)
 );
 
 /* See description in tapi_internal.h */
@@ -196,14 +196,14 @@ fio_app_start(tapi_fio_app *app)
                                 .stdout_loc = &app->out_chs[0],
                                 .stderr_loc = &app->out_chs[1],
                                 .filters = TAPI_JOB_SIMPLE_FILTERS(
-                                    {.use_stderr = TRUE,
+                                    {.use_stderr = true,
                                      .log_level = TE_LL_ERROR,
-                                     .readable = TRUE,
+                                     .readable = true,
                                      .filter_name = "fio_stderr",
                                     },
-                                    {.use_stdout = TRUE,
+                                    {.use_stdout = true,
                                      .log_level = TE_LL_RING,
-                                     .readable = FALSE,
+                                     .readable = false,
                                      .filter_name = "fio_stdout",
                                     }
                                  )
@@ -224,7 +224,7 @@ fio_app_start(tapi_fio_app *app)
         return rc;
     }
 
-    app->running = TRUE;
+    app->running = true;
 
     return 0;
 }
@@ -242,7 +242,7 @@ fio_app_stop(tapi_fio_app *app)
     if (rc != 0)
         return rc;
 
-    app->running = FALSE;
+    app->running = false;
 
     return 0;
 }
@@ -261,7 +261,7 @@ fio_app_wait(tapi_fio_app *app, int16_t timeout_sec)
     if (rc != 0)
         return rc;
 
-    app->running = FALSE;
+    app->running = false;
 
     return 0;
 }

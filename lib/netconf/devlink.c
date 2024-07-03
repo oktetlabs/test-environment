@@ -428,7 +428,7 @@ get_param_value_data(netconf_devlink_param *param,
     {
         case NETCONF_NLA_FLAG:
             if (na_data != NULL)
-                value->data.flag = TRUE;
+                value->data.flag = true;
             break;
 
         case NETCONF_NLA_U8:
@@ -460,7 +460,7 @@ get_param_value_data(netconf_devlink_param *param,
     if (rc != 0)
         return rc;
 
-    value->defined = TRUE;
+    value->defined = true;
     return 0;
 }
 
@@ -548,7 +548,7 @@ param_nested_attr_cb(struct nlattr *na, void *data)
             return netconf_get_str_attr(na, &param->name);
 
         case DEVLINK_ATTR_PARAM_GENERIC:
-            param->generic = TRUE;
+            param->generic = true;
             break;
 
         case DEVLINK_ATTR_PARAM_TYPE:
@@ -742,7 +742,7 @@ netconf_devlink_param_set(netconf_handle nh, const char *bus,
 
     size_t value_len;
     const void *value_ptr;
-    te_bool add_value;
+    bool add_value;
 
     GET_CHECK_DEVLINK_FAMILY(nh);
 
@@ -788,7 +788,7 @@ netconf_devlink_param_set(netconf_handle nh, const char *bus,
         return rc;
 
     value_ptr = value;
-    add_value = TRUE;
+    add_value = true;
     switch (nla_type)
     {
         case NETCONF_NLA_U8:

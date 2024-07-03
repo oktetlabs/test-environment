@@ -30,7 +30,7 @@
 static struct {
     char   *config_file;
     char   *backup;
-    te_bool changed;
+    bool changed;
 } ds[UNIX_SERVICE_MAX];
 
 /** Auxiliary buffer */
@@ -47,7 +47,7 @@ static char buf[2048];
  * @return Index of the found file or -1
  */
 int
-find_file(unsigned int n, const char * const *files, te_bool exec)
+find_file(unsigned int n, const char * const *files, bool exec)
 {
     unsigned int    i;
     struct stat     st;
@@ -129,13 +129,13 @@ ds_backup(int index)
  *
  * @param index index returned by the ds_create_backup
  *
- * @return TRUE, if the file was changed
+ * @return @c true, if the file was changed
  */
-te_bool
+bool
 ds_config_changed(int index)
 {
     return (index >= UNIX_SERVICE_MAX || index < 0 ||
-            ds[index].backup == NULL) ? FALSE : ds[index].changed;
+            ds[index].backup == NULL) ? false : ds[index].changed;
 }
 
 /**
@@ -147,7 +147,7 @@ void
 ds_config_touch(int index)
 {
     if (index < UNIX_SERVICE_MAX && index >= 0)
-        ds[index].changed = TRUE;
+        ds[index].changed = true;
 }
 
 /**
@@ -581,7 +581,7 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
     int   index = ds_lookup(XINETD_ETC_DIR, get_ds_name(oid));
     FILE *f, *g;
 
-    te_bool inside = FALSE;
+    bool inside = false;
     char   *server = xinetd_server;
 
     xinetd_server = NULL;
@@ -625,7 +625,7 @@ xinetd_set(unsigned int gid, const char *oid, const char *value)
 
         if (strstr(buf, "{") && !inside)
         {
-            inside = TRUE;
+            inside = true;
             fprintf(g, "\tdisable = %s\n", *value == '0' ? "yes" : "no");
             if (server != NULL)
                 fprintf(g, "\tserver = %s\n", server);
@@ -1156,7 +1156,7 @@ static te_errno
 ds_tftpserver_addr_set(unsigned int gid, const char *oid, const char *value)
 {
     unsigned int addr;
-    te_bool      addr_set = FALSE;
+    bool addr_set = false;
 
     FILE *f;
     FILE *g;
@@ -1197,7 +1197,7 @@ ds_tftpserver_addr_set(unsigned int gid, const char *oid, const char *value)
         {
             char *opt;
 
-            addr_set = TRUE;
+            addr_set = true;
 
             if ((opt = strstr(buf, "-a")) != NULL)
             {
@@ -1302,7 +1302,7 @@ ds_tftpserver_last_access_params_get(char *fname, time_t *time_val)
 {
     struct tm  last_tm;
     struct tm  prev_tm;
-    te_bool    again = FALSE;
+    bool again = false;
     FILE      *f;
     int        last_sess_id = -1; /* TFTP last transaction id */
     int        sess_id;
@@ -1393,7 +1393,7 @@ ds_tftpserver_last_access_params_get(char *fname, time_t *time_val)
 
     if (fname != NULL && *fname == '\0' && !again)
     {
-        again = TRUE;
+        again = true;
         goto again;
     }
 
@@ -1525,7 +1525,7 @@ enum ftp_server_kinds { FTP_VSFTPD, FTP_WUFTPD, FTP_PROFTPD };
 
 static int                     ftp_indices[] = { -1, -1, -1 };
 static int                     ftp_xinetd_index = -1;
-static te_bool                 ftp_standalone   = TRUE;
+static bool ftp_standalone = true;
 static enum  ftp_server_kinds  ftp_server_kind  = FTP_VSFTPD;
 
 #define VSFTPD_CONF  "vsftpd.conf"
@@ -1609,7 +1609,7 @@ ds_ftpserver_update_config(void)
 
         case FTP_PROFTPD:
         {
-            te_bool inside_anonymous = FALSE;
+            bool inside_anonymous = false;
 
             OPEN_BACKUP(ftp_indices[ftp_server_kind], f);
             while (fgets(buf, sizeof(buf), f) != NULL)
@@ -1617,11 +1617,11 @@ ds_ftpserver_update_config(void)
                 if (inside_anonymous)
                 {
                     if (strstr(buf, "</Anonymous>") != NULL)
-                        inside_anonymous = FALSE;
+                        inside_anonymous = false;
                 }
                 else if (strstr(buf, "<Anonymous"))
                 {
-                    inside_anonymous = TRUE;
+                    inside_anonymous = true;
                 }
                 else if (strstr(buf, "ServerType") == NULL &&
                          strstr(buf, "AllowOverwrite") == NULL)
@@ -1700,9 +1700,9 @@ ds_ftpserver_get(unsigned int gid, const char *oid, char *value)
  *
  * @param daemon    daemon/service name
  *
- * @return TRUE, if daemon is running
+ * @return @c true, if daemon is running
  */
-static inline te_bool
+static inline bool
 ftpserver_running()
 {
     char enable[2];
@@ -1717,7 +1717,7 @@ static te_errno
 ds_ftpserver_server_set(unsigned int gid, const char *oid,
                         const char *value)
 {
-    te_bool standalone = (strncmp(value, "xinetd_", 7) != 0);
+    bool standalone = (strncmp(value, "xinetd_", 7) != 0);
     int     newkind;
     char    tmp[2];
 
@@ -1778,7 +1778,7 @@ ds_ftpserver_server_get(unsigned int gid, const char *oid, char *value)
 }
 
 
-static te_bool
+static bool
 ftp_create_backup(enum ftp_server_kinds kind)
 {
     const char *dir = NULL;
@@ -1796,17 +1796,17 @@ ftp_create_backup(enum ftp_server_kinds kind)
         strcpy(tmp, "/etc/");
         strcat(tmp, ftp_config_files[kind]);
         if (!file_exists(tmp))
-            return FALSE;
+            return false;
         dir = "/etc/";
     }
 
     if (ds_create_backup(dir, ftp_config_files[kind],
                          &ftp_indices[kind]) != 0)
-        return FALSE;
+        return false;
 
     ftp_server_kind = kind;
 
-    return TRUE;
+    return true;
 }
 
 RCF_PCH_CFG_NODE_RW(node_ds_ftpserver_server, "server",
@@ -1822,7 +1822,7 @@ te_errno
 ftpserver_grab(const char *name)
 {
     te_errno rc;
-    te_bool  ftp_register;
+    bool ftp_register;
 
     UNUSED(name);
 
@@ -2027,7 +2027,7 @@ static int sendmail_index = -1;
 
 /** Check if smarthost option presents in the sendmail configuration file */
 static int
-sendmail_smarthost_get(te_bool *enable)
+sendmail_smarthost_get(bool *enable)
 {
     FILE *f;
     int   rc;
@@ -2045,18 +2045,18 @@ sendmail_smarthost_get(te_bool *enable)
         if (strcmp_start(SENDMAIL_SMARTHOST_OPT_S, buf) == 0)
         {
             fclose(f);
-            *enable = TRUE;
+            *enable = true;
             return 0;
         }
     }
-    *enable = FALSE;
+    *enable = false;
     fclose(f);
     return 0;
 }
 
 /** Enable/disable smarthost option in the sendmail configuration file */
 static int
-sendmail_smarthost_set(te_bool enable)
+sendmail_smarthost_set(bool enable)
 {
     FILE *f = NULL;
     FILE *g = NULL;
@@ -2160,7 +2160,7 @@ static int postfix_index = -1;
 
 /** Check if ost option presents in the postfix configuration file */
 static int
-postfix_smarthost_get(te_bool *enable)
+postfix_smarthost_get(bool *enable)
 {
     FILE *f;
     int   rc;
@@ -2189,7 +2189,7 @@ postfix_smarthost_get(te_bool *enable)
 
 /** Enable/disable smarthost option in the postfix configuration file */
 static int
-postfix_smarthost_set(te_bool enable)
+postfix_smarthost_set(bool enable)
 {
     FILE *f = NULL;
     FILE *g = NULL;
@@ -2254,7 +2254,7 @@ static int exim_index = -1;
 
 /** Check if ost option presents in the postfix configuration file */
 static int
-exim_smarthost_get(te_bool *enable)
+exim_smarthost_get(bool *enable)
 {
     FILE *f;
     int   rc;
@@ -2282,7 +2282,7 @@ exim_smarthost_get(te_bool *enable)
 
 /** Enable/disable smarthost option in the exim configuration file */
 static int
-exim_smarthost_set(te_bool enable)
+exim_smarthost_set(bool enable)
 {
     FILE *f = NULL;
     FILE *g = NULL;
@@ -2341,7 +2341,7 @@ static int qmail_index = -1;
 
 /** Check if ost option presents in the postfix configuration file */
 static int
-qmail_smarthost_get(te_bool *enable)
+qmail_smarthost_get(bool *enable)
 {
     FILE *f;
     int   rc;
@@ -2369,7 +2369,7 @@ qmail_smarthost_get(te_bool *enable)
 
 /** Enable/disable smarthost option in the qmail configuration file */
 static int
-qmail_smarthost_set(te_bool enable, const char *relay)
+qmail_smarthost_set(bool enable, const char *relay)
 {
     FILE *g = NULL;
     int   rc;
@@ -2417,7 +2417,7 @@ ds_smtp_smarthost_get(unsigned int gid, const char *oid, char *value)
 
     if (strcmp(smtp_current, "sendmail") == 0)
     {
-        te_bool enable = FALSE;
+        bool enable = false;
         int     rc;
 
         if ((rc = sendmail_smarthost_get(&enable)) != 0)
@@ -2429,7 +2429,7 @@ ds_smtp_smarthost_get(unsigned int gid, const char *oid, char *value)
 #if defined __linux__
     else if (strcmp(smtp_current, "postfix") == 0)
     {
-        te_bool enable = FALSE;
+        bool enable = false;
         int     rc;
 
         if ((rc = postfix_smarthost_get(&enable)) != 0)
@@ -2440,7 +2440,7 @@ ds_smtp_smarthost_get(unsigned int gid, const char *oid, char *value)
     }
     else if (strcmp(smtp_current, "exim") == 0)
     {
-        te_bool enable = FALSE;
+        bool enable = false;
         int     rc;
 
         if ((rc = exim_smarthost_get(&enable)) != 0)
@@ -2451,7 +2451,7 @@ ds_smtp_smarthost_get(unsigned int gid, const char *oid, char *value)
     }
     else if (strcmp(smtp_current, "qmail") == 0)
     {
-        te_bool enable = FALSE;
+        bool enable = false;
         int     rc;
 
         if ((rc = qmail_smarthost_get(&enable)) != 0)
@@ -2876,9 +2876,9 @@ ds_vncpasswd_get(unsigned int gid, const char *oid, char *value)
  *
  * @param number  display number
  *
- * @return TRUE, if the server exists
+ * @return @c true, if the server exists
  */
-static te_bool
+static bool
 vncserver_exists(char *number)
 {
     sprintf(buf,

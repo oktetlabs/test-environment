@@ -48,13 +48,13 @@ extern int ipc_init(void);
  * Register IPC server.
  *
  * @param name          Name of the server (must be less than UNIX_PATH_MAX)
- * @param conn          FALSE - connectionless server,
- *                      TRUE - connection-oriented server
+ * @param conn          @c false connectionless server,
+ *                      @c true  connection-oriented server
  * @param p_ipcs        Location for IPC server handle
  *
  * @return Status code.
  */
-extern int ipc_register_server(const char *name, te_bool conn,
+extern int ipc_register_server(const char *name, bool conn,
                                struct ipc_server **p_ipcs);
 
 
@@ -94,7 +94,7 @@ extern int ipc_get_server_fds(const struct ipc_server *ipcs,
  *
  * @return Is server ready or not?
  */
-extern te_bool ipc_is_server_ready(struct ipc_server *ipcs,
+extern bool ipc_is_server_ready(struct ipc_server *ipcs,
                                    const fd_set *set, int max_fd);
 
 /**

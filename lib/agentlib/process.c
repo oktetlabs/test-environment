@@ -51,7 +51,7 @@ typedef struct ta_children_dead {
     pid_t                       pid;        /**< PID of the child */
     int                         status;     /**< status of the child */
     struct timeval              timestamp;  /**< when child finished */
-    te_bool                     valid;      /**< is this entry valid? */
+    bool valid;      /**< is this entry valid? */
 } ta_children_dead;
 
 /** Length of pre-allocated list for dead children records. */
@@ -61,7 +61,7 @@ typedef struct ta_children_dead {
 static ta_children_dead ta_children_dead_heap[TA_CHILDREN_DEAD_MAX];
 
 /** Is the heap initialized? */
-static te_bool ta_children_dead_heap_inited = FALSE;
+static bool ta_children_dead_heap_inited = false;
 
 /** Head of empty entries list */
 SLIST_HEAD(, ta_children_dead) ta_children_dead_pool;
@@ -85,22 +85,22 @@ ta_children_dead_heap_init(void)
         ta_children_dead *dead = &ta_children_dead_heap[i];
         memset(dead, 0, sizeof(ta_children_dead));
         SLIST_INSERT_HEAD(&ta_children_dead_pool, dead, links);
-        dead->valid = FALSE;
+        dead->valid = false;
     }
-    ta_children_dead_heap_inited = TRUE;
+    ta_children_dead_heap_inited = true;
 }
 
 /** Is logger available in signal handler? */
-static inline te_bool
+static inline bool
 is_logger_available(void)
 {
     ta_log_lock_key key;
 
     if (ta_log_trylock(&key) != 0)
-        return FALSE;
+        return false;
 
     (void)ta_log_unlock(&key);
-    return TRUE;
+    return true;
 }
 
 /**
@@ -150,7 +150,7 @@ ta_sigchld_handler(void)
     int     status;
     int     pid;
     int     get = 0;
-    te_bool logger = is_logger_available();
+    bool logger = is_logger_available();
     int     saved_errno = errno;
 
     /*
@@ -232,7 +232,7 @@ ta_sigchld_handler(void)
 
         dead->pid = pid;
         dead->status = status;
-        dead->valid = TRUE;
+        dead->valid = true;
         gettimeofday(&dead->timestamp, NULL);
         SLIST_INSERT_HEAD(&ta_children_dead_list, dead, links);
 
@@ -273,9 +273,9 @@ ta_sigchld_handler(void)
  * @param pid    pid of process to find or -1 to find any pid
  * @param status status of the process to return
  *
- * @return TRUE is a child was found, FALSE overwise.
+ * @return @c true is a child was found, @c false overwise.
  */
-static te_bool
+static bool
 find_dead_child(pid_t pid, int *status)
 {
     ta_children_dead *dead = NULL;
@@ -294,7 +294,7 @@ find_dead_child(pid_t pid, int *status)
             SLIST_INSERT_HEAD(&ta_children_dead_pool, dead, links);
 
             *status = dead->status;
-            dead->valid = FALSE;
+            dead->valid = false;
             break;
         }
 

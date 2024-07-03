@@ -78,7 +78,7 @@ rpc_opendir(rcf_rpc_server *rpcs, const char *path)
     if (path != NULL)
         free(in.path.path_val);
 
-    CHECK_RETVAL_VAR(opendir, out.mem_ptr, FALSE, RPC_NULL);
+    CHECK_RETVAL_VAR(opendir, out.mem_ptr, false, RPC_NULL);
     TAPI_RPC_LOG(rpcs, opendir, "%s", "0x%x",
                  path, (unsigned)out.mem_ptr);
 
@@ -177,7 +177,7 @@ rpc_readdir(rcf_rpc_server *rpcs, rpc_dir_p dirp)
      */
     if (out.dent.dent_val == NULL)
     {
-        TAPI_RPC_OUT(readdir, FALSE);
+        TAPI_RPC_OUT(readdir, false);
         return NULL;
     }
     else

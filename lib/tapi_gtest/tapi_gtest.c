@@ -87,12 +87,12 @@ tapi_gtest_init(tapi_gtest *gtest, tapi_job_factory_t *factory)
         .stderr_loc = &gtest->impl.out[1],
         .filters = TAPI_JOB_SIMPLE_FILTERS(
             {
-                .use_stdout = TRUE,
+                .use_stdout = true,
                 .filter_name = "stdout-gtest",
                 .log_level = TE_LL_RING,
             },
             {
-                .use_stderr = TRUE,
+                .use_stderr = true,
                 .filter_name = "stderr-gtest",
                 .log_level = TE_LL_ERROR,
             }

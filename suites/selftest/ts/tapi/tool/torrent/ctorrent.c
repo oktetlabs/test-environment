@@ -90,7 +90,7 @@ main(int argc, char **argv)
 
     const char *content = "Source file content";
 
-    te_bool  completed;
+    bool completed;
     te_errno rc_create_metainfo;
     te_errno rc_tracker_wait;
 

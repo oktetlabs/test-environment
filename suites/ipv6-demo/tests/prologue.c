@@ -50,7 +50,7 @@ main(int argc, char **argv)
                   "configuration: %r", rc);
     }
 
-    rc = tapi_cfg_net_all_up(FALSE);
+    rc = tapi_cfg_net_all_up(false);
     if (rc != 0)
     {
         TEST_FAIL("Failed to up all interfaces mentioned in networks "
@@ -98,7 +98,7 @@ main(int argc, char **argv)
     }
 
     CFG_WAIT_CHANGES;
-    CHECK_RC(rc = cfg_synchronize("/:", TRUE));
+    CHECK_RC(rc = cfg_synchronize("/:", true));
 
 #if 0
     TEST_START_ENV;

@@ -116,7 +116,7 @@ typedef struct tsa_config {
     uint32_t            flags;          /**< Flags described in tsa_flags
                                              enum */
 
-    te_bool             gw_preconf;     /**< If @c TRUE, gateway is
+    bool gw_preconf;     /**< If @c true, gateway is
                                              preconfigured, this library
                                              should not touch it. */
 } tsa_config;
@@ -130,19 +130,19 @@ typedef struct tsa_state_sock {
                                              accept on @p pco_tst */
 
     /**< Routing */
-    te_bool     route_dst_added;        /**< @c TRUE if route from
+    bool route_dst_added;        /**< @c true if route from
                                              @p pco_iut to @p
                                              pco_tst was added */
-    te_bool     route_src_added;        /**< @c TRUE if route from @p
+    bool route_src_added;        /**< @c true if route from @p
                                              pco_tst to @p pco_iut
                                              was added */
-    te_bool     ipv4_fw_enabled;        /**< @c TRUE if IPv4 forwarding is
+    bool ipv4_fw_enabled;        /**< @c true if IPv4 forwarding is
                                              enabled */
-    te_bool     ipv4_fw;                /**< Was IPv4 forwarding configured
+    bool ipv4_fw;                /**< Was IPv4 forwarding configured
                                              previously? */
-    te_bool     ipv6_fw_enabled;        /**< @c TRUE if IPv6 forwarding is
+    bool ipv6_fw_enabled;        /**< @c true if IPv6 forwarding is
                                              enabled */
-    te_bool     ipv6_fw;                /**< Was IPv6 forwarding configured
+    bool ipv6_fw;                /**< Was IPv6 forwarding configured
                                              previously? */
 
     /**< Sending RST via CSAP */
@@ -212,7 +212,7 @@ typedef struct tsa_state {
     rpc_tcp_state       state_to;       /**< TCP state after change */
     const char         *rem_path;       /**< Part of TCP state sequence
                                              remaining when error occurred */
-    te_bool             timeout_used;   /**< TRUE if the last TCP state
+    bool timeout_used;   /**< @c true if the last TCP state
                                              change was achieved through
                                              timeout */
     int                 elapsed_time;   /**< Time waited for TCP state
@@ -220,20 +220,20 @@ typedef struct tsa_state {
                                              */
 
     /** Functions called with RCF_RPC_CALL */
-    te_bool         iut_wait_connect;   /**< @c TRUE if @b rpc_connect with
+    bool iut_wait_connect;   /**< @c true if @b rpc_connect with
                                              @c RCF_RPC_CALL was called on
                                              @p pco_iut */
-    te_bool         tst_wait_connect;   /**< @c TRUE if @b rpc_connect with
+    bool tst_wait_connect;   /**< @c true if @b rpc_connect with
                                              @c RCF_RPC_CALL was called on
                                              @p pco_tst */
-    te_bool         close_listener;     /**< Close listener socket just
+    bool close_listener;     /**< Close listener socket just
                                              after accepting connection */
 
-    te_bool     iut_alien_arp_added;    /**< @c TRUE if ARP for alien MAC
+    bool iut_alien_arp_added;    /**< @c true if ARP for alien MAC
                                              was added to break connection
                                              from @p pco_tst to
                                              @p pco_iut */
-    te_bool     tst_alien_arp_added;    /**< @c TRUE if ARP for alien MAC
+    bool tst_alien_arp_added;    /**< @c true if ARP for alien MAC
                                              was added to break connection
                                              from @p pco_iut to
                                              @p pco_tst */
@@ -380,7 +380,7 @@ tsa_rem_path(tsa_session *ss)
  * @return
  *      Value of timeout_used field of tsa_state structure
  */
-static inline te_bool
+static inline bool
 tsa_timeout_used(tsa_session *ss)
 {
     return ss->state.timeout_used;
@@ -475,11 +475,11 @@ extern te_errno tsa_gw_set(tsa_session *ss, rcf_rpc_server *pco_gw,
  * this function only before @b tsa_gw_set().
  *
  * @param ss                    Pointer to TSA session structure
- * @param preconfigured         If @c TRUE, gateway is already configured,
+ * @param preconfigured         If @c true, gateway is already configured,
  *                              @b tsa_gw_set() should not try to configure
  *                              routes or forwarding.
  */
-extern void tsa_gw_preconf(tsa_session *ss, te_bool preconfigured);
+extern void tsa_gw_preconf(tsa_session *ss, bool preconfigured);
 
 /**
  * Break network connection from @p pco_tst to @p pco_iut by

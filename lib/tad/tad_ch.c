@@ -71,7 +71,7 @@
     } while (0)
 
 
-static te_bool tad_is_initialized = FALSE;
+static bool tad_is_initialized = false;
 
 
 /* See description in rcf_ch_api.h */
@@ -85,7 +85,7 @@ rcf_ch_tad_init(void)
      * Set initialized flag in any case, if error occur it will be
      * unsed, by shutdown routine.
      */
-    tad_is_initialized = TRUE;
+    tad_is_initialized = true;
 
 #ifdef TAD_DUMMY
 
@@ -199,7 +199,7 @@ rcf_ch_tad_shutdown(void)
         return TE_RC(TE_TAD_CH, TE_EINVAL);
 
     /* The function continues shutdown even in the case of failures */
-    tad_is_initialized = FALSE;
+    tad_is_initialized = false;
 
 #ifndef TAD_DUMMY
 #if defined(WITH_CS)
@@ -599,7 +599,7 @@ int
 rcf_ch_trsend_start(struct rcf_comm_connection *rcfc,
                     char *cbuf, size_t buflen, size_t answer_plen,
                     const uint8_t *ba, size_t cmdlen,
-                    csap_handle_t csap_id, te_bool postponed)
+                    csap_handle_t csap_id, bool postponed)
 {
 #ifdef TAD_DUMMY
     UNUSED(rcfc);

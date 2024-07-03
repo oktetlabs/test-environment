@@ -80,7 +80,7 @@ typedef struct tapi_redis_srv_opt {
      * files.
      */
     te_bool3                rdbchecksum;
-    /** Replication SYNC strategy: disk, if TRUE, socket otherwise. */
+    /** Replication SYNC strategy: disk, if @c TE_BOOL3_TRUE, socket otherwise. */
     te_bool3                repl_diskless_sync;
     /**
      * Replica can load the RDB it reads from the replication link directly

@@ -92,8 +92,8 @@ main(int argc, char **argv)
 
     trex_opt.driver = TE_TREX_PCI_DRIVER;
     trex_opt.astf_template = astf_template;
-    trex_opt.lro_disable = TRUE;
-    trex_opt.no_monitors = TRUE;
+    trex_opt.lro_disable = true;
+    trex_opt.no_monitors = true;
     trex_opt.duration = TAPI_JOB_OPT_DOUBLE_VAL(trex_duration);
     trex_opt.rate_multiplier = TAPI_JOB_OPT_UINT_VAL(trex_multiplier);
 

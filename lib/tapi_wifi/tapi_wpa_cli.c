@@ -23,7 +23,7 @@ typedef struct wpa_cli_common_opt {
 } wpa_cli_common_opt;
 
 static const tapi_job_opt_bind wpa_cli_common_binds[] = TAPI_JOB_OPT_SET(
-    TAPI_JOB_OPT_STRING("-i", FALSE, wpa_cli_common_opt, ifname)
+    TAPI_JOB_OPT_STRING("-i", false, wpa_cli_common_opt, ifname)
 );
 
 /* See description in tapi_wpa_cli.h */
@@ -74,15 +74,15 @@ tapi_wpa_cli(rcf_rpc_server *rpcs, const char *ifname,
                     .stderr_loc = &cherr,
                     .filters = TAPI_JOB_SIMPLE_FILTERS(
                         {
-                            .use_stdout = TRUE,
+                            .use_stdout = true,
                             .log_level = TE_LL_RING,
-                            .readable = FALSE,
+                            .readable = false,
                             .filter_name = "stdout",
                         },
                         {
-                            .use_stderr = TRUE,
+                            .use_stderr = true,
                             .log_level = TE_LL_ERROR,
-                            .readable = FALSE,
+                            .readable = false,
                             .filter_name = "stderr",
                         }
                     )

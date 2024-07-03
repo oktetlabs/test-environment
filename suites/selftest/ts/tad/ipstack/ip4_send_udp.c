@@ -83,7 +83,7 @@ main(int argc, char *argv[])
     void                       *send_buf = NULL;
     void                       *recv_buf = NULL;
 
-    te_bool                     sum_ok;
+    bool sum_ok;
 
     TEST_START;
 
@@ -122,21 +122,21 @@ main(int argc, char *argv[])
                                           &udp_ip4_send_csap));
 
     /* Prepare data-sending template */
-    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(&template, FALSE,
+    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(&template, false,
                                           ndn_udp_header,
                                           "#udp", NULL));
-    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(&template, FALSE,
+    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(&template, false,
                                           ndn_ip4_header,
                                           "#ip4", NULL));
-    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(&template, FALSE,
+    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(&template, false,
                                           ndn_eth_header,
                                           "#eth", NULL));
-    CHECK_RC(tapi_tad_tmpl_ptrn_set_payload_plain(&template, FALSE,
+    CHECK_RC(tapi_tad_tmpl_ptrn_set_payload_plain(&template, false,
                                                   send_buf, pld_len));
 
     if (strcmp(chksum, "correct") == 0)
     {
-        sum_ok = TRUE;
+        sum_ok = true;
     }
     else if (chksum[0] == '+')
     {
@@ -148,7 +148,7 @@ main(int argc, char *argv[])
 
         CHECK_RC(asn_write_int32(template, v,
                                  "pdus.1.#ip4.pld-checksum.#diff"));
-        sum_ok = FALSE;
+        sum_ok = false;
     }
     else
     {

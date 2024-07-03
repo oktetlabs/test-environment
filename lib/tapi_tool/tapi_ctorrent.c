@@ -43,26 +43,26 @@ typedef struct tapi_ctorrent_create_opt {
 } tapi_ctorrent_create_opt;
 
 static const tapi_job_opt_bind ctorrent_create_binds[] = TAPI_JOB_OPT_SET(
-    TAPI_JOB_OPT_STRING("-tu", FALSE, tapi_ctorrent_create_opt, tracker_url),
-    TAPI_JOB_OPT_STRING("-s",  FALSE, tapi_ctorrent_create_opt, metainfo_file),
-    TAPI_JOB_OPT_STRING(NULL,  FALSE, tapi_ctorrent_create_opt, target)
+    TAPI_JOB_OPT_STRING("-tu", false, tapi_ctorrent_create_opt, tracker_url),
+    TAPI_JOB_OPT_STRING("-s",  false, tapi_ctorrent_create_opt, metainfo_file),
+    TAPI_JOB_OPT_STRING(NULL,  false, tapi_ctorrent_create_opt, target)
 );
 
 static const tapi_job_opt_bind ctorrent_binds[] = TAPI_JOB_OPT_SET(
-    TAPI_JOB_OPT_UINT_OMITTABLE("-e", FALSE, NULL,
+    TAPI_JOB_OPT_UINT_OMITTABLE("-e", false, NULL,
                                 tapi_ctorrent_opt, hours_to_seed),
-    TAPI_JOB_OPT_STRING("-i", FALSE, tapi_ctorrent_opt, ip),
-    TAPI_JOB_OPT_UINT_OMITTABLE("-p", FALSE, NULL, tapi_ctorrent_opt, port),
-    TAPI_JOB_OPT_STRING("-s", FALSE, tapi_ctorrent_opt, save_to_file),
-    TAPI_JOB_OPT_UINT_OMITTABLE("-M", FALSE, NULL,
+    TAPI_JOB_OPT_STRING("-i", false, tapi_ctorrent_opt, ip),
+    TAPI_JOB_OPT_UINT_OMITTABLE("-p", false, NULL, tapi_ctorrent_opt, port),
+    TAPI_JOB_OPT_STRING("-s", false, tapi_ctorrent_opt, save_to_file),
+    TAPI_JOB_OPT_UINT_OMITTABLE("-M", false, NULL,
                                 tapi_ctorrent_opt, max_peers),
-    TAPI_JOB_OPT_UINT_OMITTABLE("-m", FALSE, NULL,
+    TAPI_JOB_OPT_UINT_OMITTABLE("-m", false, NULL,
                                 tapi_ctorrent_opt, min_peers),
-    TAPI_JOB_OPT_UINT_OMITTABLE("-D", FALSE, NULL,
+    TAPI_JOB_OPT_UINT_OMITTABLE("-D", false, NULL,
                                 tapi_ctorrent_opt, download_rate),
-    TAPI_JOB_OPT_UINT_OMITTABLE("-U", FALSE, NULL,
+    TAPI_JOB_OPT_UINT_OMITTABLE("-U", false, NULL,
                                 tapi_ctorrent_opt, upload_rate),
-    TAPI_JOB_OPT_STRING(NULL, FALSE, tapi_ctorrent_opt, metainfo_file)
+    TAPI_JOB_OPT_STRING(NULL, false, tapi_ctorrent_opt, metainfo_file)
 );
 
 const tapi_ctorrent_opt tapi_ctorrent_default_opt = {
@@ -125,15 +125,15 @@ create_ctorrent_create_job(tapi_job_factory_t        *factory,
                                 .stderr_loc = &stderr,
                                 .filters    = TAPI_JOB_SIMPLE_FILTERS(
                                     {
-                                        .use_stderr = TRUE,
-                                        .readable   = TRUE,
+                                        .use_stderr = true,
+                                        .readable   = true,
                                         .re         = "file .* already exists",
                                         .extract    = 0,
                                         .filter_var = metainfo_exists
                                     },
                                     {
-                                        .use_stderr  = TRUE,
-                                        .readable    = FALSE,
+                                        .use_stderr  = true,
+                                        .readable    = false,
                                         .log_level   = TE_LL_ERROR,
                                         .filter_name = "ctorrent create stderr"
                                     }
@@ -234,15 +234,15 @@ tapi_ctorrent_create_app(tapi_job_factory_t *factory, tapi_ctorrent_opt *opt,
                            .stderr_loc = &result->out_chs[1],
                            .filters    = TAPI_JOB_SIMPLE_FILTERS(
                                {
-                                   .use_stdout  = TRUE,
-                                   .readable    = TRUE,
+                                   .use_stdout  = true,
+                                   .readable    = true,
                                    .re          = "\\[[0-9]+/[0-9]+/[0-9]+\\]",
                                    .extract     = 0,
                                    .filter_var  = &result->completion_filter
                                },
                                {
-                                   .use_stderr  = TRUE,
-                                   .readable    = FALSE,
+                                   .use_stderr  = true,
+                                   .readable    = false,
                                    .log_level   = TE_LL_ERROR,
                                    .filter_name = "ctorrent stderr"
                                }
@@ -347,13 +347,13 @@ read_completion_status(tapi_ctorrent_app *app, int receive_timeout_ms,
 
 te_errno
 tapi_ctorrent_check_completion(tapi_ctorrent_app *app, int receive_timeout_ms,
-                               te_bool *completed)
+                               bool *completed)
 {
     te_errno      rc;
     unsigned int  completed_pieces;
     unsigned int  total_pieces;
 
-    *completed = FALSE;
+    *completed = false;
     rc = read_completion_status(app, receive_timeout_ms, &completed_pieces,
                                 &total_pieces);
     if (rc != 0)
@@ -367,7 +367,7 @@ tapi_ctorrent_check_completion(tapi_ctorrent_app *app, int receive_timeout_ms,
     }
     else if (completed_pieces == total_pieces)
     {
-        *completed = TRUE;
+        *completed = true;
     }
 
     return 0;

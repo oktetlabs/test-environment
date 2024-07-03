@@ -129,7 +129,7 @@ tapi_netns_create_ns_with_net_channel(const char *ta, const char *ns_name,
     CHRC(te_sockaddr_h2str(addr1, &addr_str1));
     CHRC(te_sockaddr_h2str(addr2, &addr_str2));
 
-    CHRC(tapi_cfg_base_ipv4_fw(ta, TRUE));
+    CHRC(tapi_cfg_base_ipv4_fw(ta, true));
     CHRC(tapi_netns_add(ta, ns_name));
     CHRC(tapi_cfg_base_if_add_veth(ta, veth1, veth2));
     CHRC(tapi_netns_if_set(ta, ns_name, veth2));
@@ -138,11 +138,11 @@ tapi_netns_create_ns_with_net_channel(const char *ta, const char *ns_name,
                                       prefix, veth2));
 
     CHRC(tapi_cfg_base_if_add_net_addr(ta, veth1, addr1,
-                                       prefix, FALSE, NULL));
+                                       prefix, false, NULL));
 
     /* iptables -t nat -A POSTROUTING -o ctl_if -j MASQUERADE");*/
     CHRC(tapi_cfg_iptables_chain_add(ta, veth1, AF_INET, "nat", "NS_MASQUERADE",
-                                     FALSE));
+                                     false));
     CHRC(tapi_cfg_iptables_cmd_fmt(ta, veth1, AF_INET, "nat", "NS_MASQUERADE",
                                        "-A POSTROUTING -o %s -j", ctl_if));
     CHRC(tapi_cfg_iptables_cmd(ta, veth1, AF_INET, "nat",
@@ -150,7 +150,7 @@ tapi_netns_create_ns_with_net_channel(const char *ta, const char *ns_name,
 
     /* iptables -t nat -A PREROUTING -p tcp --dport rcfport -j DNAT
      *          --to-destination addr_str2:rcfport  */
-    CHRC(tapi_cfg_iptables_chain_add(ta, veth1, AF_INET, "nat", "NS_PORT_FW", FALSE));
+    CHRC(tapi_cfg_iptables_chain_add(ta, veth1, AF_INET, "nat", "NS_PORT_FW", false));
     CHRC(tapi_cfg_iptables_cmd_fmt(ta, veth1, AF_INET, "nat", "NS_PORT_FW",
                                    "-A PREROUTING -p tcp --dport %d -j",
                                    rcfport));
@@ -172,7 +172,7 @@ tapi_netns_create_cleanup:
 te_errno
 tapi_netns_add_ta(const char *host, const char *ns_name, const char *ta_name,
                   const char *ta_type, int rcfport, const char *ta_conn,
-                  const char *ld_preload, te_bool ext_rcf_listener)
+                  const char *ld_preload, bool ext_rcf_listener)
 {
     char        confstr[CONFSTR_LEN];
     int         res;
@@ -323,20 +323,20 @@ configure_netns_network_dhclient(const char *ta, const char *ns_name,
  * @param ta            Test agent name
  * @param ctl_if        Control interface name on the test agent
  * @param macvlan_if    MAC VLAN interface name
- * @param add           Add if @c TRUE, else - remove the macvlan interface
+ * @param add           Add if @c true, else - remove the macvlan interface
  *
  * @return Status code
  */
 static te_errno
 add_del_macvlan(const char *ta, const char *ctl_if, const char *macvlan_if,
-                te_bool add)
+                bool add)
 {
     te_errno     rc = 0;
     te_errno     rc2 = 0;
-    te_bool      grabbed = FALSE;
+    bool grabbed = false;
 
     if (cfg_get_instance_string_fmt(NULL, "/agent:%s/rsrc:%s", ta, ctl_if) == 0)
-        grabbed = TRUE;
+        grabbed = true;
 
     if (!grabbed)
     {
@@ -352,7 +352,7 @@ add_del_macvlan(const char *ta, const char *ctl_if, const char *macvlan_if,
         /* Do not keep it in the configuration tree. */
         if (rc == 0 && tapi_host_ns_enabled())
         {
-            rc = tapi_host_ns_if_del(ta, macvlan_if, TRUE);
+            rc = tapi_host_ns_if_del(ta, macvlan_if, true);
             if (rc != 0)
                 ERROR("Failed to remove interface %s/%s from /local/host: %r",
                       ta, macvlan_if, rc);
@@ -389,7 +389,7 @@ tapi_netns_create_ns_with_macvlan(const char *ta, const char *ns_name,
     if (rc != 0)
         return rc;
 
-    rc = add_del_macvlan(ta, ctl_if, macvlan_if, TRUE);
+    rc = add_del_macvlan(ta, ctl_if, macvlan_if, true);
     if (rc != 0)
         return rc;
 
@@ -448,7 +448,7 @@ tapi_netns_destroy_ns_with_macvlan(const char *ta, const char *ns_name,
     if (rc == 0)
         rc = rc2;
 
-    rc2 = add_del_macvlan(ta, ctl_if, macvlan_if, FALSE);
+    rc2 = add_del_macvlan(ta, ctl_if, macvlan_if, false);
     if (rc == 0)
         rc = rc2;
 
@@ -461,23 +461,23 @@ tapi_netns_destroy_ns_with_macvlan(const char *ta, const char *ns_name,
  * @param ta            Test agent name
  * @param ctl_if        Control interface name on the test agent
  * @param ipvlan_if     IP VLAN interface name
- * @param add           Add if @c TRUE, else - remove the ipvlan interface
+ * @param add           Add if @c true, else - remove the ipvlan interface
  *
  * @return Status code
  */
 static te_errno
 add_del_ipvlan(const char *ta, const char *ctl_if, const char *ipvlan_if,
-               te_bool add)
+               bool add)
 {
     cfg_val_type val_type = CVT_STRING;
     te_errno     rc = 0;
     te_errno     rc2 = 0;
-    te_bool      grabbed = FALSE;
+    bool grabbed = false;
 
     if (cfg_get_instance_fmt(&val_type, NULL, "/agent:%s/rsrc:%s",
                              ta, ctl_if) == 0)
     {
-        grabbed = TRUE;
+        grabbed = true;
     }
 
     if (!grabbed)
@@ -494,7 +494,7 @@ add_del_ipvlan(const char *ta, const char *ctl_if, const char *ipvlan_if,
         /* Do not keep it in the configuration tree. */
         if (rc == 0 && tapi_host_ns_enabled())
         {
-            rc = tapi_host_ns_if_del(ta, ipvlan_if, TRUE);
+            rc = tapi_host_ns_if_del(ta, ipvlan_if, true);
             if (rc != 0)
             {
                 ERROR("Failed to remove interface %s/%s from /local/host: %r",
@@ -529,7 +529,7 @@ tapi_netns_create_ns_with_ipvlan(const char *ta, const char *ns_name,
     if (rc != 0)
         return rc;
 
-    rc = add_del_ipvlan(ta, ctl_if, ipvlan_if, TRUE);
+    rc = add_del_ipvlan(ta, ctl_if, ipvlan_if, true);
     if (rc != 0)
         return rc;
 
@@ -555,7 +555,7 @@ tapi_netns_destroy_ns_with_ipvlan(const char *ta, const char *ns_name,
     if (rc == 0)
         rc = rc2;
 
-    rc2 = add_del_ipvlan(ta, ctl_if, ipvlan_if, FALSE);
+    rc2 = add_del_ipvlan(ta, ctl_if, ipvlan_if, false);
     if (rc == 0)
         rc = rc2;
 

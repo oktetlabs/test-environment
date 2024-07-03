@@ -20,7 +20,7 @@
 /* See description in the tapi_cfg_qdisc.h */
 te_errno
 tapi_cfg_qdisc_get_enabled(const char *ta, const char *if_name,
-                           te_bool *enabled)
+                           bool *enabled)
 {
     te_errno rc;
     int int_enabled = 0;
@@ -30,17 +30,17 @@ tapi_cfg_qdisc_get_enabled(const char *ta, const char *if_name,
     if (rc != 0)
         return rc;
 
-    *enabled = (te_bool)int_enabled;
+    *enabled = (bool)int_enabled;
     return 0;
 }
 
 /* See description in the tapi_cfg_qdisc.h */
 te_errno
 tapi_cfg_qdisc_set_enabled(const char *ta, const char *if_name,
-                           te_bool enabled)
+                           bool enabled)
 {
     te_errno rc;
-    te_bool already_enabled = FALSE;
+    bool already_enabled = false;
 
     if ((rc = tapi_cfg_qdisc_get_enabled(ta, if_name, &already_enabled)) != 0)
         return rc;
@@ -48,7 +48,7 @@ tapi_cfg_qdisc_set_enabled(const char *ta, const char *if_name,
     if (enabled == already_enabled)
         return 0;
 
-    return tapi_cfg_set_int_fmt(enabled == TRUE ? 1: 0, NULL,
+    return tapi_cfg_set_int_fmt(enabled == true ? 1: 0, NULL,
                                 QDISC_FMT "/enabled:", ta, if_name);
 }
 

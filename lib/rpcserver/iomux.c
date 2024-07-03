@@ -132,7 +132,7 @@ iomux_create_state(iomux_func iomux, iomux_funcs *funcs,
 
 static inline void
 iomux_select_set_state(iomux_state *state, int fd, int events,
-                       te_bool do_clear)
+                       bool do_clear)
 {
     /* Hack: POLERR is present in both read and write. Do not set both if
      * not really necessary */
@@ -186,7 +186,7 @@ do {                                                              \
         case FUNC_SELECT:
         case FUNC_PSELECT:
             IOMUX_CHECK_LIMIT(state->select.nfds);
-            iomux_select_set_state(state, fd, events, FALSE);
+            iomux_select_set_state(state, fd, events, false);
             state->select.maxfds = MAX(state->select.maxfds, fd);
             state->select.fds[state->select.nfds] = fd;
             state->select.nfds++;
@@ -238,7 +238,7 @@ iomux_mod_fd(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
     {
         case FUNC_SELECT:
         case FUNC_PSELECT:
-            iomux_select_set_state(state, fd, events, TRUE);
+            iomux_select_set_state(state, fd, events, true);
             return 0;
 
         case FUNC_POLL:
@@ -510,7 +510,7 @@ iomux_close(iomux_func iomux, iomux_funcs *funcs, iomux_state *state)
 /* See description in iomux.h */
 int
 iomux_fd_is_writable(int fd_exp, iomux_func iomux, iomux_state *iomux_st,
-                     iomux_return *iomux_ret, int rc, te_bool *writable)
+                     iomux_return *iomux_ret, int rc, bool *writable)
 {
     iomux_return_iterator itr;
     int fd = -1;
@@ -523,7 +523,7 @@ iomux_fd_is_writable(int fd_exp, iomux_func iomux, iomux_state *iomux_st,
     }
     else if (rc == 0)
     {
-        *writable = FALSE;
+        *writable = false;
         return 0;
     }
 
@@ -538,7 +538,7 @@ iomux_fd_is_writable(int fd_exp, iomux_func iomux, iomux_state *iomux_st,
     }
 
     if ((events & POLLOUT) != 0)
-        *writable = TRUE;
+        *writable = true;
 
     itr = iomux_return_iterate(iomux, iomux_st, iomux_ret, itr, &fd,
                                &events);

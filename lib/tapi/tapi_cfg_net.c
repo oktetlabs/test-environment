@@ -416,7 +416,7 @@ te_errno
 tapi_cfg_net_unregister_net(const char *name, cfg_net_t *net)
 {
     free(net->nodes);
-    return cfg_del_instance_fmt(TRUE, "/net:%s", name);
+    return cfg_del_instance_fmt(true, "/net:%s", name);
 }
 
 /* See description in tapi_cfg_net.h */
@@ -1365,7 +1365,7 @@ te_errno
 tapi_cfg_net_node_interface(const char *node_value, char **iface_name)
 {
     char node_value_obj[CFG_OID_MAX];
-    te_bool with_netdev = FALSE;
+    bool with_netdev = false;
     cfg_oid *node_value_oid = NULL;
     char *pci_fn_oid_str = NULL;
     te_errno rc = 0;
@@ -1383,7 +1383,7 @@ tapi_cfg_net_node_interface(const char *node_value, char **iface_name)
     {
         char *pci_fn_node_value;
 
-        with_netdev = TRUE;
+        with_netdev = true;
         pci_fn_node_value =
             make_pci_fn_oid_str_by_pci_fn_netdev_oid(node_value_oid);
         rc = cfg_get_instance_str(NULL, &pci_fn_oid_str, pci_fn_node_value);
@@ -1537,7 +1537,7 @@ tapi_cfg_net_nodes_switch_pci_fn_to_interface(enum net_node_type type)
      * If a net driver was rebound, synchronize configuration tree to discover
      * network interfaces that are associated with that driver.
      */
-    rc = cfg_synchronize("/:", TRUE);
+    rc = cfg_synchronize("/:", true);
     if (rc != 0)
     {
         ERROR("Configurator synchronize failed after interfaces bind: %r", rc);
@@ -1721,7 +1721,7 @@ tapi_cfg_net_reserve_all(void)
 
 /* See description in tapi_cfg_net.h */
 te_errno
-tapi_cfg_net_all_up(te_bool force)
+tapi_cfg_net_all_up(bool force)
 {
     int             rc;
     cfg_nets_t      nets;
@@ -1859,7 +1859,7 @@ tapi_cfg_net_node_delete_all_ip_addresses(cfg_net_t *net, cfg_net_node_t *node,
     int      rc;
     char     ta_type[RCF_MAX_NAME];
     char    *def_route_if;
-    te_bool  ipv6 = FALSE;
+    bool ipv6 = false;
 
     struct sockaddr_storage   dummy_addr;
 
@@ -1869,8 +1869,8 @@ tapi_cfg_net_node_delete_all_ip_addresses(cfg_net_t *net, cfg_net_node_t *node,
     if (net->is_virtual)
         return 0;
 
-    if (cookie != NULL && *(te_bool *)cookie)
-        ipv6 = TRUE;
+    if (cookie != NULL && *(bool *)cookie)
+        ipv6 = true;
 
     memset(&dummy_addr, 0, sizeof(dummy_addr));
     dummy_addr.ss_family = (ipv6 ? AF_INET6 : AF_INET);
@@ -1950,7 +1950,7 @@ tapi_cfg_net_node_delete_all_ip_addresses(cfg_net_t *net, cfg_net_node_t *node,
 te_errno
 tapi_cfg_net_delete_all_ip4_addresses(void)
 {
-    te_bool ipv6 = FALSE;
+    bool ipv6 = false;
 
     return tapi_cfg_net_foreach_node(
                                 tapi_cfg_net_node_delete_all_ip_addresses,
@@ -1961,7 +1961,7 @@ tapi_cfg_net_delete_all_ip4_addresses(void)
 te_errno
 tapi_cfg_net_delete_all_ip6_addresses(void)
 {
-    te_bool ipv6 = TRUE;
+    bool ipv6 = true;
 
     return tapi_cfg_net_foreach_node(
                                 tapi_cfg_net_node_delete_all_ip_addresses,
@@ -2102,7 +2102,7 @@ tapi_cfg_net_assign_ip(unsigned int af, cfg_net_t *net,
                     break;
                 }
 
-                rc = tapi_cfg_base_add_net_addr(str, addr, net_pfx, TRUE,
+                rc = tapi_cfg_base_add_net_addr(str, addr, net_pfx, true,
                                                 &addr_hndl);
                 if (TE_RC_GET_ERROR(rc) == TE_EEXIST)
                 {
@@ -2190,7 +2190,7 @@ tapi_cfg_net_unassign_ip(unsigned int af, cfg_net_t *net,
         }
 
         /* Delete network address from TA */
-        rc = cfg_del_instance_fmt(FALSE, "%s/net_addr:%s",
+        rc = cfg_del_instance_fmt(false, "%s/net_addr:%s",
                                   if_oid, net_addr_str);
         if (rc != 0)
         {
@@ -2210,7 +2210,7 @@ tapi_cfg_net_unassign_ip(unsigned int af, cfg_net_t *net,
         }
 
         /* Delete "/net_pool/entry/pool/entry" instance  */
-        rc = cfg_del_instance(assigned->entries[i], TRUE);
+        rc = cfg_del_instance(assigned->entries[i], true);
         if (rc != 0)
         {
             ERROR("Failed to delete ip address instance from net/node");
@@ -2538,7 +2538,7 @@ tapi_cfg_net_assign_ip_one_end(unsigned int af, cfg_net_t *net,
                 break;
             }
 
-            rc = tapi_cfg_base_add_net_addr(str, addr, net_pfx, TRUE,
+            rc = tapi_cfg_base_add_net_addr(str, addr, net_pfx, true,
                                             &addr_hndl);
             if (TE_RC_GET_ERROR(rc) == TE_EEXIST)
             {
@@ -3051,8 +3051,8 @@ tapi_cfg_net_create_routes(unsigned int af)
 
                 if (strcmp(net1->name, net2->name) != 0)
                 {
-                    routed[net1_ind * nets.n_nets + net2_ind] = TRUE;
-                    routed[net2_ind * nets.n_nets + net1_ind] = TRUE;
+                    routed[net1_ind * nets.n_nets + net2_ind] = true;
+                    routed[net2_ind * nets.n_nets + net1_ind] = true;
                     rc = tapi_cfg_net_create_routes_to(af, net1, net2);
                     if (rc == 0)
                         rc = tapi_cfg_net_create_routes_to(af, net2, net1);
@@ -3158,7 +3158,7 @@ tapi_cfg_net_setup_masquerade(cfg_nets_t *nets, cfg_net_t *net, unsigned int af)
         }
 
         rc = tapi_cfg_iptables_chain_add(ta, intf, af, "nat",
-                                         "POSTROUTING", TRUE);
+                                         "POSTROUTING", true);
         if (rc != 0)
         {
             ERROR("Failed to create POSTROUTING chain for %s on TA %s: %r",
@@ -3281,7 +3281,7 @@ tapi_cfg_net_setup_dnat(cfg_nets_t *nets, cfg_net_t *net, unsigned int af,
     }
 
     rc = tapi_cfg_iptables_chain_add(source_ta, source_intf, af, "nat",
-                                     "PREROUTING", TRUE);
+                                     "PREROUTING", true);
     if (rc != 0)
     {
         ERROR("Failed to create PREROUTING chain for %s on TA %s: %r",
@@ -3447,7 +3447,7 @@ tapi_cfg_net_delete_all(void)
 
     for (i = 0; i < n_nets; ++i)
     {
-        rc = cfg_del_instance(net_handles[i], TRUE);
+        rc = cfg_del_instance(net_handles[i], true);
         if (rc != 0)
         {
             ERROR("Failed to delete net with handle %#08x: %r",
@@ -3519,7 +3519,7 @@ tapi_cfg_net_remove_empty(void)
 
             if (*(tmp + 1) == 0)
             {
-                if ((rc = cfg_del_instance(net_handles[i], TRUE)) != 0)
+                if ((rc = cfg_del_instance(net_handles[i], true)) != 0)
                     ERROR("Failed to delete /net:%s", net_name);
 
                 break;

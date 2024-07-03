@@ -61,7 +61,7 @@ sniffer_enable_sync(tapi_sniffer_id *snif_id)
 
     snprintf(sn_oid, sizeof(sn_oid), TE_CFG_SNIF_FMT, snif_id->ta,
              snif_id->ifname, snif_id->snifname);
-    if ((rc = cfg_synchronize(sn_oid, TRUE)) != 0)
+    if ((rc = cfg_synchronize(sn_oid, true)) != 0)
     {
         ERROR("Failted to sync");
         return rc;
@@ -150,7 +150,7 @@ sniffer_check_name(const char *ta, const char *iface, const char *name,
 /* See description in tapi_sniffer.h */
 tapi_sniffer_id *
 tapi_sniffer_add(const char *ta, const char *iface, const char *name,
-                 const char *filter, te_bool ofill)
+                 const char *filter, bool ofill)
 {
     tapi_sniffer_id      *newsnid = NULL;
     int                   rc;
@@ -204,7 +204,7 @@ tapi_sniffer_add(const char *ta, const char *iface, const char *name,
         }
     }
 
-    if (ofill == TRUE)
+    if (ofill == true)
     {
         rc = cfg_set_instance_fmt(CFG_VAL(INT32, 1), TE_CFG_SNIF_FMT
                                   "/tmp_logs:/overfill_meth:",
@@ -232,7 +232,7 @@ clean_sniffer_add:
 /* See description in tapi_sniffer.h */
 te_errno
 tapi_sniffer_add_mult(const char *ta, const char *iface, const char *name,
-                      const char *filter, te_bool ofill, sniffl_h_t *snif_h)
+                      const char *filter, bool ofill, sniffl_h_t *snif_h)
 {
     tapi_sniffer_id      *newsnid = NULL;
     tapi_sniff_list_s    *newsn_l = NULL;
@@ -287,7 +287,7 @@ tapi_sniffer_del(tapi_sniffer_id *id)
     if (id == NULL)
         return 0;
 
-    rc = cfg_del_instance_fmt(FALSE, TE_CFG_SNIF_FMT, id->ta,
+    rc = cfg_del_instance_fmt(false, TE_CFG_SNIF_FMT, id->ta,
                               id->ifname, id->snifname);
     if (rc != 0)
     {

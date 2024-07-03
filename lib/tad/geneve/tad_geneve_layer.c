@@ -56,38 +56,38 @@ typedef struct tad_geneve_proto_pdu_data {
 static const tad_bps_pkt_frag tad_geneve_bps_header[] =
 {
     { "version",           2,  BPS_FLD_CONST(0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "options-length",    6,
       BPS_FLD_CONST_DEF(NDN_TAG_GENEVE_OPTIONS_LENGTH, 0),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
     { "oam",               1,  BPS_FLD_CONST_DEF(NDN_TAG_GENEVE_OAM, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "critical",          1,  BPS_FLD_CONST_DEF(NDN_TAG_GENEVE_CRITICAL, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "reserved-1",        6,  BPS_FLD_CONST(0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "protocol",          16, BPS_FLD_SIMPLE(NDN_TAG_GENEVE_PROTOCOL),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "vni",               24, BPS_FLD_CONST_DEF(NDN_TAG_GENEVE_VNI, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "reserved-2",        8,  BPS_FLD_CONST(0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 /** Geneve option BPS representation (draft-gross-geneve-00) */
 static const tad_bps_pkt_frag tad_geneve_bps_option[] =
 {
     { "option-class",      16, BPS_FLD_NO_DEF(NDN_TAG_GENEVE_OPTION_CLASS),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "type",              8,  BPS_FLD_NO_DEF(NDN_TAG_GENEVE_OPTION_TYPE),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "flags-reserved",    3,  BPS_FLD_CONST(0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "length",            5,  BPS_FLD_CONST_DEF(NDN_TAG_GENEVE_OPTION_LENGTH, 0),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
     { "data",              0,
       BPS_FLD_CONST_DEF(NDN_TAG_GENEVE_OPTION_DATA, 0),
-      TAD_DU_OCTS, FALSE },
+      TAD_DU_OCTS, false },
 };
 
 /* See description in 'tad_geneve_impl.h' */
@@ -196,7 +196,7 @@ static te_errno
 tad_geneve_mk_data_from_nds_and_confirm(tad_bps_pkt_frag_def  *def,
                                         asn_value             *nds,
                                         tad_bps_pkt_frag_data *data,
-                                        te_bool                confirm)
+                                        bool confirm)
 {
     te_errno rc;
 
@@ -213,7 +213,7 @@ static te_errno
 tad_geneve_process_options(tad_geneve_proto_data_t     *proto_data,
                            asn_value                   *layer_pdu,
                            tad_geneve_proto_pdu_data_t *pdu_data,
-                           te_bool                      confirm)
+                           bool confirm)
 {
     tad_geneve_option_t *options = NULL;
     int                  nb_options = 0;
@@ -317,11 +317,11 @@ tad_geneve_confirm_tmpl_cb(csap_p         csap,
     tmpl_data = TE_ALLOC(sizeof(*tmpl_data));
 
     rc = tad_geneve_mk_data_from_nds_and_confirm(&proto_data->header, layer_pdu,
-                                                 &tmpl_data->header, TRUE);
+                                                 &tmpl_data->header, true);
     if (rc != 0)
         goto fail;
 
-    rc = tad_geneve_process_options(proto_data, layer_pdu, tmpl_data, TRUE);
+    rc = tad_geneve_process_options(proto_data, layer_pdu, tmpl_data, true);
     if (rc != 0)
         goto fail;
 
@@ -402,7 +402,7 @@ tad_geneve_gen_bin_cb(csap_p                csap,
     }
 
     tad_pkts_move(pdus, sdus);
-    rc = tad_pkts_add_new_seg(pdus, TRUE, binary, binary_len,
+    rc = tad_pkts_add_new_seg(pdus, true, binary, binary_len,
                               tad_pkt_seg_data_free);
     if (rc != 0)
         goto fail;
@@ -440,7 +440,7 @@ tad_geneve_confirm_ptrn_cb(csap_p         csap,
     if (rc != 0)
         goto fail;
 
-    rc = tad_geneve_process_options(proto_data, layer_pdu, ptrn_data, FALSE);
+    rc = tad_geneve_process_options(proto_data, layer_pdu, ptrn_data, false);
     if (rc != 0)
         goto fail;
 

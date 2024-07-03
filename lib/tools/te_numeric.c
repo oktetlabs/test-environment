@@ -41,7 +41,7 @@ static const te_scalar_type_props te_scalar_types_props[] = {
 
 static te_errno
 generic_double2int(long double val, long double min, long double max,
-                   te_bool is_unsigned, void *result)
+                   bool is_unsigned, void *result)
 {
     switch (fpclassify(val))
     {
@@ -96,13 +96,13 @@ te_errno
 te_double2int_safe(long double val, intmax_t lim, intmax_t *result)
 {
     return generic_double2int(val, (long double)(-lim - 1), (long double)lim,
-                              FALSE, result);
+                              false, result);
 }
 
 te_errno
 te_double2uint_safe(long double val, uintmax_t max, uintmax_t *result)
 {
-    return generic_double2int(val, 0.0L, (long double)max, FALSE, result);
+    return generic_double2int(val, 0.0L, (long double)max, false, result);
 }
 
 uintmax_t
@@ -123,14 +123,14 @@ te_scalar_type_sizeof(te_scalar_type type)
     return te_scalar_types_props[type].size;
 }
 
-te_bool
+bool
 te_scalar_type_is_signed(te_scalar_type type)
 {
     return te_scalar_type_min(type) != 0;
 }
 
 te_errno
-te_scalar_type_fit_size(te_bool is_signed, size_t size, te_scalar_type *type)
+te_scalar_type_fit_size(bool is_signed, size_t size, te_scalar_type *type)
 {
     size_t i;
 

@@ -154,7 +154,7 @@ log_msg_filter_load_yaml(log_msg_filter *filter, yaml_document_t *doc,
         else if (user == NULL)
         {
             rc = log_msg_filter_add_entity(filter, include != NULL,
-                                           entity, FALSE,
+                                           entity, false,
                                            level);
             if (rc != 0)
                 return rc;
@@ -162,8 +162,8 @@ log_msg_filter_load_yaml(log_msg_filter *filter, yaml_document_t *doc,
         else
         {
             rc = log_msg_filter_add_user(filter, include != NULL,
-                                         entity, FALSE,
-                                         user, FALSE,
+                                         entity, false,
+                                         user, false,
                                          level);
             if (rc != 0)
                 return rc;

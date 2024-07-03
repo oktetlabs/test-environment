@@ -109,7 +109,7 @@ main(int argc, char *argv[])
               "@b commit_obj state it should be available. Once state is "
               "rolled back to backup 2, this instance will disappear "
               "again, making the following history of commands unusable.");
-    CHECK_RC(cfg_synchronize_fmt(TRUE, "/agent:%s/selftest:",
+    CHECK_RC(cfg_synchronize_fmt(true, "/agent:%s/selftest:",
                                  pco_iut->ta));
     CHECK_RC(cfg_set_instance_fmt(CFG_VAL(UINT32, 1),
                                   "/agent:%s/selftest:/commit_obj_dep:",
@@ -121,7 +121,7 @@ main(int argc, char *argv[])
     if (rc != 0)
         TEST_VERDICT("Failed to restore the second backup.");
 
-    CHECK_RC(cfg_synchronize_fmt(TRUE, "/agent:%s/selftest:",
+    CHECK_RC(cfg_synchronize_fmt(true, "/agent:%s/selftest:",
                                  pco_iut->ta));
 
     TEST_STEP("Restore backup 1 (assuming that history of commands will be "

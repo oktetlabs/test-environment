@@ -106,7 +106,7 @@ extern te_errno tapi_netns_create_ns_with_net_channel(const char *ta,
  * @param rcfport           Port number to communicate with RCF
  * @param ta_conn           Connection hostname or address or @c NULL
  * @param ld_preload        The @c LD_PRELOAD variable or @c NULL
- * @param ext_rcf_listener  If @c TRUE, create listener socket for
+ * @param ext_rcf_listener  If @c true, create listener socket for
  *                          accepting RCF connection before exec(ta).
  *                          Such socket will be able to accept
  *                          connections via interfaces from default
@@ -123,7 +123,7 @@ extern te_errno tapi_netns_add_ta(const char *host,
                                   int rcfport,
                                   const char *ta_conn,
                                   const char *ld_preload,
-                                  te_bool ext_rcf_listener);
+                                  bool ext_rcf_listener);
 
 /**
  * Create network namespace and configure control network channel using

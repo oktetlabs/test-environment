@@ -84,14 +84,14 @@ typedef struct tapi_bpf_stim_hdl {
  * @param[in]  pco      RPC server.
  * @param[in]  ifname   Interface to link the program to.
  * @param[in]  type     Type of the stimulus.
- * @param[in]  egress   Link stimulus BPF program to tc egress if @c TRUE,
+ * @param[in]  egress   Link stimulus BPF program to tc egress if @c true,
  *                      otherwise link to tc ingress.
  * @param[out] handle   BPF stimulus handle.
  */
 extern void tapi_bpf_stim_init(rcf_rpc_server *pco,
                                const char *ifname,
                                unsigned int type,
-                               te_bool egress,
+                               bool egress,
                                tapi_bpf_stim_hdl **handle);
 
 /**

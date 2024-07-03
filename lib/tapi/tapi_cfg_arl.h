@@ -75,14 +75,14 @@ tapi_mac_next(uint8_t *mac)
  *
  * @param mac       - MAC address
  *
- * @retval TRUE     - broadcast
- * @retval FALSE    - not broadcast
+ * @retval @c true  broadcast
+ * @retval @c false not broadcast
  */
-static inline te_bool
+static inline bool
 tapi_mac_is_broadcast(const uint8_t *mac)
 {
     return ((mac[0] & mac[1] & mac[2] &
-             mac[3] & mac[4] & mac[5]) == 0xFF) ? TRUE : FALSE;
+             mac[3] & mac[4] & mac[5]) == 0xFF) ? true : false;
 }
 
 
@@ -91,13 +91,13 @@ tapi_mac_is_broadcast(const uint8_t *mac)
  *
  * @param mac       - MAC address
  *
- * @retval TRUE     - multicast
- * @retval FALSE    - not multicast
+ * @retval @c true  multicast
+ * @retval @c false not multicast
  */
-static inline te_bool
+static inline bool
 tapi_mac_is_multicast(const uint8_t *mac)
 {
-    return (mac[0] & 1) ? TRUE : FALSE;
+    return (mac[0] & 1) ? true : false;
 }
 
 
@@ -111,7 +111,7 @@ tapi_mac_is_multicast(const uint8_t *mac)
  *
  * @return Status code.
  */
-extern int tapi_cfg_arl_get_table(const char *ta, te_bool sync,
+extern int tapi_cfg_arl_get_table(const char *ta, bool sync,
                                   arl_table_t *p_table);
 
 /**

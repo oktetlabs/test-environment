@@ -27,7 +27,7 @@ const tapi_ethtool_opt tapi_ethtool_default_opt = {
 const tapi_ethtool_report tapi_ethtool_default_report = {
     .cmd = TAPI_ETHTOOL_CMD_NONE,
 
-    .err_out = FALSE,
+    .err_out = false,
     .err_data = TE_STRING_INIT,
     .err_code = TE_EOK,
 };
@@ -84,9 +84,9 @@ static te_errno fill_cmd_arg(const void *value, const void *priv, te_vec *args);
  */
 
 #define BASIC_BINDS \
-    { &fill_cmd_arg, NULL, FALSE, NULL, \
+    { &fill_cmd_arg, NULL, false, NULL, \
       offsetof(tapi_ethtool_opt, cmd) }, \
-    TAPI_JOB_OPT_STRING(NULL, FALSE, tapi_ethtool_opt, if_name)
+    TAPI_JOB_OPT_STRING(NULL, false, tapi_ethtool_opt, if_name)
 
 static const tapi_job_opt_bind basic_binds[] = TAPI_JOB_OPT_SET(
     BASIC_BINDS
@@ -180,7 +180,7 @@ add_value_filter(tapi_ethtool_app *app,
         return 0;
 
     rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(app->out_chs[0]),
-                                filter_name, TRUE, 0, filter);
+                                filter_name, true, 0, filter);
     if (rc != 0)
         return rc;
 
@@ -225,7 +225,7 @@ attach_line_filter(tapi_ethtool_app *app)
     te_errno rc;
 
     rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(app->out_chs[0]),
-                                "Line", TRUE, 0,
+                                "Line", true, 0,
                                 &app->out_filters.line_filter);
     if (rc != 0)
         return rc;
@@ -355,14 +355,14 @@ create_app(tapi_job_factory_t *factory,
     desc.stderr_loc = &result->out_chs[1];
     desc.filters = TAPI_JOB_SIMPLE_FILTERS(
         {
-            .use_stdout  = TRUE,
-            .readable    = TRUE,
+            .use_stdout  = true,
+            .readable    = true,
             .log_level   = TE_LL_RING,
             .filter_name = "out",
         },
         {
-            .use_stderr  = TRUE,
-            .readable    = TRUE,
+            .use_stderr  = true,
+            .readable    = true,
             .log_level   = TE_LL_ERROR,
             .filter_name = "err",
             .filter_var = &result->err_filter,
@@ -422,7 +422,7 @@ get_if_props(tapi_ethtool_app *app,
         goto out;
 
     if (strcasecmp(val.ptr, "on") == 0)
-        props->autoneg = TRUE;
+        props->autoneg = true;
 
     te_string_free(&val);
 
@@ -432,7 +432,7 @@ get_if_props(tapi_ethtool_app *app,
         goto out;
 
     if (strcasecmp(val.ptr, "yes") == 0)
-        props->link = TRUE;
+        props->link = true;
 
 out:
 
@@ -499,13 +499,13 @@ out:
  * Get a single value from a filter which can be either on or off.
  *
  * @param filter      Filter to read from
- * @param value       Will be set to @c TRUE in case of 'on' and
- *                    to @c FALSE in case of 'off'
+ * @param value       Will be set to @c true in case of 'on' and
+ *                    to @c false in case of 'off'
  *
  * @return Status code.
  */
 static te_errno
-get_on_off_value(tapi_job_channel_t *filter, te_bool *value)
+get_on_off_value(tapi_job_channel_t *filter, bool *value)
 {
     te_errno rc = 0;
     te_string str_val = TE_STRING_INIT;
@@ -516,11 +516,11 @@ get_on_off_value(tapi_job_channel_t *filter, te_bool *value)
 
     if (strcasecmp(str_val.ptr, "on") == 0)
     {
-        *value = TRUE;
+        *value = true;
     }
     else if (strcasecmp(str_val.ptr, "off") == 0)
     {
-        *value = FALSE;
+        *value = false;
     }
     else
     {
@@ -652,7 +652,7 @@ get_error(tapi_ethtool_app *app,
         if (buffers[i].eos)
             break;
 
-        report->err_out = TRUE;
+        report->err_out = true;
 
         rc = te_string_append(&report->err_data, "%s",
                               te_string_value(&buffers[i].data));
@@ -676,14 +676,14 @@ cleanup:
  *
  * @param app           Pointer to application structure
  * @param report        Where to save parsed data
- * @param parse_stdout  If @c TRUE, parse stdout
+ * @param parse_stdout  If @c true, parse stdout
  *
  * @return Status code.
  */
 static te_errno
 get_report(tapi_ethtool_app *app,
            tapi_ethtool_report *report,
-           te_bool parse_stdout)
+           bool parse_stdout)
 {
     te_errno rc;
 
@@ -748,13 +748,13 @@ tapi_ethtool(tapi_job_factory_t *factory,
     {
         rc = TE_RC(TE_TAPI, TE_ESHCMD);
         if (report != NULL)
-            get_report(app, report, FALSE);
+            get_report(app, report, false);
 
         goto out;
     }
 
     if (report != NULL)
-        rc = get_report(app, report, TRUE);
+        rc = get_report(app, report, true);
 
 out:
 

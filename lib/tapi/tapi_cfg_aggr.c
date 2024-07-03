@@ -136,14 +136,14 @@ tapi_cfg_aggr_destroy_bond(const char *ta, const char *name)
             if (rc != 0)
                 ERROR("Failed to bring bond interface down: %r", rc);
 
-            rc2 = cfg_del_instance(rsrc_handle, FALSE);
+            rc2 = cfg_del_instance(rsrc_handle, false);
             if (rc == 0)
                 rc = rc2;
         }
 
         if (tapi_host_ns_enabled())
         {
-            rc2 = tapi_host_ns_if_del(ta, bond_ifname, TRUE);
+            rc2 = tapi_host_ns_if_del(ta, bond_ifname, true);
             if (rc == 0)
                 rc = rc2;
         }
@@ -151,7 +151,7 @@ tapi_cfg_aggr_destroy_bond(const char *ta, const char *name)
         free(bond_ifname);
     }
 
-    rc2 = cfg_del_instance_fmt(FALSE, "/agent:%s/aggregation:%s", ta, name);
+    rc2 = cfg_del_instance_fmt(false, "/agent:%s/aggregation:%s", ta, name);
     if (rc == 0)
         rc = rc2;
 
@@ -247,9 +247,9 @@ tapi_cfg_aggr_bond_free_slave(const char *ta, const char *name,
         }
     }
 
-    rc2 = cfg_del_instance_fmt(FALSE,
-                              "/agent:%s/aggregation:%s/member:%s",
-                              ta, name, slave_if);
+    rc2 = cfg_del_instance_fmt(false,
+                               "/agent:%s/aggregation:%s/member:%s",
+                               ta, name, slave_if);
     if (rc2 != 0)
         ERROR("Failed to release slave interface");
     if (rc == 0)

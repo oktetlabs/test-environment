@@ -48,8 +48,8 @@ parse_byte_set(const char **spec, te_charset *set)
     }
     else
     {
-        te_bool except = FALSE;
-        te_bool empty_range = TRUE;
+        bool except = false;
+        bool empty_range = true;
 
         for (iter++; *iter != ']'; iter++)
         {
@@ -62,7 +62,7 @@ parse_byte_set(const char **spec, te_charset *set)
                     if (empty_range)
                     {
                         te_charset_add_range(set, 0, UINT8_MAX);
-                        empty_range = FALSE;
+                        empty_range = false;
                     }
                     except = !except;
                     continue;
@@ -91,7 +91,7 @@ parse_byte_set(const char **spec, te_charset *set)
                 te_charset_remove_range(set, minch, maxch);
             else
                 te_charset_add_range(set, minch, maxch);
-            empty_range = FALSE;
+            empty_range = false;
         }
 
         if (empty_range)
@@ -326,25 +326,25 @@ te_calloc_fill(size_t num, size_t size, int byte)
 }
 
 
-te_bool
+bool
 te_compare_bufs(const void *exp_buf, size_t exp_len,
                 unsigned int n_copies,
                 const void *actual_buf, size_t actual_len,
                 unsigned int log_level)
 {
-    te_bool result = TRUE;
+    bool result = true;
     size_t offset = 0;
 
     if (n_copies * exp_len != actual_len)
     {
         /* If we don't log anything, there's no need to look for more diffs. */
         if (log_level == 0)
-            return FALSE;
+            return false;
 
         LOG_MSG(log_level, "Buffer lengths are not equal: "
                 "%zu * %u != %zu", exp_len, n_copies, actual_len);
 
-        result = FALSE;
+        result = false;
     }
 
     while (n_copies != 0)
@@ -355,9 +355,9 @@ te_compare_bufs(const void *exp_buf, size_t exp_len,
             chunk_len < exp_len)
         {
             if (log_level == 0)
-                return FALSE;
+                return false;
 
-            result = FALSE;
+            result = false;
             LOG_HEX_DIFF_DUMP_AT(log_level, exp_buf, exp_len,
                                  actual_buf, chunk_len, offset);
         }

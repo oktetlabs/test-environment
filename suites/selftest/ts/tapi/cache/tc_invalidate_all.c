@@ -99,18 +99,18 @@ static const struct {
 };
 
 /* It depends on cb_common() implementation */
-static te_bool
+static bool
 test_invalidation(const char *area, const char **subs, int num_subs,
                   const char **methods, size_t num_methods)
 {
-    te_bool success = TRUE;
+    bool success = true;
     te_errno rc;
     int i;
 
     rc = cfg_find_fmt(NULL, "%s/%s", TAPI_CACHE_ROOT_INST, area);
     if (rc != 0)
     {
-        success = FALSE;
+        success = false;
         ERROR_VERDICT("Unexpectedly removed registered area '%s': %r",
                       area, rc);
     }
@@ -123,7 +123,7 @@ test_invalidation(const char *area, const char **subs, int num_subs,
                               TAPI_CACHE_ROOT_INST, area, subs[i]);
             if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
             {
-                success = FALSE;
+                success = false;
                 ERROR_VERDICT("Failed to invalidate area '%s/bar:%s': %r",
                               area, subs[i], rc);
             }
@@ -141,7 +141,7 @@ test_invalidation(const char *area, const char **subs, int num_subs,
                                       area, leafs[k], methods[j]);
                     if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
                     {
-                        success = FALSE;
+                        success = false;
                         ERROR_VERDICT("Failed to invalidate leaf '%s/%s:%s': "
                                       "%r", area, leafs[k], methods[j], rc);
                     }
@@ -163,11 +163,11 @@ main(int argc, char **argv)
     size_t   num_subinstances;
     char   **methods;
     size_t   num_methods;
-    te_bool  inv_method_by_method;
+    bool inv_method_by_method;
     size_t   i;
     size_t   j;
     opaque_t op;
-    te_bool  test_ok = TRUE;
+    bool test_ok = true;
 
     TEST_START;
     TEST_GET_STRING_LIST_PARAM(areas, num_areas);

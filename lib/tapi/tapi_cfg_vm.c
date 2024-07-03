@@ -96,7 +96,7 @@ exit:
 /* See descriptions in tapi_cfg_vm.h */
 te_errno
 tapi_cfg_vm_add(const char *ta, const char *vm_name,
-                const char *tmpl, te_bool start)
+                const char *tmpl, bool start)
 {
     te_errno rc;
 
@@ -128,7 +128,7 @@ tapi_cfg_vm_add(const char *ta, const char *vm_name,
 
 fail_vm_start:
 fail_vm_tmpl:
-    (void)cfg_del_instance_fmt(FALSE, TE_CFG_TA_VM, ta, vm_name);
+    (void)cfg_del_instance_fmt(false, TE_CFG_TA_VM, ta, vm_name);
 
 fail_vm_add:
     return rc;
@@ -140,7 +140,7 @@ tapi_cfg_vm_del(const char *ta, const char *vm_name)
 {
     te_errno rc;
 
-    rc = cfg_del_instance_fmt(FALSE, TE_CFG_TA_VM, ta, vm_name);
+    rc = cfg_del_instance_fmt(false, TE_CFG_TA_VM, ta, vm_name);
     if (rc != 0)
         ERROR("Cannot delete VM %s from TA %s: %r", vm_name, ta, rc);
 
@@ -179,7 +179,7 @@ tapi_cfg_vm_stop(const char *ta, const char *vm_name)
 te_errno
 tapi_cfg_vm_add_drive(const char *ta, const char *vm_name,
                       const char *drive_name, const char *file,
-                      te_bool snapshot)
+                      bool snapshot)
 {
     te_errno rc = 0;
 
@@ -215,7 +215,7 @@ tapi_cfg_vm_add_drive(const char *ta, const char *vm_name,
     return 0;
 
 fail_vm_add_drive:
-    (void)cfg_del_instance_fmt(TRUE, TE_CFG_TA_VM "/drive:%s",
+    (void)cfg_del_instance_fmt(true, TE_CFG_TA_VM "/drive:%s",
                                ta, vm_name, drive_name);
 
     return rc;

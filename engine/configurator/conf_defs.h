@@ -61,7 +61,7 @@
 #include "ipc_server.h"
 
 /** Check if the instance is volatile */
-static inline te_bool
+static inline bool
 cfg_instance_volatile(cfg_instance *inst)
 {
     return inst->obj->vol;

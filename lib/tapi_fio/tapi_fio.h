@@ -228,8 +228,8 @@ typedef struct tapi_fio_opts {
     tapi_fio_rwtype rwtype;      /**< Read or write type */
     tapi_fio_ioengine ioengine;  /**< I/O Engine type */
     te_string output_path;       /**< File name where store FIO result */
-    te_bool direct;              /**< Use O_DIRECT I/O */
-    te_bool exit_on_error;       /**< Terminate all jobs when one exits in
+    bool direct;              /**< Use O_DIRECT I/O */
+    bool exit_on_error;       /**< Terminate all jobs when one exits in
                                     * error */
     const char *rand_gen;        /**< Random generator type */
     const char *user;            /**< Raw string passed to fio */
@@ -253,8 +253,8 @@ typedef struct tapi_fio_opts {
     .rwtype = TAPI_FIO_RWTYPE_SEQ,                      \
     .ioengine = TAPI_FIO_IOENGINE_SYNC,                 \
     .output_path = TE_STRING_INIT,                      \
-    .direct = TRUE,                                     \
-    .exit_on_error = TRUE,                              \
+    .direct = true,                                     \
+    .exit_on_error = true,                              \
     .rand_gen = NULL,                                   \
     .user = NULL,                                       \
     .prefix = NULL,                                     \
@@ -267,7 +267,7 @@ typedef struct tapi_fio_opts {
 typedef struct tapi_fio_app {
     tapi_job_factory_t *factory; /**< Factory to create the job */
     te_string path; /** Path to fio tool */
-    te_bool running; /**< Is the app running */
+    bool running; /**< Is the app running */
     tapi_job_t *job; /**< TAPI job handle */
     tapi_job_channel_t *out_chs[2]; /**< Output channel handles */
     tapi_fio_opts opts; /**< Tool's options */

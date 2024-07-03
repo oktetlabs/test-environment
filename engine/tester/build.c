@@ -32,7 +32,7 @@
 
 /* See description in tester_build.h */
 te_errno
-tester_build_suite(const test_suite_info *suite, te_bool verbose)
+tester_build_suite(const test_suite_info *suite, bool verbose)
 {
     te_errno rc;
 
@@ -60,7 +60,7 @@ tester_build_suite(const test_suite_info *suite, te_bool verbose)
 
 /* See description in tester_build.h */
 te_errno
-tester_build_suites(const test_suites_info *suites, te_bool verbose)
+tester_build_suites(const test_suites_info *suites, bool verbose)
 {
     te_errno                rc;
     const test_suite_info  *suite;

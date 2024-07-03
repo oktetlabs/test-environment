@@ -223,7 +223,7 @@ rcf_op_to_string(rcf_op_t op)
 }
 
 /** Type of IPC used by RCF on Test Engine */
-#define RCF_IPC     (TRUE)  /* Connection-oriented IPC */
+#define RCF_IPC     (true)  /* Connection-oriented IPC */
 
 #ifdef __cplusplus
 }

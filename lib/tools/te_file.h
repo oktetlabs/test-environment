@@ -266,7 +266,7 @@ extern te_errno te_unlink_fmt(const char *fmt, ...)
 /**
  * Read the contents of the file into a dynamic string @p dest.
  *
- * If @p binary is @c FALSE, the function ensures that there is no
+ * If @p binary is @c false, the function ensures that there is no
  * embedded zeroes in the file content and strips off trailing newlines
  * if there are any.
  *
@@ -289,9 +289,9 @@ extern te_errno te_unlink_fmt(const char *fmt, ...)
  * @return status code
  * @retval TE_EFBIG     The file size is larger than @p maxsize.
  * @retval TE_EILSEQ    The file contains embedded zeroes and
- *                      @p binary is @c FALSE.
+ *                      @p binary is @c false.
  */
-extern te_errno te_file_read_string(te_string *dest, te_bool binary,
+extern te_errno te_file_read_string(te_string *dest, bool binary,
                                     size_t maxsize, const char *path_fmt, ...)
                                     TE_LIKE_PRINTF(4, 5);
 
@@ -393,14 +393,14 @@ extern te_errno te_file_scandir(const char *dirname,
  *
  * @param filename  filename
  * @param pattern   glob pattern with a single @c *
- * @param basename  if @c TRUE, only the basename of @p filename is
+ * @param basename  if @c true, only the basename of @p filename is
  *                  used for matching.
  *
  * @return the varying part of the filename (must be free()'d) or
  *         @c NULL if @p filename does not match a @p pattern.
  */
 extern char *te_file_extract_glob(const char *filename, const char *pattern,
-                                  te_bool basename);
+                                  bool basename);
 
 #ifdef __cplusplus
 } /* extern "C" */

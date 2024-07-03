@@ -47,9 +47,9 @@
 #include "ndn.h"
 #include "ndn_base.h"
 
-static te_bool sigusr2_caught = FALSE;
+static bool sigusr2_caught = false;
 
-te_bool
+bool
 te_sigusr2_caught(void)
 {
     return sigusr2_caught;
@@ -73,7 +73,7 @@ te_test_sig_handler(int signum)
         if (getenv("TE_TEST_SIGUSR2_STOP") != NULL)
             exit(TE_EXIT_SIGUSR2);
         else
-            sigusr2_caught = TRUE;
+            sigusr2_caught = true;
     }
 }
 
@@ -633,7 +633,7 @@ tapi_asn_params_get(int argc, char **argv, const char *conf_prefix,
                                     param->name,
                                     asn_path,
                                     asn_path_len,
-                                    TRUE);
+                                    true);
         if (rc != 0)
         {
             ERROR("Failed to convert extended path to normal, path='%s', "
@@ -1256,14 +1256,14 @@ test_get_value_bin_unit_param(int argc, char **argv, const char *name)
     return intval;
 }
 
-static te_bool
+static bool
 check_expected_status(const tapi_test_expected_result *expected,
                       te_errno rc)
 {
     if (TE_RC_GET_ERROR(rc) != expected->error_code)
     {
         ERROR("Expected status %r, but got %r", expected->error_code, rc);
-        return FALSE;
+        return false;
     }
 
     if (expected->error_module != TE_MIN_MODULE &&
@@ -1272,25 +1272,25 @@ check_expected_status(const tapi_test_expected_result *expected,
         ERROR("Unexpected module of the status: %s instead of %s",
               te_rc_mod2str(rc),
               te_rc_mod2str(TE_RC(expected->error_module, 0)));
-        return FALSE;
+        return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 /* See description in tapi_test.h */
-te_bool
+bool
 tapi_test_check_expected_result(const tapi_test_expected_result *expected,
                                 te_errno rc, const char *output)
 {
-    te_bool is_status_ok = check_expected_status(expected, rc);
+    bool is_status_ok = check_expected_status(expected, rc);
 
     if (expected->output == NULL)
     {
         if (output != NULL)
         {
             ERROR("The output is not NULL: %s", output);
-            return FALSE;
+            return false;
         }
     }
     else
@@ -1299,14 +1299,14 @@ tapi_test_check_expected_result(const tapi_test_expected_result *expected,
         {
             ERROR("The output should be '%s', but it is NULL",
                   expected->output);
-            return FALSE;
+            return false;
         }
 
         if (strcmp(output, expected->output) != 0)
         {
             ERROR("The output is expected to be '%s', but it is '%s'",
                   expected->output, output);
-            return FALSE;
+            return false;
         }
     }
 
@@ -1314,11 +1314,11 @@ tapi_test_check_expected_result(const tapi_test_expected_result *expected,
 }
 
 /* See description in tapi_test.h */
-te_bool
+bool
 tapi_test_check_expected_int_result(const tapi_test_expected_result *expected,
                                     te_errno rc, intmax_t ival)
 {
-    te_bool is_status_ok = check_expected_status(expected, rc);
+    bool is_status_ok = check_expected_status(expected, rc);
 
     if (expected->output != NULL)
     {
@@ -1330,7 +1330,7 @@ tapi_test_check_expected_int_result(const tapi_test_expected_result *expected,
         {
             ERROR("The result is expected to be %jd, but it is %jd",
                   expected_ival, ival);
-            return FALSE;
+            return false;
         }
     }
 
@@ -1399,7 +1399,7 @@ test_get_expected_result_param(int argc, char **argv, const char *name)
 #undef OK_PREFIX
 }
 
-static te_bool
+static bool
 is_opt_param_none(int argc, char **argv, const char *name)
 {
     const char *value = test_get_param(argc, argv, name);

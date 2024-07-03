@@ -388,7 +388,7 @@ typedef int (*t_wmi_uninit_wbem_objs)(void);
 typedef te_errno (*t_wmi_get_vlan_list)(char * , DWORD **, int *);
 typedef char * (*t_wmi_get_frname_by_vlanid)(DWORD vlanid);
 typedef DWORD (*t_wmi_get_vlanid_by_frname)(const char *ifname);
-typedef te_errno (*t_wmi_add_vlan)(DWORD vlan_id, te_bool priority);
+typedef te_errno (*t_wmi_add_vlan)(DWORD vlan_id, bool priority);
 typedef te_errno (*t_wmi_del_vlan)(DWORD vlan_id);
 typedef int(*t_wmi_mtu_set)(const char* frname, int value);
 
@@ -406,26 +406,26 @@ GEN_IMP_FUNC_PTR(wmi_del_vlan);
 GEN_IMP_FUNC_PTR(wmi_mtu_set);
 #undef GEN_IMP_FUNC_PTR
 
-static te_bool wmi_imported = FALSE;
+static bool wmi_imported = false;
 
 /** Function used to initialize function poiners with respective
   * function addresses from talib.
-  * If import was successfull it marks wmi_imported as TRUE.
+  * If import was successfull it marks wmi_imported as @c true.
   *
   * After successful import , pwmi_* funcs can be used as usual.
   */
-static te_bool wmi_init_func_imports(void)
+static bool wmi_init_func_imports(void)
 {
-    wmi_imported = TRUE;
+    wmi_imported = true;
 #define IMPORT_FUNC(_fname)                                   \
     do {                                                      \
         if (!wmi_imported)                                    \
             break;                                            \
-        if ((p##_fname = rcf_ch_symbol_addr(#_fname, TRUE)) == 0)\
+        if ((p##_fname = rcf_ch_symbol_addr(#_fname, true)) == 0)\
         {                                                     \
             ERROR("No %s function exported. "                  \
                  "WMI support will be disabled", #_fname);    \
-            wmi_imported = FALSE;                             \
+            wmi_imported = false;                             \
         }                                                     \
     } while (0)
 
@@ -1105,7 +1105,7 @@ ifname2ifindex(const char *ifname)
 {
     char   *s;
     char   *tmp;
-    te_bool ef = FALSE;
+    bool ef = false;
     DWORD   index, vlan_id;
     char *friendly_name;
 
@@ -1140,7 +1140,7 @@ ifname2ifindex(const char *ifname)
         else
         {
             s = (char *)ifname + strlen("ef");
-            ef = TRUE;
+            ef = true;
         }
     }
     else
@@ -1319,7 +1319,7 @@ ta_win32_conf_base_init(void)
 int
 rcf_ch_conf_init()
 {
-    static te_bool init = FALSE;
+    static bool init = false;
 
     if (!init)
     {
@@ -1364,7 +1364,7 @@ rcf_ch_conf_init()
         if (ta_unix_conf_phy_init() != 0)
             return -1;
 
-        init = TRUE;
+        init = true;
     }
 
     return 0;
@@ -2712,7 +2712,7 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
     int             rc;
     DWORD           type = strstr(oid, "dynamic") == NULL ? ARP_STATIC
                                                           : ARP_DYNAMIC;
-    te_bool         found = FALSE;
+    bool found = false;
     DWORD           ifindex = ifname2ifindex(ifname);
 
     UNUSED(gid);
@@ -2743,7 +2743,7 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
                     return TE_RC(TE_TA_WIN32, TE_EWIN);
                 }
             }
-            found = TRUE;
+            found = true;
             /* Continue to delete entries on other interfaces */
         }
     }
@@ -3274,7 +3274,7 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
  * @param name_len  -1, if @a name is a NUL-terminated string;
  *                  >= 0, if length of the @a name is @a name_len
  */
-static te_bool
+static bool
 env_is_hidden(const char *name, int name_len)
 {
     unsigned int    i;
@@ -3283,9 +3283,9 @@ env_is_hidden(const char *name, int name_len)
     {
         if (memcmp(env_hidden[i], name,
                    (name_len < 0) ? strlen(name) : (size_t)name_len) == 0)
-            return TRUE;
+            return true;
     }
-    return FALSE;
+    return false;
 }
 
 /**
@@ -4877,7 +4877,7 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
 {
     int vid = atoi(vid_str);
     int rc = 0;
-    te_bool priority = TRUE;
+    bool priority = true;
 
     UNUSED(value);
 
@@ -4897,10 +4897,10 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
             if (vid != TAG_PRI_ONLY)
                 WARN("Vlan id has been set to 0 in Priority only mode");
             vid = TAG_PRI_ONLY;
-            /*priority = TRUE;*/
+            /*priority = true;*/
         }
         else if (vid & TAG_VLAN_ONLY)
-            priority = FALSE;
+            priority = false;
 
         if (!wmi_imported)
             return TE_RC(TE_TA_WIN32, TE_EFAULT);

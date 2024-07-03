@@ -110,7 +110,7 @@ typedef LIST_HEAD(cpu_item_list, cpu_item) cpu_item_list;
 
 typedef union cpu_properties {
     struct {
-        te_bool isolated;
+        bool isolated;
     } thread;
 } cpu_properties;
 
@@ -517,7 +517,7 @@ out:
 
 static te_errno
 is_thread_isolated(const char *isolated_str, unsigned long thread_id,
-                   te_bool *isolated)
+                   bool *isolated)
 {
     unsigned long first;
     unsigned long last;
@@ -552,7 +552,7 @@ is_thread_isolated(const char *isolated_str, unsigned long thread_id,
 
         if (first <= thread_id && thread_id <= last)
         {
-            *isolated = TRUE;
+            *isolated = true;
             return 0;
         }
 
@@ -562,13 +562,13 @@ is_thread_isolated(const char *isolated_str, unsigned long thread_id,
             str = endptr;
     }
 
-    *isolated = FALSE;
+    *isolated = false;
 
     return 0;
 }
 
 static te_errno
-is_cpu_online(const char *name, te_bool *is_online)
+is_cpu_online(const char *name, bool *is_online)
 {
     FILE *f = NULL;
     te_errno rc = 0;
@@ -583,7 +583,7 @@ is_cpu_online(const char *name, te_bool *is_online)
     /* cpu0 is always online */
     if (thread_id == 0)
     {
-        *is_online = TRUE;
+        *is_online = true;
         return rc;
     }
 
@@ -600,7 +600,7 @@ is_cpu_online(const char *name, te_bool *is_online)
             break;
         case TE_ENOENT:
             INFO("Could not open sysfs CPUs online file, fallback to empty");
-            *is_online = TRUE;
+            *is_online = true;
             rc = 0;
             goto out;
         default:
@@ -614,7 +614,7 @@ is_cpu_online(const char *name, te_bool *is_online)
         goto out;
     }
 
-    *is_online = (result == 1) ? TRUE : FALSE;
+    *is_online = (result == 1) ? true : false;
 
 out:
     if (f != NULL)
@@ -630,7 +630,7 @@ populate_cpu(cpu_item_list *root, const char *name, const char *isolated_str)
     unsigned long node_id;
     unsigned int core_id;
     unsigned int package_id;
-    te_bool isolated = FALSE;
+    bool isolated = false;
     te_errno rc = 0;
 
     if ((rc = get_suffix_index(name, &thread_id)) != 0)
@@ -705,17 +705,17 @@ free_list(cpu_item_list *root)
 }
 
 #if SUPPORT_CACHES
-static te_bool
+static bool
 compare_cache_items(cache_item *item1, cache_item *item2)
 {
     if (item1->sys_id != item2->sys_id)
-        return FALSE;
+        return false;
     if (strcmp(item1->type, item2->type) != 0)
-        return FALSE;
+        return false;
     if (item1->level != item2->level)
-        return FALSE;
+        return false;
 
-    return TRUE;
+    return true;
 }
 
 static void
@@ -750,7 +750,7 @@ read_shared_cpu_list(const char *cpu_name, const char *index_name,
     char shared_cpu_list[RCF_MAX_VAL];
     te_errno rc = 0;
 
-    rc = read_sys_value(shared_cpu_list, sizeof(shared_cpu_list), FALSE,
+    rc = read_sys_value(shared_cpu_list, sizeof(shared_cpu_list), false,
                         SYSFS_SYSTEM_TREE "/cpu/%s/cache/%s/shared_cpu_list",
                         cpu_name, index_name);
 
@@ -776,7 +776,7 @@ get_cache_dim(const char *cpu_name, const char *index_name,
 
     *dim = 0;
 
-    rc = read_sys_value(result, sizeof(result), FALSE, SYSFS_SYSTEM_TREE
+    rc = read_sys_value(result, sizeof(result), false, SYSFS_SYSTEM_TREE
                         "/cpu/%s/cache/%s/%s", cpu_name,
                         index_name, item_name);
 
@@ -805,7 +805,7 @@ get_type(const char *cpu_name, const char *index_name, char **type)
     char result[RCF_MAX_VAL];
     te_errno rc = 0;
 
-    rc = read_sys_value(result, sizeof(result), FALSE, SYSFS_SYSTEM_TREE
+    rc = read_sys_value(result, sizeof(result), false, SYSFS_SYSTEM_TREE
                         "/cpu/%s/cache/%s/type", cpu_name, index_name);
 
     if (rc != 0)
@@ -936,7 +936,7 @@ scan_system(cpu_item_list *root)
     int n_cpus = 0;
     te_errno rc = 0;
     int i;
-    te_bool is_online = TRUE;
+    bool is_online = true;
 
     if ((rc = read_isolated(&isolated_str)) != 0)
         goto out;
@@ -1434,7 +1434,7 @@ cpu_core_cache_list(unsigned int gid, const char *oid, const char *sub_id,
     unsigned long node_id;
     unsigned long package_id;
     unsigned long core_id;
-    te_bool first = TRUE;
+    bool first = true;
     cpu_item *core = NULL;
     cache_item *cache;
 
@@ -1453,7 +1453,7 @@ cpu_core_cache_list(unsigned int gid, const char *oid, const char *sub_id,
     LIST_FOREACH(cache, &core->cache_list, next)
     {
         te_string_append(&result, "%s%u", first ? "" : " ", cache->id);
-        first = FALSE;
+        first = false;
     }
 
     *list = result.ptr;
@@ -1484,7 +1484,7 @@ cpu_package_cache_list(unsigned int gid, const char *oid, const char *sub_id,
     te_string result = TE_STRING_INIT;
     unsigned long node_id;
     unsigned long package_id;
-    te_bool first = TRUE;
+    bool first = true;
     cpu_item *package = NULL;
     cache_item *cache;
 
@@ -1501,7 +1501,7 @@ cpu_package_cache_list(unsigned int gid, const char *oid, const char *sub_id,
     LIST_FOREACH(cache, &package->cache_list, next)
     {
         te_string_append(&result, "%s%u", first ? "" : " ", cache->id);
-        first = FALSE;
+        first = false;
     }
 
     *list = result.ptr;
@@ -1520,7 +1520,7 @@ numa_list(unsigned int gid, const char *oid, const char *sub_id,
                char **list)
 {
     te_string result = TE_STRING_INIT;
-    te_bool first = TRUE;
+    bool first = true;
     cpu_item *node;
     te_errno rc;
 
@@ -1531,7 +1531,7 @@ numa_list(unsigned int gid, const char *oid, const char *sub_id,
     LIST_FOREACH(node, &global_cpu_item_root, next)
     {
         rc = te_string_append(&result, "%s%u", first ? "" : " ", node->id);
-        first = FALSE;
+        first = false;
         if (rc != 0)
         {
             te_string_free(&result);
@@ -1549,7 +1549,7 @@ cpu_list(unsigned int gid, const char *oid, const char *sub_id,
 {
     te_string result = TE_STRING_INIT;
     unsigned long node_id;
-    te_bool first = TRUE;
+    bool first = true;
     cpu_item *node = NULL;
     cpu_item *package;
     te_errno rc;
@@ -1573,7 +1573,7 @@ cpu_list(unsigned int gid, const char *oid, const char *sub_id,
     LIST_FOREACH(package, &node->children, next)
     {
         rc = te_string_append(&result, "%s%u", first ? "" : " ", package->id);
-        first = FALSE;
+        first = false;
         if (rc != 0)
         {
             te_string_free(&result);
@@ -1593,7 +1593,7 @@ cpu_core_list(unsigned int gid, const char *oid, const char *sub_id,
     te_string result = TE_STRING_INIT;
     unsigned long node_id;
     unsigned long package_id;
-    te_bool first = TRUE;
+    bool first = true;
     cpu_item *package = NULL;
     cpu_item *core;
     te_errno rc;
@@ -1618,7 +1618,7 @@ cpu_core_list(unsigned int gid, const char *oid, const char *sub_id,
     LIST_FOREACH(core, &package->children, next)
     {
         rc = te_string_append(&result, "%s%u", first ? "" : " ", core->id);
-        first = FALSE;
+        first = false;
         if (rc != 0)
         {
             te_string_free(&result);
@@ -1639,7 +1639,7 @@ cpu_thread_list(unsigned int gid, const char *oid, const char *sub_id,
     unsigned long node_id;
     unsigned long package_id;
     unsigned long core_id;
-    te_bool first = TRUE;
+    bool first = true;
     cpu_item *core = NULL;
     cpu_item *thread;
     te_errno rc;
@@ -1666,7 +1666,7 @@ cpu_thread_list(unsigned int gid, const char *oid, const char *sub_id,
     LIST_FOREACH(thread, &core->children, next)
     {
         rc = te_string_append(&result, "%s%u", first ? "" : " ", thread->id);
-        first = FALSE;
+        first = false;
         if (rc != 0)
         {
             te_string_free(&result);

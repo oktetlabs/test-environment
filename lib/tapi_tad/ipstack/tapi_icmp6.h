@@ -184,7 +184,7 @@ extern te_errno tapi_icmp_ip6_eth_csap_create(const char    *ta_name,
  */
 extern te_errno tapi_icmp6_add_pdu(asn_value **tmpl_or_ptrn,
                                    asn_value **pdu,
-                                   te_bool is_pattern,
+                                   bool is_pattern,
                                    int type, int code,
                                    icmp6_msg_body *body,
                                    icmp6_msg_option *optlist);

@@ -47,7 +47,7 @@ tapi_cfg_socks_add(const char *ta, tapi_socks_id id)
 te_errno
 tapi_cfg_socks_del(const char *ta, tapi_socks_id id)
 {
-    return cfg_del_instance_fmt(FALSE,
+    return cfg_del_instance_fmt(false,
                                 TE_CFG_TA_SOCKS_FMT,
                                 TE_CFG_TA_SOCKS_ARGS(ta, id));
 }
@@ -56,19 +56,19 @@ tapi_cfg_socks_del(const char *ta, tapi_socks_id id)
 te_errno
 tapi_cfg_socks_enable(const char *ta, tapi_socks_id id)
 {
-    return tapi_cfg_socks_status_set(ta, (const char *)id, TRUE);
+    return tapi_cfg_socks_status_set(ta, (const char *)id, true);
 }
 
 /* See description in tapi_cfg_socks.h */
 te_errno
 tapi_cfg_socks_disable(const char *ta, tapi_socks_id id)
 {
-    return tapi_cfg_socks_status_set(ta, (const char *)id, FALSE);
+    return tapi_cfg_socks_status_set(ta, (const char *)id, false);
 }
 
 /* See description in tapi_cfg_socks.h */
 te_errno
-tapi_cfg_socks_status_get(const char *ta, tapi_socks_id id, te_bool *value)
+tapi_cfg_socks_status_get(const char *ta, tapi_socks_id id, bool *value)
 {
     te_errno        rc;
     int             val;
@@ -84,7 +84,7 @@ tapi_cfg_socks_status_get(const char *ta, tapi_socks_id id, te_bool *value)
 /* See description in tapi_cfg_socks.h */
 te_errno
 tapi_cfg_socks_status_set(const char *ta, tapi_socks_id id,
-                          te_bool status)
+                          bool status)
 {
     return tapi_cfg_set_int_fmt(status ? 1 : 0, NULL,
                                 TE_CFG_TA_SOCKS_FMT "/status:",
@@ -149,7 +149,7 @@ tapi_cfg_socks_proto_del(const char         *ta,
                          tapi_socks_id       id,
                          tapi_socks_proto_id proto_id)
 {
-    return cfg_del_instance_fmt(FALSE, TE_CFG_TA_SOCKS_FMT "/proto:%s",
+    return cfg_del_instance_fmt(false, TE_CFG_TA_SOCKS_FMT "/proto:%s",
                                 TE_CFG_TA_SOCKS_ARGS(ta, id),
                                 (const char *)proto_id);
 }
@@ -208,7 +208,7 @@ tapi_cfg_socks_interface_del(const char                *ta,
                              tapi_socks_id              id,
                              tapi_socks_interface_id    interface_id)
 {
-    return cfg_del_instance_fmt(FALSE, TE_CFG_TA_SOCKS_FMT "/interface:%s",
+    return cfg_del_instance_fmt(false, TE_CFG_TA_SOCKS_FMT "/interface:%s",
                                 TE_CFG_TA_SOCKS_ARGS(ta, id),
                                 (const char *)interface_id);
 }
@@ -388,7 +388,7 @@ tapi_cfg_socks_user_del(const char         *ta,
                         tapi_socks_id       id,
                         tapi_socks_user_id  user)
 {
-    return cfg_del_instance_fmt(FALSE, TE_CFG_TA_SOCKS_FMT "/user:%s",
+    return cfg_del_instance_fmt(false, TE_CFG_TA_SOCKS_FMT "/user:%s",
                                 TE_CFG_TA_SOCKS_ARGS(ta, id),
                                 (const char *)user);
 }

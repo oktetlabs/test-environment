@@ -123,7 +123,7 @@ tapi_serial_parser_add(tapi_parser_id *id)
         return rc;
     }
 
-    rc = cfg_set_instance_fmt(CVT_INT32, (void *)TRUE,
+    rc = cfg_set_instance_fmt(CVT_INT32, (void *) true,
                               TE_SERIAL_PARSER "/enable:", id->ta,
                               id->name);
     if (rc != 0)
@@ -138,7 +138,7 @@ tapi_serial_parser_add(tapi_parser_id *id)
 void
 tapi_serial_parser_del(tapi_parser_id *id)
 {
-    if (cfg_del_instance_fmt(FALSE, TE_SERIAL_PARSER, id->ta,
+    if (cfg_del_instance_fmt(false, TE_SERIAL_PARSER, id->ta,
                              id->name) != 0)
         WARN("Couldn't delete the serial parser %s", id->name);
 }
@@ -149,7 +149,7 @@ tapi_serial_parser_enable(tapi_parser_id *id)
 {
     te_errno rc;
 
-    if ((rc = cfg_set_instance_fmt(CVT_INT32, (void *)TRUE,
+    if ((rc = cfg_set_instance_fmt(CVT_INT32, (void *) true,
                                    TE_SERIAL_PARSER "/enable:", id->ta,
                                    id->name)) != 0)
     {
@@ -167,7 +167,7 @@ tapi_serial_parser_disable(tapi_parser_id *id)
 {
     te_errno rc;
 
-    if ((rc = cfg_set_instance_fmt(CVT_INT32, (void *)FALSE,
+    if ((rc = cfg_set_instance_fmt(CVT_INT32, (void *) false,
                                    TE_SERIAL_PARSER "/enable:", id->ta,
                                    id->name)) != 0)
     {
@@ -197,7 +197,7 @@ tapi_serial_logging_enable(tapi_parser_id *id, const char *level)
         }
     }
 
-    rc = cfg_set_instance_fmt(CVT_INT32, (void *)TRUE,
+    rc = cfg_set_instance_fmt(CVT_INT32, (void *) true,
                               TE_SERIAL_LOG, id->ta, id->name);
     if (rc != 0)
     {
@@ -214,7 +214,7 @@ tapi_serial_logging_disable(tapi_parser_id *id)
 {
     te_errno rc;
 
-    if ((rc = cfg_set_instance_fmt(CVT_INT32, (void *)FALSE,
+    if ((rc = cfg_set_instance_fmt(CVT_INT32, (void *) false,
                                    TE_SERIAL_LOG, id->ta, id->name)) != 0)
     {
         ERROR("Couldn't disable logging of the serial parser %s", id->name);
@@ -244,7 +244,7 @@ tapi_serial_parser_event_add(tapi_parser_id *id, const char *name,
 void
 tapi_serial_parser_event_del(tapi_parser_id *id, const char *name)
 {
-    if (cfg_del_instance_fmt(FALSE, TE_SERIAL_EVENT, id->ta, id->name,
+    if (cfg_del_instance_fmt(false, TE_SERIAL_EVENT, id->ta, id->name,
                              name) != 0)
         WARN("Couldn't delete event %s from the serial parser %s",
              name, id->name);
@@ -309,7 +309,7 @@ void
 tapi_serial_parser_pattern_del(tapi_parser_id *id, const char *e_name,
                                int pat_i)
 {
-    if (cfg_del_instance_fmt(FALSE, TE_SERIAL_EVENT  "/pattern:%d", id->ta,
+    if (cfg_del_instance_fmt(false, TE_SERIAL_EVENT  "/pattern:%d", id->ta,
                              id->name, e_name, pat_i) != 0)
         WARN("Couldn't delete pattern from event %s", e_name);
 }
@@ -320,7 +320,7 @@ tapi_serial_parser_reset(tapi_parser_id *id)
 {
     te_errno rc;
 
-    if ((rc = cfg_set_instance_fmt(CVT_INT32, (void *)TRUE,
+    if ((rc = cfg_set_instance_fmt(CVT_INT32, (void *) true,
                                    TE_SERIAL_PARSER "/reset:", id->ta,
                                    id->name)) != 0)
     {
@@ -349,7 +349,7 @@ tapi_serial_tester_event_add(const char *name)
 void
 tapi_serial_tester_event_del(const char *name)
 {
-    if (cfg_del_instance_fmt(FALSE, TE_TESTER_EVENT, name) != 0)
+    if (cfg_del_instance_fmt(false, TE_TESTER_EVENT, name) != 0)
         WARN("Couldn't delete event %s from the tester", name);
 }
 
@@ -376,8 +376,8 @@ tapi_serial_handler_ext_add(const char *ev_name, const char *h_name,
         return rc;
     }
 
-    rc = cfg_set_instance_fmt(CVT_INT32, (void *)FALSE,
-                             TE_TESTER_HANDL "/internal:", ev_name, h_name);
+    rc = cfg_set_instance_fmt(CVT_INT32, (void *) false,
+                              TE_TESTER_HANDL "/internal:", ev_name, h_name);
     if (rc != 0)
     {
         ERROR("Couldn't set the handler internal flag to false");
@@ -411,8 +411,8 @@ tapi_serial_handler_int_add(const char *ev_name, const char *h_name,
         return rc;
     }
 
-    rc = cfg_set_instance_fmt(CVT_INT32, (void *)TRUE,
-                             TE_TESTER_HANDL "/internal:", ev_name, h_name);
+    rc = cfg_set_instance_fmt(CVT_INT32, (void *) true,
+                              TE_TESTER_HANDL "/internal:", ev_name, h_name);
     if (rc != 0)
     {
         ERROR("Couldn't set the handler internal flag to true");
@@ -444,7 +444,7 @@ tapi_serial_handler_int_add(const char *ev_name, const char *h_name,
 void
 tapi_serial_handler_del(const char *ev_name, const char *h_name)
 {
-    if (cfg_del_instance_fmt(FALSE, TE_TESTER_HANDL, ev_name, h_name) != 0)
+    if (cfg_del_instance_fmt(false, TE_TESTER_HANDL, ev_name, h_name) != 0)
         WARN("Couldn't delete serial handler %s from event %s",
              h_name, ev_name);
 }

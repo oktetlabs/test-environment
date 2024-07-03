@@ -322,7 +322,7 @@ extern te_errno tapi_cfg_nginx_evt_method_set(const char *ta,
  */
 extern te_errno tapi_cfg_nginx_evt_multi_accept_get(const char *ta,
                                                     const char *inst_name,
-                                                    te_bool *evt_multi_accept);
+                                                    bool *evt_multi_accept);
 
 /**
  * Enable accepting multiple connections
@@ -357,7 +357,7 @@ extern te_errno tapi_cfg_nginx_evt_accept_mutex_disable(const char *ta,
  */
 extern te_errno tapi_cfg_nginx_evt_accept_mutex_get(const char *ta,
                                                     const char *inst_name,
-                                                    te_bool *evt_accept_mutex);
+                                                    bool *evt_accept_mutex);
 
 /**
  * Enable handling connections by turn
@@ -683,7 +683,7 @@ extern te_errno tapi_cfg_nginx_http_server_sendfile_get(
                                                     const char *ta,
                                                     const char *inst_name,
                                                     const char *srv_name,
-                                                    te_bool *sendfile);
+                                                    bool *sendfile);
 
 /**
  * Enable nginx server sendfile option
@@ -727,7 +727,7 @@ extern te_errno tapi_cfg_nginx_http_server_tcp_nopush_get(
                                                     const char *ta,
                                                     const char *inst_name,
                                                     const char *srv_name,
-                                                    te_bool *tcp_nopush);
+                                                    bool *tcp_nopush);
 
 /**
  * Enable nginx server TCP_NOPUSH option
@@ -771,7 +771,7 @@ extern te_errno tapi_cfg_nginx_http_server_tcp_nodelay_get(
                                                     const char *ta,
                                                     const char *inst_name,
                                                     const char *srv_name,
-                                                    te_bool *tcp_nodelay);
+                                                    bool *tcp_nodelay);
 
 /**
  * Enable nginx server TCP_NODELAY option
@@ -815,7 +815,7 @@ extern te_errno tapi_cfg_nginx_http_server_reset_timedout_conn_get(
                                                 const char *ta,
                                                 const char *inst_name,
                                                 const char *srv_name,
-                                                te_bool *reset_timedout_conn);
+                                                bool *reset_timedout_conn);
 
 /**
  * Enable nginx server reset timedout connection option
@@ -988,7 +988,7 @@ extern te_errno tapi_cfg_nginx_http_server_proxy_buf_get(
                                                     const char *ta,
                                                     const char *inst_name,
                                                     const char *srv_name,
-                                                    te_bool *proxy_buf);
+                                                    bool *proxy_buf);
 
 /**
  * Enable nginx server proxy buffering
@@ -1128,7 +1128,7 @@ extern te_errno tapi_cfg_nginx_http_server_file_cache_errors_get(
                                             const char *ta,
                                             const char *inst_name,
                                             const char *srv_name,
-                                            te_bool *file_cache_errors);
+                                            bool *file_cache_errors);
 
 /**
  * Enable nginx server file lookup errors caching
@@ -1172,7 +1172,7 @@ extern te_errno tapi_cfg_nginx_http_server_file_cache_get(
                                                     const char *ta,
                                                     const char *inst_name,
                                                     const char *srv_name,
-                                                    te_bool *file_cache);
+                                                    bool *file_cache);
 
 /**
  * Enable nginx server file information caching

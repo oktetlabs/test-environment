@@ -97,7 +97,7 @@ typedef struct trc_log_parse_ctx {
                                                  data */
 
     unsigned int        stack_size; /**< Size of the stack in elements */
-    te_bool            *stack_info; /**< Stack */
+    bool               *stack_info; /**< Stack */
     unsigned int        stack_pos;  /**< Current position in the stack */
 } trc_log_parse_ctx;
 

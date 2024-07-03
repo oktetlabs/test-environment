@@ -25,10 +25,10 @@
  *
  * @param obj_name    Object name.
  *
- * @return @c TRUE if this is an object which requires an instance name,
- *         @c FALSE otherwise.
+ * @return @c true if this is an object which requires an instance name,
+ *         @c false otherwise.
  */
-static te_bool
+static bool
 req_instance(const char *obj_name)
 {
     const char    *names[] = { "conf/", "neigh/" };
@@ -40,10 +40,10 @@ req_instance(const char *obj_name)
         name_len = strlen(names[i]);
 
         if (strncmp(obj_name, names[i], name_len) == 0)
-            return TRUE;
+            return true;
     }
 
-    return FALSE;
+    return false;
 }
 
 /**
@@ -73,7 +73,7 @@ tapi_cfg_sys_parse_path_va(char *buf, size_t len,
     size_t    i = 0;
     size_t    j = 0;
     te_errno  rc = 0;
-    te_bool   instance_name = FALSE;
+    bool instance_name = false;
 
     if (len == 0 || buf == NULL)
     {
@@ -102,12 +102,12 @@ tapi_cfg_sys_parse_path_va(char *buf, size_t len,
 
             if (buf_aux[i] == '/')
             {
-                instance_name = FALSE;
+                instance_name = false;
                 obj_name = buf_aux + i + 1;
             }
             else if (buf_aux[i] == ':')
             {
-                instance_name = TRUE;
+                instance_name = true;
             }
         }
         else
@@ -131,7 +131,7 @@ tapi_cfg_sys_parse_path_va(char *buf, size_t len,
                  * next name in the path as an instance name rather than
                  * an object name.
                  */
-                instance_name = TRUE;
+                instance_name = true;
             }
             else if (buf_aux[i] == '/')
             {

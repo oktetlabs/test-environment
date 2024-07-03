@@ -63,12 +63,12 @@ typedef struct rgt_xml2multi_opts {
      * If this is turned on, references to logs files in
      * TRC report will be broken.
      */
-    te_bool depth_seq_names;
+    bool depth_seq_names;
 
-    /** If TRUE, output HTML index files only */
-    te_bool index_only;
-    /** If TRUE, output log only for specified log node */
-    te_bool single_node_match;
+    /** If @c true, output HTML index files only */
+    bool index_only;
+    /** If @c true, output log only for specified log node */
+    bool single_node_match;
     /** How a single log node was specified */
     rgt_match_type match_type;
     /** ID of log node */
@@ -79,7 +79,7 @@ typedef struct rgt_xml2multi_opts {
     uint32_t match_seq;
 
     /** Output page selector allowing to select page of large HTML log */
-    te_bool page_selector_set;
+    bool page_selector_set;
     /** Current page number */
     uint32_t cur_page;
     /** Total pages count */
@@ -87,7 +87,7 @@ typedef struct rgt_xml2multi_opts {
 } rgt_xml2multi_opts;
 
 /** Initializer for rgt_xml2multi_opts */
-#define RGT_XML2MULTI_OPTS_INIT { .depth_seq_names = FALSE, }
+#define RGT_XML2MULTI_OPTS_INIT { .depth_seq_names = false, }
 
 /* Root log node depth in the tree of log nodes */
 #define ROOT_NODE_DEPTH   1
@@ -121,9 +121,9 @@ extern void rgt_xml2multi_process_cmdline(rgt_xml2multi_opts *opts,
  * @param seq       Node sequential number (in the list of children of its
  *                  parent)
  *
- * @return TRUE if node should be output, FALSE otherwise.
+ * @return @c true if node should be output, @c false otherwise.
  */
-extern te_bool rgt_xml2multi_match_node(rgt_xml2multi_opts *opts,
+extern bool rgt_xml2multi_match_node(rgt_xml2multi_opts *opts,
                                         const char *tin,
                                         const char *node_id,
                                         uint32_t depth,
@@ -153,13 +153,13 @@ extern void rgt_xml2multi_fname(char *fname, size_t len,
  *
  * @param ctx             Generic rgt-format context
  * @param opts            Command line options
- * @param shared_files    If @c TRUE, there are some shared files which
+ * @param shared_files    If @c true, there are some shared files which
  *                        should be copied to destination directory unless
  *                        URL to common location is provided
  */
 extern void rgt_xml2multi_setup_outdir(rgt_gen_ctx_t *ctx,
                                        rgt_xml2multi_opts *opts,
-                                       te_bool shared_files);
+                                       bool shared_files);
 
 #ifdef __cplusplus
 } /* extern "C" */

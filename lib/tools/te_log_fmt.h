@@ -133,7 +133,7 @@ typedef struct te_log_msg_raw_data {
     unsigned int        args_n;     /**< Number of raw arguments */
     size_t              args_len;   /**< Total length required in raw log
                                          to store raw arguments */
-    te_bool             trunc;      /**< Is log message truncated? */
+    bool trunc;      /**< Is log message truncated? */
 } te_log_msg_raw_data;
 
 /** Information about truncated part of raw log argument. */

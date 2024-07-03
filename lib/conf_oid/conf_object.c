@@ -19,7 +19,7 @@
 #include <arpa/inet.h>
 
 /**
- * Convert @b te_bool field to string.
+ * Convert boolean field to string.
  *
  * @param [in,out] str   String to append with converted value.
  * @param [in]    name   Field name.
@@ -31,14 +31,14 @@ static te_errno
 te_bool_to_str(te_string *str, const char *name,
                const void *arg)
 {
-    te_bool value = *(te_bool *)arg;
+    bool value = *(bool *)arg;
 
     return te_string_append(str, "%s=%s",
                             name, (value ? "true" : "false"));
 }
 
 /**
- * Obtain @b te_bool field value from string.
+ * Obtain boolean field value from string.
  *
  * @param [in]  value    String.
  * @param [out] arg      Pointer to the field value.
@@ -53,9 +53,9 @@ te_bool_from_str(const char *value, void *arg,
     UNUSED(options);
 
     if (strcmp(value, "true") == 0)
-        *(te_bool *)arg = TRUE;
+        *(bool *)arg = true;
     else if (strcmp(value, "false") == 0)
-        *(te_bool *)arg = FALSE;
+        *(bool *)arg = false;
     else
         return TE_EINVAL;
 
@@ -63,7 +63,7 @@ te_bool_from_str(const char *value, void *arg,
 }
 
 /**
- * Compare values of two @b te_bool fields.
+ * Compare values of two boolean fields.
  *
  * @param a     Pointer to the first field.
  * @param b     Pointer to the second field.
@@ -75,7 +75,7 @@ te_bool_from_str(const char *value, void *arg,
 static int
 te_bool_compare(const void *a, const void *b)
 {
-    return (!!(*(te_bool *)a) == !!(*(te_bool *)b));
+    return (!!(*(bool *)a) == !!(*(bool *)b));
 }
 
 /**
@@ -255,7 +255,7 @@ str_compare(const void *a, const void *b)
     return strcmp((const char*)a, (const char*)b) == 0;
 }
 
-te_conf_obj_methods te_conf_obj_methods_te_bool = {
+te_conf_obj_methods te_conf_obj_methods__Bool = {
     .to_str   = te_bool_to_str,
     .from_str = te_bool_from_str,
     .compare  = te_bool_compare,
@@ -447,9 +447,9 @@ te_conf_obj_compare(const te_conf_obj *fields, size_t fields_number,
 
     for (i = 0; i < fields_number; i++)
     {
-        const te_bool required_for_a = (required & fields[i].flag) != 0;
-        const te_bool filled_for_a = (mask_a  & fields[i].flag) != 0;
-        const te_bool filled_for_b = (mask_b  & fields[i].flag) != 0;
+        const bool required_for_a = (required & fields[i].flag) != 0;
+        const bool filled_for_a = (mask_a & fields[i].flag) != 0;
+        const bool filled_for_b = (mask_b & fields[i].flag) != 0;
 
         if (!required_for_a)
         {

@@ -139,7 +139,7 @@ tad_pcap_confirm_ptrn_cb(csap_p csap, unsigned int layer,
     }
 
     rc = pcap_compile_nopcap(TAD_PCAP_SNAPLEN, layer_data->iftype,
-                             bpf_program, pcap_str, TRUE, 0
+                             bpf_program, pcap_str, true, 0
 #ifdef __NetBSD__
                              /*
                               * FIXME

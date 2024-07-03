@@ -64,7 +64,7 @@ typedef struct tapi_arp_frame {
         assert(sizeof((arp_frame_)->eth_hdr.dst_addr) == ETHER_ADDR_LEN); \
         memcpy((arp_frame_)->eth_hdr.dst_addr, dst_mac_, ETHER_ADDR_LEN); \
         (arp_frame_)->eth_hdr.len_type = ETHERTYPE_ARP;                   \
-        (arp_frame_)->eth_hdr.is_tagged = FALSE;                          \
+        (arp_frame_)->eth_hdr.is_tagged = false;                          \
     } while (0)
 
 /**
@@ -278,7 +278,7 @@ extern te_errno tapi_arp_add_csap_layer_eth_ip4(asn_value **csap_spec);
  * @sa tapi_arp_add_csap_layer, tapi_arp_add_pdu_eth_ip4
  */
 extern te_errno tapi_arp_add_pdu(asn_value      **tmpl_or_ptrn,
-                                 te_bool          is_pattern,
+                                 bool is_pattern,
                                  const uint16_t  *hw_type,
                                  const uint16_t  *proto_type,
                                  const uint8_t   *hw_size,
@@ -320,7 +320,7 @@ extern te_errno tapi_arp_add_pdu(asn_value      **tmpl_or_ptrn,
  * @sa tapi_arp_add_csap_layer_eth_ip4, tapi_arp_add_pdu
  */
 extern te_errno tapi_arp_add_pdu_eth_ip4(asn_value      **tmpl_or_ptrn,
-                                         te_bool          is_pattern,
+                                         bool is_pattern,
                                          const uint16_t  *opcode,
                                          const uint8_t   *snd_hw_addr,
                                          const uint8_t   *snd_proto_addr,

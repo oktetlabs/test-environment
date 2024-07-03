@@ -36,9 +36,9 @@ typedef enum udp_tunnel_entry_type {
 
 typedef struct udp_tunnel_entry {
     SLIST_ENTRY(udp_tunnel_entry)   links;
-    te_bool                         enabled;
-    te_bool                         added;
-    te_bool                         to_be_deleted;
+    bool enabled;
+    bool added;
+    bool to_be_deleted;
     udp_tunnel_entry_type           type;
     union {
         netconf_geneve             *geneve;
@@ -100,7 +100,7 @@ udp_tunnel_find(const char *ifname, udp_tunnel_entry_type type)
     return NULL;
 }
 
-static te_bool
+static bool
 udp_tunnel_entry_valid(const udp_tunnel_entry *udp_tunnel_e)
 {
     return (udp_tunnel_e != NULL) && !udp_tunnel_e->to_be_deleted;
@@ -166,7 +166,7 @@ udp_tunnel_commit(unsigned int gid, const cfg_oid *p_oid)
                         return TE_RC(TE_TA_UNIX, TE_EINVAL);
                 }
                 if (rc != 0)
-                    udp_tunnel_e->added = FALSE;
+                    udp_tunnel_e->added = false;
             }
         }
         else
@@ -185,14 +185,14 @@ udp_tunnel_commit(unsigned int gid, const cfg_oid *p_oid)
                     return TE_RC(TE_TA_UNIX, TE_EINVAL);
             }
             if (rc == 0)
-                udp_tunnel_e->added = TRUE;
+                udp_tunnel_e->added = true;
         }
     }
     else if (udp_tunnel_e->added)
     {
         rc = netconf_udp_tunnel_del(nh, ifname);
         if (rc == 0)
-            udp_tunnel_e->added = FALSE;
+            udp_tunnel_e->added = false;
     }
 
     if (udp_tunnel_e->to_be_deleted)
@@ -308,8 +308,8 @@ udp_tunnel_add(unsigned int gid, const char *oid, const char *value,
 
     udp_tunnel_e->type = type;
     udp_tunnel_e->enabled = (uint_value == 1);
-    udp_tunnel_e->added = FALSE;
-    udp_tunnel_e->to_be_deleted = FALSE;
+    udp_tunnel_e->added = false;
+    udp_tunnel_e->to_be_deleted = false;
     SLIST_INSERT_HEAD(&udp_tunnels, udp_tunnel_e, links);
 
     return 0;
@@ -346,8 +346,8 @@ udp_tunnel_del(unsigned int gid, const char *oid, const char *tunnelname,
     if (udp_tunnel_e == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    udp_tunnel_e->enabled = FALSE;
-    udp_tunnel_e->to_be_deleted = TRUE;
+    udp_tunnel_e->enabled = false;
+    udp_tunnel_e->to_be_deleted = true;
 
     return 0;
 }
@@ -359,9 +359,9 @@ udp_tunnel_del(unsigned int gid, const char *oid, const char *tunnelname,
  * @param ifname    The interface name.
  * @param data      Unused.
  *
- * @return @c TRUE if the interface is grabbed, @c FALSE otherwise.
+ * @return @c true if the interface is grabbed, @c false otherwise.
  */
-static te_bool
+static bool
 udp_tunnel_list_include_cb(const char *ifname, void *data)
 {
     UNUSED(data);

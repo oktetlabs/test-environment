@@ -79,7 +79,7 @@ test_send_eth_frame(const char *ta, csap_handle_t csap,
     asn_value  *tmpl = NULL;
     asn_value  *pdu = NULL;
 
-    CHECK_RC(tapi_eth_add_pdu(&tmpl, &pdu, FALSE, NULL, NULL,
+    CHECK_RC(tapi_eth_add_pdu(&tmpl, &pdu, false, NULL, NULL,
                               &tst_eth_type, tagged, llc_snap));
 
     if (tagged == TE_BOOL3_TRUE)
@@ -147,7 +147,7 @@ main(int argc, char **argv)
     asn_free_value(csap_spec); csap_spec = NULL;
 
     /* Prepare receive pattern and start receiver */
-    CHECK_RC(tapi_eth_add_pdu(&pattern, &pdu, TRUE, NULL, NULL,
+    CHECK_RC(tapi_eth_add_pdu(&pattern, &pdu, true, NULL, NULL,
                               &tst_eth_type, tagged, llc_snap));
     if (tagged == TE_BOOL3_TRUE)
         CHECK_RC(tapi_eth_pdu_tag_header(pdu, &tst_priority, NULL));

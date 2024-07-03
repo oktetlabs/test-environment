@@ -36,7 +36,7 @@ static void check_string(const char *expected, const char *actual)
 
 static void check_validate(const te_tree *tree)
 {
-    if (!te_tree_validate_types(tree, FALSE, NULL))
+    if (!te_tree_validate_types(tree, false, NULL))
         TEST_VERDICT("The tree is expected to be valid, but it is not");
 }
 
@@ -44,7 +44,7 @@ static void check_invalid(const te_tree *tree, const te_tree *exp_invalid)
 {
     const te_tree *invalid = NULL;
 
-    if (te_tree_validate_types(tree, FALSE, &invalid))
+    if (te_tree_validate_types(tree, false, &invalid))
         TEST_VERDICT("The tree is expected to be invvalid, but it validates");
 
     if (invalid != exp_invalid)
@@ -58,7 +58,7 @@ main(int argc, char **argv)
     te_tree *annot = NULL;
     te_tree *invalid = NULL;
     intmax_t intval;
-    te_bool bval;
+    bool bval;
     double fval;
 
     TEST_START;
@@ -83,7 +83,7 @@ main(int argc, char **argv)
     te_tree_free(tree);
 
     TEST_SUBSTEP("Testing booleans");
-    tree = te_tree_make_typed("node", TE_TREE_ATTR_TYPE_BOOL, TRUE);
+    tree = te_tree_make_typed("node", TE_TREE_ATTR_TYPE_BOOL, true);
     check_string(TE_TREE_ATTR_TYPE_BOOL, te_tree_get_type(tree));
     check_string("true", te_tree_get_attr(tree, TE_TREE_ATTR_VALUE));
     CHECK_RC(te_tree_get_bool_attr(tree, TE_TREE_ATTR_VALUE, &bval));
@@ -201,9 +201,9 @@ main(int argc, char **argv)
     tree = te_tree_alloc();
     te_tree_add_attr(tree, TE_TREE_ATTR_TYPE, "unsupported");
     check_string("unsupported", te_tree_get_type(tree));
-    if (te_tree_validate_types(tree, FALSE, NULL))
+    if (te_tree_validate_types(tree, false, NULL))
         TEST_VERDICT("The tree with an unknown type should not validate");
-    if (!te_tree_validate_types(tree, TRUE, NULL))
+    if (!te_tree_validate_types(tree, true, NULL))
         TEST_VERDICT("The tree with an unknown type should validate");
     te_tree_free(tree);
 

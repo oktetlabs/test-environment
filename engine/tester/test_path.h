@@ -153,7 +153,7 @@ extern te_errno tester_process_test_paths(
                     const tester_cfgs *cfgs,
                     test_paths        *paths,
                     testing_scenario  *scenario,
-                    te_bool            all_by_default);
+                    bool all_by_default);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -59,7 +59,7 @@
 #define BUCKETS_COUNT (AVAILABLE_PORT_COUNT / PORTS_PER_BUCKET_COUNT)
 
 /* Used to initialize state only once for the TA */
-static te_bool initialization_needed = TRUE;
+static bool initialization_needed = true;
 /* Number of allocated ports for the TA */
 static unsigned int allocated_ports = 0;
 /* Current offset of the next port to allocate for the TA */
@@ -84,7 +84,7 @@ agent_port_alloc_init(void)
     }
 
     port_offset = (rnd % BUCKETS_COUNT) * PORTS_PER_BUCKET_COUNT;
-    initialization_needed = FALSE;
+    initialization_needed = false;
 
     return 0;
 }
@@ -143,14 +143,14 @@ agent_free_l4_port(uint16_t port)
     pthread_mutex_unlock(&alloc_lock);
 }
 
-te_bool
+bool
 agent_check_l4_port_is_free(int socket_family, int socket_type, uint16_t port)
 {
     static const int type[] = { SOCK_STREAM, SOCK_DGRAM };
     static const int pf[] = { PF_INET6, PF_INET };
     static const int af[] = { AF_INET6, AF_INET };
     /* Whether fallback to IPv4 is required (when using 0 socket family) */
-    te_bool all_families_fallback_inet4 = FALSE;
+    bool all_families_fallback_inet4 = false;
     unsigned int family_id;
     unsigned int type_id;
 
@@ -163,7 +163,7 @@ agent_check_l4_port_is_free(int socket_family, int socket_type, uint16_t port)
 
         default:
             ERROR("Invalid socket family");
-            return FALSE;
+            return false;
     }
 
     switch (socket_type)
@@ -175,7 +175,7 @@ agent_check_l4_port_is_free(int socket_family, int socket_type, uint16_t port)
 
         default:
             ERROR("Invalid socket type");
-            return FALSE;
+            return false;
     }
 
 
@@ -204,12 +204,12 @@ agent_check_l4_port_is_free(int socket_family, int socket_type, uint16_t port)
                      * Fallback to IPv4 since IPv6 is not supported
                      * and requested family is 0 (all supported families).
                      */
-                    all_families_fallback_inet4 = TRUE;
+                    all_families_fallback_inet4 = true;
                     break;
                 }
 
                 ERROR("Failed to create socket");
-                return FALSE;
+                return false;
             }
 
             memset(&addr, 0, sizeof(addr));
@@ -229,7 +229,7 @@ agent_check_l4_port_is_free(int socket_family, int socket_type, uint16_t port)
             rc = bind(fd, SA(&addr), addr_len);
             close(fd);
             if (rc != 0)
-                return FALSE;
+                return false;
         }
 
         /*
@@ -237,10 +237,10 @@ agent_check_l4_port_is_free(int socket_family, int socket_type, uint16_t port)
          * but if fallback to IPv4 is requested, continue checking with IPv4.
          */
         if (socket_family == 0 && !all_families_fallback_inet4)
-            return TRUE;
+            return true;
     }
 
-    return TRUE;
+    return true;
 }
 
 te_errno

@@ -29,10 +29,10 @@ extern "C" {
  * @param dlna_file     Remote DLNA file.
  * @param local_file    Local media file.
  *
- * @return Result of comparison: @c TRUE if both DLNA and media local files
+ * @return Result of comparison: @c true if both DLNA and media local files
  *         are equal.
  */
-extern te_bool tapi_media_dlna_cmp_with_local(
+extern bool tapi_media_dlna_cmp_with_local(
                             const tapi_upnp_cd_container_node *dlna_file,
                             const tapi_media_file             *local_file);
 

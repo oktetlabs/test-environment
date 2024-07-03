@@ -33,7 +33,7 @@ get_loadavg_stats(loadavg_stats *stats)
     te_errno rc;
     char buf[RCF_MAX_VAL];
 
-    rc = read_sys_value(buf, sizeof(buf), FALSE, "/proc/loadavg");
+    rc = read_sys_value(buf, sizeof(buf), false, "/proc/loadavg");
     if (rc != 0)
         return rc;
 

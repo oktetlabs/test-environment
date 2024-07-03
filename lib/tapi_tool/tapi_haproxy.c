@@ -17,19 +17,19 @@ const tapi_haproxy_opt tapi_haproxy_default_opt = {
     .haproxy_path = NULL,
     .cfg_file = NULL,
     .cfg_opt = NULL,
-    .verbose = FALSE,
+    .verbose = false,
 };
 
 static const te_enum_map tapi_haproxy_verbose_mapping[] = {
-    {.name = "-V", .value = TRUE},
-    {.name = "",  .value = FALSE},
+    {.name = "-V", .value = true},
+    {.name = "",  .value = false},
     TE_ENUM_MAP_END
 };
 
 static const tapi_job_opt_bind haproxy_binds[] = TAPI_JOB_OPT_SET(
-    TAPI_JOB_OPT_ENUM_BOOL(NULL, FALSE, tapi_haproxy_opt, verbose,
+    TAPI_JOB_OPT_ENUM_BOOL(NULL, false, tapi_haproxy_opt, verbose,
                            tapi_haproxy_verbose_mapping),
-    TAPI_JOB_OPT_STRING("-f", FALSE, tapi_haproxy_opt, cfg_file)
+    TAPI_JOB_OPT_STRING("-f", false, tapi_haproxy_opt, cfg_file)
 );
 
 /* See description in tapi_haproxy.h */
@@ -78,15 +78,15 @@ tapi_haproxy_create(tapi_job_factory_t *factory, const tapi_haproxy_opt *opt,
                                 .stderr_loc = &result->out_chs[1],
                                 .filters    = TAPI_JOB_SIMPLE_FILTERS(
                                     {
-                                        .use_stdout  = TRUE,
-                                        .readable    = TRUE,
+                                        .use_stdout  = true,
+                                        .readable    = true,
                                         .log_level   = TE_LL_RING,
                                         .filter_name = "haproxy stdout",
                                         .filter_var = &result->stdout_filter
                                     },
                                     {
-                                        .use_stderr  = TRUE,
-                                        .readable    = TRUE,
+                                        .use_stderr  = true,
+                                        .readable    = true,
                                         .log_level   = TE_LL_WARN,
                                         .filter_name = "haproxy stderr",
                                         .filter_var = &result->stderr_filter

@@ -123,13 +123,13 @@ main(int argc, char *argv[])
     /* Open sock for listen. */
     iut_tcp_sock = rpc_socket(iut_pco, RPC_PF_INET,
                            RPC_SOCK_STREAM, RPC_PROTO_DEF);
-    te_bool optval = TRUE;
+    bool optval = true;
     rpc_setsockopt(iut_pco, iut_tcp_sock, RPC_SO_REUSEADDR, &optval);
     rpc_bind(iut_pco, iut_tcp_sock, iut_addr);
     rpc_listen(iut_pco, iut_tcp_sock, 1);
 
     CHECK_RC(tapi_update_arp(iut_pco->ta, iut_if->if_name, NULL, NULL,
-                             fake_tst_addr, fake_tst_mac, FALSE));
+                             fake_tst_addr, fake_tst_mac, false));
     CFG_WAIT_CHANGES;
 
     /* Establish TCP connection. */
@@ -174,7 +174,7 @@ main(int argc, char *argv[])
     /* Give data some time to be received. */
     MSLEEP(100);
     /* Receive data via socket. */
-    te_bool sock_ready_for_read;
+    bool sock_ready_for_read;
     RPC_GET_READABILITY(sock_ready_for_read, iut_pco, iut_tcp_sock, 1);
     if (sock_ready_for_read)
     {

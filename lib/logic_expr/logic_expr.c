@@ -341,7 +341,7 @@ logic_expr_match(const logic_expr *re, const tqh_strings *set)
 
         default:
             ERROR("Invalid type of requirements expression");
-            assert(FALSE);
+            assert(false);
             result = -1;
             break;
     }
@@ -413,7 +413,7 @@ logic_expr_not_prop(logic_expr **expr)
 
         default:
             ERROR("Invalid type of requirements expression");
-            assert(FALSE);
+            assert(false);
     }
 
     return 0;
@@ -689,8 +689,8 @@ and_chains_cmp(logic_expr *chain1,
     logic_expr *p_cur = NULL;
     logic_expr *q_cur = NULL;
     int         rc = 0;
-    te_bool     first_noeq = FALSE;
-    te_bool     second_noeq = FALSE;
+    bool first_noeq = false;
+    bool second_noeq = false;
 
     assert(chain1 != NULL);
     assert(chain2 != NULL);
@@ -753,7 +753,7 @@ and_chains_cmp(logic_expr *chain1,
              * the same element as current element in the second
              * conjunction. If so, we will suppose that the
              * second conjunction is substring of the first one,
-             * and will set first_noeq to TRUE. The same
+             * and will set @c first_noeq to @c true. The same
              * considerations are applicable to the opposite case
              * when we should set second_noeq. If these variables
              * are set both it means that both conjunctions
@@ -761,11 +761,11 @@ and_chains_cmp(logic_expr *chain1,
              * so no one can merge another one.
              */
             if (rc == 1)
-                first_noeq = TRUE;
+                first_noeq = true;
             else
-                second_noeq = TRUE;
+                second_noeq = true;
 
-            if (first_noeq == TRUE && second_noeq == TRUE)
+            if (first_noeq == true && second_noeq == true)
                 return -2;
         }
         else if (p == NULL || q == NULL)
@@ -777,11 +777,11 @@ and_chains_cmp(logic_expr *chain1,
      * of the second - the second one is perhaps a
      * substring of the first one. */
     if (p != NULL)
-        first_noeq = TRUE;
+        first_noeq = true;
 
     /* The opposite case */
     if (q != NULL)
-        second_noeq = TRUE;
+        second_noeq = true;
 
     /* Comparison of conjunctions ended on
      * different last elements - no one can
@@ -790,9 +790,9 @@ and_chains_cmp(logic_expr *chain1,
     if (p == NULL && q == NULL && rc != 0)
         return -2;
 
-    if (first_noeq == TRUE && second_noeq == TRUE)
+    if (first_noeq == true && second_noeq == true)
         return -2;
-    else if (first_noeq == TRUE)
+    else if (first_noeq == true)
         return 1;
     else
         return -1;
@@ -1184,7 +1184,7 @@ logic_expr_to_str_gen(logic_expr *expr, logic_expr *parent)
 
         default:
             ERROR("Invalid type of requirements expression");
-            assert(FALSE);
+            assert(false);
     }
 
     free(l_str);
@@ -1265,7 +1265,7 @@ logic_expr_parse_comparison_oper(const logic_expr *parsed,
     long int l_val;
     long int r_val;
     te_errno rc;
-    te_bool both_are_numbers;
+    bool both_are_numbers;
     long int cmp_res;
     logic_expr_res res_l = LOGIC_EXPR_RES_INIT;
     logic_expr_res res_r = LOGIC_EXPR_RES_INIT;
@@ -1298,9 +1298,9 @@ logic_expr_parse_comparison_oper(const logic_expr *parsed,
 
     if (te_strtol_silent(res_l.value.simple, 0, &l_val) == 0 &&
         te_strtol_silent(res_r.value.simple, 0, &r_val) == 0)
-        both_are_numbers = TRUE;
+        both_are_numbers = true;
     else
-        both_are_numbers = FALSE;
+        both_are_numbers = false;
 
     if (both_are_numbers)
         cmp_res = l_val - r_val;

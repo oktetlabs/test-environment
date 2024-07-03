@@ -117,7 +117,7 @@ extern te_errno tapi_cfg_iptables_chain_set(const char *ta,
                                             unsigned int af,
                                             const char *table,
                                             const char *chain,
-                                            te_bool enable);
+                                            bool enable);
 
 /**
  * Add per-interface chain to the system
@@ -135,7 +135,7 @@ extern te_errno tapi_cfg_iptables_chain_add(const char *ta,
                                             unsigned int af,
                                             const char *table,
                                             const char *chain,
-                                            te_bool enable);
+                                            bool enable);
 
 /**
  * Delete per-interface chain from the system

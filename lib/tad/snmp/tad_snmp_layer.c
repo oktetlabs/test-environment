@@ -176,7 +176,7 @@ tad_snmp_gen_bin_cb(csap_p csap, unsigned int layer,
     if (rc == 0)
     {
         tad_pkts_move(pdus, sdus);
-        rc = tad_pkts_add_new_seg(pdus, TRUE, pdu, sizeof(*pdu),
+        rc = tad_pkts_add_new_seg(pdus, true, pdu, sizeof(*pdu),
                                   tad_snmp_free_pdu);
     }
 

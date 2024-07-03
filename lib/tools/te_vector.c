@@ -241,7 +241,7 @@ te_vec_append_strarray(te_vec *vec, const char **elements)
 
 te_errno
 te_vec_split_string(const char *str, te_vec *strvec, char sep,
-                    te_bool empty_is_none)
+                    bool empty_is_none)
 {
     const char *next = str;
 
@@ -280,7 +280,7 @@ te_vec_sort(te_vec *vec, int (*compar)(const void *, const void *))
     qsort(vec->data.ptr, te_vec_size(vec), vec->element_size, compar);
 }
 
-te_bool
+bool
 te_vec_search(const te_vec *vec, const void *key,
               int (*compar)(const void *, const void *),
               unsigned int *minpos, unsigned int *maxpos)
@@ -289,7 +289,7 @@ te_vec_search(const te_vec *vec, const void *key,
                                 vec->element_size, compar);
 
     if (found == NULL)
-        return FALSE;
+        return false;
 
     if (minpos != NULL)
     {
@@ -316,5 +316,5 @@ te_vec_search(const te_vec *vec, const void *key,
         }
         *maxpos = te_vec_get_index(vec, iter);
     }
-    return TRUE;
+    return true;
 }

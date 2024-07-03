@@ -115,7 +115,7 @@ tapi_tcp_udp_ip_eth_csap_create(
 /* See the description in tapi_ip_common.h */
 te_errno
 tapi_ip_pdu_tmpl_fragments(asn_value **tmpl, asn_value **pdu,
-                           te_bool ipv4,
+                           bool ipv4,
                            tapi_ip_frag_spec *fragments,
                            unsigned int num_frags)
 {
@@ -128,7 +128,7 @@ tapi_ip_pdu_tmpl_fragments(asn_value **tmpl, asn_value **pdu,
     if (tmpl != NULL)
     {
         CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(tmpl,
-                                              FALSE /* template */,
+                                              false /* template */,
                                               (ipv4 ?
                                                   ndn_ip4_header :
                                                   ndn_ip6_header),

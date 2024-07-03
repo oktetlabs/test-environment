@@ -234,7 +234,7 @@ tapi_ip6_eth_csap_create(const char *ta_name, int sid,
 
 te_errno
 tapi_ip6_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
-                 te_bool is_pattern,
+                 bool is_pattern,
                  const uint8_t *src_addr, const uint8_t *dst_addr,
                  int next_header, int hop_limit)
 {
@@ -367,6 +367,6 @@ tapi_ip6_pdu_tmpl_fragments(asn_value **tmpl, asn_value **pdu,
                             tapi_ip_frag_spec *fragments,
                             unsigned int num_frags)
 {
-    return tapi_ip_pdu_tmpl_fragments(tmpl, pdu, FALSE,
+    return tapi_ip_pdu_tmpl_fragments(tmpl, pdu, false,
                                       fragments, num_frags);
 }

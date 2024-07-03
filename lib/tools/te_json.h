@@ -158,7 +158,7 @@ te_json_add_null(te_json_ctx_t *ctx)
  * @param val boolean value
  */
 static inline void
-te_json_add_bool(te_json_ctx_t *ctx, te_bool val)
+te_json_add_bool(te_json_ctx_t *ctx, bool val)
 {
     te_json_add_simple(ctx, val ? "true" : "false");
 }
@@ -354,7 +354,7 @@ te_json_add_key_enum(te_json_ctx_t *ctx, const te_enum_map *map,
 /**
  * Serialize an array of strings.
  *
- * If @p skip_null is @c TRUE, @c NULL values in @p strs
+ * If @p skip_null is @c true, @c NULL values in @p strs
  * will be skipped, otherwise serialized as JSON @c null.
  *
  * @param ctx       JSON context
@@ -362,7 +362,7 @@ te_json_add_key_enum(te_json_ctx_t *ctx, const te_enum_map *map,
  * @param n_strs    number of elements in @p strs
  * @param strs      array of strings
  */
-extern void te_json_add_array_str(te_json_ctx_t *ctx, te_bool skip_null,
+extern void te_json_add_array_str(te_json_ctx_t *ctx, bool skip_null,
                                   size_t n_strs, const char *strs[n_strs]);
 
 /**

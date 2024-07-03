@@ -62,8 +62,8 @@ typedef enum cfg_nat_setup_t {
 /** Net description structure */
 typedef struct cfg_net_t {
     char           *name;       /**< Network instance name */
-    te_bool         is_virtual; /**< Is network virtual? */
-    te_bool         nat;        /**< Is network behind NAT? */
+    bool is_virtual; /**< Is network virtual? */
+    bool nat;        /**< Is network behind NAT? */
     cfg_nat_setup_t nat_setup;  /**< NAT setup procedure */
     cfg_handle      handle;     /**< Cfg instance handle */
     te_kvpair_h     gateways;   /**< Gateway nodes */
@@ -365,7 +365,7 @@ extern te_errno tapi_cfg_net_reserve_all(void);
  *
  * @return Status code.
  */
-extern te_errno tapi_cfg_net_all_up(te_bool force);
+extern te_errno tapi_cfg_net_all_up(bool force);
 
 /**
  * Delete IPv4 addresses from all nodes in networks configuration.

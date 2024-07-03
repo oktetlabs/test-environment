@@ -246,15 +246,15 @@ extern te_errno tapi_cfg_phy_state_wait_up(const char *ta,
  *                      TE_PHY_DUPLEX_HALF - half duplex
  *                      TE_PHY_DUPLEX_FULL - full duplex
  * @param state         Pointer to mode state:
- *                      @c TRUE - the mode is advertised
- *                      @c FALSE - the mode is not advertised
+ *                      @c true - the mode is advertised
+ *                      @c false - the mode is not advertised
  *
  * @return Status code
  */
 extern te_errno tapi_cfg_phy_is_mode_advertised(const char *ta,
                                                 const char *if_name,
                                                 int speed, int duplex,
-                                                te_bool *state);
+                                                bool *state);
 
 /**
  * Set PHY mode to advertising state.
@@ -271,15 +271,15 @@ extern te_errno tapi_cfg_phy_is_mode_advertised(const char *ta,
  *                      TE_PHY_DUPLEX_HALF - half duplex
  *                      TE_PHY_DUPLEX_FULL - full duplex
  * @param state         Mode state:
- *                      @c FALSE - the mode is not advertised
- *                      @c TRUE - the mode is advertised
+ *                      @c false - the mode is not advertised
+ *                      @c true - the mode is advertised
  *
  * @return Status code
  */
 extern te_errno tapi_cfg_phy_advertise_mode(const char *ta,
                                             const char *if_name,
                                             int speed, int duplex,
-                                            te_bool state);
+                                            bool state);
 
 /**
  * Check whether a specific link mode is supported.
@@ -287,15 +287,15 @@ extern te_errno tapi_cfg_phy_advertise_mode(const char *ta,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param mode_name     Link mode name
- * @param supported     Will be set to @c TRUE if the requested link
- *                      mode is supported, to @c FALSE otherwise
+ * @param supported     Will be set to @c true if the requested link
+ *                      mode is supported, to @c false otherwise
  *
  * @return Status code.
  */
 extern te_errno tapi_cfg_phy_mode_supported(const char *ta,
                                             const char *if_name,
                                             const char *mode_name,
-                                            te_bool *supported);
+                                            bool *supported);
 
 /**
  * Check whether a specific link mode is advertised.
@@ -303,15 +303,15 @@ extern te_errno tapi_cfg_phy_mode_supported(const char *ta,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param mode_name     Link mode name
- * @param state         Will be set to @c TRUE if the requested link
- *                      mode is advertised, to @c FALSE otherwise
+ * @param state         Will be set to @c true if the requested link
+ *                      mode is advertised, to @c false otherwise
  *
  * @return Status code.
  */
 extern te_errno tapi_cfg_phy_mode_adv_get(const char *ta,
                                           const char *if_name,
                                           const char *mode_name,
-                                          te_bool *state);
+                                          bool *state);
 
 /**
  * Set advertising state for a link mode.
@@ -319,15 +319,15 @@ extern te_errno tapi_cfg_phy_mode_adv_get(const char *ta,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param mode_name     Link mode name
- * @param state         If @c TRUE, link mode should be advertised,
- *                      if @c FALSE - it should not be advertised
+ * @param state         If @c true, link mode should be advertised,
+ *                      if @c false - it should not be advertised
  *
  * @return Status code.
  */
 extern te_errno tapi_cfg_phy_mode_adv_set(const char *ta,
                                           const char *if_name,
                                           const char *mode_name,
-                                          te_bool state);
+                                          bool state);
 
 /**
  * Check whether link partner advertises a given link mode.
@@ -335,15 +335,15 @@ extern te_errno tapi_cfg_phy_mode_adv_set(const char *ta,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param mode_name     Link mode name
- * @param advertised    Will be set to @c TRUE if link partner advertises
- *                      the link mode and to @c FALSE otherwise
+ * @param advertised    Will be set to @c true if link partner advertises
+ *                      the link mode and to @c false otherwise
  *
  * @return Status code.
  */
 extern te_errno tapi_cfg_phy_lp_advertised(const char *ta,
                                            const char *if_name,
                                            const char *mode_name,
-                                           te_bool *advertised);
+                                           bool *advertised);
 
 /**
  * Commit PHY interface changes to TAs.

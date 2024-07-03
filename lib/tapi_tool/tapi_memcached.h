@@ -61,7 +61,7 @@ typedef struct tapi_memcached_opt {
     /** Unix socket path to listen on (disables network support). */
     const char                         *unix_socket;
     /** Enable ascii "shutdown" command. */
-    te_bool                             enable_ascii_shutdown;
+    bool enable_ascii_shutdown;
     /** Permissions (in octal form) for Unix socket created with -s option. */
     tapi_job_opt_uint_t                 unix_mask;
     /** Listen on @c ip_addr. */
@@ -82,7 +82,7 @@ typedef struct tapi_memcached_opt {
      * Lock down all paged memory.
      * This is a somewhat dangerous option with large caches.
      */
-    te_bool                             lock_memory;
+    bool lock_memory;
     /**
      * TCP port to listen on (0 by default, 0 to turn off).
      *
@@ -99,9 +99,9 @@ typedef struct tapi_memcached_opt {
      * Disable automatic removal of items from the cache when out of memory.
      * Additions will not be possible until adequate space is freed up.
      */
-    te_bool                             disable_evictions;
+    bool disable_evictions;
     /** Raise the core file size limit to the maximum allowable. */
-    te_bool                             enable_coredumps;
+    bool enable_coredumps;
     /**
      * A lower value may result in less wasted memory depending on the total
      * amount of memory available and the distribution of item sizes.
@@ -113,7 +113,7 @@ typedef struct tapi_memcached_opt {
      */
     tapi_job_opt_uint_t                 slab_min_size;
     /** Disable the use of CAS (and reduce the per-item size by 8 bytes). */
-    te_bool                             disable_cas;
+    bool disable_cas;
     /**
      * Be verbose during the event loop.
      * Print out errors and warnings (none by default).
@@ -133,7 +133,7 @@ typedef struct tapi_memcached_opt {
      * Increasing the memory page size could reduce the number of TLB misses
      * and improve the performance.
      */
-    te_bool                             enable_largepages;
+    bool enable_largepages;
     /** Set the backlog queue limit to number of connections. */
     tapi_job_opt_uint_t                 listen_backlog;
     /** Specify the binding protocol to use ("auto" by default). */
@@ -144,25 +144,25 @@ typedef struct tapi_memcached_opt {
      * Turn on SASL authentication. This option is only meaningful
      * if memcached was compiled with SASL support enabled.
      */
-    te_bool                             enable_sasl;
+    bool enable_sasl;
     /**
      * Disable the "flush_all" command. The cmd_flush counter will
      * increment, but clients will receive an error message and the
      * flush will not occur.
      */
-    te_bool                             disable_flush_all;
+    bool disable_flush_all;
     /** Disable the "stats cachedump" and "lru_crawler metadump" commands. */
-    te_bool                             disable_dumping;
+    bool disable_dumping;
     /** Disable watch commands (live logging). */
-    te_bool                             disable_watch;
+    bool disable_watch;
     /**
      * @name Extended options
      * @{
      */
     /** Immediately close new connections after limit. */
-    te_bool                             maxconns_fast;
+    bool maxconns_fast;
     /** Cancel maxconns_fast option. */
-    te_bool                             no_maxconns_fast;
+    bool no_maxconns_fast;
     /**
      * An integer multiplier for how large the hash
      * table should be. Normally grows at runtime.
@@ -176,13 +176,13 @@ typedef struct tapi_memcached_opt {
      */
     tapi_job_opt_uint_t                 tail_repair_time;
     /** Disable LRU Crawler background thread. */
-    te_bool                             no_lru_crawler;
+    bool no_lru_crawler;
     /** Microseconds to sleep between items. */
     tapi_job_opt_uint_t                 lru_crawler_sleep;
     /** Max items to crawl per slab per run (if 0 then unlimited). */
     tapi_job_opt_uint_t                 lru_crawler_tocrawl;
     /**  Disable new LRU system + background thread. */
-    te_bool                             no_lru_maintainer;
+    bool no_lru_maintainer;
     /** pct of slab memory to reserve for hot lru. Requires lru_maintainer. */
     tapi_job_opt_uint_t                 hot_lru_pct;
     /** pct of slab memory to reserve for warm lru. Requires lru_maintainer. */
@@ -206,9 +206,9 @@ typedef struct tapi_memcached_opt {
      */
     tapi_job_opt_uint_t                 worker_logbuf_size;
     /** Enable dynamic reports for 'stats sizes' command. */
-    te_bool                             track_sizes;
+    bool track_sizes;
     /** Disables hash table expansion. Dangerous! */
-    te_bool                             no_hashexpand;
+    bool no_hashexpand;
 
     /**
      * @name External storage options
@@ -255,7 +255,7 @@ typedef struct tapi_memcached_opt {
     /** Consider TTLs lower than this specially. */
     tapi_job_opt_uint_t                 ext_low_ttl;
     /** Don't re-write unread values during compaction. */
-    te_bool                             ext_drop_unread;
+    bool ext_drop_unread;
     /**
      * Recache an item every N accesses.
      *

@@ -313,7 +313,7 @@ invalidate_descendants(const char *method, cfg_handle handle)
             if (get_area_by_instance(method, handle) == NULL)
             {
                 VERB("remove childless: %u", handle);
-                rc = cfg_del_instance(handle, FALSE);
+                rc = cfg_del_instance(handle, false);
                 if (rc != 0)
                     return rc;
             }
@@ -328,7 +328,7 @@ invalidate_descendants(const char *method, cfg_handle handle)
     if (strcmp(method, name) == 0)
     {
         VERB("remove leaf: %u", handle);
-        rc = cfg_del_instance(handle, FALSE);
+        rc = cfg_del_instance(handle, false);
     }
 
     return rc;
@@ -368,7 +368,7 @@ invalidate_instance(const char *method, cfg_handle instance)
     {
         /* Do not remove an instance of area with registered callback */
         if (get_area_by_instance(method, instance) == NULL)
-            rc = cfg_del_instance(instance, FALSE);
+            rc = cfg_del_instance(instance, false);
     }
 
     return rc;
@@ -870,7 +870,7 @@ tapi_cache_del(const char *area_ptrn, ...)
     {
         if (items[i] != root_handle)
         {
-            rc = cfg_del_instance(items[i], TRUE);
+            rc = cfg_del_instance(items[i], true);
         }
         else
         {
@@ -888,7 +888,7 @@ tapi_cache_del(const char *area_ptrn, ...)
                 if (rc != 0)
                     break;
 
-                rc = cfg_del_instance(handle, TRUE);
+                rc = cfg_del_instance(handle, true);
                 if (rc != 0)
                     break;
 

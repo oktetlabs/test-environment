@@ -29,9 +29,9 @@
 
 const tapi_ssh_client_opt tapi_ssh_client_opt_default_opt = {
     .path = TAPI_SSH_DEFAULT_PATH,
-    .gateway_ports = FALSE,
+    .gateway_ports = false,
     .local_port_forwarding = NULL,
-    .forbid_remote_commands_execution = FALSE,
+    .forbid_remote_commands_execution = false,
     .remote_port_forwarding = NULL,
     .identity_file = NULL,
     .login_name = NULL,
@@ -49,14 +49,14 @@ const tapi_ssh_server_opt tapi_ssh_server_opt_default_opt = {
     .authorized_keys_file = NULL,
     .permit_root_login = TAPI_SSH_PERMIT_ROOT_LOGIN_YES,
     .pid_file = NULL,
-    .pub_key_authentication = TRUE,
-    .strict_modes = FALSE,
+    .pub_key_authentication = true,
+    .strict_modes = false,
     .port = TAPI_SSH_DEFAULT_PORT,
 };
 
 static const te_enum_map tapi_ssh_option_yes_no_mapping[] = {
-    {.name = "yes", .value = TRUE},
-    {.name = "no", .value = FALSE},
+    {.name = "yes", .value = true},
+    {.name = "no", .value = false},
     TE_ENUM_MAP_END
 };
 
@@ -96,26 +96,26 @@ tapi_ssh_create_client(tapi_job_factory_t *factory,
     const char        *path = opt->path;
 
     const tapi_job_opt_bind client_binds[] = TAPI_JOB_OPT_SET(
-        TAPI_JOB_OPT_STRING("-i", FALSE, tapi_ssh_client_opt,
+        TAPI_JOB_OPT_STRING("-i", false, tapi_ssh_client_opt,
                             identity_file),
-        TAPI_JOB_OPT_STRING("-l", FALSE, tapi_ssh_client_opt,
+        TAPI_JOB_OPT_STRING("-l", false, tapi_ssh_client_opt,
                             login_name),
-        TAPI_JOB_OPT_ENUM("-o StrictHostKeyChecking=", TRUE, tapi_ssh_client_opt,
+        TAPI_JOB_OPT_ENUM("-o StrictHostKeyChecking=", true, tapi_ssh_client_opt,
                           strict_host_key_checking,
                           tapi_ssh_strict_host_key_checking_mapping),
-        TAPI_JOB_OPT_STRING("-o UserKnownHostsFile=", TRUE, tapi_ssh_client_opt,
+        TAPI_JOB_OPT_STRING("-o UserKnownHostsFile=", true, tapi_ssh_client_opt,
                             user_known_hosts_file),
         TAPI_JOB_OPT_BOOL("-g", tapi_ssh_client_opt,
                           gateway_ports),
         TAPI_JOB_OPT_BOOL("-N", tapi_ssh_client_opt,
                           forbid_remote_commands_execution),
-        TAPI_JOB_OPT_STRING("-L", FALSE, tapi_ssh_client_opt,
+        TAPI_JOB_OPT_STRING("-L", false, tapi_ssh_client_opt,
                             local_port_forwarding),
-        TAPI_JOB_OPT_STRING("-R", FALSE, tapi_ssh_client_opt,
+        TAPI_JOB_OPT_STRING("-R", false, tapi_ssh_client_opt,
                             remote_port_forwarding),
-        TAPI_JOB_OPT_UINT("-p", FALSE, NULL, tapi_ssh_client_opt, port),
-        TAPI_JOB_OPT_STRING(NULL, FALSE, tapi_ssh_client_opt, destination),
-        TAPI_JOB_OPT_STRING(NULL, FALSE, tapi_ssh_client_opt, command)
+        TAPI_JOB_OPT_UINT("-p", false, NULL, tapi_ssh_client_opt, port),
+        TAPI_JOB_OPT_STRING(NULL, false, tapi_ssh_client_opt, destination),
+        TAPI_JOB_OPT_STRING(NULL, false, tapi_ssh_client_opt, command)
     );
 
     if (opt->port == TAPI_SSH_DEFAULT_PORT)
@@ -136,15 +136,15 @@ tapi_ssh_create_client(tapi_job_factory_t *factory,
                                     .stderr_loc = &client->out_chs[1],
                                     .filters = TAPI_JOB_SIMPLE_FILTERS(
                                         {
-                                         .use_stdout = TRUE,
+                                         .use_stdout = true,
                                          .log_level = TE_LL_RING,
-                                         .readable = FALSE,
+                                         .readable = false,
                                          .filter_name = "out",
                                         },
                                         {
-                                         .use_stderr = TRUE,
+                                         .use_stderr = true,
                                          .log_level = TE_LL_ERROR,
-                                         .readable = FALSE,
+                                         .readable = false,
                                          .filter_name = "err",
                                         }
                                     )
@@ -175,21 +175,21 @@ tapi_ssh_create_server(tapi_job_factory_t *factory,
     const char        *path = opt->path;
 
     const tapi_job_opt_bind server_binds[] = TAPI_JOB_OPT_SET(
-        TAPI_JOB_OPT_STRING("-h", FALSE, tapi_ssh_server_opt,
+        TAPI_JOB_OPT_STRING("-h", false, tapi_ssh_server_opt,
                             host_key_file),
-        TAPI_JOB_OPT_STRING("-f", FALSE, tapi_ssh_server_opt,
+        TAPI_JOB_OPT_STRING("-f", false, tapi_ssh_server_opt,
                             config_file),
-        TAPI_JOB_OPT_STRING("-o AuthorizedKeysFile=", TRUE, tapi_ssh_server_opt,
+        TAPI_JOB_OPT_STRING("-o AuthorizedKeysFile=", true, tapi_ssh_server_opt,
                             authorized_keys_file),
-        TAPI_JOB_OPT_ENUM("-o PermitRootLogin=", TRUE, tapi_ssh_server_opt,
+        TAPI_JOB_OPT_ENUM("-o PermitRootLogin=", true, tapi_ssh_server_opt,
                           permit_root_login, tapi_ssh_permit_root_login_mapping),
-        TAPI_JOB_OPT_STRING("-o PidFile=", TRUE, tapi_ssh_server_opt,
+        TAPI_JOB_OPT_STRING("-o PidFile=", true, tapi_ssh_server_opt,
                             pid_file),
-        TAPI_JOB_OPT_ENUM_BOOL("-o PubkeyAuthentication=", TRUE, tapi_ssh_server_opt,
+        TAPI_JOB_OPT_ENUM_BOOL("-o PubkeyAuthentication=", true, tapi_ssh_server_opt,
                                pub_key_authentication, tapi_ssh_option_yes_no_mapping),
-        TAPI_JOB_OPT_ENUM_BOOL("-o StrictModes=", TRUE, tapi_ssh_server_opt,
+        TAPI_JOB_OPT_ENUM_BOOL("-o StrictModes=", true, tapi_ssh_server_opt,
                                strict_modes, tapi_ssh_option_yes_no_mapping),
-        TAPI_JOB_OPT_UINT("-p", FALSE, NULL, tapi_ssh_server_opt, port),
+        TAPI_JOB_OPT_UINT("-p", false, NULL, tapi_ssh_server_opt, port),
         TAPI_JOB_OPT_DUMMY("-D")
     );
 
@@ -211,15 +211,15 @@ tapi_ssh_create_server(tapi_job_factory_t *factory,
                                     .stderr_loc = &server->out_chs[1],
                                     .filters = TAPI_JOB_SIMPLE_FILTERS(
                                         {
-                                         .use_stdout = TRUE,
+                                         .use_stdout = true,
                                          .log_level = TE_LL_RING,
-                                         .readable = FALSE,
+                                         .readable = false,
                                          .filter_name = "out",
                                         },
                                         {
-                                         .use_stderr = TRUE,
+                                         .use_stderr = true,
                                          .log_level = TE_LL_ERROR,
-                                         .readable = FALSE,
+                                         .readable = false,
                                          .filter_name = "err",
                                         }
                                     )

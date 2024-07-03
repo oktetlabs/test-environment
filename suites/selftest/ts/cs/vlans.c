@@ -135,7 +135,7 @@ main(int argc, char *argv[])
         RING("read ifname rc %r, %s", rc, name);
     }
 
-    rc = cfg_del_instance_fmt(FALSE, "/agent:Agt_A/interface:%s/vlans:12",
+    rc = cfg_del_instance_fmt(false, "/agent:Agt_A/interface:%s/vlans:12",
                               if_name);
     if (rc != 0)
         TEST_FAIL("remove VLAN failed %r", rc);
@@ -157,7 +157,7 @@ main(int argc, char *argv[])
         sprintf(cfg_if_oid, "/agent:Agt_A/interface:%s", vlan_ifn);
 
         rc = tapi_cfg_base_add_net_addr(cfg_if_oid, SA(&sa),
-                           24, FALSE, &new_addr);
+                           24, false, &new_addr);
         if (rc != 0)
             TEST_FAIL("add IP address on VLAN failed %r", rc);
     }

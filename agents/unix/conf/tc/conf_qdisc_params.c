@@ -555,13 +555,13 @@ conf_qdisc_clsact_bpf_set(struct bpf_link_info_list *list,
 #if defined(WITH_BPF) && defined(TCA_BPF_FLAG_ACT_DIRECT) && defined(TC_H_CLSACT)
     struct nl_msg *msg;
     struct tcmsg tchdr = {0};
-    te_bool link = *prog_name != '\0';
+    bool link = *prog_name != '\0';
     int err = 0;
     unsigned int protocol = 0;
     int cmd = 0;
     unsigned int flags = 0;
     bpf_link_info *item;
-    te_bool iface_found = FALSE;
+    bool iface_found = false;
 
     /* Check that only one TC program is linked to the interface. */
     LIST_FOREACH(item, list, next)
@@ -576,7 +576,7 @@ conf_qdisc_clsact_bpf_set(struct bpf_link_info_list *list,
             }
             else
             {
-                iface_found = TRUE;
+                iface_found = true;
             }
         }
     }

@@ -218,7 +218,7 @@
                                                     \
         if (rc_ != 0 && out->common._errno == 0)    \
             out->common._errno = rc_;               \
-    } while (FALSE)
+    } while (false)
 
 
 /**
@@ -308,9 +308,9 @@ shut_how_rpc2h(rpc_shut_how how)
 /**
  * Get the loading status of dynamic library.
  *
- * @return @c TRUE if dynamic library loaded
+ * @return @c true if dynamic library loaded
  */
-extern te_bool tarpc_dynamic_library_loaded(void);
+extern bool tarpc_dynamic_library_loaded(void);
 
 /**
  * Sleep the pending timeout and return error in case
@@ -407,10 +407,10 @@ extern te_errno tarpc_check_args(checked_arg_list *list);
  *                      unchanged after function call).
  * @param _is_local     Whether local variable or dynamically allocated
  *                      memory should be used to store converted value.
- *                      This *must* be a literal TRUE or FALSE
- * @param _do_register  If @c TRUE, register argument in the list
+ *                      This *must* be a literal @c true or @c false
+ * @param _do_register  If @c true, register argument in the list
  *                      to be checked after function call.
- *                      This *must* be a literal TRUE or FALSE
+ *                      This *must* be a literal @c true or @c false
  */
 #define PREPARE_ADDR_GEN(_name, _value, _wlen, _is_local,           \
                          _do_register)                              \
@@ -439,14 +439,14 @@ extern te_errno tarpc_check_args(checked_arg_list *list);
         }                                                           \
     }
 
-#define PREPARE_ADDR_GEN_IS_LOCAL_DEFS_TRUE(_name)
-#define PREPARE_ADDR_GEN_IS_LOCAL_DEFS_FALSE(_name)     \
+#define PREPARE_ADDR_GEN_IS_LOCAL_DEFS_true(_name)
+#define PREPARE_ADDR_GEN_IS_LOCAL_DEFS_false(_name)     \
     struct sockaddr        *_name ## _dup = NULL;       \
 
-#define PREPARE_ADDR_GEN_IS_LOCAL_VAR_TRUE(_name) _name
-#define PREPARE_ADDR_GEN_IS_LOCAL_VAR_FALSE(_name) _name ## _dup
+#define PREPARE_ADDR_GEN_IS_LOCAL_VAR_true(_name) _name
+#define PREPARE_ADDR_GEN_IS_LOCAL_VAR_false(_name) _name ## _dup
 
-#define PREPARE_ADDR_GEN_IS_LOCAL_COPY_FALSE(_name)                 \
+#define PREPARE_ADDR_GEN_IS_LOCAL_COPY_false(_name)                 \
     if (_name != NULL)                                              \
     {                                                               \
         _name ## _dup = calloc(1, _name ## len);                    \
@@ -455,12 +455,12 @@ extern te_errno tarpc_check_args(checked_arg_list *list);
         else                                                        \
             memcpy(_name ## _dup, _name, _name ## len);             \
     }
-#define PREPARE_ADDR_GEN_IS_LOCAL_COPY_TRUE(_name)
+#define PREPARE_ADDR_GEN_IS_LOCAL_COPY_true(_name)
 
-#define PREPARE_ADDR_GEN_DO_REGISTER_TRUE(_name, _len, _wlen)   \
+#define PREPARE_ADDR_GEN_DO_REGISTER_true(_name, _len, _wlen)   \
     INIT_CHECKED_ARG(_name, _len, _wlen);
 
-#define PREPARE_ADDR_GEN_DO_REGISTER_FALSE(_name, _len, _wlen)
+#define PREPARE_ADDR_GEN_DO_REGISTER_false(_name, _len, _wlen)
 
 
 /**
@@ -472,7 +472,7 @@ extern te_errno tarpc_check_args(checked_arg_list *list);
  *                  unchanged after function call.
  */
 #define PREPARE_ADDR(_name, _value, _wlen)              \
-    PREPARE_ADDR_GEN(_name, _value, _wlen, TRUE, TRUE)
+    PREPARE_ADDR_GEN(_name, _value, _wlen, true, true)
 
 /**
  * Copy in variable argument to out variable argument and zero in argument.
@@ -498,7 +498,7 @@ extern te_errno tarpc_check_args(checked_arg_list *list);
         {                                                       \
             ERROR("Argument %s cannot be NULL", #_a);           \
             out->common._errno = TE_RC(TE_TA_UNIX, TE_EINVAL);  \
-            return TRUE;                                        \
+            return true;                                        \
         }                                                       \
         COPY_ARG(_a);                                           \
     } while (0)
@@ -631,7 +631,7 @@ typedef void rpc_wrapper_func(struct rpc_call_data *call);
  * Type of functions doing input-to-output copying for RPC calls.
  * @note This is a function type, not a function pointer
  */
-typedef te_bool rpc_copy_func(void *in, void *out);
+typedef bool rpc_copy_func(void *in, void *out);
 
 /**
  * Generic XDR resource-freeing routine pointer
@@ -661,7 +661,7 @@ typedef struct rpc_call_data {
     void *in;                  /**< Input data */
     void *out;                 /**< Output data */
     checked_arg_list checked_args; /**< List of checked arguments */
-    te_bool done;              /**< Completion status
+    bool done;              /**< Completion status
                                 * @note Only used for async calls
                                 */
     struct timeval call_start; /**< Timestamp when the actual code is
@@ -683,7 +683,7 @@ typedef struct deferred_call_list deferred_call_list;
 extern te_errno tarpc_defer_call(deferred_call_list *list,
                                  uintptr_t jobid, rpc_call_data *call);
 
-extern te_bool tarpc_has_deferred_calls(const deferred_call_list *list);
+extern bool tarpc_has_deferred_calls(const deferred_call_list *list);
 
 /**
  * Generic RPC handler.
@@ -837,7 +837,7 @@ extern void tarpc_generic_service(deferred_call_list *list,
                                                                         \
     static rpc_copy_func _func##_docopy;                                \
                                                                         \
-    static te_bool                                                      \
+    static bool                                                         \
     _func##_docopy(void *_in, void *_out)                               \
     {                                                                   \
         tarpc_##_func##_in  * const in  = _in;                          \
@@ -848,7 +848,7 @@ extern void tarpc_generic_service(deferred_call_list *list,
                                                                         \
         { _copy_args }                                                  \
                                                                         \
-        return FALSE;                                                   \
+        return false;                                                   \
     }                                                                   \
                                                                         \
     bool_t                                                              \
@@ -878,7 +878,7 @@ extern void tarpc_generic_service(deferred_call_list *list,
         te_rpc_error_set_target(&_out->common);                         \
         tarpc_generic_service((void *)_rqstp->rq_xprt->xp_p1, &_call);  \
         te_rpc_error_set_target(NULL);                                  \
-        return TRUE;                                                    \
+        return true;                                                    \
     }
 
 /**

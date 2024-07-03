@@ -289,7 +289,7 @@ tapi_cfg_xen_set_base_mac_addr(char const *ta, uint8_t const *mac)
 
 /* See description in tapi_cfg_xen.h */
 te_errno
-tapi_cfg_xen_get_accel(char const *ta, te_bool *accel)
+tapi_cfg_xen_get_accel(char const *ta, bool *accel)
 {
     int          acceleration;
     te_errno     rc;
@@ -307,7 +307,7 @@ tapi_cfg_xen_get_accel(char const *ta, te_bool *accel)
     }
     else
     {
-        *accel = acceleration ? TRUE : FALSE;
+        *accel = acceleration ? true : false;
     }
 
     return rc;
@@ -315,14 +315,14 @@ tapi_cfg_xen_get_accel(char const *ta, te_bool *accel)
 
 /* See description in tapi_cfg_xen.h */
 te_errno
-tapi_cfg_xen_set_accel(char const *ta, te_bool accel)
+tapi_cfg_xen_set_accel(char const *ta, bool accel)
 {
     te_errno rc;
 
     if (ta == NULL)
     {
         ERROR("Failed to set acceleration to %s on %s: Invalid params",
-              accel ? "TRUE" : "FALSE", ta);
+              accel ? "true" : "false", ta);
         return TE_EINVAL;
     }
 
@@ -331,7 +331,7 @@ tapi_cfg_xen_set_accel(char const *ta, te_bool accel)
                                    ta)) != 0)
     {
         ERROR("Failed to set acceleration to %s on %s",
-              accel ? "TRUE" : "FALSE", ta);
+              accel ? "true" : "false", ta);
     }
 
     return rc;
@@ -339,7 +339,7 @@ tapi_cfg_xen_set_accel(char const *ta, te_bool accel)
 
 /* See description in tapi_cfg_xen.h */
 te_errno
-tapi_cfg_xen_set_init(char const *ta, te_bool init)
+tapi_cfg_xen_set_init(char const *ta, bool init)
 {
     te_errno rc;
 
@@ -427,7 +427,7 @@ tapi_cfg_xen_destroy_dom_u(char const *ta, char const *dom_u)
     }
 
     /* Destroy domU */
-    if ((rc = cfg_del_instance_fmt(FALSE,
+    if ((rc = cfg_del_instance_fmt(false,
                                    "/agent:%s/xen:/dom_u:%s",
                                    ta, dom_u)) != 0)
     {
@@ -474,7 +474,7 @@ tapi_cfg_xen_dom_u_set_status(char const *ta, char const *dom_u,
                               char const *status)
 {
     unsigned int v;
-    te_bool      started;
+    bool started;
     te_errno     rc;
 
     struct sockaddr *value;
@@ -512,7 +512,7 @@ tapi_cfg_xen_dom_u_set_status(char const *ta, char const *dom_u,
         return 0;
 
     /* Check up to 120-150 seconds whether SSH server is up */
-    for (v = 0, started = FALSE; !started && v < 20; v++)
+    for (v = 0, started = false; !started && v < 20; v++)
     {
         char buf[256];
         char const *const chk_str = "BOPOHA ECT KYCOK CbIPA";
@@ -532,7 +532,7 @@ tapi_cfg_xen_dom_u_set_status(char const *ta, char const *dom_u,
         if (fgets(buf, sizeof(buf), f) != NULL &&
             strncmp(buf, chk_str, strlen(chk_str)) == 0)
         {
-            started = TRUE;
+            started = true;
         }
 
         pclose(f);
@@ -749,7 +749,7 @@ tapi_cfg_xen_dom_u_del_bridge(char const *ta, char const *dom_u,
         return TE_EINVAL;
     }
 
-    if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/xen:/dom_u:%s"
+    if ((rc = cfg_del_instance_fmt(false, "/agent:%s/xen:/dom_u:%s"
                                    "/bridge:%s", ta, dom_u, bridge)) != 0)
     {
         ERROR("Failed to delete '%s' bridge for '%s' domU on %s",
@@ -943,7 +943,7 @@ tapi_cfg_xen_dom_u_bridge_set_mac_addr(char const *ta, char const *dom_u,
 /* See description in tapi_cfg_xen.h */
 te_errno
 tapi_cfg_xen_dom_u_bridge_get_accel(char const *ta, char const *dom_u,
-                                    char const *bridge, te_bool *accel)
+                                    char const *bridge, bool *accel)
 {
     int          acceleration;
     te_errno     rc;
@@ -974,7 +974,7 @@ tapi_cfg_xen_dom_u_bridge_get_accel(char const *ta, char const *dom_u,
 /* See description in tapi_cfg_xen.h */
 te_errno
 tapi_cfg_xen_dom_u_bridge_set_accel(char const *ta, char const *dom_u,
-                                    char const *bridge, te_bool accel)
+                                    char const *bridge, bool accel)
 {
     te_errno rc;
 
@@ -1001,10 +1001,10 @@ tapi_cfg_xen_dom_u_bridge_set_accel(char const *ta, char const *dom_u,
 te_errno
 tapi_cfg_xen_dom_u_migrate(char const *from_ta, char const *to_ta,
                            char const *dom_u, char const *host,
-                           te_bool live)
+                           bool live)
 {
-    te_bool running;
-    te_bool saved;
+    bool running;
+    bool saved;
 
     char xen_path1[PATH_MAX];
     char xen_path2[PATH_MAX];
@@ -1095,7 +1095,7 @@ tapi_cfg_xen_dom_u_migrate(char const *from_ta, char const *to_ta,
     }
 
     /* Delete domU item from the source agent configurator tree */
-    if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/xen:/dom_u:%s",
+    if ((rc = cfg_del_instance_fmt(false, "/agent:%s/xen:/dom_u:%s",
                                    from_ta, dom_u)) != 0)
     {
         ERROR("Failed to destroy '%s' domU on %s", dom_u, from_ta);

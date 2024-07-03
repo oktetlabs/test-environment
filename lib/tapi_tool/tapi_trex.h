@@ -53,7 +53,7 @@ extern "C" {
  * @endcode
  */
 #define TAPI_TREX_LINUX_IFACE(ta_, iface_) \
-    tapi_trex_interface_init_oid(TRUE, "/agent:%s/interface:%s", \
+    tapi_trex_interface_init_oid(true, "/agent:%s/interface:%s", \
                                  (ta_), (iface_))
 
 /**
@@ -69,7 +69,7 @@ extern "C" {
  * @endcode
  */
 #define TAPI_TREX_PCI_BY_IFACE(ta_, iface_) \
-    tapi_trex_interface_init_oid(FALSE, "/agent:%s/interface:%s", \
+    tapi_trex_interface_init_oid(false, "/agent:%s/interface:%s", \
                                  (ta_), (iface_))
 
 /**
@@ -86,7 +86,7 @@ extern "C" {
  * @endcode
  */
 #define TAPI_TREX_PCI_BY_BDF(ta_, addr_) \
-    tapi_trex_interface_init_oid(FALSE, "/agent:%s/hardware:/pci:/device:%s", \
+    tapi_trex_interface_init_oid(false, "/agent:%s/hardware:/pci:/device:%s", \
                                  (ta_), (addr_))
 
 /**
@@ -344,9 +344,9 @@ extern const tapi_trex_server_config tapi_trex_server_config_default;
  *
  * trex_opt.astf_template = getenv("TE_TREX_ASTF_TEMPLATE");
  * trex_opt.trex_exec = getenv("TE_TREX_EXEC");
- * trex_opt.force_close_at_end = TRUE;
- * trex_opt.no_monitors = TRUE;
- * trex_opt.lro_disable = TRUE;
+ * trex_opt.force_close_at_end = true;
+ * trex_opt.no_monitors = true;
+ * trex_opt.lro_disable = true;
  *
  * // Setup servers
  * trex_opt.servers = TAPI_TREX_SERVERS(
@@ -382,16 +382,16 @@ typedef struct tapi_trex_opt {
      * If set, only server side ports (e.g. @c 1, @c 3 and etc.) are enabled
      * with ASTF service. Traffic won't be transmitted on clients ports.
      */
-    te_bool astf_server_only;
+    bool astf_server_only;
     /**
      * Number of hardware threads to allocate for each port pair.
      * Overrides the @c 'c' argument from config file.
      */
     tapi_job_opt_uint_t n_threads;
     /** If set, disable TSO (advanced TCP mode). */
-    te_bool tso_disable;
+    bool tso_disable;
     /** If set, disable LRO (advanced TCP mode). */
-    te_bool lro_disable;
+    bool lro_disable;
     /**
      * Duration of the test, in seconds.
      *
@@ -403,37 +403,37 @@ typedef struct tapi_trex_opt {
      * server to client. It can achieve better port utilization when
      * flow traffic is asymmetric.
      */
-    te_bool asymmetric_traffic_flow;
+    bool asymmetric_traffic_flow;
     /** If set, report latency using high dynamic range histograms. */
-    te_bool use_hdr_histograms;
+    bool use_hdr_histograms;
     /** If set, work in IPv6 mode. */
-    te_bool ipv6;
+    bool ipv6;
     /**
      * Rate multiplier.
      * Multiply basic rate of templates by this number.
      */
     tapi_job_opt_uint_t rate_multiplier;
     /** If set, won't wait for all flows to be closed, before terminating. */
-    te_bool force_close_at_end;
+    bool force_close_at_end;
     /**
      * If set, enable flow-control.
      * By default TRex disables flow-control.
      * If this option is given, it does not touch it
      */
-    te_bool enable_flow_control;
+    bool enable_flow_control;
     /** If set, disable watchdog. */
-    te_bool no_watchdog;
+    bool no_watchdog;
     /** If set, run TRex DP/RX cores in realtime priority. */
-    te_bool use_realtime_prio;
+    bool use_realtime_prio;
     /** If set, disable monitors publishers. */
-    te_bool no_monitors;
+    bool no_monitors;
     /** If set, don't retry to send packets on failure (queue full etc.). */
-    te_bool dont_resend_pkts;
+    bool dont_resend_pkts;
     /**
      * If set, use sleeps instead of busy wait in scheduler.
      * Less accurate, more power saving.
      */
-    te_bool use_sleep;
+    bool use_sleep;
     /** The higher the value, print more debug information. */
     tapi_trex_verbose_t verbose;
     /** IO mode for server output.*/
@@ -687,16 +687,16 @@ typedef struct tapi_trex_report {
  *
  * @code{.c}
  * tapi_trex_interface *iface = tapi_trex_interface_init_oid(
- *          FALSE, "/agent:%s/interface:%s", "Agt_A", "eth0");
+ *          false, "/agent:%s/interface:%s", "Agt_A", "eth0");
  * ...
  * tapi_trex_interface_free(iface);
  * @endcode
  *
  * @note Function result should be tapi_trex_interface_free()'d.
  *
- * @note If @p use_kernel_interface is @c TRUE, then only @c '/agent/interface'
+ * @note If @p use_kernel_interface is @c true, then only @c '/agent/interface'
  *       OIDs are supported and the name of the interface is used.
- *       If @p use_kernel_interface is @c FALSE, then OIDs are resolved
+ *       If @p use_kernel_interface is @c false, then OIDs are resolved
  *       to a PCI address.
  *
  * @note OID can be one the following:
@@ -704,7 +704,7 @@ typedef struct tapi_trex_report {
  *          - @c '/agent/hardware/pci/device'
  *          - @c '/agent/interface'
  */
-extern tapi_trex_interface *tapi_trex_interface_init_oid(te_bool use_kernel_interface,
+extern tapi_trex_interface *tapi_trex_interface_init_oid(bool use_kernel_interface,
                                                          const char *oid_fmt,
                                                          ...);
 
@@ -986,10 +986,10 @@ extern te_errno tapi_trex_destroy_report(tapi_trex_report *report);
  * @param[in]  report           TRex report.
  * @param[in]  param            Type of param.
  * @param[in]  index            Port index.
- * @param[in]  absolute_value   If @c TRUE - return parameter value, otherwise,
+ * @param[in]  absolute_value   If @c true - return parameter value, otherwise,
  *                              return the differences in the values of each
  *                              pair of consecutive parameters.
- * @param[in]  by_time          If @c TRUE - the parameter value will be divided
+ * @param[in]  by_time          If @c true - the parameter value will be divided
  *                              by the time interval between the current and
  *                              previous parameter
  * @param[out] vals             Array of values.
@@ -997,7 +997,7 @@ extern te_errno tapi_trex_destroy_report(tapi_trex_report *report);
  */
 extern void tapi_trex_port_stat_param_series_get(tapi_trex_report *report,
                             tapi_trex_port_stat_enum param, unsigned int index,
-                            te_bool absolute_value, te_bool by_time,
+                            bool absolute_value, bool by_time,
                             double **vals, unsigned int *n_vals);
 
 
@@ -1013,7 +1013,7 @@ tapi_trex_port_stat_time_series_get(tapi_trex_report *report,
                             double **vals, unsigned int *n_vals)
 {
     tapi_trex_port_stat_param_series_get(report,
-                            TAPI_TREX_PORT_STAT_CURRENT_TIME, 0, TRUE, FALSE,
+                            TAPI_TREX_PORT_STAT_CURRENT_TIME, 0, true, false,
                             vals, n_vals);
 }
 
@@ -1032,7 +1032,7 @@ tapi_trex_port_stat_param_series_by_time_get(tapi_trex_report *report,
                             double **vals, unsigned int *n_vals)
 {
     tapi_trex_port_stat_param_series_get(report,
-                            param, index, FALSE, TRUE, vals, n_vals);
+                            param, index, false, true, vals, n_vals);
 }
 
 /**

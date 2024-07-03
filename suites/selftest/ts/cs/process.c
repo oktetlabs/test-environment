@@ -32,21 +32,21 @@ main(int argc, char *argv[])
     const char     *ta = "Agt_A";
     char           *ps1_name = "testps1";
     char           *ps2_name = "testps2";
-    te_bool         is_running;
+    bool is_running;
 
     TEST_START;
 
     TEST_STEP("Add processes");
-    CHECK_RC(tapi_cfg_ps_add(ta, ps1_name, "echo", FALSE));
+    CHECK_RC(tapi_cfg_ps_add(ta, ps1_name, "echo", false));
 
-    CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s/process:%s",
+    CHECK_RC(rc = cfg_synchronize_fmt(true, "/agent:%s/process:%s",
                                       ta, ps1_name));
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/agent:%s/process:%s",
                                  ta, ps1_name));
 
-    CHECK_RC(tapi_cfg_ps_add(ta, ps2_name, "printenv", FALSE));
+    CHECK_RC(tapi_cfg_ps_add(ta, ps2_name, "printenv", false));
 
-    CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s/process:%s",
+    CHECK_RC(rc = cfg_synchronize_fmt(true, "/agent:%s/process:%s",
                                       ta, ps2_name));
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/agent:%s/process:%s",
                                  ta, ps2_name));
@@ -55,7 +55,7 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_cfg_ps_add_arg(ta, ps1_name, 3, "TESTARG1"));
     CHECK_RC(tapi_cfg_ps_add_arg(ta, ps1_name, 1, "TESTARG2"));
 
-    CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s/process:%s",
+    CHECK_RC(rc = cfg_synchronize_fmt(true, "/agent:%s/process:%s",
                                       ta, ps1_name));
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/agent:%s/process:%s",
                                  ta, ps1_name));
@@ -85,7 +85,7 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_cfg_ps_add_opt(ta, ps1_name, "long", "optval2"));
     CHECK_RC(tapi_cfg_ps_add_opt(ta, ps1_name, "without_val", NULL));
 
-    CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s/process:%s",
+    CHECK_RC(rc = cfg_synchronize_fmt(true, "/agent:%s/process:%s",
                                       ta, ps1_name));
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/agent:%s/process:%s",
                                  ta, ps1_name));
@@ -101,7 +101,7 @@ main(int argc, char *argv[])
     TEST_STEP("Set long option value separator for the first process");
     CHECK_RC(tapi_cfg_ps_set_long_opt_sep(ta, ps1_name, "="));
 
-    CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s/process:%s",
+    CHECK_RC(rc = cfg_synchronize_fmt(true, "/agent:%s/process:%s",
                                       ta, ps1_name));
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/agent:%s/process:%s",
                                  ta, ps1_name));
@@ -122,7 +122,7 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_cfg_ps_add_arg(ta, ps2_name, 1, "TESTENVVAR1"));
     CHECK_RC(tapi_cfg_ps_add_arg(ta, ps2_name, 2, "TESTENVVAR2"));
 
-    CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s/process:%s",
+    CHECK_RC(rc = cfg_synchronize_fmt(true, "/agent:%s/process:%s",
                                       ta, ps2_name));
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/agent:%s/process:%s",
                                  ta, ps2_name));

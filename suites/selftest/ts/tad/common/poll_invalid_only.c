@@ -42,9 +42,9 @@ main(int argc, char *argv[])
 {
     rcf_trpoll_csap    *csaps = NULL;
     unsigned int        n_csaps;
-    te_bool             ta_null;
-    te_bool             zero_timeout;
-    te_bool             zero_status;
+    bool ta_null;
+    bool zero_timeout;
+    bool zero_status;
     unsigned int        i;
 
     TEST_START;

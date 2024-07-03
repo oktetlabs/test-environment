@@ -91,7 +91,7 @@ main(int argc, char *argv[])
     tst_s6 = rpc_socket(pco_tst, RPC_PF_INET6, RPC_SOCK_STREAM, RPC_PROTO_DEF);
 
     /***** Enable IPV6_V6ONLY option *****/
-    opt_val = TRUE;
+    opt_val = true;
     rpc_setsockopt(pco_iut, iut_s6, RPC_IPV6_V6ONLY, &opt_val);
 
     /*
@@ -122,7 +122,7 @@ main(int argc, char *argv[])
     CHECK_RPC_ERRNO(pco_tst, RPC_ECONNREFUSED, "connect() returns -1, but");
 
     SLEEP(3);
-    RPC_CHECK_READABILITY(pco_iut, iut_s6, FALSE);
+    RPC_CHECK_READABILITY(pco_iut, iut_s6, false);
 
     /*
      * Check that it is still possible to open
@@ -131,7 +131,7 @@ main(int argc, char *argv[])
     rpc_connect(pco_tst, tst_s6, iut_addr6);
 
     /* Open a new connection */
-    RPC_CHECK_READABILITY(pco_iut, iut_s6, TRUE);
+    RPC_CHECK_READABILITY(pco_iut, iut_s6, true);
     conn_s = rpc_accept(pco_iut, iut_s6, NULL, NULL);
     RPC_CLOSE(pco_iut, conn_s);
 
@@ -140,7 +140,7 @@ main(int argc, char *argv[])
     tst_s6 = rpc_socket(pco_tst, RPC_PF_INET6, RPC_SOCK_STREAM, RPC_PROTO_DEF);
 
     /***** Disable IPV6_V6ONLY option *****/
-    opt_val = FALSE;
+    opt_val = false;
 
     /*
      * On some systems it is not allowed to change IPV6_V6ONLY option
@@ -177,7 +177,7 @@ main(int argc, char *argv[])
     rpc_connect(pco_tst, tst_s4, iut_addr4);
 
     /* Open a new connection */
-    RPC_CHECK_READABILITY(pco_iut, iut_s6, TRUE);
+    RPC_CHECK_READABILITY(pco_iut, iut_s6, true);
     conn_s = rpc_accept(pco_iut, iut_s6, NULL, NULL);
     RPC_CLOSE(pco_iut, conn_s);
 
@@ -188,7 +188,7 @@ main(int argc, char *argv[])
     rpc_connect(pco_tst, tst_s6, iut_addr6);
 
     /* Open a new connection */
-    RPC_CHECK_READABILITY(pco_iut, iut_s6, TRUE);
+    RPC_CHECK_READABILITY(pco_iut, iut_s6, true);
     conn_s = rpc_accept(pco_iut, iut_s6, NULL, NULL);
     RPC_CLOSE(pco_iut, conn_s);
 

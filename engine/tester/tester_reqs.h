@@ -27,7 +27,7 @@ typedef struct test_requirement {
     TAILQ_ENTRY(test_requirement)   links;  /**< List links */
     char       *id;         /**< Identifier */
     char       *ref;        /**< Reference */
-    te_bool     sticky;     /**< Is it sticky requirement? */
+    bool sticky;     /**< Is it sticky requirement? */
 } test_requirement;
 
 /** Head of the list of requirements */
@@ -84,16 +84,16 @@ extern void test_requirements_free(test_requirements *reqs);
  * @param flags         Current Tester context flags
  * @param quiet         Be quiet
  *
- * @retval TRUE         Run is required
- * @retval FALSE        Run is not required
+ * @retval @c true      Run is required
+ * @retval @c false     Run is not required
  */
-extern te_bool tester_is_run_required(
+extern bool tester_is_run_required(
                    const logic_expr           *targets,
                    const test_requirements    *sticky_reqs,
                    const struct run_item      *test,
                    const struct test_iter_arg *args,
                    tester_flags                flags,
-                   te_bool                     quiet);
+                   bool quiet);
 
 /**
  * Add sticky requirements to the context.

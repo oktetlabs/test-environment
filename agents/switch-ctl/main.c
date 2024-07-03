@@ -30,7 +30,7 @@
 #include "poe_lib.h"
 
 
-extern void *rcf_ch_symbol_addr_auto(const char *name, te_bool is_func);
+extern void *rcf_ch_symbol_addr_auto(const char *name, bool is_func);
 extern char *rcf_ch_symbol_name_auto(const void *addr);
 
 
@@ -56,7 +56,7 @@ static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
         rc = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);      \
         RCF_CH_UNLOCK;                                                  \
         return rc;                                                      \
-    } while (FALSE)
+    } while (false)
 
 
 /* See description in rcf_ch_api.h */
@@ -194,7 +194,7 @@ rcf_ch_vwrite(struct rcf_comm_connection *handle,
 
 /* See description in rcf_ch_api.h */
 void *
-rcf_ch_symbol_addr(const char *name, te_bool is_func)
+rcf_ch_symbol_addr(const char *name, bool is_func)
 {
     return rcf_ch_symbol_addr_auto(name, is_func);
 }
@@ -226,7 +226,7 @@ rcf_ch_file(struct rcf_comm_connection *handle,
 int
 rcf_ch_call(struct rcf_comm_connection *handle,
             char *cbuf, size_t buflen, size_t answer_plen,
-            const char *rtn, te_bool is_argv, int argc, uint32_t *params)
+            const char *rtn, bool is_argv, int argc, uint32_t *params)
 {
     UNUSED(handle);
     UNUSED(cbuf);
@@ -245,7 +245,7 @@ rcf_ch_call(struct rcf_comm_connection *handle,
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_start_process(pid_t *pid,
-                     int priority, const char *rtn, te_bool is_argv,
+                     int priority, const char *rtn, bool is_argv,
                      int argc, uint32_t *params)
 {
     UNUSED(priority);
@@ -260,7 +260,7 @@ rcf_ch_start_process(pid_t *pid,
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_start_thread(int *tid,
-                    int priority, const char *rtn, te_bool is_argv,
+                    int priority, const char *rtn, bool is_argv,
                     int argc, uint32_t *params)
 {
     UNUSED(priority);

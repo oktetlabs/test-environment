@@ -161,14 +161,14 @@ trc_re_subst_parse(trc_re_subst *p)
         if (m == NULL)
             return TE_ENOMEM;
 
-        m->match = FALSE;
+        m->match = false;
 
         if (s[0] == '\\')
         {
             *s++ = '\0';
             if (isdigit(*s))
             {
-                m->match = TRUE;
+                m->match = true;
                 m->u.match = *s - '0';
                 if (p->max_match < m->u.match)
                     p->max_match = m->u.match;

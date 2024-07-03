@@ -141,20 +141,20 @@ typedef struct dhcp_message {
     uint8_t sname[DHCPV4_HDR_SNAME_SIZE];   /**< Server host name */
     uint8_t file[DHCPV4_HDR_FILE_SIZE];     /**< Boot file name */
 
-    te_bool  is_op_set;         /**< Is message op code has been set */
-    te_bool  is_htype_set;      /**< Is message htype has been set */
-    te_bool  is_hlen_set;       /**< Is message hlen has been set */
-    te_bool  is_hops_set;       /**< Is message hops has been set */
-    te_bool  is_xid_set;        /**< Is message xid has been set */
-    te_bool  is_secs_set;       /**< Is message secs has been set */
-    te_bool  is_flags_set;      /**< Is message flags has been set */
-    te_bool  is_ciaddr_set;     /**< Is message ciaddr has been set */
-    te_bool  is_yiaddr_set;     /**< Is message yiaddr has been set */
-    te_bool  is_siaddr_set;     /**< Is message siaddr has been set */
-    te_bool  is_giaddr_set;     /**< Is message giaddr has been set */
-    te_bool  is_chaddr_set;     /**< Is message chaddr has been set */
-    te_bool  is_sname_set;      /**< Is message sname has been set */
-    te_bool  is_file_set;       /**< Is message file has been set */
+    bool is_op_set;         /**< Is message op code has been set */
+    bool is_htype_set;      /**< Is message htype has been set */
+    bool is_hlen_set;       /**< Is message hlen has been set */
+    bool is_hops_set;       /**< Is message hops has been set */
+    bool is_xid_set;        /**< Is message xid has been set */
+    bool is_secs_set;       /**< Is message secs has been set */
+    bool is_flags_set;      /**< Is message flags has been set */
+    bool is_ciaddr_set;     /**< Is message ciaddr has been set */
+    bool is_yiaddr_set;     /**< Is message yiaddr has been set */
+    bool is_siaddr_set;     /**< Is message siaddr has been set */
+    bool is_giaddr_set;     /**< Is message giaddr has been set */
+    bool is_chaddr_set;     /**< Is message chaddr has been set */
+    bool is_sname_set;      /**< Is message sname has been set */
+    bool is_file_set;       /**< Is message file has been set */
 
     struct dhcp_option *opts;   /**< List of DHCP options */
 } dhcp_message;
@@ -166,7 +166,7 @@ typedef struct dhcp_message {
  * @param field_  Field name whose value to be got
  */
 #define dhcpv4_message_get_field(msg_, field_) \
-            ((((msg_)->is_ ## field_ ## _set != TRUE) ? assert(0) : 0), \
+            ((((msg_)->is_ ## field_ ## _set != true) ? assert(0) : 0), \
              ((msg_)->field_))
 
 /** @name Get field macros */
@@ -202,7 +202,7 @@ typedef struct dhcp_message {
  * @param value_  Pointer to the new value
  */
 #define dhcpv4_message_set_simple_field(msg_, field_, value_) \
-            ((msg_)->is_ ## field_ ## _set = TRUE,                       \
+            ((msg_)->is_ ## field_ ## _set = true,                       \
              memcpy(&((msg_)->field_), value_, sizeof((msg_)->field_)))
 
 /**
@@ -214,7 +214,7 @@ typedef struct dhcp_message {
  * @param value_  Pointer to the new value
  */
 #define dhcpv4_message_set_array_field(msg_, field_, value_) \
-            ((msg_)->is_ ## field_ ## _set = TRUE,                       \
+            ((msg_)->is_ ## field_ ## _set = true,                       \
              memcpy(((msg_)->field_), value_, sizeof((msg_)->field_)))
 
 /** @name Set field macros */
@@ -265,7 +265,7 @@ typedef struct dhcp_message {
                 size_t str_len = strlen(value_);           \
                                                            \
                 assert(str_len < sizeof((msg_)->file));    \
-                (msg_)->is_file_set = TRUE;                \
+                (msg_)->is_file_set = true;                \
                 memcpy((msg_)->file, value_, str_len + 1); \
             } while (0)
 
@@ -389,7 +389,7 @@ extern int dhcpv4_message_add_option(struct dhcp_message *dhcp_msg,
                                      const void *val);
 extern int dhcpv4_message_insert_option(struct dhcp_message *dhcp_msg,
                                         struct dhcp_option *opt);
-extern te_bool dhcpv4_option55_has_code(const struct dhcp_option *opt,
+extern bool dhcpv4_option55_has_code(const struct dhcp_option *opt,
                                         uint8_t type);
 
 /**

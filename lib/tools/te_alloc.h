@@ -36,21 +36,21 @@ extern "C" {
  * @param[in]     offset         Offset of a chunk within the buffer.
  * @param[in,out] extent         Length of the chunk.
  *
- * @return @c TRUE if @p extent was reduced.
+ * @return @c true if @p extent was reduced.
  *
  * @pre @p offset should be within @p total_length.
  */
-static inline te_bool
+static inline bool
 te_alloc_adjust_extent(size_t total_length, size_t offset, size_t *extent)
 {
-    te_bool adjusted = FALSE;
+    bool adjusted = false;
 
     assert(offset < total_length);
     if (offset + *extent > total_length ||
         offset + *extent < offset)
     {
         *extent = total_length - offset;
-        adjusted = TRUE;
+        adjusted = true;
     }
 
     return adjusted;
@@ -63,7 +63,7 @@ te_alloc_adjust_extent(size_t total_length, size_t offset, size_t *extent)
  * use TE_ALLOC() or TE_ALLOC_UNINITIALIZED() macros instead.
  *
  * @param size       Number of bytes to allocate.
- * @param initialize Zero the allocated memory if @c TRUE.
+ * @param initialize Zero the allocated memory if @c true.
  * @param filename   Caller's filename.
  * @param line       Caller's line.
  *
@@ -75,7 +75,7 @@ te_alloc_adjust_extent(size_t total_length, size_t offset, size_t *extent)
  * @note On requesting zero bytes, the function actually returns a 1-byte
  *       buffer capturing ISO C permitted behaviour of recent glibc.
  */
-extern void *te_alloc_internal(size_t size, te_bool initialize,
+extern void *te_alloc_internal(size_t size, bool initialize,
                                const char *filename, int line);
 
 /**
@@ -91,7 +91,7 @@ extern void *te_alloc_internal(size_t size, te_bool initialize,
  * @note On requesting zero bytes, the macro actually returns a 1-byte
  *       buffer capturing ISO C permitted behaviour of recent glibc.
  */
-#define TE_ALLOC(size_) (te_alloc_internal((size_), TRUE, __FILE__, __LINE__))
+#define TE_ALLOC(size_) (te_alloc_internal((size_), true, __FILE__, __LINE__))
 
 /**
  * Allocate @p size_ bytes without initializing it.
@@ -112,7 +112,7 @@ extern void *te_alloc_internal(size_t size, te_bool initialize,
  *       buffer capturing ISO C permitted behaviour of recent glibc.
  */
 #define TE_ALLOC_UNINITIALIZED(size_) \
-    (te_alloc_internal((size_), FALSE, __FILE__, __LINE__))
+    (te_alloc_internal((size_), false, __FILE__, __LINE__))
 
 /**
  * Reallocate @p oldptr to have the size of @p newsize.
@@ -189,9 +189,9 @@ extern void *te_realloc_internal(void *oldptr, size_t newsize,
  * @param nmemb  Number of elements.
  * @param size   Size of an element.
  *
- * @return @c TRUE if an array of @p nmemb elements may be allocated.
+ * @return @c true if an array of @p nmemb elements may be allocated.
  */
-static inline te_bool
+static inline bool
 te_is_valid_alloc(size_t nmemb, size_t size)
 {
     return size <= 1 || nmemb <= 1 || nmemb < (SIZE_MAX / size);
@@ -203,10 +203,10 @@ te_is_valid_alloc(size_t nmemb, size_t size)
  * This function should never be called directly,
  *
  * @param src                Source buffer (may be @c NULL).
- * @param zero_terminated    If @c TRUE, only copy bytes up to the first
+ * @param zero_terminated    If @c true, only copy bytes up to the first
  *                           binary zero.
  * @param maxsize            Maximum number of bytes to copy
- *                           (may be less if @p zero_terminated is @c TRUE).
+ *                           (may be less if @p zero_terminated is @c true).
  * @param filename           Source filename.
  * @param line               Source line.
  *
@@ -216,7 +216,7 @@ te_is_valid_alloc(size_t nmemb, size_t size)
  * @exception TE_FATAL_ERROR in an unlikely case of a memory allocation
  *            failure.
  */
-extern void *te_memdup_internal(const void *src, te_bool zero_terminated,
+extern void *te_memdup_internal(const void *src, bool zero_terminated,
                                 size_t maxsize, const char *filename, int line);
 
 /**
@@ -237,7 +237,7 @@ extern void *te_memdup_internal(const void *src, te_bool zero_terminated,
  * @note Refer to TE_ALLOC() on behaviour when @p size_ is zero.
  */
 #define TE_MEMDUP(src_, size_) \
-    (te_memdup_internal((src_), FALSE, (size_), __FILE__, __LINE__))
+    (te_memdup_internal((src_), false, (size_), __FILE__, __LINE__))
 
 /**
  * Make a copy of zero-terminated @p src_ like system @c strdup.
@@ -251,7 +251,7 @@ extern void *te_memdup_internal(const void *src, te_bool zero_terminated,
  *            failure.
  */
 #define TE_STRDUP(src_) \
-    ((char *)te_memdup_internal((src_), TRUE, SIZE_MAX, __FILE__, __LINE__))
+    ((char *)te_memdup_internal((src_), true, SIZE_MAX, __FILE__, __LINE__))
 
 /**
  * Make a copy of possibly zero-terminated @p src_ like system @c strndup.
@@ -271,7 +271,7 @@ extern void *te_memdup_internal(const void *src, te_bool zero_terminated,
  *            failure.
  */
 #define TE_STRNDUP(src_, maxsize_) \
-    ((char *)te_memdup_internal((src_), TRUE, (maxsize_), __FILE__, __LINE__))
+    ((char *)te_memdup_internal((src_), true, (maxsize_), __FILE__, __LINE__))
 
 
 #ifdef __cplusplus

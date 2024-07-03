@@ -326,7 +326,7 @@ tapi_cfg_phy_state_wait_up(const char *ta,
     if (rc != 0)
         return rc;
 
-    while (TRUE)
+    while (true)
     {
         rc = tapi_cfg_phy_state_get(ta, if_name, &state);
         if (rc != 0)
@@ -357,12 +357,12 @@ tapi_cfg_phy_state_wait_up(const char *ta,
  * @param speed               Speed (if <= 0, all speeds match)
  * @param duplex              Duplex state (if TE_PHY_DUPLEX_UNKNOWN, all
  *                            states match)
- * @param state               If @p do_set is @c TRUE, this tells whether
+ * @param state               If @p do_set is @c true, this tells whether
  *                            advertising should be enabled. Otherwise the
  *                            current advertising state will be saved here
- * @param do_set              If @c TRUE, perform state change. Otherwise
+ * @param do_set              If @c true, perform state change. Otherwise
  *                            get the current state
- * @param unset_not_matched   If @c TRUE and @p do_set is @c TRUE, disable
+ * @param unset_not_matched   If @c true and @p do_set is @c true, disable
  *                            all not matching link modes which specify
  *                            speed/duplex
  *
@@ -370,8 +370,8 @@ tapi_cfg_phy_state_wait_up(const char *ta,
  */
 static te_errno
 speed_duplex_advertise_op(const char *ta, const char *if_name,
-                          int speed, int duplex, te_bool *state,
-                          te_bool do_set, te_bool unset_not_matched)
+                          int speed, int duplex, bool *state,
+                          bool do_set, bool unset_not_matched)
 {
     te_errno rc = 0;
     unsigned int modes_num = 0;
@@ -385,10 +385,10 @@ speed_duplex_advertise_op(const char *ta, const char *if_name,
     char *str_duplex;
     int parsed_duplex;
     int state_int;
-    te_bool not_matched;
+    bool not_matched;
 
     if (!do_set)
-        *state = FALSE;
+        *state = false;
 
     rc = cfg_find_pattern_fmt(&modes_num, &modes,
                               "/agent:%s/interface:%s/phy:/mode:*",
@@ -400,7 +400,7 @@ speed_duplex_advertise_op(const char *ta, const char *if_name,
     {
         free(mode_name);
         mode_name = NULL;
-        not_matched = FALSE;
+        not_matched = false;
 
         rc = cfg_get_inst_name(modes[i], &mode_name);
         if (rc != 0)
@@ -414,7 +414,7 @@ speed_duplex_advertise_op(const char *ta, const char *if_name,
             if (!unset_not_matched)
                 continue;
 
-            not_matched = TRUE;
+            not_matched = true;
         }
 
         str_duplex = strrchr(mode_name, '_');
@@ -433,7 +433,7 @@ speed_duplex_advertise_op(const char *ta, const char *if_name,
             if (!unset_not_matched)
                 continue;
 
-            not_matched = TRUE;
+            not_matched = true;
         }
 
         if (do_set)
@@ -451,7 +451,7 @@ speed_duplex_advertise_op(const char *ta, const char *if_name,
             rc = cfg_get_instance(modes[i], &val_type, &state_int);
             if (rc == 0)
             {
-                *state = (state_int == 0 ? FALSE : TRUE);
+                *state = (state_int == 0 ? false : true);
                 if (*state)
                     break;
             }
@@ -470,20 +470,20 @@ speed_duplex_advertise_op(const char *ta, const char *if_name,
 te_errno
 tapi_cfg_phy_is_mode_advertised(const char *ta, const char *if_name,
                                 int speed, int duplex,
-                                te_bool *state)
+                                bool *state)
 {
     return speed_duplex_advertise_op(ta, if_name, speed, duplex, state,
-                                     FALSE, FALSE);
+                                     false, false);
 }
 
 /* See description in tapi_cfg_phy.h */
 te_errno
 tapi_cfg_phy_advertise_mode(const char *ta, const char *if_name,
-                            int speed, int duplex, te_bool state)
+                            int speed, int duplex, bool state)
 {
 
     return speed_duplex_advertise_op(ta, if_name, speed, duplex, &state,
-                                     TRUE, FALSE);
+                                     true, false);
 }
 
 /* See description in tapi_cfg_phy.h */
@@ -499,10 +499,10 @@ tapi_cfg_phy_advertise_one(const char *ta, const char *if_name,
                            int advert_speed, int advert_duplex)
 {
     te_errno rc;
-    te_bool state = TRUE;
+    bool state = true;
 
     rc = speed_duplex_advertise_op(ta, if_name, advert_speed,
-                                   advert_duplex, &state, TRUE, TRUE);
+                                   advert_duplex, &state, true, true);
     if (rc != 0)
         return rc;
 
@@ -514,7 +514,7 @@ te_errno
 tapi_cfg_phy_lp_advertised(const char *ta,
                            const char *if_name,
                            const char *mode_name,
-                           te_bool *advertised)
+                           bool *advertised)
 {
     te_errno rc;
     cfg_handle handle;
@@ -523,9 +523,9 @@ tapi_cfg_phy_lp_advertised(const char *ta,
                       "/agent:%s/interface:%s/phy:/lp_advertised:%s",
                       ta, if_name, mode_name);
     if (rc == 0)
-        *advertised = TRUE;
+        *advertised = true;
     else if (rc == TE_RC(TE_CS, TE_ENOENT))
-        *advertised = FALSE;
+        *advertised = false;
     else
         return rc;
 
@@ -538,8 +538,8 @@ tapi_cfg_phy_pause_lp_adv_get(const char *ta, const char *if_name,
                               int *state)
 {
     te_errno rc;
-    te_bool pause = FALSE;
-    te_bool asym_pause = FALSE;
+    bool pause = false;
+    bool asym_pause = false;
 
     rc = tapi_cfg_phy_lp_advertised(ta, if_name, "Pause", &pause);
     if (rc != 0)
@@ -573,7 +573,7 @@ tapi_cfg_phy_autoneg_lp_adv_get(const char *ta, const char *if_name,
                                 int *state)
 {
     te_errno rc;
-    te_bool autoneg;
+    bool autoneg;
 
     rc = tapi_cfg_phy_lp_advertised(ta, if_name, "Autoneg", &autoneg);
     if (rc != 0)
@@ -592,7 +592,7 @@ te_errno
 tapi_cfg_phy_mode_supported(const char *ta,
                             const char *if_name,
                             const char *mode_name,
-                            te_bool *supported)
+                            bool *supported)
 {
     te_errno rc;
     cfg_handle handle;
@@ -601,9 +601,9 @@ tapi_cfg_phy_mode_supported(const char *ta,
                       "/agent:%s/interface:%s/phy:/mode:%s",
                       ta, if_name, mode_name);
     if (rc == 0)
-        *supported = TRUE;
+        *supported = true;
     else if (rc == TE_RC(TE_CS, TE_ENOENT))
-        *supported = FALSE;
+        *supported = false;
     else
         return rc;
 
@@ -615,7 +615,7 @@ te_errno
 tapi_cfg_phy_mode_adv_get(const char *ta,
                           const char *if_name,
                           const char *mode_name,
-                          te_bool *state)
+                          bool *state)
 {
     int value;
     te_errno rc;
@@ -628,9 +628,9 @@ tapi_cfg_phy_mode_adv_get(const char *ta,
         return rc;
 
     if (value == 0)
-        *state = FALSE;
+        *state = false;
     else
-        *state = TRUE;
+        *state = true;
 
     return 0;
 }
@@ -640,7 +640,7 @@ te_errno
 tapi_cfg_phy_mode_adv_set(const char *ta,
                           const char *if_name,
                           const char *mode_name,
-                          te_bool state)
+                          bool state)
 {
     int value = state ? 1 : 0;
 

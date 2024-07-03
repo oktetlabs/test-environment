@@ -183,19 +183,19 @@ create_optional_ipversion(const void *value, const void *priv, te_vec *args)
       offsetof(_struct, _filed) }
 
 #define CREATE_OPT_PROTO(_struct, _filed) \
-    { create_optional_proto, NULL, FALSE, NULL, \
+    { create_optional_proto, NULL, false, NULL, \
       offsetof(_struct, _filed) }
 
 #define CREATE_OPT_MUXER(_prefix, _struct, _filed) \
-    { create_optional_muxer, _prefix, TRUE, NULL, \
+    { create_optional_muxer, _prefix, true, NULL, \
       offsetof(_struct, _filed) }
 
 #define CREATE_OPT_SIZES(_prefix, _struct, _filed) \
-    { create_optional_sizes, _prefix, TRUE, NULL, \
+    { create_optional_sizes, _prefix, true, NULL, \
       offsetof(_struct, _filed) }
 
 #define CREATE_OPT_IPVERSION(_struct, _field) \
-    {create_optional_ipversion, NULL, FALSE, NULL, \
+    {create_optional_ipversion, NULL, false, NULL, \
      offsetof(_struct, _field) }
 
 const tapi_sfnt_pp_opt tapi_sfnt_pp_opt_default_opt = {
@@ -208,7 +208,7 @@ const tapi_sfnt_pp_opt tapi_sfnt_pp_opt_default_opt = {
     .max_ms = -1,
     .min_iter = -1,
     .max_iter = -1,
-    .spin = FALSE,
+    .spin = false,
     .muxer = TAPI_SFNT_PP_MUXER_NONE,
     .timeout_ms = -1,
     .sizes = NULL,
@@ -227,18 +227,18 @@ tapi_sfnt_pp_create_client(tapi_job_factory_t *factory,
 
     const tapi_job_opt_bind client_binds[] = TAPI_JOB_OPT_SET(
         CREATE_OPT_SIZES("--sizes=", tapi_sfnt_pp_opt, sizes),
-        CREATE_OPT_INT("--minmsg=", TRUE, tapi_sfnt_pp_opt, min_msg),
-        CREATE_OPT_INT("--maxmsg=", TRUE, tapi_sfnt_pp_opt, max_msg),
-        CREATE_OPT_INT("--minms=", TRUE, tapi_sfnt_pp_opt, min_ms),
-        CREATE_OPT_INT("--maxms=", TRUE, tapi_sfnt_pp_opt, max_ms),
-        CREATE_OPT_INT("--miniter=", TRUE, tapi_sfnt_pp_opt, min_iter),
-        CREATE_OPT_INT("--maxiter=", TRUE, tapi_sfnt_pp_opt, max_iter),
+        CREATE_OPT_INT("--minmsg=", true, tapi_sfnt_pp_opt, min_msg),
+        CREATE_OPT_INT("--maxmsg=", true, tapi_sfnt_pp_opt, max_msg),
+        CREATE_OPT_INT("--minms=", true, tapi_sfnt_pp_opt, min_ms),
+        CREATE_OPT_INT("--maxms=", true, tapi_sfnt_pp_opt, max_ms),
+        CREATE_OPT_INT("--miniter=", true, tapi_sfnt_pp_opt, min_iter),
+        CREATE_OPT_INT("--maxiter=", true, tapi_sfnt_pp_opt, max_iter),
         TAPI_JOB_OPT_BOOL("--spin", tapi_sfnt_pp_opt, spin),
         CREATE_OPT_MUXER("--muxer=", tapi_sfnt_pp_opt, muxer),
-        CREATE_OPT_INT("--timeout=", TRUE, tapi_sfnt_pp_opt, timeout_ms),
+        CREATE_OPT_INT("--timeout=", true, tapi_sfnt_pp_opt, timeout_ms),
         CREATE_OPT_IPVERSION(tapi_sfnt_pp_opt, ipversion),
         CREATE_OPT_PROTO(tapi_sfnt_pp_opt, proto),
-        TAPI_JOB_OPT_SOCKADDR_PTR(NULL, FALSE, tapi_sfnt_pp_opt, server)
+        TAPI_JOB_OPT_SOCKADDR_PTR(NULL, false, tapi_sfnt_pp_opt, server)
     );
 
     if (opt->server == NULL)
@@ -261,22 +261,22 @@ tapi_sfnt_pp_create_client(tapi_job_factory_t *factory,
                                     .stdout_loc = &client->out_chs[0],
                                     .stderr_loc = &client->out_chs[1],
                                     .filters = TAPI_JOB_SIMPLE_FILTERS(
-                                        {.use_stdout = TRUE,
-                                         .readable = TRUE,
+                                        {.use_stdout = true,
+                                         .readable = true,
                                          .re = "\\s*(\\d+[\\t ]+\\d+[\\t ]+"
                                                "\\d+[\\t ]+\\d+[\\t ]+\\d+[\\t ]+"
                                                "\\d+[\\t ]+\\d+[\\t ]+\\d+)\\s*",
                                          .extract = 0,
                                          .filter_var = &client->filter,
                                         },
-                                        {.use_stdout = TRUE,
+                                        {.use_stdout = true,
                                          .log_level = TE_LL_RING,
-                                         .readable = FALSE,
+                                         .readable = false,
                                          .filter_name = "out",
                                         },
-                                        {.use_stderr = TRUE,
+                                        {.use_stderr = true,
                                          .log_level = TE_LL_ERROR,
-                                         .readable = FALSE,
+                                         .readable = false,
                                          .filter_name = "err",
                                         }
                                     )
@@ -321,14 +321,14 @@ tapi_sfnt_pp_create_server(tapi_job_factory_t *factory,
                                     .stdout_loc = &server->out_chs[0],
                                     .stderr_loc = &server->out_chs[1],
                                     .filters = TAPI_JOB_SIMPLE_FILTERS(
-                                        {.use_stdout = TRUE,
+                                        {.use_stdout = true,
                                          .log_level = TE_LL_RING,
-                                         .readable = FALSE,
+                                         .readable = false,
                                          .filter_name = "out",
                                         },
-                                        {.use_stderr = TRUE,
+                                        {.use_stderr = true,
                                          .log_level = TE_LL_ERROR,
-                                         .readable = FALSE,
+                                         .readable = false,
                                          .filter_name = "err",
                                         }
                                     )

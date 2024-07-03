@@ -62,7 +62,7 @@ main(int argc, char **argv)
     TEST_STEP("Testing local file expansion");
     CHECK_RC(tapi_file_expand_kvpairs(NULL, template, NULL, &kvpairs,
                                       "%s/%s", tmpdir, filename.ptr));
-    CHECK_RC(te_file_read_string(&local, FALSE, 0, "%s/%s", tmpdir,
+    CHECK_RC(te_file_read_string(&local, false, 0, "%s/%s", tmpdir,
                                  filename.ptr));
     if (strcmp(expected, local.ptr) != 0)
     {

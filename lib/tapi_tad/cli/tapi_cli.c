@@ -401,7 +401,7 @@ tapi_cli_csap_create(const char *ta_name, int sid,
         ERROR("rcf_ta_csap_create() failed(%r) on TA %s:%d file %s",
               rc, ta_name, sid, tmp_name);
     }
-    else if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/csap:*",
+    else if ((rc = cfg_synchronize_fmt(true, "/agent:%s/csap:*",
                                        ta_name)) != 0)
     {
         ERROR("%s(): cfg_synchronize_fmt(/agent:%s/csap:*) failed: %r",

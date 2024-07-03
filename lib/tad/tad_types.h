@@ -246,7 +246,7 @@ typedef struct {
             size_t   length;    /**< Value/mask length */
             uint8_t *value;     /**< Expected value when mask applied */
             uint8_t *mask;      /**< The mask */
-            te_bool  exact_len; /**< Whether length of matched data
+            bool     exact_len; /**< Whether length of matched data
                                      should be exactly the same? */
         } mask;
 

@@ -93,9 +93,9 @@ typedef struct tad_eth_proto_pdu_data {
 static const tad_bps_pkt_frag tad_eth_addrs_bps_hdr[] =
 {
     { "dst-addr", 48, NDN_TAG_802_3_DST,
-      NDN_TAG_ETH_REMOTE, NDN_TAG_ETH_LOCAL, 0, TAD_DU_OCTS, FALSE },
+      NDN_TAG_ETH_REMOTE, NDN_TAG_ETH_LOCAL, 0, TAD_DU_OCTS, false },
     { "src-addr", 48, NDN_TAG_802_3_SRC,
-      NDN_TAG_ETH_LOCAL, NDN_TAG_ETH_REMOTE, 0, TAD_DU_OCTS, FALSE },
+      NDN_TAG_ETH_LOCAL, NDN_TAG_ETH_REMOTE, 0, TAD_DU_OCTS, false },
 };
 
 /**
@@ -108,7 +108,7 @@ static const tad_bps_pkt_frag tad_eth_addrs_bps_hdr[] =
 static const tad_bps_pkt_frag tad_eth_length_type_bps_hdr[] =
 {
     { "length-type", 16, BPS_FLD_NO_DEF(NDN_TAG_802_3_LENGTH_TYPE),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
 };
 
 /**
@@ -117,7 +117,7 @@ static const tad_bps_pkt_frag tad_eth_length_type_bps_hdr[] =
  */
 static const tad_bps_pkt_frag tad_802_1q_tpid_bps_hdr[] =
 {
-    { "tpid", 16, BPS_FLD_CONST(TAD_802_1Q_TAG_TYPE), TAD_DU_I32, FALSE },
+    { "tpid", 16, BPS_FLD_CONST(TAD_802_1Q_TAG_TYPE), TAD_DU_I32, false },
 };
 
 /**
@@ -126,11 +126,11 @@ static const tad_bps_pkt_frag tad_802_1q_tpid_bps_hdr[] =
 static const tad_bps_pkt_frag tad_802_1q_tci_bps_hdr[] =
 {
     { "priority",  3, BPS_FLD_CONST_DEF(NDN_TAG_VLAN_TAG_HEADER_PRIO, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "cfi",       1, BPS_FLD_CONST_DEF(NDN_TAG_VLAN_TAG_HEADER_CFI, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "vlan-id",  12, BPS_FLD_CONST_DEF(NDN_TAG_VLAN_TAG_HEADER_VID, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 /**
@@ -142,27 +142,27 @@ static const tad_bps_pkt_frag tad_802_1q_e_rif_bps_hdr[] =
     /* - frame is transparent (010 binary) */
     { "e-rif-rc-rt",   3,
       BPS_FLD_CONST_DEF(NDN_TAG_VLAN_TAG_HEADER_ERIF_RC_RT, 2),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     /* - length is minimum length of the header w/o RD */
     { "e-rif-rc-lth",  5,
       BPS_FLD_CONST_DEF(NDN_TAG_VLAN_TAG_HEADER_ERIF_RC_LTH, 2),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     /* - forward direction */
     { "e-rif-rc-d",    1,
       BPS_FLD_CONST_DEF(NDN_TAG_VLAN_TAG_HEADER_ERIF_RC_D, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     /* - largest frame is unset */
     { "e-rif-rc-lf",   6,
       BPS_FLD_CONST_DEF(NDN_TAG_VLAN_TAG_HEADER_ERIF_RC_LF, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     /* - NCFI is reset to indicate that the format is Non-canonical */
     { "e-rif-rc-ncfi", 1,
       BPS_FLD_CONST_DEF(NDN_TAG_VLAN_TAG_HEADER_ERIF_RC_NCFI, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     /* - route descriptors are empty */
     { "e-rif-rd",      0,
       BPS_FLD_CONST_DEF(NDN_TAG_VLAN_TAG_HEADER_ERIF_RD, 0),
-      TAD_DU_OCTS, FALSE },
+      TAD_DU_OCTS, false },
 };
 
 /**
@@ -179,7 +179,7 @@ static const tad_bps_pkt_frag tad_802_1ad_tpid_bps_hdr[] =
         .tag_rx_def = ASN_TAG_USER,
         .value = TAD_802_1ad_TAG_TYPE,
         .plain_du = TAD_DU_I32,
-        .force_read = FALSE,
+        .force_read = false,
     },
 };
 
@@ -190,11 +190,11 @@ static const tad_bps_pkt_frag tad_802_1ad_tpid_bps_hdr[] =
 static const tad_bps_pkt_frag tad_802_1ad_tci_bps_hdr[] =
 {
     { "pcp", 3, BPS_FLD_CONST_DEF(NDN_TAG_VLAN_HEADER_PCP, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "dei", 1, BPS_FLD_CONST_DEF(NDN_TAG_VLAN_HEADER_DEI, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "vid", 12, BPS_FLD_CONST_DEF(NDN_TAG_VLAN_HEADER_VID, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 /**
@@ -203,22 +203,22 @@ static const tad_bps_pkt_frag tad_802_1ad_tci_bps_hdr[] =
 static const tad_bps_pkt_frag tad_802_2_llc_bps_hdr[] =
 {
     { "dsap", 7, BPS_FLD_NO_DEF(NDN_TAG_LLC_DSAP),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     /* By default, DSAP is individual (LSB of the first byte) */
     { "i-g",  1, BPS_FLD_CONST_DEF(NDN_TAG_LLC_DSAP_IG, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "ssap", 7, BPS_FLD_NO_DEF(NDN_TAG_LLC_SSAP),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     /* By default, command (not response) (LSB of the second byte) */
     { "c-r",  1, BPS_FLD_CONST_DEF(NDN_TAG_LLC_SSAP_CR, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     /*
      * Minimum length of the Control is 8bit. We have to get it from
      * the received packet in any case to understand the real length of
      * this field.
      */
     { "ctl",  8, BPS_FLD_NO_DEF(NDN_TAG_LLC_CTL),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
 };
 
 /**
@@ -228,7 +228,7 @@ static const tad_bps_pkt_frag tad_802_2_llc_bps_hdr[] =
 static const tad_bps_pkt_frag tad_802_snap_bps_hdr[] =
 {
     { "oui", 24, BPS_FLD_CONST_DEF(NDN_TAG_SNAP_OUI, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 /**
@@ -238,7 +238,7 @@ static const tad_bps_pkt_frag tad_802_snap_bps_hdr[] =
 static const tad_bps_pkt_frag tad_eth_ether_type_bps_hdr[] =
 {
     { "ether-type", 16, BPS_FLD_SIMPLE(NDN_TAG_802_3_ETHER_TYPE),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 
@@ -1199,7 +1199,7 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
      * Add header segment to each PDU. All segments refer to the same
      * memory. Free function is set for segment of the first packet only.
      */
-    rc = tad_pkts_add_new_seg(pdus, TRUE, data, len,
+    rc = tad_pkts_add_new_seg(pdus, true, data, len,
                               tad_pkt_seg_data_free);
     if (rc != 0)
     {

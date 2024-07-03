@@ -52,7 +52,7 @@ main(int argc, char *argv[])
     char *agt_b;
     size_t  len = sizeof(ta);
 
-    te_bool enum_iterator;
+    bool enum_iterator;
 
     csap_handle_t ip4_send_csap = CSAP_INVALID_HANDLE;
     csap_handle_t ip4_listen_csap = CSAP_INVALID_HANDLE;

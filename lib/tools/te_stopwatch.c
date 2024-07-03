@@ -17,7 +17,7 @@ te_stopwatch_start(te_stopwatch_t *stopwatch)
     if (stopwatch->is_running)
         INFO("Stopwatch is already running");
 
-    stopwatch->is_running = TRUE;
+    stopwatch->is_running = true;
     return te_gettimeofday(&stopwatch->start, NULL);
 }
 
@@ -40,7 +40,7 @@ te_stopwatch_stop(te_stopwatch_t *stopwatch, struct timeval *lap)
     if (rc == 0)
     {
         te_timersub(&now, &stopwatch->start, lap);
-        stopwatch->is_running = FALSE;
+        stopwatch->is_running = false;
     }
 
     return rc;

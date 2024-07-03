@@ -42,7 +42,7 @@
 static te_errno
 phy_field_get(unsigned int gid, const char *if_name,
               ta_ethtool_lsets_field field,
-              unsigned int *value, te_bool admin)
+              unsigned int *value, bool admin)
 {
     ta_ethtool_lsets *lsets_ptr;
     te_errno rc;
@@ -154,7 +154,7 @@ phy_autoneg_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
 
     rc = phy_field_get(gid, if_name,
-                       TA_ETHTOOL_LSETS_AUTONEG, &autoneg, FALSE);
+                       TA_ETHTOOL_LSETS_AUTONEG, &autoneg, false);
     if (rc != 0)
         return rc;
 
@@ -171,7 +171,7 @@ phy_autoneg_get(unsigned int gid, const char *oid, char *value,
 /* Common function to process get request for speed_oper/speed_admin */
 static te_errno
 phy_speed_get_common(unsigned int gid, const char *oid, char *value,
-                     const char *if_name, te_bool admin)
+                     const char *if_name, bool admin)
 {
     te_errno rc;
     unsigned int speed;
@@ -204,7 +204,7 @@ static te_errno
 phy_speed_oper_get(unsigned int gid, const char *oid, char *value,
                    const char *if_name)
 {
-    return phy_speed_get_common(gid, oid, value, if_name, FALSE);
+    return phy_speed_get_common(gid, oid, value, if_name, false);
 }
 
 /*
@@ -216,13 +216,13 @@ static te_errno
 phy_speed_admin_get(unsigned int gid, const char *oid, char *value,
                     const char *if_name)
 {
-    return phy_speed_get_common(gid, oid, value, if_name, TRUE);
+    return phy_speed_get_common(gid, oid, value, if_name, true);
 }
 
 /* Common function to process get request for duplex_oper/duplex_admin */
 static te_errno
 phy_duplex_get_common(unsigned int gid, const char *oid, char *value,
-                      const char *if_name, te_bool admin)
+                      const char *if_name, bool admin)
 {
     te_errno rc;
     unsigned int duplex;
@@ -269,7 +269,7 @@ static te_errno
 phy_duplex_oper_get(unsigned int gid, const char *oid, char *value,
                     const char *if_name)
 {
-    return phy_duplex_get_common(gid, oid, value, if_name, FALSE);
+    return phy_duplex_get_common(gid, oid, value, if_name, false);
 }
 
 /*
@@ -281,7 +281,7 @@ static te_errno
 phy_duplex_admin_get(unsigned int gid, const char *oid, char *value,
                      const char *if_name)
 {
-    return phy_duplex_get_common(gid, oid, value, if_name, TRUE);
+    return phy_duplex_get_common(gid, oid, value, if_name, true);
 }
 
 /*
@@ -513,7 +513,7 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
  * or advertised by its link partner.
  */
 static te_errno
-mode_list_common(te_bool link_partner,
+mode_list_common(bool link_partner,
                  unsigned int gid, const char *oid,
                  const char *sub_id, char **list,
                  const char *if_name)
@@ -565,7 +565,7 @@ phy_mode_list(unsigned int gid, const char *oid,
               const char *sub_id, char **list,
               const char *if_name)
 {
-    return mode_list_common(FALSE, gid, oid, sub_id, list, if_name);
+    return mode_list_common(false, gid, oid, sub_id, list, if_name);
 }
 
 /* Get advertising state for a supported link mode */
@@ -577,7 +577,7 @@ phy_mode_get(unsigned int gid, const char *oid, char *value,
     ta_ethtool_lsets *lsets_ptr;
     te_errno rc;
     ta_ethtool_link_mode mode;
-    te_bool advertised;
+    bool advertised;
 
     UNUSED(oid);
     UNUSED(phy_name);
@@ -636,7 +636,7 @@ phy_mode_set(unsigned int gid, const char *oid, const char *value,
         return rc;
 
     return ta_ethtool_lmode_advertise(lsets_ptr, mode,
-                                      parsed_val == 0 ? FALSE : TRUE);
+                                      parsed_val == 0 ? false : true);
 }
 
 /* Get list of link modes advertised by link partner */
@@ -645,7 +645,7 @@ phy_lp_advertised_list(unsigned int gid, const char *oid,
                        const char *sub_id, char **list,
                        const char *if_name)
 {
-    return mode_list_common(TRUE, gid, oid, sub_id, list, if_name);
+    return mode_list_common(true, gid, oid, sub_id, list, if_name);
 }
 
 /* Commit all changes made to link settings */
@@ -664,7 +664,7 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
         return rc;
 
     rc = phy_field_get(gid, if_name, TA_ETHTOOL_LSETS_AUTONEG,
-                       &autoneg, FALSE);
+                       &autoneg, false);
     if (rc != 0)
         return rc;
 

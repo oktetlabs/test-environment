@@ -35,7 +35,7 @@
 
 /* See description in tapi_cfg_arl.h */
 int
-tapi_cfg_arl_get_table(const char *ta, te_bool sync, arl_table_t *p_table)
+tapi_cfg_arl_get_table(const char *ta, bool sync, arl_table_t *p_table)
 {
     int             rc;
     cfg_handle     *handles = NULL;
@@ -49,7 +49,7 @@ tapi_cfg_arl_get_table(const char *ta, te_bool sync, arl_table_t *p_table)
 
     if (sync)
     {
-        rc = cfg_synchronize_fmt(TRUE, "/agent:%s/arl:", ta);
+        rc = cfg_synchronize_fmt(true, "/agent:%s/arl:", ta);
         if (rc != 0)
         {
             ERROR("Failed(%x) to synchronize ARL table", rc);
@@ -112,7 +112,7 @@ tapi_cfg_arl_del_entry(const char *ta,
     if (vlan_name == NULL)
         vlan_name = DEFAULT_VLAN_NAME;
 
-    rc = cfg_del_instance_fmt(FALSE, "/agent:%s/arl:/entry:"
+    rc = cfg_del_instance_fmt(false, "/agent:%s/arl:/entry:"
                               "%d.%u.%02x:%02x:%02x:%02x:%02x:%02x.%s",
                                ta, type, port_num,
                                mac_addr[0], mac_addr[1], mac_addr[2],
@@ -123,7 +123,7 @@ tapi_cfg_arl_del_entry(const char *ta,
         ERROR("Error while deleting ARL entry: %x", rc);
     }
 
-    if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/arl:", ta)) != 0)
+    if ((rc = cfg_synchronize_fmt(true, "/agent:%s/arl:", ta)) != 0)
     {
         ERROR("Error while synchronizing ARL table on %s Agent", ta);
     }
@@ -147,7 +147,7 @@ tapi_cfg_arl_add_entry(const char *ta,
      * We should synchronize ARL entry subtree to make it
      * available for Configurator
      */
-    if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/arl:", ta)) != 0)
+    if ((rc = cfg_synchronize_fmt(true, "/agent:%s/arl:", ta)) != 0)
     {
         ERROR("Error while synchronizing ARL table on %s Agent", ta);
         return rc;
@@ -165,7 +165,7 @@ tapi_cfg_arl_add_entry(const char *ta,
         return rc;
     }
 
-    if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s", ta)) != 0)
+    if ((rc = cfg_synchronize_fmt(true, "/agent:%s", ta)) != 0)
     {
         ERROR("Error while synchronizing ARL table on %s Agent", ta);
         return rc;

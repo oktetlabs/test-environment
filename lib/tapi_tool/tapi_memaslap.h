@@ -122,16 +122,16 @@ typedef struct tapi_memaslap_opt {
      */
     tapi_job_opt_double_t   overwrite;
     /** Reconnect tests: when connection is closed it will be reconnected. */
-    te_bool                 reconnect;
+    bool reconnect;
     /** UDP tests. TCP port and UDP port of server must be same. */
-    te_bool                 udp;
+    bool udp;
     /**
      * Enable facebook test feature,
      * set with TCP and multi-get with UDP.
      */
-    te_bool                 facebook;
+    bool facebook;
     /** Enable binary protocol. Default with ASCII protocol. */
-    te_bool                 bin_protocol;
+    bool bin_protocol;
     /**
      * Expected throughput, in operations/second.
      * e.g.: --tps=10k.
@@ -140,7 +140,7 @@ typedef struct tapi_memaslap_opt {
     /** The first n-th servers can write data, e.g.: --rep_write=2. */
     tapi_job_opt_uint_t     rep_write;
     /** Output detailed information when verification fails. */
-    te_bool                 verbose;
+    bool verbose;
 
     /** Path to configuration file */
     const char *cfg_cmd;

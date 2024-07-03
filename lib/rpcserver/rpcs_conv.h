@@ -19,7 +19,7 @@
  * @param tarpc_iov     Array of tarpc_iovec structures.
  * @param iov           Array of iovec structures.
  * @param count         Number of elements in the arrays.
- * @param may_change    If @c TRUE, INIT_CHECKED_ARG() should allow
+ * @param may_change    If @c true, INIT_CHECKED_ARG() should allow
  *                      change of data in iovecs, otherwise it should
  *                      not. The first option is meant for readv()-like
  *                      calls, the second - for writev()-like ones.
@@ -30,7 +30,7 @@
  */
 extern void rpcs_iovec_tarpc2h(const struct tarpc_iovec *tarpc_iov,
                                struct iovec *iov, size_t count,
-                               te_bool may_change,
+                               bool may_change,
                                checked_arg_list *arglist);
 
 #endif /* __RPCSERVER_RPCS_CONV_H__ */

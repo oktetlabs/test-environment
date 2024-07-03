@@ -106,7 +106,7 @@ function print_bits()
             printf "{\n    memcpy((uint8_t *)x + %s_OFFSET, data, %s_SIZE);\n",
                 varname, varname;
         }
-        else if (result_type == "te_bool")
+        else if (result_type == "bool")
         {
             printf "\nstatic inline void\n%s(void *x)\n",
                 accessor_prefix "set_" accessname;

@@ -96,7 +96,7 @@ extern te_errno tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs,
 extern te_errno tapi_dpdk_testpmd_is_opt_supported(rcf_rpc_server *rpcs,
                                                    tapi_env *env,
                                                    te_kvpair_h *opt,
-                                                   te_bool *opt_supported);
+                                                   bool *opt_supported);
 
 /**
  * Start test-pmd job
@@ -151,10 +151,10 @@ extern te_errno tapi_dpdk_testpmd_destroy(tapi_dpdk_testpmd_job_t *testpmd_job);
  * @param[out] mtu      Location for required MTU
  *
  * @return If required MTU is greater than @c ETHER_DATA_LEN
- * @retval TRUE         Required MTU is greater than @c ETHER_DATA_LEN
- * @retval FALSE        Required MTU is less or equal to @c ETHER_DATA_LEN
+ * @retval @c true         Required MTU is greater than @c ETHER_DATA_LEN
+ * @retval @c false        Required MTU is less or equal to @c ETHER_DATA_LEN
  */
-extern te_bool tapi_dpdk_mtu_by_pkt_size(unsigned int packet_size,
+extern bool tapi_dpdk_mtu_by_pkt_size(unsigned int packet_size,
                                          unsigned int *mtu);
 
 /**
@@ -163,11 +163,11 @@ extern te_bool tapi_dpdk_mtu_by_pkt_size(unsigned int packet_size,
  *
  * @param packet_size       Size of a packet
  * @param[out] mbuf_size    Required mbuf size (set when the function
- *                          returns @c TRUE)
+ *                          returns @c true)
  *
- * @return          @c TRUE - mbuf size should be set, @c FALSE - should not be
+ * @return          @c true - mbuf size should be set, @c false - should not be
  */
-extern te_bool tapi_dpdk_mbuf_size_by_pkt_size(unsigned int packet_size,
+extern bool tapi_dpdk_mbuf_size_by_pkt_size(unsigned int packet_size,
                                                unsigned int *mbuf_size);
 
 /**

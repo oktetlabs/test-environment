@@ -69,7 +69,7 @@ iscsi_openiscsi_set_param(const char *recid,
 /**
  *  Start Open-iSCSI managing daemon `iscsid'.
  *  If the daemon is already running, then:
- *  - if @p force_start is TRUE, the old daemon is killed and
+ *  - if @p force_start is @c true, the old daemon is killed and
  *  a new one is started.
  *  - otherwise, the function just returns.
  *
@@ -85,7 +85,7 @@ iscsi_openiscsi_set_param(const char *recid,
  *  @param  force_start Force restarting the daemon if it's running
  */
 static te_errno
-iscsi_openiscsi_start_daemon(iscsi_target_data_t *target, te_bool force_start)
+iscsi_openiscsi_start_daemon(iscsi_target_data_t *target, bool force_start)
 {
     int   rc = 0;
     FILE *name_file;
@@ -200,74 +200,74 @@ iscsi_openiscsi_set_target_params(iscsi_target_data_t *target)
 #define TGT_PARAMETER(field, name, type) \
     {0, name, type, ISCSI_GLOBAL_PARAM, offsetof(iscsi_target_data_t, field), NULL, NULL}
 #define AUTH_PARAM(field, name, predicate) \
-        {0, "node.session.auth." name, TRUE, ISCSI_SECURITY_PARAM, \
+        {0, "node.session.auth." name, true, ISCSI_SECURITY_PARAM, \
          offsetof(iscsi_tgt_chap_data_t, field), NULL, predicate}
 
     /** Operational and security parameters */
     static iscsi_target_param_descr_t params[] =
         {
-            TGT_PARAMETER(target_name, "node.name", TRUE),
-            TGT_PARAMETER(target_addr, "node.conn[0].address", TRUE),
-            TGT_PARAMETER(target_port, "node.conn[0].port", FALSE),
+            TGT_PARAMETER(target_name, "node.name", true),
+            TGT_PARAMETER(target_addr, "node.conn[0].address", true),
+            TGT_PARAMETER(target_port, "node.conn[0].port", false),
             PARAMETER(max_connections,
-                      "node.session.iscsi.MaxConnections", MAX_CONNECTIONS, FALSE),
+                      "node.session.iscsi.MaxConnections", MAX_CONNECTIONS, false),
             PARAMETER(initial_r2t,
-                      "node.session.iscsi.InitialR2T", INITIAL_R2T,  TRUE),
+                      "node.session.iscsi.InitialR2T", INITIAL_R2T,  true),
             PARAMETER(header_digest,
-                      "node.conn[0].iscsi.HeaderDigest", HEADER_DIGEST,  TRUE),
+                      "node.conn[0].iscsi.HeaderDigest", HEADER_DIGEST,  true),
             PARAMETER(data_digest,
-                      "node.conn[0].iscsi.DataDigest", DATA_DIGEST,  TRUE),
+                      "node.conn[0].iscsi.DataDigest", DATA_DIGEST,  true),
             PARAMETER(immediate_data,
-                      "node.session.iscsi.ImmediateData", IMMEDIATE_DATA,  TRUE),
+                      "node.session.iscsi.ImmediateData", IMMEDIATE_DATA,  true),
             PARAMETER(max_recv_data_segment_length,
                       "node.conn[0].iscsi.MaxRecvDataSegmentLength",
                       MAX_RECV_DATA_SEGMENT_LENGTH,
-                      FALSE),
+                      false),
             PARAMETER(first_burst_length,
                       "node.session.iscsi.FirstBurstLength",
-                      FIRST_BURST_LENGTH,  FALSE),
+                      FIRST_BURST_LENGTH,  false),
             PARAMETER(max_burst_length,
                       "node.session.iscsi.MaxBurstLength",
-                      MAX_BURST_LENGTH,  FALSE),
+                      MAX_BURST_LENGTH,  false),
             PARAMETER(default_time2wait,
                       "node.session.iscsi.DefaultTime2Wait",
-                      DEFAULT_TIME2WAIT,  FALSE),
+                      DEFAULT_TIME2WAIT,  false),
             PARAMETER(default_time2retain,
                       "node.session.iscsi.DefaultTime2Retain",
-                      DEFAULT_TIME2RETAIN,  FALSE),
+                      DEFAULT_TIME2RETAIN,  false),
             PARAMETER(max_outstanding_r2t,
                       "node.session.iscsi.MaxOutstandingr2t",
-                      MAX_OUTSTANDING_R2T,  FALSE),
+                      MAX_OUTSTANDING_R2T,  false),
 #if 0 /* not implemented in open iscsi */
             PARAMETER(data_pdu_in_order,
                       "node.session.iscsi.DataPDUInOrder",
-                      DATA_PDU_IN_ORDER,  TRUE),
+                      DATA_PDU_IN_ORDER,  true),
             PARAMETER(data_sequence_in_order,
                       "node.session.iscsi.DataSequenceInOrder",
-                      DATA_SEQUENCE_IN_ORDER,  TRUE),
+                      DATA_SEQUENCE_IN_ORDER,  true),
 #endif
 #if 0 /* not implemented in the initiator config tree */
             PARAMETER(if_marker,
                       "node.session.iscsi.IFMarker",
-                      IF_MARKER,  TRUE),
+                      IF_MARKER,  true),
             PARAMETER(of_marker,
                       "node.session.iscsi.OFMarker",
-                      OF_MARKER,  TRUE),
+                      OF_MARKER,  true),
 
 #endif
 #if 0 /* not implemented both in the initiator and the config tree */
             PARAMETER(if_mark_int,
                       "node.session.iscsi.IFMarkInt",
-                      IF_MARKER,  TRUE),
+                      IF_MARKER,  true),
             PARAMETER(of_mark_int,
                       "node.session.iscsi.OFMarkInt",
-                      OF_MARKER,  TRUE),
+                      OF_MARKER,  true),
 
 #endif
 
             PARAMETER(error_recovery_level,
                       "node.session.iscsi.ERL",
-                      ERROR_RECOVERY_LEVEL,  FALSE),
+                      ERROR_RECOVERY_LEVEL,  false),
             AUTH_PARAM(chap, "authmethod", NULL),
             AUTH_PARAM(peer_name, "username", NULL),
             AUTH_PARAM(peer_secret, "password", NULL),

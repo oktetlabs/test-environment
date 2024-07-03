@@ -63,7 +63,7 @@ count_empty(char *line, void *data)
 }
 
 static void
-build_buffer(unsigned int max_lines, unsigned int max_line_size, te_bool crlf,
+build_buffer(unsigned int max_lines, unsigned int max_line_size, bool crlf,
              te_string *buffer, char **last_line, unsigned int *n_lines)
 {
     size_t actual_len;
@@ -93,7 +93,7 @@ main(int argc, char **argv)
     unsigned int n_iterations;
     unsigned int max_lines;
     unsigned int max_line_size;
-    te_bool crlf;
+    bool crlf;
     unsigned int i;
     char *last_line = NULL;
     unsigned int n_lines;
@@ -115,7 +115,7 @@ main(int argc, char **argv)
                      &last_line, &n_lines);
 
         up_counter = down_counter = rand_range(1, n_lines);
-        CHECK_RC(te_string_process_lines(&str, TRUE, count_downward,
+        CHECK_RC(te_string_process_lines(&str, true, count_downward,
                                          &down_counter));
 
         if (down_counter != 0)
@@ -123,7 +123,7 @@ main(int argc, char **argv)
             TEST_VERDICT("Line processing stopped early: %u lines unprocessed",
                          down_counter);
         }
-        CHECK_RC(te_string_process_lines(&str, TRUE, count_upward,
+        CHECK_RC(te_string_process_lines(&str, true, count_upward,
                                          &up_counter));
         if (up_counter != n_lines)
         {
@@ -140,7 +140,7 @@ main(int argc, char **argv)
 
         if (*last_line != '\0')
         {
-            CHECK_RC(te_string_process_lines(&str, FALSE, count_upward,
+            CHECK_RC(te_string_process_lines(&str, false, count_upward,
                                              &up_counter));
             if (up_counter != n_lines + 1)
                 TEST_VERDICT("Trailing line unprocessed");
@@ -158,7 +158,7 @@ main(int argc, char **argv)
 
     TEST_STEP("Testing empty buffer");
     up_counter = 0;
-    CHECK_RC(te_string_process_lines(&(te_string)TE_STRING_INIT, FALSE,
+    CHECK_RC(te_string_process_lines(&(te_string)TE_STRING_INIT, false,
                                      count_upward, &up_counter));
     if (up_counter != 0)
         TEST_VERDICT("Callback called on an empty buffer");
@@ -172,7 +172,7 @@ main(int argc, char **argv)
         assert(*last_line == '\0');
 
         up_counter = 0;
-        CHECK_RC(te_string_process_lines(&str, TRUE, count_empty,
+        CHECK_RC(te_string_process_lines(&str, true, count_empty,
                                          &up_counter));
         if (up_counter != n_lines)
         {

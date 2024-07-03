@@ -73,10 +73,10 @@ static tester_serial_pid_t pid;
 static pthread_t serial_thread;
 
 /* Flag to stop test sequence performance */
-static te_bool stop_test_sequence = FALSE;
+static bool stop_test_sequence = false;
 
 /* Flag to finalize and stop the thread */
-static te_bool stop_thread = TRUE;
+static bool stop_thread = true;
 
 /** Struct to configure a Tester handler */
 typedef struct tester_serial_handler_t {
@@ -84,7 +84,7 @@ typedef struct tester_serial_handler_t {
     char            *path;      /**< Path to executable file */
     cfg_handle       handle;    /**< Confapi handle of the handler */
     int              priority;  /**< The handler priority */
-    te_bool          internal;  /**< Internal flag */
+    bool internal;  /**< Internal flag */
     int              signal;    /**< Signal to perform internal handler */
 
     SLIST_ENTRY(tester_serial_handler_t)  ent_hand_l; /**< Connector */
@@ -179,7 +179,7 @@ if (_rc != 0) \
         SERIAL_CHECK_RC(rc, "Failed to get the handler type");
         h->internal = (is_internal != 0);
 
-        if (h->internal == FALSE)
+        if (h->internal == false)
         {
             type = CVT_STRING;
             SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance(h->handle, &type,
@@ -311,9 +311,8 @@ tester_handle_serial_event(const char *event_name)
     tester_serial_handler_t    *h;         /* Current handler */
     te_errno                    rc;
     int                         res;
-    te_bool                     h_exec;    /* While value is TRUE handlers
-                                              executes */
-    te_bool                     fail = FALSE;
+    bool h_exec;    /* While value is true, handlers executes */
+    bool fail = false;
 
     if (event_name == NULL || *event_name == '\0')
     {
@@ -330,13 +329,13 @@ tester_handle_serial_event(const char *event_name)
         return rc;
     }
 
-    h_exec = TRUE;
+    h_exec = true;
     while(!SLIST_EMPTY(&hh))
     {
         h = SLIST_FIRST(&hh);
-        if (h_exec == TRUE)
+        if (h_exec == true)
         {
-            if (h->internal == TRUE)
+            if (h->internal == true)
             {
                 if (h->signal > 0)
                 {
@@ -347,7 +346,7 @@ tester_handle_serial_event(const char *event_name)
                         {
                             if (errno == ESRCH)
                             {
-                                fail = TRUE;
+                                fail = true;
                                 VERB("kill(%d, %d) failed: %s", pid.id,
                                      h->signal, strerror(errno));
                             }
@@ -358,7 +357,7 @@ tester_handle_serial_event(const char *event_name)
                     }
                     else
                     {
-                        fail = TRUE;
+                        fail = true;
                         VERB("Can not send signal to process with pid %d",
                              pid.id);
                     }
@@ -375,11 +374,11 @@ tester_handle_serial_event(const char *event_name)
                         break;
 
                     case SERIAL_EVENT_STOP_H:
-                        h_exec = FALSE;
+                        h_exec = false;
                         break;
 
                     case SERIAL_EVENT_STOP_B:
-                        h_exec = FALSE;
+                        h_exec = false;
                         /* Stop the test */
                         pthread_mutex_lock(&pid.mutex);
                         if (pid.id > 0)
@@ -388,7 +387,7 @@ tester_handle_serial_event(const char *event_name)
                             {
                                 if (errno == ESRCH)
                                 {
-                                    fail = TRUE;
+                                    fail = true;
                                     VERB("kill(%d, %d) failed: %s", pid.id,
                                          h->signal, strerror(errno));
                                 }
@@ -404,7 +403,7 @@ tester_handle_serial_event(const char *event_name)
                         break;
 
                     case SERIAL_EVENT_STOP_ALL:
-                        h_exec = FALSE;
+                        h_exec = false;
                         /* Stop the test */
                         pthread_mutex_lock(&pid.mutex);
                         if (pid.id > 0)
@@ -413,7 +412,7 @@ tester_handle_serial_event(const char *event_name)
                             {
                                 if (errno == ESRCH)
                                 {
-                                    fail = TRUE;
+                                    fail = true;
                                     VERB("kill(%d, %d) failed: %s", pid.id,
                                          h->signal, strerror(errno));
                                 }
@@ -425,7 +424,7 @@ tester_handle_serial_event(const char *event_name)
                         pthread_mutex_unlock(&pid.mutex);
 
                         /* Stop the sequence of tests */
-                        stop_test_sequence = TRUE;
+                        stop_test_sequence = true;
                         WARN("Test and test sequence were stopped by"
                              "result of the serial console handler %s",
                              h->name);
@@ -436,7 +435,7 @@ tester_handle_serial_event(const char *event_name)
                               h->path, res);
                 } /* switch */
             } /* else */
-        } /* if (h_exec == TRUE) */
+        } /* if (h_exec == true) */
 
         /* Cleanup and remove element */
         SLIST_REMOVE_HEAD(&hh, ent_hand_l);
@@ -481,7 +480,7 @@ tester_serial_thread(void)
         period = TESTER_SERIAL_PERIOD;
     period *= 1000;
 
-    while (stop_thread == FALSE)
+    while (stop_thread == false)
     {
         SERIAL_WAIT_LOCAL_SEQ(cfg_find_pattern_fmt(&n_handles, &handles,
             "/agent:*/parser:*/event:*"));
@@ -543,7 +542,7 @@ tester_serial_thread(void)
 
                 type = CVT_INT32;
                 SERIAL_WAIT_LOCAL_SEQ(cfg_set_instance(status_handle, type,
-                                                       FALSE));
+                                                       false));
                 if (rc != 0)
                 {
                     ERROR("Couldn't change event %s status", event_name);
@@ -561,7 +560,7 @@ tester_serial_thread(void)
             handles = NULL;
         }
 
-        if (stop_thread != FALSE)
+        if (stop_thread != false)
             break;
         usleep(period);
     }
@@ -606,7 +605,7 @@ tester_release_serial_pid(void)
 }
 
 /* See description in the tester_seria_thread.h */
-te_bool
+bool
 tester_check_serial_stop(void)
 {
     return stop_test_sequence;
@@ -622,10 +621,10 @@ tester_start_serial_thread(void)
     /* Check support of the serial parsing framework */
     SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_int_fmt(&enable,
                                                    "/local:/tester:/enable:"));
-    if ((rc != 0 && TE_RC(TE_CS, TE_ENOENT)) || enable == FALSE)
+    if ((rc != 0 && TE_RC(TE_CS, TE_ENOENT)) || enable == false)
         return 0;
 
-    stop_thread = FALSE;
+    stop_thread = false;
 
     pid.id = -1;
     rc = pthread_mutex_init(&pid.mutex, NULL);
@@ -645,9 +644,9 @@ tester_stop_serial_thread(void)
 {
     int rc;
 
-    if (stop_thread == FALSE)
+    if (stop_thread == false)
     {
-        stop_thread = TRUE;
+        stop_thread = true;
         rc = pthread_join(serial_thread, NULL);
         if (rc != 0)
         {

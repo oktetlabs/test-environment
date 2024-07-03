@@ -165,10 +165,10 @@ out:
 
 static te_errno
 check_thread(const char *ta, const tapi_cpu_index_t *cpu_id,
-             const tapi_cpu_prop_t *prop, te_bool *suitable)
+             const tapi_cpu_prop_t *prop, bool *suitable)
 {
     char cpu_value[RCF_MAX_VAL] = {0};
-    te_bool is_isolated;
+    bool is_isolated;
     int isolated;
     te_errno rc;
 
@@ -247,7 +247,7 @@ tapi_cfg_cpu_release_by_id(const char *ta, const tapi_cpu_index_t *cpu_id)
             return rc;
     }
 
-    return cfg_del_instance_fmt(FALSE, "%s", cpu_rsrc_oid);
+    return cfg_del_instance_fmt(false, "%s", cpu_rsrc_oid);
 }
 
 /* See description in tapi_cfg_cpu.h */
@@ -315,7 +315,7 @@ tapi_cfg_cpu_grab_by_prop(const char *ta, const tapi_cpu_prop_t *prop,
 {
     tapi_cpu_index_t *indices = NULL;
     size_t thread_count = 0;
-    te_bool suitable = FALSE;
+    bool suitable = false;
     te_errno rc = 0;
     size_t i;
 
@@ -359,13 +359,13 @@ out:
     return rc;
 }
 
-static te_bool
+static bool
 cpu_id_matches(unsigned long id, unsigned long required)
 {
     return required == TAPI_CPU_ID_UNSPEC || id == required;
 }
 
-static te_bool
+static bool
 cpu_index_matches(const tapi_cpu_index_t *id, const tapi_cpu_index_t *required)
 {
     return cpu_id_matches(id->node_id, required->node_id) &&
@@ -423,7 +423,7 @@ tapi_cfg_cpu_grab_multiple_with_id(const char *ta,
 
     for (i = 0; i < thread_count && n_grabbed < n_cpus; i++)
     {
-        te_bool suitable;
+        bool suitable;
 
         if (topology != NULL && !cpu_index_matches(&indices[i], topology))
             continue;

@@ -197,7 +197,7 @@ req_get(const test_requirement *req,
  * @param n_args        Number of arguments
  * @param args          Test iteration arguments
  */
-static te_bool
+static bool
 is_req_in_set(const char *req, const test_requirements *set,
               const unsigned int n_args, const test_iter_arg *args)
 {
@@ -211,10 +211,10 @@ is_req_in_set(const char *req, const test_requirements *set,
     {
         if (strcmp(req, req_get(s, n_args, args)) == 0)
         {
-            return TRUE;
+            return true;
         }
     }
-    return FALSE;
+    return false;
 }
 
 /**
@@ -224,7 +224,7 @@ is_req_in_set(const char *req, const test_requirements *set,
  * @param n_args        Number of arguments
  * @param args          Test iteration arguments
  */
-static te_bool
+static bool
 is_req_in_args(const char *req, const unsigned int n_args,
                const test_iter_arg *args)
 {
@@ -237,9 +237,9 @@ is_req_in_args(const char *req, const unsigned int n_args,
             continue;
 
         if (is_req_in_set(req, &p->reqs, n_args, args))
-            return TRUE;
+            return true;
     }
-    return FALSE;
+    return false;
 }
 
 /**
@@ -251,23 +251,23 @@ is_req_in_args(const char *req, const unsigned int n_args,
  * @param test_set      Test set of requirements
  * @param n_args        Number of arguments
  * @param args          Test iteration arguments
- * @param force         Will be set to @c TRUE if the run item is
+ * @param force         Will be set to @c true if the run item is
  *                      explicitly disabled by a requirement
  *                      like !REQ_NAME. Such a requirement should be
  *                      either the only one or a part of top-level
  *                      AND expression (like X&Y&!REQ_NAME&Z)
  * @param set_force     Whether @p force should be set by this call
  */
-static te_bool
+static bool
 is_reqs_expr_match(const logic_expr        *re,
                    const test_requirements *ctx_set,
                    const test_requirements *test_set,
                    const unsigned int       n_args,
                    const test_iter_arg     *args,
-                   te_bool                 *force,
-                   te_bool                  set_force)
+                   bool *force,
+                   bool set_force)
 {
-    te_bool result;
+    bool result;
 
     assert(re != NULL);
     switch (re->type)
@@ -283,26 +283,26 @@ is_reqs_expr_match(const logic_expr        *re,
         case LOGIC_EXPR_NOT:
             result = !is_reqs_expr_match(re->u.unary,
                                          ctx_set, test_set, n_args, args,
-                                         force, FALSE);
+                                         force, false);
             if (!result && set_force &&
                 re->u.unary->type == LOGIC_EXPR_VALUE)
             {
-                *force = TRUE;
+                *force = true;
             }
             VERB("%s(): ! -> %u(%u)", __FUNCTION__, result, *force);
             break;
 
         case LOGIC_EXPR_AND:
         {
-            te_bool lhr = is_reqs_expr_match(re->u.binary.lhv,
-                                             ctx_set, test_set,
-                                             n_args, args, force,
-                                             set_force);
-            te_bool rhr = (lhr || (set_force && !*force)) ?
-                              is_reqs_expr_match(re->u.binary.rhv,
-                                                 ctx_set, test_set,
-                                                 n_args, args,
-                                                 force, set_force) : FALSE;
+            bool lhr = is_reqs_expr_match(re->u.binary.lhv, ctx_set, test_set,
+                                          n_args, args, force, set_force);
+            bool rhr = (lhr || (set_force && !*force)) ? is_reqs_expr_match(re->u.binary.rhv,
+                                                                            ctx_set,
+                                                                            test_set,
+                                                                            n_args,
+                                                                            args,
+                                                                            force,
+                                                                            set_force) : false;
 
             result = lhr && rhr;
             VERB("%s(): && -> %u(%u)", __FUNCTION__, result, *force);
@@ -312,18 +312,18 @@ is_reqs_expr_match(const logic_expr        *re,
         case LOGIC_EXPR_OR:
             result = is_reqs_expr_match(re->u.binary.lhv,
                                         ctx_set, test_set,
-                                        n_args, args, force, FALSE) ||
+                                        n_args, args, force, false) ||
                      is_reqs_expr_match(re->u.binary.rhv,
                                         ctx_set, test_set,
-                                        n_args, args, force, FALSE);
+                                        n_args, args, force, false);
             VERB("%s(): || -> %u(%u)", __FUNCTION__, result, *force);
             break;
 
         default:
             ERROR("Invalid type of requirements expression");
-            assert(FALSE);
-            result = FALSE;
-            *force = TRUE;
+            assert(false);
+            result = false;
+            *force = true;
             break;
     }
     return result;
@@ -343,7 +343,7 @@ reqs_expr_to_string_buf(const logic_expr *expr, char **buf, ssize_t *left,
                         logic_expr_type prev_op)
 {
     int     out;
-    te_bool enclose;
+    bool enclose;
 
     switch (expr->type)
     {
@@ -402,7 +402,7 @@ reqs_expr_to_string_buf(const logic_expr *expr, char **buf, ssize_t *left,
 
         default:
             ERROR("Invalid type of requirements expression");
-            assert(FALSE);
+            assert(false);
             break;
     }
 }
@@ -526,16 +526,16 @@ params_reqs_list_to_string(const unsigned int   n_args,
 
 
 /* See description in tester_reqs.h */
-te_bool
+bool
 tester_is_run_required(const logic_expr        *targets,
                        const test_requirements *sticky_reqs,
                        const run_item          *test,
                        const test_iter_arg     *args,
                        tester_flags             flags,
-                       te_bool                  quiet)
+                       bool quiet)
 {
-    te_bool                     result;
-    te_bool                     force = FALSE;
+    bool result;
+    bool force = false;
     const test_requirements    *reqs;
 
     switch (test->type)
@@ -553,15 +553,15 @@ tester_is_run_required(const logic_expr        *targets,
             break;
 
         default:
-            assert(FALSE);
-            return FALSE;
+            assert(false);
+            return false;
     }
 
     if (targets != NULL)
     {
         result = is_reqs_expr_match(targets, sticky_reqs, reqs,
                                     test->n_args, args, &force,
-                                    TRUE);
+                                    true);
         if (!force)
             result = result || (test->type != RUN_ITEM_SCRIPT) ||
                      !!(flags & TESTER_INLOGUE);
@@ -579,7 +579,7 @@ tester_is_run_required(const logic_expr        *targets,
     }
     else
     {
-        result = TRUE;
+        result = true;
     }
 
     return result;

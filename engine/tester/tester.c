@@ -59,7 +59,7 @@ extern char **environ;
 extern int test_path_lex_destroy(void);
 
 /** Is SIGINT signal received? */
-te_bool tester_sigint_received = FALSE;
+bool tester_sigint_received = false;
 
 
 tester_global tester_global_context;
@@ -138,7 +138,7 @@ tester_sigint_handler(int signum)
 {
     UNUSED(signum);
     WARN("SIGINT received");
-    tester_sigint_received = TRUE;
+    tester_sigint_received = true;
 }
 
 
@@ -428,13 +428,13 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
     int          rc;
     const char  *cfg_file;
 #if WITH_TRC
-    te_bool      no_trc = FALSE;
+    bool      no_trc = false;
 #else
-    te_bool      no_trc = TRUE;
+    bool      no_trc = true;
 #endif
-    te_bool      warn_no_trc = TRUE;
+    bool      warn_no_trc = true;
 
-    te_bool      no_reqs = FALSE;
+    bool      no_reqs = false;
 
 
     /* Process command line options */
@@ -470,7 +470,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
             case TESTER_OPT_NO_TRC:
                 global->flags |= TESTER_NO_TRC;
-                no_trc = TRUE;
+                no_trc = true;
                 break;
 
             case TESTER_OPT_NO_CS:
@@ -669,7 +669,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                 global->flags |= TESTER_LOG_REQS_LIST;
                 break;
             case TESTER_OPT_NO_REQS:
-                no_reqs = TRUE;
+                no_reqs = true;
                 break;
 
             case TESTER_OPT_TRC_DB:
@@ -730,12 +730,12 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                     }
 #else
                     /* Unreachable */
-                    assert(FALSE);
+                    assert(false);
 #endif
                 }
                 else if (warn_no_trc)
                 {
-                    warn_no_trc = FALSE;
+                    warn_no_trc = false;
                     WARN("No TRC, related command-line options are "
                          "ignored");
                 }
@@ -781,8 +781,8 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                 }
 
                 monitor = calloc(1, sizeof(*monitor));
-                monitor->enabled = FALSE;
-                monitor->run_monitor = TRUE;
+                monitor->enabled = false;
+                monitor->run_monitor = true;
                 if (ta != NULL)
                     monitor->ta = strdup(ta);
                 else

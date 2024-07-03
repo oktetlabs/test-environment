@@ -118,8 +118,8 @@ static uint8_t                 gfc;
 static uint16_t                vpi;
 static uint16_t                vci;
 static uint8_t                 payload_type;
-static te_bool                 congestion;
-static te_bool                 clp;
+static bool congestion;
+static bool clp;
 
 static void
 my_callback(asn_value *packet, void *user_data)
@@ -164,8 +164,8 @@ main(int argc, char *argv[])
     uint16_t                vpi_nomatch;
     uint16_t                vci_nomatch;
     uint8_t                 payload_type_nomatch;
-    te_bool                 congestion_nomatch;
-    te_bool                 clp_nomatch;
+    bool congestion_nomatch;
+    bool clp_nomatch;
 
     csap_handle_t           tcp_srv_csap = CSAP_INVALID_HANDLE;
     int                     tst_s = -1;
@@ -272,19 +272,19 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_tad_csap_create(iut_host->ta, 0, "atm.socket",
                                   csap_spec, &csap));
 
-    CHECK_RC(tapi_atm_add_pdu(&ptrn, TRUE,
-                 (ptrn_gfc == CSAP_PARAM_UNSPEC ||
-                     strcmp(type, "uni") != 0) ?  NULL :
-                 (ptrn_gfc == CSAP_PARAM_MATCH) ?  &gfc : &gfc_nomatch,
-                 (ptrn_vpi == CSAP_PARAM_UNSPEC) ?  NULL :
-                 (ptrn_vpi == CSAP_PARAM_MATCH) ?  &vpi : &vpi_nomatch,
-                 (ptrn_vci == CSAP_PARAM_UNSPEC) ?  NULL :
-                 (ptrn_vci == CSAP_PARAM_MATCH) ?  &vci : &vci_nomatch,
-                 (ptrn_payload_type == CSAP_PARAM_UNSPEC) ?  NULL :
-                 (ptrn_payload_type == CSAP_PARAM_MATCH) ?  &payload_type :
-                     &payload_type_nomatch,
-                 (ptrn_clp == CSAP_PARAM_UNSPEC) ?  NULL :
-                 (ptrn_clp == CSAP_PARAM_MATCH) ?  &clp : &clp_nomatch));
+    CHECK_RC(tapi_atm_add_pdu(&ptrn, true,
+                              (ptrn_gfc == CSAP_PARAM_UNSPEC ||
+                               strcmp(type, "uni") != 0) ?  NULL :
+                              (ptrn_gfc == CSAP_PARAM_MATCH) ?  &gfc : &gfc_nomatch,
+                              (ptrn_vpi == CSAP_PARAM_UNSPEC) ?  NULL :
+                              (ptrn_vpi == CSAP_PARAM_MATCH) ?  &vpi : &vpi_nomatch,
+                              (ptrn_vci == CSAP_PARAM_UNSPEC) ?  NULL :
+                              (ptrn_vci == CSAP_PARAM_MATCH) ?  &vci : &vci_nomatch,
+                              (ptrn_payload_type == CSAP_PARAM_UNSPEC) ?  NULL :
+                              (ptrn_payload_type == CSAP_PARAM_MATCH) ?  &payload_type :
+                              &payload_type_nomatch,
+                              (ptrn_clp == CSAP_PARAM_UNSPEC) ?  NULL :
+                              (ptrn_clp == CSAP_PARAM_MATCH) ?  &clp : &clp_nomatch));
     CHECK_RC(tapi_tad_trrecv_start(iut_host->ta, 0, csap, ptrn, 1000, 1,
                                    RCF_TRRECV_PACKETS));
 

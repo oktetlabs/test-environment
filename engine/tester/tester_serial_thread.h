@@ -45,7 +45,7 @@ extern te_errno tester_release_serial_pid(void);
  * Check the flag to stop test sequence
  *
  * @return
- * @retval TRUE     Test sequence should be stopped
- * @retval FALSE    Continue work
+ * @retval @c true     Test sequence should be stopped
+ * @retval @c false    Continue work
  */
-extern te_bool tester_check_serial_stop(void);
+extern bool tester_check_serial_stop(void);

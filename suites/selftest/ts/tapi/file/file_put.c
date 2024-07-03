@@ -36,7 +36,7 @@ main(int argc, char **argv)
 
     TEST_STEP("Generate a file on TEN");
     buf = te_make_buf_by_len(len);
-    CHECK_NOT_NULL(lfile = tapi_file_create(len, buf, TRUE));
+    CHECK_NOT_NULL(lfile = tapi_file_create(len, buf, true));
     RING("File '%s' is generated", lfile);
 
     TEST_STEP("Put the file on TA");

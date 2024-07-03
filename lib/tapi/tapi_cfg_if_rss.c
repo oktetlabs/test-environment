@@ -70,7 +70,7 @@ tapi_cfg_if_rss_hash_key_get(const char *ta,
 
 /* Common code for hash key setting */
 static te_errno
-hash_key_set_common(te_bool local,
+hash_key_set_common(bool local,
                     const char *ta,
                     const char *if_name,
                     unsigned int rss_context,
@@ -112,7 +112,7 @@ tapi_cfg_if_rss_hash_key_set_local(
                              unsigned int rss_context,
                              const uint8_t *buf, size_t len)
 {
-    return hash_key_set_common(TRUE, ta, if_name, rss_context, buf, len);
+    return hash_key_set_common(true, ta, if_name, rss_context, buf, len);
 }
 
 /* See description in tapi_cfg_if_rss.h */
@@ -123,7 +123,7 @@ tapi_cfg_if_rss_hash_key_set(
                              unsigned int rss_context,
                              const uint8_t *buf, size_t len)
 {
-    return hash_key_set_common(FALSE, ta, if_name, rss_context, buf, len);
+    return hash_key_set_common(false, ta, if_name, rss_context, buf, len);
 }
 
 /* See description in tapi_cfg_if_rss.h */
@@ -382,7 +382,7 @@ tapi_cfg_if_rss_hfunc_set_single_local(const char *ta,
     unsigned int hfuncs_count;
     unsigned int i;
     te_errno rc = 0;
-    te_bool found = FALSE;
+    bool found = false;
 
     rc = tapi_cfg_if_rss_hfuncs_get(ta, if_name, rss_context,
                                     &hfuncs, &hfuncs_count);
@@ -393,7 +393,7 @@ tapi_cfg_if_rss_hfunc_set_single_local(const char *ta,
     {
         if (strcmp(hfuncs[i].name, func_name) == 0)
         {
-            found = TRUE;
+            found = true;
             break;
         }
     }

@@ -1076,7 +1076,7 @@ TARPC_FUNC(rte_eth_allmulticast_get, {},
 TARPC_FUNC(rte_eth_dev_get_mtu,{},
 {
     uint16_t mtu;
-    te_bool is_mtu_null;
+    bool is_mtu_null;
 
     is_mtu_null = (in->mtu.mtu_len == 0);
 
@@ -1317,7 +1317,7 @@ TARPC_FUNC(rte_eth_dev_get_vlan_offload, {},
     else
     {
         mask = out->retval;
-        rc = rpc_dpdk_bitmask64_convert(mask, vlan_offload_map, TRUE, &mask);
+        rc = rpc_dpdk_bitmask64_convert(mask, vlan_offload_map, true, &mask);
         if (rc != 0)
             out->retval = -TE_RC(TE_RPCS, rc);
         else
@@ -2337,7 +2337,7 @@ static void
 tarpc_rte_speed_fec_capa2rpc(const struct rte_eth_fec_capa *rte,
                              struct tarpc_rte_eth_fec_capa *rpc)
 {
-    rpc->speed = te_enum_translate(link_speed_trn, (int)rte->speed, TRUE,
+    rpc->speed = te_enum_translate(link_speed_trn, (int)rte->speed, true,
                                    TARPC_RTE_ETH_SPEED_NUM_UNKNOWN);
     rpc->capa = rpc_dpdk_bitmask32_rte2rpc(rte->capa, fec_capa_map,
                                            TARPC_RTE_ETH_FEC__UNKNOWN_BIT);

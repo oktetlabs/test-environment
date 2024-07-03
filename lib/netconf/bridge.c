@@ -65,15 +65,15 @@ port_parse_link(struct nlmsghdr *h, struct rtattr **rta_arr, int max)
  *
  * @param linkgen   The general link attributes array
  * @param cookie    Pointer to the bridge interface index
- * @return @c TRUE if link is port.
+ * @return @c true if link is port.
  */
-static te_bool
+static bool
 port_link_is_bridge_port(struct rtattr **linkgen, void *cookie)
 {
     if (linkgen[IFLA_MASTER] == NULL ||
         *(uint32_t *)RTA_DATA(linkgen[IFLA_MASTER]) != *(uint32_t *)cookie)
-        return FALSE;
-    return TRUE;
+        return false;
+    return true;
 }
 
 /**
@@ -97,7 +97,7 @@ port_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
     port_parse_link(h, linkgen, IFLA_MAX);
 
     if (linkgen[IFLA_IFNAME] == NULL ||
-        port_link_is_bridge_port(linkgen, cookie) == FALSE)
+        port_link_is_bridge_port(linkgen, cookie) == false)
         return 0;
 
     port.name = netconf_dup_rta(linkgen[IFLA_IFNAME]);
@@ -193,7 +193,7 @@ netconf_port_list(netconf_handle nh, const char *brname,
         if (node->data.bridge_port.name != NULL)
         {
             if (filter_cb != NULL &&
-                filter_cb(node->data.bridge_port.name, filter_opaque) == TRUE)
+                filter_cb(node->data.bridge_port.name, filter_opaque) == true)
                 continue;
             rc = te_string_append(&str, "%s ", node->data.bridge_port.name);
             if (rc != 0)
@@ -270,9 +270,9 @@ bridge_parse_link(struct nlmsghdr *h, struct rtattr **rta_arr, int max)
  *
  * @param linkgen   The general link attributes array
  *
- * @return @c TRUE if link is bridge.
+ * @return @c true if link is bridge.
  */
-static te_bool
+static bool
 bridge_link_is_bridge(struct rtattr **linkgen)
 {
     struct rtattr *linkinfo[IFLA_INFO_MAX + 1];
@@ -283,9 +283,9 @@ bridge_link_is_bridge(struct rtattr **linkgen)
     if (linkinfo[IFLA_INFO_KIND] == NULL ||
         strcmp(RTA_DATA(linkinfo[IFLA_INFO_KIND]),
                NETCONF_LINK_KIND_BRIDGE) != 0)
-        return FALSE;
+        return false;
 
-    return TRUE;
+    return true;
 }
 
 /**
@@ -311,7 +311,7 @@ bridge_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
     bridge_parse_link(h, linkgen, IFLA_MAX);
 
     if (linkgen[IFLA_LINKINFO] == NULL || linkgen[IFLA_IFNAME] == NULL ||
-        bridge_link_is_bridge(linkgen) == FALSE)
+        bridge_link_is_bridge(linkgen) == false)
         return 0;
 
     bridge.ifname = netconf_dup_rta(linkgen[IFLA_IFNAME]);
@@ -402,7 +402,7 @@ netconf_bridge_list(netconf_handle nh, netconf_bridge_list_filter_func filter_cb
         if (node->data.bridge.ifname != NULL)
         {
             if (filter_cb != NULL &&
-                filter_cb(node->data.bridge.ifname, filter_opaque) == FALSE)
+                filter_cb(node->data.bridge.ifname, filter_opaque) == false)
                 continue;
             rc = te_string_append(&str, "%s ", node->data.bridge.ifname);
             if (rc != 0)

@@ -51,7 +51,7 @@ typedef struct te_string {
     char   *ptr;          /**< Pointer to the buffer */
     size_t  size;         /**< Size of the buffer */
     size_t  len;          /**< Length of the string */
-    te_bool ext_buf;      /**< If TRUE, buffer is supplied
+    bool ext_buf;      /**< If @c true, buffer is supplied
                                by user and should not be
                                reallocated or freed. */
 
@@ -74,7 +74,7 @@ extern te_string_free_func te_string_free_heap;
  *        need to. Please use simple TE_STRING_INIT.
  */
 #define TE_STRING_INIT_RESERVE(reserved_size_) \
-    { .ptr = NULL, .size = (reserved_size_), .len = 0, .ext_buf = FALSE, \
+    { .ptr = NULL, .size = (reserved_size_), .len = 0, .ext_buf = false, \
       .free_func = &te_string_free_heap }
 
 /**
@@ -82,21 +82,21 @@ extern te_string_free_func te_string_free_heap;
  * free function.
  */
 #define TE_STRING_INIT_RESERVE_FREE(reserved_size_, free_func_) \
-    { .ptr = NULL, .size = (reserved_size_), .len = 0, .ext_buf = FALSE, \
+    { .ptr = NULL, .size = (reserved_size_), .len = 0, .ext_buf = false, \
       .free_func = free_func_ }
 
 /**
  * Initialize TE string assigning buffer to it.
  */
 #define TE_STRING_BUF_INIT(buf_) \
-    { .ptr = buf_, .size = sizeof(buf_), .len = 0, .ext_buf = TRUE, \
+    { .ptr = buf_, .size = sizeof(buf_), .len = 0, .ext_buf = true, \
       .free_func = &te_string_reset }
 
 /**
  * Initialize TE string assigning buffer and size to it.
  */
 #define TE_STRING_EXT_BUF_INIT(buf_, size_) \
-    { .ptr = buf_, .size = size_, .len = 0, .ext_buf = TRUE, \
+    { .ptr = buf_, .size = size_, .len = 0, .ext_buf = true, \
       .free_func = &te_string_reset }
 
 /**
@@ -434,7 +434,7 @@ extern void te_string_generic_escape(te_string *str, const char *input,
  *
  * The encoding is defined in RFC 4648. Lines are not split.
  *
- * If @p url_safe is @c TRUE, the so called URL-safe variant of RFC 4648
+ * If @p url_safe is @c true, the so called URL-safe variant of RFC 4648
  * is used which produces strings that may be directed included into an URI
  * without additional escaping. Also they may be safely used as filenames.
  *
@@ -445,7 +445,7 @@ extern void te_string_generic_escape(te_string *str, const char *input,
  */
 extern void te_string_encode_base64(te_string *str, size_t len,
                                     const uint8_t bytes[len],
-                                    te_bool url_safe);
+                                    bool url_safe);
 
 /**
  * Decode a Base64-encoded string.
@@ -599,22 +599,22 @@ typedef te_errno te_string_line_handler_fn(char *line, void *user);
  * while ((read_bytes = read(fd, buf, sizeof(buf))) > 0)
  * {
  *     te_string_append_buf(&buffer, buf, read_bytes);
- *     CHECK_RC(te_string_process_lines(&buffer, TRUE,
+ *     CHECK_RC(te_string_process_lines(&buffer, true,
  *                                      handle_line, data));
  * }
- * CHECK_RC(te_string_process_lines(&buffer, FALSE, handle_line, &linecount));
+ * CHECK_RC(te_string_process_lines(&buffer, false, handle_line, &linecount));
  * @endcode
  *
  * @param[in,out] buffer          TE string.
  * @param[in]     complete_lines  Do not process incomplete lines
- *                                if @c TRUE.
+ *                                if @c true.
  * @param[in]     callback        Callback function.
  * @param[in]     user_data       User data.
  *
  * @return Status code.
  */
 extern te_errno te_string_process_lines(te_string *buffer,
-                                        te_bool complete_lines,
+                                        bool complete_lines,
                                         te_string_line_handler_fn *callback,
                                         void *user_data);
 
@@ -667,9 +667,9 @@ typedef struct te_substring_t {
  *
  * @param substr Substring
  *
- * @return @c TRUE or @c FALSE
+ * @return @c true or @c false
  */
-static inline te_bool
+static inline bool
 te_substring_is_valid(const te_substring_t *substr)
 {
     return substr->start < substr->base->len;

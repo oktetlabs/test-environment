@@ -235,7 +235,7 @@ exit:
 
 /* See the description in conf_getmsg.h */
 te_errno
-ta_unix_conf_neigh_list_getmsg(const char *iface, te_bool is_static,
+ta_unix_conf_neigh_list_getmsg(const char *iface, bool is_static,
                                char **list)
 {
     static unsigned int ipNetToMediaEntrySize = 0;

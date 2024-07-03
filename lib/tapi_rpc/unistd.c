@@ -1426,7 +1426,7 @@ pollreq2str(struct rpc_pollfd *ufds, unsigned int nfds,
         for (i = 0; i < nfds; ++i)
         {
             const char* returned_events = poll_event_rpc2str(ufds[i].revents);
-            te_bool need_mark = (ufds[i].revents != 0);
+            bool need_mark = (ufds[i].revents != 0);
 
             rc = snprintf(buf, buflen, "{%d,%s,%s%s}",
                           ufds[i].fd,
@@ -2412,7 +2412,7 @@ rpc_getuid(rcf_rpc_server *rpcs)
 
     rcf_rpc_call(rpcs, "getuid", &in, &out);
 
-    CHECK_RETVAL_VAR(getuid, out.uid, FALSE, (tarpc_uid_t)-1);
+    CHECK_RETVAL_VAR(getuid, out.uid, false, (tarpc_uid_t)-1);
     TAPI_RPC_LOG(rpcs, getuid, "", "%d", out.uid);
     RETVAL_INT(getuid, out.uid);
 }
@@ -2459,7 +2459,7 @@ rpc_geteuid(rcf_rpc_server *rpcs)
 
     rcf_rpc_call(rpcs, "geteuid", &in, &out);
 
-    CHECK_RETVAL_VAR(geteuid, out.uid, FALSE, (tarpc_uid_t)-1);
+    CHECK_RETVAL_VAR(geteuid, out.uid, false, (tarpc_uid_t)-1);
     TAPI_RPC_LOG(rpcs, geteuid, "", "%d", out.uid);
     RETVAL_INT(geteuid, out.uid);
 }
@@ -2560,7 +2560,7 @@ rpc_getpwnam(rcf_rpc_server *rpcs, const char *name)
     rcf_rpc_call(rpcs, "getpwnam", &in, &out);
 
     CHECK_RETVAL_VAR(getpwnam, out.passwd.name.name_val,
-                     FALSE, NULL);
+                     false, NULL);
 
     free(in.name.name_val);
     res = (!RPC_IS_CALL_OK(rpcs) || out.passwd.name.name_val == NULL) ?
@@ -3221,7 +3221,7 @@ rpc_mkdirp(rcf_rpc_server *rpcs, const char *path, rpc_file_mode_flags mode)
         free(in.path.path_val);
 
     /* mkdirp() on the agent may legitimately clear errno */
-    out.common.errno_changed = FALSE;
+    out.common.errno_changed = false;
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(mkdirp, out.retval);
     TAPI_RPC_LOG(rpcs, mkdirp, "%s, %s", "%d",
                  path, file_mode_flags_rpc2str(mode), out.retval);
@@ -3672,7 +3672,7 @@ tapi_rpc_append_fd_to_te_string(rcf_rpc_server *rpcs,
 
     assert(testr != NULL);
 
-    while (TRUE)
+    while (true)
     {
         received = rpc_read(rpcs, fd, tmp_buf, sizeof(tmp_buf) - 1);
 

@@ -124,7 +124,7 @@ out:
 /* See description in te_ipstack.h */
 te_errno
 te_ipstack_prepare_raw_tcpv4_packet(uint8_t *raw_packet, ssize_t *total_size,
-                                    te_bool remove_vlan_hdr,
+                                    bool remove_vlan_hdr,
                                     struct sockaddr_ll *sadr_ll)
 {
     struct ethhdr          *ethh;
@@ -149,7 +149,7 @@ te_ipstack_prepare_raw_tcpv4_packet(uint8_t *raw_packet, ssize_t *total_size,
     ethh = (struct ethhdr *)(raw_packet);
     eth_hdr_len = sizeof(*ethh);
 
-    /* Remove all VLAN headers if @p remove_vlan_hdr is @c TRUE */
+    /* Remove all VLAN headers if @p remove_vlan_hdr is @c true */
     if (remove_vlan_hdr)
     {
         while (ethh->h_proto == htons(ETH_P_8021Q))

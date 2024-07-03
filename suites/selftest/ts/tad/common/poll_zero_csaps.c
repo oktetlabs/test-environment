@@ -34,7 +34,7 @@ int
 main(int argc, char *argv[])
 {
     rcf_trpoll_csap     csaps = { NULL, CSAP_INVALID_HANDLE, 0 };
-    te_bool             csaps_null;
+    bool csaps_null;
 
     TEST_START;
     TEST_GET_BOOL_PARAM(csaps_null);

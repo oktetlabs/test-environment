@@ -42,7 +42,7 @@ main(int argc, char **argv)
     memset(expected.ptr, *pattern, expected.len);
 
     TEST_STEP("Check the file contents");
-    CHECK_RC(te_file_read_string(&inbuf, TRUE, 0, "%s", fname));
+    CHECK_RC(te_file_read_string(&inbuf, true, 0, "%s", fname));
 
     if (!te_compare_bufs(expected.ptr, expected.len, 1,
                          inbuf.ptr, inbuf.len, TE_LL_ERROR))

@@ -89,30 +89,30 @@ check_prefix_strip(void)
 
     static const struct {
         const char *input;
-        te_bool exact_match;
+        bool exact_match;
         const char *expected;
         int exp_val;
     } tests[] = {
-        {NULL, TRUE, NULL, -1},
-        {NULL, FALSE, NULL, -1},
-        {"", TRUE, "", -1},
-        {"", FALSE, "", -1},
-        {"ERROR", TRUE, "", 1},
-        {"ERROR", FALSE, "", 1},
-        {"ERR", TRUE, "ERR", -1},
-        {"ERR", FALSE, "", 1},
-        {"WARNING:", TRUE, ":", 2},
-        {"WARN", FALSE, "", 2},
-        {"NOTE", TRUE, "", 3},
-        {"NOTICE", TRUE, "", 4},
-        {"NOT", TRUE, "NOT", -1},
-        {"NOT", FALSE, "", 3},
-        {"NOTI", FALSE, "", 4},
-        {"TRACE0", TRUE, "0", 5},
-        {"TRACEA", TRUE, "A", 5},
-        {"TRACEALL", TRUE, "", 6},
-        {"TRACE", FALSE, "", 5},
-        {"TRACEA", FALSE, "", 6},
+        {NULL, true, NULL, -1},
+        {NULL, false, NULL, -1},
+        {"", true, "", -1},
+        {"", false, "", -1},
+        {"ERROR", true, "", 1},
+        {"ERROR", false, "", 1},
+        {"ERR", true, "ERR", -1},
+        {"ERR", false, "", 1},
+        {"WARNING:", true, ":", 2},
+        {"WARN", false, "", 2},
+        {"NOTE", true, "", 3},
+        {"NOTICE", true, "", 4},
+        {"NOT", true, "NOT", -1},
+        {"NOT", false, "", 3},
+        {"NOTI", false, "", 4},
+        {"TRACE0", true, "0", 5},
+        {"TRACEA", true, "A", 5},
+        {"TRACEALL", true, "", 6},
+        {"TRACE", false, "", 5},
+        {"TRACEA", false, "", 6},
     };
     unsigned int i;
 
@@ -285,7 +285,7 @@ main(int argc, char **argv)
     for (i = 0; translation[i].from != INT_MIN; i++)
     {
         int mapped = te_enum_translate(translation, translation[i].from,
-                                       FALSE, -1);
+                                       false, -1);
 
         if (mapped != translation[i].to)
         {
@@ -293,7 +293,7 @@ main(int argc, char **argv)
                          "expected %d, got %d", translation[i].from,
                          translation[i].to, mapped);
         }
-        mapped = te_enum_translate(translation, translation[i].to, TRUE, -1);
+        mapped = te_enum_translate(translation, translation[i].to, true, -1);
 
         if (mapped != translation[i].from)
         {
@@ -304,9 +304,9 @@ main(int argc, char **argv)
     }
 
     TEST_STEP("Checking unknown value translation");
-    if (te_enum_translate(translation, INT_MAX, FALSE, -1) != -1)
+    if (te_enum_translate(translation, INT_MAX, false, -1) != -1)
         TEST_VERDICT("Unknown value forward-translated as it is known");
-    if (te_enum_translate(translation, INT_MAX, TRUE, -1) != -1)
+    if (te_enum_translate(translation, INT_MAX, true, -1) != -1)
         TEST_VERDICT("Unknown value backward-translated as it is known");
 
     TEST_STEP("Check dynamic translation generation");
@@ -340,7 +340,7 @@ main(int argc, char **argv)
         uint64_t converted;
 
         CHECK_RC(te_enum_bitmask_convert(mask_conv_map, masks_a[i],
-                                         FALSE, &converted));
+                                         false, &converted));
         if (converted != masks_b[i])
         {
             TEST_VERDICT("Forward converstion of %" PRIu64 " failed: "
@@ -349,7 +349,7 @@ main(int argc, char **argv)
         }
 
         CHECK_RC(te_enum_bitmask_convert(mask_conv_map, masks_b[i],
-                                         TRUE, &converted));
+                                         true, &converted));
         if (converted != masks_a[i])
         {
             TEST_VERDICT("Backward converstion of %" PRIu64" failed: "
@@ -361,7 +361,7 @@ main(int argc, char **argv)
     TEST_STEP("Checking forward conversion of a bitmask with unknown bit");
     if (te_enum_bitmask_convert(mask_conv_map,
                                 (masks_a[0] | ENUM_MAP_MASK_BITS__UNKNOWN),
-                                FALSE, NULL) != TE_ERANGE)
+                                false, NULL) != TE_ERANGE)
     {
         TEST_VERDICT("Unknown bit forward-converted as it is known");
     }
@@ -369,7 +369,7 @@ main(int argc, char **argv)
     TEST_STEP("Checking backward conversion of a bitmask with unknown bit");
     if (te_enum_bitmask_convert(mask_conv_map,
                                 (masks_b[0] | ENUM_MAP_MASK_BITS__UNKNOWN),
-                                TRUE, NULL) != TE_ERANGE)
+                                true, NULL) != TE_ERANGE)
     {
         TEST_VERDICT("Unknown bit backward-converted as it is known");
     }
@@ -378,14 +378,14 @@ main(int argc, char **argv)
     /* Left-side bits are overlapped. */
     mask_conv_map[0].bits_from = ENUM_MAP_MASK_BITS__OVERLAPPED;
     status = TE_EINVAL;
-    status &= te_enum_bitmask_convert(mask_conv_map, masks_a[0], FALSE, NULL);
-    status &= te_enum_bitmask_convert(mask_conv_map, masks_b[0], TRUE, NULL);
+    status &= te_enum_bitmask_convert(mask_conv_map, masks_a[0], false, NULL);
+    status &= te_enum_bitmask_convert(mask_conv_map, masks_b[0], true, NULL);
 
     /* Right-side bits are overlapped. */
     mask_conv_map[0].bits_from = ENUM_MAP_MASK_A_BITS_A;
     mask_conv_map[0].bits_to = ENUM_MAP_MASK_BITS__OVERLAPPED;
-    status &= te_enum_bitmask_convert(mask_conv_map, masks_a[0], FALSE, NULL);
-    status &= te_enum_bitmask_convert(mask_conv_map, masks_b[0], TRUE, NULL);
+    status &= te_enum_bitmask_convert(mask_conv_map, masks_a[0], false, NULL);
+    status &= te_enum_bitmask_convert(mask_conv_map, masks_b[0], true, NULL);
 
     if (status != TE_EINVAL)
         TEST_VERDICT("Maps with overlapped bits were processed as valid");

@@ -61,7 +61,7 @@ extern te_errno tapi_sniffer_common_snaplen_set(const char *ta, int snaplen);
  * @c     NULL          Name will be generated automatically
  * @param filter        Filter expression
  * @c     NULL          If NULL is specified - the filter is not applied
- * @param ofill         If FALSE is specified, than overfill handling method
+ * @param ofill         If @c false is specified, than overfill handling method
  *                      is rotation. Otherwise - tail drop
  *
  * @return Pointer to identifier structure of the sniffer. In case of
@@ -70,7 +70,7 @@ extern te_errno tapi_sniffer_common_snaplen_set(const char *ta, int snaplen);
 extern tapi_sniffer_id * tapi_sniffer_add(const char *ta, const char *iface,
                                           const char *name,
                                           const char *filter,
-                                          te_bool ofill);
+                                          bool ofill);
 
 /**
  * Create and start one or more new sniffers on the agent.
@@ -82,7 +82,7 @@ extern tapi_sniffer_id * tapi_sniffer_add(const char *ta, const char *iface,
  * @c     NULL          Name will be generated automatically
  * @param filter        Filter expression
  * @c     NULL          If NULL is specified - the filter is not applied
- * @param ofill         If FALSE is specified, than overfill handling method
+ * @param ofill         If @c false is specified, than overfill handling method
  *                      is rotation. Otherwise - tail drop
  * @param snif_h        Pointer to head of sniffer list
  *
@@ -91,7 +91,7 @@ extern tapi_sniffer_id * tapi_sniffer_add(const char *ta, const char *iface,
  */
 extern te_errno tapi_sniffer_add_mult(const char *ta, const char *iface,
                                       const char *name, const char *filter,
-                                      te_bool ofill, sniffl_h_t *snif_h);
+                                      bool ofill, sniffl_h_t *snif_h);
 
 /**
  * Stop and destroy the sniffer.

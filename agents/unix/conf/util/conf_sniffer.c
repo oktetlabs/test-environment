@@ -105,7 +105,7 @@ typedef enum overfill_meth_t {
 
 /** Structure for the common sniffers settings. */
 typedef struct snif_sets_t {
-    te_bool             enable;
+    bool enable;
     char                agt_id[RCF_PCH_MAX_ID_LEN];
     char               *filter_exp_str;
     char               *filter_exp_file;
@@ -119,13 +119,13 @@ typedef struct snif_sets_t {
     overfill_meth_t     overfill_meth;
     int                 ssn;                /**< Sniffer session sequence
                                                  number. */
-    te_bool             lock;
+    bool lock;
 } snif_sets_t;
 
 /** List of the personal sniffer settings. */
 typedef struct sniffer_t {
     SLIST_ENTRY(sniffer_t)  ent_l;
-    te_bool                 enable;
+    bool enable;
     sniffer_id              id;
     char                   *filter_exp_str;
     char                   *filter_exp_file;
@@ -276,8 +276,8 @@ sniffer_settings_init(void)
     te_errno rc;
 
     snif_sets.ssn               = 0;
-    snif_sets.enable            = FALSE;
-    snif_sets.lock              = FALSE;
+    snif_sets.enable            = false;
+    snif_sets.lock              = false;
     snif_sets.snaplen           = 0;
     snif_sets.total_size        = SNIFFER_AGENT_TOTAL_SIZE;
     snif_sets.file_size         = SNIFFER_FILE_SIZE;
@@ -416,14 +416,14 @@ sniffer_set_params(unsigned int gid, const char *oid, const char *value)
     }
 
     /* After sniffers start common setting should not be changed. */
-    if (snif_sets.lock == TRUE)
+    if (snif_sets.lock == true)
         return 0;
 
     if (strstr(oid, "/enable:") != NULL)
     {
-        snif_sets.enable = atoi(value) ? TRUE : FALSE;
+        snif_sets.enable = atoi(value) ? true : false;
         if (snif_sets.enable)
-            snif_sets.lock = TRUE;
+            snif_sets.lock = true;
     }
     else if (strstr(oid, "/snaplen:") != NULL)
         snif_sets.snaplen = atoi(value);
@@ -548,7 +548,7 @@ sniffer_common_set(unsigned int gid, const char *oid, const char *value,
        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    if (sniff->enable == TRUE)
+    if (sniff->enable == true)
     {
        WARN("The sniffer has been started.");
        return TE_RC(TE_TA_UNIX, TE_EBUSY);
@@ -684,13 +684,13 @@ sniffer_find_by_id(sniffer_id *id)
  */
 static char *
 sniffer_get_capture_fname(sniffer_t *snif, int *fnum, char **wp_fname,
-                          te_bool newest)
+                          bool newest)
 {
     DIR           *dir;
     struct dirent *ent;
     char          *fname    = NULL;
     char          *resname  = NULL;
-    te_bool        fl       = TRUE;
+    bool fl = true;
     int            res;
 
     *fnum       = 0;
@@ -718,7 +718,7 @@ sniffer_get_capture_fname(sniffer_t *snif, int *fnum, char **wp_fname,
         {
             if((fname = strdup(ent->d_name)) == NULL)
                 return NULL;
-            fl = FALSE;
+            fl = false;
             continue;
         }
 
@@ -789,7 +789,7 @@ sniffer_get_curr_offset(const char *sniff_id_str, void *snif_arg,
     else
         snif = (sniffer_t *)snif_arg;
 
-    fname = sniffer_get_capture_fname(snif, &fnum, &wp_fname, TRUE);
+    fname = sniffer_get_capture_fname(snif, &fnum, &wp_fname, true);
     if (fname == NULL)
     {
         snif->state &= ~SNIF_ST_HAS_L;
@@ -853,7 +853,7 @@ sniffer_get_curr_offset(const char *sniff_id_str, void *snif_arg,
  * @return The buffer length or zero if the buffer is empty.
  */
 static size_t
-sniffer_get_list_buf(char **buf, te_bool sync)
+sniffer_get_list_buf(char **buf, bool sync)
 {
     sniffer_t           *sniff;
     sniffer_t           *sniff_aux;
@@ -877,7 +877,7 @@ sniffer_get_list_buf(char **buf, te_bool sync)
             if (sniffer_get_curr_offset(NULL, sniff, &offset) != 0)
                 continue;
         }
-        if (sync == FALSE || (sniff->state & SNIF_ST_HAS_L) == SNIF_ST_HAS_L)
+        if (sync == false || (sniff->state & SNIF_ST_HAS_L) == SNIF_ST_HAS_L)
         {
             str_len = snprintf(*buf + clen, mem_size - clen, "%s %s %u %llu",
                                sniff->id.snifname, sniff->id.ifname, sniff->id.ssn,
@@ -937,7 +937,7 @@ sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
     size_t           size;
     char            *wp_fname;
     size_t           len            = answer_plen;
-    te_bool          first_launch   = FALSE;
+    bool first_launch = false;
 
     if ((rc = sniffer_parse_sniff_id(buf, &id)) != 0)
         return rc;
@@ -947,7 +947,7 @@ sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    fname = sniffer_get_capture_fname(snif, &fnum, &wp_fname, FALSE);
+    fname = sniffer_get_capture_fname(snif, &fnum, &wp_fname, false);
     if (fname == NULL)
     {
         snif->state &= ~SNIF_ST_HAS_L;
@@ -987,7 +987,7 @@ sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
     if (snif->curr_file_name == NULL)
     {
         snif->curr_file_name = fname;
-        first_launch = TRUE;
+        first_launch = true;
     }
     /* Check the current file still exists. */
     else if (strcmp(snif->curr_file_name, fname) != 0)
@@ -1281,7 +1281,7 @@ sniffer_start_process(sniffer_t *sniff)
     if ((s_argv == NULL) || (s_argc == 0))
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    if ((rc = rcf_ch_start_process(&sniff->pid, -1, te_snif_path, TRUE,
+    if ((rc = rcf_ch_start_process(&sniff->pid, -1, te_snif_path, true,
                                    s_argc, (void **)s_argv)) != 0)
     {
         ERROR("Start the sniffer process failed.");
@@ -1366,8 +1366,8 @@ sniffer_set_enable(unsigned int gid, const char *oid, const char *value,
     {
         if (sniffer_start_process(sniff) == 0)
         {
-            snif_sets.lock = TRUE;
-            sniff->enable = TRUE;
+            snif_sets.lock = true;
+            sniff->enable = true;
             sniff->state |= SNIF_ST_START;
         }
         else
@@ -1377,7 +1377,7 @@ sniffer_set_enable(unsigned int gid, const char *oid, const char *value,
     else if (enable == 0)
     {
         rcf_ch_kill_process(sniff->pid);
-        sniff->enable = FALSE;
+        sniff->enable = false;
 
         sniffer_add_clone(sniff);
 
@@ -1515,9 +1515,9 @@ sniffers_list(unsigned int gid, const char *oid, const char *sub_id,
  *
  * @param sniff     The nsiffer location.
  *
- * @return TRUE if the folder exists.
+ * @return @c true if the folder exists.
  */
-static te_bool
+static bool
 sniffer_check_exst_backup(sniffer_t *sniff)
 {
     DIR  *dir;
@@ -1532,23 +1532,23 @@ sniffer_check_exst_backup(sniffer_t *sniff)
     if (res > RCF_MAX_PATH)
     {
         WARN("Too long path string for sniffer logs folder.");
-        return FALSE;
+        return false;
     }
 
     dir = opendir(sniff->path);
     if (dir == NULL)
-        return FALSE;
+        return false;
     closedir(dir);
 
     sniff->curr_file_name = sniffer_get_capture_fname(sniff, &fnum,
-                                                      &wp_fname, FALSE);
+                                                      &wp_fname, false);
     if (sniff->curr_file_name == NULL)
-        return FALSE;
+        return false;
     sniff->id.abs_offset = strtoll(wp_fname, NULL, 10);
     sniff->curr_offset = SNIF_PCAP_HSIZE;
     sniff->state |= SNIF_ST_START;
 
-    return TRUE;
+    return true;
 }
 
 /**
@@ -1570,7 +1570,7 @@ sniffer_add(unsigned int gid, const char *oid, char *ssn,
     UNUSED(oid);
 
     sniffer_t *sniff;
-    te_bool    backup = FALSE;
+    bool backup = false;
 
     SNIFFER_MALLOC(sniff, sizeof(sniffer_t));
     sniff->id.snifname      = strdup(snifname);
@@ -1813,9 +1813,9 @@ rcf_ch_get_sniffers(struct rcf_comm_connection *handle, char *cbuf,
 
     /* Get sniffer list processing. */
     if (strcmp(sniff_id_str, "sync") == 0)
-        alen = sniffer_get_list_buf(&abuf, TRUE);
+        alen = sniffer_get_list_buf(&abuf, true);
     else if (strcmp(sniff_id_str, "nosync") == 0)
-        alen = sniffer_get_list_buf(&abuf, FALSE);
+        alen = sniffer_get_list_buf(&abuf, false);
     /* Mark processing. */
     else if (sniffer_get_curr_offset(sniff_id_str, NULL, &offset) == 0)
     {

@@ -62,7 +62,7 @@ do {                                                                    \
             {                                                           \
                 RING("Function %s() is not supported",  #func);         \
                 if (rpcs->iut_err_jump)                                 \
-                    rpcs->err_log = TRUE;                               \
+                    rpcs->err_log = true;                               \
             }                                                           \
             else if (rpcs->errno_change_check &&                        \
                      out.common.errno_changed)                          \
@@ -72,13 +72,13 @@ do {                                                                    \
                       RPC_ERROR_ARGS(rpcs));                            \
                 rpcs->_errno = TE_RC(TE_TAPI, TE_ECORRUPTED);           \
                 if (rpcs->iut_err_jump)                                 \
-                    rpcs->err_log = TRUE;                               \
+                    rpcs->err_log = true;                               \
             }                                                           \
         }                                                               \
         else                                                            \
         {                                                               \
             /* Log error regardless RPC error expectations */           \
-            rpcs->err_log = TRUE;                                       \
+            rpcs->err_log = true;                                       \
         }                                                               \
         if (!rpcs->err_log && rpcs->silent_pass)                        \
         {                                                               \
@@ -95,7 +95,7 @@ do {                                                                    \
                 rpcop2str(rpcs->last_op),                               \
                 (rpcs->last_use_libc || rpcs->use_libc) ? " libc" : "", \
                 _x, RPC_ERROR_ARGS(rpcs));                              \
-        rpcs->err_log = FALSE;                                          \
+        rpcs->err_log = false;                                          \
     }                                                                   \
     rpcs->silent = rpcs->silent_default;                                \
 } while (0)
@@ -118,7 +118,7 @@ do {                                                                    \
 
 /**
  * Free memory, check RPC error, jump in the case of RPC error or if
- * @a _res is @c TRUE, set jump condition to default value.
+ * @a _res is @c true, set jump condition to default value.
  */
 #define TAPI_RPC_OUT(_func, _res) \
     do {                                                                \
@@ -130,7 +130,7 @@ do {                                                                    \
             {                                                           \
                 if (rpcs->err_jump)                                     \
                 {                                                       \
-                    rpcs->iut_err_jump = TRUE;                          \
+                    rpcs->iut_err_jump = true;                          \
                     TAPI_RPC_JUMP_VERDICT(_func, rpcs);                 \
                     TAPI_JMP_DO(TE_EFAIL);                              \
                 }                                                       \
@@ -150,8 +150,8 @@ do {                                                                    \
                     TAPI_JMP_DO(TE_EFAIL);                              \
                 }                                                       \
             }                                                           \
-            rpcs->iut_err_jump = TRUE;                                  \
-            rpcs->err_jump = TRUE;                                      \
+            rpcs->iut_err_jump = true;                                  \
+            rpcs->err_jump = true;                                      \
         }                                                               \
         else                                                            \
         {                                                               \
@@ -168,7 +168,7 @@ do {                                                                    \
  * and RPC server errno is not updated.
  *
  * Error logging is requested if error is not expected and @a _err_cond
- * condition is @c TRUE.
+ * condition is @c true.
  *
  * The function assumes to have RPC server handle as @b rpcs variable in
  * the context.
@@ -203,7 +203,7 @@ do {                                                                    \
             {                                                       \
                 if (_err_cond)                                      \
                     /* errno change is expected */                  \
-                    out.common.errno_changed = FALSE;               \
+                    out.common.errno_changed = false;               \
                 else                                                \
                     (_var) = (_error_val);                          \
             }                                                       \
@@ -212,7 +212,7 @@ do {                                                                    \
              * above.                                               \
              */                                                     \
             if (rpcs->iut_err_jump && (_err_cond))                  \
-                rpcs->err_log = TRUE;                               \
+                rpcs->err_log = true;                               \
         }                                                           \
     } while (0)
 
@@ -318,13 +318,13 @@ do {                                                                    \
 
 /**
  * If RPC call status is OK, check that variable @a _var with function
- * return value is @c TRUE or @c FALSE and set specified variable to
- * @c FALSE and RPC server errno to #TE_ECORRUPTED, if it is not true.
- * If RPC call status is not OK, variable @a _var is set to @c FALSE and
+ * return value is @c true or @c false and set specified variable to
+ * @c false and RPC server errno to #TE_ECORRUPTED, if it is not true.
+ * If RPC call status is not OK, variable @a _var is set to @c false and
  * RPC server errno is not updated.
  *
  * Error logging is requested if error is not expected and finally @a _var
- * is equal to @c FALSE.
+ * is equal to @c false.
  *
  * The function assumes to have RPC server handle as @b rpcs variable in
  * the context.
@@ -333,8 +333,8 @@ do {                                                                    \
  * @param _var      variable with return value
  */
 #define CHECK_RETVAL_VAR_IS_BOOL(_func, _var) \
-    CHECK_RETVAL_VAR(_func, _var, (((_var) != FALSE) && ((_var) != TRUE)), \
-                     FALSE)
+    CHECK_RETVAL_VAR(_func, _var, (((_var) != false) && ((_var) != true)), \
+                     false)
 
 /**
  * Auxiliary check with false condition required for RPC logging with
@@ -376,7 +376,7 @@ do {                                                                    \
 /** Return with check (for functions returning boolean value) */
 #define RETVAL_BOOL(_func, _retval) \
     do {                                  \
-        te_bool __retval = _retval;       \
+        bool __retval = _retval;          \
                                           \
         TAPI_RPC_OUT(_func, !(__retval)); \
                                           \
@@ -437,7 +437,7 @@ do {                                                                    \
 /** Return with check (for void functions) */
 #define RETVAL_VOID(_func) \
     do {                                                            \
-        TAPI_RPC_OUT(_func, FALSE);                                 \
+        TAPI_RPC_OUT(_func, false);                                 \
         return;                                                     \
     } while(0)
 
@@ -597,9 +597,9 @@ extern const char *tapi_rpc_namespace_get(
 
 /**
  * Initialize and check @b rpc_msghdr.msg_flags value in RPC only if the
- * variable is @c TRUE.
+ * variable is @c true.
  */
-extern te_bool rpc_msghdr_msg_flags_init_check_enabled;
+extern bool rpc_msghdr_msg_flags_init_check_enabled;
 
 /**
  * Initialize @b msg_flags by a random value.
@@ -629,14 +629,14 @@ extern te_bool rpc_msghdr_msg_flags_init_check_enabled;
  *                          saved (call @b tarpc_msghdr_free() to
  *                          free memory after this function, even if
  *                          it failed).
- * @param recv_call         Set to @c TRUE if conversion is done for
+ * @param recv_call         Set to @c true if conversion is done for
  *                          receive function call.
  *
  * @return Status code.
  */
 extern te_errno msghdr_rpc2tarpc(const rpc_msghdr *rpc_msg,
                                  tarpc_msghdr *tarpc_msg,
-                                 te_bool recv_call);
+                                 bool recv_call);
 
 /**
  * Release memory allocated by @b msghdr_rpc2tarpc() for converted value.
@@ -669,7 +669,7 @@ extern te_errno msghdr_tarpc2rpc(const tarpc_msghdr *tarpc_msg,
  * @param num             Number of elements in @p rpc_mmsgs.
  * @param tarpc_mmsgs     Where to save a pointer to array of converted
  *                        values.
- * @param recv_call       If @c TRUE, conversion is done for receive call.
+ * @param recv_call       If @c true, conversion is done for receive call.
  *
  * @return Status code.
  *
@@ -678,7 +678,7 @@ extern te_errno msghdr_tarpc2rpc(const tarpc_msghdr *tarpc_msg,
 extern te_errno mmsghdrs_rpc2tarpc(const struct rpc_mmsghdr *rpc_mmsgs,
                                    unsigned int num,
                                    tarpc_mmsghdr **tarpc_mmsgs,
-                                   te_bool recv_call);
+                                   bool recv_call);
 
 /**
  * Release memory allocated by @b mmsghdrs_rpc2tarpc() for converted values.

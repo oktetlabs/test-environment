@@ -73,18 +73,18 @@ extern void rpc_transport_read_set_add(rpc_transport_handle handle);
  *
  * @param timeout       timeout in seconds
  *
- * @return TRUE is the read event is received or FALSE otherwise
+ * @return @c true is the read event is received or @c false otherwise
  */
-extern te_bool rpc_transport_read_set_wait(int timeout);
+extern bool rpc_transport_read_set_wait(int timeout);
 
 /**
  * Check if data are pending on the connection.
  *
  * @param handle        connection handle
  *
- * @return TRUE is data are pending or FALSE otherwise
+ * @return @c true is data are pending or @c false otherwise
  */
-extern te_bool rpc_transport_is_readable(rpc_transport_handle handle);
+extern bool rpc_transport_is_readable(rpc_transport_handle handle);
 
 /**
  * Receive message with specified timeout.

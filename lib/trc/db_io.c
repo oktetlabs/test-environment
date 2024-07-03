@@ -54,7 +54,7 @@ te_trc_db *current_db;
 /** Widely used expected results */
 static trc_exp_results  exp_defaults;
 /** Are exp_defaults initialized? */
-static te_bool          exp_defaults_inited = FALSE;
+static bool exp_defaults_inited = false;
 
 
 static te_errno get_tests(xmlNodePtr *node, trc_tests *tests,
@@ -218,7 +218,7 @@ exp_defaults_free(void)
             free(TAILQ_FIRST(&p->results));
             free(p);
         }
-        exp_defaults_inited = FALSE;
+        exp_defaults_inited = false;
     }
 }
 
@@ -234,7 +234,7 @@ exp_defaults_init(void)
     {
         STAILQ_INIT(&exp_defaults);
         atexit(exp_defaults_free);
-        exp_defaults_inited = TRUE;
+        exp_defaults_inited = true;
     }
 }
 
@@ -628,7 +628,7 @@ get_expected_rentry(xmlNodePtr node, trc_exp_result_entry *rentry)
 /* See description in trc_db.h */
 te_errno
 get_expected_result(xmlNodePtr node, trc_exp_result *result,
-                    te_bool tags_tolerate)
+                    bool tags_tolerate)
 {
     te_errno                rc = 0;
     trc_exp_result_entry   *entry;
@@ -691,7 +691,7 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
 
         TAILQ_INIT(&result->results);
         STAILQ_INSERT_TAIL(results, result, links);
-        get_expected_result(*node, result, FALSE);
+        get_expected_result(*node, result, false);
         *node = xmlNodeNext(*node);
     }
 
@@ -969,11 +969,11 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
     if (tmp == NULL ||
         strcmp(tmp, "false") == 0)
     {
-        p->aux = FALSE;
+        p->aux = false;
     }
     else if (strcmp(tmp, "true") == 0)
     {
-        p->aux = TRUE;
+        p->aux = true;
     }
     else
     {
@@ -1429,7 +1429,7 @@ trc_db_open_ext(const char *location, te_trc_db **db, int flags)
         if (last_match != NULL &&
             (strcmp(last_match, "true") == 0 || strcmp(last_match, "1") == 0))
         {
-            (*db)->last_match = TRUE;
+            (*db)->last_match = true;
         }
 
         (*db)->version = XML2CHAR(xmlGetProp(node,
@@ -1482,8 +1482,8 @@ trc_db_open(const char *location, te_trc_db **db)
 
 static te_errno trc_update_tests(trc_tests *tests, int flags,
                                  int uid,
-                                 te_bool (*to_save)(void *, te_bool),
-                                 char *(*set_user_attr)(void *, te_bool));
+                                 bool (*to_save)(void *, bool),
+                                 char *(*set_user_attr)(void *, bool));
 
 te_errno
 trc_verdict_to_xml(char *v, xmlNodePtr result_node)
@@ -1539,7 +1539,7 @@ trc_exp_result_entry_to_xml(trc_exp_result_entry *res_entry,
 
 te_errno
 trc_exp_result_to_xml(trc_exp_result *exp_result, xmlNodePtr results_node,
-                      te_bool is_default)
+                      bool is_default)
 {
     trc_exp_result_entry    *res_entry;
 
@@ -1583,7 +1583,7 @@ trc_exp_result_to_xml(trc_exp_result *exp_result, xmlNodePtr results_node,
 
 te_errno
 trc_exp_results_to_xml(trc_exp_results *exp_results, xmlNodePtr node,
-                       te_bool insert_after)
+                       bool insert_after)
 {
     xmlNodePtr               results_node;
     xmlNodePtr               prev_node;
@@ -1606,7 +1606,7 @@ trc_exp_results_to_xml(trc_exp_results *exp_results, xmlNodePtr node,
         else
             xmlAddChild(node, results_node);
 
-        trc_exp_result_to_xml(result, results_node, FALSE);
+        trc_exp_result_to_xml(result, results_node, false);
     }
 
     return 0;
@@ -1614,17 +1614,17 @@ trc_exp_results_to_xml(trc_exp_results *exp_results, xmlNodePtr node,
 
 static te_errno
 trc_update_iters(trc_test_iters *iters, int flags, int uid,
-                 te_bool (*to_save)(void *, te_bool),
-                 char *(*set_user_attr)(void *, te_bool))
+                 bool (*to_save)(void *, bool),
+                 char *(*set_user_attr)(void *, bool))
 {
     te_errno        rc;
     trc_test_iter  *p;
     void           *user_data;
-    te_bool         is_saved;
+    bool is_saved;
     char           *user_attr;
     xmlNodePtr      node;
     xmlNodePtr      prev_node;
-    te_bool         renew_content;
+    bool renew_content;
 
     TAILQ_FOREACH(p, &iters->head, links)
     {
@@ -1637,9 +1637,9 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
 
         user_data = trc_db_iter_get_user_data(p, uid);
         if (to_save != NULL)
-            is_saved = to_save(user_data, TRUE);
+            is_saved = to_save(user_data, true);
         else
-            is_saved = TRUE;
+            is_saved = true;
 
         if (!is_saved && p->node != NULL)
         {
@@ -1652,7 +1652,7 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
         {
             trc_test_iter_arg  *a;
 
-            renew_content = TRUE;
+            renew_content = true;
 
             if (p->node == NULL)
             {
@@ -1693,7 +1693,7 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
                 }
             }
             else
-                renew_content = FALSE;
+                renew_content = false;
 
             if (renew_content)
             {
@@ -1704,7 +1704,7 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
 
                 if (set_user_attr != NULL)
                 {
-                    user_attr = set_user_attr(user_data, TRUE);
+                    user_attr = set_user_attr(user_data, true);
                     if (user_attr != NULL)
                     {
                         xmlNewProp(p->tests.node, BAD_CAST "user_attr",
@@ -1735,13 +1735,13 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
                      */
                     if (tq_str != NULL)
                     {
-                        te_bool found = FALSE;
+                        bool found = false;
 
                         TAILQ_FOREACH(a, &p->args.head, links)
                         {
                             if (strcmp(a->name, tq_str->v) == 0)
                             {
-                                found = TRUE;
+                                found = true;
                                 break;
                             }
                         }
@@ -1815,7 +1815,7 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
                     !STAILQ_EMPTY(&p->exp_results))
                     trc_exp_results_to_xml(&p->exp_results,
                                            prev_node,
-                                           TRUE);
+                                           true);
             }
 
             if (is_saved)
@@ -1845,16 +1845,16 @@ trc_test_type_to_str(trc_test_type type)
 
 static te_errno
 trc_update_tests(trc_tests *tests, int flags, int uid,
-                 te_bool (*to_save)(void *, te_bool),
-                 char *(*set_user_attr)(void *, te_bool))
+                 bool (*to_save)(void *, bool),
+                 char *(*set_user_attr)(void *, bool))
 {
     te_errno    rc;
     trc_test   *p;
     xmlNodePtr  node;
     xmlNodePtr  prev_node;
     void       *user_data;
-    te_bool     is_saved;
-    te_bool     renew_content = FALSE;
+    bool is_saved;
+    bool renew_content = false;
     char       *user_attr;
 
     TAILQ_FOREACH(p, &tests->head, links)
@@ -1868,9 +1868,9 @@ trc_update_tests(trc_tests *tests, int flags, int uid,
 
         user_data = trc_db_test_get_user_data(p, uid);
         if (to_save != NULL)
-            is_saved = to_save(user_data, FALSE);
+            is_saved = to_save(user_data, false);
         else
-            is_saved = TRUE;
+            is_saved = true;
 
         if (!is_saved && p->node != NULL)
         {
@@ -1881,7 +1881,7 @@ trc_update_tests(trc_tests *tests, int flags, int uid,
 
         if (is_saved)
         {
-            renew_content = TRUE;
+            renew_content = true;
 
             if (p->node == NULL)
             {
@@ -1921,7 +1921,7 @@ trc_update_tests(trc_tests *tests, int flags, int uid,
                 }
             }
             else
-                renew_content = FALSE;
+                renew_content = false;
 
             if (renew_content)
             {
@@ -2034,8 +2034,8 @@ trc_update_tests(trc_tests *tests, int flags, int uid,
  *                  list of its siblings or not
  * @param is_top    Whether this is a top element in TRC DB
  */
-static te_errno trc_tests_pos(trc_test *test, te_bool is_first,
-                              te_bool is_top);
+static te_errno trc_tests_pos(trc_test *test, bool is_first,
+                              bool is_top);
 
 /**
  * Compute "file_pos" properties value for
@@ -2047,7 +2047,7 @@ static te_errno trc_tests_pos(trc_test *test, te_bool is_first,
  *                  list of its siblings or not
  */
 static te_errno
-trc_iters_pos(trc_test_iter *iter, te_bool is_first)
+trc_iters_pos(trc_test_iter *iter, bool is_first)
 {
     int               pos = 0;
     char             *filename;
@@ -2065,7 +2065,7 @@ trc_iters_pos(trc_test_iter *iter, te_bool is_first)
         {
             p->file_pos = ++pos;
             test = TAILQ_FIRST(&p->tests.head);
-            if (trc_tests_pos(test, TRUE, FALSE) != 0)
+            if (trc_tests_pos(test, true, false) != 0)
                 return -1;
         }
         else if (is_first)
@@ -2073,7 +2073,7 @@ trc_iters_pos(trc_test_iter *iter, te_bool is_first)
             const char            *filename_oth = p->filename;
             trc_test_iter         *p_prev = p;
 
-            if (trc_iters_pos(p, FALSE) != 0)
+            if (trc_iters_pos(p, false) != 0)
                 return -1;
 
             /* Skip iterations that were handled by recursive call. */
@@ -2092,7 +2092,7 @@ trc_iters_pos(trc_test_iter *iter, te_bool is_first)
 
 /** See description above */
 static te_errno
-trc_tests_pos(trc_test *test, te_bool is_first, te_bool is_top)
+trc_tests_pos(trc_test *test, bool is_first, bool is_top)
 {
     int              pos = 0;
     char            *filename;
@@ -2119,7 +2119,7 @@ trc_tests_pos(trc_test *test, te_bool is_first, te_bool is_top)
 
             p->file_pos = ++pos;
             iter = TAILQ_FIRST(&p->iters.head);
-            if (trc_iters_pos(iter, TRUE) != 0)
+            if (trc_iters_pos(iter, true) != 0)
                 return -1;
         }
         else if (is_first)
@@ -2127,7 +2127,7 @@ trc_tests_pos(trc_test *test, te_bool is_first, te_bool is_top)
             const char       *filename_oth = p->filename;
             trc_test         *p_prev = p;
 
-            if (trc_tests_pos(p, FALSE, FALSE) != 0)
+            if (trc_tests_pos(p, false, false) != 0)
                 return -1;
 
             /* Skip tests that were handled by recursive call. */
@@ -2140,7 +2140,7 @@ trc_tests_pos(trc_test *test, te_bool is_first, te_bool is_top)
         else
             break;
 
-        is_top = FALSE;
+        is_top = false;
     } while ((p = TAILQ_NEXT(p, links)) != NULL);
 
     return 0;
@@ -2149,8 +2149,8 @@ trc_tests_pos(trc_test *test, te_bool is_first, te_bool is_top)
 /* See description in trc_db.h */
 te_errno
 trc_db_save(te_trc_db *db, const char *filename, int flags,
-            int uid, te_bool (*to_save)(void *, te_bool),
-            char *(*set_user_attr)(void *, te_bool),
+            int uid, bool (*to_save)(void *, bool),
+            char *(*set_user_attr)(void *, bool),
             char *cmd)
 {
     const char          *fn = (filename != NULL) ?
@@ -2236,7 +2236,7 @@ trc_db_save(te_trc_db *db, const char *filename, int flags,
 
     test = TAILQ_FIRST(&db->tests.head);
     if (flags & TRC_SAVE_POS_ATTR)
-        trc_tests_pos(test, TRUE, TRUE);
+        trc_tests_pos(test, true, true);
 
     if ((rc = trc_update_tests(&db->tests, flags, uid, to_save,
                                set_user_attr)) != 0)

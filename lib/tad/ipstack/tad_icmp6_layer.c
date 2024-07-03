@@ -130,21 +130,21 @@ static const tad_bps_pkt_frag tad_icmp6_bps_hdr [] =
         8,
         BPS_FLD_NO_DEF(NDN_TAG_ICMP6_TYPE),
         TAD_DU_I32,
-        TRUE
+        true
     },
     {
         "code",
         8,
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_CODE, 0),
         TAD_DU_I32,
-        FALSE
+        false
     },
     {
         "checksum",
         16,
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_CHECKSUM, 0),
         TAD_DU_I32,
-        TRUE
+        true
     },
 };
 
@@ -158,7 +158,7 @@ static const tad_bps_pkt_frag tad_icmp6_dest_unreach_bps_hdr [] =
         32,
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_DEST_UNREACH_UNUSED, 0),
         TAD_DU_I32,
-        FALSE
+        false
     },
 };
 
@@ -172,7 +172,7 @@ static const tad_bps_pkt_frag tad_icmp6_packet_too_big_bps_hdr [] =
         32,
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_PACKET_TOO_BIG_MTU, 0),
         TAD_DU_I32,
-        FALSE
+        false
     },
 };
 
@@ -186,7 +186,7 @@ static const tad_bps_pkt_frag tad_icmp6_time_exceeded_bps_hdr [] =
         32,
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_TIME_EXCEEDED_UNUSED, 0),
         TAD_DU_I32,
-        FALSE
+        false
     },
 };
 
@@ -200,7 +200,7 @@ static const tad_bps_pkt_frag tad_icmp6_param_prob_bps_hdr [] =
         32,
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_PARAM_PROB_PTR, 0),
         TAD_DU_I32,
-        FALSE
+        false
     },
 };
 
@@ -214,14 +214,14 @@ static const tad_bps_pkt_frag tad_icmp6_echo_bps_hdr [] =
         16,
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_ECHO_ID, 0),
         TAD_DU_I32,
-        FALSE
+        false
     },
     {
         "seq",
         16,
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_ECHO_SEQ, 0),
         TAD_DU_I32,
-        FALSE
+        false
     },
 };
 
@@ -235,21 +235,21 @@ static const tad_bps_pkt_frag tad_icmp6_mld_bps_hdr [] =
         16,
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_MLD_MAX_RESPONSE_DELAY, 0),
         TAD_DU_I32,
-        FALSE
+        false
     },
     {
         "reserved",
         16,
         BPS_FLD_CONST(0),
         TAD_DU_I32,
-        FALSE
+        false
     },
     {
         "group-addr",
         128,
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_MLD_GROUP_ADDR, 0),
         TAD_DU_OCTS,
-        FALSE
+        false
     },
 };
 
@@ -263,7 +263,7 @@ static const tad_bps_pkt_frag tad_icmp6_router_sol_bps_hdr [] =
         32,
         BPS_FLD_CONST(0),
         TAD_DU_I32,
-        FALSE
+        false
     },
 };
 
@@ -277,35 +277,35 @@ static const tad_bps_pkt_frag tad_icmp6_router_adv_bps_hdr [] =
         8,
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_ROUTER_ADV_CUR_HOP_LIMIT, 64),
         TAD_DU_I32,
-        FALSE
+        false
     },
     {
         "flags",
         8,
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_ROUTER_ADV_FLAGS, 0),
         TAD_DU_I32,
-        FALSE
+        false
     },
     {
         "lifetime",
         16,
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_ROUTER_ADV_LIFETIME, 180),
         TAD_DU_I32,
-        FALSE
+        false
     },
     {
         "reachable-time",
         32,
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_ROUTER_ADV_REACHABLE_TIME, 0),
         TAD_DU_I32,
-        FALSE
+        false
     },
     {
         "retrans-timer",
         32,
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_ROUTER_ADV_RETRANS_TIMER, 0),
         TAD_DU_I32,
-        FALSE
+        false
     },
 };
 
@@ -319,14 +319,14 @@ static const tad_bps_pkt_frag tad_icmp6_neighbor_sol_bps_hdr [] =
         32,
         BPS_FLD_CONST(0),
         TAD_DU_I32,
-        FALSE
+        false
     },
     {
         "target-addr",
         128,
         BPS_FLD_NO_DEF(NDN_TAG_ICMP6_NEIGHBOR_SOL_TARGET_ADDR),
         TAD_DU_OCTS,
-        FALSE
+        false
     }
 };
 
@@ -341,14 +341,14 @@ static const tad_bps_pkt_frag tad_icmp6_neighbor_adv_bps_hdr [] =
         /* All zeros on default */
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_NEIGHBOR_ADV_FLAGS, 0),
         TAD_DU_I32,
-        FALSE
+        false
     },
     {
         "target-addr",
         128,
         BPS_FLD_NO_DEF(NDN_TAG_ICMP6_NEIGHBOR_ADV_TARGET_ADDR),
         TAD_DU_OCTS,
-        FALSE
+        false
     }
 };
 
@@ -362,14 +362,14 @@ static const tad_bps_pkt_frag tad_icmp6_option_hdr_bps_hdr [] =
         8,
         BPS_FLD_NO_DEF(NDN_TAG_ICMP6_OPT_TYPE),
         TAD_DU_I32,
-        FALSE
+        false
     },
     {
         "length",
         8,
         BPS_FLD_NO_DEF(NDN_TAG_ICMP6_OPT_LEN),
         TAD_DU_I32,
-        FALSE
+        false
     }
 };
 
@@ -383,7 +383,7 @@ static const tad_bps_pkt_frag tad_icmp6_option_ll_addr_bps_hdr [] =
         48,
         BPS_FLD_NO_DEF(NDN_TAG_ICMP6_OPT_LL_ADDR_MAC),
         TAD_DU_OCTS,
-        FALSE
+        false
     }
 };
 
@@ -397,7 +397,7 @@ static const tad_bps_pkt_frag tad_icmp6_option_prefix_info_bps_hdr [] =
         8,
         BPS_FLD_NO_DEF(NDN_TAG_ICMP6_OPT_PREFIX_PREFIX_LENGTH),
         TAD_DU_I32,
-        FALSE
+        false
     },
     {
         "flags",
@@ -405,7 +405,7 @@ static const tad_bps_pkt_frag tad_icmp6_option_prefix_info_bps_hdr [] =
         /* All zeros on default */
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_OPT_PREFIX_FLAGS, 0),
         TAD_DU_I32,
-        FALSE
+        false
     },
     {
         "valid-lifetime",
@@ -413,7 +413,7 @@ static const tad_bps_pkt_frag tad_icmp6_option_prefix_info_bps_hdr [] =
         /* 86400 sec. on default */
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_OPT_PREFIX_VALID_LIFETIME, 86400),
         TAD_DU_I32,
-        FALSE
+        false
     },
     {
         "preferred-lifetime",
@@ -421,14 +421,14 @@ static const tad_bps_pkt_frag tad_icmp6_option_prefix_info_bps_hdr [] =
         /* 14400 sec. on default */
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_OPT_PREFIX_PREFERRED_LIFETIME, 14400),
         TAD_DU_I32,
-        FALSE
+        false
     },
     {
         "prefix",
         128,
         BPS_FLD_NO_DEF(NDN_TAG_ICMP6_OPT_PREFIX_PREFIX),
         TAD_DU_OCTS,
-        FALSE
+        false
     }
 };
 
@@ -1101,7 +1101,7 @@ tad_icmp6_gen_bin_cb(csap_p csap, unsigned int layer,
     tad_pkts_move(pdus, sdus);
 
     /* Allocate a segment for ICMPv6 header and body for all pkts */
-    if ((rc = tad_pkts_add_new_seg(pdus, TRUE, NULL,
+    if ((rc = tad_pkts_add_new_seg(pdus, true, NULL,
                                    bitlen >> 3, NULL)) != 0)
     {
         return rc;

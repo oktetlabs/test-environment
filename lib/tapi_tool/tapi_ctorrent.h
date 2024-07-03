@@ -150,7 +150,7 @@ extern te_errno tapi_ctorrent_destroy(tapi_ctorrent_app *app, int timeout_ms);
  *
  * @param[in]  app                 ctorrent app handle.
  * @param[in]  receive_timeout_ms  Timeout to receive status data from ctorrent.
- * @param[out] completed           @c TRUE if the download is completed.
+ * @param[out] completed           @c true if the download is completed.
  *
  * @return     Status code.
  * @retval     TE_ETIMEDOUT        ctorrent has not displayed its status line
@@ -164,7 +164,7 @@ extern te_errno tapi_ctorrent_destroy(tapi_ctorrent_app *app, int timeout_ms);
  */
 extern te_errno tapi_ctorrent_check_completion(tapi_ctorrent_app *app,
                                                int receive_timeout_ms,
-                                               te_bool *completed);
+                                               bool *completed);
 
 /**
  * Wait for the download to complete.

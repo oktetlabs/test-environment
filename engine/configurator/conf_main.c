@@ -71,9 +71,9 @@ static const char *cs_dirs_cfg = NULL;
 /** Configurator global flags */
 static unsigned int cs_flags = 0;
 
-static te_bool cs_inconsistency_state = FALSE;
+static bool cs_inconsistency_state = false;
 
-static void process_backup(cfg_backup_msg *msg, te_bool release_dh);
+static void process_backup(cfg_backup_msg *msg, bool release_dh);
 static te_errno create_backup(char **bkp_filename);
 static te_errno process_backup_op(const char *name, uint8_t op);
 static te_errno release_backup(const char *name);
@@ -159,7 +159,7 @@ static void
 set_inconsistency_state(void)
 {
     ERROR("Configurator is in inconsistent state");
-    cs_inconsistency_state = TRUE;
+    cs_inconsistency_state = true;
 }
 
 /**
@@ -176,9 +176,9 @@ set_inconsistency_state(void)
  */
 static int
 cfg_avoid_local_cmd_problem(const char *cmd, const char *oid,
-                            cfg_msg *msg, te_bool update_dh)
+                            cfg_msg *msg, bool update_dh)
 {
-    te_bool msg_local = FALSE;
+    bool msg_local = false;
 
     UNUSED(update_dh);
 
@@ -249,7 +249,7 @@ cfg_avoid_local_cmd_problem(const char *cmd, const char *oid,
     {
         if ((msg->rc = create_backup(&local_cmd_bkp)) != 0)
             return msg->rc;
-        local_cmd_seq = TRUE;
+        local_cmd_seq = true;
 
         snprintf(max_commit_subtree, sizeof(max_commit_subtree), "%s", oid);
 
@@ -289,8 +289,8 @@ cfg_wipe_cmd_error(uint8_t type, cfg_handle handle)
         int rc;
 
         /* Restore configuration before the first local SET/ADD/DEL */
-        local_cmd_seq = FALSE;
-        rc = cfg_dh_restore_backup(local_cmd_bkp, FALSE);
+        local_cmd_seq = false;
+        rc = cfg_dh_restore_backup(local_cmd_bkp, false);
         WARN("Restore backup to configuration which was before "
              "the first local ADD/DEL/SET commands. Restored with code %r",
              rc);
@@ -386,16 +386,16 @@ parse_config_dh_sync(xmlNodePtr root_node, te_kvpair_h *expand_vars)
         ERROR("Failed to create a backup");
         return rc;
     }
-    rc = cfg_dh_process_file(root_node, expand_vars, FALSE);
-    if (rc == 0 && (rc = cfg_ta_sync("/:", TRUE)) != 0)
+    rc = cfg_dh_process_file(root_node, expand_vars, false);
+    if (rc == 0 && (rc = cfg_ta_sync("/:", true)) != 0)
     {
         ERROR("Cannot synchronise database with Test Agents");
-        cfg_dh_restore_backup(backup, FALSE);
+        cfg_dh_restore_backup(backup, false);
     }
-    if (rc == 0 && (rc = cfg_dh_process_file(root_node, expand_vars, TRUE)) != 0)
+    if (rc == 0 && (rc = cfg_dh_process_file(root_node, expand_vars, true)) != 0)
     {
         ERROR("Failed to modify database after synchronisation: %r", rc);
-        cfg_dh_restore_backup(backup, FALSE);
+        cfg_dh_restore_backup(backup, false);
     }
     if (rc == 0)
         cfg_dh_release_backup(backup);
@@ -411,7 +411,7 @@ parse_config_dh_sync(xmlNodePtr root_node, te_kvpair_h *expand_vars)
  * @param expand_vars   List of key-value pairs for expansion in file,
  *                      @c NULL if environment variables are used for
  *                      substitutions
- * @param history       if TRUE, the configuration file must be a history,
+ * @param history       if @c true, the configuration file must be a history,
  *                      otherwise, it must be a backup
  * @param subtrees      Vector of the subtrees to execute the configuration
  *                      file.
@@ -419,7 +419,7 @@ parse_config_dh_sync(xmlNodePtr root_node, te_kvpair_h *expand_vars)
  * @return status code (see te_errno.h)
  */
 static int
-parse_config_xml(const char *file, te_kvpair_h *expand_vars, te_bool history,
+parse_config_xml(const char *file, te_kvpair_h *expand_vars, bool history,
                  const te_vec *subtrees)
 {
     xmlDocPtr   doc;
@@ -471,7 +471,7 @@ parse_config_xml(const char *file, te_kvpair_h *expand_vars, te_bool history,
         return 0;
     }
 
-    rcf_log_cfg_changes(TRUE);
+    rcf_log_cfg_changes(true);
     if (xmlStrcmp(root->name, (const xmlChar *)"backup") == 0)
     {
         if (history)
@@ -481,7 +481,7 @@ parse_config_xml(const char *file, te_kvpair_h *expand_vars, te_bool history,
         }
         else
         {
-            rc = cfg_backup_process_file(root, TRUE, subtrees);
+            rc = cfg_backup_process_file(root, true, subtrees);
         }
     }
     else if (xmlStrcmp(root->name, (const xmlChar *)"history") == 0)
@@ -502,7 +502,7 @@ parse_config_xml(const char *file, te_kvpair_h *expand_vars, te_bool history,
               root->name);
         rc = TE_RC(TE_CS, TE_EINVAL);
     }
-    rcf_log_cfg_changes(FALSE);
+    rcf_log_cfg_changes(false);
 
     xmlFreeDoc(doc);
     xmlCleanupParser();
@@ -527,7 +527,7 @@ cfg_sync_agt_volatile(cfg_msg *msg, const char *inst_name)
 
     CFG_CHECK_NO_LOCAL_SEQ_RC("sync_agt_volatile", msg);
 
-    msg->rc = cfg_ta_sync(oid, TRUE);
+    msg->rc = cfg_ta_sync(oid, true);
     free(oid);
     return msg->rc;
 }
@@ -610,7 +610,7 @@ add_inst_with_src_val(const char *dst_oid, const cfg_instance *src_inst,
     msg->len += strlen(dst_oid) + 1;
     memcpy((char *)msg + msg->oid_offset, dst_oid, strlen(dst_oid) + 1);
 
-    cfg_process_msg((cfg_msg **)&msg, TRUE);
+    cfg_process_msg((cfg_msg **)&msg, true);
 
     rc = msg->rc;
     if (rc == 0)
@@ -658,7 +658,7 @@ copy_value(cfg_handle dst_handle, const cfg_instance *src_inst)
 
         cfg_types[dst_inst->obj->type].put_to_msg(src_inst->val, (cfg_msg *)msg);
 
-        cfg_process_msg((cfg_msg **)&msg, TRUE);
+        cfg_process_msg((cfg_msg **)&msg, true);
 
         rc = msg->rc;
         free(msg);
@@ -681,14 +681,14 @@ copy_subtree_instance(const char *dst_oid, const cfg_instance *src_inst,
 {
     cfg_handle    dst_handle;
     int           rc = 0;
-    te_bool       exists = FALSE;
+    bool exists = false;
 
     rc = cfg_db_find(dst_oid, &dst_handle);
     if (rc == 0)
     {
         if (CFG_IS_INST(dst_handle))
         {
-            exists = TRUE;
+            exists = true;
         }
         else
         {
@@ -753,7 +753,7 @@ copy_subtree_object(const char *dst_oid, const cfg_object *src_obj,
     }
     msg->len = msg_len;
 
-    cfg_process_msg((cfg_msg **)&msg, TRUE);
+    cfg_process_msg((cfg_msg **)&msg, true);
 
     rc = msg->rc;
     if (rc == 0)
@@ -925,7 +925,7 @@ process_copy(cfg_copy_msg *msg)
  * @param update_dh     if true, add the command to dynamic history
  */
 static void
-process_add(cfg_add_msg *msg, te_bool update_dh)
+process_add(cfg_add_msg *msg, bool update_dh)
 {
     cfg_handle    handle = 0;
     cfg_instance *inst;
@@ -967,7 +967,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     assert(inst != NULL);
     obj = inst->obj;
     if (cfg_instance_volatile(inst))
-        update_dh = FALSE;
+        update_dh = false;
 
     if (obj->access != CFG_READ_CREATE)
     {
@@ -1003,9 +1003,9 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
 
         /*
          * Instance is not from agent subtree, but we set 'added'
-         * to TRUE to avoid possible problems with this instance.
+         * to @c true to avoid possible problems with this instance.
          */
-        inst->added = TRUE;
+        inst->added = true;
 
         msg->handle = handle;
         return;
@@ -1074,7 +1074,7 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
     if (obj->type != CVT_NONE)
         free(val_str);
 
-    if ((msg->rc = cfg_ta_sync(oid, TRUE)) != 0)
+    if ((msg->rc = cfg_ta_sync(oid, true)) != 0)
     {
         ERROR("Failed to synchronize subtree %s "
               "error=%r", oid, msg->rc);
@@ -1123,9 +1123,9 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
      */
     if ((inst = CFG_GET_INST(handle)) != NULL)
     {
-        inst->added = TRUE;
+        inst->added = true;
 
-        cfg_ta_sync_dependants(inst, FALSE);
+        cfg_ta_sync_dependants(inst, false);
 
         cfg_conf_delay_update(inst->oid);
     }
@@ -1185,7 +1185,7 @@ out:
  * @param update_dh     if true, add the command to dynamic history
  */
 static void
-process_set(cfg_set_msg *msg, te_bool update_dh)
+process_set(cfg_set_msg *msg, bool update_dh)
 {
     cfg_handle    handle = msg->handle;
     cfg_instance *inst;
@@ -1207,7 +1207,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
 
     obj = inst->obj;
     if (cfg_instance_volatile(inst))
-        update_dh = FALSE;
+        update_dh = false;
 
     if ((msg->rc = cfg_types[obj->type].
                    get_from_msg((cfg_msg *)msg, &val)) != 0)
@@ -1324,14 +1324,14 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
     if (msg->rc != 0)
     {
         cfg_db_set(handle, old_val);
-        cfg_ta_sync_dependants(CFG_GET_INST(handle), FALSE);
+        cfg_ta_sync_dependants(CFG_GET_INST(handle), false);
         cfg_conf_delay_update(CFG_GET_INST(handle)->oid);
         goto cleanup;
     }
 
     if (obj->substitution)
     {
-        msg->rc = cfg_ta_sync(CFG_GET_INST(handle)->oid, TRUE);
+        msg->rc = cfg_ta_sync(CFG_GET_INST(handle)->oid, true);
         if (msg->rc != 0)
         {
             te_errno rc;
@@ -1364,7 +1364,7 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         }
     }
 
-    cfg_ta_sync_dependants(CFG_GET_INST(handle), FALSE);
+    cfg_ta_sync_dependants(CFG_GET_INST(handle), false);
 
     cfg_conf_delay_update(CFG_GET_INST(handle)->oid);
 
@@ -1381,7 +1381,7 @@ cleanup:
  * @param update_dh     if true, add the command to dynamic history
  */
 static void
-process_del(cfg_del_msg *msg, te_bool update_dh)
+process_del(cfg_del_msg *msg, bool update_dh)
 {
     cfg_handle    handle = msg->handle;
     cfg_instance *inst;
@@ -1397,7 +1397,7 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
 
     obj = inst->obj;
     if (cfg_instance_volatile(inst))
-        update_dh = FALSE;
+        update_dh = false;
 
     if (obj->access != CFG_READ_CREATE)
     {
@@ -1458,7 +1458,7 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
             cfg_wipe_cmd_error(CFG_DEL, CFG_HANDLE_INVALID);
             return;
         }
-        inst->remove = TRUE;
+        inst->remove = true;
         return;
     }
 
@@ -1525,7 +1525,7 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
         return;
     }
 
-    cfg_ta_sync_dependants(inst, TRUE);
+    cfg_ta_sync_dependants(inst, true);
 
     cfg_conf_delay_update(oid);
     free(oid);
@@ -1557,7 +1557,7 @@ process_get(cfg_get_msg *msg)
     if ((obj->vol || msg->sync) &&
         strcmp_start("/agent", inst->oid) == 0)
     {
-        msg->rc = cfg_ta_sync(inst->oid, FALSE);
+        msg->rc = cfg_ta_sync(inst->oid, false);
         if (msg->rc != 0)
         {
             ERROR("Failed to synchronize %s: %r", inst->oid, msg->rc);
@@ -1607,7 +1607,7 @@ get_time_ms(void)
  * @param before    Logging before or after processing
  */
 static void
-log_msg(cfg_msg *msg, te_bool before)
+log_msg(cfg_msg *msg, bool before)
 {
     uint16_t    level;
     const char *addon;
@@ -1779,7 +1779,7 @@ log_msg(cfg_msg *msg, te_bool before)
             cfg_add_msg *m = (cfg_add_msg *)msg;
             cfg_inst_val val;
             char        *val_str;
-            te_bool      val_str_free = FALSE;
+            bool val_str_free = false;
 
             if (m->val_type == CVT_NONE)
             {
@@ -1794,7 +1794,7 @@ log_msg(cfg_msg *msg, te_bool before)
                 if (cfg_types[m->val_type].val2str(val, &val_str) != 0)
                     val_str = NULL;
                 else
-                    val_str_free = TRUE;
+                    val_str_free = true;
                 cfg_types[m->val_type].free(val);
             }
             LOG_MSG(level, "Add instance %s value %s%s",
@@ -1817,7 +1817,7 @@ log_msg(cfg_msg *msg, te_bool before)
             cfg_set_msg *m = (cfg_set_msg *)msg;
             cfg_inst_val val;
             char        *val_str = NULL;
-            te_bool      val_str_free = FALSE;
+            bool val_str_free = false;
 
             GET_STRS(cfg_set_msg);
 
@@ -1828,7 +1828,7 @@ log_msg(cfg_msg *msg, te_bool before)
                 if (cfg_types[m->val_type].val2str(val, &val_str) != 0)
                     val_str = NULL;
                 else
-                    val_str_free = TRUE;
+                    val_str_free = true;
                 cfg_types[m->val_type].free(val);
             }
             LOG_MSG(level, "Set for %s%s value %s%s", s1, s2,
@@ -1940,14 +1940,14 @@ log_msg(cfg_msg *msg, te_bool before)
  * Check if the current DB changes from the backup.
  *
  * @param filename      backup filename
- * @param log           if TRUE, log changes
+ * @param log           if @c true, log changes
  * @param error_msg     if not NULL, log failure with specified message
  * @param subtrees       Subtree to verification. @c NULL to verify all trees
  *
  * @return 0 if DB state does not differ from backup; status code otherwise
  */
 static inline te_errno
-verify_backup(const char *backup, te_bool log, const char *msg,
+verify_backup(const char *backup, bool log, const char *msg,
               const te_vec *subtrees)
 {
     char diff_file[RCF_MAX_PATH];
@@ -2130,7 +2130,7 @@ delete_rcf_conf_agent(cfg_handle handle)
 
     cfg_ipc_mk_find_fmt((cfg_find_msg *)msg, msg_size,
                         "%s/status:", agent_instance->oid);
-    cfg_process_msg(&msg, FALSE);
+    cfg_process_msg(&msg, false);
     if (msg->rc != 0)
     {
         rc = msg->rc;
@@ -2146,8 +2146,8 @@ delete_rcf_conf_agent(cfg_handle handle)
      * need to set the status to 0.
      */
     cfg_ipc_mk_set_int((cfg_set_msg *)msg, msg_size, status_handle,
-                       FALSE, 0);
-    cfg_process_msg(&msg, FALSE);
+                       false, 0);
+    cfg_process_msg(&msg, false);
     if (msg->rc != 0)
     {
         rc = msg->rc;
@@ -2156,8 +2156,8 @@ delete_rcf_conf_agent(cfg_handle handle)
         return rc;
     }
 
-    cfg_ipc_mk_del((cfg_del_msg *)msg, msg_size, handle, FALSE);
-    cfg_process_msg(&msg, FALSE);
+    cfg_ipc_mk_del((cfg_del_msg *)msg, msg_size, handle, false);
+    cfg_process_msg(&msg, false);
 
     rc = msg->rc;
     if (rc != 0)
@@ -2184,7 +2184,7 @@ reboot_dead_agents(const te_vec *dead_agents)
         cfg_ipc_mk_find_fmt(msg, msg_size, "/rcf:/agent:%s",
                             *dead_agent);
 
-        cfg_process_msg((cfg_msg **)&msg, FALSE);
+        cfg_process_msg((cfg_msg **)&msg, false);
         if (TE_RC_GET_ERROR(msg->rc) == TE_ENOENT)
         {
             rc = te_vec_append_str_fmt(&reboot_list, "%s", *dead_agent);
@@ -2243,7 +2243,7 @@ check_and_reanimate_agents(const te_vec *already_dead_agents)
             goto out;
     }
 
-    cfg_ta_sync("/:", TRUE);
+    cfg_ta_sync("/:", true);
 
     rc = cfg_dh_restore_agents(&dead_agents);
     if (rc != 0)
@@ -2262,7 +2262,7 @@ out:
  *                      Does not affect on create and release backup actions
  */
 static void
-process_backup(cfg_backup_msg *msg, te_bool release_dh)
+process_backup(cfg_backup_msg *msg, bool release_dh)
 {
     char *backup_filename;
     char *subtrees = NULL;
@@ -2312,12 +2312,12 @@ process_backup(cfg_backup_msg *msg, te_bool release_dh)
             if (msg->rc != 0)
                 return;
 
-            rcf_log_cfg_changes(TRUE);
+            rcf_log_cfg_changes(true);
 
             if (msg->op != CFG_BACKUP_RESTORE_NOHISTORY)
             {
                 /* Try to restore using dynamic history */
-                msg->rc = cfg_dh_restore_backup(backup_filename, TRUE);
+                msg->rc = cfg_dh_restore_backup(backup_filename, true);
                 if (msg->rc != 0)
                 {
                     WARN("Restoring backup from history failed; "
@@ -2326,14 +2326,14 @@ process_backup(cfg_backup_msg *msg, te_bool release_dh)
                 else
                 {
                     cfg_conf_delay_reset();
-                    cfg_ta_sync("/:", TRUE);
+                    cfg_ta_sync("/:", true);
 
-                    msg->rc = verify_backup(backup_filename, FALSE,
+                    msg->rc = verify_backup(backup_filename, false,
                                             "Restoring backup from history "
                                             "failed:", NULL);
                     if (msg->rc == 0)
                     {
-                        rcf_log_cfg_changes(FALSE);
+                        rcf_log_cfg_changes(false);
                         break;
                     }
                 }
@@ -2342,7 +2342,7 @@ process_backup(cfg_backup_msg *msg, te_bool release_dh)
                 {
                     rcf_check_agents();
                 }
-                cfg_ta_sync("/:", TRUE);
+                cfg_ta_sync("/:", true);
             }
 
             /*
@@ -2358,8 +2358,8 @@ process_backup(cfg_backup_msg *msg, te_bool release_dh)
                 break;
             }
 
-            msg->rc = parse_config_xml(backup.ptr, NULL, FALSE, &subtrees_vec);
-            rcf_log_cfg_changes(FALSE);
+            msg->rc = parse_config_xml(backup.ptr, NULL, false, &subtrees_vec);
+            rcf_log_cfg_changes(false);
 
             if (release_dh)
                 cfg_dh_release_after(backup_filename);
@@ -2395,11 +2395,11 @@ process_backup(cfg_backup_msg *msg, te_bool release_dh)
                 break;
             }
 
-            msg->rc = verify_backup(backup.ptr, TRUE, NULL, &subtrees_vec);
+            msg->rc = verify_backup(backup.ptr, true, NULL, &subtrees_vec);
             if (msg->rc != 0)
             {
-                cfg_ta_sync("/:", TRUE);
-                msg->rc = verify_backup(backup.ptr, TRUE, NULL, &subtrees_vec);
+                cfg_ta_sync("/:", true);
+                msg->rc = verify_backup(backup.ptr, true, NULL, &subtrees_vec);
             }
 
             if (msg->rc == 0 && release_dh)
@@ -2442,7 +2442,7 @@ create_backup(char **bkp_filename)
     bkp_msg->subtrees_offset = bkp_msg->len;
     bkp_msg->filename_offset = bkp_msg->len;
 
-    process_backup(bkp_msg, TRUE);
+    process_backup(bkp_msg, true);
     rc = bkp_msg->rc;
     if (rc != 0)
     {
@@ -2490,7 +2490,7 @@ process_backup_op(const char *name, uint8_t op)
     bkp_msg->len += len;
     memcpy((char *)bkp_msg + bkp_msg->filename_offset, name, len);
 
-    process_backup(bkp_msg, TRUE);
+    process_backup(bkp_msg, true);
     rc = bkp_msg->rc;
 
     free(bkp_msg);
@@ -2562,13 +2562,13 @@ process_reboot(cfg_reboot_msg *msg)
  * @param update_dh     if true, add the command to dynamic history
  */
 static void
-process_register(cfg_register_msg *msg, te_bool update_dh)
+process_register(cfg_register_msg *msg, bool update_dh)
 {
     cfg_object *obj;
 
     if (update_dh)
     {
-        if ((msg->rc = cfg_dh_push_command((cfg_msg *)msg, FALSE, NULL)) != 0)
+        if ((msg->rc = cfg_dh_push_command((cfg_msg *)msg, false, NULL)) != 0)
             return;
     }
 
@@ -2606,7 +2606,7 @@ process_register(cfg_register_msg *msg, te_bool update_dh)
          * of this function, errors will be logged,
          * but can be ignored.
          */
-        cfg_ta_sync_obj(obj->father, TRUE);
+        cfg_ta_sync_obj(obj->father, true);
     }
 }
 
@@ -2618,9 +2618,9 @@ process_register(cfg_register_msg *msg, te_bool update_dh)
  * @param update_dh     if true, add the command to dynamic history
  */
 void
-cfg_process_msg(cfg_msg **msg, te_bool update_dh)
+cfg_process_msg(cfg_msg **msg, bool update_dh)
 {
-    log_msg(*msg, TRUE);
+    log_msg(*msg, true);
 
     switch ((*msg)->type)
     {
@@ -2768,9 +2768,9 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
 
         case CFG_SHUTDOWN:
             /* Remove commands initiated by configuration file */
-            rcf_log_cfg_changes(TRUE);
+            rcf_log_cfg_changes(true);
             cfg_dh_restore_backup_on_shutdown();
-            rcf_log_cfg_changes(FALSE);
+            rcf_log_cfg_changes(false);
             cs_flags |= CS_SHUTDOWN;
             break;
 
@@ -2785,7 +2785,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
 
     (*msg)->rc = TE_RC(TE_CS, (*msg)->rc);
 
-    log_msg(*msg, FALSE);
+    log_msg(*msg, false);
 }
 
 /**
@@ -2972,7 +2972,7 @@ parse_config(const char *fname, te_kvpair_h *expand_vars)
     fclose(f);
 
     if (strcmp(str, "<?xml") == 0)
-        return parse_config_xml(fname, expand_vars, TRUE, NULL);
+        return parse_config_xml(fname, expand_vars, true, NULL);
 #if WITH_CONF_YAML
     else if (strcmp(str, "---") == 0)
         return parse_config_yaml(fname, expand_vars, NULL, cs_dirs_cfg);
@@ -3064,7 +3064,7 @@ main(int argc, char **argv)
     }
 
     if (cs_sniff_cfg_file != NULL &&
-        (rc = parse_config_xml(cs_sniff_cfg_file, NULL, TRUE, NULL)) != 0)
+        (rc = parse_config_xml(cs_sniff_cfg_file, NULL, true, NULL)) != 0)
     {
         ERROR("Fatal error during sniffer configuration file parsing");
         goto exit;
@@ -3082,7 +3082,7 @@ main(int argc, char **argv)
      * Go to background, if foreground mode is not requested.
      * No threads should be created before become a daemon.
      */
-    if ((~cs_flags & CS_FOREGROUND) && (daemon(TRUE, FALSE) != 0))
+    if ((~cs_flags & CS_FOREGROUND) && (daemon(true, false) != 0))
     {
         ERROR("daemon() failed");
         goto exit;
@@ -3091,7 +3091,7 @@ main(int argc, char **argv)
     INFO("Initialization is finished");
     cfg_conf_delay = 0;
 
-    while (TRUE)
+    while (true)
     {
         struct ipc_server_client *user = NULL;
 
@@ -3112,7 +3112,7 @@ main(int argc, char **argv)
         else
         {
             msg->rc = 0;
-            cfg_process_msg(&msg, TRUE);
+            cfg_process_msg(&msg, true);
         }
 
         rc = ipc_send_answer(server, user, (char *)msg, msg->len);

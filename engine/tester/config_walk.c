@@ -36,7 +36,7 @@ static tester_cfg_walk_ctl walk_run_item(
                                const run_item        *run,
                                const run_item        *keepalive,
                                const run_item        *exception,
-                               te_bool               *ka_failed);
+                               bool *ka_failed);
 
 static tester_cfg_walk_ctl walk_run_items(const tester_cfg_walk *walk,
                                           const void            *opaque,
@@ -45,7 +45,7 @@ static tester_cfg_walk_ctl walk_run_items(const tester_cfg_walk *walk,
                                           const run_items       *runs,
                                           const run_item        *keepalive,
                                           const run_item        *exception,
-                                          te_bool               *ka_failed);
+                                          bool *ka_failed);
 
 
 /**
@@ -74,7 +74,7 @@ tester_cfg_walk_ctl2str(tester_cfg_walk_ctl ctl)
 #undef TESTER_CFG_WALK_CTL2STR
 
         default:
-            assert(FALSE);
+            assert(false);
             return "<UNKNOWN>";
     }
 }
@@ -204,9 +204,9 @@ walk_test_session(const tester_cfg_walk *walk, const void *opaque,
 {
     tester_cfg_walk_ctl ctl;
     tester_cfg_walk_ctl ctl_tmp;
-    te_bool             skip_items = FALSE;
-    te_bool             have_skip_cb;
-    te_bool             keepalive_failed = FALSE;
+    bool skip_items = false;
+    bool have_skip_cb;
+    bool keepalive_failed = false;
 
     ENTRY("run=%s id_off=%u flags=%#x", run_item_name(ri), id_off, flags);
 
@@ -299,8 +299,8 @@ walk_test_package(const tester_cfg_walk *walk, const void *opaque,
 {
     tester_cfg_walk_ctl  ctl;
     tester_cfg_walk_ctl  ctl_tmp;
-    te_bool              skip_items;
-    te_bool              have_skip_cb;
+    bool skip_items;
+    bool have_skip_cb;
 
     ENTRY("run=%s id_off=%u flags=%#x", run_item_name(ri), id_off, flags);
 
@@ -347,7 +347,7 @@ walk_test_package(const tester_cfg_walk *walk, const void *opaque,
  *                      after every iteration
  * @param exception     Exceptions handler to be called in the case of
  *                      exception (TESTER_CFG_WALK_EXC)
- * @param ka_failed     Set to TRUE if keepalive fails at any point
+ * @param ka_failed     Set to @c true if keepalive fails at any point
  *
  * @return Walk control.
  */
@@ -356,12 +356,12 @@ walk_repeat(const tester_cfg_walk *walk, const void *opaque,
             const unsigned int id_off, const unsigned int flags,
             const run_item *run,
             const run_item *keepalive, const run_item *exception,
-            te_bool *ka_failed)
+            bool *ka_failed)
 {
     tester_cfg_walk_ctl ctl;
     tester_cfg_walk_ctl ctl_tmp;
-    te_bool             do_exception = FALSE;
-    te_bool             have_skip_cb;
+    bool do_exception = false;
+    bool have_skip_cb;
 
     ENTRY("run=%s id_off=%u flags=%#x keepalive=%p exception=%p",
           run_item_name(run), id_off, flags, keepalive, exception);
@@ -378,7 +378,7 @@ walk_repeat(const tester_cfg_walk *walk, const void *opaque,
             {
                 if (!have_skip_cb)
                     break;
-                *ka_failed = TRUE;
+                *ka_failed = true;
                 walk->skip_start((void *)opaque);
                 ctl = TESTER_CFG_WALK_CONT;
             }
@@ -425,7 +425,7 @@ walk_repeat(const tester_cfg_walk *walk, const void *opaque,
 
         if (ctl == TESTER_CFG_WALK_EXC)
         {
-            do_exception = TRUE;
+            do_exception = true;
             ctl = TESTER_CFG_WALK_CONT;
         }
 
@@ -442,7 +442,7 @@ walk_repeat(const tester_cfg_walk *walk, const void *opaque,
 
         if (do_exception || (flags & TESTER_CFG_WALK_FORCE_EXCEPTION))
         {
-            do_exception = FALSE;
+            do_exception = false;
             if (exception != NULL)
             {
                 ctl_tmp = walk_service(walk, opaque, id_off, exception,
@@ -477,7 +477,7 @@ walk_repeat(const tester_cfg_walk *walk, const void *opaque,
  *                      after every iteration
  * @param exception     Exceptions handler to be called in the case of
  *                      exception (TESTER_CFG_WALK_EXC)
- * @param ka_failed     Set to TRUE if keepalive fails at any point
+ * @param ka_failed     Set to @c true if keepalive fails at any point
  *
  * @return Walk control.
  */
@@ -486,7 +486,7 @@ walk_iterate(const tester_cfg_walk *walk, const void *opaque,
              const unsigned int id_off, const unsigned int flags,
              const run_item *run,
              const run_item *keepalive, const run_item *exception,
-             te_bool *ka_failed)
+             bool *ka_failed)
 {
     tester_cfg_walk_ctl ctl = TESTER_CFG_WALK_CONT;
     tester_cfg_walk_ctl ctl_tmp;
@@ -563,7 +563,7 @@ walk_iterate(const tester_cfg_walk *walk, const void *opaque,
  *                      after every iteration
  * @param exception     Exceptions handler to be called in the case of
  *                      exception (TESTER_CFG_WALK_EXC)
- * @param ka_failed     Set to TRUE if keepalive fails at any point
+ * @param ka_failed     Set to @c true if keepalive fails at any point
  *
  * @return Walk control.
  */
@@ -572,7 +572,7 @@ walk_run_item(const tester_cfg_walk *walk, const void *opaque,
               const unsigned int id_off, const unsigned int flags,
               const run_item *run,
               const run_item *keepalive, const run_item *exception,
-              te_bool *ka_failed)
+              bool *ka_failed)
 {
     tester_cfg_walk_ctl ctl;
     tester_cfg_walk_ctl ctl_tmp;
@@ -615,7 +615,7 @@ walk_run_item(const tester_cfg_walk *walk, const void *opaque,
  *                      after every run item
  * @param exception     Exceptions handler to be called in the case of
  *                      exception (TESTER_CFG_WALK_EXC)
- * @param ka_failed     Set to TRUE if keepalive fails at any point
+ * @param ka_failed     Set to @c true if keepalive fails at any point
  *
  * @return Walk control.
  */
@@ -624,7 +624,7 @@ walk_run_items(const tester_cfg_walk *walk, const void *opaque,
                const unsigned int id_off, const unsigned int flags,
                const run_items *runs,
                const run_item *keepalive, const run_item *exception,
-               te_bool *ka_failed)
+               bool *ka_failed)
 {
     tester_cfg_walk_ctl     ctl = TESTER_CFG_WALK_CONT;
     unsigned int            curr_id_off = id_off;

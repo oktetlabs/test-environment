@@ -99,7 +99,7 @@ typedef struct te_sockaddr_subnet {
  *
  * @param af        Address family
  */
-static inline te_bool
+static inline bool
 te_sockaddr_is_af_supported(int af)
 {
     return (af == AF_INET) || (af == AF_INET6) || (af == AF_LOCAL);
@@ -285,7 +285,7 @@ extern void te_sockaddr_set_multicast(struct sockaddr *addr);
  * of the structure assuming that there is enough space for a structure
  * defined from the value of "sa_family" field.
  */
-extern te_bool te_sockaddr_is_wildcard(const struct sockaddr *addr);
+extern bool te_sockaddr_is_wildcard(const struct sockaddr *addr);
 
 /**
  * Check if "network address" part of corresponding struct sockaddr is
@@ -293,10 +293,10 @@ extern te_bool te_sockaddr_is_wildcard(const struct sockaddr *addr);
  *
  * @param addr Generic address struture
  *
- * @return TRUE/FALSE - multicast/other address
+ * @return @c true/false - multicast/other address
  *
  */
-extern te_bool te_sockaddr_is_multicast(const struct sockaddr *addr);
+extern bool te_sockaddr_is_multicast(const struct sockaddr *addr);
 
 /**
  * Returns the size of a particular sockaddr structure according to

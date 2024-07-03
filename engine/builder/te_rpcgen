@@ -64,7 +64,7 @@ te_rpcgen_stub() {
 	echo '#include "rpc_xdr.h"'
 	echo '#include "tarpc.h"'
 	echo 'extern void tarpc_call_unsupported(const char *name, void *out, size_t outsize, size_t common_offset);'
-	sed -n '/^[ \t]*version/,/^[ \t]*}/s/^[ \t]*\(\w\+\)[ \t]*_\(\w\+\)(\(\w\+\)[ \t]*\*)[ \t]*=[ \t]*[0-9]\+;[ \t]*$/__attribute__ ((weak)) bool_t _\2_1_svc(\3 *in, \1 *out,  struct svc_req *rqstp) { UNUSED(in); UNUSED(rqstp); tarpc_call_unsupported("\2", \&out->common, sizeof(*out), offsetof(\1, common)); return TRUE; }/p' $1
+	sed -n '/^[ \t]*version/,/^[ \t]*}/s/^[ \t]*\(\w\+\)[ \t]*_\(\w\+\)(\(\w\+\)[ \t]*\*)[ \t]*=[ \t]*[0-9]\+;[ \t]*$/__attribute__ ((weak)) bool_t _\2_1_svc(\3 *in, \1 *out,  struct svc_req *rqstp) { UNUSED(in); UNUSED(rqstp); tarpc_call_unsupported("\2", \&out->common, sizeof(*out), offsetof(\1, common)); return true; }/p' $1
 }
 
 header=

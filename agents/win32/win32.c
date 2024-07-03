@@ -45,7 +45,7 @@
         _rc = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);     \
         RCF_CH_UNLOCK;                                                  \
         return _rc;                                                     \
-    } while (FALSE)
+    } while (false)
 
 char *ta_name = "(win32)";
 
@@ -199,7 +199,7 @@ rcf_ch_file(struct rcf_comm_connection *handle,
 int
 rcf_ch_call(struct rcf_comm_connection *handle,
             char *cbuf, size_t buflen, size_t answer_plen,
-            const char *rtn, te_bool is_argv, int argc, void **params)
+            const char *rtn, bool is_argv, int argc, void **params)
 {
     UNUSED(handle);
     UNUSED(cbuf);
@@ -219,10 +219,10 @@ uint32_t ta_processes_num = 0;
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_start_process(int *pid,
-                    int priority, const char *rtn, te_bool is_argv,
+                    int priority, const char *rtn, bool is_argv,
                     int argc, void **params)
 {
-    void *addr = rcf_ch_symbol_addr(rtn, TRUE);
+    void *addr = rcf_ch_symbol_addr(rtn, true);
     int   tries = 0;
 
     UNUSED(priority);
@@ -309,14 +309,14 @@ rcf_ch_start_process(int *pid,
 
 
 struct rcf_thread_parameter {
-    te_bool   active;
+    bool active;
     pthread_t id;
     void     *addr;
-    te_bool   is_argv;
+    bool is_argv;
     int       argc;
     void    **params;
     te_errno  rc;
-    te_bool   sem_created;
+    bool sem_created;
     sem_t     params_processed;
 };
 
@@ -349,7 +349,7 @@ rcf_ch_thread_wrapper(void *arg)
     }
     VERB("thread is terminating");
     pthread_mutex_lock(&thread_pool_mutex);
-    parm->active = FALSE;
+    parm->active = false;
     pthread_mutex_unlock(&thread_pool_mutex);
     return NULL;
 }
@@ -357,10 +357,10 @@ rcf_ch_thread_wrapper(void *arg)
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_start_thread(int *tid,
-                    int priority, const char *rtn, te_bool is_argv,
+                    int priority, const char *rtn, bool is_argv,
                     int argc, void **params)
 {
-    void *addr = rcf_ch_symbol_addr(rtn, TRUE);
+    void *addr = rcf_ch_symbol_addr(rtn, true);
 
     struct rcf_thread_parameter *iter;
 
@@ -386,8 +386,8 @@ rcf_ch_start_thread(int *tid,
                 iter->id = 0;
                 if (!iter->sem_created)
                 {
-                    sem_init(&iter->params_processed, FALSE, 0);
-                    iter->sem_created = TRUE;
+                    sem_init(&iter->params_processed, false, 0);
+                    iter->sem_created = true;
                 }
                 if ((rc = pthread_create(&iter->id, NULL,
                                          rcf_ch_thread_wrapper, iter)) != 0)
@@ -396,7 +396,7 @@ rcf_ch_start_thread(int *tid,
                     return TE_OS_RC(TE_TA_WIN32, rc);
                 }
                 VERB("started thread %d", iter - thread_pool);
-                iter->active = TRUE;
+                iter->active = true;
                 sem_wait(&iter->params_processed);
                 pthread_mutex_unlock(&thread_pool_mutex);
                 *tid = (int)(iter - thread_pool);

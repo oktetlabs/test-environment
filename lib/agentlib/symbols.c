@@ -86,7 +86,7 @@ dl_lookup_addr(const void *addr)
 
 /* See description in agentlib.h */
 void *
-rcf_ch_symbol_addr(const char *name, te_bool is_func)
+rcf_ch_symbol_addr(const char *name, bool is_func)
 {
     const symbol_table_list *table_iter;
 

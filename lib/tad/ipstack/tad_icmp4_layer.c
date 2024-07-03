@@ -82,11 +82,11 @@ typedef struct tad_icmp4_proto_pdu_data {
 static const tad_bps_pkt_frag tad_icmp4_bps_hdr[] =
 {
     { "type",      8, BPS_FLD_NO_DEF(NDN_TAG_ICMP4_TYPE),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
     { "code",      8, BPS_FLD_NO_DEF(NDN_TAG_ICMP4_CODE),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "checksum", 16, BPS_FLD_CONST_DEF(NDN_TAG_ICMP4_CHECKSUM, 0),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
 };
 
 /**
@@ -95,7 +95,7 @@ static const tad_bps_pkt_frag tad_icmp4_bps_hdr[] =
 static const tad_bps_pkt_frag tad_icmp4_unused_bps_hdr[] =
 {
     { "unused",   32, BPS_FLD_CONST_DEF(NDN_TAG_ICMP4_UNUSED, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 /**
@@ -104,9 +104,9 @@ static const tad_bps_pkt_frag tad_icmp4_unused_bps_hdr[] =
 static const tad_bps_pkt_frag tad_icmp4_pp_bps_hdr[] =
 {
     { "ptr",       8, BPS_FLD_NO_DEF(NDN_TAG_ICMP4_PP_PTR),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "unused",   24, BPS_FLD_CONST_DEF(NDN_TAG_ICMP4_UNUSED, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 /**
@@ -115,7 +115,7 @@ static const tad_bps_pkt_frag tad_icmp4_pp_bps_hdr[] =
 static const tad_bps_pkt_frag tad_icmp4_redirect_bps_hdr[] =
 {
     { "gw",       32, BPS_FLD_NO_DEF(NDN_TAG_ICMP4_REDIRECT_GW),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 /**
@@ -124,9 +124,9 @@ static const tad_bps_pkt_frag tad_icmp4_redirect_bps_hdr[] =
 static const tad_bps_pkt_frag tad_icmp4_echo_bps_hdr[] =
 {
     { "id",       16, BPS_FLD_NO_DEF(NDN_TAG_ICMP4_ID),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "seq",      16, BPS_FLD_NO_DEF(NDN_TAG_ICMP4_SEQ),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 /**
@@ -135,15 +135,15 @@ static const tad_bps_pkt_frag tad_icmp4_echo_bps_hdr[] =
 static const tad_bps_pkt_frag tad_icmp4_ts_bps_hdr[] =
 {
     { "id",       16, BPS_FLD_NO_DEF(NDN_TAG_ICMP4_ID),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "seq",      16, BPS_FLD_NO_DEF(NDN_TAG_ICMP4_SEQ),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "orig-ts",  32, BPS_FLD_NO_DEF(NDN_TAG_ICMP4_ORIG_TS),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "rx-ts",    32, BPS_FLD_NO_DEF(NDN_TAG_ICMP4_RX_TS),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "tx-ts",    32, BPS_FLD_NO_DEF(NDN_TAG_ICMP4_TX_TS),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 /**
@@ -152,9 +152,9 @@ static const tad_bps_pkt_frag tad_icmp4_ts_bps_hdr[] =
 static const tad_bps_pkt_frag tad_icmp4_du_bps_hdr[] =
 {
     { "unused",   16, BPS_FLD_CONST_DEF(NDN_TAG_ICMP4_UNUSED, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "nexthop-mtu", 16, BPS_FLD_CONST_DEF(NDN_TAG_ICMP4_NH_MTU, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 /* See description tad_ipstack_impl.h */
@@ -538,7 +538,7 @@ tad_icmp4_gen_bin_cb(csap_p csap, unsigned int layer,
     tad_pkts_move(pdus, sdus);
 
     /* Allocate and add ICMPv4 header to all packets */
-    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, bitoff >> 3, NULL);
+    rc = tad_pkts_add_new_seg(pdus, true, NULL, bitoff >> 3, NULL);
     if (rc != 0)
         return rc;
 

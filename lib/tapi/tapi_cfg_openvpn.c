@@ -42,7 +42,7 @@ tapi_cfg_openvpn_add(const char *ta, tapi_openvpn_id id)
 te_errno
 tapi_cfg_openvpn_del(const char *ta, tapi_openvpn_id id)
 {
-    return cfg_del_instance_fmt(FALSE, "/agent:%s/openvpn:%s",
+    return cfg_del_instance_fmt(false, "/agent:%s/openvpn:%s",
                                 ta, (const char *)id);
 }
 
@@ -115,7 +115,7 @@ tapi_cfg_openvpn_peer_del(const char *ta,
                           tapi_openvpn_id id,
                           tapi_openvpn_prop peer)
 {
-    return cfg_del_instance_fmt(FALSE, "/agent:%s/openvpn:%s/client:/peer:%s",
+    return cfg_del_instance_fmt(false, "/agent:%s/openvpn:%s/client:/peer:%s",
                                 ta, (const char *)id, (const char *)peer);
 }
 
@@ -171,7 +171,7 @@ tapi_cfg_openvpn_user_del(const char *ta,
                           tapi_openvpn_id id,
                           tapi_openvpn_prop user)
 {
-    return cfg_del_instance_fmt(FALSE, "/agent:%s/openvpn:%s/server:/user:%s",
+    return cfg_del_instance_fmt(false, "/agent:%s/openvpn:%s/server:/user:%s",
                                 ta, (const char *)id, (const char *)user);
 }
 
@@ -259,6 +259,6 @@ tapi_cfg_openvpn_option_del(const char *ta,
                             tapi_openvpn_id id,
                             tapi_openvpn_prop option)
 {
-    return cfg_del_instance_fmt(FALSE, "/agent:%s/openvpn:%s/option:%s",
+    return cfg_del_instance_fmt(false, "/agent:%s/openvpn:%s/option:%s",
                                 ta, (const char *)id, (const char *)option);
 }

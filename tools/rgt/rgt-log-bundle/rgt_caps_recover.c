@@ -150,7 +150,7 @@ process_sniff_frags(const char *base_frag_name, uint64_t frags_cnt)
         CHECK_FOPEN_FMT(f_frag, "r", "%s/%s_sniff_%" PRIu64,
                         split_log_path, base_frag_name, i);
 
-        while (TRUE)
+        while (true)
         {
             CHECK_RC(rc = rgt_read_cap_prefix(f_frag, &file_id,
                                               &pkt_offset, &len));

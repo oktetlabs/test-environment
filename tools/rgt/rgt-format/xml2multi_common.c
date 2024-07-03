@@ -115,13 +115,13 @@ rgt_xml2multi_process_cmdline(rgt_xml2multi_opts *opts,
                 opts->match_type = RGT_MATCH_DEPTH_SEQ;
             }
 
-            opts->single_node_match = TRUE;
+            opts->single_node_match = true;
             break;
         }
 
         case 'x':
         {
-            opts->index_only = TRUE;
+            opts->index_only = true;
             break;
         }
 
@@ -132,7 +132,7 @@ rgt_xml2multi_process_cmdline(rgt_xml2multi_opts *opts,
             if ((page_selector = poptGetOptArg(con)) == NULL)
                 usage(con, 1, "Specify page selector", NULL);
 
-            opts->page_selector_set = TRUE;
+            opts->page_selector_set = true;
             if (strcmp(page_selector, "all") == 0)
             {
                 opts->cur_page = 0;
@@ -150,13 +150,13 @@ rgt_xml2multi_process_cmdline(rgt_xml2multi_opts *opts,
 }
 
 /* See description in xml2multi_common.h */
-te_bool
+bool
 rgt_xml2multi_match_node(rgt_xml2multi_opts *opts,
                          const char *tin, const char *node_id,
                          uint32_t depth, uint32_t seq)
 {
     if (opts->index_only)
-        return FALSE;
+        return false;
 
     if (opts->single_node_match)
     {
@@ -165,24 +165,24 @@ rgt_xml2multi_match_node(rgt_xml2multi_opts *opts,
             case RGT_MATCH_TIN:
                 if (tin == NULL || opts->match_id == NULL ||
                     strcmp(opts->match_id, tin) != 0)
-                    return FALSE;
+                    return false;
                 break;
 
             case RGT_MATCH_NODE_ID:
                 if (node_id == NULL || opts->match_id == NULL ||
                     strcmp(opts->match_id, node_id) != 0)
-                    return FALSE;
+                    return false;
                 break;
 
             case RGT_MATCH_DEPTH_SEQ:
                 if (opts->match_depth != depth ||
                     opts->match_seq != seq)
-                    return FALSE;
+                    return false;
                 break;
         }
     }
 
-    return TRUE;
+    return true;
 }
 
 /* See description in xml2multi_common.h */
@@ -269,7 +269,7 @@ rgt_xml2multi_fname(char *fname, size_t len,
 void
 rgt_xml2multi_setup_outdir(rgt_gen_ctx_t *ctx,
                            rgt_xml2multi_opts *opts,
-                           te_bool shared_files)
+                           bool shared_files)
 {
     int rc;
     struct stat stat_buf;

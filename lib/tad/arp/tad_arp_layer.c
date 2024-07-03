@@ -46,15 +46,15 @@ typedef struct tad_arp_proto_pdu_data {
 static const tad_bps_pkt_frag tad_arp_bps_hdr[] =
 {
     { "hw-type",    16,
-      BPS_FLD_SIMPLE(NDN_TAG_ARP_HW_TYPE),    TAD_DU_I32, FALSE },
+      BPS_FLD_SIMPLE(NDN_TAG_ARP_HW_TYPE),    TAD_DU_I32, false },
     { "proto-type", 16,
-      BPS_FLD_SIMPLE(NDN_TAG_ARP_PROTO),      TAD_DU_I32, FALSE },
+      BPS_FLD_SIMPLE(NDN_TAG_ARP_PROTO),      TAD_DU_I32, false },
     { "hw-size",    8,
-      BPS_FLD_SIMPLE(NDN_TAG_ARP_HW_SIZE),    TAD_DU_I32, TRUE },
+      BPS_FLD_SIMPLE(NDN_TAG_ARP_HW_SIZE),    TAD_DU_I32, true },
     { "proto-size", 8,
-      BPS_FLD_SIMPLE(NDN_TAG_ARP_PROTO_SIZE), TAD_DU_I32, TRUE },
+      BPS_FLD_SIMPLE(NDN_TAG_ARP_PROTO_SIZE), TAD_DU_I32, true },
     { "opcode",     16,
-      BPS_FLD_NO_DEF(NDN_TAG_ARP_OPCODE),     TAD_DU_I32, FALSE },
+      BPS_FLD_NO_DEF(NDN_TAG_ARP_OPCODE),     TAD_DU_I32, false },
 };
 
 /**
@@ -63,13 +63,13 @@ static const tad_bps_pkt_frag tad_arp_bps_hdr[] =
 static const tad_bps_pkt_frag tad_arp_bps_addrs[] =
 {
     { "snd-hw-addr",    0,
-      BPS_FLD_NO_DEF(NDN_TAG_ARP_SND_HW_ADDR),    TAD_DU_OCTS, FALSE },
+      BPS_FLD_NO_DEF(NDN_TAG_ARP_SND_HW_ADDR),    TAD_DU_OCTS, false },
     { "snd-proto-addr", 0,
-      BPS_FLD_NO_DEF(NDN_TAG_ARP_SND_PROTO_ADDR), TAD_DU_OCTS, FALSE },
+      BPS_FLD_NO_DEF(NDN_TAG_ARP_SND_PROTO_ADDR), TAD_DU_OCTS, false },
     { "tgt-hw-addr",    0,
-      BPS_FLD_NO_DEF(NDN_TAG_ARP_TGT_HW_ADDR),    TAD_DU_OCTS, FALSE },
+      BPS_FLD_NO_DEF(NDN_TAG_ARP_TGT_HW_ADDR),    TAD_DU_OCTS, false },
     { "tgt-proto-addr", 0,
-      BPS_FLD_NO_DEF(NDN_TAG_ARP_TGT_PROTO_ADDR), TAD_DU_OCTS, FALSE },
+      BPS_FLD_NO_DEF(NDN_TAG_ARP_TGT_PROTO_ADDR), TAD_DU_OCTS, false },
 };
 
 
@@ -274,7 +274,7 @@ tad_arp_gen_bin_cb(csap_p                csap,
      * Add header segment to each PDU. All segments refer to the same
      * memory. Free function is set for segment of the first packet only.
      */
-    rc = tad_pkts_add_new_seg(pdus, TRUE, data, len,
+    rc = tad_pkts_add_new_seg(pdus, true, data, len,
                               tad_pkt_seg_data_free);
     if (rc != 0)
     {

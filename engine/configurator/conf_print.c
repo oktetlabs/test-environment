@@ -183,7 +183,7 @@ obj_tree_bufprint(cfg_object *obj, const int indent)
                     obj->access == CFG_READ_WRITE ? "RW" :
                     "R",
                     obj_type_name,
-                    obj->vol == TRUE ? "V" : "")
+                    obj->vol == true ? "V" : "")
           != NULL);
     for (dep = obj->depends_on; dep != NULL; dep = dep->next)
     {

@@ -94,7 +94,7 @@ extern te_errno tapi_bpf_rxq_stats_set_params(
                                       int addr_family,
                                       const struct sockaddr *src_addr,
                                       const struct sockaddr *dst_addr,
-                                      int protocol, te_bool enable);
+                                      int protocol, bool enable);
 
 /**
  * Enable or disable packets counting in "rxq_stats" program.
@@ -108,7 +108,7 @@ extern te_errno tapi_bpf_rxq_stats_set_params(
  */
 extern te_errno tapi_bpf_rxq_stats_enable(const char *ta,
                                           unsigned int bpf_id,
-                                          te_bool enable);
+                                          bool enable);
 
 /**
  * Clear statistics collected by "rxq_stats" program.

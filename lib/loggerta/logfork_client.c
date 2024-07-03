@@ -166,7 +166,7 @@ logfork_register_user(const char *name)
 }
 
 int
-logfork_set_id_logging(te_bool enabled)
+logfork_set_id_logging(bool enabled)
 {
     logfork_msg msg;
 
@@ -240,7 +240,7 @@ logfork_log_message(const char *file, unsigned int line,
     logfork_msg msg;
     te_errno rc;
 
-    static te_bool init = FALSE;
+    static bool init = false;
 
     struct te_log_out_params cm =
         { NULL, (uint8_t *)msg.__log_msg, sizeof(msg.__log_msg), 0 };
@@ -267,7 +267,7 @@ logfork_log_message(const char *file, unsigned int line,
     if (!init && logfork_clnt_sockd == -1)
         open_sock();
 
-    init = TRUE;
+    init = true;
 
     if (logfork_clnt_sockd == -1)
     {

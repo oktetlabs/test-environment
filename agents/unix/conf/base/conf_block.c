@@ -41,7 +41,7 @@
 #include "unix_internal.h"
 #include "conf_common.h"
 
-static te_bool
+static bool
 ta_block_is_mine(const char *block_name, void *data)
 {
     UNUSED(data);
@@ -61,7 +61,7 @@ block_dev_list(unsigned int gid, const char *oid,
 #ifdef __linux__
     {
         te_errno rc;
-        rc = get_dir_list("/sys/block", buf, sizeof(buf), FALSE,
+        rc = get_dir_list("/sys/block", buf, sizeof(buf), false,
                           &ta_block_is_mine, NULL, NULL);
         if (rc != 0)
             return rc;
@@ -86,7 +86,7 @@ check_block_loop(const char *block_name)
     te_errno rc = 0;
     char buf[64];
 
-    rc = read_sys_value(buf, sizeof(buf), FALSE, "/sys/block/%s/dev",
+    rc = read_sys_value(buf, sizeof(buf), false, "/sys/block/%s/dev",
                         block_name);
     if (rc != 0)
     {
@@ -160,7 +160,7 @@ block_dev_loop_backing_file_get(unsigned int gid, const char *oid, char *value,
      * anyway.
      */
     rc = read_sys_value(filename, sizeof(filename),
-                        FALSE, "/sys/block/%s/loop/backing_file",
+                        false, "/sys/block/%s/loop/backing_file",
                         block_name);
     if (rc != 0)
     {

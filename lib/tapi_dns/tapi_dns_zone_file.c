@@ -83,7 +83,7 @@ job_opt_create_rdata(const void *value, const void *priv, te_vec *args)
  * Bind tapi_dns_zone_file_rr argument.
  *
  * @param[in] prefix_           Argument prefix.
- * @param[in] concat_prefix_    Concatenate prefix with argument if @c TRUE.
+ * @param[in] concat_prefix_    Concatenate prefix with argument if @c true.
  * @param[in] struct_           Option struct.
  * @param[in] rr_data_          Field name of the string in option struct.
  */
@@ -102,16 +102,16 @@ static const te_enum_map tapi_dns_zone_file_rr_class_mapping[] = {
 static const tapi_job_opt_bind zone_file_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_ARRAY_PTR(tapi_dns_zone_file_data,
         resource_records_n, resource_records,
-        TAPI_JOB_OPT_STRUCT(NULL, FALSE, " ", NULL,
-                            TAPI_JOB_OPT_STRING(NULL, FALSE,
-                                tapi_dns_zone_file_rr, owner),
-                            TAPI_JOB_OPT_UINT_T(NULL, FALSE, NULL,
-                                tapi_dns_zone_file_rr, ttl),
-                            TAPI_JOB_OPT_ENUM(NULL, FALSE,
-                                tapi_dns_zone_file_rr, class,
-                                tapi_dns_zone_file_rr_class_mapping),
-                            TAPI_DNS_ZONE_OPT_RDATA(NULL, FALSE,
-                                tapi_dns_zone_file_rr, rdata)
+        TAPI_JOB_OPT_STRUCT(NULL, false, " ", NULL,
+                            TAPI_JOB_OPT_STRING(NULL, false,
+						tapi_dns_zone_file_rr, owner),
+                            TAPI_JOB_OPT_UINT_T(NULL, false, NULL,
+						tapi_dns_zone_file_rr, ttl),
+                            TAPI_JOB_OPT_ENUM(NULL, false,
+					      tapi_dns_zone_file_rr, class,
+					      tapi_dns_zone_file_rr_class_mapping),
+                            TAPI_DNS_ZONE_OPT_RDATA(NULL, false,
+						    tapi_dns_zone_file_rr, rdata)
                             ))
 );
 

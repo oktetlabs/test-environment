@@ -43,27 +43,27 @@ const tapi_wrk_opt tapi_wrk_default_opt = {
     .timeout_ms = 2000,
     .script_path = NULL,
     .script_content = NULL,
-    .latency = FALSE,
+    .latency = false,
     .host = NULL,
-    .rate = {.value = 1000, .defined = FALSE},
+    .rate = {.value = 1000, .defined = false},
     .affinity = NULL,
 };
 
 static const tapi_job_opt_bind wrk_binds[] = TAPI_JOB_OPT_SET(
-    TAPI_JOB_OPT_UINT("--connections", FALSE, NULL, tapi_wrk_opt, connections),
-    TAPI_JOB_OPT_UINT("--threads", FALSE, NULL, tapi_wrk_opt, n_threads),
-    TAPI_JOB_OPT_UINT("--duration", FALSE, "s", tapi_wrk_opt, duration_s),
+    TAPI_JOB_OPT_UINT("--connections", false, NULL, tapi_wrk_opt, connections),
+    TAPI_JOB_OPT_UINT("--threads", false, NULL, tapi_wrk_opt, n_threads),
+    TAPI_JOB_OPT_UINT("--duration", false, "s", tapi_wrk_opt, duration_s),
     TAPI_JOB_OPT_BOOL("--latency", tapi_wrk_opt, latency),
-    TAPI_JOB_OPT_STRING(NULL, FALSE, tapi_wrk_opt, host),
+    TAPI_JOB_OPT_STRING(NULL, false, tapi_wrk_opt, host),
     TAPI_JOB_OPT_ARRAY(tapi_wrk_opt, n_headers, headers,
-                       TAPI_JOB_OPT_STRING("--header", FALSE,
+                       TAPI_JOB_OPT_STRING("--header", false,
                                            tapi_wrk_opt, headers[0])),
-    TAPI_JOB_OPT_STRING("--script", FALSE, tapi_wrk_opt, script_path),
-    TAPI_JOB_OPT_UINT_T("--rate", FALSE, NULL, tapi_wrk_opt, rate),
-    TAPI_JOB_OPT_STRING("--affinity", FALSE, tapi_wrk_opt, affinity),
+    TAPI_JOB_OPT_STRING("--script", false, tapi_wrk_opt, script_path),
+    TAPI_JOB_OPT_UINT_T("--rate", false, NULL, tapi_wrk_opt, rate),
+    TAPI_JOB_OPT_STRING("--affinity", false, tapi_wrk_opt, affinity),
     /* Note: script arguments must be after all other arguments */
     TAPI_JOB_OPT_ARRAY(tapi_wrk_opt, n_script_args, script_args,
-                       TAPI_JOB_OPT_STRING(NULL, FALSE,
+                       TAPI_JOB_OPT_STRING(NULL, false,
                                            tapi_wrk_opt, script_args[0]))
 );
 
@@ -81,7 +81,7 @@ static char *
 tapi_wrk_args2str(te_vec *vec, size_t max_arg_len)
 {
     void **arg;
-    te_bool is_trunc;
+    bool is_trunc;
     te_string str = TE_STRING_INIT;
     te_errno rc = 0;
     const char *separator = " ";
@@ -94,11 +94,11 @@ tapi_wrk_args2str(te_vec *vec, size_t max_arg_len)
     {
         if (rc == 0 && *arg != NULL)
         {
-            is_trunc = FALSE;
+            is_trunc = false;
             if (strlen((char*)(*arg)) > max_arg_len)
             {
                 ((char*)(*arg))[max_arg_len - 1] = '\0';
-                is_trunc = TRUE;
+                is_trunc = true;
             }
 
             rc = te_string_append(&str, "%s%s%s",
@@ -232,50 +232,50 @@ tapi_wrk_create(tapi_job_factory_t *factory, const tapi_wrk_opt *opt,
                                 .stdout_loc = &result->out_chs[0],
                                 .stderr_loc = &result->out_chs[1],
                                 .filters = TAPI_JOB_SIMPLE_FILTERS(
-                                    {.use_stdout = TRUE,
-                                     .readable = TRUE,
+                                    {.use_stdout = true,
+                                     .readable = true,
                                      .re = "\\s*([0-9]+)\\s*requests in .*",
                                      .extract = 1,
                                      .filter_var = &result->req_count_filter,
                                     },
-                                    {.use_stdout = TRUE,
-                                     .readable = TRUE,
+                                    {.use_stdout = true,
+                                     .readable = true,
                                      .re = "Transfer/sec:\\s*([^\\s]+)B",
                                      .extract = 1,
                                      .filter_var = &result->bps_filter,
                                     },
-                                    {.use_stdout = TRUE,
-                                     .readable = TRUE,
+                                    {.use_stdout = true,
+                                     .readable = true,
                                      .re = "Requests/sec:\\s*([^\\s]+)",
                                      .extract = 1,
                                      .filter_var = &result->req_total_filter,
                                     },
-                                    {.use_stdout = TRUE,
-                                     .readable = TRUE,
+                                    {.use_stdout = true,
+                                     .readable = true,
                                      .re = "Latency\\s*(.*%)",
                                      .extract = 1,
                                      .filter_var = &result->lat_filter,
                                     },
-                                    {.use_stdout = TRUE,
-                                     .readable = TRUE,
+                                    {.use_stdout = true,
+                                     .readable = true,
                                      .re = "Req/Sec\\s*(.*%)",
                                      .extract = 1,
                                      .filter_var = &result->req_filter,
                                     },
-                                    {.use_stdout = TRUE,
-                                     .readable = TRUE,
+                                    {.use_stdout = true,
+                                     .readable = true,
                                      .re = "(?m)Latency Distribution\n((\\s+[0-9]+%.*)+)",
                                      .extract = 1,
                                      .filter_var = &result->lat_distr_filter,
                                     },
-                                    {.use_stdout = TRUE,
-                                     .readable = TRUE,
+                                    {.use_stdout = true,
+                                     .readable = true,
                                      .re = "Non-2xx or 3xx responses:\\s*([0-9.]+).*",
                                      .extract = 1,
                                      .filter_var = &result->unexpected_resp_filter,
                                     },
-                                    {.use_stdout = TRUE,
-                                     .readable = TRUE,
+                                    {.use_stdout = true,
+                                     .readable = true,
                                      .re = "Socket errors:\\s*("
                                            "connect\\s*-?[0-9]+,\\s*"
                                            "read\\s*-?[0-9]+,\\s*"
@@ -284,15 +284,15 @@ tapi_wrk_create(tapi_job_factory_t *factory, const tapi_wrk_opt *opt,
                                      .extract = 1,
                                      .filter_var = &result->socket_errors_filter,
                                     },
-                                    {.use_stderr = TRUE,
+                                    {.use_stderr = true,
                                      .log_level = opt->stderr_log_level,
-                                     .readable = TRUE,
+                                     .readable = true,
                                      .filter_name = "wrk stderr",
                                      .filter_var = &result->std_err,
                                     },
-                                    {.use_stdout = TRUE,
+                                    {.use_stdout = true,
                                      .log_level = opt->stdout_log_level,
-                                     .readable = TRUE,
+                                     .readable = true,
                                      .filter_name = "wrk stdout",
                                      .filter_var = &result->std_out,
                                     }

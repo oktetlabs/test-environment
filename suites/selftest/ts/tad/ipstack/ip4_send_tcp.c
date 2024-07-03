@@ -95,7 +95,7 @@ main(int argc, char *argv[])
     asn_value                 *pdu = NULL;
     asn_value                 *pdu_ip = NULL;
 
-    te_bool                    checksum_correct = TRUE;
+    bool checksum_correct = true;
 
     TEST_START;
     TEST_GET_PCO(iut_pco);
@@ -128,13 +128,13 @@ main(int argc, char *argv[])
     /* Open sock for listen. */
     iut_tcp_sock = rpc_socket(iut_pco, RPC_PF_INET,
                            RPC_SOCK_STREAM, RPC_PROTO_DEF);
-    te_bool optval = TRUE;
+    bool optval = true;
     rpc_setsockopt(iut_pco, iut_tcp_sock, RPC_SO_REUSEADDR, &optval);
     rpc_bind(iut_pco, iut_tcp_sock, iut_addr);
     rpc_listen(iut_pco, iut_tcp_sock, 1);
 
     CHECK_RC(tapi_update_arp(iut_pco->ta, iut_if->if_name, NULL, NULL,
-                             fake_tst_addr, fake_tst_mac, FALSE));
+                             fake_tst_addr, fake_tst_mac, false));
     CFG_WAIT_CHANGES;
 
     /* Establish TCP connection. */
@@ -153,19 +153,19 @@ main(int argc, char *argv[])
     recv_buf = malloc(payload_len);
 
     /* Prepare data to send. */
-    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(&template, FALSE,
+    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(&template, false,
                                           ndn_tcp_header, "#tcp", &pdu));
     CHECK_RC(asn_write_int32(pdu, TCP_FLAG_ACK, "flags.#plain"));
     CHECK_RC(asn_write_int32(pdu, tapi_tcp_next_ackn(tcp_conn),
                              "ackn.#plain"));
     CHECK_RC(asn_write_int32(pdu, tapi_tcp_next_seqn(tcp_conn),
                              "seqn.#plain"));
-    CHECK_RC(tapi_tad_tmpl_ptrn_set_payload_plain(&template, FALSE,
+    CHECK_RC(tapi_tad_tmpl_ptrn_set_payload_plain(&template, false,
                                                   send_buf, payload_len));
     if (strcmp(check_sum, "correct"))
     {
-        checksum_correct = FALSE;
-        CHECK_RC(tapi_ip4_add_pdu(&template, &pdu_ip, FALSE, 0, 0, -1, -1, -1));
+        checksum_correct = false;
+        CHECK_RC(tapi_ip4_add_pdu(&template, &pdu_ip, false, 0, 0, -1, -1, -1));
         CHECK_RC(asn_write_int32(pdu_ip, rand_range(1, 255),
                                  "pld-checksum.#diff"));
     }
@@ -178,7 +178,7 @@ main(int argc, char *argv[])
     MSLEEP(100);
 
     /* Receive data. */
-    te_bool sock_ready_for_read;
+    bool sock_ready_for_read;
     RPC_GET_READABILITY(sock_ready_for_read, iut_pco, iut_tcp_sock, 1);
 
     if (checksum_correct)

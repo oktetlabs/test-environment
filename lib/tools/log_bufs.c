@@ -47,7 +47,7 @@
 /** Internal presentation of log buffer. */
 struct te_log_buf {
     te_string   str;    /**< Buffer data - must be the first member */
-    te_bool     used;   /**< Whether this buffer is already in use */
+    bool     used;      /**< Whether this buffer is already in use */
 
     TAILQ_ENTRY(te_log_buf) links; /**< Queue links */
 };
@@ -107,7 +107,7 @@ te_log_buf_alloc(void)
         }
     }
 
-    buf->used = TRUE;
+    buf->used = true;
     pthread_mutex_unlock(&te_log_buf_mutex);
 
     return buf;
@@ -135,7 +135,7 @@ te_log_buf_free(te_log_buf *buf)
 
     pthread_mutex_lock(&te_log_buf_mutex);
     te_string_reset(&buf->str);
-    buf->used = FALSE;
+    buf->used = false;
 
     /*
      * Make sure that all the free buffers are at the
@@ -172,7 +172,7 @@ te_log_bufs_cleanup(void)
 /** Check that 'ptr_' is a valid log buffer */
 #define VALIDATE_LOG_BUF(ptr_) \
     do {                                                                \
-        assert((ptr_)->used == TRUE);                                   \
+        assert((ptr_)->used == true);                                   \
     } while (0)
 
 /* See description in log_bufs.h */
@@ -215,11 +215,11 @@ te_bit_mask_or_flag2te_str(te_string *te_str, unsigned long long bit_mask,
                            const struct te_log_buf_bit2str *bit_map,
                            const struct te_log_buf_flag2str *flag_map,
                            unsigned long long *left_bit_mask,
-                           te_bool append_left, te_bool *added_out)
+                           bool append_left, bool *added_out)
 {
     unsigned int        i;
-    te_bool             added = FALSE;
-    te_bool             append;
+    bool added = false;
+    bool append;
     uint64_t            bit_or_flag;
     const char         *str;
 
@@ -244,7 +244,7 @@ te_bit_mask_or_flag2te_str(te_string *te_str, unsigned long long bit_mask,
             rc = te_string_append(te_str, "%s%s", added ? "|" : "", str);
             if (rc != 0)
                 return rc;
-            added = TRUE;
+            added = true;
             bit_mask &= ~bit_or_flag;
         }
     }
@@ -271,7 +271,7 @@ te_bit_mask2te_str(te_string *str,
                    unsigned long long bit_mask,
                    const te_bit2str *map)
 {
-    return te_bit_mask_or_flag2te_str(str, bit_mask, map, NULL, NULL, TRUE,
+    return te_bit_mask_or_flag2te_str(str, bit_mask, map, NULL, NULL, true,
                                       NULL);
 }
 
@@ -291,11 +291,11 @@ te_extended_bit_mask2te_str(te_string *str,
                             const te_flag2str *fm)
 {
     unsigned long long left;
-    te_bool added;
+    bool added;
     te_errno rc;
 
     rc = te_bit_mask_or_flag2te_str(str, bit_mask, bm, NULL, &left,
-                                    FALSE, &added);
+                                    false, &added);
     if (rc != 0)
         return rc;
 
@@ -306,7 +306,7 @@ te_extended_bit_mask2te_str(te_string *str,
             return rc;
     }
 
-    rc = te_bit_mask_or_flag2te_str(str, left, NULL, fm, &left, FALSE,
+    rc = te_bit_mask_or_flag2te_str(str, left, NULL, fm, &left, false,
                                     added ? NULL : &added);
     if (rc != 0)
         return rc;

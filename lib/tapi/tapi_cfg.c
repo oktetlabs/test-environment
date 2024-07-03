@@ -69,7 +69,7 @@ static int tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
                              const char *ifname,
                              const struct sockaddr *net_addr,
                              const void *link_addr,
-                             void *ret_addr, te_bool *is_static,
+                             void *ret_addr, bool *is_static,
                              cs_neigh_entry_state *state);
 
 /**
@@ -261,7 +261,7 @@ tapi_cfg_switch_del_vlan(const char *ta_name, uint16_t vid)
     rc = cfg_find_str(oid, &handle);
     if (rc == 0)
     {
-        rc = cfg_del_instance(handle, FALSE);
+        rc = cfg_del_instance(handle, false);
         if (rc != 0)
         {
             ERROR("Delete of VLAN %u on TA %s failed(%r)",
@@ -351,7 +351,7 @@ tapi_cfg_switch_vlan_del_port(const char *ta_name, uint16_t vid,
     rc = cfg_find_str(oid, &handle);
     if (rc == 0)
     {
-        rc = cfg_del_instance(handle, FALSE);
+        rc = cfg_del_instance(handle, false);
         if (rc != 0)
         {
             ERROR("Delete of port %u from VLAN %u on TA %s failed(%r)",
@@ -926,7 +926,7 @@ tapi_cfg_del_route(cfg_handle *rt_hndl)
     if (*rt_hndl == CFG_HANDLE_INVALID)
         return 0;
 
-    rc = cfg_del_instance(*rt_hndl, FALSE);
+    rc = cfg_del_instance(*rt_hndl, false);
     if (rc == 0)
     {
         *rt_hndl = CFG_HANDLE_INVALID;
@@ -967,7 +967,7 @@ tapi_cfg_del_route_simple(const char *ta, const struct sockaddr *target,
 te_errno
 tapi_cfg_get_neigh_entry(const char *ta, const char *ifname,
                          const struct sockaddr *net_addr,
-                         void *ret_addr, te_bool *is_static,
+                         void *ret_addr, bool *is_static,
                          cs_neigh_entry_state *state)
 {
     return tapi_cfg_neigh_op(OP_GET, ta, ifname, net_addr, NULL,
@@ -978,7 +978,7 @@ tapi_cfg_get_neigh_entry(const char *ta, const char *ifname,
 te_errno
 tapi_cfg_set_neigh_entry(const char *ta, const char *ifname,
                          const struct sockaddr *net_addr,
-                         const void *link_addr, te_bool is_static)
+                         const void *link_addr, bool is_static)
 {
     return tapi_cfg_neigh_op(OP_MODIFY, ta, ifname, net_addr, link_addr, NULL,
                              &is_static, NULL);
@@ -989,7 +989,7 @@ tapi_cfg_set_neigh_entry(const char *ta, const char *ifname,
 te_errno
 tapi_cfg_add_neigh_entry(const char *ta, const char *ifname,
                          const struct sockaddr *net_addr,
-                         const void *link_addr, te_bool is_static)
+                         const void *link_addr, bool is_static)
 {
     return tapi_cfg_neigh_op(OP_ADD, ta, ifname, net_addr, link_addr, NULL,
                              &is_static, NULL);
@@ -1060,7 +1060,7 @@ tapi_cfg_del_neigh_dynamic(const char *ta, const char *ifname)
         return result;
     }
 
-    if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s",
+    if ((rc = cfg_synchronize_fmt(true, "/agent:%s/interface:%s",
                                   ta, ifname)) != 0)
         return rc;
 
@@ -1072,7 +1072,7 @@ tapi_cfg_del_neigh_dynamic(const char *ta, const char *ifname)
     }
     for (i = 0; i < num; i++)
     {
-        if ((rc = cfg_del_instance(hndls[i], FALSE)) != 0)
+        if ((rc = cfg_del_instance(hndls[i], false)) != 0)
         {
             if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
                 TE_RC_UPDATE(result, rc);
@@ -1186,7 +1186,7 @@ remove_nexthops(const char *ta,
 
     for (i = 0; i < num; i++)
     {
-        rc = cfg_del_instance_local_fmt(FALSE,
+        rc = cfg_del_instance_local_fmt(false,
                                         "/agent:%s/route:%s/nexthop:%u",
                                         ta, route_inst_name, i);
         if (rc != 0)
@@ -1383,7 +1383,7 @@ cfg_route_op(enum tapi_cfg_oper op, const char *ta,
  * Macro makes local set for route attribute whose name specified
  * with 'field_' parameter.
  * Macro uses 'break' statement and is intended to be called inside
- * 'do {} while (FALSE)' brace.
+ * `do {} while (false)` brace.
  *
  * You may use this macro with trailing ';', which will just
  * add empty statement, but do not worry about that.
@@ -1451,7 +1451,7 @@ cfg_route_op(enum tapi_cfg_oper op, const char *ta,
                 CFG_RT_SET_LOCAL(mtu);
                 CFG_RT_SET_LOCAL(irtt);
                 CFG_RT_SET_LOCAL(hoplimit);
-            } while (FALSE);
+            } while (false);
 
 #undef CFG_RT_SET_LOCAL
 
@@ -1538,7 +1538,7 @@ cfg_route_op(enum tapi_cfg_oper op, const char *ta,
                 CFG_RT_SET_LOCAL(mtu);
                 CFG_RT_SET_LOCAL(irtt);
                 CFG_RT_SET_LOCAL(hoplimit);
-            } while (FALSE);
+            } while (false);
 
             if (rc == 0)
             {
@@ -1550,7 +1550,7 @@ cfg_route_op(enum tapi_cfg_oper op, const char *ta,
 
             if (rc != 0)
             {
-                cfg_del_instance(handle, TRUE);
+                cfg_del_instance(handle, true);
                 break;
             }
 
@@ -1568,7 +1568,7 @@ cfg_route_op(enum tapi_cfg_oper op, const char *ta,
         }
 
         case OP_DEL:
-            if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/route:%s",
+            if ((rc = cfg_del_instance_fmt(false, "/agent:%s/route:%s",
                                            ta, route_inst_name)) != 0)
             {
                 ERROR("%s() fails deleting route %s on '%s' Agent "
@@ -1606,7 +1606,7 @@ static int
 tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
                   const char *ifname, const struct sockaddr *net_addr,
                   const void *link_addr, void *ret_addr,
-                  te_bool *is_static, cs_neigh_entry_state *state)
+                  bool *is_static, cs_neigh_entry_state *state)
 {
     cfg_handle handle;
     char       net_addr_str[INET6_ADDRSTRLEN];
@@ -1630,7 +1630,7 @@ tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
         {
             struct sockaddr *lnk_addr = NULL;
 
-            rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s/"
+            rc = cfg_synchronize_fmt(true, "/agent:%s/interface:%s/"
                                            "neigh_static:%s",
                                      ta, ifname, net_addr_str);
             if (rc != 0)
@@ -1643,7 +1643,7 @@ tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
 
             if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
             {
-                rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s",
+                rc = cfg_synchronize_fmt(true, "/agent:%s/interface:%s",
                                          ta, ifname);
                 if (rc != 0)
                     break;
@@ -1655,7 +1655,7 @@ tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
                 if (rc == 0)
                 {
                     if (is_static != NULL)
-                        *is_static = FALSE;
+                        *is_static = false;
 
                     if (state != NULL)
                     {
@@ -1668,7 +1668,7 @@ tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
             }
             else if ((rc == 0) && (is_static != NULL))
             {
-                *is_static = TRUE;
+                *is_static = true;
                 if (state != NULL)
                     *state = CS_NEIGH_REACHABLE;
             }
@@ -1739,12 +1739,12 @@ tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
                               ta, ifname, net_addr_str);
             if (rc == 0)
             {
-                rc = cfg_del_instance(handle, FALSE);
+                rc = cfg_del_instance(handle, false);
                 /* Error is logged by CS */
             }
             else if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
             {
-                rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s",
+                rc = cfg_synchronize_fmt(true, "/agent:%s/interface:%s",
                                          ta, ifname);
                 if (rc != 0)
                     break;
@@ -1754,7 +1754,7 @@ tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
                                   ta, ifname, net_addr_str);
                 if (rc == 0)
                 {
-                    rc = cfg_del_instance(handle, FALSE);
+                    rc = cfg_del_instance(handle, false);
                     /* Error is logged by CS */
                 }
 
@@ -2071,7 +2071,7 @@ tapi_cfg_get_if_last_ancestor(const char *ta,
             return TE_RC(TE_TAPI, TE_ESMALLBUF);
         }
 
-    } while (TRUE);
+    } while (true);
 
     return 0;
 }
@@ -2878,12 +2878,12 @@ tapi_cfg_add_new_user(const char *agent, int uid)
 }
 
 te_errno
-tapi_cfg_add_user_if_needed(const char *agent, int uid, te_bool *added)
+tapi_cfg_add_user_if_needed(const char *agent, int uid, bool *added)
 {
     te_errno rc;
 
     if (added != NULL)
-        *added = FALSE;
+        *added = false;
     if (cfg_find_fmt(NULL, "/agent:%s/user:%s%d", agent,
                      TE_USER_PREFIX, uid) == 0)
         return 0;
@@ -2892,7 +2892,7 @@ tapi_cfg_add_user_if_needed(const char *agent, int uid, te_bool *added)
     if (rc == 0)
     {
         if (added != NULL)
-            *added = TRUE;
+            *added = true;
     }
 
     return rc;
@@ -2910,6 +2910,6 @@ tapi_cfg_del_user(const char *agent, int uid)
     if (rc != 0)
         return rc;
 
-    return cfg_del_instance_fmt(FALSE, "/agent:%s/user:%s", agent,
+    return cfg_del_instance_fmt(false, "/agent:%s/user:%s", agent,
                                 user_name.ptr);
 }

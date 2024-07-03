@@ -91,7 +91,7 @@ tapi_nvme_internal_file_read(rcf_rpc_server *rpcs, char *buffer, size_t size,
 }
 
 /* See description in tapi_nvme_internal.h */
-te_bool
+bool
 tapi_nvme_internal_isdir_exist(rcf_rpc_server *rpcs, const char *path)
 {
     rpc_dir_p dir;
@@ -102,14 +102,14 @@ tapi_nvme_internal_isdir_exist(rcf_rpc_server *rpcs, const char *path)
     {
         RPC_AWAIT_IUT_ERROR(rpcs);
         rpc_closedir(rpcs, dir);
-        return TRUE;
+        return true;
     }
 
-    return FALSE;
+    return false;
 }
 
 /* See description in tapi_nvme_internal.h */
-te_bool
+bool
 tapi_nvme_internal_mkdir(rcf_rpc_server *rpcs, const char *fmt, ...)
 {
     te_errno rc;
@@ -121,7 +121,7 @@ tapi_nvme_internal_mkdir(rcf_rpc_server *rpcs, const char *fmt, ...)
     if (te_string_append_va(&path, fmt, arguments) != 0)
     {
         ERROR("%s: Cannot create path with format %s", fmt);
-        return FALSE;
+        return false;
     }
     va_end(arguments);
 
@@ -129,13 +129,13 @@ tapi_nvme_internal_mkdir(rcf_rpc_server *rpcs, const char *fmt, ...)
     rc = rpc_mkdir(rpcs, path.ptr, TAPI_NVME_INTERNAL_MODE);
 
     if (rc == -1 && rpcs->_errno == TE_EEXIST)
-        return TRUE;
+        return true;
 
     return rc == 0;
 }
 
 /* See description in tapi_nvme_internal.h */
-te_bool
+bool
 tapi_nvme_internal_rmdir(rcf_rpc_server *rpcs, const char *fmt, ...)
 {
     va_list arguments;
@@ -146,12 +146,12 @@ tapi_nvme_internal_rmdir(rcf_rpc_server *rpcs, const char *fmt, ...)
     if (te_string_append_va(&path, fmt, arguments) != 0)
     {
         ERROR("%s: Cannot create path with format %s", fmt);
-        return FALSE;
+        return false;
     }
     va_end(arguments);
 
     if (!tapi_nvme_internal_isdir_exist(rpcs, path.ptr))
-        return FALSE;
+        return false;
 
     RPC_AWAIT_IUT_ERROR(rpcs);
     return rpc_rmdir(rpcs, path.ptr) == 0;

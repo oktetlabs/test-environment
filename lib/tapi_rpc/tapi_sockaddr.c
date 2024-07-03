@@ -157,7 +157,7 @@ tapi_allocate_port_range(struct rcf_rpc_server *pco,
     for (i = 0; i < 3; i++)
     {
         uint16_t   *tmp = calloc(num, sizeof(*tmp));
-        te_bool     ok = TRUE;
+        bool ok = true;
 
         for (j = 0; j < num; j++)
         {
@@ -172,7 +172,7 @@ tapi_allocate_port_range(struct rcf_rpc_server *pco,
                      __FUNCTION__, i + 1, j - 1, tmp[j - 1], j, tmp[j]);
 
                 free(tmp);
-                ok = FALSE;
+                ok = false;
                 break;
             }
         }

@@ -58,25 +58,25 @@ te_str_lower(const char *src)
 }
 
 /* See description in te_str.h */
-te_bool
+bool
 te_str_is_equal_nospace(const char *str1, const char *str2)
 {
-    te_bool has_space1 = TRUE;
-    te_bool has_space2 = TRUE;
+    bool has_space1 = true;
+    bool has_space2 = true;
 
     while (*str1 != '\0' || *str2 != '\0')
     {
         for (; *str1 != '\0' && isspace(*str1); str1++)
-            has_space1 = TRUE;
+            has_space1 = true;
         for (; *str2 != '\0' && isspace(*str2); str2++)
-            has_space2 = TRUE;
+            has_space2 = true;
 
         if (*str1 != *str2)
-            return FALSE;
+            return false;
         if (has_space1 != has_space2 && *str1 != '\0')
-            return FALSE;
+            return false;
 
-        has_space1 = has_space2 = FALSE;
+        has_space1 = has_space2 = false;
         if (*str1 != '\0')
         {
             str1++;
@@ -84,7 +84,7 @@ te_str_is_equal_nospace(const char *str1, const char *str2)
         }
     }
 
-    return TRUE;
+    return true;
 }
 
 /* See description in te_str.h */
@@ -335,7 +335,7 @@ te_strpbrk_rev_balanced(const char *str, char opening, char closing,
 
     for (; ptr != str; ptr--)
     {
-        te_bool is_escaped = FALSE;
+        bool is_escaped = false;
 
         if (escape != '\0' && ptr > str + 1)
         {
@@ -804,7 +804,7 @@ te_strtol(const char *str, int base, long int *result)
 }
 
 te_errno
-te_strtol_bool(const char *input, te_bool *bresult)
+te_strtol_bool(const char *input, bool *bresult)
 {
     long int res;
 
@@ -812,7 +812,7 @@ te_strtol_bool(const char *input, te_bool *bresult)
         return TE_EINVAL;
 
     if (bresult != NULL)
-        *bresult = (te_bool)res;
+        *bresult = (bool)res;
 
     return 0;
 }

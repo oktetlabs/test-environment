@@ -29,9 +29,9 @@ extern "C" {
  *
  * @note The function jumps to @b cleanup in case of failure.
  *
- * @param ipv6_supp  @c TRUE if IPv6 addressing is supported.
+ * @param ipv6_supp  @c true if IPv6 addressing is supported.
  */
-extern void tapi_network_setup(te_bool ipv6_supp);
+extern void tapi_network_setup(bool ipv6_supp);
 
 /**
  * Flush ARP table for the interface @p ifname.

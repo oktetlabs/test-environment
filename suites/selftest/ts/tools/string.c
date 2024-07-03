@@ -51,33 +51,33 @@ check_string_equality(void)
     struct {
         const char *str1;
         const char *str2;
-        te_bool expected;
+        bool expected;
     } tests[] = {
-        {"", "", TRUE},
-        {"", "abc", FALSE},
-        {"abc", "abc", TRUE},
-        {"abc", "def", FALSE},
-        {"abc", "ab", FALSE},
-        {" abc", "abc", TRUE},
-        {"abc", " abc", TRUE},
-        {"  abc", "\n\t\nabc", TRUE},
-        {"abc ", "abc", TRUE},
-        {"abc", "abc ", TRUE},
-        {"abc   ", "abc\n\t\t", TRUE},
-        {"abc def", "abc\n\ndef", TRUE},
-        {"abc def", "abcdef", FALSE},
-        {"abcdef", "abc def", FALSE},
-        {"abc def", "abc\n\nghi", FALSE},
-        {"abc", "abcdef", FALSE},
-        {"abc ", "abc def", FALSE},
-        {"abdef", "abc", FALSE},
-        {NULL, NULL, TRUE}
+        {"", "", true},
+        {"", "abc", false},
+        {"abc", "abc", true},
+        {"abc", "def", false},
+        {"abc", "ab", false},
+        {" abc", "abc", true},
+        {"abc", " abc", true},
+        {"  abc", "\n\t\nabc", true},
+        {"abc ", "abc", true},
+        {"abc", "abc ", true},
+        {"abc   ", "abc\n\t\t", true},
+        {"abc def", "abc\n\ndef", true},
+        {"abc def", "abcdef", false},
+        {"abcdef", "abc def", false},
+        {"abc def", "abc\n\nghi", false},
+        {"abc", "abcdef", false},
+        {"abc ", "abc def", false},
+        {"abdef", "abc", false},
+        {NULL, NULL, true}
     };
     unsigned int i;
 
     for (i = 0; tests[i].str1 != NULL; i++)
     {
-        te_bool result = te_str_is_equal_nospace(tests[i].str1, tests[i].str2);
+        bool result = te_str_is_equal_nospace(tests[i].str1, tests[i].str2);
 
         if (result != tests[i].expected)
         {

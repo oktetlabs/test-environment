@@ -180,7 +180,7 @@ rcf_ch_file(struct rcf_comm_connection *handle,
 int
 rcf_ch_call(struct rcf_comm_connection *handle,
             char *cbuf, size_t buflen, size_t answer_plen,
-            const char *rtn, te_bool is_argv, int argc, void **params)
+            const char *rtn, bool is_argv, int argc, void **params)
 {
     UNUSED(handle);
     UNUSED(cbuf);
@@ -198,7 +198,7 @@ rcf_ch_call(struct rcf_comm_connection *handle,
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_start_process(pid_t *pid,
-                     int priority, const char *rtn, te_bool is_argv,
+                     int priority, const char *rtn, bool is_argv,
                      int argc, void **params)
 {
     UNUSED(pid);
@@ -214,7 +214,7 @@ rcf_ch_start_process(pid_t *pid,
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_start_thread(int *tid,
-                    int priority, const char *rtn, te_bool is_argv,
+                    int priority, const char *rtn, bool is_argv,
                     int argc, void **params)
 {
     UNUSED(tid);

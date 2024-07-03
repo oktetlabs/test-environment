@@ -296,7 +296,7 @@ rpc_read_all(rcf_rpc_server *rpcs, int fd, char **pbuf, size_t *bytes)
         ERROR("Out of memory");
         rc = -1;
     }
-    else while (TRUE)
+    else while (true)
     {
         int used;
 
@@ -353,7 +353,7 @@ rpc_read_all2(rcf_rpc_server *rpcs, int fd[2], char *buf[2],
 {
     size_t  buflen[2] = {RPC_READ_ALL_BUF_CHUNK, RPC_READ_ALL_BUF_CHUNK};
     int     rc = 0;
-    te_bool all_read[2] = {FALSE, FALSE};
+    bool all_read[2] = {false, false};
 
     rpc_fd_set_p fdset;
 
@@ -396,7 +396,7 @@ rpc_read_all2(rcf_rpc_server *rpcs, int fd[2], char *buf[2],
                 return -1;
             }
             if (used == 0)
-                all_read[i] = TRUE;
+                all_read[i] = true;
 
             bytes[i] += used;
             if (bytes[i] == buflen[i])
@@ -425,7 +425,7 @@ rpc_shell_get_all(rcf_rpc_server *rpcs, char **pbuf, const char *cmd,
 
     tarpc_pid_t     pid;
     rpc_wait_status rc;
-    te_bool         iut_err_jump;
+    bool iut_err_jump;
 
     va_list ap;
 
@@ -479,7 +479,7 @@ rpc_shell_get_all2(rcf_rpc_server *rpcs, char **pbuf,
 
     tarpc_pid_t     pid;
     rpc_wait_status rc;
-    te_bool         iut_err_jump;
+    bool iut_err_jump;
 
     va_list ap;
 
@@ -559,7 +559,7 @@ rpc_shell_get_all3(rcf_rpc_server *rpcs, char **pbuf,
 
     tarpc_pid_t     pid;
     rpc_wait_status rc;
-    te_bool         iut_err_jump;
+    bool iut_err_jump;
 
     va_list ap;
 
@@ -712,7 +712,7 @@ rpc_getenv(rcf_rpc_server *rpcs, const char *name)
 
     out.val = NULL;
 
-    TAPI_RPC_OUT(getenv, FALSE);
+    TAPI_RPC_OUT(getenv, false);
 
     return val;
 }

@@ -83,7 +83,7 @@ static void
 agent_csap_list_cb(csap_handle_t csap_id, void *ptr, void *opaque)
 {
     agent_csap_list_cb_data *data = opaque;
-    te_bool                  again;
+    bool again;
     int                      p;
 
     UNUSED(ptr);

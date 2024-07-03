@@ -69,13 +69,13 @@ typedef struct tapi_redis_benchmark_opt {
     /** Number of pipline requests. */
     tapi_job_opt_uint_t     pipelines;
     /** If server replies with errors, show them on stdout. */
-    te_bool                 show_srv_errors;
+    bool show_srv_errors;
     /** Number of threads to use. */
     tapi_job_opt_uint_t     threads;
     /** Only run the comma separated list of tests. */
     const char             *tests;
     /** Idle mode. */
-    te_bool                 idle;
+    bool idle;
     /** Path to redis-benchmark exec (if @c NULL then "redis-benchmark"). */
     const char             *exec_path;
 } tapi_redis_benchmark_opt;

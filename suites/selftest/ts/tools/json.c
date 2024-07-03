@@ -140,7 +140,7 @@ do_json_array_of_arrays(te_json_ctx_t *ctx, void *val)
 }
 
 typedef struct array_of_str {
-    te_bool skip_null;
+    bool skip_null;
     unsigned int n_strs;
     const char **strs;
 } array_of_str;
@@ -154,7 +154,7 @@ do_json_array_of_str(te_json_ctx_t *ctx, void *val)
 }
 
 static void
-do_json_append_raw_gen(te_json_ctx_t *ctx, void *val, te_bool use_len)
+do_json_append_raw_gen(te_json_ctx_t *ctx, void *val, bool use_len)
 {
     const char **strs = val;
     unsigned int i;
@@ -170,13 +170,13 @@ do_json_append_raw_gen(te_json_ctx_t *ctx, void *val, te_bool use_len)
 static void
 do_json_append_raw(te_json_ctx_t *ctx, void *val)
 {
-    return do_json_append_raw_gen(ctx, val, FALSE);
+    return do_json_append_raw_gen(ctx, val, false);
 }
 
 static void
 do_json_append_raw_len(te_json_ctx_t *ctx, void *val)
 {
-    return do_json_append_raw_gen(ctx, val, TRUE);
+    return do_json_append_raw_gen(ctx, val, true);
 }
 
 static void
@@ -244,7 +244,7 @@ check_json(void *val, void (*func)(te_json_ctx_t *ctx, void *),
 int
 main(int argc, char **argv)
 {
-    te_bool use_file;
+    bool use_file;
 
     TEST_START;
     TEST_GET_BOOL_PARAM(use_file);
@@ -322,30 +322,30 @@ main(int argc, char **argv)
                do_json_array_of_arrays, "[[1,2],[3,4]]");
 
     TEST_STEP("Checking JSON arrays of strings");
-    check_json((array_of_str []){{.skip_null = TRUE,
+    check_json((array_of_str []){{.skip_null = true,
                     .n_strs = 0, .strs = NULL}},
         do_json_array_of_str, "[]");
-    check_json((array_of_str []){{.skip_null = TRUE,
+    check_json((array_of_str []){{.skip_null = true,
                     .n_strs = 1,
                     .strs = (const char *[]){"abc"}}},
         do_json_array_of_str, "[\"abc\"]");
-    check_json((array_of_str []){{.skip_null = TRUE,
+    check_json((array_of_str []){{.skip_null = true,
                     .n_strs = 2,
                     .strs = (const char *[]){"abc", "def"}}},
         do_json_array_of_str, "[\"abc\",\"def\"]");
-    check_json((array_of_str []){{.skip_null = TRUE,
+    check_json((array_of_str []){{.skip_null = true,
                     .n_strs = 1,
                     .strs = (const char *[]){NULL}}},
         do_json_array_of_str, "[]");
-    check_json((array_of_str []){{.skip_null = TRUE,
+    check_json((array_of_str []){{.skip_null = true,
                     .n_strs = 2,
                     .strs = (const char *[]){NULL, "abc"}}},
         do_json_array_of_str, "[\"abc\"]");
-    check_json((array_of_str []){{.skip_null = FALSE,
+    check_json((array_of_str []){{.skip_null = false,
                     .n_strs = 1,
                     .strs = (const char *[]){NULL}}},
         do_json_array_of_str, "[null]");
-    check_json((array_of_str []){{.skip_null = FALSE,
+    check_json((array_of_str []){{.skip_null = false,
                     .n_strs = 2,
                     .strs = (const char *[]){"abc", NULL}}},
         do_json_array_of_str, "[\"abc\",null]");

@@ -46,7 +46,7 @@ neg_errno_h2rpc(int *retval)
 static inline te_errno
 rpc_dpdk_bitmask64_convert(uint64_t from_bm,
                            const te_enum_bitmask_conv conv_map[],
-                           te_bool rte2rpc, uint64_t *to_bm)
+                           bool rte2rpc, uint64_t *to_bm)
 {
     return te_enum_bitmask_convert(conv_map, from_bm, rte2rpc, to_bm);
 }
@@ -68,7 +68,7 @@ rpc_dpdk_bitmask64_rpc2rte(uint64_t rpc_bm,
                            const te_enum_bitmask_conv conv_map[],
                            uint64_t *rte_bm)
 {
-    return rpc_dpdk_bitmask64_convert(rpc_bm, conv_map, FALSE, rte_bm);
+    return rpc_dpdk_bitmask64_convert(rpc_bm, conv_map, false, rte_bm);
 }
 
 /**
@@ -88,7 +88,7 @@ rpc_dpdk_bitmask64_rte2rpc(uint64_t rte_bm,
     uint64_t rpc_bm = 0;
     te_errno rc;
 
-    rc = rpc_dpdk_bitmask64_convert(rte_bm, conv_map, TRUE, &rpc_bm);
+    rc = rpc_dpdk_bitmask64_convert(rte_bm, conv_map, true, &rpc_bm);
     if (rc == TE_ERANGE)
         rpc_bm |= UINT64_C(1) << unknown_bit;
     else if (rc == TE_EINVAL)

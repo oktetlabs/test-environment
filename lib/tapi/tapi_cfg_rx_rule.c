@@ -229,7 +229,7 @@ tapi_cfg_rx_rule_rss_context_set(const char *ta,
 te_errno
 set_field_value_or_mask(const char *ta, const char *if_name,
                         int64_t location, const char *field_name,
-                        te_bool mask, cfg_val_type type, const void *value)
+                        bool mask, cfg_val_type type, const void *value)
 {
     te_string str_oid = TE_STRING_INIT_STATIC(CFG_OID_MAX);
     const char *oid = te_string_value(&str_oid);
@@ -248,7 +248,7 @@ set_field_value_or_mask(const char *ta, const char *if_name,
 /* Get value of a flow specification field */
 static te_errno
 get_field(const char *ta, const char *if_name, int64_t location,
-          const char *field_name, te_bool mask,
+          const char *field_name, bool mask,
           cfg_val_type type, void *value)
 {
     char *last_id = (mask ? "/mask:" : "");
@@ -272,7 +272,7 @@ get_field(const char *ta, const char *if_name, int64_t location,
                               const type_ value)                          \
     {                                                                     \
         return set_field_value_or_mask(ta, if_name, location, #field_,    \
-                                       FALSE, CFG_VAL(cfg_type_, value)); \
+                                       false, CFG_VAL(cfg_type_, value)); \
     }                                                                     \
                                                                           \
     te_errno                                                              \
@@ -283,7 +283,7 @@ get_field(const char *ta, const char *if_name, int64_t location,
                               const type_ value)                          \
     {                                                                     \
         return set_field_value_or_mask(ta, if_name, location, #field_,    \
-                                       TRUE, CFG_VAL(cfg_type_, value));  \
+                                       true, CFG_VAL(cfg_type_, value));  \
     }                                                                     \
                                                                           \
     te_errno                                                              \
@@ -293,7 +293,7 @@ get_field(const char *ta, const char *if_name, int64_t location,
                               int64_t location,                           \
                               type_ *value)                               \
     {                                                                     \
-        return get_field(ta, if_name, location, #field_, FALSE,           \
+        return get_field(ta, if_name, location, #field_, false,           \
                          CVT_ ## cfg_type_, value);                       \
     }                                                                     \
                                                                           \
@@ -304,7 +304,7 @@ get_field(const char *ta, const char *if_name, int64_t location,
                               int64_t location,                           \
                               type_ *value)                               \
     {                                                                     \
-        return get_field(ta, if_name, location, #field_, TRUE,            \
+        return get_field(ta, if_name, location, #field_, true,            \
                          CVT_ ## cfg_type_, value);                       \
     }                                                                     \
 
@@ -329,9 +329,9 @@ FIELD_ACCESSORS(l4_proto, uint8_t, UINT8)
 /* Fill fields storing address and port */
 te_errno
 fill_addr_port(const char *ta, const char *if_name, int64_t location,
-               int af, const struct sockaddr *addr, te_bool default_zero,
+               int af, const struct sockaddr *addr, bool default_zero,
                const char *addr_name, const char *port_name,
-               te_bool mask)
+               bool mask)
 {
     struct sockaddr_storage addr_st;
     struct sockaddr *addr_aux = NULL;
@@ -390,24 +390,24 @@ tapi_cfg_rx_rule_fill_ip_addrs_ports(const char *ta, const char *if_name,
     te_errno rc;
 
     rc = fill_addr_port(ta, if_name, location, af, src,
-                        TRUE, "src_l3_addr", "src_port", FALSE);
+                        true, "src_l3_addr", "src_port", false);
     if (rc != 0)
         return rc;
 
     rc = fill_addr_port(ta, if_name, location, af, src_mask,
-                        src == NULL ? TRUE : FALSE, "src_l3_addr",
-                        "src_port", TRUE);
+                        src == NULL ? true : false, "src_l3_addr",
+                        "src_port", true);
     if (rc != 0)
         return rc;
 
     rc = fill_addr_port(ta, if_name, location, af, dst,
-                        TRUE, "dst_l3_addr", "dst_port", FALSE);
+                        true, "dst_l3_addr", "dst_port", false);
     if (rc != 0)
         return rc;
 
     return fill_addr_port(ta, if_name, location, af, dst_mask,
-                          dst == NULL ? TRUE : FALSE, "dst_l3_addr",
-                          "dst_port", TRUE);
+                          dst == NULL ? true : false, "dst_l3_addr",
+                          "dst_port", true);
 }
 
 /* See description in tapi_cfg_rx_rule.h */
@@ -426,7 +426,7 @@ tapi_cfg_rx_rule_commit(const char *ta,
          * under its real location after synchronization.
          */
         rc = cfg_synchronize_fmt(
-                              TRUE, "/agent:%s/interface:%s/rx_rules:",
+                              true, "/agent:%s/interface:%s/rx_rules:",
                               ta, if_name);
     }
 
@@ -450,7 +450,7 @@ tapi_cfg_rx_rule_del(const char *ta, const char *if_name,
 {
     RULE_ACCESSOR_START;
 
-    return cfg_del_instance_fmt(FALSE, "%s", rule_oid);
+    return cfg_del_instance_fmt(false, "%s", rule_oid);
 }
 
 /* See description in tapi_cfg_rx_rule.h */
@@ -530,7 +530,7 @@ tapi_cfg_rx_rule_rss_context_get(const char *ta,
 /* See description in tapi_cfg_rx_rule.h */
 te_errno
 tapi_cfg_rx_rule_spec_loc_get(const char *ta, const char *if_name,
-                              te_bool *value)
+                              bool *value)
 {
     return cfg_get_bool(value,
                         "/agent:%s/interface:%s/rx_rules:/spec_loc:",

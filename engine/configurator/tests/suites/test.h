@@ -161,11 +161,11 @@
                                                                             \
         strcat(env, te_install);                                            \
         strcat(env, "/lib/");                                               \
-        setenv("LD_LIBRARY_PATH", env, TRUE);                               \
-        setenv("TE_TMP", "/tmp/", TRUE);                                    \
+        setenv("LD_LIBRARY_PATH", env, true);                               \
+        setenv("TE_TMP", "/tmp/", true);                                    \
                                                                             \
-        setenv("TE_LOG_DIR", "/tmp", TRUE);                                 \
-        setenv("TE_LOG_RAW", "/tmp/conf_tester_tmp_raw_log", TRUE);         \
+        setenv("TE_LOG_DIR", "/tmp", true);                                 \
+        setenv("TE_LOG_RAW", "/tmp/conf_tester_tmp_raw_log", true);         \
         printf("==================\n");                                     \
     } while (0)
 

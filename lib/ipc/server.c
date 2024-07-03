@@ -102,7 +102,7 @@ struct ipc_server_client {
         } dgram;
         struct {
             int         socket;     /**< Connected socket to client */
-            te_bool     is_ready;   /**< Is client socket ready for
+            bool        is_ready;   /**< Is client socket ready for
                                          reading? */
             size_t      pending;    /**< Number of octets in current
                                          message left to read from
@@ -118,7 +118,7 @@ struct ipc_server_client {
 struct ipc_server {
     char    name[UNIX_PATH_MAX];    /**< Name of the server */
     int     socket;                 /**< Server socket */
-    te_bool is_ready;               /**< Is server socket ready? */
+    bool is_ready;               /**< Is server socket ready? */
 
     /** List of "active" IPC clients */
     LIST_HEAD(ipc_server_clients, ipc_server_client) clients;
@@ -126,7 +126,7 @@ struct ipc_server {
 #ifndef TE_IPC_AF_UNIX
     uint16_t    port;           /**< Port number used for this server */
 #endif
-    te_bool     conn;           /**< Is connection-oriented server? */
+    bool conn;           /**< Is connection-oriented server? */
     union {
         struct {
             char   *buffer;     /**< Used to avoid data copying
@@ -196,7 +196,7 @@ static int ipc_stream_send_answer(struct ipc_server *ipcs,
 
 /* See description in ipc_server.h */
 int
-ipc_register_server(const char *name, te_bool conn,
+ipc_register_server(const char *name, bool conn,
                     struct ipc_server **p_ipcs)
 {
     struct ipc_server *ipcs;
@@ -386,7 +386,7 @@ ipc_get_server_fds(const struct ipc_server *ipcs, fd_set *set)
  * @param conn      Is connection-oriented server client or not?
  */
 static void
-ipc_server_close_client(struct ipc_server_client *ipcsc, te_bool conn)
+ipc_server_close_client(struct ipc_server_client *ipcsc, bool conn)
 {
     LIST_REMOVE(ipcsc, links);
     if (conn)
@@ -397,10 +397,10 @@ ipc_server_close_client(struct ipc_server_client *ipcsc, te_bool conn)
 }
 
 /* See description in ipc_server.h */
-te_bool
+bool
 ipc_is_server_ready(struct ipc_server *ipcs, const fd_set *set, int max_fd)
 {
-    te_bool                     is_ready = FALSE;
+    bool is_ready = false;
     struct ipc_server_client   *client, *next;
 
     if (ipcs == NULL || set == NULL)
@@ -433,7 +433,7 @@ ipc_is_server_ready(struct ipc_server *ipcs, const fd_set *set, int max_fd)
                         perror("FIONREAD ioctl() failed");
 
                     if (available > 0)
-                        is_ready = TRUE;
+                        is_ready = true;
                     else
                         ipc_server_close_client(client, ipcs->conn);
                 }
@@ -842,14 +842,14 @@ ipc_stream_receive_message(struct ipc_server *ipcs,
         return ipc_stream_server_receive(ipcs, buf, p_buf_len, client);
     }
 
-    while (TRUE)
+    while (true)
     {
         /* Data in the connection? */
         LIST_FOREACH_SAFE(client, &ipcs->clients, links, next_client)
         {
             if (client->stream.is_ready)
             {
-                client->stream.is_ready = FALSE;
+                client->stream.is_ready = false;
 
                 /*
                  * Connection with data found. Check that no pending data
@@ -893,7 +893,7 @@ ipc_stream_receive_message(struct ipc_server *ipcs,
 
         if (ipcs->is_ready)
         {
-            ipcs->is_ready = FALSE;
+            ipcs->is_ready = false;
 
             /* New connection requested. Accept it */
 
@@ -1172,7 +1172,7 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
     }
 
     /* No appropriate datagram in the pool found */
-    while (TRUE)
+    while (true)
     {
         struct sockaddr_un          sa;
         socklen_t                   sa_len = sizeof(sa);

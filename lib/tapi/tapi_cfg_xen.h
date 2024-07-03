@@ -147,7 +147,7 @@ extern te_errno tapi_cfg_xen_set_base_mac_addr(char const    *ta,
  *
  * @return Status code
  */
-extern te_errno tapi_cfg_xen_get_accel(char const *ta, te_bool *accel);
+extern te_errno tapi_cfg_xen_get_accel(char const *ta, bool *accel);
 
 /**
  * Set dom0 acceleration.
@@ -157,17 +157,17 @@ extern te_errno tapi_cfg_xen_get_accel(char const *ta, te_bool *accel);
  *
  * @return Status code
  */
-extern te_errno tapi_cfg_xen_set_accel(char const *ta, te_bool accel);
+extern te_errno tapi_cfg_xen_set_accel(char const *ta, bool accel);
 
 /**
  * Perform dom0 initialization/cleanup.
  *
  * @param ta            Test Agent running withing dom0
- * @param init          Initialization (TRUE) or clean up (FALSE)?
+ * @param init          Initialization (@c true) or clean up (@c false)?
  *
  * @return Status code
  */
-extern te_errno tapi_cfg_xen_set_init(char const *ta, te_bool init);
+extern te_errno tapi_cfg_xen_set_init(char const *ta, bool init);
 
 /**
  * Create new domU.
@@ -428,7 +428,7 @@ extern te_errno tapi_cfg_xen_dom_u_bridge_get_accel(
                                                 char const *ta,
                                                 char const *dom_u,
                                                 char const *bridge,
-                                                te_bool    *accel);
+                                                bool *accel);
 
 /**
  * Set acceleration specification sign of a tested interface of domU.
@@ -443,7 +443,7 @@ extern te_errno tapi_cfg_xen_dom_u_bridge_set_accel(
                                                 char const *ta,
                                                 char const *dom_u,
                                                 char const *bridge,
-                                                te_bool     accel);
+                                                bool accel);
 
 /**
  * Set MAC address of 'eth0' of domU.
@@ -460,7 +460,7 @@ extern te_errno tapi_cfg_xen_dom_u_migrate(char const *from_ta,
                                            char const *to_ta,
                                            char const *dom_u,
                                            char const *host,
-                                           te_bool     live);
+                                           bool live);
 
 /**@} <!-- END tapi_conf_xen --> */
 

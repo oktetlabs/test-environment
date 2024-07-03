@@ -336,9 +336,9 @@ extern const asn_type *asn_get_type(const asn_value *value);
  * @param value         ASN.1 value.
  * @param type          ASN.1 type.
  *
- * @return @c TRUE if @p value of type of @p type, @c FALSE otherwise.
+ * @return @c true if @p value of type of @p type, @c false otherwise.
  */
-extern te_bool asn_check_type(const asn_value *value, const asn_type *type);
+extern bool asn_check_type(const asn_value *value, const asn_type *type);
 
 
 
@@ -725,7 +725,7 @@ extern te_errno asn_put_choice(asn_value *container, asn_value *value);
  */
 te_errno asn_path_from_extended(asn_value *node, const char *ext_path,
                                 char *asn_path, unsigned int asn_path_len,
-                                te_bool auto_insert);
+                                bool auto_insert);
 
 /**
  * Inserts 'value' into root_node ASN.1 value.
@@ -997,7 +997,7 @@ extern te_errno asn_read_uint32(const asn_value *container,
  * @return zero on success, otherwise error code.
  */
 extern te_errno asn_write_bool(asn_value *container,
-                               te_bool value, const char *labels);
+                               bool value, const char *labels);
 
 /**
  * Read boolean from leaf in specified ASN.1 value.
@@ -1010,7 +1010,7 @@ extern te_errno asn_write_bool(asn_value *container,
  * @return zero on success, otherwise error code.
  */
 extern te_errno asn_read_bool(const asn_value *container,
-                              te_bool *value, const char *labels);
+                              bool *value, const char *labels);
 
 /**
  * Write character string into leaf in specified ASN.1 value.
@@ -1337,7 +1337,7 @@ typedef te_errno (* walk_method)(asn_value *value, void *user_ptr);
  *
  * @param container     Pointer to the ASN.1 value which subvalues
  *                      should be iterated.
- * @param only_leafs    Boolean flag, if @c TRUE, user callback will
+ * @param only_leafs    Boolean flag, if @c true, user callback will
  *                      will be called only for the leafs, i.e.
  *                      for nodes without sub-values: either
  *                      primitive or empty compound.
@@ -1351,7 +1351,7 @@ typedef te_errno (* walk_method)(asn_value *value, void *user_ptr);
  *
  * @return status code.
  */
-extern te_errno asn_walk_depth(asn_value *container, te_bool only_leafs,
+extern te_errno asn_walk_depth(asn_value *container, bool only_leafs,
                                te_errno *status, walk_method func,
                                void *user_ptr);
 
@@ -1362,7 +1362,7 @@ extern te_errno asn_walk_depth(asn_value *container, te_bool only_leafs,
  *
  * @param container     Pointer to the ASN.1 value which subvalues
  *                      should be iterated.
- * @param only_leafs    Boolean flag, if @c TRUE, user callback will
+ * @param only_leafs    Boolean flag, if @c true, user callback will
  *                      will be called only for the leafs, i.e.
  *                      for nodes without sub-values: either
  *                      primitive or empty compound.
@@ -1375,7 +1375,7 @@ extern te_errno asn_walk_depth(asn_value *container, te_bool only_leafs,
  *
  * @return status code.
  */
-extern te_errno asn_walk_breadth(asn_value *container, te_bool only_leafs,
+extern te_errno asn_walk_breadth(asn_value *container, bool only_leafs,
                                  te_errno *status, walk_method func,
                                  void *user_ptr);
 

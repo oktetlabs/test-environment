@@ -166,14 +166,14 @@ parser_clean_parser_events(serial_parser_t *parser)
 static te_errno
 parser_stop_thread(serial_parser_t *parser)
 {
-    if (parser->enable == TRUE)
+    if (parser->enable == true)
     {
         TE_SERIAL_CHECK_LOCK(pthread_mutex_lock(&parser->mutex));
 
         /* Stop the thread */
         pthread_cancel(parser->thread);
         TE_SERIAL_CHECK_LOCK(pthread_mutex_unlock(&parser->mutex));
-        parser->enable = FALSE;
+        parser->enable = false;
     }
     return 0;
 }
@@ -200,11 +200,11 @@ parser_add(unsigned int gid, const char *oid, char *cname,
     int              rc;
 
     parser = TE_ALLOC_UNINITIALIZED(sizeof(serial_parser_t));
-    parser->enable      = FALSE;
-    parser->rcf         = FALSE;
+    parser->enable      = false;
+    parser->rcf         = false;
     parser->port        = TE_SERIAL_PORT;
     parser->interval    = TE_SERIAL_INTERVAL;
-    parser->logging     = TRUE;
+    parser->logging     = true;
     parser->level       = map_name_to_level(TE_SERIAL_LLEVEL);
 
     te_strlcpy(parser->name, pname, sizeof(parser->name));
@@ -376,17 +376,17 @@ parser_set_enable(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
 
     serial_parser_t *parser;
-    te_bool          en;
+    bool en;
     int              rc;
 
     parser = parser_get_by_name(pname);
     if (parser == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    en = atoi(value) == 0 ? FALSE : TRUE;
+    en = atoi(value) == 0 ? false : true;
 
     if (en == parser->enable)
         return 0;
-    if (en == TRUE)
+    if (en == true)
     {
         rc = pthread_create(&parser->thread, NULL,
                             (void *)&te_serial_parser_connect, parser);
@@ -462,7 +462,7 @@ parser_common_set(unsigned int gid, const char *oid, char *value,
             snprintf(parser->log_user, TE_SERIAL_MAX_NAME, "%s", value);
         }
         else
-            parser->logging = atoi(value) == 0 ? FALSE : TRUE;
+            parser->logging = atoi(value) == 0 ? false : true;
         TE_SERIAL_CHECK_LOCK(pthread_mutex_unlock(&parser->mutex));
     }
     else if (strstr(oid, "/user:") != NULL)
@@ -550,7 +550,7 @@ parser_reset(unsigned int gid, const char *oid, char *value,
     serial_event_t   *event;
     serial_pattern_t *pat;
 
-    if (atoi(value) == FALSE)
+    if (atoi(value) == false)
         return 0;
 
     parser = parser_get_by_name(pname);
@@ -562,7 +562,7 @@ parser_reset(unsigned int gid, const char *oid, char *value,
     {
         SLIST_FOREACH(pat, &event->patterns, ent_pat_l)
         {
-            event->status = FALSE;
+            event->status = false;
         }
     }
     TE_SERIAL_CHECK_LOCK(pthread_mutex_unlock(&parser->mutex));
@@ -648,7 +648,7 @@ parser_event_add(unsigned int gid, const char *oid, char *t_name,
     event = TE_ALLOC_UNINITIALIZED(sizeof(serial_event_t));
 
     event->count                      = 0;
-    event->status                     = FALSE;
+    event->status                     = false;
 
     te_strlcpy(event->name, ename, sizeof(event->name));
     te_strlcpy(event->t_name, t_name, sizeof(event->t_name));
@@ -1046,7 +1046,7 @@ parser_event_common_set(unsigned int gid, const char *oid, char *value,
 
     TE_SERIAL_CHECK_LOCK(pthread_mutex_lock(&parser->mutex));
     if (strstr(oid, "/status:") != NULL)
-        event->status = atoi(value) == 0 ? FALSE : TRUE;
+        event->status = atoi(value) == 0 ? false : true;
     else if (strstr(oid, "/counter:") != NULL)
         event->count = atoi(value);
     else

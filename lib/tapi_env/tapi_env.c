@@ -85,7 +85,7 @@ static te_errno add_address(tapi_env_addr         *env_addr,
 
 static te_errno bind_env_to_cfg_nets(tapi_env_ifs *ifs,
                                      cfg_nets_t   *cfg_nets);
-static te_bool bind_host_if(tapi_env_if  *iface,
+static bool bind_host_if(tapi_env_if  *iface,
                             tapi_env_ifs *ifs,
                             cfg_nets_t   *cfg_nets,
                             node_indexes *used_nodes);
@@ -100,13 +100,13 @@ static te_errno node_mark_used(node_indexes *used_nodes,
                                unsigned int net, unsigned int node);
 static void node_unmark_used(node_indexes *used_nodes,
                              unsigned int net, unsigned int node);
-static te_bool node_is_used(node_indexes *used_nodes,
+static bool node_is_used(node_indexes *used_nodes,
                             unsigned int net, unsigned int node);
 
-static te_bool check_net_type_cfg_vs_env(cfg_net_t *net,
+static bool check_net_type_cfg_vs_env(cfg_net_t *net,
                                          tapi_env_type net_type);
 
-static te_bool check_node_type_vs_pcos(cfg_nets_t         *cfg_nets,
+static bool check_node_type_vs_pcos(cfg_nets_t         *cfg_nets,
                                        cfg_net_node_t     *node,
                                        tapi_env_processes *processes);
 
@@ -426,7 +426,7 @@ tapi_env_free(tapi_env *env)
     {
         if (addr->handle != CFG_HANDLE_INVALID)
         {
-            rc = cfg_del_instance(addr->handle, FALSE);
+            rc = cfg_del_instance(addr->handle, false);
             if (rc != 0)
             {
                 ERROR("%s(): cfg_del_instance() failed: %r",
@@ -475,7 +475,7 @@ tapi_env_free(tapi_env *env)
                     TE_RC_UPDATE(result, rc);
                 }
             }
-            rc = cfg_del_instance(addr_hndl->handle, FALSE);
+            rc = cfg_del_instance(addr_hndl->handle, false);
             if (rc != 0)
             {
                 ERROR("Failed to delete IPv4 address pool entry: %r", rc);
@@ -1331,9 +1331,9 @@ prepare_unicast(unsigned int af, tapi_env_addr *env_addr,
         }
 
         if (af == AF_INET)
-            env_addr->iface->ip4_unicast_used = TRUE;
+            env_addr->iface->ip4_unicast_used = true;
         else
-            env_addr->iface->ip6_unicast_used = TRUE;
+            env_addr->iface->ip6_unicast_used = true;
     }
 
     return 0;
@@ -1702,14 +1702,14 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             }
             else if (env_addr->type == TAPI_ENV_ADDR_ALIEN)
             {
-                static te_bool first_time = TRUE;
+                static bool first_time = true;
                 static uint8_t alien_addr[IPV6_ADDR_LEN] = {0};
 
                 if (first_time)
                 {
                     struct sockaddr *tmp;
 
-                    first_time = FALSE;
+                    first_time = false;
 
                     rc = cfg_get_instance_addr_fmt(&tmp, "/local:/ip6_alien:");
                     if (rc != 0)
@@ -1762,7 +1762,7 @@ add_address(tapi_env_addr *env_addr, cfg_nets_t *cfg_nets,
                                     (addr->sa_family == AF_INET) ?
                                         env_addr->iface->net->ip4pfx :
                                         env_addr->iface->net->ip6pfx,
-                                    TRUE,
+                                    true,
                                     &env_addr->handle);
     if (TE_RC_GET_ERROR(rc) == TE_EEXIST)
     {
@@ -2115,10 +2115,10 @@ prepare_pcos(tapi_env_hosts *hosts)
     tapi_env_host      *host;
     tapi_env_process   *proc;
     tapi_env_pco       *pco;
-    te_bool             main_thread;
+    bool main_thread;
     int                 iut_errno_change_no_check = 0;
-    te_bool             no_reuse_pco = FALSE;
-    te_bool             get_reuse_pco;
+    bool no_reuse_pco = false;
+    bool get_reuse_pco;
     const char         *reuse_pco = getenv("TE_ENV_REUSE_PCO");
     const char         *tst_with_lib = getenv("TE_ENV_TST_WITH_LIB");
 
@@ -2147,7 +2147,7 @@ prepare_pcos(tapi_env_hosts *hosts)
              proc != NULL && rc == 0;
              proc = SLIST_NEXT(proc, links))
         {
-            main_thread = TRUE;
+            main_thread = true;
 
             STAILQ_FOREACH(pco, &proc->pcos, links)
             {
@@ -2172,12 +2172,12 @@ prepare_pcos(tapi_env_hosts *hosts)
                             ERROR("rcf_rpc_server_get() failed: %r", rc);
                             break;
                         }
-                        pco->created = TRUE;
+                        pco->created = true;
                     }
                     else
-                        pco->created = FALSE;
+                        pco->created = false;
 
-                    main_thread = FALSE;
+                    main_thread = false;
                     if (pco->type == TAPI_ENV_IUT ||
                         (tst_with_lib != NULL && proc->net &&
                          proc->net->type == TAPI_ENV_IUT))
@@ -2212,7 +2212,7 @@ prepare_pcos(tapi_env_hosts *hosts)
                               rc);
                         break;
                     }
-                    pco->created = TRUE;
+                    pco->created = true;
                 }
             }
             /*
@@ -2273,10 +2273,10 @@ bind_env_to_cfg_nets(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
  * @param cfg_nets      network model configuration
  * @param used_nodes    list with used (net, node) indexes
  *
- * @retval TRUE         success
- * @retval FALSE        failure
+ * @retval @c true      success
+ * @retval @c false     failure
  */
-static te_bool
+static bool
 bind_host_if(tapi_env_if *iface, tapi_env_ifs *ifs,
              cfg_nets_t *cfg_nets, node_indexes *used_nodes)
 {
@@ -2284,7 +2284,7 @@ bind_host_if(tapi_env_if *iface, tapi_env_ifs *ifs,
     tapi_env_if    *p;
 
     if (iface == (void *)ifs)
-        return TRUE;
+        return true;
 
     assert(iface != NULL);
     assert(iface->net != NULL);
@@ -2326,8 +2326,8 @@ bind_host_if(tapi_env_if *iface, tapi_env_ifs *ifs,
             p = iface;
             while ((p = p->links.cqe_prev) != (void *)ifs)
             {
-                te_bool one_host;
-                te_bool one_ta;
+                bool one_host;
+                bool one_ta;
 
                 if (iface->net == p->net)
                 {
@@ -2370,14 +2370,14 @@ bind_host_if(tapi_env_if *iface, tapi_env_ifs *ifs,
                 iface->net->i_net = i;
                 iface->i_node = j;
                 if (node_mark_used(used_nodes, i, j) != 0)
-                    return FALSE;
+                    return false;
                 VERB("Mark (%u,%u) as used by '%s/%s'", i, j,
                      iface->host->name, iface->name);
                 /* Try to bind the next host/interface */
                 if (bind_host_if(iface->links.cqe_next, ifs, cfg_nets,
                                  used_nodes))
                 {
-                    return TRUE;
+                    return true;
                 }
                 VERB("Failed to bind host '%s/%s', unmark (%u,%u)",
                      iface->host->name, iface->name, i, j);
@@ -2390,7 +2390,7 @@ bind_host_if(tapi_env_if *iface, tapi_env_ifs *ifs,
 
     VERB("Failed to bind host '%s/%s'", iface->host->name, iface->name);
 
-    return FALSE;
+    return false;
 }
 
 static te_errno
@@ -2573,10 +2573,10 @@ node_unmark_used(node_indexes *used_nodes, unsigned int net, unsigned int node)
  * @param net           net-index
  * @param node          node-index
  *
- * @retval TRUE         marked as used
- * @retval FALSE        not marked as used
+ * @retval @c true      marked as used
+ * @retval @c false     not marked as used
  */
-static te_bool
+static bool
 node_is_used(node_indexes *used_nodes, unsigned int net, unsigned int node)
 {
     node_index *p;
@@ -2712,7 +2712,7 @@ tapi_get_addr_type(tapi_env *env, const char *name)
  *
  * @return Whether types match?
  */
-static te_bool
+static bool
 check_node_type_vs_pcos(cfg_nets_t         *cfg_nets,
                         cfg_net_node_t     *node,
                         tapi_env_processes *processes)
@@ -2722,13 +2722,13 @@ check_node_type_vs_pcos(cfg_nets_t         *cfg_nets,
     switch (type)
     {
         case TAPI_ENV_INVALID:
-            return FALSE;
+            return false;
         case TAPI_ENV_IUT:
             return get_ta_type(cfg_nets, node) == NET_NODE_TYPE_NUT;
         case TAPI_ENV_IUT_PEER:
             return get_ta_type(cfg_nets, node) == NET_NODE_TYPE_NUT_PEER;
         case TAPI_ENV_TESTER:
-            return TRUE;
+            return true;
         default:
             assert(0);
             break;
@@ -2744,7 +2744,7 @@ check_node_type_vs_pcos(cfg_nets_t         *cfg_nets,
  *
  * @return Whether types match?
  */
-static te_bool
+static bool
 check_net_type_cfg_vs_env(cfg_net_t *net, tapi_env_type net_type)
 {
     enum net_node_type  node_type;
@@ -2763,7 +2763,7 @@ check_net_type_cfg_vs_env(cfg_net_t *net, tapi_env_type net_type)
     switch (net_type)
     {
         case TAPI_ENV_UNSPEC:
-            return TRUE;
+            return true;
 
         case TAPI_ENV_IUT:
             return (node_type == NET_NODE_TYPE_NUT);
@@ -2779,12 +2779,12 @@ check_net_type_cfg_vs_env(cfg_net_t *net, tapi_env_type net_type)
              */
             VERB("%s: you're binding a net with type "
                  "IUT_PEER - this won't work");
-            return FALSE;
+            return false;
 
         case TAPI_ENV_INVALID:
         default:
             assert(0);
-            return FALSE;
+            return false;
     }
 }
 
@@ -2917,7 +2917,7 @@ tapi_env_add_addresses(rcf_rpc_server *rpcs, tapi_env_net *net, int af,
         TMP_CHECK_RC(tapi_allocate_set_port(rpcs, *addr));
         TMP_CHECK_RC(
             tapi_cfg_base_if_add_net_addr(rpcs->ta, iface->if_name,
-                                          *addr, prefix, FALSE, NULL));
+                                          *addr, prefix, false, NULL));
     }
 
     if (rc == 0)
@@ -2960,7 +2960,7 @@ prepare_sniffers(tapi_env *env)
         {
             p->sniffer_id =
                 tapi_sniffer_add(p->host->ta, p->if_info.if_name, p->name,
-                                 NULL, FALSE);
+                                 NULL, false);
             if (p->sniffer_id == NULL)
                 rc = TE_RC(TE_TAPI, TE_EFAULT);
         }

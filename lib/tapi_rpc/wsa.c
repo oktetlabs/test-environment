@@ -119,7 +119,7 @@ rpc_wsa_socket(rcf_rpc_server *rpcs,
     RETVAL_INT(socket, out.fd);
 }
 
-te_bool
+bool
 rpc_connect_ex(rcf_rpc_server *rpcs,
                int s, const struct sockaddr *addr,
                rpc_ptr buf, ssize_t len_buf,
@@ -137,7 +137,7 @@ rpc_connect_ex(rcf_rpc_server *rpcs,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_BOOL(connect_ex, FALSE);
+        RETVAL_BOOL(connect_ex, false);
     }
 
     in.fd = s;
@@ -155,7 +155,7 @@ rpc_connect_ex(rcf_rpc_server *rpcs,
         *bytes_sent = out.len_sent.len_sent_val[0];
 
     if (rpcs->last_op == RCF_RPC_CALL)
-        out.retval = TRUE;
+        out.retval = true;
 
     CHECK_RETVAL_VAR_IS_BOOL(connect_ex, out.retval);
     TAPI_RPC_LOG(rpcs, ConnectEx, "%d, %s, %u, %u, %d, %u", "%s",
@@ -166,7 +166,7 @@ rpc_connect_ex(rcf_rpc_server *rpcs,
     RETVAL_BOOL(connect_ex, out.retval);
 }
 
-te_bool
+bool
 rpc_disconnect_ex(rcf_rpc_server *rpcs, int s,
                   rpc_overlapped overlapped, int flags)
 {
@@ -179,7 +179,7 @@ rpc_disconnect_ex(rcf_rpc_server *rpcs, int s,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_BOOL(disconnect_ex, FALSE);
+        RETVAL_BOOL(disconnect_ex, false);
     }
 
     in.fd = s;
@@ -189,7 +189,7 @@ rpc_disconnect_ex(rcf_rpc_server *rpcs, int s,
     rcf_rpc_call(rpcs, "disconnect_ex", &in, &out);
 
     if (rpcs->last_op == RCF_RPC_CALL)
-        out.retval = TRUE;
+        out.retval = true;
 
     CHECK_RETVAL_VAR_IS_BOOL(disconnect_ex, out.retval);
     TAPI_RPC_LOG(rpcs, DisconnectEx, "%d, %u, %d", "%s",
@@ -280,7 +280,7 @@ rpc_wsa_accept(rcf_rpc_server *rpcs,
 }
 
 
-te_bool
+bool
 rpc_accept_ex(rcf_rpc_server *rpcs, int s, int s_a,
               rpc_ptr buf, size_t len, size_t laddr_len, size_t raddr_len,
               size_t *bytes_received, rpc_overlapped overlapped)
@@ -295,7 +295,7 @@ rpc_accept_ex(rcf_rpc_server *rpcs, int s, int s_a,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_BOOL(accept_ex, FALSE);
+        RETVAL_BOOL(accept_ex, false);
     }
 
     in.fd = s;
@@ -321,7 +321,7 @@ rpc_accept_ex(rcf_rpc_server *rpcs, int s, int s_a,
     }
 
     if (rpcs->last_op == RCF_RPC_CALL)
-        out.retval = TRUE;
+        out.retval = true;
 
     CHECK_RETVAL_VAR_IS_BOOL(accept_ex, out.retval);
     TAPI_RPC_LOG(rpcs, AcceptEx, "%d, %d, %u, %d, %d, %d, %d, %u",
@@ -399,7 +399,7 @@ rpc_get_accept_addr_gen(rcf_rpc_server *rpcs,
     RETVAL_VOID(get_accept_addr);
 }
 
-te_bool
+bool
 rpc_transmit_packets(rcf_rpc_server *rpcs, int s,
                      tarpc_transmit_packets_element *data,
                      ssize_t element_count, ssize_t send_size,
@@ -411,7 +411,7 @@ rpc_transmit_packets(rcf_rpc_server *rpcs, int s,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_BOOL(transmit_packets, FALSE);
+        RETVAL_BOOL(transmit_packets, false);
     }
 
     memset(&in, 0, sizeof(in));
@@ -427,7 +427,7 @@ rpc_transmit_packets(rcf_rpc_server *rpcs, int s,
     rcf_rpc_call(rpcs, "transmit_packets", &in, &out);
 
     if (rpcs->last_op == RCF_RPC_CALL)
-        out.retval = TRUE;
+        out.retval = true;
 
     CHECK_RETVAL_VAR_IS_BOOL(transmit_packets, out.retval);
     TAPI_RPC_LOG(rpcs, TransmitPackets, "%d, %d, %d, %u, %d", "%s",
@@ -436,7 +436,7 @@ rpc_transmit_packets(rcf_rpc_server *rpcs, int s,
     RETVAL_BOOL(transmit_packets, out.retval);
 }
 
-te_bool
+bool
 rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
                   ssize_t len, ssize_t len_per_send,
                   rpc_overlapped overlapped,
@@ -452,7 +452,7 @@ rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_BOOL(transmit_file, FALSE);
+        RETVAL_BOOL(transmit_file, false);
     }
 
     in.fd = s;
@@ -478,7 +478,7 @@ rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
     rcf_rpc_call(rpcs, "transmit_file", &in, &out);
 
     if (rpcs->last_op == RCF_RPC_CALL)
-        out.retval = TRUE;
+        out.retval = true;
 
     CHECK_RETVAL_VAR_IS_BOOL(transmit_file, out.retval);
     TAPI_RPC_LOG(rpcs, TransmitFile,
@@ -493,7 +493,7 @@ rpc_transmit_file(rcf_rpc_server *rpcs, int s, int file,
  * Attention: when using the overlapped I/O the supplied buffers head
  * and tail will be freed when you call rpc_wsa_get_overlapped_result().
  */
-te_bool
+bool
 rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, int file,
                         ssize_t len, ssize_t bytes_per_send,
                         rpc_overlapped overlapped,
@@ -509,7 +509,7 @@ rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, int file,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_BOOL(transmitfile_tabufs, FALSE);
+        RETVAL_BOOL(transmitfile_tabufs, false);
     }
 
     in.s = s;
@@ -529,7 +529,7 @@ rpc_transmitfile_tabufs(rcf_rpc_server *rpcs, int s, int file,
     rcf_rpc_call(rpcs, "transmitfile_tabufs", &in, &out);
 
     if (rpcs->last_op == RCF_RPC_CALL)
-        out.retval = TRUE;
+        out.retval = true;
 
     CHECK_RETVAL_VAR_IS_BOOL(transmitfile_tabufs, out.retval);
     TAPI_RPC_LOG(rpcs, TransmitFile,
@@ -604,7 +604,7 @@ rpc_closesocket(rcf_rpc_server *rpcs, int s)
     RETVAL_INT(closesocket, out.retval);
 }
 
-te_bool
+bool
 rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
                                 rpc_overlapped overlapped)
 {
@@ -624,14 +624,14 @@ rpc_has_overlapped_io_completed(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "has_overlapped_io_completed", &in, &out);
 
-    /* No check - it's strange to assume FALSE as failure here */
+    /* No check - it's strange to assume @c false as failure here */
 
     TAPI_RPC_LOG(rpcs, HasOverlappedIoCompleted, "%u", "%s",
                  overlapped, out.retval ? "true" : "false");
     RETVAL_INT(has_overlapped_io_completed, out.retval);
 }
 
-te_bool
+bool
 rpc_cancel_io(rcf_rpc_server *rpcs, int fd)
 {
     tarpc_cancel_io_in  in;
@@ -691,7 +691,7 @@ rpc_create_io_completion_port(rcf_rpc_server *rpcs,
     RETVAL_INT(create_io_completion_port, out.retval);
 }
 
-te_bool
+bool
 rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
                                  int completion_port,
                                  size_t *number_of_bytes,
@@ -708,7 +708,7 @@ rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_BOOL(get_queued_completion_status, FALSE);
+        RETVAL_BOOL(get_queued_completion_status, false);
     }
 
     in.milliseconds = milliseconds;
@@ -719,7 +719,7 @@ rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "get_queued_completion_status", &in, &out);
 
     if (rpcs->last_op == RCF_RPC_CALL)
-        out.retval = TRUE;
+        out.retval = true;
 
     CHECK_RETVAL_VAR_IS_BOOL(get_queued_completion_status, out.retval);
     TAPI_RPC_LOG(rpcs, GetQueuedCompletionStatus, "%d",
@@ -738,7 +738,7 @@ rpc_get_queued_completion_status(rcf_rpc_server *rpcs,
     RETVAL_BOOL(get_queued_completion_status, out.retval);
 }
 
-te_bool
+bool
 rpc_post_queued_completion_status(rcf_rpc_server *rpcs,
                                   int completion_port,
                                   unsigned int number_of_bytes,
@@ -754,7 +754,7 @@ rpc_post_queued_completion_status(rcf_rpc_server *rpcs,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_BOOL(post_queued_completion_status, FALSE);
+        RETVAL_BOOL(post_queued_completion_status, false);
     }
 
     in.completion_port = completion_port;
@@ -765,7 +765,7 @@ rpc_post_queued_completion_status(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "post_queued_completion_status", &in, &out);
 
     if (rpcs->last_op == RCF_RPC_CALL)
-        out.retval = TRUE;
+        out.retval = true;
 
     CHECK_RETVAL_VAR_IS_BOOL(post_queued_completion_status, out.retval);
     TAPI_RPC_LOG(rpcs, PostQueuedCompletionStatus,
@@ -930,7 +930,7 @@ rpc_create_event_with_bit(rcf_rpc_server *rpcs)
     RETVAL_RPC_PTR(create_event_with_bit, out.retval);
 }
 
-te_bool
+bool
 rpc_close_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent)
 {
     tarpc_close_event_in  in;
@@ -942,7 +942,7 @@ rpc_close_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_BOOL(close_event, FALSE);
+        RETVAL_BOOL(close_event, false);
     }
 
     in.hevent = (tarpc_wsaevent)hevent;
@@ -956,7 +956,7 @@ rpc_close_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent)
     RETVAL_BOOL(close_event, out.retval);
 }
 
-te_bool
+bool
 rpc_reset_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent)
 {
     tarpc_reset_event_in  in;
@@ -968,7 +968,7 @@ rpc_reset_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_BOOL(reset_event, FALSE);
+        RETVAL_BOOL(reset_event, false);
     }
 
     in.hevent = (tarpc_wsaevent)hevent;
@@ -982,7 +982,7 @@ rpc_reset_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent)
     RETVAL_BOOL(reset_event, out.retval);
 }
 
-te_bool
+bool
 rpc_set_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent)
 {
     tarpc_set_event_in  in;
@@ -994,7 +994,7 @@ rpc_set_event(rcf_rpc_server *rpcs, rpc_wsaevent hevent)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_BOOL(set_event, FALSE);
+        RETVAL_BOOL(set_event, false);
     }
 
     in.hevent = (tarpc_wsaevent)hevent;
@@ -2050,10 +2050,10 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
     RETVAL_INT(wsa_recv_msg, out.retval);
 }
 
-te_bool
+bool
 rpc_wsa_get_overlapped_result(rcf_rpc_server *rpcs,
                               int s, rpc_overlapped overlapped,
-                              size_t *bytes, te_bool wait,
+                              size_t *bytes, bool wait,
                               rpc_send_recv_flags *flags,
                               char *buf, int buflen)
 {
@@ -2085,7 +2085,7 @@ rpc_wsa_get_overlapped_result(rcf_rpc_server *rpcs,
         in.flags.flags_len = 1;
         in.flags.flags_val = (int *)flags;
     }
-    in.get_data = buf == NULL ? FALSE : TRUE;
+    in.get_data = buf == NULL ? false : true;
 
     rcf_rpc_call(rpcs, "wsa_get_overlapped_result", &in, &out);
 
@@ -2116,7 +2116,7 @@ rpc_wsa_get_overlapped_result(rcf_rpc_server *rpcs,
     }
 
     if (op == RCF_RPC_CALL)
-        out.retval = TRUE;
+        out.retval = true;
 
     CHECK_RETVAL_VAR_IS_BOOL(wsa_get_overlapped_result, out.retval);
     TAPI_RPC_LOG(rpcs, WSAGetOverlappedResult, "%d, %u, %s",
@@ -2179,7 +2179,7 @@ rpc_wsa_duplicate_socket(rcf_rpc_server *rpcs,
     RETVAL_INT(duplicate_socket, out.retval);
 }
 
-te_bool
+bool
 rpc_duplicate_handle(rcf_rpc_server *rpcs,
                      pid_t src, int old_fd,
                      pid_t tgt, int *new_fd)
@@ -2194,13 +2194,13 @@ rpc_duplicate_handle(rcf_rpc_server *rpcs,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        RETVAL_BOOL(duplicate_handle, FALSE);
+        RETVAL_BOOL(duplicate_handle, false);
     }
 
     if (new_fd == NULL)
     {
         ERROR("%s(): Invalid new handle pointer", __FUNCTION__);
-        RETVAL_BOOL(duplicate_handle, FALSE);
+        RETVAL_BOOL(duplicate_handle, false);
     }
 
     op = rpcs->op;
@@ -2212,7 +2212,7 @@ rpc_duplicate_handle(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "duplicate_handle", &in, &out);
 
     if (op == RCF_RPC_CALL)
-        out.retval = TRUE;
+        out.retval = true;
 
     *new_fd = out.fd;
 
@@ -2226,8 +2226,8 @@ rpc_duplicate_handle(rcf_rpc_server *rpcs,
 int
 rpc_wait_for_multiple_events(rcf_rpc_server *rpcs,
                              int count, rpc_wsaevent *events,
-                             te_bool wait_all, uint32_t timeout,
-                             te_bool alertable)
+                             bool wait_all, uint32_t timeout,
+                             bool alertable)
 {
     tarpc_wait_for_multiple_events_in  in;
     tarpc_wait_for_multiple_events_out out;
@@ -2274,7 +2274,7 @@ rpc_wait_for_multiple_events(rcf_rpc_server *rpcs,
         }
     }
 
-    CHECK_RETVAL_VAR(wait_for_multiple_events, out.retval, FALSE,
+    CHECK_RETVAL_VAR(wait_for_multiple_events, out.retval, false,
                      (int)WSA_WAIT_FAILED);
     TAPI_RPC_LOG(rpcs, WSAWaitForMultipleEvents,
                  "%d, %p, %s, %d, %s", "%s",
@@ -2289,15 +2289,15 @@ rpc_wait_for_multiple_events(rcf_rpc_server *rpcs,
  *
  * @param rpcs  RPC server handle
  *
- * @return TRUE, if it is definitely known that winsock2 is used and FALSE
+ * @return @c true, if it is definitely known that winsock2 is used and @c false
  *         otherwise
  */
-te_bool
+bool
 rpc_is_winsock2(rcf_rpc_server *rpcs)
 {
     rpc_wsaevent hevent;
     char        *value;
-    te_bool      result;
+    bool result;
     int          rc;
     cfg_handle   handle;
 
@@ -2305,7 +2305,7 @@ rpc_is_winsock2(rcf_rpc_server *rpcs)
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return FALSE;
+        return false;
     }
 
     /* First check that instance for TA exists in the configurator */
@@ -2327,14 +2327,14 @@ rpc_is_winsock2(rcf_rpc_server *rpcs)
         if (RPC_ERRNO(rpcs) != RPC_ERPCNOTSUPP)
         {
             ERROR("RPC failed with unexpected error");
-            return FALSE;
+            return false;
         }
-        result = FALSE;
+        result = false;
     }
     else
     {
         rpc_close_event(rpcs, hevent);
-        result = TRUE;
+        result = true;
     }
 
     if ((rc = cfg_add_instance_fmt(&handle, CVT_STRING,
@@ -2579,10 +2579,10 @@ rpc_wsa_connect(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
     in.callee_wsabuf = callee_wsabuf;
 
     if (sqos == NULL)
-        in.sqos_is_null = TRUE;
+        in.sqos_is_null = true;
     else
     {
-        in.sqos_is_null = FALSE;
+        in.sqos_is_null = false;
         in.sqos.sending = sqos->sending;
         in.sqos.receiving = sqos->receiving;
         in.sqos.provider_specific_buf.provider_specific_buf_val =
@@ -2867,10 +2867,10 @@ call:
     RETVAL_INT(wsa_ioctl, out.retval);
 }
 
-te_bool
+bool
 rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
                                     int s, rpc_overlapped overlapped,
-                                    int *bytes, te_bool wait,
+                                    int *bytes, bool wait,
                                     rpc_send_recv_flags *flags,
                                     char *buf,
                                     rpc_ioctl_code control_code)
@@ -2909,7 +2909,7 @@ rpc_get_wsa_ioctl_overlapped_result(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "get_wsa_ioctl_overlapped_result", &in, &out);
 
     if (op == RCF_RPC_CALL)
-        out.retval = TRUE;
+        out.retval = true;
 
     CHECK_RETVAL_VAR_IS_BOOL(get_wsa_ioctl_overlapped_result, out.retval);
 
@@ -3214,10 +3214,10 @@ rpc_wsa_join_leaf(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
     in.callee_wsabuf = callee_wsabuf;
 
     if (sqos == NULL)
-        in.sqos_is_null = TRUE;
+        in.sqos_is_null = true;
     else
     {
-        in.sqos_is_null = FALSE;
+        in.sqos_is_null = false;
         in.sqos.sending = *(tarpc_flowspec*)&sqos->sending;
         in.sqos.receiving = *(tarpc_flowspec*)&sqos->receiving;
         in.sqos.provider_specific_buf.provider_specific_buf_val =
@@ -3237,7 +3237,7 @@ rpc_wsa_join_leaf(rcf_rpc_server *rpcs, int s, const struct sockaddr *addr,
     RETVAL_INT(wsa_join_leaf, out.retval);
 }
 
-te_bool
+bool
 rpc_read_file(rcf_rpc_server *rpcs,
               int fd, void *buf, size_t count,
               size_t *received, rpc_overlapped overlapped)
@@ -3253,7 +3253,7 @@ rpc_read_file(rcf_rpc_server *rpcs,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return FALSE;
+        return false;
     }
 
     op = rpcs->op;
@@ -3272,7 +3272,7 @@ rpc_read_file(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "read_file", &in, &out);
 
     if (op == RCF_RPC_CALL)
-        out.retval = TRUE;
+        out.retval = true;
 
     CHECK_RETVAL_VAR_IS_BOOL(read_file, out.retval);
 
@@ -3291,7 +3291,7 @@ rpc_read_file(rcf_rpc_server *rpcs,
     RETVAL_BOOL(read_file, out.retval);
 }
 
-te_bool
+bool
 rpc_read_file_ex(rcf_rpc_server *rpcs,
                  int fd, void *buf, size_t count,
                  rpc_overlapped overlapped, const char *callback)
@@ -3306,7 +3306,7 @@ rpc_read_file_ex(rcf_rpc_server *rpcs,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return FALSE;
+        return false;
     }
 
     op = rpcs->op;
@@ -3323,7 +3323,7 @@ rpc_read_file_ex(rcf_rpc_server *rpcs,
     free(in.callback);
 
     if (op == RCF_RPC_CALL)
-        out.retval = TRUE;
+        out.retval = true;
 
     CHECK_RETVAL_VAR_IS_BOOL(read_file_ex, out.retval);
     TAPI_RPC_LOG(rpcs, ReadFileEx, "%d, %p, %u, %u, %s", "%d",
@@ -3331,7 +3331,7 @@ rpc_read_file_ex(rcf_rpc_server *rpcs,
     RETVAL_BOOL(read_file_ex, out.retval);
 }
 
-te_bool
+bool
 rpc_write_file(rcf_rpc_server *rpcs,
                int fd, void *buf, size_t count,
                size_t *sent, rpc_overlapped overlapped)
@@ -3347,7 +3347,7 @@ rpc_write_file(rcf_rpc_server *rpcs,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return FALSE;
+        return false;
     }
 
     op = rpcs->op;
@@ -3366,7 +3366,7 @@ rpc_write_file(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "write_file", &in, &out);
 
     if (op == RCF_RPC_CALL)
-        out.retval = TRUE;
+        out.retval = true;
 
     if (op != RCF_RPC_CALL && out.retval)
     {
@@ -3381,7 +3381,7 @@ rpc_write_file(rcf_rpc_server *rpcs,
     RETVAL_BOOL(write_file, out.retval);
 }
 
-te_bool
+bool
 rpc_write_file_ex(rcf_rpc_server *rpcs,
                  int fd, void *buf, size_t count,
                  rpc_overlapped overlapped, const char *callback)
@@ -3396,7 +3396,7 @@ rpc_write_file_ex(rcf_rpc_server *rpcs,
     if (rpcs == NULL)
     {
         ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
-        return FALSE;
+        return false;
     }
 
     op = rpcs->op;
@@ -3413,7 +3413,7 @@ rpc_write_file_ex(rcf_rpc_server *rpcs,
     free(in.callback);
 
     if (op == RCF_RPC_CALL)
-        out.retval = TRUE;
+        out.retval = true;
 
     CHECK_RETVAL_VAR_IS_BOOL(write_file_ex, out.retval);
     TAPI_RPC_LOG(rpcs, WriteFileEx, "%d, %p, %u, %u, %s", "%d",
@@ -3423,7 +3423,7 @@ rpc_write_file_ex(rcf_rpc_server *rpcs,
 
 int
 rpc_overfill_buffers_ex(rcf_rpc_server *rpcs, int sock, uint64_t *sent,
-                        te_bool is_nonblocking)
+                        bool is_nonblocking)
 {
     tarpc_overfill_buffers_in in;
     tarpc_overfill_buffers_out out;

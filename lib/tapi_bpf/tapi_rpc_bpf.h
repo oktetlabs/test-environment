@@ -53,7 +53,7 @@ extern int rpc_xsk_umem__delete(rcf_rpc_server *rpcs, rpc_ptr umem);
  * @param if_name       Interface name
  * @param queue_id      Rx queue id
  * @param umem          RPC pointer to UMEM
- * @param shared_umem   If @c TRUE, UMEM is shared with other sockets
+ * @param shared_umem   If @c true, UMEM is shared with other sockets
  * @oaram config        Configuration parameters
  * @param sock          RPC pointer to created socket structure on TA
  *
@@ -61,7 +61,7 @@ extern int rpc_xsk_umem__delete(rcf_rpc_server *rpcs, rpc_ptr umem);
  */
 extern int rpc_xsk_socket__create(rcf_rpc_server *rpcs, const char *if_name,
                                   uint32_t queue_id, rpc_ptr umem,
-                                  te_bool shared_umem,
+                                  bool shared_umem,
                                   tarpc_xsk_socket_config *config,
                                   rpc_ptr *sock);
 

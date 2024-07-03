@@ -408,17 +408,17 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
     uint32_t spec_tci = 0;
     uint32_t mask_tci = 0;
     uint32_t last_tci = 0;
-    te_bool is_empty = FALSE;
-    te_bool is_double_tagged = FALSE;
+    bool is_empty = false;
+    bool is_double_tagged = false;
     int rc;
 
     if (strcmp(label, "outer") == 0 || strcmp(label, "inner") == 0)
     {
-        is_double_tagged = TRUE;
+        is_double_tagged = true;
 
         rc = asn_get_subvalue(tagged_pdu, &vlan_pdu, label);
         if (rc == TE_EASNINCOMPLVAL)
-            is_empty = TRUE;
+            is_empty = true;
         else if (rc != 0)
             goto out;
     }
@@ -780,7 +780,7 @@ out:
     return rc;
 }
 
-static te_bool
+static bool
 rte_flow_is_zero_addr(const uint8_t *addr, unsigned int size)
 {
     uint8_t sum = 0;
@@ -789,7 +789,7 @@ rte_flow_is_zero_addr(const uint8_t *addr, unsigned int size)
     for (i = 0; i < size; i++)
         sum |= addr[i];
 
-    return (sum == 0) ? TRUE : FALSE;
+    return (sum == 0) ? true : false;
 }
 
 static te_errno

@@ -53,16 +53,16 @@ typedef te_errno (tapi_job_method_start)(const tapi_job_t *job);
 
 /**
  * Method that allocates @p n_channels channels.
- * If the @p input_channels is @c TRUE,
+ * If the @p input_channels is @c true,
  * the first channel is expected to be connected to the job's stdin;
- * If the @p input_channels is @c FALSE,
+ * If the @p input_channels is @c false,
  * The first and the second output channels are expected to be
  * connected to stdout and stderr respectively;
  * The wiring of not mentioned channels is spawner-dependant.
  *
  * @param[in]    job               Job instance handle
- * @param[in]    input_channels    @c TRUE to allocate input channels,
- *                                 @c FALSE to allocate output channels
+ * @param[in]    input_channels    @c true to allocate input channels,
+ *                                 @c false to allocate output channels
  * @param[in]    n_channels        Number of channels
  * @param[out]   channels          A vector of obtained channel handles
  *                                 (may be @c NULL if the caller is not
@@ -71,7 +71,7 @@ typedef te_errno (tapi_job_method_start)(const tapi_job_t *job);
  * @return       Status code
  */
 typedef te_errno (tapi_job_method_allocate_channels)(const tapi_job_t *job,
-                                                     te_bool input_channels,
+                                                     bool input_channels,
                                                      unsigned int n_channels,
                                                      unsigned int *channels);
 

@@ -105,7 +105,7 @@ main(int argc, char *argv[])
 
     uint8_t                     ip_header_len;
 
-    te_bool                     sum_ok;
+    bool sum_ok;
 
     TEST_START;
 
@@ -160,16 +160,16 @@ main(int argc, char *argv[])
 
     /* Prepare data-sending template */
     CHECK_RC(tapi_icmp4_add_pdu(&template, NULL,
-                                FALSE, type, code));
+                                false, type, code));
     CHECK_RC(tapi_ip4_add_pdu(&template, NULL,
-                              FALSE,
+                              false,
                               SIN(csap_addr)->sin_addr.s_addr,
                               SIN(sock_addr)->sin_addr.s_addr,
                               IPPROTO_ICMP,
                               -1,
                               -1));
     CHECK_RC(tapi_eth_add_pdu(&template, NULL,
-                              FALSE,
+                              false,
                               (const uint8_t *)sock_hwaddr->sa_data,
                               (const uint8_t *)csap_hwaddr->sa_data,
                               &ip_eth,
@@ -233,7 +233,7 @@ main(int argc, char *argv[])
     }
 
     if (strcmp(chksum, "correct") == 0)
-        sum_ok = TRUE;
+        sum_ok = true;
     else if (chksum[0] == '+')
     {
         char           *end;
@@ -244,7 +244,7 @@ main(int argc, char *argv[])
 
         CHECK_RC(asn_write_int32(template, v,
                                  "pdus.1.#ip4.pld-checksum.#diff"));
-        sum_ok = FALSE;
+        sum_ok = false;
     }
     else
         TEST_FAIL("Invalide 'chksum' parameter value '%s'", chksum);

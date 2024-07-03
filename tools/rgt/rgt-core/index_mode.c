@@ -34,7 +34,7 @@ static int index_process_regular_msg(log_msg *msg);
 /** Offset of the previous message in raw log */
 static off_t   prev_rawlog_fpos;
 /** Is the first message in raw log being processed? */
-static te_bool first_message;
+static bool first_message;
 
 /* See the description in index_mode.h */
 void
@@ -57,7 +57,7 @@ index_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST],
     root_proc[CTRL_EVT_END] = NULL;
 
     prev_rawlog_fpos = 0;
-    first_message = TRUE;
+    first_message = true;
 }
 
 /** Print the length of previous message, finishing its description  */
@@ -68,7 +68,7 @@ print_prev_length(void)
     {
         fprintf(rgt_ctx.out_fd, "0.0 0 0 0 FIRST %u ROOT",
                 TE_TIN_INVALID);
-        first_message = FALSE;
+        first_message = false;
     }
     if (prev_rawlog_fpos >= 0)
         fprintf(rgt_ctx.out_fd, " %lld\n",

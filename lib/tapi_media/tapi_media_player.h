@@ -178,9 +178,9 @@ extern te_errno tapi_media_player_get_errors(tapi_media_player *player);
  *
  * @param player    Player access point.
  *
- * @return @c TRUE if there are errors in counters.
+ * @return @c true if there are errors in counters.
  */
-extern te_bool tapi_media_player_check_errors(tapi_media_player *player);
+extern bool tapi_media_player_check_errors(tapi_media_player *player);
 
 /**
  * Print a number of errors sorted by type which were occurred during media

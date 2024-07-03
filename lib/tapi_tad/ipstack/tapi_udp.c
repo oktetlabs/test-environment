@@ -80,7 +80,7 @@ tapi_udp_add_csap_layer(asn_value **csap_spec,
 /* See the description in tapi_udp.h */
 te_errno
 tapi_udp_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
-                 te_bool is_pattern,
+                 bool is_pattern,
                  int src_port, int dst_port)
 {
     asn_value  *tmp_pdu;

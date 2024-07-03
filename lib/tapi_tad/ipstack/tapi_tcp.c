@@ -673,7 +673,7 @@ tapi_tcp_ip4_eth_recv_start(const char *ta_name, int sid,
 te_errno
 tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
                   tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-                  te_bool syn_flag, te_bool ack_flag,
+                  bool syn_flag, bool ack_flag,
                   uint8_t *msg)
 {
     if (msg == NULL)
@@ -721,7 +721,7 @@ tapi_tcp_make_msg(uint16_t src_port, uint16_t dst_port,
 te_errno
 tapi_tcp_pdu(int src_port, int dst_port,
              tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-             te_bool syn_flag, te_bool ack_flag,
+             bool syn_flag, bool ack_flag,
              asn_value **pdu)
 {
     te_errno    rc;
@@ -800,9 +800,9 @@ tapi_tcp_pdu(int src_port, int dst_port,
 
 /* See description in tapi_tcp.h */
 int
-tapi_tcp_template_gen(te_bool is_eth_pdu, te_bool force_ip6,
+tapi_tcp_template_gen(bool is_eth_pdu, bool force_ip6,
                       tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-                      te_bool syn_flag, te_bool ack_flag,
+                      bool syn_flag, bool ack_flag,
                       uint8_t *data, size_t pld_len,
                       asn_value **tmpl)
 {
@@ -832,7 +832,7 @@ tapi_tcp_template_gen(te_bool is_eth_pdu, te_bool force_ip6,
 
     if (!force_ip6)
     {
-        rc = asn_write_bool(*tmpl, TRUE, "pdus.0.#ip4.dont-frag.#plain");
+        rc = asn_write_bool(*tmpl, true, "pdus.0.#ip4.dont-frag.#plain");
         if (rc != 0)
         {
             ERROR("%s(): write ip4 dont-frag flag error: %r", __FUNCTION__, rc);
@@ -883,21 +883,21 @@ cleanup:
 
 /* See description in tapi_tcp.h */
 int
-tapi_tcp_template(te_bool force_ip6, tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-                  te_bool syn_flag, te_bool ack_flag,
+tapi_tcp_template(bool force_ip6, tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
+                  bool syn_flag, bool ack_flag,
                   uint8_t *data, size_t pld_len,
                   asn_value **tmpl)
 {
-    return tapi_tcp_template_gen(TRUE, force_ip6, seqn, ackn, syn_flag,
+    return tapi_tcp_template_gen(true, force_ip6, seqn, ackn, syn_flag,
                                  ack_flag, data, pld_len, tmpl);
 }
 
 int
-tapi_tcp_ip_segment_pattern_gen(te_bool is_eth_pdu, te_bool force_ip6,
+tapi_tcp_ip_segment_pattern_gen(bool is_eth_pdu, bool force_ip6,
                                 tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-                                te_bool urg_flag, te_bool ack_flag,
-                                te_bool psh_flag, te_bool rst_flag,
-                                te_bool syn_flag, te_bool fin_flag,
+                                bool urg_flag, bool ack_flag,
+                                bool psh_flag, bool rst_flag,
+                                bool syn_flag, bool fin_flag,
                                 asn_value **pattern)
 {
     int         rc = 0;
@@ -978,27 +978,27 @@ cleanup:
 }
 
 int
-tapi_tcp_ip_pattern_gen(te_bool is_eth_pdu, te_bool force_ip6,
+tapi_tcp_ip_pattern_gen(bool is_eth_pdu, bool force_ip6,
                         tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-                        te_bool syn_flag, te_bool ack_flag,
+                        bool syn_flag, bool ack_flag,
                         asn_value **pattern)
 {
     return tapi_tcp_ip_segment_pattern_gen(is_eth_pdu, force_ip6,
                                            seqn, ackn,
-                                           FALSE, ack_flag,
-                                           FALSE, FALSE,
-                                           syn_flag, FALSE,
+                                           false, ack_flag,
+                                           false, false,
+                                           syn_flag, false,
                                            pattern);
 }
 
 int
 tapi_tcp_segment_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-                         te_bool urg_flag, te_bool ack_flag,
-                         te_bool psh_flag, te_bool rst_flag,
-                         te_bool syn_flag, te_bool fin_flag,
+                         bool urg_flag, bool ack_flag,
+                         bool psh_flag, bool rst_flag,
+                         bool syn_flag, bool fin_flag,
                          asn_value **pattern)
 {
-    return tapi_tcp_ip_segment_pattern_gen(TRUE, FALSE, seqn, ackn,
+    return tapi_tcp_ip_segment_pattern_gen(true, false, seqn, ackn,
                                            urg_flag, ack_flag,
                                            psh_flag, rst_flag,
                                            syn_flag, fin_flag,
@@ -1006,14 +1006,14 @@ tapi_tcp_segment_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
 }
 
 int
-tapi_tcp_ip_segment_pattern(te_bool force_ip6,
+tapi_tcp_ip_segment_pattern(bool force_ip6,
                             tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-                            te_bool urg_flag, te_bool ack_flag,
-                            te_bool psh_flag, te_bool rst_flag,
-                            te_bool syn_flag, te_bool fin_flag,
+                            bool urg_flag, bool ack_flag,
+                            bool psh_flag, bool rst_flag,
+                            bool syn_flag, bool fin_flag,
                             asn_value **pattern)
 {
-    return tapi_tcp_ip_segment_pattern_gen(TRUE, force_ip6, seqn, ackn,
+    return tapi_tcp_ip_segment_pattern_gen(true, force_ip6, seqn, ackn,
                                            urg_flag, ack_flag,
                                            psh_flag, rst_flag,
                                            syn_flag, fin_flag,
@@ -1022,9 +1022,9 @@ tapi_tcp_ip_segment_pattern(te_bool force_ip6,
 
 /* See description in tapi_tcp.h */
 int
-tapi_tcp_pattern_gen(te_bool is_eth_pdu,
+tapi_tcp_pattern_gen(bool is_eth_pdu,
                      tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-                     te_bool syn_flag, te_bool ack_flag,
+                     bool syn_flag, bool ack_flag,
                      asn_value **pattern)
 {
     int rc = 0,
@@ -1086,10 +1086,10 @@ cleanup:
 /* See description in tapi_tcp.h */
 int
 tapi_tcp_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-                 te_bool syn_flag, te_bool ack_flag,
+                 bool syn_flag, bool ack_flag,
                  asn_value **pattern)
 {
-    return tapi_tcp_pattern_gen(TRUE, seqn, ackn,
+    return tapi_tcp_pattern_gen(true, seqn, ackn,
                                 syn_flag, ack_flag, pattern);
 }
 
@@ -1097,9 +1097,9 @@ tapi_tcp_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
 te_errno
 tapi_tcp_segment_pdu(int src_port, int dst_port,
                      tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-                     te_bool urg_flag, te_bool ack_flag,
-                     te_bool psh_flag, te_bool rst_flag,
-                     te_bool syn_flag, te_bool fin_flag,
+                     bool urg_flag, bool ack_flag,
+                     bool psh_flag, bool rst_flag,
+                     bool syn_flag, bool fin_flag,
                      asn_value **pdu)
 {
     te_errno    rc;
@@ -1186,11 +1186,11 @@ tapi_tcp_segment_pdu(int src_port, int dst_port,
 
 /* See description in tapi_tcp.h */
 int
-tapi_tcp_ip_segment_template_gen(te_bool is_eth_pdu, te_bool force_ip6,
+tapi_tcp_ip_segment_template_gen(bool is_eth_pdu, bool force_ip6,
                                  tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-                                 te_bool urg_flag, te_bool ack_flag,
-                                 te_bool psh_flag, te_bool rst_flag,
-                                 te_bool syn_flag, te_bool fin_flag,
+                                 bool urg_flag, bool ack_flag,
+                                 bool psh_flag, bool rst_flag,
+                                 bool syn_flag, bool fin_flag,
                                  uint8_t *data, size_t pld_len,
                                  asn_value **tmpl)
 {
@@ -1251,17 +1251,17 @@ cleanup:
 }
 
 int
-tapi_tcp_ip_template_gen(te_bool is_eth_pdu, te_bool force_ip6,
+tapi_tcp_ip_template_gen(bool is_eth_pdu, bool force_ip6,
                          tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-                         te_bool syn_flag, te_bool ack_flag,
+                         bool syn_flag, bool ack_flag,
                          uint8_t *data, size_t pld_len,
                          asn_value **tmpl)
 {
     return tapi_tcp_ip_segment_template_gen(is_eth_pdu, force_ip6,
                                             seqn, ackn,
-                                            FALSE, ack_flag,
-                                            FALSE, FALSE,
-                                            syn_flag, FALSE,
+                                            false, ack_flag,
+                                            false, false,
+                                            syn_flag, false,
                                             data, pld_len,
                                             tmpl);
 }
@@ -1270,13 +1270,13 @@ tapi_tcp_ip_template_gen(te_bool is_eth_pdu, te_bool force_ip6,
 int
 tapi_tcp_segment_template(tapi_tcp_pos_t seqn,
                           tapi_tcp_pos_t ackn,
-                          te_bool urg_flag, te_bool ack_flag,
-                          te_bool psh_flag, te_bool rst_flag,
-                          te_bool syn_flag, te_bool fin_flag,
+                          bool urg_flag, bool ack_flag,
+                          bool psh_flag, bool rst_flag,
+                          bool syn_flag, bool fin_flag,
                           uint8_t *data, size_t pld_len,
                           asn_value **tmpl)
 {
-    return tapi_tcp_ip_segment_template_gen(TRUE, FALSE, seqn, ackn,
+    return tapi_tcp_ip_segment_template_gen(true, false, seqn, ackn,
                                             urg_flag, ack_flag,
                                             psh_flag, rst_flag,
                                             syn_flag, fin_flag,
@@ -1286,16 +1286,16 @@ tapi_tcp_segment_template(tapi_tcp_pos_t seqn,
 
 /* See description in tapi_tcp.h */
 int
-tapi_tcp_ip_segment_template(te_bool force_ip6,
+tapi_tcp_ip_segment_template(bool force_ip6,
                              tapi_tcp_pos_t seqn,
                              tapi_tcp_pos_t ackn,
-                             te_bool urg_flag, te_bool ack_flag,
-                             te_bool psh_flag, te_bool rst_flag,
-                             te_bool syn_flag, te_bool fin_flag,
+                             bool urg_flag, bool ack_flag,
+                             bool psh_flag, bool rst_flag,
+                             bool syn_flag, bool fin_flag,
                              uint8_t *data, size_t pld_len,
                              asn_value **tmpl)
 {
-    return tapi_tcp_ip_segment_template_gen(TRUE, force_ip6, seqn, ackn,
+    return tapi_tcp_ip_segment_template_gen(true, force_ip6, seqn, ackn,
                                             urg_flag, ack_flag,
                                             psh_flag, rst_flag,
                                             syn_flag, fin_flag,
@@ -1305,7 +1305,7 @@ tapi_tcp_ip_segment_template(te_bool force_ip6,
 
 int
 tapi_tcp_reset_hack_init(const char *ta_name, int session,
-                         const char *iface, te_bool dir_out,
+                         const char *iface, bool dir_out,
                          tapi_tcp_reset_hack_t *context)
 {
     int rc;
@@ -1331,7 +1331,7 @@ tapi_tcp_reset_hack_init(const char *ta_name, int session,
         return TE_RC(TE_TAPI, rc);
     }
 
-    rc = tapi_tcp_pattern(0, 0, TRUE, TRUE, &syn_ack_pat);
+    rc = tapi_tcp_pattern(0, 0, true, true, &syn_ack_pat);
 
     if (context->loc_port)
         asn_write_int32(syn_ack_pat, context->loc_port,
@@ -1357,7 +1357,7 @@ tapi_tcp_reset_hack_init(const char *ta_name, int session,
         return TE_RC(TE_TAPI, rc);
     }
 
-    context->catched = FALSE;
+    context->catched = false;
 
     return 0;
 }
@@ -1439,7 +1439,7 @@ tcp_reset_hack_pkt_handler(const char *pkt_file, void *user_param)
         asn_read_value_field(pkt, &(context->loc_ip_addr), &v_len,
                              "pdus.1.#ip4.src-addr.#plain");
 
-    context->catched = TRUE;
+    context->catched = true;
 
 cleanup:
     asn_free_value(pkt);
@@ -1480,9 +1480,9 @@ tapi_tcp_reset_hack_send(const char *ta_name, int session,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    rc = tapi_tcp_template(FALSE, context->loc_start_seq + sent,
+    rc = tapi_tcp_template(false, context->loc_start_seq + sent,
                            context->rem_start_seq + received,
-                           FALSE, TRUE, NULL, 0, &reset_tmpl);
+                           false, true, NULL, 0, &reset_tmpl);
     if (rc != 0)
         ERROR("make reset template failed %r", rc);
     asn_write_int32(reset_tmpl, TCP_RST_FLAG | TCP_ACK_FLAG,
@@ -1743,8 +1743,8 @@ tapi_tcp_set_ts_opt(asn_value *val,
 
     if (ts_opt != NULL)
     {
-        CHECK_WRITE_OPT(ts_opt, TRUE, ts_value, "value.#plain");
-        CHECK_WRITE_OPT(ts_opt, TRUE, ts_echo, "echo.#plain");
+        CHECK_WRITE_OPT(ts_opt, true, ts_value, "value.#plain");
+        CHECK_WRITE_OPT(ts_opt, true, ts_echo, "echo.#plain");
     }
     else if (options != NULL)
     {
@@ -1756,10 +1756,10 @@ tapi_tcp_set_ts_opt(asn_value *val,
             return TE_EFAIL;
         }
 
-        CHECK_WRITE_OPT(options, TRUE, ts_value,
+        CHECK_WRITE_OPT(options, true, ts_value,
                         "%u.#timestamp.value.#plain",
                         (unsigned int)opts_num);
-        CHECK_WRITE_OPT(options, TRUE, ts_echo,
+        CHECK_WRITE_OPT(options, true, ts_echo,
                         "%u.#timestamp.echo-reply.#plain",
                         (unsigned int)opts_num);
 
@@ -1769,19 +1769,19 @@ tapi_tcp_set_ts_opt(asn_value *val,
          * timestamp takes 80 bits, so we need additional 16 bits
          * for alignment.
          */
-        CHECK_WRITE_OPT(options, FALSE, 0,
+        CHECK_WRITE_OPT(options, false, 0,
                         "%u.#nop", (unsigned int)opts_num + 1);
-        CHECK_WRITE_OPT(options, FALSE, 0,
+        CHECK_WRITE_OPT(options, false, 0,
                         "%u.#nop", (unsigned int)opts_num + 2);
     }
     else
     {
-        CHECK_WRITE_OPT(tcp_pdu, TRUE, ts_value,
+        CHECK_WRITE_OPT(tcp_pdu, true, ts_value,
                         "options.0.#timestamp.value.#plain");
-        CHECK_WRITE_OPT(tcp_pdu, TRUE, ts_echo,
+        CHECK_WRITE_OPT(tcp_pdu, true, ts_echo,
                         "options.0.#timestamp.echo-reply.#plain");
-        CHECK_WRITE_OPT(tcp_pdu, FALSE, 0, "options.1.#nop");
-        CHECK_WRITE_OPT(tcp_pdu, FALSE, 0, "options.2.#nop");
+        CHECK_WRITE_OPT(tcp_pdu, false, 0, "options.1.#nop");
+        CHECK_WRITE_OPT(tcp_pdu, false, 0, "options.2.#nop");
     }
 
     return 0;

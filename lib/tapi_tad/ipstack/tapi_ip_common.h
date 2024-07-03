@@ -29,8 +29,8 @@ typedef struct tapi_ip_frag_spec {
     uint32_t    real_offset;    /**< Begin of frag data in real payload */
     size_t      hdr_length;     /**< Value for "length" in IP header */
     size_t      real_length;    /**< Length of frag data in real payload */
-    te_bool     more_frags;     /**< Value for "more frags" flag */
-    te_bool     dont_frag;      /**< Value for "don't frag" flag */
+    bool more_frags;     /**< Value for "more frags" flag */
+    bool dont_frag;      /**< Value for "don't frag" flag */
     int64_t     id;             /**< Value for ID field; ignored if
                                      negative */
 } tapi_ip_frag_spec;
@@ -114,7 +114,7 @@ extern te_errno tapi_tcp_udp_ip_eth_csap_create(
  *                      specification; on return, if this parameter is
  *                      not @c NULL, pointer to IP PDU will be saved
  *                      in it
- * @param ipv4          If @c TRUE, IPv4 PDU is processed, otherwise
+ * @param ipv4          If @c true, IPv4 PDU is processed, otherwise
  *                      IPv6 PDU
  * @param fragments     Array with IP fragments specifications
  * @param num_frags     Number of IP fragments
@@ -123,7 +123,7 @@ extern te_errno tapi_tcp_udp_ip_eth_csap_create(
  */
 extern te_errno tapi_ip_pdu_tmpl_fragments(asn_value **tmpl,
                                            asn_value **pdu,
-                                           te_bool ipv4,
+                                           bool ipv4,
                                            tapi_ip_frag_spec *fragments,
                                            unsigned int num_frags);
 

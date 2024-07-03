@@ -132,7 +132,7 @@ main(int argc, char *argv[])
         len = sizeof(rx_buffer);
         memset(rx_buffer, 0, len);
         rc = tapi_tcp_buffer_recv(agt_a, 0, acc_csap, 2000,
-                                  CSAP_INVALID_HANDLE, FALSE,
+                                  CSAP_INVALID_HANDLE, false,
                                   rx_buffer, &len);
         if (rc != 0)
             TEST_FAIL("recv from NET failed: %r", rc);

@@ -96,7 +96,7 @@ typedef struct csap_layer_t {
     te_tad_protocols_t  proto_tag;           /**< Protocol layer int tag */
 
     void        *specific_data;              /**< Protocol-specific data */
-    te_bool      rw_use_tad_pkt_seg_tagging; /**< This layer has to make use of
+    bool rw_use_tad_pkt_seg_tagging; /**< This layer has to make use of
                                                   layer tag field in TAD packet
                                                   segment control blocks during
                                                   read-write opearation */

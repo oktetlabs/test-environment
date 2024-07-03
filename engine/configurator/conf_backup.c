@@ -70,7 +70,7 @@ cfg_register_dependency(xmlNodePtr node, const char *dependant)
                             xmlStrcmp(scope,
                                       (const xmlChar *)"object") == 0);
         strcpy(msg->oid, (char *)oid);
-        cfg_process_msg((cfg_msg **)&msg, TRUE);
+        cfg_process_msg((cfg_msg **)&msg, true);
         if (msg->rc != 0)
         {
             ERROR("Cannot add dependency for %s: %r", oid, msg->rc);
@@ -87,12 +87,12 @@ cfg_register_dependency(xmlNodePtr node, const char *dependant)
  * Parse all objects specified in the configuration file.
  *
  * @param node     first object node
- * @param reg      if TRUE, register objects
+ * @param reg      if @c true, register objects
  *
  * @return status code (see te_errno.h)
  */
 static int
-register_objects(xmlNodePtr *node, te_bool reg)
+register_objects(xmlNodePtr *node, bool reg)
 {
     xmlNodePtr cur = *node;
 
@@ -144,7 +144,7 @@ register_objects(xmlNodePtr *node, te_bool reg)
                               xmlStrcmp(parent_dep,
                                         (const xmlChar *)"no") == 0);
         msg->val_type = CVT_NONE;
-        msg->substitution = FALSE;
+        msg->substitution = false;
         strcpy(msg->oid, (char *)oid);
         if (def_val != NULL)
         {
@@ -187,7 +187,7 @@ register_objects(xmlNodePtr *node, te_bool reg)
         if ((attr = xmlGetProp(cur, (const xmlChar *)"volatile")) != NULL)
         {
             if (strcmp((char *)attr, "true") == 0)
-                msg->vol = TRUE;
+                msg->vol = true;
             else if (strcmp((char *)attr, "false") != 0)
                 RETERR(TE_EINVAL, "Volatile should be specified using "
                        "\"true\" or \"false\"");
@@ -198,7 +198,7 @@ register_objects(xmlNodePtr *node, te_bool reg)
         {
             if (strcmp((char *)attr, "true") == 0)
             {
-                msg->unit = TRUE;
+                msg->unit = true;
             }
             else if (strcmp((char *)attr, "false") != 0)
             {
@@ -236,7 +236,7 @@ register_objects(xmlNodePtr *node, te_bool reg)
         }
         attr = NULL;
 
-        cfg_process_msg((cfg_msg **)&msg, TRUE);
+        cfg_process_msg((cfg_msg **)&msg, true);
         if (msg->rc != 0)
             RETERR(msg->rc, "Failed to register object %s", msg->oid);
 
@@ -382,10 +382,10 @@ parse_instances(xmlNodePtr node, cfg_instance **list,
  * @return status code (see te_errno.h)
  */
 static int
-delete_with_children(cfg_instance *inst, te_bool *has_deps)
+delete_with_children(cfg_instance *inst, bool *has_deps)
 {
     cfg_del_msg msg = { .type = CFG_DEL, .len = sizeof(cfg_del_msg),
-                        .rc = 0, .handle = 0, .local = FALSE};
+                        .rc = 0, .handle = 0, .local = false};
     cfg_msg    *p_msg = (cfg_msg *)&msg;
     int         rc;
 
@@ -398,7 +398,7 @@ delete_with_children(cfg_instance *inst, te_bool *has_deps)
         return 0;
 
     if (inst->obj->dependants != NULL)
-        *has_deps = TRUE;
+        *has_deps = true;
 
     for (tmp = inst->son; tmp != NULL; tmp = next)
     {
@@ -409,7 +409,7 @@ delete_with_children(cfg_instance *inst, te_bool *has_deps)
 
     msg.handle = inst->handle;
 
-    cfg_process_msg(&p_msg, TRUE);
+    cfg_process_msg(&p_msg, true);
 
     /*
      * modifications below are related to OL Bug 6111.
@@ -445,9 +445,9 @@ topo_qsort_predicate(const void *arg1, const void *arg2)
  * @param subtrees Vector of the subtrees.
  * @param oid      Instance oid to check.
  *
- * @return @c TRUE if oid belongs to subtree
+ * @return @c true if oid belongs to subtree
  */
-static te_bool
+static bool
 check_oid_contains_subtrees(const te_vec *subtrees, const char *oid)
 {
     char * const *subtree;
@@ -455,25 +455,25 @@ check_oid_contains_subtrees(const te_vec *subtrees, const char *oid)
     if (subtrees == NULL || te_vec_size(subtrees) == 0)
     {
         if (strcmp_start("/", oid) == 0)
-            return TRUE;
+            return true;
         else
-            return FALSE;
+            return false;
     }
 
     TE_VEC_FOREACH(subtrees, subtree)
     {
         if (strcmp_start(*subtree, oid) == 0)
-            return TRUE;
+            return true;
     }
 
-    return FALSE;
+    return false;
 }
 
 /**
  * Delete all instances from CS not mentioned in the configuration file
  *
  * @param list          list of instances mentioned in the configuration file
- * @param[out] has_deps @c TRUE, if there are objects that depend on
+ * @param[out] has_deps @c true, if there are objects that depend on
  *                      at least one object from the @p list
  * @param subtrees      Vector of the subtrees to delete. May be @c NULL
  *                      for the root subtree.
@@ -481,7 +481,7 @@ check_oid_contains_subtrees(const te_vec *subtrees, const char *oid)
  * @return status code (see te_errno.h)
  */
 static int
-remove_excessive(cfg_instance *list, te_bool *has_deps, const te_vec *subtrees)
+remove_excessive(cfg_instance *list, bool *has_deps, const te_vec *subtrees)
 {
     int rc;
     uint64_t n_deletable;
@@ -541,17 +541,17 @@ remove_excessive(cfg_instance *list, te_bool *has_deps, const te_vec *subtrees)
  * Add instance or change its value.
  *
  * @param inst          Object instance to be added or changed
- * @param local         If @c TRUE, make local changes to be committed later
- * @param has_deps      Will be set to @c TRUE if changes in other instances
+ * @param local         If @c true, make local changes to be committed later
+ * @param has_deps      Will be set to @c true if changes in other instances
  *                      may happen due to dependencies
- * @param change_made   Will be set to @c TRUE if any change was made
+ * @param change_made   Will be set to @c true if any change was made
  *                      to configuration
  *
  * @return Status code (see errno.h)
  */
 static int
-add_or_set(cfg_instance *inst, te_bool local, te_bool *has_deps,
-           te_bool *change_made)
+add_or_set(cfg_instance *inst, bool local, bool *has_deps,
+           bool *change_made)
 {
     if (cfg_inst_agent(inst))
         return 0;
@@ -580,7 +580,7 @@ add_or_set(cfg_instance *inst, te_bool local, te_bool *has_deps,
             return 0;
         }
         if (inst->obj->dependants != NULL)
-            *has_deps = TRUE;
+            *has_deps = true;
 
         msg = (cfg_set_msg *)calloc(sizeof(*msg) +
                                     CFG_MAX_INST_VALUE, 1);
@@ -595,12 +595,12 @@ add_or_set(cfg_instance *inst, te_bool local, te_bool *has_deps,
         t = msg->val_type = inst->obj->type;
         cfg_types[t].put_to_msg(inst->val, (cfg_msg *)msg);
         msg->local = local;
-        cfg_process_msg(&p_msg, TRUE);
+        cfg_process_msg(&p_msg, true);
         rc = msg->rc;
         free(msg);
 
         if (rc == 0)
-            *change_made = TRUE;
+            *change_made = true;
 
         return rc;
     }
@@ -616,7 +616,7 @@ add_or_set(cfg_instance *inst, te_bool local, te_bool *has_deps,
             return TE_ENOMEM;
 
         if (inst->obj->dependants != NULL)
-            *has_deps = TRUE;
+            *has_deps = true;
 
         msg->type = CFG_ADD;
         msg->len = sizeof(*msg);
@@ -626,13 +626,13 @@ add_or_set(cfg_instance *inst, te_bool local, te_bool *has_deps,
         msg->len += strlen(inst->oid) + 1;
         strcpy((char *)msg + msg->oid_offset, inst->oid);
         msg->local = local;
-        cfg_process_msg((cfg_msg **)&msg, TRUE);
+        cfg_process_msg((cfg_msg **)&msg, true);
 
         rc = msg->rc;
         free(msg);
 
         if (rc == 0)
-            *change_made = TRUE;
+            *change_made = true;
 
         return rc;
     }
@@ -712,21 +712,21 @@ topo_sort_instances(cfg_instance *list, unsigned int list_size)
  * @param inst          Instance to restore
  * @param local         Whether to make only local changes to be
  *                      committed later
- * @param need_retry    Will be set to @c TRUE if another attempt
+ * @param need_retry    Will be set to @c true if another attempt
  *                      to restore from backup is needed because
  *                      some instances are missing
- * @param change_made   Will be set to @c TRUE if any change was made
+ * @param change_made   Will be set to @c true if any change was made
  *                      to configuration
- * @param has_deps      Will be set to @c TRUE if made changes could
+ * @param has_deps      Will be set to @c true if made changes could
  *                      have produced changes in other instances due to
  *                      dependencies
  *
  * @return Status code.
  */
 static te_errno
-restore_entry_aux(cfg_instance *inst, te_bool local,
-                  te_bool *need_retry, te_bool *change_made,
-                  te_bool *has_deps)
+restore_entry_aux(cfg_instance *inst, bool local,
+                  bool *need_retry, bool *change_made,
+                  bool *has_deps)
 {
     int rc;
     cfg_instance *child;
@@ -734,12 +734,12 @@ restore_entry_aux(cfg_instance *inst, te_bool local,
     switch (rc = add_or_set(inst, local, has_deps, change_made))
     {
         case 0:
-            inst->added = TRUE;
+            inst->added = true;
             break;
 
         case TE_ENOENT:
             /* do nothing */
-            *need_retry = TRUE;
+            *need_retry = true;
             break;
 
         default:
@@ -751,7 +751,7 @@ restore_entry_aux(cfg_instance *inst, te_bool local,
         return 0;
 
     /*
-     * local=TRUE is used for instances of "unit" objects; all their
+     * local=true is used for instances of "unit" objects; all their
      * children should be updated and then all the changes should be
      * committed at once.
      */
@@ -770,25 +770,25 @@ restore_entry_aux(cfg_instance *inst, te_bool local,
  * Restore the single instance from backup.
  *
  * @param inst          Instance to restore
- * @param need_retry    Will be set to @c TRUE if another attempt
+ * @param need_retry    Will be set to @c true if another attempt
  *                      to restore from backup is needed because
  *                      some instances are missing
- * @param change_made   Will be set to @c TRUE if any change was made
+ * @param change_made   Will be set to @c true if any change was made
  *                      to configuration
- * @param has_deps      Will be set to @c TRUE if made changes could
+ * @param has_deps      Will be set to @c true if made changes could
  *                      have produced changes in other instances due to
  *                      dependencies
  *
  * @return Status code.
  */
 static te_errno
-restore_entry(cfg_instance *inst, te_bool *need_retry,
-              te_bool *change_made, te_bool *has_deps)
+restore_entry(cfg_instance *inst, bool *need_retry,
+              bool *change_made, bool *has_deps)
 {
     te_errno rc;
     cfg_commit_msg *msg = NULL;
     size_t size;
-    te_bool change_made_aux = FALSE;
+    bool change_made_aux = false;
 
     rc = restore_entry_aux(inst, inst->obj->unit,
                            need_retry, &change_made_aux, has_deps);
@@ -796,7 +796,7 @@ restore_entry(cfg_instance *inst, te_bool *need_retry,
         return rc;
 
     if (change_made_aux)
-        *change_made = TRUE;
+        *change_made = true;
 
     if (!inst->obj->unit || !change_made_aux)
         return 0;
@@ -813,7 +813,7 @@ restore_entry(cfg_instance *inst, te_bool *need_retry,
     msg->len = size;
     strcpy(msg->oid, inst->oid);
 
-    cfg_process_msg((cfg_msg **)&msg, TRUE);
+    cfg_process_msg((cfg_msg **)&msg, true);
     rc = msg->rc;
     free(msg);
 
@@ -1000,11 +1000,11 @@ restore_entries(cfg_instance *list, unsigned int list_size,
                 const te_vec *subtrees)
 {
     int           rc;
-    te_bool       change_made = FALSE;
+    bool change_made = false;
     int           n_iterations    = 0;
-    te_bool       need_retry      = FALSE;
+    bool need_retry = false;
     cfg_instance *iter;
-    te_bool       deps_might_fire = TRUE;
+    bool deps_might_fire = true;
 
     /*
      * Lists of children are not filled for instances read from a backup
@@ -1021,7 +1021,7 @@ restore_entries(cfg_instance *list, unsigned int list_size,
 
     while (deps_might_fire)
     {
-        deps_might_fire = FALSE;
+        deps_might_fire = false;
         if ((rc = remove_excessive(list, &deps_might_fire, subtrees)) != 0)
         {
             ERROR("Failed to remove excessive entries");
@@ -1031,8 +1031,8 @@ restore_entries(cfg_instance *list, unsigned int list_size,
 
         do
         {
-            change_made = FALSE;
-            need_retry  = FALSE;
+            change_made = false;
+            need_retry  = false;
             for (iter = list; iter != NULL; iter = iter->bkp_next)
             {
                 if (iter->added || iter->obj->unit_part)
@@ -1058,7 +1058,7 @@ restore_entries(cfg_instance *list, unsigned int list_size,
         }
 
         if (deps_might_fire)
-            cfg_ta_sync("/:", TRUE);
+            cfg_ta_sync("/:", true);
         if (n_iterations++ > 10)
         {
             WARN("Loop dependency suspected, aborting");
@@ -1075,7 +1075,7 @@ restore_entries(cfg_instance *list, unsigned int list_size,
  * Process "backup" configuration file or backup file.
  *
  * @param node     <backup> node pointer
- * @param restore  if TRUE, the configuration should be restored after
+ * @param restore  if @c true, the configuration should be restored after
  *                 unsuccessful dynamic history restoring
  * @param subtrees Vector of the subtrees to restore. May be @c NULL for
  *                 the root.
@@ -1083,7 +1083,7 @@ restore_entries(cfg_instance *list, unsigned int list_size,
  * @return status code (errno.h)
  */
 int
-cfg_backup_process_file(xmlNodePtr node, te_bool restore,
+cfg_backup_process_file(xmlNodePtr node, bool restore,
                         const te_vec *subtrees)
 {
     cfg_instance *list;
@@ -1105,7 +1105,7 @@ cfg_backup_process_file(xmlNodePtr node, te_bool restore,
 
     if (!restore)
     {
-        if ((rc = cfg_ta_sync("/:", TRUE)) != 0)
+        if ((rc = cfg_ta_sync("/:", true)) != 0)
         {
             ERROR("Cannot synchronize database with Test Agents");
             return rc;
@@ -1138,7 +1138,7 @@ cfg_backup_restore_ta(char *ta)
 
     sprintf(buf, CFG_TA_PREFIX"%s", ta);
 
-    if ((rc = cfg_ta_sync(buf, TRUE)) != 0)
+    if ((rc = cfg_ta_sync(buf, true)) != 0)
     {
         return rc;
     }
@@ -1424,7 +1424,7 @@ cfg_backup_wrapper(const char *filename, const te_vec *subtrees, uint8_t op)
     len = strlen(filename) + 1;
     memcpy((char *)msg + msg->filename_offset, filename, len);
 
-    cfg_process_msg((cfg_msg **)&msg, FALSE);
+    cfg_process_msg((cfg_msg **)&msg, false);
 
     rc = msg->rc;
     free(msg);

@@ -52,7 +52,7 @@ te_timer_start(te_timer_t *timer, unsigned int timeout_s)
 
     /* Create the timer */
     TE_TIMER_CHECK_ERRNO(timer_create(TE_TIMER_CLOCKID, &sev, &timer->id));
-    timer->is_valid = TRUE;
+    timer->is_valid = true;
 
     /* Start the timer */
     trigger.it_value.tv_sec = timeout_s;
@@ -95,7 +95,7 @@ te_timer_stop(te_timer_t *timer)
     if (timer->is_valid)
     {
         TE_TIMER_CHECK_ERRNO(timer_delete(timer->id));
-        timer->is_valid = FALSE;
+        timer->is_valid = false;
     }
 
     return 0;

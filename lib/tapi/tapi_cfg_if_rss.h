@@ -227,7 +227,7 @@ extern te_errno tapi_cfg_if_rss_print_indir_table(
 /** Information about RSS hash function */
 typedef struct tapi_cfg_if_rss_hfunc {
     char name[TAPI_CFG_IF_RSS_HFUNC_NAME_LEN];  /**< Function name */
-    te_bool enabled; /**< Whether function is enabled */
+    bool enabled; /**< Whether function is enabled */
 } tapi_cfg_if_rss_hfunc;
 
 /**

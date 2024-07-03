@@ -67,10 +67,10 @@ extern int rcf_net_engine_transmit(struct rcf_net_connection *rnc,
  * @param rnc       - Handler received from rcf_net_engine_connect.
  *
  * @return Status code.
- * @retval TRUE     - Data are pending.
- * @retval FALSE    - No data are pending.
+ * @retval @c true     Data are pending.
+ * @retval @c false    No data are pending.
  */
-extern te_bool rcf_net_engine_is_ready(struct rcf_net_connection *rnc);
+extern bool rcf_net_engine_is_ready(struct rcf_net_connection *rnc);
 
 
 /**

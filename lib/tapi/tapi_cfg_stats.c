@@ -73,7 +73,7 @@ tapi_cfg_stats_if_stats_get(const char          *ta,
 
     VERB("Try to sync stats");
 
-    rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s/stats:",
+    rc = cfg_synchronize_fmt(true, "/agent:%s/interface:%s/stats:",
                              ta, ifname);
     if (rc != 0)
         return rc;
@@ -137,7 +137,7 @@ tapi_cfg_stats_net_stats_get(const char          *ta,
 
     VERB("Try to sync stats");
 
-    rc = cfg_synchronize_fmt(TRUE, "/agent:%s/stats:", ta);
+    rc = cfg_synchronize_fmt(true, "/agent:%s/stats:", ta);
     if (rc != 0)
         return rc;
 

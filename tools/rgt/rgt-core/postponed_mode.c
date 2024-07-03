@@ -144,7 +144,7 @@ static void
 append_attr(const char *name, const char *value)
 {
     fprintf(rgt_ctx.out_fd, " %s=\"", name);
-    write_xml_string(NULL, value, TRUE);
+    write_xml_string(NULL, value, true);
     fprintf(rgt_ctx.out_fd, "\"");
 }
 
@@ -307,13 +307,13 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
     if (node->descr.objective != NULL)
     {
         fputs("<objective>", rgt_ctx.out_fd);
-        write_xml_string(NULL, node->descr.objective, FALSE);
+        write_xml_string(NULL, node->descr.objective, false);
         fputs("</objective>\n", rgt_ctx.out_fd);
     }
     if (node->descr.page != NULL)
     {
         fputs("<page>", rgt_ctx.out_fd);
-        write_xml_string(NULL, node->descr.page, FALSE);
+        write_xml_string(NULL, node->descr.page, false);
         fputs("</page>\n", rgt_ctx.out_fd);
     }
     if (node->descr.authors_num > 0)
@@ -332,14 +332,14 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
             if (author->name != NULL)
             {
                 fputs(" name=\"", rgt_ctx.out_fd);
-                write_xml_string(NULL, author->name, TRUE);
+                write_xml_string(NULL, author->name, true);
                 fputs("\"", rgt_ctx.out_fd);
             }
 
             if (author->email != NULL)
             {
                 fputs(" email=\"", rgt_ctx.out_fd);
-                write_xml_string(NULL, author->email, TRUE);
+                write_xml_string(NULL, author->email, true);
                 fputs("\"", rgt_ctx.out_fd);
             }
 
@@ -519,7 +519,7 @@ output_regular_log_msg(log_msg *msg)
 
     if (msg->txt_msg != NULL)
     {
-        write_xml_string(log_obstk, msg->txt_msg, FALSE);
+        write_xml_string(log_obstk, msg->txt_msg, false);
     }
     else
     {
@@ -538,7 +538,7 @@ output_regular_log_msg(log_msg *msg)
                 {
                     /* Too few arguments in the message */
                     /* Simply write the rest of format string to the log */
-                    write_xml_string(log_obstk, msg->fmt_str + i, FALSE);
+                    write_xml_string(log_obstk, msg->fmt_str + i, false);
                     break;
                 }
 
@@ -559,7 +559,7 @@ output_regular_log_msg(log_msg *msg)
                         else
                         {
                             c_buf[0] = (char)val;
-                            write_xml_string(log_obstk, c_buf, FALSE);
+                            write_xml_string(log_obstk, c_buf, false);
                         }
 
                         i++;
@@ -616,7 +616,7 @@ output_regular_log_msg(log_msg *msg)
                     case 's':
                     {
                         write_xml_string(log_obstk, (const char *)arg->val,
-                                         FALSE);
+                                         false);
                         i++;
 
                         continue;
@@ -633,11 +633,11 @@ output_regular_log_msg(log_msg *msg)
                         src = te_rc_mod2str(err);
                         if (strlen(src) > 0)
                         {
-                            write_xml_string(log_obstk, src, FALSE);
+                            write_xml_string(log_obstk, src, false);
                             obstack_1grow(log_obstk, '-');
                         }
                         write_xml_string(log_obstk, te_rc_err2str(err),
-                                         FALSE);
+                                         false);
                         i++;
 
                         continue;
@@ -650,7 +650,7 @@ output_regular_log_msg(log_msg *msg)
                         int  tuple_width;
                         int  cur_pos = 0;
                         char one_byte_str[3];
-                        int  default_format = FALSE;
+                        int  default_format = false;
                         int  k;
 
                         /* @todo think of better way to implement this! */
@@ -661,7 +661,7 @@ output_regular_log_msg(log_msg *msg)
                             obstack_printf(log_obstk,
                                            "<file name=\"%s\">", "TODO");
                             write_xml_string(log_obstk,
-                                             (const char *)arg->val, FALSE);
+                                             (const char *)arg->val, false);
                             /* End file tag */
                             obstack_grow(log_obstk, "</file>",
                                          strlen("</file>"));
@@ -692,7 +692,7 @@ output_regular_log_msg(log_msg *msg)
                         if (sscanf(msg->fmt_str + i, "%%Tm[[%d].[%d]]",
                                    &n_tuples, &tuple_width) != 2)
                         {
-                            default_format = TRUE;
+                            default_format = true;
                             tuple_width = 1;
                             n_tuples = 16; /* @todo remove hardcode */
                         }

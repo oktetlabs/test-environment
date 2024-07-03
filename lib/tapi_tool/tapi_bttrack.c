@@ -22,8 +22,8 @@
 static const char bttrack_path[] = TAPI_BTTRACK_DEFAULT_PATH;
 
 static const tapi_job_opt_bind bttrack_binds[] = TAPI_JOB_OPT_SET(
-    TAPI_JOB_OPT_STRING("--dfile", FALSE, tapi_bttrack_opt, dfile),
-    TAPI_JOB_OPT_UINT_OMITTABLE("--port", FALSE, NULL,
+    TAPI_JOB_OPT_STRING("--dfile", false, tapi_bttrack_opt, dfile),
+    TAPI_JOB_OPT_UINT_OMITTABLE("--port", false, NULL,
                                             tapi_bttrack_opt, port)
 );
 
@@ -83,8 +83,8 @@ tapi_bttrack_create(tapi_job_factory_t *factory,
                                     .stderr_loc = &result->out_chs[1],
                                     .filters    = TAPI_JOB_SIMPLE_FILTERS(
                                         {
-                                            .use_stderr  = TRUE,
-                                            .readable    = FALSE,
+                                            .use_stderr  = true,
+                                            .readable    = false,
                                             .log_level   = TE_LL_ERROR,
                                             .filter_name = "bttrack's stderr"
                                         }

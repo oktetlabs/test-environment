@@ -128,9 +128,9 @@ typedef te_errno (* rcf_talib_transmit)(rcf_talib_handle handle,
  *
  * @param handle        TA handle
  *
- * @return TRUE, if data are pending; FALSE otherwise
+ * @return @c true, if data are pending; @c false otherwise
  */
-typedef te_bool (* rcf_talib_is_ready)(rcf_talib_handle handle);
+typedef bool (* rcf_talib_is_ready)(rcf_talib_handle handle);
 
 /**
  * Receive one command (possibly with attachment) from the Test Agent

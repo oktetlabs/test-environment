@@ -28,7 +28,7 @@ extern "C" {
  * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_ipc_mk_get(cfg_get_msg *msg, size_t msg_buf_size,
-                               cfg_handle handle, te_bool sync);
+                               cfg_handle handle, bool sync);
 
 /**
  * Prepare a cfg_find message.
@@ -70,13 +70,13 @@ extern te_errno cfg_ipc_mk_find_fmt(cfg_find_msg *msg, size_t msg_buf_size,
  * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_ipc_mk_set(cfg_set_msg *msg, size_t msg_buf_size,
-                               cfg_handle handle, te_bool local,
+                               cfg_handle handle, bool local,
                                cfg_val_type type, cfg_inst_val value);
 
 /** Same function as cfg_ipc_mk_set, but type is fixed as CVT_INT32 */
 static inline te_errno
 cfg_ipc_mk_set_int(cfg_set_msg *msg, size_t msg_buf_size,
-               cfg_handle handle, te_bool local, int32_t value)
+               cfg_handle handle, bool local, int32_t value)
 {
     cfg_inst_val val;
 
@@ -87,7 +87,7 @@ cfg_ipc_mk_set_int(cfg_set_msg *msg, size_t msg_buf_size,
 /** Same function as cfg_ipc_mk_set, but type is fixed as CVT_STRING */
 static inline te_errno
 cfg_ipc_mk_set_str(cfg_set_msg *msg, size_t msg_buf_size,
-               cfg_handle handle, te_bool local, char *value)
+               cfg_handle handle, bool local, char *value)
 {
     cfg_inst_val val;
 
@@ -106,7 +106,7 @@ cfg_ipc_mk_set_str(cfg_set_msg *msg, size_t msg_buf_size,
  * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_ipc_mk_del(cfg_del_msg *msg, size_t msg_buf_size,
-                               cfg_handle handle, te_bool local);
+                               cfg_handle handle, bool local);
 
 #ifdef __cplusplus
 }

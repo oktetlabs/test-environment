@@ -63,12 +63,12 @@ typedef struct tad_igmp_proto_pdu_data {
 static const tad_bps_pkt_frag tad_igmp_bps_hdr[] =
 {
     { "type", 8, BPS_FLD_NO_DEF(NDN_TAG_IGMP_TYPE),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "max-resp-time", 8,
       BPS_FLD_CONST_DEF(NDN_TAG_IGMP_MAX_RESPONSE_TIME, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "checksum", 16, BPS_FLD_CONST_DEF(NDN_TAG_IGMP_CHECKSUM, 0),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
 };
 
 /**
@@ -78,7 +78,7 @@ static const tad_bps_pkt_frag tad_igmp_bps_group_address[] =
 {
     { "group-address", 32,
       BPS_FLD_CONST_DEF(NDN_TAG_IGMP_GROUP_ADDRESS, 0),
-      TAD_DU_OCTS, FALSE },
+      TAD_DU_OCTS, false },
 };
 
 /**
@@ -87,19 +87,19 @@ static const tad_bps_pkt_frag tad_igmp_bps_group_address[] =
 static const tad_bps_pkt_frag tad_igmp_bps_v3_query[] =
 {
     { "reserved", 4, BPS_FLD_CONST(0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "s-flag", 1, BPS_FLD_CONST_DEF(NDN_TAG_IGMP3_S_FLAG, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "qrv", 3, BPS_FLD_CONST_DEF(NDN_TAG_IGMP3_QRV, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "qqic", 8, BPS_FLD_CONST_DEF(NDN_TAG_IGMP3_QQIC, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "number-of-sources", 16,
       BPS_FLD_NO_DEF(NDN_TAG_IGMP3_NUMBER_OF_SOURCES),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "source-address-list", 0,
       BPS_FLD_CONST_DEF(NDN_TAG_IGMP3_SOURCE_ADDRESS_LIST, 0),
-      TAD_DU_OCTS, FALSE },
+      TAD_DU_OCTS, false },
 };
 
 /**
@@ -108,12 +108,12 @@ static const tad_bps_pkt_frag tad_igmp_bps_v3_query[] =
 static const tad_bps_pkt_frag tad_igmp_bps_v3_report[] =
 {
     { "reserved", 16, BPS_FLD_CONST(0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "number-of-groups", 16, BPS_FLD_NO_DEF(NDN_TAG_IGMP3_NUMBER_OF_GROUPS),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "group-record-list", 0,
       BPS_FLD_CONST_DEF(NDN_TAG_IGMP3_GROUP_RECORD_LIST, 0),
-      TAD_DU_OCTS, FALSE },
+      TAD_DU_OCTS, false },
 };
 
 
@@ -438,7 +438,7 @@ tad_igmp_gen_bin_cb(csap_p csap, unsigned int layer,
     tad_pkts_move(pdus, sdus);
 
     /* Allocate and add IGMPv2 header to all packets */
-    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, bitoff >> 3, NULL);
+    rc = tad_pkts_add_new_seg(pdus, true, NULL, bitoff >> 3, NULL);
     if (rc != 0)
         return rc;
 

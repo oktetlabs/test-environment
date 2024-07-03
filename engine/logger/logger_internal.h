@@ -95,7 +95,7 @@ typedef struct snif_polling_sets_t {
     unsigned        period;             /**< Period for capture logs
                                              polling */
     overfill_type   ofill;              /**< Overfill handle method */
-    te_bool         errors;             /**< Errors flag */
+    bool errors;             /**< Errors flag */
 } snif_polling_sets_t;
 
 /** Node of the TA single linked list */
@@ -109,7 +109,7 @@ typedef struct ta_inst {
                                               nmbr */
     int             polling;             /**< Polling parameter value
                                               (in milliseconds) */
-    te_bool         thread_run;          /**< Is thread running? */
+    bool thread_run;          /**< Is thread running? */
     pthread_t       thread;              /**< Thread identifier */
     int             flush_log;           /**< 0 - normal processing;
                                               1 - flush TA local log */
@@ -156,9 +156,9 @@ extern void lgr_register_message(const void *buf_mess, size_t buf_len);
 /**
  * Check the logger shutdown flag.
  *
- * @return TRUE if the flag is active else FALSE.
+ * @return @c true if the flag is active else @c false.
  */
-extern te_bool te_log_check_shutdown(void);
+extern bool te_log_check_shutdown(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

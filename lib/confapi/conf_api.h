@@ -232,7 +232,7 @@ extern te_errno cfg_get_inst_name(cfg_handle handle, char **name);
  * @param type      Type instance name
  * @param val       Value of the corresponding type
  * @code
- *                  type == CVT_BOOL -> (te_bool *)
+ *                  type == CVT_BOOL -> (bool *)
  *                  type == CVT_INT8 -> (int8_t *)
  *                  type == CVT_UINT8 -> (uint8_t *)
  *                  type == CVT_INT16 -> (int16_t *)
@@ -517,10 +517,10 @@ extern te_errno cfg_add_instance_child_fmt(cfg_handle *p_handle,
  *
  * @return Status code (see te_errno.h)
  */
-extern te_errno cfg_del_instance(cfg_handle handle, te_bool with_children);
+extern te_errno cfg_del_instance(cfg_handle handle, bool with_children);
 
 /** Set instance by the OID. OID may be format string */
-extern te_errno cfg_del_instance_fmt(te_bool with_children,
+extern te_errno cfg_del_instance_fmt(bool with_children,
                                      const char *oid_fmt, ...)
                                      TE_LIKE_PRINTF(2, 3);
 
@@ -534,7 +534,7 @@ extern te_errno cfg_del_instance_fmt(te_bool with_children,
  * @return Status code (see te_errno.h).
  */
 extern te_errno cfg_del_instance_local(cfg_handle handle,
-                                       te_bool with_children);
+                                       bool with_children);
 
 /**
  * Same as @b cfg_del_instance_local(), but accepts OID string.
@@ -545,7 +545,7 @@ extern te_errno cfg_del_instance_local(cfg_handle handle,
  *
  * @return Status code (see te_errno.h).
  */
-extern te_errno cfg_del_instance_local_fmt(te_bool with_children,
+extern te_errno cfg_del_instance_local_fmt(bool with_children,
                                            const char *oid_fmt, ...)
                                      TE_LIKE_PRINTF(2, 3);
 
@@ -653,8 +653,8 @@ extern te_errno cfg_get_instance_fmt(cfg_val_type *p_type, void *val,
 extern te_errno cfg_get_int(int *val, const char *oid_fmt, ...)
                             TE_LIKE_PRINTF(2, 3);
 
-/** Type-safe version of cfg_get_instance_fmt() for values of te_bool type */
-extern te_errno cfg_get_bool(te_bool *val,
+/** Type-safe version of cfg_get_instance_fmt() for values of bool type */
+extern te_errno cfg_get_bool(bool *val,
                              const char *oid_fmt, ...)
                              TE_LIKE_PRINTF(2, 3);
 
@@ -761,9 +761,9 @@ extern te_errno cfg_get_int_sync(int *val,
                                  TE_LIKE_PRINTF(2, 3);
 
 /**
- * Type-safe version of cfg_get_instance_sync_fmt() for values of te_bool type
+ * Type-safe version of cfg_get_instance_sync_fmt() for values of bool type
  */
-extern te_errno cfg_get_bool_sync(te_bool *val,
+extern te_errno cfg_get_bool_sync(bool *val,
                                   const char *oid_fmt, ...)
                                   TE_LIKE_PRINTF(2, 3);
 
@@ -859,10 +859,10 @@ extern te_errno cfg_get_addr_sync(struct sockaddr **val,
  *
  * @return Status code (see te_errno.h)
  */
-extern te_errno cfg_synchronize(const char *oid, te_bool subtree);
+extern te_errno cfg_synchronize(const char *oid, bool subtree);
 
 /** The same function as cfg_synchronize, but OID may be format string */
-extern te_errno cfg_synchronize_fmt(te_bool subtree, const char *oid_fmt, ...)
+extern te_errno cfg_synchronize_fmt(bool subtree, const char *oid_fmt, ...)
                                     TE_LIKE_PRINTF(2, 3);
 
 /**@}*/
@@ -900,12 +900,12 @@ extern te_errno cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
  * Reboot the Test Agent.
  *
  * @param ta_name      name of the Test Agent
- * @param restore      if TRUE, restore the current configuration
+ * @param restore      if @c true, restore the current configuration
  * @param reboot_type  type of TA reboot
  *
  * @return Status code (see te_errno.h)
  */
-extern te_errno cfg_reboot_ta(const char *ta_name, te_bool restore,
+extern te_errno cfg_reboot_ta(const char *ta_name, bool restore,
                               rcf_reboot_type reboot_type);
 
 /**@}*/
@@ -980,12 +980,12 @@ extern te_errno cfg_release_backup(char **name);
  * Create a configuration file.
  *
  * @param name      configuration file name
- * @param history   if TRUE "history" configuration file is created;
- *                    otherwise "backup" configuration file is created
+ * @param history   if @c true "history" configuration file is created;
+ *                  otherwise "backup" configuration file is created
  *
  * @return Status code (see te_errno.h)
  */
-extern te_errno cfg_create_config(const char *name, te_bool history);
+extern te_errno cfg_create_config(const char *name, bool history);
 
 /**
  * Process a history configuration file.

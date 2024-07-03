@@ -18,8 +18,8 @@
 
 const tapi_haproxy_cfg_opt tapi_haproxy_cfg_default_opt = {
     .nbthread = TAPI_JOB_OPT_UINT_UNDEF,
-    .tune_listener_multi_queue = FALSE,
-    .tune_idle_pool_shared = FALSE,
+    .tune_listener_multi_queue = false,
+    .tune_idle_pool_shared = false,
     .timeout_client_ms =
         TAPI_JOB_OPT_UINT_VAL(TAPI_HAPROXY_CONF_DEFAULT_TIMEOUT_MS),
     .timeout_server_ms =
@@ -42,43 +42,43 @@ static const te_enum_map tapi_haproxy_cfg_shards_mapping[] = {
 };
 
 static const te_enum_map tapi_haproxy_cfg_bool_mapping[] = {
-    {.name = "on", .value = TRUE},
-    {.name = "off",  .value = FALSE},
+    {.name = "on", .value = true},
+    {.name = "off",  .value = false},
     TE_ENUM_MAP_END
 };
 
 static const tapi_job_opt_bind haproxy_cfg_global_binds[] = TAPI_JOB_OPT_SET(
-    TAPI_JOB_OPT_UINT_T("nbthread ", TRUE, NULL,
+    TAPI_JOB_OPT_UINT_T("nbthread ", true, NULL,
                         tapi_haproxy_cfg_opt, nbthread),
-    TAPI_JOB_OPT_ENUM_BOOL("tune.listener.multi-queue ", TRUE,
+    TAPI_JOB_OPT_ENUM_BOOL("tune.listener.multi-queue ", true,
                             tapi_haproxy_cfg_opt, tune_listener_multi_queue,
                             tapi_haproxy_cfg_bool_mapping),
-    TAPI_JOB_OPT_ENUM_BOOL("tune.idle-pool.shared ", TRUE,
+    TAPI_JOB_OPT_ENUM_BOOL("tune.idle-pool.shared ", true,
                             tapi_haproxy_cfg_opt, tune_idle_pool_shared,
                             tapi_haproxy_cfg_bool_mapping)
 );
 
 static const tapi_job_opt_bind haproxy_cfg_defaults_binds[] = TAPI_JOB_OPT_SET(
-    TAPI_JOB_OPT_UINT_T("timeout client ", TRUE, NULL, tapi_haproxy_cfg_opt,
+    TAPI_JOB_OPT_UINT_T("timeout client ", true, NULL, tapi_haproxy_cfg_opt,
                         timeout_client_ms),
-    TAPI_JOB_OPT_UINT_T("timeout server ", TRUE, NULL, tapi_haproxy_cfg_opt,
+    TAPI_JOB_OPT_UINT_T("timeout server ", true, NULL, tapi_haproxy_cfg_opt,
                         timeout_server_ms),
-    TAPI_JOB_OPT_UINT_T("timeout connect ", TRUE, NULL, tapi_haproxy_cfg_opt,
+    TAPI_JOB_OPT_UINT_T("timeout connect ", true, NULL, tapi_haproxy_cfg_opt,
                         timeout_connect_ms)
 );
 
 static const tapi_job_opt_bind haproxy_cfg_frontend_binds[] = TAPI_JOB_OPT_SET(
-    TAPI_JOB_OPT_STRUCT("bind ", TRUE, " ", NULL,
-        TAPI_JOB_OPT_STRUCT(NULL, FALSE, ":", NULL,
-            TAPI_JOB_OPT_STRING(NULL, FALSE,
-                tapi_haproxy_cfg_opt, frontend.frontend_addr.addr),
-            TAPI_JOB_OPT_UINT_T(NULL, FALSE, NULL,
-                tapi_haproxy_cfg_opt, frontend.frontend_addr.port)),
-        TAPI_JOB_OPT_ENUM("shards", TRUE, tapi_haproxy_cfg_opt,
-                          frontend.shards, tapi_haproxy_cfg_shards_mapping),
-        TAPI_JOB_OPT_UINT_T(NULL, FALSE, NULL, tapi_haproxy_cfg_opt,
-                            frontend.shards_n)),
-    TAPI_JOB_OPT_STRING("default_backend ", TRUE, tapi_haproxy_cfg_opt,
+    TAPI_JOB_OPT_STRUCT("bind ", true, " ", NULL,
+			TAPI_JOB_OPT_STRUCT(NULL, false, ":", NULL,
+					    TAPI_JOB_OPT_STRING(NULL, false,
+								tapi_haproxy_cfg_opt, frontend.frontend_addr.addr),
+					    TAPI_JOB_OPT_UINT_T(NULL, false, NULL,
+								tapi_haproxy_cfg_opt, frontend.frontend_addr.port)),
+			TAPI_JOB_OPT_ENUM("shards", true, tapi_haproxy_cfg_opt,
+					  frontend.shards, tapi_haproxy_cfg_shards_mapping),
+			TAPI_JOB_OPT_UINT_T(NULL, false, NULL, tapi_haproxy_cfg_opt,
+					    frontend.shards_n)),
+    TAPI_JOB_OPT_STRING("default_backend ", true, tapi_haproxy_cfg_opt,
                         backend.name)
 );
 
@@ -87,14 +87,14 @@ static const tapi_job_opt_bind haproxy_cfg_backends_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_DUMMY("balance static-rr"),
     TAPI_JOB_OPT_ARRAY_PTR(tapi_haproxy_cfg_opt,
         backend.n, backend.backends,
-        TAPI_JOB_OPT_STRUCT("server ", TRUE, " ", NULL,
-            TAPI_JOB_OPT_STRING(NULL, FALSE,
-                tapi_haproxy_cfg_backend, name),
-            TAPI_JOB_OPT_STRUCT(NULL, FALSE, ":", NULL,
-                TAPI_JOB_OPT_STRING(NULL, FALSE,
-                    tapi_haproxy_cfg_backend, backend_addr.addr),
-                TAPI_JOB_OPT_UINT_T(NULL, FALSE, NULL,
-                    tapi_haproxy_cfg_backend, backend_addr.port))))
+        TAPI_JOB_OPT_STRUCT("server ", true, " ", NULL,
+			    TAPI_JOB_OPT_STRING(NULL, false,
+						tapi_haproxy_cfg_backend, name),
+			    TAPI_JOB_OPT_STRUCT(NULL, false, ":", NULL,
+						TAPI_JOB_OPT_STRING(NULL, false,
+								    tapi_haproxy_cfg_backend, backend_addr.addr),
+						TAPI_JOB_OPT_UINT_T(NULL, false, NULL,
+								    tapi_haproxy_cfg_backend, backend_addr.port))))
 );
 
 static char *
@@ -119,7 +119,7 @@ build_cfg_group(const char *prefix_base,
                 const tapi_job_opt_bind *binds,
                 const char *sep,
                 te_string *res,
-                te_bool last_group)
+                bool last_group)
 {
     te_string prefix = TE_STRING_INIT;
     te_vec args = TE_VEC_INIT(char *);
@@ -151,13 +151,13 @@ tapi_haproxy_cfg_create(const char *ta, const tapi_haproxy_cfg_opt *opt,
         opt = &tapi_haproxy_cfg_default_opt;
 
     build_cfg_group("global", NULL, opt, haproxy_cfg_global_binds,
-                    "\n" INDENT, &cfg_data, FALSE);
+                    "\n" INDENT, &cfg_data, false);
     build_cfg_group("defaults", NULL, opt, haproxy_cfg_defaults_binds,
-                    "\n" INDENT, &cfg_data, FALSE);
+                    "\n" INDENT, &cfg_data, false);
     build_cfg_group("frontend", opt->frontend.name, opt,
-                    haproxy_cfg_frontend_binds, "\n" INDENT, &cfg_data, FALSE);
+                    haproxy_cfg_frontend_binds, "\n" INDENT, &cfg_data, false);
     build_cfg_group("backend", opt->backend.name, opt,
-                    haproxy_cfg_backends_binds, "\n" INDENT, &cfg_data, TRUE);
+                    haproxy_cfg_backends_binds, "\n" INDENT, &cfg_data, true);
 
     path = generate_conf_path(ta);
     rc = tapi_file_create_ta(ta, path, "%s", cfg_data.ptr);

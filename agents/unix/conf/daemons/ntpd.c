@@ -20,7 +20,7 @@
 /** Possible daemon names. */
 static const char *ntpd_names[] = {"chronyd", "chrony", "ntpd", "ntp"};
 
-static te_bool ntpd_status = FALSE;
+static bool ntpd_status = false;
 
 /** Possible action on the daemon. */
 typedef enum daemon_action {
@@ -86,7 +86,7 @@ service_app(void)
  * @return Status code
  */
 static te_errno
-ntpd_apply_action(daemon_action act, te_bool *status)
+ntpd_apply_action(daemon_action act, bool *status)
 {
     const char *act_str = NULL;
     char cmd[RCF_MAX_PATH] = {0,};
@@ -187,9 +187,9 @@ do {                                                                    \
         if (res == 0)
         {
             if (act == ACT_START)
-                ntpd_status = TRUE;
+                ntpd_status = true;
             if (act == ACT_STOP)
-                ntpd_status = FALSE;
+                ntpd_status = false;
             return 0;
         }
 

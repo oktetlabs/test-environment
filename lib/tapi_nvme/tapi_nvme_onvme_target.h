@@ -23,7 +23,7 @@ extern "C" {
 
 /** ONVMe target opts */
 typedef struct tapi_nvme_onvme_target_opts {
-    te_bool is_nullblock;       /**< Target use nullblock instend nvme dev */
+    bool is_nullblock;       /**< Target use nullblock instend nvme dev */
     te_string cores;            /**< Target will use the specified cpu */
     unsigned max_worker_conn;   /**< Maximum number of connections to accept
                                      per worker */
@@ -32,7 +32,7 @@ typedef struct tapi_nvme_onvme_target_opts {
 
 /** ONVMe target opts defaults */
 #define TAPI_NVME_ONVME_TARGET_OPTS_DEFAULTS (tapi_nvme_onvme_target_opts) { \
-    .is_nullblock = FALSE,                                                   \
+    .is_nullblock = false,                                                   \
     .cores = TE_STRING_INIT,                                                 \
     .max_worker_conn = 0,                                                    \
     .log_level = -1,                                                         \

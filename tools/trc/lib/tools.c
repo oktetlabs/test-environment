@@ -35,7 +35,7 @@ trc_tools_filter_db(te_trc_db *db,
     te_errno                rc = 0;
     te_trc_db_walker       *walker;
     trc_db_walker_motion    mv;
-    te_bool                 is_iter = TRUE;
+    bool is_iter = true;
 
     walker = trc_db_new_walker(db);
     if (walker == NULL)
@@ -55,14 +55,14 @@ trc_tools_filter_db(te_trc_db *db,
                 {
                     tqe_string     *test_path;
                     trc_test       *test = trc_db_walker_get_test(walker);
-                    te_bool         do_include = FALSE;
-                    te_bool         do_exclude = FALSE;
+                    bool do_include = false;
+                    bool do_exclude = false;
 
                     TAILQ_FOREACH(test_path, tests_include, links)
                     {
                         if (strstr(test->path, test_path->v) != NULL)
                         {
-                            do_include = TRUE;
+                            do_include = true;
                             break;
                         }
                     }
@@ -71,14 +71,14 @@ trc_tools_filter_db(te_trc_db *db,
                     {
                         if (strstr(test->path, test_path->v) != NULL)
                         {
-                            do_exclude = TRUE;
+                            do_exclude = true;
                             break;
                         }
                     }
 
-                    if (((do_include == FALSE) &&
+                    if (((do_include == false) &&
                          (!TAILQ_EMPTY(tests_include))) ||
-                        (do_exclude == TRUE))
+                        (do_exclude == true))
                     {
                         int i;
                         for (i = 0; i < db_uids_size; i++)
@@ -104,7 +104,7 @@ trc_tools_filter_db(te_trc_db *db,
                 break;
 
             default:
-                assert(FALSE);
+                assert(false);
                 break;
         }
     }
@@ -118,12 +118,12 @@ trc_tools_filter_db(te_trc_db *db,
 /* See the description in trc_report.h */
 te_errno
 trc_tools_cut_db(te_trc_db *db, unsigned int db_uid,
-                 const char *path_pattern, te_bool inverse)
+                 const char *path_pattern, bool inverse)
 {
     te_errno                rc = 0;
     te_trc_db_walker       *walker;
     trc_db_walker_motion    mv;
-    te_bool                 is_iter = TRUE;
+    bool is_iter = true;
     int                     removed = 0;
     int                     removed_total = 0;
 
@@ -183,7 +183,7 @@ trc_tools_cut_db(te_trc_db *db, unsigned int db_uid,
                 break;
 
             default:
-                assert(FALSE);
+                assert(false);
                 break;
         }
     }
@@ -204,8 +204,8 @@ trc_tools_merge_db(te_trc_db *db, int dst_uid, int src_uid1, int src_uid2)
     te_errno                rc = 0;
     te_trc_db_walker       *walker;
     trc_db_walker_motion    mv;
-    te_bool                 is_iter = TRUE;
-    te_bool                 overwritten = FALSE;
+    bool is_iter = true;
+    bool overwritten = false;
     int                     new_iters = 0;
     int                     replaced_iters = 0;
     int                     new_total = 0;
@@ -250,7 +250,7 @@ trc_tools_merge_db(te_trc_db *db, int dst_uid, int src_uid1, int src_uid2)
                                                     iter_data);
                     if (iter_data != iter_data1)
                     {
-                        overwritten = TRUE;
+                        overwritten = true;
                         if (iter_data1 == NULL)
                             new_iters++;
                         else
@@ -278,7 +278,7 @@ trc_tools_merge_db(te_trc_db *db, int dst_uid, int src_uid1, int src_uid2)
                                                     test_data);
                     if (test_data != test_data1)
                     {
-                        //overwritten = TRUE;
+                        //overwritten = true;
                     }
                 }
                 break;
@@ -292,7 +292,7 @@ trc_tools_merge_db(te_trc_db *db, int dst_uid, int src_uid1, int src_uid2)
                         printf("  Merge %s: %d replaced + %d new\n",
                                trc_db_walker_get_test(walker)->path,
                                replaced_iters, new_iters);
-                        overwritten = FALSE;
+                        overwritten = false;
                         new_total += new_iters;
                         new_iters = 0;
                         replaced_total += replaced_iters;
@@ -302,7 +302,7 @@ trc_tools_merge_db(te_trc_db *db, int dst_uid, int src_uid1, int src_uid2)
                 break;
 
             default:
-                assert(FALSE);
+                assert(false);
                 break;
         }
     }

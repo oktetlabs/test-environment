@@ -63,8 +63,8 @@ struct vm_drive_entry {
     SLIST_ENTRY(vm_drive_entry)     links;
     char                           *name;
     te_string                       file;
-    te_bool                         snapshot;
-    te_bool                         cdrom;
+    bool snapshot;
+    bool cdrom;
 };
 
 struct vm_virtfs_entry {
@@ -80,7 +80,7 @@ struct vm_chardev_entry {
     SLIST_ENTRY(vm_chardev_entry)   links;
     char                           *name;
     char                           *path;
-    te_bool                         server;
+    bool server;
 };
 
 struct vm_net_entry {
@@ -120,14 +120,14 @@ struct vm_entry {
     char                   *qemu;
     char                   *machine;
     char                   *mgmt_net_device;
-    te_bool                 kvm;
+    bool kvm;
     uint16_t                host_ssh_port;
     uint16_t                guest_ssh_port;
     uint16_t                rcf_port;
     vm_cpu                  cpu;
     unsigned int            mem_size;
     char                   *mem_path;
-    te_bool                 mem_prealloc;
+    bool mem_prealloc;
     te_string               cmd;
     pid_t                   pid;
     vm_chardev_list_t       chardevs;
@@ -149,15 +149,15 @@ static struct vm_chardev_entry * vm_chardev_find(const struct vm_entry *vm,
 static SLIST_HEAD(, vm_entry) vms = SLIST_HEAD_INITIALIZER(vms);
 
 static uint16_t guest_ssh_port; /* SSH port in host byte order */
-static te_bool kvm_supported;
+static bool kvm_supported;
 
-static te_bool
+static bool
 vm_is_running(struct vm_entry *vm)
 {
     pid_t ret;
 
     if (vm->pid == -1)
-        return FALSE;
+        return false;
 
     do {
         ret = ta_waitpid(vm->pid, NULL, WNOHANG);
@@ -170,10 +170,10 @@ vm_is_running(struct vm_entry *vm)
          * In both cases we can forget about the child process.
          */
         vm->pid = -1;
-        return FALSE;
+        return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 static te_errno
@@ -1343,7 +1343,7 @@ vm_status_set(unsigned int gid, const char *oid, const char *value,
               const char *vm_name)
 {
     struct vm_entry *vm;
-    te_bool enable = !!atoi(value);
+    bool enable = !!atoi(value);
     te_errno rc;
 
     UNUSED(gid);
@@ -1473,7 +1473,7 @@ vm_kvm_set(unsigned int gid, const char *oid, const char *value,
            const char *vm_name)
 {
     struct vm_entry *vm;
-    te_bool val;
+    bool val;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1641,7 +1641,7 @@ vm_mem_prealloc_set(unsigned int gid, const char *oid, const char *value,
                     const char *vm_name)
 {
     struct vm_entry *vm;
-    te_bool enable = !!atoi(value);
+    bool enable = !!atoi(value);
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1727,7 +1727,7 @@ vm_chardev_list(unsigned int gid, const char *oid, const char *sub_id, char **li
     te_string result = TE_STRING_INIT;
     struct vm_entry *vm;
     struct vm_chardev_entry *chardev;
-    te_bool first = TRUE;
+    bool first = true;
     te_errno rc;
 
     UNUSED(gid);
@@ -1741,7 +1741,7 @@ vm_chardev_list(unsigned int gid, const char *oid, const char *sub_id, char **li
     SLIST_FOREACH(chardev, &vm->chardevs, links)
     {
         rc = te_string_append(&result, "%s%s", first ? "" : " ", chardev->name);
-        first = FALSE;
+        first = false;
         if (rc != 0)
         {
             te_string_free(&result);
@@ -1872,7 +1872,7 @@ vm_net_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
     te_string result = TE_STRING_INIT;
     struct vm_entry *vm;
     struct vm_net_entry *net;
-    te_bool first = TRUE;
+    bool first = true;
     te_errno rc;
 
     UNUSED(gid);
@@ -1886,7 +1886,7 @@ vm_net_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
     SLIST_FOREACH(net, &vm->nets, links)
     {
         rc = te_string_append(&result, "%s%s", first ? "" : " ", net->name);
-        first = FALSE;
+        first = false;
         if (rc != 0)
         {
             te_string_free(&result);
@@ -1922,7 +1922,7 @@ vm_chardev_server_set(unsigned int gid, const char *oid, const char *value,
 {
     struct vm_entry *vm;
     struct vm_chardev_entry *chardev;
-    te_bool is_server = !!atoi(value);
+    bool is_server = !!atoi(value);
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2496,7 +2496,7 @@ vm_drive_list(unsigned int gid, const char *oid, const char *sub_id, char **list
     te_string result = TE_STRING_INIT;
     struct vm_entry *vm;
     struct vm_drive_entry *drive;
-    te_bool first = TRUE;
+    bool first = true;
     te_errno rc;
 
     UNUSED(gid);
@@ -2510,7 +2510,7 @@ vm_drive_list(unsigned int gid, const char *oid, const char *sub_id, char **list
     SLIST_FOREACH(drive, &vm->drives, links)
     {
         rc = te_string_append(&result, "%s%s", first ? "" : " ", drive->name);
-        first = FALSE;
+        first = false;
         if (rc != 0)
         {
             te_string_free(&result);
@@ -2725,7 +2725,7 @@ vm_virtfs_list(unsigned int gid, const char *oid, const char *sub_id,
     te_string result = TE_STRING_INIT;
     struct vm_entry *vm;
     struct vm_virtfs_entry *vfs;
-    te_bool first = TRUE;
+    bool first = true;
     te_errno rc;
 
     UNUSED(gid);
@@ -2739,7 +2739,7 @@ vm_virtfs_list(unsigned int gid, const char *oid, const char *sub_id,
     SLIST_FOREACH(vfs, &vm->virtfses, links)
     {
         rc = te_string_append(&result, "%s%s", first ? "" : " ", vfs->name);
-        first = FALSE;
+        first = false;
         if (rc != 0)
         {
             te_string_free(&result);
@@ -3047,7 +3047,7 @@ vm_pci_pt_list(unsigned int gid, const char *oid, const char *sub_id,
     te_string result = TE_STRING_INIT;
     struct vm_entry *vm;
     struct vm_pci_pt_entry *pt;
-    te_bool first = TRUE;
+    bool first = true;
     te_errno rc;
 
     UNUSED(gid);
@@ -3061,7 +3061,7 @@ vm_pci_pt_list(unsigned int gid, const char *oid, const char *sub_id,
     SLIST_FOREACH(pt, &vm->pci_pts, links)
     {
         rc = te_string_append(&result, "%s%s", first ? "" : " ", pt->name);
-        first = FALSE;
+        first = false;
         if (rc != 0)
         {
             te_string_free(&result);
@@ -3205,7 +3205,7 @@ vm_device_list(unsigned int gid, const char *oid, const char *sub_id,
     te_string result = TE_STRING_INIT;
     struct vm_entry *vm;
     struct vm_device_entry *dev;
-    te_bool first = TRUE;
+    bool first = true;
     te_errno rc;
 
     UNUSED(gid);
@@ -3219,7 +3219,7 @@ vm_device_list(unsigned int gid, const char *oid, const char *sub_id,
     SLIST_FOREACH(dev, &vm->devices, links)
     {
         rc = te_string_append(&result, "%s%s", first ? "" : " ", dev->name);
-        first = FALSE;
+        first = false;
         if (rc != 0)
         {
             te_string_free(&result);
@@ -3473,10 +3473,10 @@ RCF_PCH_CFG_NODE_COLLECTION(node_vm, "vm", &node_vm_qemu, NULL,
                             vm_add, vm_del, vm_list, NULL);
 
 
-static te_bool
+static bool
 check_kvm(void)
 {
-    te_bool supported = FALSE;
+    bool supported = false;
     struct stat st;
 
     if (stat(DEV_KVM, &st) != 0)
@@ -3503,7 +3503,7 @@ check_kvm(void)
         {
             close(fd);
             RING("KVM is supported");
-            supported = TRUE;
+            supported = true;
         }
     }
 

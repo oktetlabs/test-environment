@@ -150,7 +150,7 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-    found = FALSE;
+    found = false;
     for (t = list->head; t != NULL; t = t->next)
     {
         const netconf_route    *route = &(t->data.route);
@@ -181,13 +181,13 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
             if ((route->family == AF_INET) &&
                 (SIN(&(rt_info->dst))->sin_addr.s_addr == INADDR_ANY))
             {
-                found = TRUE;
+                found = true;
             }
             else if ((route->family == AF_INET6) &&
                      (memcmp(&SIN6(&(rt_info->dst))->sin6_addr,
                              &addr_any, sizeof(struct in6_addr)) == 0))
             {
-                found = TRUE;
+                found = true;
             }
         }
         else
@@ -196,13 +196,13 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
                 (memcmp(route->dst, &(SIN(&(rt_info->dst))->sin_addr),
                         sizeof(struct in_addr)) == 0))
             {
-                found = TRUE;
+                found = true;
             }
             else if ((route->family == AF_INET6) &&
                      (memcmp(route->dst, &(SIN6(&(rt_info->dst))->sin6_addr),
                              sizeof(struct in6_addr)) == 0))
             {
-                found = TRUE;
+                found = true;
             }
         }
 

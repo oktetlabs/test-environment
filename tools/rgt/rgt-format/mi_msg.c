@@ -59,7 +59,7 @@ te_rgt_mi_parse_error(te_rgt_mi *mi, te_errno rc, const char *fmt, ...)
 
     va_start(va, fmt);
 
-    mi->parse_failed = TRUE;
+    mi->parse_failed = true;
     vsnprintf(mi->parse_err, sizeof(mi->parse_err), fmt, va);
     mi->rc = rc;
 
@@ -421,7 +421,7 @@ get_line_graph(json_t *view_obj, te_rgt_mi *mi,
     }
     else if (line_graph->axis_x >= 0)
     {
-        meas->params[line_graph->axis_x].in_graph = TRUE;
+        meas->params[line_graph->axis_x].in_graph = true;
     }
 
     axis_y = json_object_get(view_obj, "axis_y");
@@ -462,7 +462,7 @@ get_line_graph(json_t *view_obj, te_rgt_mi *mi,
                 }
 
                 axis_y_list[i] = j;
-                meas->params[j].in_graph = TRUE;
+                meas->params[j].in_graph = true;
             }
         }
     }
@@ -475,7 +475,7 @@ get_line_graph(json_t *view_obj, te_rgt_mi *mi,
          */
         for (i = 0; i < meas->params_num; i++)
         {
-            meas->params[i].in_graph = TRUE;
+            meas->params[i].in_graph = true;
         }
     }
 
@@ -607,7 +607,7 @@ te_rgt_parse_mi_meas_message(te_rgt_mi *mi)
         for (i = 0; i < meas->params_num; i++)
         {
             json_t *entries;
-            te_bool no_stats;
+            bool no_stats;
 
             te_rgt_mi_meas_param *param = &meas->params[param_id];
             te_rgt_mi_meas_value value = TE_RGT_MI_MEAS_VALUE_INIT;
@@ -649,17 +649,17 @@ te_rgt_parse_mi_meas_message(te_rgt_mi *mi)
                 if (aggr == NULL)
                     continue;
 
-                value.defined = TRUE;
+                value.defined = true;
                 if (json_object_get_number(entry, "value",
                                            &value.value) == 0)
-                    value.specified = TRUE;
+                    value.specified = true;
 
                 value.multiplier = json_object_get_string(entry,
                                                           "multiplier");
                 value.base_units = json_object_get_string(entry,
                                                           "base_units");
 
-                no_stats = FALSE;
+                no_stats = false;
                 if (strcmp(aggr, "min") == 0)
                 {
                     param->min = value;
@@ -699,11 +699,11 @@ te_rgt_parse_mi_meas_message(te_rgt_mi *mi)
                         param->values[value_id] = value;
                         value_id++;
                     }
-                    no_stats = TRUE;
+                    no_stats = true;
                 }
 
                 if (!no_stats)
-                    param->stats_present = TRUE;
+                    param->stats_present = true;
             }
 
             param->values_num = value_id;
@@ -746,7 +746,7 @@ cleanup:
  *
  * @returns Boolean flag that signals successful type check.
  */
-static te_bool
+static bool
 check_json_type(te_rgt_mi *mi, json_t **json, json_type expected_type,
                 const char *field_name)
 {
@@ -756,7 +756,7 @@ check_json_type(te_rgt_mi *mi, json_t **json, json_type expected_type,
         *json = NULL;
 
     if (*json == NULL)
-        return TRUE;
+        return true;
 
     actual_type = json_typeof(*json);
     if (actual_type != expected_type)
@@ -765,10 +765,10 @@ check_json_type(te_rgt_mi *mi, json_t **json, json_type expected_type,
                               " expected %s, got %s", field_name,
                               json_type_string(expected_type),
                               json_type_string(actual_type));
-        return FALSE;
+        return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 /** Parse "test_start" MI message */
@@ -1180,7 +1180,7 @@ te_rgt_parse_mi_message(const char *json_buf, size_t buf_len,
     root = json_loadb(json_buf, buf_len, 0, &error);
     if (root == NULL)
     {
-        mi->parse_failed = TRUE;
+        mi->parse_failed = true;
         snprintf(mi->parse_err, sizeof(mi->parse_err),
                  "%s", error.text);
         mi->rc = TE_EINVAL;

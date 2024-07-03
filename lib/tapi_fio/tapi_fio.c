@@ -27,7 +27,7 @@ app_init(tapi_fio_app *app, const tapi_fio_opts *opts,
     const char *ta = tapi_job_factory_ta(factory);
 
     app->factory = factory;
-    app->running = FALSE;
+    app->running = false;
     app->args = TE_VEC_INIT(char *);
     app->path = (te_string)TE_STRING_INIT;
 

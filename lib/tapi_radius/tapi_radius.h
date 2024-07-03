@@ -613,7 +613,7 @@ typedef enum {
 extern te_errno tapi_radius_serv_add_user(
                             const char *ta_name,
                             const char *user_name,
-                            te_bool acpt_user,
+                            bool acpt_user,
                             const tapi_radius_attr_list_t *check_attrs,
                             const tapi_radius_attr_list_t *acpt_attrs,
                             const tapi_radius_attr_list_t *chlg_attrs);
@@ -686,7 +686,7 @@ typedef struct tapi_auth_tls_s {
 typedef struct tapi_auth_info_s {
     char                    *identity;  /**< EAP identity */
     tapi_auth_eap_t          eap_type;  /**< EAP type */
-    te_bool                  valid;     /**< Whether the user allowed */
+    bool valid;     /**< Whether the user allowed */
     union {
         struct {
             char *username;             /**< User name */
@@ -727,7 +727,7 @@ tapi_radius_disable_auth(const char *ta_name,
                          tapi_auth_info_t *auth)
 {
     assert(auth != NULL);
-    auth->valid = FALSE;
+    auth->valid = false;
     return cfg_set_instance_fmt(CFG_VAL(INT32, 0),
                                 "/agent:%s/radiusserver:/user:%s",
                                 ta_name, auth->identity);

@@ -30,7 +30,7 @@
 /**
  * Compare two results.
  */
-te_bool
+bool
 te_test_results_equal(const te_test_result *lhv,
                       const te_test_result *rhv)
 {
@@ -38,7 +38,7 @@ te_test_results_equal(const te_test_result *lhv,
     const te_test_verdict  *v2;
 
     if (lhv->status != rhv->status)
-        return FALSE;
+        return false;
 
     for (v1 = TAILQ_FIRST(&lhv->verdicts),
          v2 = TAILQ_FIRST(&rhv->verdicts);
@@ -76,7 +76,7 @@ trc_is_result_expected(const trc_exp_result *expected,
 }
 
 /* See the description in te_trc.h */
-te_bool
+bool
 trc_is_exp_result_skipped(const trc_exp_result *result)
 {
     const trc_exp_result_entry *p;
@@ -88,9 +88,9 @@ trc_is_exp_result_skipped(const trc_exp_result *result)
         if (p->result.status != TE_TEST_SKIPPED ||
             TAILQ_FIRST(&p->result.verdicts) != NULL)
         {
-            return FALSE;
+            return false;
         }
     }
 
-    return TRUE;
+    return true;
 }

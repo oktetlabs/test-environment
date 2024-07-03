@@ -57,7 +57,7 @@ typedef struct test_path_proc_ctx {
     uint8_t        *bm;     /**< Bit mask with iterations to be run */
     unsigned int    iter;   /**< Current iteration of the run item */
 
-    te_bool transparent;    /**< Is the run item transparent on the path? */
+    bool transparent;    /**< Is the run item transparent on the path? */
 
 } test_path_proc_ctx;
 
@@ -140,7 +140,7 @@ test_path_proc_destroy_ctx(test_path_proc_data *gctx)
  * @return Pointer to allocated memory or NULL.
  */
 static uint8_t *
-bit_mask_alloc(unsigned int num, te_bool set)
+bit_mask_alloc(unsigned int num, bool set)
 {
     unsigned int    bytes;
     uint8_t        *mem;
@@ -169,23 +169,23 @@ bit_mask_alloc(unsigned int num, te_bool set)
  *
  * @return Is resulting bit mask empty or not?
  */
-static te_bool
+static bool
 bit_mask_start_step(uint8_t *bm, unsigned int bm_len,
                     unsigned int start, unsigned int step)
 {
-    te_bool         empty = TRUE;
+    bool empty = true;
     unsigned int    i;
     unsigned int    j;
     unsigned int    period = start;
 
-    for (empty = TRUE, j = 0, i = 0; i < bm_len; ++i)
+    for (empty = true, j = 0, i = 0; i < bm_len; ++i)
     {
         if (bit_mask_is_set(bm, i))
         {
             j++;
             if (j == period)
             {
-                empty = FALSE;
+                empty = false;
                 period = step;
                 j = 0;
             }
@@ -343,7 +343,7 @@ typedef struct test_path_arg_value_cb_data {
 
     uint8_t        *bm;     /**< Argument bit mask */
     unsigned int    index;  /**< Index of the current argument value */
-    te_bool         found;  /**< Is at least one matching value found? */
+    bool found;  /**< Is at least one matching value found? */
     unsigned int    pref_i; /**< Index of the preferred value */
 
     const test_entity_value *pref_value;    /**< Pointer to the
@@ -363,7 +363,7 @@ test_path_arg_value_cb(const test_entity_value *value, void *opaque)
     test_path_arg_value_cb_data *data = opaque;
     const char                  *plain;
     tqe_string                  *path_arg_value;
-    te_bool                      match;
+    bool match;
 
     ENTRY("value=%s|%s ref=%p index=%u found=%u",
           value->plain, value->ext, value->ref,
@@ -413,7 +413,7 @@ test_path_arg_value_cb(const test_entity_value *value, void *opaque)
                     m = getenv(env_name);
                     if (m == NULL)
                     {
-                        match = FALSE;
+                        match = false;
                         break;
                     }
                 }
@@ -428,17 +428,17 @@ test_path_arg_value_cb(const test_entity_value *value, void *opaque)
                                  FNM_NOESCAPE) == 0);
 #else
                 WARN("Glob-style matching is not supported");
-                match = FALSE;
+                match = false;
 #endif
                 break;
 
             default:
-                assert(FALSE);
-                match = FALSE;
+                assert(false);
+                match = false;
         }
         if (match)
         {
-            data->found = TRUE;
+            data->found = true;
             bit_mask_set(data->bm, data->index);
             /* Continue, since equal values are possible */
         }
@@ -505,7 +505,7 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
     }
 
     /* Allocate bit mask for all iterations */
-    bm = bit_mask_alloc(run->n_iters, TRUE);
+    bm = bit_mask_alloc(run->n_iters, true);
     if (bm == NULL)
     {
         gctx->rc = TE_ENOMEM;
@@ -540,7 +540,7 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
                 return TESTER_CFG_WALK_SKIP;
             }
 
-            arg_bm = bit_mask_alloc(n_values, FALSE);
+            arg_bm = bit_mask_alloc(n_values, false);
             if (arg_bm == NULL)
             {
                 free(bm);
@@ -551,7 +551,7 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
             value_data.path_arg = path_arg;
             value_data.bm = arg_bm;
             value_data.index = 0;
-            value_data.found = FALSE;
+            value_data.found = false;
             value_data.pref_i = 0;
             value_data.pref_value = va->preferred;
             rc = test_var_arg_enum_values(run, va,
@@ -887,35 +887,35 @@ process_test_path(const tester_cfgs *cfgs, test_path *path)
  */
 static te_errno
 merge_test_paths(test_paths *paths, const unsigned int total_iters,
-                 testing_scenario *scenario, te_bool all_by_default)
+                 testing_scenario *scenario, bool all_by_default)
 {
     testing_scenario    flags;
     testing_scenario    exclude;
-    te_bool             run_scen;
-    te_bool             run_spec;
+    bool run_scen;
+    bool run_spec;
     test_path          *path;
     te_errno            rc;
 
     TAILQ_INIT(&flags);
     TAILQ_INIT(&exclude);
 
-    run_spec = FALSE;
+    run_spec = false;
     TAILQ_FOREACH(path, paths, links)
     {
         rc = 0;
-        run_scen = FALSE;
+        run_scen = false;
         switch (path->type)
         {
             case TEST_PATH_RUN:
-                run_scen = TRUE;
+                run_scen = true;
                 break;
 
             case TEST_PATH_RUN_FORCE:
-                run_scen = TRUE;
+                run_scen = true;
                 break;
 
             case TEST_PATH_RUN_FROM:
-                run_scen = TRUE;
+                run_scen = true;
                 if (TAILQ_NEXT(path, links) != NULL &&
                     TAILQ_NEXT(path, links)->type == TEST_PATH_RUN_TO)
                 {
@@ -932,7 +932,7 @@ merge_test_paths(test_paths *paths, const unsigned int total_iters,
                 break;
 
             case TEST_PATH_RUN_TO:
-                run_scen = TRUE;
+                run_scen = true;
                 scenario_apply_to(&path->scen, 0);
                 break;
 
@@ -991,14 +991,14 @@ merge_test_paths(test_paths *paths, const unsigned int total_iters,
                 break;
 
             default:
-                assert(FALSE);
+                assert(false);
         }
         if (rc != 0)
             goto exit;
 
         if (run_scen)
         {
-            run_spec = TRUE;
+            run_spec = true;
             rc = scenario_apply_flags(&path->scen, &flags);
             if (rc != 0)
                 goto exit;
@@ -1046,7 +1046,7 @@ te_errno
 tester_process_test_paths(const tester_cfgs *cfgs,
                           test_paths        *paths,
                           testing_scenario  *scenario,
-                          te_bool            all_by_default)
+                          bool all_by_default)
 {
     te_errno    rc;
     test_path  *path;

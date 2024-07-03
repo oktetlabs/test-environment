@@ -48,7 +48,7 @@ static const size_t ifnamesiz = IFNAMSIZ;
 static const te_conf_obj ip_rule[] = {
     ITEM(uint32_t, priority,   PRIORITY),
     ITEM(uint8_t,  family,     FAMILY  ),
-    ITEM(te_bool,  invert,     INVERT  ),
+    ITEM(bool,     invert,     INVERT  ),
     ITEM(uint32_t, type,       TYPE    ),
     ITEM(uint8_t,  srclen,     SRCLEN  ),
     ITEM(uint8_t,  dstlen,     DSTLEN  ),
@@ -105,7 +105,7 @@ te_conf_ip_rule_compare(uint32_t required, const te_conf_ip_rule *object_a,
 /* See the description in conf_ip_rule.h */
 void
 te_conf_ip_rule_set_invert(te_conf_ip_rule *rule,
-                           te_bool invert)
+                           bool invert)
 {
     rule->invert = invert;
     if (invert)
@@ -115,7 +115,7 @@ te_conf_ip_rule_set_invert(te_conf_ip_rule *rule,
 }
 
 /* See the description in conf_ip_rule.h */
-te_bool
+bool
 te_conf_ip_rule_get_invert(const te_conf_ip_rule *rule)
 {
     return !!(rule->mask & TE_IP_RULE_FLAG_INVERT);

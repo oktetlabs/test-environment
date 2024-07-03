@@ -752,7 +752,7 @@ trc_db_iter_get_user_data(const trc_test_iter *iter, unsigned int user_id)
 
 /* See the description in trc_db.h */
 te_errno
-trc_db_set_user_data(void *db_item, te_bool is_iter, unsigned int user_id,
+trc_db_set_user_data(void *db_item, bool is_iter, unsigned int user_id,
                      void *user_data)
 {
     trc_users_data  *users = is_iter ? &((trc_test_iter *)db_item)->users :
@@ -778,7 +778,7 @@ te_errno
 trc_db_iter_set_user_data(trc_test_iter *iter, unsigned int user_id,
                           void *user_data)
 {
-    return trc_db_set_user_data(iter, TRUE, user_id, user_data);
+    return trc_db_set_user_data(iter, true, user_id, user_data);
 }
 
 /* See the description in trc_db.h */
@@ -786,16 +786,16 @@ te_errno
 trc_db_test_set_user_data(trc_test *test, unsigned int user_id,
                           void *user_data)
 {
-    return trc_db_set_user_data(test, FALSE, user_id, user_data);
+    return trc_db_set_user_data(test, false, user_id, user_data);
 }
 
 /* See the description in te_trc.h */
 te_errno
 trc_db_walker_set_prop_ud(const te_trc_db_walker *walker,
                           unsigned int user_id, void *user_data,
-                          void *(*data_gen)(void *, te_bool))
+                          void *(*data_gen)(void *, bool))
 {
-    te_bool     is_iter = trc_db_walker_is_iter(walker);
+    bool is_iter = trc_db_walker_is_iter(walker);
     void       *p = is_iter ? (void *)trc_db_walker_get_iter(walker) :
                                 (void *)trc_db_walker_get_test(walker);
 
@@ -905,12 +905,12 @@ trc_db_get_test_by_path(te_trc_db *db, char *path)
     trc_tests      *tests;
     trc_test_iter  *iter;
     trc_test_iters *iters = NULL;
-    te_bool         is_iter;
+    bool is_iter;
 
     if (path == NULL)
         return NULL;
 
-    is_iter = FALSE;
+    is_iter = false;
     tests = &db->tests;
 
     for (i = 0; i <= (int)strlen(path); i++)
@@ -943,7 +943,7 @@ trc_db_get_test_by_path(te_trc_db *db, char *path)
                         return NULL;
                     else
                     {
-                        is_iter = TRUE;
+                        is_iter = true;
                         iters = &test->iters;
                     }
                 }
@@ -967,7 +967,7 @@ trc_db_get_test_by_path(te_trc_db *db, char *path)
 const trc_exp_result *
 trc_db_iter_get_exp_result(const trc_test_iter    *iter,
                            const tqh_strings      *tags,
-                           te_bool                 last_match)
+                           bool last_match)
 {
     const trc_exp_result       *result;
     const trc_exp_result       *p;

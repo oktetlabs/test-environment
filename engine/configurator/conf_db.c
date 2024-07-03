@@ -41,52 +41,52 @@ static cfg_object cfg_obj_conf_delay_ta;
 
 /** Root of configuration objects */
 cfg_object cfg_obj_root =
-    { CFG_OBJ_HANDLE_ROOT, "/", { 0 }, CVT_NONE, CFG_READ_ONLY, NULL, FALSE,
-      NULL, &cfg_obj_agent, NULL, CFG_DEP_INITIALIZER, FALSE };
+    { CFG_OBJ_HANDLE_ROOT, "/", { 0 }, CVT_NONE, CFG_READ_ONLY, NULL, false,
+      NULL, &cfg_obj_agent, NULL, CFG_DEP_INITIALIZER, false };
 
 /** "/agent" object */
 static cfg_object cfg_obj_agent =
     { CFG_OBJ_HANDLE_AGENT, "/agent", "agent",
-      CVT_NONE, CFG_READ_ONLY, NULL, FALSE, &cfg_obj_root,
-      &cfg_obj_agent_rsrc, &cfg_obj_conf_delay, CFG_DEP_INITIALIZER, FALSE };
+      CVT_NONE, CFG_READ_ONLY, NULL, false, &cfg_obj_root,
+      &cfg_obj_agent_rsrc, &cfg_obj_conf_delay, CFG_DEP_INITIALIZER, false };
 
 /** "/agent/rsrc" object */
 static cfg_object cfg_obj_agent_rsrc =
     { CFG_OBJ_HANDLE_RSRC, "/agent/rsrc", "rsrc",
-      CVT_STRING, CFG_READ_CREATE, NULL, FALSE, &cfg_obj_agent,
-      &cfg_obj_agent_rsrc_shared, NULL, CFG_DEP_INITIALIZER, FALSE };
+      CVT_STRING, CFG_READ_CREATE, NULL, false, &cfg_obj_agent,
+      &cfg_obj_agent_rsrc_shared, NULL, CFG_DEP_INITIALIZER, false };
 
 /** "/agent/rsrc/shared" object */
 static cfg_object cfg_obj_agent_rsrc_shared =
     { CFG_OBJ_HANDLE_RSRC_SHARED, "/agent/rsrc/shared", "shared",
-      CVT_INT32, CFG_READ_WRITE, NULL, TRUE, &cfg_obj_agent_rsrc,
-      NULL, &cfg_obj_agent_rsrc_timeout, CFG_DEP_INITIALIZER, FALSE };
+      CVT_INT32, CFG_READ_WRITE, NULL, true, &cfg_obj_agent_rsrc,
+      NULL, &cfg_obj_agent_rsrc_timeout, CFG_DEP_INITIALIZER, false };
 
 /** "/agent/rsrc/acquire_timeout" object */
 static cfg_object cfg_obj_agent_rsrc_timeout =
     { CFG_OBJ_HANDLE_RSRC_ACQUIRE_TIMEOUT,
       "/agent/rsrc/acquire_attempts_timeout", "acquire_attempts_timeout",
-      CVT_INT32, CFG_READ_WRITE, NULL, FALSE, &cfg_obj_agent_rsrc,
-      NULL, &cfg_obj_agent_rsrc_fallback_shared, CFG_DEP_INITIALIZER, FALSE };
+      CVT_INT32, CFG_READ_WRITE, NULL, false, &cfg_obj_agent_rsrc,
+      NULL, &cfg_obj_agent_rsrc_fallback_shared, CFG_DEP_INITIALIZER, false };
 
 /** "/agent/rsrc/fallback_shared" object */
 static cfg_object cfg_obj_agent_rsrc_fallback_shared =
     { CFG_OBJ_HANDLE_RSRC_FALLBACK_SHARED, "/agent/rsrc/fallback_shared",
       "fallback_shared",
-      CVT_INT32, CFG_READ_WRITE, NULL, FALSE, &cfg_obj_agent_rsrc,
-      NULL, NULL, CFG_DEP_INITIALIZER, FALSE };
+      CVT_INT32, CFG_READ_WRITE, NULL, false, &cfg_obj_agent_rsrc,
+      NULL, NULL, CFG_DEP_INITIALIZER, false };
 
 /** "/conf_delay" object */
 static cfg_object cfg_obj_conf_delay =
     { CFG_OBJ_HANDLE_CONF_DELAY, "/conf_delay", "conf_delay",
-      CVT_STRING, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_root,
-      &cfg_obj_conf_delay_ta, NULL, CFG_DEP_INITIALIZER, FALSE };
+      CVT_STRING, CFG_READ_CREATE, NULL, true, &cfg_obj_root,
+      &cfg_obj_conf_delay_ta, NULL, CFG_DEP_INITIALIZER, false };
 
 /** "/conf_delay/ta" object */
 static cfg_object cfg_obj_conf_delay_ta =
     { CFG_OBJ_HANDLE_CONF_DELAY_TA, "/conf_delay/ta", "ta",
-      CVT_INT32, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_conf_delay,
-      NULL, NULL, CFG_DEP_INITIALIZER, FALSE };
+      CVT_INT32, CFG_READ_CREATE, NULL, true, &cfg_obj_conf_delay,
+      NULL, NULL, CFG_DEP_INITIALIZER, false };
 
 /** Pool with configuration objects */
 cfg_object **cfg_all_obj = NULL;
@@ -101,8 +101,8 @@ cfg_instance cfg_inst_root =
         .oid = "/:",
         .name = "",
         .obj = &cfg_obj_root,
-        .added = TRUE,
-        .remove = FALSE,
+        .added = true,
+        .remove = false,
         .father = NULL,
         .son = NULL,
         .brother = NULL,
@@ -135,7 +135,7 @@ typedef struct cfg_orphan
 {
     cfg_object *object;       /**< Dependant object */
     cfg_oid    *master;       /**< Master object */
-    te_bool     object_wide;  /**< Whether the dependency is object-wide */
+    bool object_wide;  /**< Whether the dependency is object-wide */
     struct cfg_orphan *next;  /**< Next dependency */
     struct cfg_orphan *prev;  /**< Previous dependency */
 } cfg_orphan;
@@ -174,7 +174,7 @@ get_value_for_substitution(const char *oid, char **value)
 }
 
 static te_errno
-replace_substitutions_to_values(te_string *str, te_bool *is_subs_found)
+replace_substitutions_to_values(te_string *str, bool *is_subs_found)
 {
     te_substring_t iter = TE_SUBSTRING_INIT(str);
     te_substring_t end;
@@ -183,7 +183,7 @@ replace_substitutions_to_values(te_string *str, te_bool *is_subs_found)
     char *value = NULL;
     te_errno rc = 0;
 
-    *is_subs_found = FALSE;
+    *is_subs_found = false;
 
     while (1)
     {
@@ -192,7 +192,7 @@ replace_substitutions_to_values(te_string *str, te_bool *is_subs_found)
         if (!te_substring_is_valid(&iter))
             break;
 
-        *is_subs_found = TRUE;
+        *is_subs_found = true;
         end = iter;
         oid_p = iter;
         te_substring_advance(&end);
@@ -245,7 +245,7 @@ expand_substitution(cfg_inst_val val_in, cfg_inst_val *val_out,
     char *val_in_str = NULL;
     te_string val_out_str = TE_STRING_INIT;
     te_errno rc = 0;
-    te_bool is_subs_found;
+    bool is_subs_found;
 
     rc = cfg_types[type].val2str(val_in, &val_in_str);
     if (rc != 0)
@@ -342,17 +342,17 @@ cfg_put_in_order_dep(cfg_object *obj)
  *
  * @param master        Master object
  * @param obj           Dependant object
- * @param object_wide   If TRUE, the dependency is between
+ * @param object_wide   If @c true, the dependency is between
  *                      the master object and dependant instances
  */
 static void
-cfg_create_dep(cfg_object *master, cfg_object *obj, te_bool object_wide)
+cfg_create_dep(cfg_object *master, cfg_object *obj, bool object_wide)
 {
     cfg_dependency *newdep;
 
     /*
      * Dependency of a direct child on its parent should be
-     * processed as usual for objects with unit_part=TRUE.
+     * processed as usual for objects with unit_part=true.
      */
     if (obj->unit_part && obj->father != master)
     {
@@ -502,10 +502,10 @@ cfg_db_init(void)
     cfg_all_inst[0] = &cfg_inst_root;
     cfg_inst_root.son = NULL;
 
-    cfg_create_dep(&cfg_obj_agent_rsrc, &cfg_obj_agent_rsrc_shared, TRUE);
-    cfg_create_dep(&cfg_obj_agent_rsrc, &cfg_obj_agent_rsrc_timeout, TRUE);
+    cfg_create_dep(&cfg_obj_agent_rsrc, &cfg_obj_agent_rsrc_shared, true);
+    cfg_create_dep(&cfg_obj_agent_rsrc, &cfg_obj_agent_rsrc_timeout, true);
     cfg_create_dep(&cfg_obj_agent_rsrc, &cfg_obj_agent_rsrc_fallback_shared,
-                   TRUE);
+                   true);
 
     return cfg_ta_add_agent_instances();
 }
@@ -610,7 +610,7 @@ cfg_process_msg_register(cfg_register_msg *msg)
     }
 
     /* Look for the father first */
-    while (TRUE)
+    while (true)
     {
        for (;
             father != NULL &&
@@ -715,7 +715,7 @@ cfg_process_msg_register(cfg_register_msg *msg)
     {
         INFO("Volatile attribute of %s it inherited from the father",
              msg->oid);
-        msg->vol = TRUE;
+        msg->vol = true;
     }
 
     cfg_all_obj[i]->handle = i;
@@ -733,7 +733,7 @@ cfg_process_msg_register(cfg_register_msg *msg)
 
     cfg_all_obj[i]->unit = msg->unit;
     if (father != NULL && (father->unit || father->unit_part))
-        cfg_all_obj[i]->unit_part = TRUE;
+        cfg_all_obj[i]->unit_part = true;
 
     cfg_all_obj[i]->ordinal_number = 0;
     cfg_all_obj[i]->depends_on = NULL;
@@ -749,7 +749,7 @@ cfg_process_msg_register(cfg_register_msg *msg)
     if (!msg->no_parent_dep &&
         father != &cfg_obj_root && father != &cfg_obj_agent)
     {
-        cfg_create_dep(father, cfg_all_obj[i], FALSE);
+        cfg_create_dep(father, cfg_all_obj[i], false);
     }
 
     cfg_free_oid(oid);
@@ -1263,8 +1263,8 @@ cfg_db_find_pattern(const char *pattern,
     uint64_t i;
     int k;
 
-    te_bool     all = FALSE;
-    te_bool     inst;
+    bool all = false;
+    bool inst;
 
 #define RETERR(_rc) \
     do {                            \
@@ -1275,15 +1275,15 @@ cfg_db_find_pattern(const char *pattern,
 
     if (strcmp(pattern, "*") == 0)
     {
-        all = TRUE;
-        inst = FALSE;
+        all = true;
+        inst = false;
         RING("pattern: %s, file: %s, line: %d\n",
              pattern, __FILE__, __LINE__);
     }
     else if (strcmp(pattern, "*:*") == 0)
     {
-        all = TRUE;
-        inst = TRUE;
+        all = true;
+        inst = true;
     }
     else if ((idsplit = cfg_convert_oid_str(pattern)) == NULL)
         return TE_RC(TE_CS, TE_EINVAL);
@@ -1642,7 +1642,7 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
     s = (cfg_inst_subid *)(oid->ids);
 
     /* Look for the father first */
-    while (TRUE)
+    while (true)
     {
         for (;
              father != NULL &&
@@ -1758,10 +1758,10 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
     /*
      * It is a new instance in local DB, so that mark it as not
      * synchronized with Test Agent (not added to Test Agent).
-     * It is the deal of upper layer to update this field to 'TRUE',
+     * It is the deal of upper layer to update this field to @c true,
      * when this object is added to the Test Agent.
      */
-    inst->added = FALSE;
+    inst->added = false;
     CFG_NEW_INST_HANDLE(inst->handle, i);
     strcpy(inst->name, s->name);
     inst->obj = obj;
@@ -1798,9 +1798,9 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
  *
  * @param inst      instance to be verified
  *
- * @return TRUE, if the instance has read/create (grand-...)children.
+ * @return @c true, if the instance has read/create (grand-...)children.
  */
-static te_bool
+static bool
 has_read_create_children(cfg_instance *inst)
 {
     cfg_instance *tmp;
@@ -1810,11 +1810,11 @@ has_read_create_children(cfg_instance *inst)
         if (tmp->obj->access == CFG_READ_CREATE ||
             has_read_create_children(tmp))
         {
-            return TRUE;
+            return true;
         }
     }
 
-    return FALSE;
+    return false;
 }
 
 /**
@@ -1994,9 +1994,9 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
     {
         cfg_instance *tmp = &cfg_inst_root;
         cfg_instance *last_subinst = NULL;
-        te_bool not_added_ancestor = FALSE;
+        bool not_added_ancestor = false;
 
-        while (TRUE)
+        while (true)
         {
             /*
              * Instance which is scheduled for removal after commit
@@ -2018,7 +2018,7 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
             }
 
             if (tmp->obj->access == CFG_READ_CREATE && !tmp->added)
-                not_added_ancestor = TRUE;
+                not_added_ancestor = true;
 
             last_subinst = tmp;
 
@@ -2078,7 +2078,7 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
     else
     {
         cfg_object *tmp = &cfg_obj_root;
-        while (TRUE)
+        while (true)
         {
            for (;
                 tmp != NULL &&
@@ -2126,7 +2126,7 @@ cfg_get_object(const char *oid_s)
 
     s = (cfg_inst_subid *)(oid->ids);
 
-    while (TRUE)
+    while (true)
     {
        for (;
             tmp != NULL &&
@@ -2318,26 +2318,26 @@ oid_find_volatile(cfg_oid *oid)
 }
 
 /* See the description in conf_db.h */
-te_bool
+bool
 cfg_oid_match_volatile(const char *oid_in, char **oid_out)
 {
     cfg_oid        *oid;
-    te_bool         match = FALSE;
+    bool match = false;
     cfg_inst_subid *subids;
 
     if (strcmp(oid_in, "*:*") == 0)
     {
         if (oid_out == NULL)
-            return TRUE;
+            return true;
 
         *oid_out = strdup(CFG_TA_PREFIX "*");
         if (*oid_out == NULL)
         {
             ERROR("%s(): strdup(%s) failed, oid: '%s'",
                   __FUNCTION__, CFG_TA_PREFIX "*", oid_in);
-            return FALSE;
+            return false;
         }
-        return TRUE;
+        return true;
     }
 
     oid = cfg_convert_oid_str(oid_in);
@@ -2345,7 +2345,7 @@ cfg_oid_match_volatile(const char *oid_in, char **oid_out)
     {
         ERROR("Incorrect OID %s is passed to %s", oid_in,
               __FUNCTION__);
-        return FALSE;
+        return false;
     }
 
     subids = (cfg_inst_subid *)(oid->ids);
@@ -2354,9 +2354,9 @@ cfg_oid_match_volatile(const char *oid_in, char **oid_out)
     {
         const int n = oid_find_volatile(oid);
         if (n <= 0)
-            match = FALSE;
+            match = false;
         else if (oid_out == NULL)
-            match = TRUE;
+            match = true;
         else
         {
             const uint8_t len = oid->len;

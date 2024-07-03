@@ -79,7 +79,7 @@ tapi_cfg_env_local_to_agent(void)
         if (rc == 0)
         {
             if (strcmp(new_value, "") == 0)
-                rc = cfg_del_instance_fmt(FALSE, "/agent:%s/env:%s",
+                rc = cfg_del_instance_fmt(false, "/agent:%s/env:%s",
                                           CFG_OID_GET_INST_NAME(oid, 1),
                                           CFG_OID_GET_INST_NAME(oid, 2));
 

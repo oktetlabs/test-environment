@@ -56,9 +56,9 @@ typedef struct tapi_local_file {
  *
  * @param file      File.
  *
- * @return @c TRUE if @p file is a regular file.
+ * @return @c true if @p file is a regular file.
  */
-static inline te_bool
+static inline bool
 tapi_local_file_is_file(const tapi_local_file *file)
 {
     return (file->type == TAPI_FILE_TYPE_FILE);
@@ -69,9 +69,9 @@ tapi_local_file_is_file(const tapi_local_file *file)
  *
  * @param file      File.
  *
- * @return @c TRUE if @p file is a directory.
+ * @return @c true if @p file is a directory.
  */
-static inline te_bool
+static inline bool
 tapi_local_file_is_dir(const tapi_local_file *file)
 {
     return (file->type == TAPI_FILE_TYPE_DIRECTORY);
@@ -106,9 +106,9 @@ extern const char *tapi_local_file_get_name(const tapi_local_file *file);
  * @param file1     First file to compare.
  * @param file2     Second file to compare.
  *
- * @return @c TRUE if files are equal.
+ * @return @c true if files are equal.
  */
-extern te_bool tapi_local_file_cmp(const tapi_local_file *file1,
+extern bool tapi_local_file_cmp(const tapi_local_file *file1,
                                    const tapi_local_file *file2);
 
 /**

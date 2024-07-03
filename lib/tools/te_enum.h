@@ -93,11 +93,11 @@ te_enum_map_from_value(const te_enum_map map[], int value)
 /**
  * Parse the longest label from @p map at the start of @p str.
  *
- * If @p exact_match is @c TRUE, @p str must start
+ * If @p exact_match is @c true, @p str must start
  * with one of the labels from @p map. If there are several
  * candidate labels, the longest one is chosen.
  *
- * If @p exact_match is @c FALSE, @p str must have
+ * If @p exact_match is @c false, @p str must have
  * a non-empty common prefix with one of the labels
  * from @p map. If there are several such labels,
  * the one with the longest common prefix is chosen
@@ -123,18 +123,18 @@ te_enum_map_from_value(const te_enum_map map[], int value)
  *     TE_ENUM_MAP_END
  * };
  * ...
- * val = te_enum_parse_longest_match(map, -1, FALSE, "ERR message", &next);
+ * val = te_enum_parse_longest_match(map, -1, false, "ERR message", &next);
  * // val is LEVEL_ERROR, next is " message"
  * // "ERR" and "ERROR" have a 3-character common prefix
  *
- * val = te_enum_parse_longest_match(map, -1, TRUE, "ERR message", &next);
+ * val = te_enum_parse_longest_match(map, -1, true, "ERR message", &next);
  * // exact match is required, but "ERR message" does not start
  * // with any of labels in map, val is -1, next is "ERR message"
  *
- * val = te_enum_parse_longest_match(map, -1, FALSE, "WARN", &next);
+ * val = te_enum_parse_longest_match(map, -1, false, "WARN", &next);
  * // val is LEVEL_WARNING, next is ""
  *
- * val = te_enum_parse_longest_match(map, -1, FALSE, "INFO", &next);
+ * val = te_enum_parse_longest_match(map, -1, false, "INFO", &next);
  * // even though match is not exact, there is no label in map
  * // that would have a non-empty common prefix with "INFO",
  * // so val is -1, next is "INFO"
@@ -146,17 +146,17 @@ te_enum_map_from_value(const te_enum_map map[], int value)
  *
  * @code
  * char bytes[13] = "ERROR message"; // no terminating zero
- * te_enum_parse_longest_match(map, -1, FALSE, bytes, &next);
+ * te_enum_parse_longest_match(map, -1, false, bytes, &next);
  * // ok, we know there are valid characters after the label
  *
  * char bytes[3] = "ERR"; // no terminating zero
- * te_enum_parse_longest_match(map, -1, FALSE, bytes, &next);
+ * te_enum_parse_longest_match(map, -1, false, bytes, &next);
  * // not ok: the function will look past the last valid character
  * @endcode
  *
  * @param[in]  map           Mapping.
  * @param[in]  defval        Default return value.
- * @param[in]  exact_match   If @c TRUE, prefixes of map labels are matched.
+ * @param[in]  exact_match   If @c true, prefixes of map labels are matched.
  * @param[in]  str           Input string.
  * @param[out] next          If not @c NULL, the rest of @p str is
  *                           stored here.
@@ -164,7 +164,7 @@ te_enum_map_from_value(const te_enum_map map[], int value)
  * @return A corresponding enum value from @p map or @p defval.
  */
 extern int te_enum_parse_longest_match(const te_enum_map map[], int defval,
-                                       te_bool exact_match, const char *str,
+                                       bool exact_match, const char *str,
                                        char **next);
 
 /**
@@ -284,7 +284,7 @@ typedef struct te_enum_trn {
  *
  * @param trn         Translation table
  * @param value       Value
- * @param reverse     If `TRUE`, the @a to field of the translation is
+ * @param reverse     If `true`, the @a to field of the translation is
  *                    used as a key, i.e. a reverse translation is
  *                    performed.
  * @param unknown_val Value to return if @p value is not found
@@ -293,7 +293,7 @@ typedef struct te_enum_trn {
  */
 
 extern int te_enum_translate(const te_enum_trn trn[],
-                             int value, te_bool reverse,
+                             int value, bool reverse,
                              int unknown_val);
 
 /**
@@ -325,7 +325,7 @@ typedef struct te_enum_bitmask_conv {
  *
  * @param[in] bm_conv     Conversion table.
  * @param[in] bm          Bitmask to convert.
- * @param[in] reverse     If @c TRUE, the @a to_bits field of the conversion
+ * @param[in] reverse     If @c true, the @a to_bits field of the conversion
  *                        is used as a key, i.e. a reverse conversion is
  *                        performed.
  * @param[out] result     Resulting bitmask. May be @c NULL to check that
@@ -337,7 +337,7 @@ typedef struct te_enum_bitmask_conv {
  *                        be converted using @p conv_map.
  */
 extern te_errno te_enum_bitmask_convert(const te_enum_bitmask_conv bm_conv[],
-                                        uint64_t bm, te_bool reverse,
+                                        uint64_t bm, bool reverse,
                                         uint64_t *result);
 
 /**

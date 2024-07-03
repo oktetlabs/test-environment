@@ -70,9 +70,9 @@
 
 typedef struct eth_feature_entry {
     char        name[ETH_GSTRING_LEN];
-    te_bool     enabled;
-    te_bool     readonly;
-    te_bool     need_update;
+    bool enabled;
+    bool readonly;
+    bool need_update;
 } eth_feature_entry;
 
 typedef struct eth_if_context {
@@ -80,7 +80,7 @@ typedef struct eth_if_context {
     char                        ifname[IFNAMSIZ];
     struct eth_feature_entry   *features;
     unsigned int                nb_features;
-    te_bool                     valid;
+    bool valid;
 } eth_if_context;
 
 static SLIST_HEAD(eth_if_contexts, eth_if_context) if_contexts;
@@ -446,7 +446,7 @@ eth_feature_set(unsigned int    gid,
     }
 
     feature->enabled = (feature_value == 1);
-    feature->need_update = TRUE;
+    feature->need_update = true;
 
     return 0;
 }
@@ -480,7 +480,7 @@ eth_feature_set_values(struct eth_if_context *if_context)
         if (if_context->features[i].enabled)
             E_FEATURE_BIT_SET(e_features->features, i, requested);
 
-       if_context->features[i].need_update = FALSE;
+       if_context->features[i].need_update = false;
     }
     rc = eth_feature_ioctl_send(if_context->ifname, e_features);
 

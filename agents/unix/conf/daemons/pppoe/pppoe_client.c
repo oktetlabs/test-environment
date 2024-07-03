@@ -40,7 +40,7 @@ typedef struct pppoe_client {
     /** Source MAC address to use in PPPoE session */
     uint8_t                mac[ETHER_ADDR_LEN];
     /** Whether PPPoE client is active or not */
-    te_bool                active;
+    bool active;
     /** PID of running PPPoE client */
     pid_t                  pid;
 } pppoe_client;
@@ -154,7 +154,7 @@ pppoe_client_create(const char *if_name, const char *name,
     (*p_clnt)->grp = (*p_grp);
     (*p_clnt)->name = strdup(name);
     memset(&(*p_clnt)->mac, 0, sizeof((*p_clnt)->mac));
-    (*p_clnt)->active = FALSE;
+    (*p_clnt)->active = false;
     (*p_clnt)->pid = (pid_t)(-1);
 
     *clnt_out = *p_clnt;
@@ -337,7 +337,7 @@ pppoe_stop(pppoe_client *clnt)
         ERROR("PPPoE client terminated abnormally");
     clnt->pid = (pid_t)(-1);
 
-    clnt->active = FALSE;
+    clnt->active = false;
     return 0;
 }
 
@@ -376,7 +376,7 @@ pppoe_start(pppoe_client *clnt)
     if (clnt->pid <= 0)
         return TE_EFAULT;
 
-    clnt->active = TRUE;
+    clnt->active = true;
     return 0;
 }
 
@@ -385,7 +385,7 @@ pppoe_set(unsigned int gid, const char *oid, const char *value,
           const char *if_name, const char *pppoe_name)
 {
     pppoe_client *clnt;
-    te_bool       set_active;
+    bool set_active;
     te_errno      rc;
 
     UNUSED(oid);
@@ -395,9 +395,9 @@ pppoe_set(unsigned int gid, const char *oid, const char *value,
         return rc;
 
     if (strcmp(value, "1") == 0)
-        set_active = TRUE;
+        set_active = true;
     else if (strcmp(value, "0") == 0)
-        set_active = FALSE;
+        set_active = false;
     else
         return TE_EINVAL;
 
@@ -502,14 +502,14 @@ pppoe_client_add(void)
     INFO("%s()", __FUNCTION__);
 
     /* Find PPPoE client executables */
-    rc = find_file(1, pppd_paths, TRUE);
+    rc = find_file(1, pppd_paths, true);
     if (rc < 0)
     {
         ERROR("Failed to find PPPD executable necessary for PPPoE client"
               " - PPPoE client will not be available");
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
-    rc = find_file(1, pppoe_paths, TRUE);
+    rc = find_file(1, pppoe_paths, true);
     if (rc < 0)
     {
         ERROR("Failed to find PPPOE executable"

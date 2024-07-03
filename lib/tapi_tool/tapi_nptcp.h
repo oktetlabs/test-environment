@@ -31,7 +31,7 @@ typedef struct tapi_nptcp_opt {
     /** Receiver host to connect to */
     const char *host;
     /** Invalidate cache */
-    te_bool invalidate_cache;
+    bool invalidate_cache;
     /** Lower bound for the size of message to be tested (in bytes) */
     unsigned int starting_msg_size;
     /** The number of repeats for each test */
@@ -48,13 +48,13 @@ typedef struct tapi_nptcp_opt {
     /** Perturbation size (in bytes) */
     unsigned int perturbation_size;
     /** Reset the TCP sockets */
-    te_bool reset_sockets;
+    bool reset_sockets;
     /** Set streaming mode */
-    te_bool streaming_mode;
+    bool streaming_mode;
     /** Upper bound for the size of message to be tested (in bytes) */
     unsigned int upper_bound;
     /** Set bi-directional mode */
-    te_bool bi_directional_mode;
+    bool bi_directional_mode;
 } tapi_nptcp_opt;
 
 /** Default options initializer */

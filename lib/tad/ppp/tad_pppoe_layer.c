@@ -53,15 +53,15 @@ typedef struct tad_pppoe_proto_pdu_data {
 static const tad_bps_pkt_frag tad_pppoe_bps_hdr[] =
 {
     { "version", 4, BPS_FLD_SIMPLE(NDN_TAG_PPPOE_VERSION),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "type", 4, BPS_FLD_SIMPLE(NDN_TAG_PPPOE_TYPE),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "code", 8, BPS_FLD_SIMPLE(NDN_TAG_PPPOE_CODE),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "session-id", 16, BPS_FLD_SIMPLE(NDN_TAG_PPPOE_SESSION_ID),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "length",    16, BPS_FLD_CONST_DEF(NDN_TAG_PPPOE_LENGTH, 0),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
 };
 
 /* item "length" index in array above */
@@ -281,7 +281,7 @@ tad_pppoe_gen_bin_cb(csap_p csap, unsigned int layer,
     tad_pkts_move(pdus, sdus);
 
     /* Allocate and add PPPoE header to all packets */
-    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, bitoff >> 3, NULL);
+    rc = tad_pkts_add_new_seg(pdus, true, NULL, bitoff >> 3, NULL);
     if (rc != 0)
         return rc;
 

@@ -189,7 +189,7 @@ security_pmf2val(tapi_wifi_pmf pmf)
         {.from = TAPI_WIFI_PMF_REQUIRED, .to = 2},
         TE_ENUM_TRN_END
     };
-    int mapped = te_enum_translate(translation, pmf, FALSE, UNKNOWN_PMF);
+    int mapped = te_enum_translate(translation, pmf, false, UNKNOWN_PMF);
 
     assert(mapped != UNKNOWN_PMF);
     return mapped;
@@ -356,7 +356,7 @@ tapi_wpa_supplicant_configure(
                         const char *ta, const char *ifname,
                         const uint8_t *bssid, const char *ssid,
                         tapi_wpa_supplicant_security *security,
-                        te_bool scan_ssid,
+                        bool scan_ssid,
                         const char *opts_fmt, ...)
 {
     va_list  ap;
@@ -375,7 +375,7 @@ tapi_wpa_supplicant_configure_va(
                         const char *ta, const char *ifname,
                         const uint8_t *bssid, const char *ssid,
                         tapi_wpa_supplicant_security *security,
-                        te_bool scan_ssid,
+                        bool scan_ssid,
                         const char *opts_fmt, va_list ap)
 {
     te_string optstr = TE_STRING_INIT;

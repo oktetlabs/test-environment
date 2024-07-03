@@ -46,27 +46,27 @@ typedef struct depth_ctx_user {
     /** Line number of the current message */
     int linum;
 
-    /** @c TRUE if we are inside log message */
-    te_bool in_msg;
+    /** @c true if we are inside log message */
+    bool in_msg;
     /**
       *  Number of log messages which are not finished yet
       * (current message and all its parents in messages hierarchy).
       */
     int opened_msgs;
-    /** @c TRUE if we started filling content in a message */
-    te_bool in_content;
+    /** @c true if we started filling content in a message */
+    bool in_content;
     /**
-     * @c TRUE if characters from XML log should be appended to
+     * @c true if characters from XML log should be appended to
      * JSON
      */
-    te_bool append_chars;
+    bool append_chars;
     /**
-     * @c TRUE if XML characters should be interpreted as raw JSON rather
+     * @c true if XML characters should be interpreted as raw JSON rather
      * than a string which needs escaping
      */
-    te_bool append_json;
-    /** @c TRUE if list of child entities is started */
-    te_bool entity_list;
+    bool append_json;
+    /** @c true if list of child entities is started */
+    bool entity_list;
 
     /** Current nesting level */
     int cur_nl;
@@ -112,7 +112,7 @@ static depth_ctx_user *
 alloc_depth_user_data(uint32_t depth)
 {
     depth_ctx_user *depth_user;
-    te_bool reused = FALSE;
+    bool reused = false;
 
     assert(depth >= 1);
 
@@ -186,7 +186,7 @@ maybe_start_entity_list(depth_ctx_user *depth_user)
         te_json_add_key(json_ctx, "items");
         te_json_start_array(json_ctx);
 
-        depth_user->entity_list = TRUE;
+        depth_user->entity_list = true;
     }
 }
 
@@ -200,7 +200,7 @@ maybe_end_entity_list(depth_ctx_user *depth_user)
     {
         te_json_end(json_ctx);
         te_json_end(json_ctx);
-        depth_user->entity_list = FALSE;
+        depth_user->entity_list = false;
     }
 }
 
@@ -237,10 +237,10 @@ RGT_DEF_FUNC(proc_document_start)
      * XML character escapings like &gt; should be converted back
      * to characters.
      */
-    ctx->expand_entities = TRUE;
+    ctx->expand_entities = true;
 
     /* Create output directory */
-    rgt_xml2multi_setup_outdir(ctx, &multi_opts, FALSE);
+    rgt_xml2multi_setup_outdir(ctx, &multi_opts, false);
 
     /* Initialize depth-specific user data pointer */
     depth_ctx->user_data = alloc_depth_user_data(ctx->depth);
@@ -317,7 +317,7 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     const char *err = rgt_tmpls_xml_attrs_get(xml_attrs, "err");
     const char *hash = rgt_tmpls_xml_attrs_get(xml_attrs, "hash");
     char fname[500] = "";
-    te_bool matched;
+    bool matched;
 
     rgt_depth_ctx_t *prev_depth_ctx;
     depth_ctx_user *prev_depth_user;
@@ -452,7 +452,7 @@ maybe_start_text_msg_content(depth_ctx_user *depth_user)
         te_json_add_key(json_ctx, "content");
         te_json_start_string(json_ctx);
 
-        depth_user->in_content = TRUE;
+        depth_user->in_content = true;
     }
 }
 
@@ -470,7 +470,7 @@ maybe_end_msg_content(depth_ctx_user *depth_user)
         te_json_end(json_ctx);
         te_json_end(json_ctx);
 
-        depth_user->in_content = FALSE;
+        depth_user->in_content = false;
     }
 }
 
@@ -623,16 +623,16 @@ RGT_XML2JSON_CB(proc_log_msg_start,
     te_json_add_key(json_ctx, "log_content");
     te_json_start_array(json_ctx);
 
-    depth_user->in_msg = TRUE;
+    depth_user->in_msg = true;
     depth_user->opened_msgs++;
 
-    depth_user->in_content = FALSE;
-    depth_user->append_chars = TRUE;
+    depth_user->in_content = false;
+    depth_user->append_chars = true;
 
     if (strcmp(level, "MI") == 0)
     {
-        depth_user->in_content = TRUE;
-        depth_user->append_json = TRUE;
+        depth_user->in_content = true;
+        depth_user->append_json = true;
 
         te_json_start_object(json_ctx);
         te_json_add_key_str(json_ctx, "type", "te-log-table-content-mi");
@@ -648,10 +648,10 @@ RGT_XML2JSON_CB(proc_log_msg_end,
     maybe_end_msg_content(depth_user);
     te_json_end(json_ctx);
 
-    depth_user->append_chars = FALSE;
-    depth_user->in_msg = FALSE;
-    depth_user->in_content = FALSE;
-    depth_user->append_json = FALSE;
+    depth_user->append_chars = false;
+    depth_user->in_msg = false;
+    depth_user->in_content = false;
+    depth_user->append_json = false;
 })
 
 RGT_XML2JSON_CB(proc_log_msg_br,
@@ -690,13 +690,13 @@ RGT_XML2JSON_CB(proc_meta_ ## _name ## _start,                        \
 {                                                                     \
     te_json_add_key(json_ctx, #_json_name);                           \
     te_json_start_string(json_ctx);                                   \
-    depth_user->append_chars = TRUE;                                  \
+    depth_user->append_chars = true;                                  \
 })                                                                    \
                                                                       \
 RGT_XML2JSON_CB(proc_meta_ ## _name ## _end,                          \
 {                                                                     \
     te_json_end(json_ctx);                                            \
-    depth_user->append_chars = FALSE;                                 \
+    depth_user->append_chars = false;                                 \
 })
 
 RGT_XML2JSON_META_PROP_CB(start_ts, start)
@@ -757,14 +757,14 @@ RGT_XML2JSON_CB(proc_meta_ ## _name ## _start,                          \
     te_json_add_key_str(json_ctx, "level", level);                      \
     te_json_add_key(json_ctx, #_name);                                  \
     te_json_start_string(json_ctx);                                     \
-    depth_user->append_chars = TRUE;                                    \
+    depth_user->append_chars = true;                                    \
 })                                                                      \
                                                                         \
 RGT_XML2JSON_CB(proc_meta_ ## _name ## _end,                            \
 {                                                                       \
     te_json_end(json_ctx);                                              \
     te_json_end(json_ctx);                                              \
-    depth_user->append_chars = FALSE;                                   \
+    depth_user->append_chars = false;                                   \
 })
 
 RGT_XML2JSON_META_ARRAY_PROP_CB(verdicts, verdicts)
@@ -783,7 +783,7 @@ RGT_XML2JSON_CB(proc_meta_page_start,
         te_json_add_key(json_ctx, "url");
         te_json_start_string(json_ctx);
         te_json_append_string(json_ctx, "%s", multi_opts.docs_url);
-        depth_user->append_chars = TRUE;
+        depth_user->append_chars = true;
     }
 })
 
@@ -793,7 +793,7 @@ RGT_XML2JSON_CB(proc_meta_page_end,
     {
         te_json_end(json_ctx);
         te_json_end(json_ctx);
-        depth_user->append_chars = FALSE;
+        depth_user->append_chars = false;
     }
 })
 
@@ -866,7 +866,7 @@ RGT_XML2JSON_CB(proc_log_msg_file_start,
     te_json_add_key_str(json_ctx, "type", "te-log-table-content-file");
     te_json_add_key(json_ctx, "content");
     te_json_start_string(json_ctx);
-    depth_user->in_content = TRUE;
+    depth_user->in_content = true;
 })
 
 RGT_XML2JSON_CB(proc_log_msg_file_end,
@@ -883,7 +883,7 @@ RGT_XML2JSON_CB(proc_mem_dump_start,
                         "te-log-table-content-memory-dump");
     te_json_add_key(json_ctx, "dump");
     te_json_start_array(json_ctx);
-    depth_user->in_content = TRUE;
+    depth_user->in_content = true;
 })
 
 RGT_XML2JSON_CB(proc_mem_dump_end,

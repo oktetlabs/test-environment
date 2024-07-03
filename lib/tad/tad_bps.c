@@ -397,7 +397,7 @@ tad_bps_pkt_frag_gen_bin(const tad_bps_pkt_frag_def *def,
         else
         {
             len = 0;
-            assert(FALSE);
+            assert(false);
         }
 
         if (((*bitoff & 7) == 0) && ((len & 7) == 0))
@@ -518,7 +518,7 @@ tad_bin_to_data_unit(const tad_pkt *pkt, unsigned int bitoff,
 
         default:
             /* The rest is not supported/meaningless */
-            assert(FALSE);
+            assert(false);
     }
     EXIT();
 }
@@ -605,7 +605,7 @@ tad_bps_pkt_frag_match_do(const tad_bps_pkt_frag_def *def,
         else
         {
             len = 0;
-            assert(FALSE);
+            assert(false);
         }
 
         if ((!def->descr[i].force_read) &&
@@ -698,7 +698,7 @@ tad_bps_pkt_frag_match_post(const tad_bps_pkt_frag_def *def,
         else
         {
             len = 0;
-            assert(FALSE);
+            assert(false);
         }
 
         /* FIXME: Optimize - do not read twice */

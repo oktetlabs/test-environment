@@ -25,7 +25,7 @@ typedef struct restconf_settings {
     /**< Server port. */
     uint16_t port;
     /**< Whether use https or http when connecting to server. */
-    te_bool https;
+    bool https;
     /**< Username to use when connecting to server. */
     char username[RCF_MAX_VAL];
     /**< Password to use when connecting to server. */

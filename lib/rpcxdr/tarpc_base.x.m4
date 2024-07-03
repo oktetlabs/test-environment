@@ -120,7 +120,7 @@ struct tarpc_out_arg {
                                RPC client want to check status or
                                wait for finish of the initiated
                                operation. */
-    tarpc_bool  unsolicited; /**< Set to TRUE for RPC responses that are
+    tarpc_bool  unsolicited; /**< Set to @c true for RPC responses that are #
                                   not paired to RPC requests.
                                   Currently only used for rpc_is_op_done
                                   notifications */
@@ -1357,7 +1357,7 @@ struct tarpc_recvfrom_in {
     tarpc_socklen_t     fromlen<>;  /**< Maximum expected length of the
                                          address */
 
-    tarpc_bool chk_func; /**< If @c TRUE, call __recvfrom_chk() */
+    tarpc_bool chk_func; /**< If @c true, call __recvfrom_chk() */
 };
 
 struct tarpc_recvfrom_out {
@@ -4571,7 +4571,7 @@ struct tarpc_pattern_sender_out {
     tarpc_int   retval;         /**< 0 (success) or -1 (failure) */
 
     uint64_t    bytes;          /**< Number of sent bytes */
-    tarpc_bool  func_failed;    /**< TRUE if it was data transmitting
+    tarpc_bool  func_failed;    /**< @c true if it was data transmitting
                                      function who failed */
 
     tarpc_pat_gen_arg gen_arg;  /**< Pattern generator function
@@ -4596,7 +4596,7 @@ struct tarpc_pattern_receiver_in {
                                      milliseconds; if @c 0, the
                                      function will wait until @b time2run
                                      expires) */
-    tarpc_bool  ignore_pollerr; /**< If @c TRUE, @c POLLERR event should be
+    tarpc_bool  ignore_pollerr; /**< If @c true, @c POLLERR event should be
                                      ignored if it arrives instead of
                                      @c POLLIN */
 
@@ -4969,7 +4969,7 @@ struct tarpc_overfill_buffers_in {
     tarpc_int       sock;
     tarpc_bool      is_nonblocking;
     iomux_func      iomux;
-    tarpc_bool      return_data;    /**< If @c TRUE, return data sent
+    tarpc_bool      return_data;    /**< If @c true, return data sent
                                          when overfilling buffers */
 };
 
@@ -5212,7 +5212,7 @@ struct tarpc_get_var_out {
     struct tarpc_out_arg common;
 
     uint64_t   val;   /**< Variable value */
-    tarpc_bool found; /**< If TRUE, variable is found */
+    tarpc_bool found; /**< If @c true, variable is found */
 };
 
 /* set_var() */
@@ -5227,7 +5227,7 @@ struct tarpc_set_var_in {
 struct tarpc_set_var_out {
     struct tarpc_out_arg common;
 
-    tarpc_bool found; /**< If TRUE, variable is found */
+    tarpc_bool found; /**< If @c true, variable is found */
 };
 
 /* mcast_join_leave() */

@@ -342,7 +342,7 @@ check_slinksettings_support(const char *if_name,
     rc = ioctl(cfg_socket, SIOCETHTOOL, &ifr);
     if (rc < 0 && errno == EOPNOTSUPP)
     {
-        lsets->set_supported = FALSE;
+        lsets->set_supported = false;
     }
     else if (rc >= 0)
     {
@@ -377,7 +377,7 @@ check_sset_support(const char *if_name, ta_ethtool_lsets *lsets)
         {
             if (strcmp(value, known_kinds[i]) == 0)
             {
-                lsets->set_supported = FALSE;
+                lsets->set_supported = false;
                 break;
             }
         }
@@ -391,7 +391,7 @@ static void
 lsets_check_set_support(const char *if_name,
                         ta_ethtool_lsets *lsets)
 {
-    lsets->set_supported = TRUE;
+    lsets->set_supported = true;
 
     if (lsets->use_xlinksettings)
     {
@@ -463,13 +463,13 @@ get_ethtool_lsets(const char *if_name, ta_ethtool_lsets *lsets)
         if (rc != 0)
             return rc;
 
-        lsets->use_xlinksettings = TRUE;
+        lsets->use_xlinksettings = true;
         return 0;
-    } while (FALSE);
+    } while (false);
 #endif
 
     memset(lsets, 0, sizeof(*lsets));
-    lsets->use_xlinksettings = FALSE;
+    lsets->use_xlinksettings = false;
     native_cmd = &lsets->sets.xset;
     native_cmd->cmd = ETHTOOL_GSET;
     ifr.ifr_data = (caddr_t)native_cmd;
@@ -878,8 +878,8 @@ ta_ethtool_get_rssh(unsigned int gid, const char *if_name,
 
     result = TE_ALLOC(sizeof(*result));
     result->rxfh = got_rxfh;
-    result->indir_change = FALSE;
-    result->indir_reset = FALSE;
+    result->indir_change = false;
+    result->indir_reset = false;
 
     rc = ta_obj_add(TA_OBJ_TYPE_IF_RSSH, te_string_value(&obj_name),
                     "", gid, result, &free_ta_ethtool_rxfh, &obj);
@@ -902,7 +902,7 @@ ta_ethtool_commit_rssh(unsigned int gid, const char *if_name,
     te_string obj_name = TE_STRING_INIT_STATIC(MAX_OBJ_NAME_LEN);
     ta_cfg_obj_t *obj;
     ta_ethtool_rxfh *ta_rxfh;
-    te_bool remove_indir_data = FALSE;
+    bool remove_indir_data = false;
     uint32_t orig_indir_size;
 
     rc = rssh_object_name(&obj_name, if_name, rss_context);
@@ -925,13 +925,13 @@ ta_ethtool_commit_rssh(unsigned int gid, const char *if_name,
     if (!ta_rxfh->indir_change)
     {
         ta_rxfh->rxfh->indir_size = ETH_RXFH_INDIR_NO_CHANGE;
-        remove_indir_data = TRUE;
+        remove_indir_data = true;
     }
 #endif
     if (ta_rxfh->indir_reset)
     {
         ta_rxfh->rxfh->indir_size = 0;
-        remove_indir_data = TRUE;
+        remove_indir_data = true;
     }
 
     if (remove_indir_data)
@@ -1136,8 +1136,8 @@ static te_errno
 old_lmode_op(ta_ethtool_lsets *lsets,
              unsigned int mask_id,
              ta_ethtool_link_mode mode,
-             te_bool do_set,
-             te_bool *value)
+             bool do_set,
+             bool *value)
 {
     uint32_t *mask;
     unsigned int native_mode;
@@ -1151,7 +1151,7 @@ old_lmode_op(ta_ethtool_lsets *lsets,
             /*
              * Ignore not defined native link modes for get operation.
              */
-            *value = FALSE;
+            *value = false;
             rc = 0;
         }
         else
@@ -1193,9 +1193,9 @@ old_lmode_op(ta_ethtool_lsets *lsets,
     else
     {
         if (*mask & native_mode)
-            *value = TRUE;
+            *value = true;
         else
-            *value = FALSE;
+            *value = false;
     }
 
     return 0;
@@ -1226,8 +1226,8 @@ static te_errno
 new_lmode_op(ta_ethtool_lsets *lsets,
              unsigned int mask_id,
              ta_ethtool_link_mode mode,
-             te_bool do_set,
-             te_bool *value)
+             bool do_set,
+             bool *value)
 {
     unsigned int native_mode;
     unsigned int nword;
@@ -1245,7 +1245,7 @@ new_lmode_op(ta_ethtool_lsets *lsets,
             /*
              * Ignore not defined native link modes for get operation.
              */
-            *value = FALSE;
+            *value = false;
             rc = 0;
         }
         else
@@ -1271,7 +1271,7 @@ new_lmode_op(ta_ethtool_lsets *lsets,
         }
         else
         {
-            *value = FALSE;
+            *value = false;
             return 0;
         }
     }
@@ -1291,9 +1291,9 @@ new_lmode_op(ta_ethtool_lsets *lsets,
     else
     {
         if (*word & (1 << flag))
-            *value = TRUE;
+            *value = true;
         else
-            *value = FALSE;
+            *value = false;
     }
 
     return 0;
@@ -1305,13 +1305,13 @@ new_lmode_op(ta_ethtool_lsets *lsets,
 te_errno
 ta_ethtool_lmode_supported(ta_ethtool_lsets *lsets,
                            ta_ethtool_link_mode mode,
-                           te_bool *supported)
+                           bool *supported)
 {
     if (lsets->use_xlinksettings)
     {
 #ifdef ETHTOOL_GLINKSETTINGS
         return new_lmode_op(lsets, SUPPORTED_MASK_ID,
-                            mode, FALSE, supported);
+                            mode, false, supported);
 #else
         ERROR("%s(): ETHTOOL_GLINKSETTINGS is not defined but "
               "use_xlinksettings is set to TRUE", __FUNCTION__);
@@ -1321,7 +1321,7 @@ ta_ethtool_lmode_supported(ta_ethtool_lsets *lsets,
     else
     {
         return old_lmode_op(lsets, SUPPORTED_MASK_ID,
-                            mode, FALSE, supported);
+                            mode, false, supported);
     }
 }
 
@@ -1329,13 +1329,13 @@ ta_ethtool_lmode_supported(ta_ethtool_lsets *lsets,
 te_errno
 ta_ethtool_lmode_advertised(ta_ethtool_lsets *lsets,
                             ta_ethtool_link_mode mode,
-                            te_bool *advertised)
+                            bool *advertised)
 {
     if (lsets->use_xlinksettings)
     {
 #ifdef ETHTOOL_GLINKSETTINGS
         return new_lmode_op(lsets, ADVERTISING_MASK_ID,
-                            mode, FALSE, advertised);
+                            mode, false, advertised);
 #else
         ERROR("%s(): ETHTOOL_GLINKSETTINGS is not defined but "
               "use_xlinksettings is set to TRUE", __FUNCTION__);
@@ -1345,7 +1345,7 @@ ta_ethtool_lmode_advertised(ta_ethtool_lsets *lsets,
     else
     {
         return old_lmode_op(lsets, ADVERTISING_MASK_ID,
-                            mode, FALSE, advertised);
+                            mode, false, advertised);
     }
 }
 
@@ -1353,13 +1353,13 @@ ta_ethtool_lmode_advertised(ta_ethtool_lsets *lsets,
 te_errno
 ta_ethtool_lmode_lp_advertised(ta_ethtool_lsets *lsets,
                                ta_ethtool_link_mode mode,
-                               te_bool *lp_advertised)
+                               bool *lp_advertised)
 {
     if (lsets->use_xlinksettings)
     {
 #ifdef ETHTOOL_GLINKSETTINGS
         return new_lmode_op(lsets, LP_ADVERTISING_MASK_ID,
-                            mode, FALSE, lp_advertised);
+                            mode, false, lp_advertised);
 #else
         ERROR("%s(): ETHTOOL_GLINKSETTINGS is not defined but "
               "use_xlinksettings is set to TRUE", __FUNCTION__);
@@ -1369,7 +1369,7 @@ ta_ethtool_lmode_lp_advertised(ta_ethtool_lsets *lsets,
     else
     {
         return old_lmode_op(lsets, LP_ADVERTISING_MASK_ID,
-                            mode, FALSE, lp_advertised);
+                            mode, false, lp_advertised);
     }
 }
 
@@ -1377,13 +1377,13 @@ ta_ethtool_lmode_lp_advertised(ta_ethtool_lsets *lsets,
 te_errno
 ta_ethtool_lmode_advertise(ta_ethtool_lsets *lsets,
                            ta_ethtool_link_mode mode,
-                           te_bool enable)
+                           bool enable)
 {
     if (lsets->use_xlinksettings)
     {
 #ifdef ETHTOOL_GLINKSETTINGS
         return new_lmode_op(lsets, ADVERTISING_MASK_ID,
-                            mode, TRUE, &enable);
+                            mode, true, &enable);
 #else
         ERROR("%s(): ETHTOOL_GLINKSETTINGS is not defined but "
               "use_xlinksettings is set to TRUE", __FUNCTION__);
@@ -1393,18 +1393,18 @@ ta_ethtool_lmode_advertise(ta_ethtool_lsets *lsets,
     else
     {
         return old_lmode_op(lsets, ADVERTISING_MASK_ID,
-                            mode, TRUE, &enable);
+                            mode, true, &enable);
     }
 }
 
 /* See description in conf_ethtool.h */
 te_errno
 ta_ethtool_lmode_list_names(ta_ethtool_lsets *lsets,
-                            te_bool link_partner,
+                            bool link_partner,
                             te_string *list_str)
 {
     size_t i;
-    te_bool enabled;
+    bool enabled;
     te_errno rc;
 
     for (i = 0; i < TE_ARRAY_LEN(modes_info); i++)
@@ -1441,8 +1441,8 @@ ta_ethtool_get_max_speed(ta_ethtool_lsets *lsets, unsigned int *speed,
     unsigned int mode_speed;
     unsigned int mode_duplex;
     unsigned int i;
-    te_bool update_speed;
-    te_bool enabled;
+    bool update_speed;
+    bool enabled;
     te_errno rc;
 
     last_speed = SPEED_UNKNOWN;
@@ -1450,7 +1450,7 @@ ta_ethtool_get_max_speed(ta_ethtool_lsets *lsets, unsigned int *speed,
 
     for (i = 0; i < TE_ARRAY_LEN(modes_info); i++)
     {
-        update_speed = FALSE;
+        update_speed = false;
 
         switch (i)
         {
@@ -1607,13 +1607,13 @@ ta_ethtool_get_max_speed(ta_ethtool_lsets *lsets, unsigned int *speed,
 
         if (last_speed == SPEED_UNKNOWN || mode_speed > last_speed)
         {
-            update_speed = TRUE;
+            update_speed = true;
         }
         else if (mode_speed == last_speed)
         {
             if (last_duplex == DUPLEX_UNKNOWN ||
                 (last_duplex == DUPLEX_HALF && mode_duplex == DUPLEX_FULL))
-                update_speed = TRUE;
+                update_speed = true;
         }
 
         if (update_speed)
@@ -1682,7 +1682,7 @@ ta_ethtool_get_rx_cls_rules(unsigned int gid, const char *if_name,
 #ifdef RX_CLS_LOC_SPECIAL
     result->spec_loc_flag = !!(rules_count.data & RX_CLS_LOC_SPECIAL);
 #else
-    result->spec_loc_flag = FALSE;
+    result->spec_loc_flag = false;
 #endif
 
     result->rule_cnt = rules_count.rule_cnt;
@@ -2052,7 +2052,7 @@ tcpip6_from_ta(const ta_ethtool_rx_cls_rule_fields *ta_fields,
 #ifdef HAVE_STRUCT_ETHTOOL_USRIP4_SPEC
 static void
 usrip4_from_ta(const ta_ethtool_rx_cls_rule_fields *ta_fields,
-               te_bool mask, struct ethtool_usrip4_spec *spec)
+               bool mask, struct ethtool_usrip4_spec *spec)
 {
     memcpy(&spec->ip4src, &ta_fields->src_l3_addr,
            sizeof(spec->ip4src));
@@ -2108,7 +2108,7 @@ tcpip4_from_ta(const ta_ethtool_rx_cls_rule_fields *ta_fields,
 #endif
 
 static te_errno
-rule_fields_ta2h(uint32_t flow_type, te_bool mask,
+rule_fields_ta2h(uint32_t flow_type, bool mask,
                  const ta_ethtool_rx_cls_rule_fields *ta_fields,
                  union ethtool_flow_union *h_fields)
 {
@@ -2179,7 +2179,7 @@ rule_fields_ta2h(uint32_t flow_type, te_bool mask,
 
 /* Check whether given buffer contains only zeroes */
 
-static te_bool
+static bool
 data_is_zero(const void *data, size_t len)
 {
     const uint8_t *p = (uint8_t *)data;
@@ -2188,10 +2188,10 @@ data_is_zero(const void *data, size_t len)
     for (i = 0; i < len; i++)
     {
         if (p[i] != 0)
-            return FALSE;
+            return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 #define DATA_IS_ZERO(data_) data_is_zero(&data_, sizeof(data_))
@@ -2264,12 +2264,12 @@ rule_ta2h(const ta_ethtool_rx_cls_rule *ta_rule,
 #endif
     }
 
-    rc = rule_fields_ta2h(ta_rule->flow_type, FALSE, &ta_rule->field_values,
+    rc = rule_fields_ta2h(ta_rule->flow_type, false, &ta_rule->field_values,
                           &h_rule->fs.h_u);
     if (rc != 0)
         return rc;
 
-    rc = rule_fields_ta2h(ta_rule->flow_type, TRUE, &ta_rule->field_masks,
+    rc = rule_fields_ta2h(ta_rule->flow_type, true, &ta_rule->field_masks,
                           &h_rule->fs.m_u);
     if (rc != 0)
         return rc;

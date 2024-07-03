@@ -185,7 +185,7 @@ rgt_parse_frag_rec(const char *s, rgt_frag_rec *rec)
     name_suff = NULL;
     if ((name_suff = strstr(rec->frag_name, "_end")) != NULL)
     {
-        rec->start_frag = FALSE;
+        rec->start_frag = false;
         if (scanf_rc >= 7)
         {
             /*
@@ -203,7 +203,7 @@ rgt_parse_frag_rec(const char *s, rgt_frag_rec *rec)
             ERROR("Too few parameters in '%s'", s);
             return -1;
         }
-        rec->start_frag = TRUE;
+        rec->start_frag = true;
         rec->start_len = f1;
         rec->frags_cnt = f2;
         rec->parent_id = f3;

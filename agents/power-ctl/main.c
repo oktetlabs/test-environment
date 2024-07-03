@@ -37,7 +37,7 @@ const char *te_lockdir = "/tmp";
 
 #define SHELL_REBOOT_PARAM "cold_reboot_cmd"
 
-static te_bool is_shell_reboot_type;
+static bool is_shell_reboot_type;
 
 /* Send answer to the TEN */
 #define SEND_ANSWER(_fmt...) \
@@ -52,7 +52,7 @@ static te_bool is_shell_reboot_type;
         _rc = rcf_comm_agent_reply(handle, cbuf, strlen(cbuf) + 1);       \
         RCF_CH_UNLOCK;                                                    \
         return _rc;                                                       \
-    } while (FALSE)
+    } while (false)
 
 /* See description in rcf_ch_api.h */
 int
@@ -193,7 +193,7 @@ rcf_ch_file(struct rcf_comm_connection *handle,
 int
 rcf_ch_call(struct rcf_comm_connection *handle,
             char *cbuf, size_t buflen, size_t answer_plen,
-            const char *rtn, te_bool is_argv, int argc, void **params)
+            const char *rtn, bool is_argv, int argc, void **params)
 {
     te_errno rc;
 
@@ -244,7 +244,7 @@ rcf_ch_call(struct rcf_comm_connection *handle,
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_start_process(pid_t *pid,
-                     int priority, const char *rtn, te_bool is_argv,
+                     int priority, const char *rtn, bool is_argv,
                      int argc, void **params)
 {
     UNUSED(pid);
@@ -260,7 +260,7 @@ rcf_ch_start_process(pid_t *pid,
 /* See description in rcf_ch_api.h */
 int
 rcf_ch_start_thread(int *tid,
-                    int priority, const char *rtn, te_bool is_argv,
+                    int priority, const char *rtn, bool is_argv,
                     int argc, void **params)
 {
     UNUSED(tid);
@@ -418,13 +418,13 @@ init_cold_reboot(char *param)
 
     if (strncmp(param, SHELL_REBOOT_PARAM, ch - param - 1) == 0)
     {
-        is_shell_reboot_type = TRUE;
+        is_shell_reboot_type = true;
         rc = ta_shell_init_cold_reboot(param);
     }
     else
     {
 #ifdef HAVE_SNMP_PDU_TYPE
-        is_shell_reboot_type = FALSE;
+        is_shell_reboot_type = false;
         rc = ta_snmp_init_cold_reboot(param);
 #else
         fprintf(stderr, "Cold reboot via SNMP is not supported");

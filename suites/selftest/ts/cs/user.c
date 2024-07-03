@@ -41,7 +41,7 @@ main(int argc, char **argv)
 
     rcf_rpc_server *pco_iut = NULL;
     int uid;
-    te_bool added = FALSE;
+    bool added = false;
     te_errno status = 0;
 
     TEST_START;

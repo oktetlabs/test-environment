@@ -173,7 +173,7 @@ rcf_pch_file(struct rcf_comm_connection *conn, char *cbuf, size_t buflen,
         return rc;
     }
     /* Unreachable */
-    assert(FALSE);
+    assert(false);
 
 reject:
     if (fd != -1)

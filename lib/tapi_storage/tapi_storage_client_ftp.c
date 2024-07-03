@@ -1352,7 +1352,7 @@ ftp_put(tapi_storage_client *client,
         do {
             RPC_AWAIT_IUT_ERROR(client->rpcs);
             sent = rpc_sendfile(client->rpcs, ftp_context->data_socket, fd,
-                                NULL, file_size, FALSE);
+                                NULL, file_size, false);
             if (sent >= 0)
                 file_size -= sent;
             else
@@ -1473,9 +1473,9 @@ remove_files(tapi_storage_client *client, tapi_local_file_list *files)
  *
  * @param path      Pathname.
  *
- * @return @c TRUE if @p path is root directory, @c FALSE in otherwise.
+ * @return @c true if @p path is root directory, @c false in otherwise.
  */
-static te_bool
+static bool
 is_rootdir(const char *path)
 {
     size_t num_points = 0;
@@ -1485,14 +1485,14 @@ is_rootdir(const char *path)
         if (*path != '.')
         {
             if (*path != '/')
-                return FALSE;
+                return false;
             num_points = 0;
         }
         else if (++num_points > 2)
-            return FALSE;
+            return false;
         path++;
     }
-    return TRUE;
+    return true;
 }
 
 /**
@@ -1500,7 +1500,7 @@ is_rootdir(const char *path)
  *
  * @param client        Client handle.
  * @param filename      Remote file name to remove.
- * @param recursive     Perform recursive removing if @c TRUE and specified
+ * @param recursive     Perform recursive removing if @c true and specified
  *                      file is directory.
  *
  * @return Status code.
@@ -1508,7 +1508,7 @@ is_rootdir(const char *path)
 static te_errno
 ftp_rm(tapi_storage_client *client,
        const char          *filename,
-       te_bool              recursive)
+       bool recursive)
 {
     tapi_local_file_list files;
     te_errno rc;

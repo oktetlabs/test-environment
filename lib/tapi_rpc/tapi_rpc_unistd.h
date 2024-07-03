@@ -1203,17 +1203,17 @@ extern uint64_t rpc_get_addr_by_id(rcf_rpc_server *rpcs, rpc_ptr id);
  * @return  Allocated buffer identifier with offset.
  *          It should be validated by RPC_PTR_OFF_IS_VALID()
  */
-static inline te_bool
+static inline bool
 rpc_malloc_off(rcf_rpc_server *rpcs, size_t size, rpc_ptr_off **buf)
 {
     rpc_ptr_off *ret = TE_ALLOC(sizeof(rpc_ptr_off));
 
     ret->base = rpc_malloc(rpcs, size);
     if (ret->base == RPC_NULL)
-        return FALSE;
+        return false;
     ret->offset = 0;
     *buf = ret;
-    return TRUE;
+    return true;
 }
 
 /**
@@ -1230,7 +1230,7 @@ rpc_free_off(rcf_rpc_server *rpcs, rpc_ptr_off *buf)
     {
         ERROR("Attempt to free buffer %u with non-zero offset %u on %s",
               buf->base, buf->offset, rpcs->ta);
-        rpcs->iut_err_jump = TRUE;
+        rpcs->iut_err_jump = true;
         TAPI_JMP_DO(TE_EFAIL);
         return;
     }

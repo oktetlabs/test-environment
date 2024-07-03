@@ -128,10 +128,10 @@ typedef struct tapi_dnsperf_opt {
     const char                 *datafile;
 
     /** set the DNSSEC OK bit (implies EDNS) */
-    te_bool                     enable_dnssec_ok;
+    bool enable_dnssec_ok;
 
     /** enable EDNS 0 */
-    te_bool                     enable_edns0;
+    bool enable_edns0;
 
     /** send EDNS option */
     const char                 *edns_opt;
@@ -170,10 +170,10 @@ typedef struct tapi_dnsperf_opt {
     tapi_job_opt_uint_t         threads;
 
     /** verbose: report each query and additional information to stdout */
-    te_bool                     verbose;
+    bool verbose;
 
     /** log warnings and errors to stdout instead of stderr */
-    te_bool                     stdout_only;
+    bool stdout_only;
 
     /** the local port from which to send queries */
     tapi_job_opt_uint_t         local_port;

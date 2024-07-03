@@ -62,7 +62,7 @@ tapi_upnp_cp_stop(const char *ta)
 }
 
 /* See description in tapi_upnp_cp.h. */
-te_bool
+bool
 tapi_upnp_cp_started(const char *ta)
 {
     te_errno rc;

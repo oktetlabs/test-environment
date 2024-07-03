@@ -98,42 +98,42 @@ static const char *
 tarpc_rte_pktmbuf_packet_type2str(te_log_buf                           *tlbp,
                                   struct tarpc_rte_pktmbuf_packet_type *p_type)
 {
-    te_bool added = FALSE;
+    bool added = false;
 
 #define CASE_TARPC_RTE_PKTMBUF_L2_PTYPE2STR(_bit) \
     case TARPC_RTE_PTYPE_L2_##_bit:               \
         te_log_buf_append(tlbp, "L2_%s", #_bit);  \
-        added = TRUE;                             \
+        added = true;                             \
         break
 
 #define CASE_TARPC_RTE_PKTMBUF_L3_PTYPE2STR(_bit) \
     case TARPC_RTE_PTYPE_L3_##_bit:                                    \
         te_log_buf_append(tlbp, "%sL3_%s", added ? " | " : "", #_bit); \
-        added = TRUE;                                                  \
+        added = true;                                                  \
         break
 
 #define CASE_TARPC_RTE_PKTMBUF_L4_PTYPE2STR(_bit) \
     case TARPC_RTE_PTYPE_L4_##_bit:                                    \
         te_log_buf_append(tlbp, "%sL4_%s", added ? " | " : "", #_bit); \
-        added = TRUE;                                                  \
+        added = true;                                                  \
         break
 
 #define CASE_TARPC_RTE_PKTMBUF_TUNNEL_PTYPE2STR(_bit) \
     case TARPC_RTE_PTYPE_TUNNEL_##_bit:                                    \
         te_log_buf_append(tlbp, "%sTUNNEL_%s", added ? " | " : "", #_bit); \
-        added = TRUE;                                                      \
+        added = true;                                                      \
         break
 
 #define CASE_TARPC_RTE_PKTMBUF_INNER_L2_PTYPE2STR(_bit) \
     case TARPC_RTE_PTYPE_INNER_L2_##_bit:                                    \
         te_log_buf_append(tlbp, "%sINNER_L2_%s", added ? " | " : "", #_bit); \
-        added = TRUE;                                                        \
+        added = true;                                                        \
         break
 
 #define CASE_TARPC_RTE_PKTMBUF_INNER_L3_PTYPE2STR(_bit) \
     case TARPC_RTE_PTYPE_INNER_L3_##_bit:                                    \
         te_log_buf_append(tlbp, "%sINNER_L3_%s", added ? " | " : "", #_bit); \
-        added = TRUE;                                                        \
+        added = true;                                                        \
         break
 
 #define CASE_TARPC_RTE_PKTMBUF_INNER_L4_PTYPE2STR(_bit) \
@@ -153,7 +153,7 @@ tarpc_rte_pktmbuf_packet_type2str(te_log_buf                           *tlbp,
         CASE_TARPC_RTE_PKTMBUF_L2_PTYPE2STR(ETHER_QINQ);
         default:
             te_log_buf_append(tlbp, "L2_BAD_TYPE");
-            added = TRUE;
+            added = true;
             break;
     }
 
@@ -168,7 +168,7 @@ tarpc_rte_pktmbuf_packet_type2str(te_log_buf                           *tlbp,
         CASE_TARPC_RTE_PKTMBUF_L3_PTYPE2STR(IPV6_EXT_UNKNOWN);
         default:
             te_log_buf_append(tlbp, "L3_BAD_TYPE");
-            added = TRUE;
+            added = true;
             break;
     }
 
@@ -183,7 +183,7 @@ tarpc_rte_pktmbuf_packet_type2str(te_log_buf                           *tlbp,
         CASE_TARPC_RTE_PKTMBUF_L4_PTYPE2STR(NONFRAG);
         default:
             te_log_buf_append(tlbp, "L4_BAD_TYPE");
-            added = TRUE;
+            added = true;
             break;
     }
 
@@ -201,7 +201,7 @@ tarpc_rte_pktmbuf_packet_type2str(te_log_buf                           *tlbp,
         CASE_TARPC_RTE_PKTMBUF_TUNNEL_PTYPE2STR(ESP);
         default:
             te_log_buf_append(tlbp, "TUNNEL_BAD_TYPE");
-            added = TRUE;
+            added = true;
             break;
     }
 
@@ -213,7 +213,7 @@ tarpc_rte_pktmbuf_packet_type2str(te_log_buf                           *tlbp,
         CASE_TARPC_RTE_PKTMBUF_INNER_L2_PTYPE2STR(ETHER_QINQ);
         default:
             te_log_buf_append(tlbp, "INNER_L2_BAD_TYPE");
-            added = TRUE;
+            added = true;
             break;
     }
 
@@ -228,7 +228,7 @@ tarpc_rte_pktmbuf_packet_type2str(te_log_buf                           *tlbp,
         CASE_TARPC_RTE_PKTMBUF_INNER_L3_PTYPE2STR(IPV6_EXT_UNKNOWN);
         default:
             te_log_buf_append(tlbp, "INNER_L3_BAD_TYPE");
-            added = TRUE;
+            added = true;
             break;
     }
 
@@ -243,7 +243,7 @@ tarpc_rte_pktmbuf_packet_type2str(te_log_buf                           *tlbp,
         CASE_TARPC_RTE_PKTMBUF_INNER_L4_PTYPE2STR(NONFRAG);
         default:
             te_log_buf_append(tlbp, "INNER_L4_BAD_TYPE");
-            added = TRUE;
+            added = true;
             break;
     }
 
@@ -625,7 +625,7 @@ rpc_rte_pktmbuf_get_pkt_len(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "rte_pktmbuf_get_pkt_len", &in, &out);
 
-    CHECK_RETVAL_VAR(rte_pktmbuf_get_pkt_len, out.retval, FALSE, UINT32_MAX);
+    CHECK_RETVAL_VAR(rte_pktmbuf_get_pkt_len, out.retval, false, UINT32_MAX);
 
     TAPI_RPC_LOG(rpcs, rte_pktmbuf_get_pkt_len, RPC_PTR_FMT, "%u",
                  RPC_PTR_VAL(in.m), out.retval);
@@ -758,7 +758,7 @@ rpc_rte_pktmbuf_get_port(rcf_rpc_server *rpcs,
     TAPI_RPC_LOG(rpcs, rte_pktmbuf_get_port, RPC_PTR_FMT, "%hu",
                  RPC_PTR_VAL(in.m), out.retval);
 
-    TAPI_RPC_OUT(rte_pktmbuf_get_port, FALSE);
+    TAPI_RPC_OUT(rte_pktmbuf_get_port, false);
 
     return (out.retval);
 }
@@ -798,7 +798,7 @@ rpc_rte_pktmbuf_get_data_len(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "rte_pktmbuf_get_data_len", &in, &out);
 
-    CHECK_RETVAL_VAR(rte_pktmbuf_get_data_len, out.retval, FALSE, UINT16_MAX);
+    CHECK_RETVAL_VAR(rte_pktmbuf_get_data_len, out.retval, false, UINT16_MAX);
 
     TAPI_RPC_LOG(rpcs, rte_pktmbuf_get_data_len, RPC_PTR_FMT, "%hu",
                  RPC_PTR_VAL(in.m), out.retval);
@@ -822,7 +822,7 @@ rpc_rte_pktmbuf_get_vlan_tci(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "rte_pktmbuf_get_vlan_tci", &in, &out);
 
-    CHECK_RETVAL_VAR(rte_pktmbuf_get_vlan_tci, out.retval, FALSE, UINT16_MAX);
+    CHECK_RETVAL_VAR(rte_pktmbuf_get_vlan_tci, out.retval, false, UINT16_MAX);
 
     TAPI_RPC_LOG(rpcs, rte_pktmbuf_get_vlan_tci, RPC_PTR_FMT, "%hu",
                  RPC_PTR_VAL(in.m), out.retval);
@@ -867,7 +867,7 @@ rpc_rte_pktmbuf_get_vlan_tci_outer(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "rte_pktmbuf_get_vlan_tci_outer", &in, &out);
 
-    CHECK_RETVAL_VAR(rte_pktmbuf_get_vlan_tci_outer, out.retval, FALSE,
+    CHECK_RETVAL_VAR(rte_pktmbuf_get_vlan_tci_outer, out.retval, false,
                      UINT16_MAX);
 
     TAPI_RPC_LOG(rpcs, rte_pktmbuf_get_vlan_tci_outer, RPC_PTR_FMT, "%hu",
@@ -914,7 +914,7 @@ rpc_rte_pktmbuf_get_flags(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "rte_pktmbuf_get_flags", &in, &out);
 
-    CHECK_RETVAL_VAR(rte_pktmbuf_get_flags, out.retval, FALSE, UINT64_MAX);
+    CHECK_RETVAL_VAR(rte_pktmbuf_get_flags, out.retval, false, UINT64_MAX);
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_pktmbuf_get_flags, RPC_PTR_FMT,
@@ -993,7 +993,7 @@ rpc_rte_pktmbuf_headroom(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "rte_pktmbuf_headroom", &in, &out);
 
-    CHECK_RETVAL_VAR(rte_pktmbuf_headroom, out.retval, FALSE, UINT16_MAX);
+    CHECK_RETVAL_VAR(rte_pktmbuf_headroom, out.retval, false, UINT16_MAX);
 
     TAPI_RPC_LOG(rpcs, rte_pktmbuf_headroom, RPC_PTR_FMT, "%hu",
                  RPC_PTR_VAL(in.m), out.retval);
@@ -1017,7 +1017,7 @@ rpc_rte_pktmbuf_tailroom(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "rte_pktmbuf_tailroom", &in, &out);
 
-    CHECK_RETVAL_VAR(rte_pktmbuf_tailroom, out.retval, FALSE, UINT16_MAX);
+    CHECK_RETVAL_VAR(rte_pktmbuf_tailroom, out.retval, false, UINT16_MAX);
 
     TAPI_RPC_LOG(rpcs, rte_pktmbuf_tailroom, RPC_PTR_FMT, "%hu",
                  RPC_PTR_VAL(in.m), out.retval);
@@ -1066,7 +1066,7 @@ rpc_rte_pktmbuf_adj(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "rte_pktmbuf_adj", &in, &out);
 
-    CHECK_RETVAL_VAR(rte_pktmbuf_adj, out.retval, FALSE, UINT16_MAX);
+    CHECK_RETVAL_VAR(rte_pktmbuf_adj, out.retval, false, UINT16_MAX);
 
     TAPI_RPC_LOG(rpcs, rte_pktmbuf_adj, RPC_PTR_FMT ", %hu", "%hu",
                  RPC_PTR_VAL(in.m), in.len, out.retval);
@@ -1156,7 +1156,7 @@ rpc_rte_pktmbuf_get_rss_hash(rcf_rpc_server *rpcs,
     /*
      * Strictly speaking, UINT32_MAX is a valid hash, but it will hardly occur
      */
-    CHECK_RETVAL_VAR(rte_pktmbuf_get_rss_hash, out.retval, FALSE, UINT32_MAX);
+    CHECK_RETVAL_VAR(rte_pktmbuf_get_rss_hash, out.retval, false, UINT32_MAX);
 
     TAPI_RPC_LOG(rpcs, rte_pktmbuf_get_rss_hash, RPC_PTR_FMT, "0x%08x",
                  RPC_PTR_VAL(in.m), out.retval);
@@ -1184,7 +1184,7 @@ rpc_rte_pktmbuf_get_fdir_id(rcf_rpc_server *rpcs,
         TEST_FAIL("%s(): RTE_MBUF_F_RX_FDIR_ID must be in offload flags",
                   __func__);
 
-    CHECK_RETVAL_VAR(rte_pktmbuf_get_fdir_id, out.retval, FALSE, UINT32_MAX);
+    CHECK_RETVAL_VAR(rte_pktmbuf_get_fdir_id, out.retval, false, UINT32_MAX);
 
     TAPI_RPC_LOG(rpcs, rte_pktmbuf_get_fdir_id, RPC_PTR_FMT, "0x%08x",
                  RPC_PTR_VAL(in.m), out.retval);
@@ -1362,7 +1362,7 @@ rpc_rte_vlan_strip(rcf_rpc_server *rpcs,
 int
 rpc_rte_pktmbuf_calc_packet_crc(rcf_rpc_server *rpcs,
                                 rpc_rte_mbuf_p m,
-                                te_bool crc_in_data,
+                                bool crc_in_data,
                                 uint32_t *crc)
 {
     tarpc_rte_pktmbuf_calc_packet_crc_in  in = {};

@@ -82,7 +82,7 @@ rpc_signal(rcf_rpc_server *rpcs,
     }
     free(copy);
 
-    CHECK_RETVAL_VAR_ERR_COND(signal, res, FALSE,
+    CHECK_RETVAL_VAR_ERR_COND(signal, res, false,
                               res, SIGNAL_RETVAL_IS_ERR(res));
 
     TAPI_RPC_LOG(rpcs, signal, "%s, %s", "%s", signum_rpc2str(signum),
@@ -132,7 +132,7 @@ rpc_bsd_signal(rcf_rpc_server *rpcs,
     }
     free(copy);
 
-    CHECK_RETVAL_VAR_ERR_COND(bsd_signal, res, FALSE,
+    CHECK_RETVAL_VAR_ERR_COND(bsd_signal, res, false,
                               res, SIGNAL_RETVAL_IS_ERR(res));
 
     TAPI_RPC_LOG(rpcs, bsd_signal, "%s, %s", "%s", signum_rpc2str(signum),
@@ -206,7 +206,7 @@ rpc_sysv_signal(rcf_rpc_server *rpcs,
     }
     free(copy);
 
-    CHECK_RETVAL_VAR_ERR_COND(sysv_signal, res, FALSE,
+    CHECK_RETVAL_VAR_ERR_COND(sysv_signal, res, false,
                               res, SIGNAL_RETVAL_IS_ERR(res));
 
     TAPI_RPC_LOG(rpcs, sysv_signal, "%s, %s", "%s", signum_rpc2str(signum),
@@ -253,7 +253,7 @@ rpc___sysv_signal(rcf_rpc_server *rpcs,
         out.handler = NULL;
     }
 
-    CHECK_RETVAL_VAR_ERR_COND(__sysv_signal, res, FALSE,
+    CHECK_RETVAL_VAR_ERR_COND(__sysv_signal, res, false,
                               res, SIGNAL_RETVAL_IS_ERR(res));
 
     TAPI_RPC_LOG(rpcs, __sysv_signal, "%s, %s", "%s", signum_rpc2str(signum),
@@ -419,7 +419,7 @@ rpc_ta_kill_death(rcf_rpc_server *rpcs, tarpc_pid_t pid)
     rcf_rpc_call(rpcs, "ta_kill_death", &in, &out);
 
     /* This function should not check errno */
-    out.common.errno_changed = FALSE;
+    out.common.errno_changed = false;
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(ta_kill_death, out.retval);
     TAPI_RPC_LOG(rpcs, ta_kill_death, "%d", "%d", pid, out.retval);
     RETVAL_INT(ta_kill_death, out.retval);
@@ -521,7 +521,7 @@ rpc_sigset_cmp(rcf_rpc_server *rpcs,
                      !(out.retval >= -1 && out.retval <= 1), -1);
     TAPI_RPC_LOG(rpcs, sigset_cmp, "0x%x, 0x%x", "%d",
                  (unsigned)first_set, (unsigned)second_set, out.retval);
-    TAPI_RPC_OUT(sigset_cmp, FALSE);
+    TAPI_RPC_OUT(sigset_cmp, false);
     return (int)out.retval;
 }
 

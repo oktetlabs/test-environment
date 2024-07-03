@@ -82,9 +82,9 @@ typedef struct trc_report_html {
 } trc_report_html;
 
 /** Should database be initialized from scratch */
-static te_bool init_db = FALSE;
+static bool init_db = false;
 /** Be quiet, do not output grand total statistics to stdout */
-static te_bool quiet = FALSE;
+static bool quiet = false;
 
 /** Name of the file with expected testing result database */
 static char *db_fn = NULL;
@@ -272,11 +272,11 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
         switch (opt)
         {
             case TRC_OPT_QUIET:
-                quiet = TRUE;
+                quiet = true;
                 break;
 
             case TRC_OPT_INIT:
-                init_db = TRUE;
+                init_db = true;
                 /*@fallthrough@*/
 
             case TRC_OPT_UPDATE:
@@ -634,7 +634,7 @@ main(int argc, char *argv[])
     /* Process cut operations */
     TAILQ_FOREACH(cut_path, &ctx.cut_paths, links)
     {
-        if (trc_tools_cut_db(ctx.db, ctx.db_uid, cut_path->v, FALSE) != 0)
+        if (trc_tools_cut_db(ctx.db, ctx.db_uid, cut_path->v, false) != 0)
         {
             ERROR("Failed to remove tests by path %s", cut_path->v);
             goto exit;

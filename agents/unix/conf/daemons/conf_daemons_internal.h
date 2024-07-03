@@ -181,9 +181,9 @@ extern const char *ds_backup(int index);
  *
  * @param index index returned by the ds_create_backup
  *
- * @return TRUE, if the file was changed
+ * @return @c true, if the file was changed
  */
-extern te_bool ds_config_changed(int index);
+extern bool ds_config_changed(int index);
 
 
 /**
@@ -256,9 +256,9 @@ extern te_errno daemon_set(unsigned int gid, const char *oid,
  *
  * @param daemon    daemon/service name
  *
- * @return TRUE, if daemon is running
+ * @return @c true, if daemon is running
  */
-static inline te_bool
+static inline bool
 daemon_running(const char *daemon)
 {
     char enable[2];
@@ -279,7 +279,7 @@ daemon_running(const char *daemon)
  * @return Index of the found file or -1
  */
 extern int find_file(unsigned int n, const char * const *files,
-                     te_bool exec);
+                     bool exec);
 
 /*
  * Grab/release functions for daemons/services - see rcfpch/rcf_pch.h

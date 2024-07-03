@@ -96,7 +96,7 @@ main(int argc, char *argv[])
 
     memset(rx_buffer, 0, sizeof(rx_buffer));
     rc = tapi_socket_recv(host_csap->ta, 0, csap, 2000,
-                          CSAP_INVALID_HANDLE, FALSE,
+                          CSAP_INVALID_HANDLE, false,
                           rx_buffer, &len);
     if (rc != 0)
         TEST_FAIL("recv on CSAP failed: %r", rc);

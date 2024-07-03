@@ -66,8 +66,7 @@ check_search(const te_vec *vector, const void *key,
 {
     unsigned int minpos;
     unsigned int maxpos;
-    te_bool found = te_vec_search(vector, key, search_func,
-                                  &minpos, &maxpos);
+    bool found = te_vec_search(vector, key, search_func, &minpos, &maxpos);
 
     if (!found)
         TEST_VERDICT("An element is not found when it should");

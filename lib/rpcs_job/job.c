@@ -18,7 +18,7 @@
 #include "agentlib.h"
 
 static ta_job_manager_t *manager = NULL;
-static te_bool is_manager_init = FALSE;
+static bool is_manager_init = false;
 /**
  * Initialize job manager if it is not initialized yet.
  * Since the backend does not have a clear entry point (i.e. the function that
@@ -37,7 +37,7 @@ static te_bool is_manager_init = FALSE;
             if (rc_ != 0)                          \
                 return rc_;                        \
                                                    \
-            is_manager_init = TRUE;                \
+            is_manager_init = true;                \
         }                                          \
     } while(0)
 
@@ -60,7 +60,7 @@ job_start(unsigned int job_id)
 }
 
 static te_errno
-job_allocate_channels(unsigned int job_id, te_bool input_channels,
+job_allocate_channels(unsigned int job_id, bool input_channels,
                       unsigned int n_channels, unsigned int *channels)
 {
     INIT_MANAGER_IF_NEEDED(manager);
@@ -81,7 +81,7 @@ job_deallocate_channels(unsigned int n_channels, unsigned int *channels)
 
 static te_errno
 job_attach_filter(const char *filter_name, unsigned int n_channels,
-                  unsigned int *channels, te_bool readable,
+                  unsigned int *channels, bool readable,
                   te_log_level log_level, unsigned int *filter_id)
 {
     INIT_MANAGER_IF_NEEDED(manager);
@@ -119,7 +119,7 @@ job_filter_remove_channels(unsigned int filter_id, unsigned int n_channels,
 
 static te_errno
 job_poll(unsigned int n_channels, unsigned int *channel_ids, int timeout_ms,
-         te_bool filter_only)
+         bool filter_only)
 {
     INIT_MANAGER_IF_NEEDED(manager);
 
@@ -433,7 +433,7 @@ TARPC_FUNC_STATIC(job_create, {},
 
     MAKE_CALL(out->retval = func(in->spawner, in->tool, argv, env,
                                  &out->job_id));
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
     if (out->retval != 0)
         goto free;
     else
@@ -456,14 +456,14 @@ TARPC_FUNC_STATIC(job_allocate_channels,
 {
     MAKE_CALL(out->retval = func(in->job_id, in->input_channels,
                                  in->n_channels, out->channels.channels_val));
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
 })
 
 TARPC_FUNC_STATIC(job_deallocate_channels, {},
 {
     MAKE_CALL(out->retval = func(in->channels.channels_len,
                                  in->channels.channels_val));
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
 })
 
 TARPC_FUNC_STATIC(job_attach_filter, {},
@@ -471,33 +471,33 @@ TARPC_FUNC_STATIC(job_attach_filter, {},
     MAKE_CALL(out->retval = func(in->filter_name, in->channels.channels_len,
                                  in->channels.channels_val,
                                  in->readable, in->log_level, &out->filter));
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
 })
 
 TARPC_FUNC_STATIC(job_filter_add_regexp, {},
 {
     MAKE_CALL(out->retval = func(in->filter, in->re, in->extract));
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
 })
 
 TARPC_FUNC_STATIC(job_filter_add_channels, {},
 {
     MAKE_CALL(out->retval = func(in->filter, in->channels.channels_len,
                                  in->channels.channels_val));
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
 })
 
 TARPC_FUNC_STATIC(job_filter_remove_channels, {},
 {
   MAKE_CALL(out->retval = func(in->filter, in->channels.channels_len,
                                in->channels.channels_val));
-  out->common.errno_changed = FALSE;
+  out->common.errno_changed = false;
 })
 
 TARPC_FUNC_STATIC(job_start, {},
 {
     MAKE_CALL(out->retval = func(in->job_id));
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
 })
 
 TARPC_FUNC_STATIC(job_receive, {},
@@ -505,7 +505,7 @@ TARPC_FUNC_STATIC(job_receive, {},
     MAKE_CALL(out->retval = func(in->filters.filters_len,
                                  in->filters.filters_val,
                                  in->timeout_ms, &out->buffer));
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
 })
 
 TARPC_FUNC_STATIC(job_receive_last, {},
@@ -513,7 +513,7 @@ TARPC_FUNC_STATIC(job_receive_last, {},
     MAKE_CALL(out->retval = func(in->filters.filters_len,
                                  in->filters.filters_val,
                                  in->timeout_ms, &out->buffer));
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
 })
 
 TARPC_FUNC_STATIC(job_receive_many, {},
@@ -524,7 +524,7 @@ TARPC_FUNC_STATIC(job_receive_many, {},
     MAKE_CALL(out->retval = func(in->filters.filters_len,
                                  in->filters.filters_val,
                                  in->timeout_ms, &bufs, &bufs_count));
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
 
     out->buffers.buffers_val = bufs;
     out->buffers.buffers_len = bufs_count;
@@ -534,40 +534,40 @@ TARPC_FUNC_STATIC(job_clear, {},
 {
     MAKE_CALL(out->retval = func(in->filters.filters_len,
                                  in->filters.filters_val));
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
 })
 
 TARPC_FUNC_STATIC(job_send, {},
 {
     MAKE_CALL(out->retval = func(in->channel, in->buf.buf_len,
                                  in->buf.buf_val));
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
 })
 
 TARPC_FUNC_STATIC(job_poll, {},
 {
     MAKE_CALL(out->retval = func(in->channels.channels_len,
                                  in->channels.channels_val,
-                                 in->timeout_ms, FALSE));
-    out->common.errno_changed = FALSE;
+                                 in->timeout_ms, false));
+    out->common.errno_changed = false;
 })
 
 TARPC_FUNC_STATIC(job_kill, {},
 {
     MAKE_CALL(out->retval = func(in->job_id, signum_rpc2h(in->signo)));
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
 })
 
 TARPC_FUNC_STATIC(job_killpg, {},
 {
     MAKE_CALL(out->retval = func(in->job_id, signum_rpc2h(in->signo)));
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
 })
 
 TARPC_FUNC_STATIC(job_wait, {},
 {
     MAKE_CALL(out->retval = func(in->job_id, in->timeout_ms, &out->status));
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
 })
 
 TARPC_FUNC_STATIC(job_stop, {},
@@ -575,13 +575,13 @@ TARPC_FUNC_STATIC(job_stop, {},
     MAKE_CALL(out->retval = func(in->job_id,
                                  signum_rpc2h(in->signo),
                                  in->term_timeout_ms));
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
 })
 
 TARPC_FUNC_STATIC(job_destroy, {},
 {
     MAKE_CALL(out->retval = func(in->job_id, in->term_timeout_ms));
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
 })
 
 TARPC_FUNC_STATIC(job_wrapper_add, {},
@@ -605,7 +605,7 @@ TARPC_FUNC_STATIC(job_wrapper_add, {},
 
     MAKE_CALL(out->retval = func(in->tool, argv, in->job_id,
                                  in->priority, &out->wrapper_id));
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
     goto done;
 
 err:
@@ -694,7 +694,7 @@ TARPC_FUNC_STATIC(job_add_exec_param, {},
     exec_param[len].data = NULL;
 
     MAKE_CALL(out->retval = func(in->job_id, exec_param));
-    out->common.errno_changed = FALSE;
+    out->common.errno_changed = false;
     goto done;
 err:
     free(exec_param);

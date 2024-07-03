@@ -45,7 +45,7 @@ te_errno
 tapi_cfg_pppoe_server_if_del(const char *ta, const char *ifname)
 {
     /* Delete subnet configuration entry */
-    return cfg_del_instance_fmt(FALSE, TE_CFG_TA_PPPOE_SERVER_FMT
+    return cfg_del_instance_fmt(false, TE_CFG_TA_PPPOE_SERVER_FMT
                                 "/interface:%s", ta, ifname);
 }
 

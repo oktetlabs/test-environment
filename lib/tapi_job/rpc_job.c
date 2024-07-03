@@ -29,8 +29,8 @@
  * @param _var          variable with return value
  */
 #define CHECK_RPC_ERRNO_UNCHANGED(_func, _var) \
-    CHECK_RETVAL_VAR_ERR_COND(_func, _var, FALSE, TE_RC(TE_TAPI, TE_ECORRUPTED), \
-                              FALSE);
+    CHECK_RETVAL_VAR_ERR_COND(_func, _var, false, TE_RC(TE_TAPI, TE_ECORRUPTED), \
+                              false);
 
 const tapi_job_methods_t rpc_job_methods = {
     .create = rpc_job_create,
@@ -65,7 +65,7 @@ rpc_job_create(tapi_job_t *job, const char *spawner, const char *tool,
                const char **argv, const char **env)
 {
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
-    te_bool silent_pass = rpcs->silent_pass;
+    bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_create_in  in;
     tarpc_job_create_out out;
@@ -158,7 +158,7 @@ te_errno
 rpc_job_start(const tapi_job_t *job)
 {
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
-    te_bool silent_pass = rpcs->silent_pass;
+    bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_start_in  in;
     tarpc_job_start_out out;
@@ -190,11 +190,11 @@ tarpc_uint_array2log_buf(te_log_buf *buf, size_t size, tarpc_uint *array)
 }
 
 te_errno
-rpc_job_allocate_channels(const tapi_job_t *job, te_bool input_channels,
+rpc_job_allocate_channels(const tapi_job_t *job, bool input_channels,
                           unsigned int n_channels, unsigned int *channels)
 {
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
-    te_bool silent_pass = rpcs->silent_pass;
+    bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_allocate_channels_in  in;
     tarpc_job_allocate_channels_out out;
@@ -269,7 +269,7 @@ rpc_job_deallocate_channels(rcf_rpc_server *rpcs, unsigned int n_channels,
 te_errno
 rpc_job_attach_filter(rcf_rpc_server *rpcs, const char *filter_name,
                       unsigned int n_channels, unsigned int *channels,
-                      te_bool readable, te_log_level log_level,
+                      bool readable, te_log_level log_level,
                       unsigned int *filter)
 {
     tarpc_job_attach_filter_in  in;
@@ -623,7 +623,7 @@ te_errno
 rpc_job_kill(const tapi_job_t *job, int signo)
 {
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
-    te_bool silent_pass = rpcs->silent_pass;
+    bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_kill_in  in;
     tarpc_job_kill_out out;
@@ -649,7 +649,7 @@ te_errno
 rpc_job_killpg(const tapi_job_t *job, int signo)
 {
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
-    te_bool silent_pass = rpcs->silent_pass;
+    bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_killpg_in  in;
     tarpc_job_killpg_out out;
@@ -723,7 +723,7 @@ te_errno
 rpc_job_wait(const tapi_job_t *job, int timeout_ms, tapi_job_status_t *status)
 {
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
-    te_bool silent_pass = rpcs->silent_pass;
+    bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_wait_in   in;
     tarpc_job_wait_out  out;
@@ -767,7 +767,7 @@ te_errno
 rpc_job_stop(const tapi_job_t *job, int signo, int term_timeout_ms)
 {
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
-    te_bool silent_pass = rpcs->silent_pass;
+    bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_stop_in   in;
     tarpc_job_stop_out  out;
@@ -796,7 +796,7 @@ te_errno
 rpc_job_destroy(const tapi_job_t *job, int term_timeout_ms)
 {
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
-    te_bool silent_pass = rpcs->silent_pass;
+    bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_destroy_in  in;
     tarpc_job_destroy_out out;
@@ -871,7 +871,7 @@ rpc_job_wrapper_add(const tapi_job_t *job, const char *tool, const char **argv,
 {
     te_errno rc;
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
-    te_bool silent_pass = rpcs->silent_pass;
+    bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_wrapper_add_in  in;
     tarpc_job_wrapper_add_out out;
@@ -939,7 +939,7 @@ te_errno
 rpc_job_wrapper_delete(const tapi_job_t *job, unsigned int wrapper_id)
 {
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
-    te_bool silent_pass = rpcs->silent_pass;
+    bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_wrapper_delete_in  in;
     tarpc_job_wrapper_delete_out out;
@@ -1109,7 +1109,7 @@ rpc_job_add_exec_param(const tapi_job_t *job,
 {
     te_errno rc;
     rcf_rpc_server *rpcs = tapi_job_get_rpcs(job);
-    te_bool silent_pass = rpcs->silent_pass;
+    bool silent_pass = rpcs->silent_pass;
 
     tarpc_job_exec_param *exec_param = NULL;
     size_t exec_param_len;

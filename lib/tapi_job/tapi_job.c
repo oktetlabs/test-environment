@@ -76,7 +76,7 @@ struct tapi_job_t {
     channel_entry_list channel_entries;
 
     /* Field to manage silent_pass log mode of RPC server */
-    te_bool silent_pass;
+    bool silent_pass;
 };
 
 struct tapi_job_wrapper_t {
@@ -98,7 +98,7 @@ struct tapi_job_channel_t {
 
     rcf_rpc_server *rpcs;
     /* Field to manage silent_pass log mode of RPC server */
-    te_bool silent_pass;
+    bool silent_pass;
     unsigned int id;
 };
 
@@ -131,7 +131,7 @@ init_secondary_channel(rcf_rpc_server *rpcs, unsigned int id, int ref_count,
     return init_channel(NULL, rpcs, id, ref_count, channel);
 }
 
-static te_bool
+static bool
 is_primary_channel(const tapi_job_channel_t *channel)
 {
     return (channel->job != NULL);
@@ -592,7 +592,7 @@ tapi_job_simple_create(tapi_job_factory_t *factory,
     if (desc->filters == NULL)
         return 0;
 
-    /* Last element should have use_stdout and  use_stderr set to FALSE */
+    /* Last element should have use_stdout and  use_stderr set to @c false */
     for (filter = desc->filters;
          filter->use_stdout || filter->use_stderr;
          filter++)
@@ -614,7 +614,7 @@ tapi_job_factory_set_path(tapi_job_factory_t *factory)
 {
     te_errno rc;
     char *ta_path = NULL;
-    te_bool awaiting_error;
+    bool awaiting_error;
     rcf_rpc_server *rpcs;
 
     if (factory == NULL || factory->type != TAPI_JOB_FACTORY_RPC)
@@ -631,7 +631,7 @@ tapi_job_factory_set_path(tapi_job_factory_t *factory)
         return rc;
 
     RPC_AWAIT_IUT_ERROR(rpcs);
-    if (rpc_setenv(rpcs, "PATH", ta_path, TRUE) != 0)
+    if (rpc_setenv(rpcs, "PATH", ta_path, true) != 0)
         rc = RPC_ERRNO(rpcs);
 
     if (awaiting_error)
@@ -683,7 +683,7 @@ tapi_job_wait(tapi_job_t *job, int timeout_ms, tapi_job_status_t *status)
     return job->methods.wait(job, timeout_ms, status);
 }
 
-te_bool
+bool
 tapi_job_is_running(tapi_job_t *job)
 {
     te_errno rc;
@@ -695,12 +695,12 @@ tapi_job_is_running(tapi_job_t *job)
     {
         case 0:
         case TE_ECHILD:
-            return FALSE;
+            return false;
         case TE_EINPROGRESS:
-            return TRUE;
+            return true;
         default:
             TEST_FAIL("Failed to check if a job is running");
-            return FALSE;
+            return false;
     }
 }
 
@@ -738,7 +738,7 @@ remove_channel_entry_from_entry_list(channel_entry *entry,
 }
 
 static te_errno
-tapi_job_alloc_channels(tapi_job_t *job, te_bool input_channels,
+tapi_job_alloc_channels(tapi_job_t *job, bool input_channels,
                         unsigned int n_channels,
                         tapi_job_channel_t *channels[n_channels])
 {
@@ -792,7 +792,7 @@ te_errno
 tapi_job_alloc_input_channels(tapi_job_t *job, unsigned int n_channels,
                               tapi_job_channel_t *channels[n_channels])
 {
-    return tapi_job_alloc_channels(job, TRUE, n_channels, channels);
+    return tapi_job_alloc_channels(job, true, n_channels, channels);
 }
 
 /* See description in tapi_job.h */
@@ -800,7 +800,7 @@ te_errno
 tapi_job_alloc_output_channels(tapi_job_t *job, unsigned int n_channels,
                                tapi_job_channel_t *channels[n_channels])
 {
-    return tapi_job_alloc_channels(job, FALSE, n_channels, channels);
+    return tapi_job_alloc_channels(job, false, n_channels, channels);
 }
 
 static void
@@ -897,7 +897,7 @@ tapi_job_dealloc_channels(tapi_job_channel_set_t channels)
     unsigned int *channel_ids;
     unsigned int n_channels;
     rcf_rpc_server *rpcs;
-    te_bool silent_pass;
+    bool silent_pass;
 
     if ((rc = validate_channel_set(channels)) != 0)
         return rc;
@@ -933,7 +933,7 @@ tapi_job_dealloc_channels(tapi_job_channel_set_t channels)
 /* See description in tapi_job.h */
 te_errno
 tapi_job_attach_filter(tapi_job_channel_set_t channels, const char *filter_name,
-                       te_bool readable, te_log_level log_level,
+                       bool readable, te_log_level log_level,
                        tapi_job_channel_t **filter)
 {
     tapi_job_channel_t *result = NULL;
@@ -943,7 +943,7 @@ tapi_job_attach_filter(tapi_job_channel_set_t channels, const char *filter_name,
     rcf_rpc_server *rpcs;
     unsigned int i;
     te_errno rc;
-    te_bool silent_pass;
+    bool silent_pass;
 
     if ((rc = validate_channel_set(channels)) != 0)
         return rc;
@@ -1060,7 +1060,7 @@ tapi_job_filter_add_regexp(tapi_job_channel_t *filter, const char *re,
 {
     te_errno rc;
     rcf_rpc_server *rpcs = filter->rpcs;
-    te_bool silent_pass = rpcs->silent_pass;
+    bool silent_pass = rpcs->silent_pass;
 
     rpcs->silent_pass = filter->silent_pass;
     rc = rpc_job_filter_add_regexp(rpcs, filter->id, re, extract);
@@ -1079,7 +1079,7 @@ tapi_job_filter_add_channels(tapi_job_channel_t *filter,
     unsigned int n_channels;
     rcf_rpc_server *rpcs;
     unsigned int i;
-    te_bool silent_pass;
+    bool silent_pass;
 
     if ((rc = validate_channel_set(channels)) != 0)
         return rc;
@@ -1126,7 +1126,7 @@ tapi_job_filter_remove_channels(tapi_job_channel_t *filter,
     unsigned int n_channels;
     rcf_rpc_server *rpcs;
     unsigned int i;
-    te_bool silent_pass;
+    bool silent_pass;
 
     if ((rc = validate_channel_set(channels)) != 0)
         return rc;
@@ -1176,7 +1176,7 @@ tapi_job_send(tapi_job_channel_t *channel, const te_string *str)
 {
     te_errno rc;
     rcf_rpc_server *rpcs = channel->rpcs;
-    te_bool silent_pass = rpcs->silent_pass;
+    bool silent_pass = rpcs->silent_pass;
 
     rpcs->silent_pass = channel->silent_pass;
     rc = rpc_job_send(rpcs, channel->id, str->ptr, str->size);
@@ -1203,7 +1203,7 @@ tapi_job_poll(const tapi_job_channel_set_t wait_set, int timeout_ms)
     unsigned int n_channels;
     rcf_rpc_server *rpcs;
     te_errno rc;
-    te_bool silent_pass;
+    bool silent_pass;
 
     if ((rc = validate_channel_set(wait_set)) != 0)
         return rc;
@@ -1264,7 +1264,7 @@ receive_common(const tapi_job_channel_set_t filters, int timeout_ms,
     unsigned int *channel_ids;
     unsigned int n_channels;
     rcf_rpc_server *rpcs;
-    te_bool silent_pass;
+    bool silent_pass;
 
     tarpc_job_buffer buf;
     te_errno rc;
@@ -1318,7 +1318,7 @@ tapi_job_receive_many(const tapi_job_channel_set_t filters, int timeout_ms,
     tapi_job_buffer_t *tapi_bufs = NULL;
     unsigned int bufs_count = *count;
     unsigned int i;
-    te_bool silent_pass;
+    bool silent_pass;
 
     *buffers = NULL;
     *count = 0;
@@ -1370,16 +1370,16 @@ tapi_job_buffers_free(tapi_job_buffer_t *buffers, unsigned int count)
     free(buffers);
 }
 
-te_bool
+bool
 tapi_job_filters_have_data(const tapi_job_channel_set_t filters, int timeout_ms)
 {
     te_errno rc;
-    te_bool have_data = FALSE;
+    bool have_data = false;
     tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;
 
     rc = tapi_job_receive_last(filters, timeout_ms, &buf);
     if (rc == 0 && !buf.eos)
-        have_data = TRUE;
+        have_data = true;
 
     te_string_free(&buf.data);
 
@@ -1403,7 +1403,7 @@ tapi_job_receive_single(tapi_job_channel_t *filter, te_string *val,
 {
     te_errno rc;
     tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;
-    te_bool matched = FALSE;
+    bool matched = false;
 
     while (1)
     {
@@ -1432,7 +1432,7 @@ tapi_job_receive_single(tapi_job_channel_t *filter, te_string *val,
             return TE_RC(TE_TAPI, TE_EPROTO);
         }
 
-        matched = TRUE;
+        matched = true;
         *val = buf.data;
     }
 
@@ -1453,7 +1453,7 @@ tapi_job_clear(const tapi_job_channel_set_t filters)
     unsigned int *channel_ids;
     unsigned int n_channels;
     rcf_rpc_server *rpcs;
-    te_bool silent_pass;
+    bool silent_pass;
 
     te_errno rc;
 
@@ -1610,7 +1610,7 @@ tapi_job_get_autorestart(tapi_job_t *job, unsigned int *value)
 }
 
 /* See description in tapi_job_internal.h */
-te_bool
+bool
 tapi_job_get_silent_pass(const tapi_job_t *job)
 {
     if (job == NULL)
@@ -1624,7 +1624,7 @@ tapi_job_get_silent_pass(const tapi_job_t *job)
 
 /* See description in tapi_job.h */
 void
-tapi_job_set_tracing(tapi_job_t *job, te_bool trace)
+tapi_job_set_tracing(tapi_job_t *job, bool trace)
 {
     channel_entry *entry;
     tapi_job_channel_t *channel;

@@ -153,10 +153,10 @@ extern int tapi_jmp_do(int val, const char *file, unsigned int lineno);
 /**
  * Is stack of jumps empty?
  *
- * @retval TRUE     Stack of jumps is empty
- * @retval FALSE    Stack of jumps is not empty
+ * @retval @c true     Stack of jumps is empty
+ * @retval @c false    Stack of jumps is not empty
  */
-extern te_bool tapi_jmp_stack_is_empty(void);
+extern bool tapi_jmp_stack_is_empty(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -209,7 +209,7 @@ static const char *
 map_oid_to_param(const char *oid)
 {
     static char param_name[32];
-    te_bool upper_case = TRUE;
+    bool upper_case = true;
     char *p = param_name;
     static char *special_mappings[][2] =
         {{"data_pdu_in_order:", "DataPDUInOrder"},
@@ -242,14 +242,14 @@ map_oid_to_param(const char *oid)
         if (upper_case)
         {
             *p++ = toupper(*oid);
-            upper_case = FALSE;
+            upper_case = false;
         }
         else if (*oid != '_')
         {
             *p++ = *oid;
         }
         if (*oid == '_' || isdigit(*oid))
-            upper_case = TRUE;
+            upper_case = true;
     }
     *p = '\0';
     return param_name;
@@ -369,7 +369,7 @@ iscsi_target_backstore_unmount(void)
 }
 
 typedef struct device_param {
-    te_bool  is_mmap;
+    bool is_mmap;
     unsigned long size;
 } device_param;
 

@@ -104,7 +104,7 @@ te_intset_generic2string(const te_intset_ops *ops, int minval, int maxval,
     return result.ptr;
 }
 
-te_bool
+bool
 te_intset_generic_is_subset(const te_intset_ops *ops,
                             int minval, int maxval,
                             const void *subset, const void *superset)
@@ -116,11 +116,11 @@ te_intset_generic_is_subset(const te_intset_ops *ops,
         if (ops->check(i, subset) &&
             !ops->check(i, superset))
         {
-            return FALSE;
+            return false;
         }
     }
 
-    return TRUE;
+    return true;
 }
 
 void
@@ -161,7 +161,7 @@ unset_uint64_bit(int v, void *val)
     *(uint64_t *)val &= ~(1ull << v);
 }
 
-static te_bool
+static bool
 check_uint64_bit(int v, const void *val)
 {
     return (*(const uint64_t *)val & (1ull << v)) != 0;
@@ -180,7 +180,7 @@ clear_charset(void *val)
     memset(val, 0, sizeof(te_charset));
 }
 
-static te_bool
+static bool
 check_charset_byte(int v, const void *val)
 {
     const te_charset *cs = val;
@@ -245,16 +245,16 @@ te_charset_get_bytes(const te_charset *cset,
     }
 }
 
-te_bool
+bool
 te_charset_check_bytes(const te_charset *cset, size_t len, const uint8_t *bytes)
 {
     for (; len > 0; len--, bytes++)
     {
         if (!te_charset_check(cset, *bytes))
-            return FALSE;
+            return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 static void
@@ -275,7 +275,7 @@ fd_set_unset(int v, void *val)
     FD_CLR(v, (fd_set *)val);
 }
 
-static te_bool
+static bool
 fd_set_check(int v, const void *val)
 {
     return FD_ISSET(v, (const fd_set *)val);
@@ -308,7 +308,7 @@ cpu_set_unset(int v, void *val)
     CPU_CLR(v, (cpu_set_t *)val);
 }
 
-static te_bool
+static bool
 cpu_set_check(int v, const void *val)
 {
     return CPU_ISSET(v, (const cpu_set_t *)val);

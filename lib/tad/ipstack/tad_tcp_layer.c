@@ -443,7 +443,7 @@ tad_tcp_fill_in_hdr(const tad_pkt *pkt, tad_pkt_seg *seg,
                     *((uint32_t *)p) = htonl((uint32_t)(def_val_));     \
                     break;                                              \
                 default:                                                \
-                    assert(FALSE);                                      \
+                    assert(false);                                      \
             }                                                           \
         }                                                               \
         p += (length_);                                                 \
@@ -591,7 +591,7 @@ tad_tcp_gen_bin_cb(csap_p csap, unsigned int layer,
      * Allocate and add TCP header to all packets.
      * FIXME sizeof(struct tcphdr) instead of 20.
      */
-    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL,
+    rc = tad_pkts_add_new_seg(pdus, true, NULL,
                               20 + opaque_data.spec_data->opt_bin_len,
                               NULL);
     if (rc != 0)

@@ -47,8 +47,8 @@ typedef struct inotify_data {
 
 /* Storage for original core pattern */
 static char orig_core_pattern[CORE_PATTERN_LEN] = "";
-/* If TRUE, core watcher should restore original core pattern at the end */
-static te_bool restore_core_pattern = FALSE;
+/* If @c true, core watcher should restore original core pattern at the end */
+static bool restore_core_pattern = false;
 /* File descriptor for te_core_pattern_lock file */
 static int fd_lock = -1;
 
@@ -179,8 +179,8 @@ lock_core_pattern(const char **core_pattern)
     int fd_cp = -1;
     ssize_t len;
     int rc = -1;
-    te_bool change_pattern = FALSE;
-    te_bool root_user = (getuid() == 0);
+    bool change_pattern = false;
+    bool root_user = (getuid() == 0);
 
     /*
      * This is done to make sure that lock file is accessible
@@ -229,7 +229,7 @@ lock_core_pattern(const char **core_pattern)
     {
         rc = cp_try_exclusive_lock(fd_lock);
         if (rc >= 0)
-            change_pattern = TRUE;
+            change_pattern = true;
     }
 
     CHECK_RC(fd_cp = open("/proc/sys/kernel/core_pattern",
@@ -242,7 +242,7 @@ lock_core_pattern(const char **core_pattern)
     {
         CHECK_RC(lseek(fd_cp, 0, SEEK_SET));
         CHECK_RC(ftruncate(fd_cp, 0));
-        restore_core_pattern = TRUE;
+        restore_core_pattern = true;
         CHECK_RC(write(fd_cp, *core_pattern, strlen(*core_pattern)));
     }
     else

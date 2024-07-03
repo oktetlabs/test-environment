@@ -144,7 +144,7 @@ main(int argc, char *argv[])
         20 + (frags[1].real_length =
               (sizeof(udp_dgm_image) - frags[0].real_length));
 
-    rc = tapi_ip4_add_pdu(&template, &ip4_pdu, FALSE,
+    rc = tapi_ip4_add_pdu(&template, &ip4_pdu, false,
                           SIN(csap_addr)->sin_addr.s_addr,
                           SIN(pco_addr)->sin_addr.s_addr,
                           IPPROTO_UDP, -1 /* default TTL */,
@@ -157,7 +157,7 @@ main(int argc, char *argv[])
     if (rc != 0)
         TEST_FAIL("Failed to fragments specification to IPv4 PDU: %r", rc);
 
-    rc = tapi_eth_add_pdu(&template, NULL, FALSE /* template */,
+    rc = tapi_eth_add_pdu(&template, NULL, false /* template */,
                           pco_mac, NULL, NULL,
                           TE_BOOL3_FALSE /* untagged */,
                           TE_BOOL3_FALSE /* Ethernet2 */);

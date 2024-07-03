@@ -56,16 +56,16 @@ const tapi_ping_opt tapi_ping_default_opt = {
 };
 
 static const tapi_job_opt_bind ping_binds[] = TAPI_JOB_OPT_SET(
-    TAPI_JOB_OPT_UINT_OMITTABLE("-c", FALSE, NULL, tapi_ping_opt, packet_count),
-    TAPI_JOB_OPT_UINT_OMITTABLE("-s", FALSE, NULL, tapi_ping_opt, packet_size),
-    TAPI_JOB_OPT_DOUBLE("-i", FALSE, NULL, tapi_ping_opt, interval),
-    TAPI_JOB_OPT_STRING("-I", FALSE, tapi_ping_opt, interface),
-    TAPI_JOB_OPT_STRING(NULL, FALSE, tapi_ping_opt, destination)
+    TAPI_JOB_OPT_UINT_OMITTABLE("-c", false, NULL, tapi_ping_opt, packet_count),
+    TAPI_JOB_OPT_UINT_OMITTABLE("-s", false, NULL, tapi_ping_opt, packet_size),
+    TAPI_JOB_OPT_DOUBLE("-i", false, NULL, tapi_ping_opt, interval),
+    TAPI_JOB_OPT_STRING("-I", false, tapi_ping_opt, interface),
+    TAPI_JOB_OPT_STRING(NULL, false, tapi_ping_opt, destination)
 );
 
 static te_errno
 tapi_ping_create_with_v(tapi_job_factory_t *factory, const tapi_ping_opt *opt,
-                 tapi_ping_app **app, te_bool use_ping6)
+                 tapi_ping_app **app, bool use_ping6)
 {
     te_errno        rc;
     tapi_ping_app  *result;
@@ -92,36 +92,36 @@ tapi_ping_create_with_v(tapi_job_factory_t *factory, const tapi_ping_opt *opt,
                                 .stderr_loc = &result->out_chs[1],
                                 .filters    = TAPI_JOB_SIMPLE_FILTERS(
                                     {
-                                        .use_stdout  = TRUE,
-                                        .readable    = TRUE,
+                                        .use_stdout  = true,
+                                        .readable    = true,
                                         .re = "([0-9]+) packets transmitted",
                                         .extract     = 1,
                                         .filter_var  = &result->trans_filter,
                                     },
                                     {
-                                        .use_stdout  = TRUE,
-                                        .readable    = TRUE,
+                                        .use_stdout  = true,
+                                        .readable    = true,
                                         .re = "([0-9]+) received",
                                         .extract     = 1,
                                         .filter_var  = &result->recv_filter,
                                     },
                                     {
-                                        .use_stdout  = TRUE,
-                                        .readable    = TRUE,
+                                        .use_stdout  = true,
+                                        .readable    = true,
                                         .re = "([0-9]+)% packet loss",
                                         .extract     = 1,
                                         .filter_var  = &result->lost_filter,
                                     },
                                     {
-                                        .use_stdout  = TRUE,
-                                        .readable    = TRUE,
+                                        .use_stdout  = true,
+                                        .readable    = true,
                                         .re = "rtt.*= (.*) ms",
                                         .extract     = 1,
                                         .filter_var  = &result->rtt_filter,
                                     },
                                     {
-                                        .use_stderr  = TRUE,
-                                        .readable    = FALSE,
+                                        .use_stderr  = true,
+                                        .readable    = false,
                                         .log_level   = TE_LL_ERROR,
                                         .filter_name = "err",
                                     }
@@ -152,7 +152,7 @@ tapi_ping_create(tapi_job_factory_t *factory, const tapi_ping_opt *opt,
     tapi_ping_opt                           ping_opts_v = tapi_ping_default_opt;
     tapi_ping_app                          *ping_app_v = NULL;
     struct sockaddr                         dest_addr;
-    te_bool                                 use_ping6 = FALSE;
+    bool use_ping6 = false;
     te_errno                                rc;
 
     rc = te_sockaddr_netaddr_from_string(opt->destination, &dest_addr);
@@ -165,7 +165,8 @@ tapi_ping_create(tapi_job_factory_t *factory, const tapi_ping_opt *opt,
         ping_opts_v.destination = "::1";
         ping_opts_v.packet_count = 1;
 
-        rc = tapi_ping_create_with_v(factory, &ping_opts_v, &ping_app_v, FALSE);
+        rc = tapi_ping_create_with_v(factory, &ping_opts_v, &ping_app_v,
+                                     false);
         if (rc != 0)
             goto out;
         rc = tapi_ping_start(ping_app_v);
@@ -173,7 +174,7 @@ tapi_ping_create(tapi_job_factory_t *factory, const tapi_ping_opt *opt,
             goto out;
         rc = tapi_ping_wait(ping_app_v, 1000);
         if (rc == TE_RC(TE_TAPI, TE_ESHCMD))
-            use_ping6 = TRUE;
+            use_ping6 = true;
         else if (rc != 0)
             goto out;
     }
@@ -317,7 +318,7 @@ tapi_ping_get_report(tapi_ping_app *app, tapi_ping_report *report)
 
     if (app->packet_size >= TAPI_PING_MIN_PACKET_SIZE_FOR_RTT_STATS)
     {
-        report->with_rtt = TRUE;
+        report->with_rtt = true;
 
         return process_filter_rtt_data(app->rtt_filter, &report->rtt);
     }
@@ -325,7 +326,7 @@ tapi_ping_get_report(tapi_ping_app *app, tapi_ping_report *report)
     {
         WARN("Ping did not produce RTT statistics since payload size "
              "(packet_size option) is too small");
-        report->with_rtt = FALSE;
+        report->with_rtt = false;
 
         return 0;
     }

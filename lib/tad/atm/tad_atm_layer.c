@@ -64,19 +64,19 @@ typedef struct tad_atm_proto_pdu_data {
 static const tad_bps_pkt_frag tad_atm_uni_bps_hdr[] =
 {
     { "gfc",            4,  BPS_FLD_CONST_DEF(NDN_TAG_ATM_GFC, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "vpi",            8,  BPS_FLD_SIMPLE(NDN_TAG_ATM_VPI),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
     { "vci",            16, BPS_FLD_SIMPLE(NDN_TAG_ATM_VCI),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
     { "payload-type",   3,  NDN_TAG_ATM_PAYLOAD_TYPE,
                             ASN_TAG_CONST, ASN_TAG_INVALID, 0,
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
     { "clp",            1,  BPS_FLD_CONST_DEF(NDN_TAG_ATM_CLP, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "hec",            8,  NDN_TAG_ATM_HEC,
                             ASN_TAG_CONST, ASN_TAG_INVALID, 0,
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
 };
 
 /**
@@ -85,17 +85,17 @@ static const tad_bps_pkt_frag tad_atm_uni_bps_hdr[] =
 static const tad_bps_pkt_frag tad_atm_nni_bps_hdr[] =
 {
     { "vpi",            12, BPS_FLD_SIMPLE(NDN_TAG_ATM_VPI),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
     { "vci",            16, BPS_FLD_SIMPLE(NDN_TAG_ATM_VCI),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
     { "payload-type",   3,  NDN_TAG_ATM_PAYLOAD_TYPE,
                             ASN_TAG_CONST, ASN_TAG_INVALID, 0,
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
     { "clp",            1,  BPS_FLD_CONST_DEF(NDN_TAG_ATM_CLP, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "hec",            8,  NDN_TAG_ATM_HEC,
                             ASN_TAG_CONST, ASN_TAG_INVALID, 0,
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
 };
 
 
@@ -373,7 +373,7 @@ tad_atm_gen_bin_cb(csap_p                csap,
     tad_pkts_move(pdus, sdus);
 
     /* Add space for ATM cell header segment to each PDU */
-    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, ATM_HEADER_LEN, NULL);
+    rc = tad_pkts_add_new_seg(pdus, true, NULL, ATM_HEADER_LEN, NULL);
     if (rc != 0)
     {
         ERROR(CSAP_LOG_FMT "Failed to add ATM cell header segment: %r",

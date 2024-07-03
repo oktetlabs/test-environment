@@ -393,7 +393,7 @@ rte_mk_mbuf_from_template(tarpc_rte_mk_mbuf_from_template_in     *in,
     csap_p                  dummy_csap_instance = NULL;
     unsigned int            num_pkts = 0;
     struct rte_ring        *ring = NULL;
-    te_bool                 csap_created = FALSE;
+    bool csap_created = false;
     struct rte_mbuf       **mbufs = NULL;
 #ifdef HAVE_RTE_RING_DEQUEUE_BULK_ARG_AVAILABLE
     unsigned int            ret;
@@ -463,7 +463,7 @@ rte_mk_mbuf_from_template(tarpc_rte_mk_mbuf_from_template_in     *in,
     if (rc != 0)
         goto out;
 
-    csap_created = TRUE;
+    csap_created = true;
 
     /* Create a dummy reply context */
     reply_ctx.spec = calloc(1, sizeof(tad_reply_spec));
@@ -477,7 +477,7 @@ rte_mk_mbuf_from_template(tarpc_rte_mk_mbuf_from_template_in     *in,
 
     /* Shove the template into the CSAP */
     rc = tad_send_start_prepare(csap_instance, in->template,
-                                TRUE, &reply_ctx);
+                                true, &reply_ctx);
     if (rc != 0)
         goto out;
 
@@ -621,7 +621,7 @@ rte_mbuf_match_pattern(tarpc_rte_mbuf_match_pattern_in  *in,
     asn_value                          *csap_spec = NULL;
     asn_value                          *rte_mbuf_layer = NULL;
     struct rte_ring                    *ring = NULL;
-    te_bool                             csap_created = FALSE;
+    bool csap_created = false;
     struct rte_mbuf                   **mbufs = NULL;
     unsigned int                        got_pkts = 0;
 #ifdef HAVE_RTE_RING_ENQUEUE_BULK_ARG_FREE_SPACE
@@ -671,7 +671,7 @@ rte_mbuf_match_pattern(tarpc_rte_mbuf_match_pattern_in  *in,
     if (rc != 0)
         goto out;
 
-    csap_created = TRUE;
+    csap_created = true;
 
     /* Create a dummy reply context */
     reply_ctx.spec = calloc(1, sizeof(tad_reply_spec));
@@ -721,7 +721,7 @@ rte_mbuf_match_pattern(tarpc_rte_mbuf_match_pattern_in  *in,
 #endif /* HAVE_RTE_RING_ENQUEUE_BULK_ARG_FREE_SPACE */
 
     recv_flags = RCF_CH_TRRECV_PACKETS;
-    if (in->seq_match == TRUE)
+    if (in->seq_match == true)
         recv_flags |= RCF_CH_TRRECV_PACKETS_SEQ_MATCH;
 
     /* Shove the pattern into the CSAP */
@@ -783,7 +783,7 @@ rte_mbuf_match_pattern(tarpc_rte_mbuf_match_pattern_in  *in,
     reply_spec->pkt = &rte_mbuf_store_matching_packets;
 
     /* Grab the matching packets from the CSAP queue */
-    rc = tad_recv_get_packets(csap_instance, &reply_ctx, FALSE, &got_pkts);
+    rc = tad_recv_get_packets(csap_instance, &reply_ctx, false, &got_pkts);
     if (rc != 0)
         goto out;
 
@@ -919,7 +919,7 @@ rte_mbuf_detect_layers(struct rte_mbuf_parse_ctx *parse_ctx,
 }
 
 struct rte_mbuf_cksum_ctx {
-    te_bool                is_ipv4;
+    bool is_ipv4;
     uint16_t               cksum;
     const struct rte_mbuf *m;
 };
@@ -1116,7 +1116,7 @@ rte_mbuf_match_tx_rx_pre(struct rte_mbuf *m)
                                      parse_ctx.innermost_l3_ofst -
                                      sizeof(*ipv6h) + parse_ctx.pld_size);
             }
-            cksum_ctx.is_ipv4 = FALSE;
+            cksum_ctx.is_ipv4 = false;
             break;
         case RTE_PTYPE_L3_IPV4:
         case RTE_PTYPE_L3_IPV4_EXT:
@@ -1131,7 +1131,7 @@ rte_mbuf_match_tx_rx_pre(struct rte_mbuf *m)
                                      parse_ctx.innermost_l3_ofst +
                                      parse_ctx.pld_size);
             }
-            cksum_ctx.is_ipv4 = TRUE;
+            cksum_ctx.is_ipv4 = true;
             break;
         default:
             ERROR("m: unsupported innermost L3");
@@ -1197,7 +1197,7 @@ struct rte_mbuf_cmp_ctx {
     /* This refers to rx_burst[rx_idx]; no const qualifier here. */
     struct rte_mbuf *m_rx;
     /* This shows whether mod15 algorithm is expected for TSO IP ID edits. */
-    te_bool          tso_ip_id_inc_algo_is_mod15;
+    bool tso_ip_id_inc_algo_is_mod15;
     /* These 2 fields contain the original (superframe) IP ID values. */
     uint16_t         start_ip_id_outer;
     uint16_t         start_ip_id_inner;
@@ -1851,7 +1851,7 @@ rte_mbuf_match_tx_rx(struct tarpc_rte_mbuf_match_tx_rx_in  *in,
 
     if (in->tso_ip_id_inc_algo != NULL &&
         strcmp(in->tso_ip_id_inc_algo, "mod15") == 0)
-        cmp_ctx.tso_ip_id_inc_algo_is_mod15 = TRUE;
+        cmp_ctx.tso_ip_id_inc_algo_is_mod15 = true;
 
     /* Conduct the comparison. TSO edits are taken care of internally. */
     for (i = 0; i < cmp_ctx.nb_rx; ++i)

@@ -98,11 +98,11 @@ extern void end_compound_data(void *data, const XML_Char *elem);
  *                  transmitting data
  * @param buflen    buffer size
  * @param op        rpc_xml_call or rpc_xml_result
- * @param rc        TRUE of FALSE, used only when op is rpc_xml_result
+ * @param rc        @c true or @c false, used only when op is rpc_xml_result
  * @param name      call/result name
  * @param x_op      XDR_ENCODE, XDR_DECODE of XDR_FREE
  *
- * @return TRUE of FALSE (in case of memory allocation failure)
+ * @return @c true or @c false (in case of memory allocation failure)
  */
 extern bool_t xdrxml_create(XDR *xdrs, caddr_t buf, u_int buflen,
                             rpc_xml_op op, bool_t rc,

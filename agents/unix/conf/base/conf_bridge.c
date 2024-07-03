@@ -30,9 +30,9 @@
  * @param ifname    The interface name.
  * @param data      Unused.
  *
- * @return @c TRUE if the interface is grabbed, @c FALSE otherwise.
+ * @return @c true if the interface is grabbed, @c false otherwise.
  */
-static te_bool
+static bool
 port_list_include_cb(const char *ifname, void *data)
 {
     UNUSED(ifname);
@@ -201,9 +201,9 @@ bridge_del(unsigned int gid, const char *oid, const char *ifname)
  * @param ifname    The interface name.
  * @param data      Unused.
  *
- * @return @c TRUE if the interface is grabbed, @c FALSE otherwise.
+ * @return @c true if the interface is grabbed, @c false otherwise.
  */
-static te_bool
+static bool
 bridge_list_include_cb(const char *ifname, void *data)
 {
     UNUSED(data);

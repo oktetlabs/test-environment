@@ -26,7 +26,7 @@ typedef struct ta_list_t {
 char *cfg_get_buf = NULL;
 static int cfg_get_buf_len = TA_BUF_SIZE;
 
-te_bool local_cmd_seq = FALSE;
+bool local_cmd_seq = false;
 char max_commit_subtree[CFG_INST_NAME_MAX] = {};
 char *local_cmd_bkp = NULL;
 
@@ -169,10 +169,10 @@ cfg_ta_reboot_all(void)
     }
 }
 
-static te_bool do_log_syncing = FALSE;
+static bool do_log_syncing = false;
 
 void
-cfg_ta_log_syncing(te_bool flag)
+cfg_ta_log_syncing(bool flag)
 {
     do_log_syncing = flag;
 }
@@ -215,13 +215,13 @@ sync_ta_instance(const char *ta, const char *oid)
             if (rc == 0)
             {
                 /* Mark it as synchronized */
-                CFG_GET_INST(handle)->added = TRUE;
+                CFG_GET_INST(handle)->added = true;
             }
         }
         return rc;
     }
 
-    while (TRUE)
+    while (true)
     {
         rc = rcf_ta_cfg_get(ta, 0, oid, cfg_get_buf, cfg_get_buf_len);
         if (TE_RC_GET_ERROR(rc) == TE_ESMALLBUF)
@@ -284,7 +284,7 @@ sync_ta_instance(const char *ta, const char *oid)
     if (rc == 0)
     {
         /* Mark it as synchronized */
-        CFG_GET_INST(handle)->added = TRUE;
+        CFG_GET_INST(handle)->added = true;
     }
 
     cfg_types[obj->type].free(val);
@@ -435,7 +435,7 @@ sync_ta_subtree(const char *ta, const char *oid)
     }
     sprintf(wildcard_oid, "%s/...", oid);
 
-    rc = rcf_ta_cfg_group(ta, 0, TRUE);
+    rc = rcf_ta_cfg_group(ta, 0, true);
     if (rc != 0)
     {
         ERROR("rcf_ta_cfg_group() failed");
@@ -444,7 +444,7 @@ sync_ta_subtree(const char *ta, const char *oid)
     }
 
     cfg_get_buf[0] = 0;
-    while (TRUE)
+    while (true)
     {
         rc = rcf_ta_cfg_get(ta, 0, wildcard_oid, cfg_get_buf,
                             cfg_get_buf_len);
@@ -456,7 +456,7 @@ sync_ta_subtree(const char *ta, const char *oid)
             if (cfg_get_buf == NULL)
             {
                 ERROR("Memory allocation failure");
-                rcf_ta_cfg_group(ta, 0, FALSE);
+                rcf_ta_cfg_group(ta, 0, false);
                 free(wildcard_oid);
                 return TE_ENOMEM;
             }
@@ -466,7 +466,7 @@ sync_ta_subtree(const char *ta, const char *oid)
         else
         {
             ERROR("rcf_ta_cfg_get() failed: TA=%s, error=%r", ta, rc);
-            rcf_ta_cfg_group(ta, 0, FALSE);
+            rcf_ta_cfg_group(ta, 0, false);
             free(wildcard_oid);
             return rc;
         }
@@ -478,7 +478,7 @@ sync_ta_subtree(const char *ta, const char *oid)
     rc = cfg_db_find_pattern(oid, (unsigned int *)&h_num, &handles);
     if (rc != 0)
     {
-        rcf_ta_cfg_group(ta, 0, FALSE);
+        rcf_ta_cfg_group(ta, 0, false);
         return rc;
     }
 
@@ -490,7 +490,7 @@ sync_ta_subtree(const char *ta, const char *oid)
         if (cfg_get_buf == NULL)
         {
             ERROR("Memory allocation failure");
-            rcf_ta_cfg_group(ta, 0, FALSE);
+            rcf_ta_cfg_group(ta, 0, false);
             free(handles);
             return TE_ENOMEM;
         }
@@ -520,7 +520,7 @@ sync_ta_subtree(const char *ta, const char *oid)
                   __FUNCTION__);
             tdestroy(oid_tree_root, oid_tree_free);
             free(handles);
-            rcf_ta_cfg_group(ta, 0, FALSE);
+            rcf_ta_cfg_group(ta, 0, false);
             return rc;
         }
     }
@@ -532,7 +532,7 @@ sync_ta_subtree(const char *ta, const char *oid)
             break;
     }
 
-    rcf_ta_cfg_group(ta, 0, FALSE);
+    rcf_ta_cfg_group(ta, 0, false);
 
     tdestroy(oid_tree_root, oid_tree_free);
     free_oid_queue(&oid_queue);
@@ -551,7 +551,7 @@ sync_ta_subtree(const char *ta, const char *oid)
  * @return status code (see te_errno.h)
  */
 int
-cfg_ta_sync(char *oid, te_bool subtree)
+cfg_ta_sync(char *oid, bool subtree)
 {
     cfg_oid  *tmp_oid;
     char     *ta;
@@ -587,7 +587,7 @@ cfg_ta_sync(char *oid, te_bool subtree)
     }
     else /** Here an exact agent is used in 'oid' */
     {
-        te_bool found = FALSE;
+        bool found = false;
         char   *tmp;
 
         ta = ((cfg_inst_subid *)(tmp_oid->ids))[1].name;
@@ -648,7 +648,7 @@ cfg_ta_sync(char *oid, te_bool subtree)
 
 /* see description in conf_ta.h */
 void
-cfg_ta_sync_obj(cfg_object *obj, te_bool subtree)
+cfg_ta_sync_obj(cfg_object *obj, bool subtree)
 {
     uint64_t i;
 
@@ -667,7 +667,7 @@ cfg_ta_sync_obj(cfg_object *obj, te_bool subtree)
 
 /* see description in conf_ta.h */
 te_errno
-cfg_ta_sync_dependants(cfg_instance *inst, te_bool no_children)
+cfg_ta_sync_dependants(cfg_instance *inst, bool no_children)
 {
     cfg_dependency *dep;
     cfg_oid        *my_oid;
@@ -699,7 +699,7 @@ cfg_ta_sync_dependants(cfg_instance *inst, te_bool no_children)
         {
             RING("Syncing dependant oid %s", to_sync_str);
         }
-        rc = cfg_ta_sync(to_sync_str, TRUE);
+        rc = cfg_ta_sync(to_sync_str, true);
         if (rc != 0)
             ERROR("Cannot sync %s: %r", to_sync_str, TE_RC(TE_CS, rc));
         free(to_sync_str);
@@ -801,7 +801,7 @@ cfg_ta_commit_instance(const char *ta, cfg_instance *inst)
         }
         if (rc == 0)
         {
-            inst->added = TRUE;
+            inst->added = true;
         }
     }
 
@@ -825,13 +825,13 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
     int           rc, ret = 0;
     cfg_instance *commit_root;
     cfg_instance *p;
-    te_bool       forward;
-    te_bool       need_sync = FALSE;
+    bool forward;
+    bool need_sync = false;
 
     cfg_instance *father;
     cfg_instance *son;
     cfg_instance *brother;
-    te_bool       is_commit_root;
+    bool is_commit_root;
 
     assert(ta != NULL);
     assert(inst != NULL);
@@ -839,7 +839,7 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
     ENTRY("ta=%s inst=0x%X", ta, inst);
     VERB("Commit to TA '%s' start at '%s'", ta, inst->oid);
 
-    rc = rcf_ta_cfg_group(ta, 0, TRUE);
+    rc = rcf_ta_cfg_group(ta, 0, true);
     if (rc != 0)
     {
         ERROR("Failed(%r) to start group on TA '%s'", rc, ta);
@@ -848,7 +848,7 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
         goto handle_result;
     }
 
-    for (commit_root = inst, p = inst, forward = TRUE; p != NULL; )
+    for (commit_root = inst, p = inst, forward = true; p != NULL; )
     {
         father = p->father;
         son = p->son;
@@ -863,7 +863,7 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
              */
             if ((!p->added && p->obj->access == CFG_READ_CREATE) ||
                 p->remove)
-                need_sync = TRUE;
+                need_sync = true;
 
             if (p->remove)
                 son = NULL;
@@ -886,13 +886,13 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
         {
             /* There are no children - go to brother */
             p = brother;
-            forward = TRUE;
+            forward = true;
         }
         else if (!is_commit_root && (father != commit_root))
         {
             p = father;
             assert(p != NULL);
-            forward = FALSE;
+            forward = false;
         }
         else
         {
@@ -900,7 +900,7 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
         }
     }
 
-    rc = rcf_ta_cfg_group(ta, 0, FALSE);
+    rc = rcf_ta_cfg_group(ta, 0, false);
     if (rc != 0)
     {
         ERROR("Failed(%r) to end group on TA '%s'", rc, ta);
@@ -1014,7 +1014,7 @@ cfg_tas_commit(const char *oid)
 
     if (local_cmd_seq)
     {
-        local_cmd_seq = FALSE;
+        local_cmd_seq = false;
 
         if (rc == 0)
         {
@@ -1027,7 +1027,7 @@ cfg_tas_commit(const char *oid)
             int ret;
 
             /* Restore configuration before the first local SET/ADD/DEL */
-            ret = cfg_dh_restore_backup(local_cmd_bkp, FALSE);
+            ret = cfg_dh_restore_backup(local_cmd_bkp, false);
             WARN("Restore backup to configuration which was before "
                  "the first local ADD/DEL/SET commands restored with "
                  "code %r", ret);

@@ -138,7 +138,7 @@ extern te_errno tapi_tad_csap_add_layer(asn_value       **csap_spec,
  * @return Status code.
  */
 extern te_errno tapi_tad_tmpl_ptrn_add_layer(asn_value       **obj_spec,
-                                             te_bool           is_pattern,
+                                             bool is_pattern,
                                              const asn_type   *pdu_type,
                                              const char       *pdu_choice,
                                              asn_value       **pdu_spec);
@@ -177,7 +177,7 @@ extern te_errno tapi_tad_new_ptrn_unit(asn_value **obj_spec,
  */
 extern te_errno tapi_tad_tmpl_ptrn_set_payload_plain(
                     asn_value  **obj_spec,
-                    te_bool      is_pattern,
+                    bool is_pattern,
                     const void  *payload,
                     size_t       length);
 
@@ -515,14 +515,14 @@ extern te_errno tapi_ndn_pkt_demand_correct_ip_cksum(asn_value        *pkt,
  * checksum in the packet which is about to be received on peer.
  *
  * @param pkt         The ASN.1 raw packet to be edited
- * @param can_be_zero If @c TRUE, allow for zero checksum value
+ * @param can_be_zero If @c true, allow for zero checksum value
  * @param level       @c TAPI_NDN_OUTER_L4 or @c TAPI_NDN_INNER_L4
  *
  * @return Status code.
  */
 extern te_errno tapi_ndn_pkt_demand_correct_udp_cksum(
                                                 asn_value        *pkt,
-                                                te_bool           can_be_zero,
+                                                bool can_be_zero,
                                                 tapi_ndn_level_t  level);
 
 /**

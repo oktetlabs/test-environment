@@ -64,7 +64,7 @@ typedef struct md_list {
     uint32_t        narg;
     void           *addr;
     uint32_t        length;
-    te_bool         add_zero;
+    bool add_zero;
 } md_list;
 
 
@@ -90,7 +90,7 @@ static const char  *skip_width = "*0123456789";
 static te_errno
 ta_log_add_ptr_argument(struct lgr_rb *ring_buffer, uint32_t position,
                         const void *start, uint32_t length,
-                        ta_log_arg *arg_location, te_bool add_zero)
+                        ta_log_arg *arg_location, bool add_zero)
 {
     uint32_t val;
     uint8_t *arg_addr;
@@ -125,7 +125,7 @@ ta_log_dynamic_user_ts(te_log_ts_sec sec, te_log_ts_usec usec,
     unsigned int i;
     int res;
 
-    lgr_rb_init_header(&header, level, NULL, "%s", TRUE, sec, usec);
+    lgr_rb_init_header(&header, level, NULL, "%s", true, sec, usec);
 
     if (ta_log_lock(&key) != 0)
         return;
@@ -147,7 +147,7 @@ ta_log_dynamic_user_ts(te_log_ts_sec sec, te_log_ts_usec usec,
     {
         if (ta_log_add_ptr_argument(&log_buffer, position,
                                     args[i], strlen(args[i]) + 1,
-                                    hdr_addr->args + i, FALSE) != 0)
+                                    hdr_addr->args + i, false) != 0)
         {
             log_buffer = lgr_rb_old;
             (void)ta_log_unlock(&key);
@@ -193,7 +193,7 @@ ta_log_message(const char *file, unsigned int line,
     UNUSED(entity);
 
     lgr_rb_init_header(&header, level, (user != NULL) ? user : null_str,
-                       (fmt != NULL) ? fmt : null_str, FALSE, sec, usec);
+                       (fmt != NULL) ? fmt : null_str, false, sec, usec);
     for (p_str = header.fmt; *p_str; p_str++)
     {
         if (*p_str != '%')
@@ -268,13 +268,13 @@ ta_log_message(const char *file, unsigned int line,
                 {
                     length = precision + 1;
                     cp_list.length += length;
-                    LGR_PUT_MD_LIST(cp_list, narg, addr, length, TRUE);
+                    LGR_PUT_MD_LIST(cp_list, narg, addr, length, true);
                 }
                 else
                 {
                     length = strlen(addr) + 1;
                     cp_list.length += length;
-                    LGR_PUT_MD_LIST(cp_list, narg, addr, length, FALSE);
+                    LGR_PUT_MD_LIST(cp_list, narg, addr, length, false);
                 }
                 break;
             }
@@ -289,7 +289,7 @@ ta_log_message(const char *file, unsigned int line,
                     length = va_arg(ap, size_t);
 
                     cp_list.length += length;
-                    LGR_PUT_MD_LIST(cp_list, narg, addr, length, FALSE);
+                    LGR_PUT_MD_LIST(cp_list, narg, addr, length, false);
                     if ((++narg) > TA_LOG_ARGS_MAX)
                         goto resume;
                     LGR_SET_ARG(header, narg, length);
@@ -375,7 +375,7 @@ clear_fmt(const char *fmt, uint8_t *clean_fmt)
 {
     int                 i;
     size_t              outlen = 0;
-    te_bool             in_fmt = FALSE;
+    bool in_fmt = false;
 
     for (i = 0; fmt[i] != '\0'; i++)
     {
@@ -385,7 +385,7 @@ clear_fmt(const char *fmt, uint8_t *clean_fmt)
         }
         else if (isalpha(fmt[i]) || fmt[i] == '%')
         {
-            in_fmt = FALSE;
+            in_fmt = false;
         }
         else if (fmt[i] == '*')
         {

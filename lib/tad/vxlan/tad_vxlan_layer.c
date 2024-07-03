@@ -38,18 +38,18 @@ typedef struct tad_vxlan_proto_pdu_data {
 static const tad_bps_pkt_frag tad_vxlan_bps_header[] =
 {
     { "flags-reserved-1",  4,  BPS_FLD_CONST(0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "vni-valid",         1,  BPS_FLD_CONST(1),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "flags-reserved-2",  3,  BPS_FLD_CONST(0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "reserved-1",        24, BPS_FLD_CONST(0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "vni",               24,
       BPS_FLD_CONST_DEF(NDN_TAG_VXLAN_VNI, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "reserved-2",        8,  BPS_FLD_CONST(0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 /* See description in 'tad_vxlan_impl.h' */
@@ -209,7 +209,7 @@ tad_vxlan_gen_bin_cb(csap_p                csap,
     }
 
     tad_pkts_move(pdus, sdus);
-    rc = tad_pkts_add_new_seg(pdus, TRUE, binary, TAD_VXLAN_HEADER_LEN,
+    rc = tad_pkts_add_new_seg(pdus, true, binary, TAD_VXLAN_HEADER_LEN,
                               tad_pkt_seg_data_free);
     if (rc != 0)
         goto fail;

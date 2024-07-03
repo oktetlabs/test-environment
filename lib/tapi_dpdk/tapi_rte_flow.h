@@ -194,8 +194,8 @@ extern rpc_rte_flow_p tapi_rte_flow_validate_and_create_rule(
  * @exception   TEST_FAIL
  */
 extern void tapi_rte_flow_make_attr(rcf_rpc_server *rpcs, uint32_t group,
-                                    uint32_t priority, te_bool ingress,
-                                    te_bool egress, te_bool transfer,
+                                    uint32_t priority, bool ingress,
+                                    bool egress, bool transfer,
                                     rpc_rte_flow_attr_p *attr);
 
 /**

@@ -42,7 +42,7 @@ typedef struct cfg_inst_subid {
 /** Object identifier */
 typedef struct cfg_oid {
     uint8_t len;  /**< Number of identifier elements */
-    te_bool inst; /**< TRUE, if OID is object instance identifier */
+    bool inst; /**< @c true, if OID is object instance identifier */
     void   *ids;  /**< Pointer to array of identifier elements */
 } cfg_oid;
 
@@ -68,7 +68,7 @@ typedef struct cfg_oid {
 #define CFG_OBJ_OID_LITERAL(...) \
     ((cfg_oid){                                                             \
         .len = 1 + TE_ARRAY_LEN(((const cfg_object_subid[]){__VA_ARGS__})), \
-        .inst = FALSE,                                                      \
+        .inst = false,                                                      \
         .ids = (cfg_object_subid[]){{""}, __VA_ARGS__}                      \
     })
 
@@ -138,12 +138,12 @@ cfg_oid_inst_subid(cfg_oid *oid, unsigned int i)
  * Allocate memory for object identifier or object instance identifier.
  *
  * @param length      number of identifier elements
- * @param inst        if TRUE - object instance identifier should be
+ * @param inst        if @c true, object instance identifier should be
  *                    allocated
  *
  * @return newly allocated structure pointer or NULL
  */
-extern cfg_oid *cfg_allocate_oid(int length, te_bool inst);
+extern cfg_oid *cfg_allocate_oid(int length, bool inst);
 
 /**
  * Convert object identifier or object instance identifier in
@@ -189,15 +189,15 @@ extern int cfg_oid_cmp(const cfg_oid *o1, const cfg_oid *o2);
  *
  * @param inst_oid      Instance OID.
  * @param obj_oid       Object OID.
- * @param match_prefix  If @c TRUE, @p inst_oid should be within
+ * @param match_prefix  If @c true, @p inst_oid should be within
  *                      a subtree defined by @p obj_oid, i.e.
  *                      there should be a prefix of @p inst_oid
  *                      matching @p obj_oid. Otherwise, the whole
  *                      @p inst_oid shall match.
- * @return @c TRUE iff @p inst_oid matches @p obj_oid.
+ * @return @c true iff @p inst_oid matches @p obj_oid.
  */
-extern te_bool cfg_oid_match(const cfg_oid *inst_oid, const cfg_oid *obj_oid,
-                             te_bool match_prefix);
+extern bool cfg_oid_match(const cfg_oid *inst_oid, const cfg_oid *obj_oid,
+                             bool match_prefix);
 
 
 /**
@@ -218,10 +218,10 @@ typedef struct cfg_oid_rule {
     /** Object OID */
     const cfg_oid *object_oid;
     /**
-     * If @c TRUE, the prefix of an instance OID is
+     * If @c true, the prefix of an instance OID is
      * matched, otherwise the whole OID.
      */
-    te_bool match_prefix;
+    bool match_prefix;
     /** Action to execute */
     cfg_oid_action *action;
 } cfg_oid_rule;

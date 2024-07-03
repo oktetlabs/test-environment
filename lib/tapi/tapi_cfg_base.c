@@ -141,14 +141,14 @@ tapi_cfg_base_get_ta_uname(const char *ta, struct utsname *uts)
 
 /* See the description in tapi_cfg_base.h */
 te_errno
-tapi_cfg_base_ipv4_fw(const char *ta, te_bool enable)
+tapi_cfg_base_ipv4_fw(const char *ta, bool enable)
 {
     return tapi_cfg_sys_set_int(ta, enable, NULL, "net/ipv4/ip_forward");
 }
 
 /* See the description in tapi_cfg_base.h */
 te_errno
-tapi_cfg_base_ipv4_fw_enabled(const char *ta, te_bool *enabled)
+tapi_cfg_base_ipv4_fw_enabled(const char *ta, bool *enabled)
 {
     te_errno rc;
     int val;
@@ -162,7 +162,7 @@ tapi_cfg_base_ipv4_fw_enabled(const char *ta, te_bool *enabled)
 
 /* See the description in tapi_cfg_base.h */
 te_errno
-tapi_cfg_ipv4_fw_set(const char *ta, const char *ifname, te_bool enable)
+tapi_cfg_ipv4_fw_set(const char *ta, const char *ifname, bool enable)
 {
     return tapi_cfg_sys_set_int(ta, enable, NULL,
                                 "net/ipv4/conf/%s/forwarding", ifname);
@@ -170,7 +170,7 @@ tapi_cfg_ipv4_fw_set(const char *ta, const char *ifname, te_bool enable)
 
 /* See the description in tapi_cfg_base.h */
 te_errno
-tapi_cfg_ipv4_fw_get(const char *ta, const char *ifname, te_bool *enabled)
+tapi_cfg_ipv4_fw_get(const char *ta, const char *ifname, bool *enabled)
 {
     te_errno rc;
     int val;
@@ -184,7 +184,7 @@ tapi_cfg_ipv4_fw_get(const char *ta, const char *ifname, te_bool *enabled)
 
 /* See the description in tapi_cfg_base.h */
 te_errno
-tapi_cfg_ipv6_fw_set(const char *ta, const char *ifname, te_bool enable)
+tapi_cfg_ipv6_fw_set(const char *ta, const char *ifname, bool enable)
 {
     return tapi_cfg_sys_set_int(ta, enable, NULL,
                                 "net/ipv6/conf/%s/forwarding", ifname);
@@ -192,7 +192,7 @@ tapi_cfg_ipv6_fw_set(const char *ta, const char *ifname, te_bool enable)
 
 /* See the description in tapi_cfg_base.h */
 te_errno
-tapi_cfg_ipv6_fw_get(const char *ta, const char *ifname, te_bool *enabled)
+tapi_cfg_ipv6_fw_get(const char *ta, const char *ifname, bool *enabled)
 {
     te_errno rc;
     int val;
@@ -407,7 +407,7 @@ tapi_cfg_base_if_del_mcast_mac(const char *oid,
 {
     if (mcast_mac != NULL)
     {
-        return cfg_del_instance_fmt(TRUE, "%s/mcast_link_addr:%s", oid,
+        return cfg_del_instance_fmt(true, "%s/mcast_link_addr:%s", oid,
                                     tapi_cfg_mac2str(mcast_mac));
     }
     else
@@ -436,7 +436,7 @@ tapi_cfg_base_if_del_mcast_mac(const char *oid,
                 break;
             }
 
-            if ((rc = cfg_del_instance(addrs[i], TRUE)) != 0)
+            if ((rc = cfg_del_instance(addrs[i], true)) != 0)
             {
                 ERROR("%s(): Failed to delete address with handle %#x: %r",
                       __FUNCTION__, addrs[i], rc);
@@ -484,7 +484,7 @@ tapi_cfg_base_if_get_mtu(const char *oid, unsigned int *p_mtu)
 /* See description in tapi_cfg_base.h */
 int
 tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
-                           int prefix, te_bool set_bcast,
+                           int prefix, bool set_bcast,
                            cfg_handle *cfg_hndl)
 {
     char    buf[INET6_ADDRSTRLEN];
@@ -558,7 +558,7 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
 
                 ERROR("%s(): Failed to set broadcast address: %r",
                       __FUNCTION__, rc);
-                rc2 = cfg_del_instance_fmt(TRUE,
+                rc2 = cfg_del_instance_fmt(true,
                                            "%s/net_addr:%s", oid,
                                            inet_ntop(addr->sa_family,
                                                      &SIN(addr)->sin_addr,
@@ -593,7 +593,7 @@ tapi_cfg_del_if_ip4_addresses(const char *ta,
                               const struct sockaddr *addr_to_save)
 {
     return tapi_cfg_save_del_if_ip4_addresses(ta, if_name,
-                                              addr_to_save, TRUE,
+                                              addr_to_save, true,
                                               NULL, NULL, NULL, NULL);
 }
 
@@ -603,7 +603,7 @@ tapi_cfg_restore_if_ip4_addresses(const char *ta,
                                   const char *if_name,
                                   struct sockaddr *saved_addrs,
                                   int *saved_prefixes,
-                                  te_bool *saved_broadcasts,
+                                  bool *saved_broadcasts,
                                   int saved_count)
 {
     return tapi_cfg_restore_if_addresses(ta, if_name, saved_addrs,
@@ -615,10 +615,10 @@ te_errno
 tapi_cfg_save_del_if_addresses(const char *ta,
                                       const char *if_name,
                                       const struct sockaddr *addr_to_save,
-                                      te_bool save_first,
+                                      bool save_first,
                                       struct sockaddr **saved_addrs,
                                       int **saved_prefixes,
-                                      te_bool **saved_broadcasts,
+                                      bool **saved_broadcasts,
                                       int *saved_count,
                                       int addr_fam)
 {
@@ -671,7 +671,7 @@ tapi_cfg_save_del_if_addresses(const char *ta,
     {
         struct sockaddr *tmp_addrs;
         int             *tmp_prefixes;
-        te_bool         *tmp_broadcasts;
+        bool *tmp_broadcasts;
 
         tmp_addrs = TE_ALLOC(sizeof(struct sockaddr) * addr_num);
 
@@ -679,7 +679,7 @@ tapi_cfg_save_del_if_addresses(const char *ta,
             tmp_prefixes = TE_ALLOC(sizeof(int) * addr_num);
 
         if (saved_broadcasts != NULL)
-            tmp_broadcasts = TE_ALLOC(sizeof(te_bool) * addr_num);
+            tmp_broadcasts = TE_ALLOC(sizeof(bool) * addr_num);
 
         *saved_addrs = tmp_addrs;
         if (saved_prefixes != NULL)
@@ -769,7 +769,7 @@ tapi_cfg_save_del_if_addresses(const char *ta,
 
         free(broadcasts);
 
-        if ((rc = cfg_del_instance(addrs[i], FALSE)) != 0)
+        if ((rc = cfg_del_instance(addrs[i], false)) != 0)
         {
             ERROR("%s(): Failed to delete address with handle %#x: %r",
                   __FUNCTION__, addrs[i], rc);
@@ -780,7 +780,7 @@ tapi_cfg_save_del_if_addresses(const char *ta,
             if (saved_prefixes != NULL)
                 (*saved_prefixes)[j] = prefix;
             if (saved_broadcasts != NULL)
-                (*saved_broadcasts)[j] = brd_num > 0 ? TRUE : FALSE;
+                (*saved_broadcasts)[j] = brd_num > 0 ? true : false;
 
             memcpy(&((*saved_addrs)[j++]), SA(&addr),
                    sizeof(struct sockaddr));
@@ -801,10 +801,10 @@ te_errno
 tapi_cfg_save_del_if_ip4_addresses(const char *ta,
                                    const char *if_name,
                                    const struct sockaddr *addr_to_save,
-                                   te_bool save_first,
+                                   bool save_first,
                                    struct sockaddr **saved_addrs,
                                    int **saved_prefixes,
-                                   te_bool **saved_broadcasts,
+                                   bool **saved_broadcasts,
                                    int *saved_count)
 {
     return tapi_cfg_save_del_if_addresses(ta, if_name, addr_to_save,
@@ -819,10 +819,10 @@ te_errno
 tapi_cfg_save_del_if_ip6_addresses(const char *ta,
                                    const char *if_name,
                                    const struct sockaddr *addr_to_save,
-                                   te_bool save_first,
+                                   bool save_first,
                                    struct sockaddr **saved_addrs,
                                    int **saved_prefixes,
-                                   te_bool **saved_broadcasts,
+                                   bool **saved_broadcasts,
                                    int *saved_count)
 {
     return tapi_cfg_save_del_if_addresses(ta, if_name, addr_to_save,
@@ -839,7 +839,7 @@ tapi_cfg_del_if_ip6_addresses(const char *ta,
                               const struct sockaddr *addr_to_save)
 {
     return tapi_cfg_save_del_if_ip6_addresses(ta, if_name,
-                                              addr_to_save, TRUE,
+                                              addr_to_save, true,
                                               NULL, NULL, NULL, NULL);
 }
 
@@ -849,7 +849,7 @@ tapi_cfg_restore_if_addresses(const char *ta,
                               const char *if_name,
                               struct sockaddr *saved_addrs,
                               int *saved_prefixes,
-                              te_bool *saved_broadcasts,
+                              bool *saved_broadcasts,
                               int saved_count)
 {
     int        i;
@@ -932,7 +932,7 @@ tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
     else
     {
         if (tapi_host_ns_enabled())
-            rc = tapi_host_ns_if_del(ta, vlan_ifname, TRUE);
+            rc = tapi_host_ns_if_del(ta, vlan_ifname, true);
 
         rc2 = tapi_cfg_base_if_del_rsrc(ta, vlan_ifname);
         if (rc2 == TE_RC(TE_CS, TE_ENOENT))
@@ -948,8 +948,8 @@ tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
         free(vlan_ifname);
     }
 
-    rc2 = cfg_del_instance_fmt(FALSE, "/agent:%s/interface:%s/vlans:%d",
-                              ta, if_name, vid);
+    rc2 = cfg_del_instance_fmt(false, "/agent:%s/interface:%s/vlans:%d",
+                               ta, if_name, vid);
     if (rc2 != 0)
         ERROR("%s(): Failed to delete VLAN with VID=%d from %s",
               __FUNCTION__, vid, if_name);
@@ -977,7 +977,7 @@ tapi_cfg_base_if_get_mtu_u(const char *agent, const char *interface,
 /* See description in tapi_cfg_base.h */
 te_errno
 tapi_cfg_base_if_set_mtu_ext(const char *agent, const char *interface,
-                             int mtu, int *old_mtu, te_bool fast)
+                             int mtu, int *old_mtu, bool fast)
 {
     te_errno        rc;
     int             old_mtu_l = 0;
@@ -1124,7 +1124,7 @@ tapi_cfg_base_if_check_add_rsrc(const char *ta, const char *ifname)
 te_errno
 tapi_cfg_base_if_del_rsrc(const char *ta, const char *ifname)
 {
-    return cfg_del_instance_fmt(FALSE, "/agent:%s/rsrc:%s", ta, ifname);
+    return cfg_del_instance_fmt(false, "/agent:%s/rsrc:%s", ta, ifname);
 }
 
 /* See description in tapi_cfg_base.h */
@@ -1158,7 +1158,7 @@ tapi_cfg_base_if_del_macvlan(const char *ta, const char *link,
                              const char *ifname)
 {
     int rc;
-    rc = cfg_del_instance_fmt(FALSE, "/agent:%s/interface:%s/macvlan:%s",
+    rc = cfg_del_instance_fmt(false, "/agent:%s/interface:%s/macvlan:%s",
                               ta, link, ifname);
     if (rc != 0)
         return rc;
@@ -1170,7 +1170,7 @@ tapi_cfg_base_if_del_macvlan(const char *ta, const char *link,
     if (tapi_host_ns_enabled())
     {
         te_errno rc2;
-        rc2 = tapi_host_ns_if_del(ta, ifname, TRUE);
+        rc2 = tapi_host_ns_if_del(ta, ifname, true);
         if (rc == 0)
             rc = rc2;
     }
@@ -1239,7 +1239,7 @@ tapi_cfg_base_if_del_ipvlan(const char *ta, const char *link,
                             const char *ifname)
 {
     int rc;
-    rc = cfg_del_instance_fmt(FALSE, "/agent:%s/interface:%s/ipvlan:%s",
+    rc = cfg_del_instance_fmt(false, "/agent:%s/interface:%s/ipvlan:%s",
                               ta, link, ifname);
     if (rc != 0)
         return rc;
@@ -1251,7 +1251,7 @@ tapi_cfg_base_if_del_ipvlan(const char *ta, const char *link,
     if (tapi_host_ns_enabled())
     {
         te_errno rc2;
-        rc2 = tapi_host_ns_if_del(ta, ifname, TRUE);
+        rc2 = tapi_host_ns_if_del(ta, ifname, true);
         if (rc == 0)
             rc = rc2;
     }
@@ -1374,11 +1374,11 @@ tapi_cfg_base_if_del_veth(const char *ta, const char *ifname)
     rc = tapi_cfg_base_if_get_veth_peer(ta, ifname, &peer);
 
     /* Try to delete veth and release resources even if a call fails. */
-    rc2 = cfg_del_instance_fmt(FALSE, "/agent:%s/veth:%s", ta, ifname);
+    rc2 = cfg_del_instance_fmt(false, "/agent:%s/veth:%s", ta, ifname);
     if (rc == 0)
         rc = rc2;
 
-    rc2 = cfg_del_instance_fmt(TRUE, "/agent:%s/rsrc:veth_%s", ta, ifname);
+    rc2 = cfg_del_instance_fmt(true, "/agent:%s/rsrc:veth_%s", ta, ifname);
     if (rc == 0)
         rc = rc2;
 
@@ -1399,7 +1399,7 @@ tapi_cfg_base_if_del_veth(const char *ta, const char *ifname)
 
     if (tapi_host_ns_enabled())
     {
-        rc2 = tapi_host_ns_if_del(ta, ifname, TRUE);
+        rc2 = tapi_host_ns_if_del(ta, ifname, true);
         if (rc == 0)
             rc = rc2;
     }

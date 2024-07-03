@@ -112,7 +112,7 @@ extern te_errno tapi_tcp_server_recv(const char *ta_name, int sid,
 extern te_errno tapi_socket_recv(const char *ta_name, int sid,
                                  csap_handle_t csap,
                                  unsigned int timeout,
-                                 csap_handle_t forward, te_bool exact,
+                                 csap_handle_t forward, bool exact,
                                  uint8_t *buf, size_t *length);
 
 /**

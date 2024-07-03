@@ -17,7 +17,7 @@
 test_behaviour test_behaviour_storage;
 
 /* See description in tapi_test_behaviour.h */
-te_bool fd_not_closed_verdict = FALSE;
+bool fd_not_closed_verdict = false;
 
 /**
  * Wrapper function to call te_strtoui().

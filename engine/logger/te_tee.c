@@ -119,7 +119,7 @@ parse_log_msg(const char *buffer, log_msg *parsed_msg)
                    sizeof(parsed_msg->user)));
 
     parsed_msg->level = te_enum_parse_longest_match(log_level_map, DEFAULT_LL,
-                                                    FALSE,
+                                                    false,
                                                     buffer + pmatch[3].rm_so,
                                                     NULL);
 
@@ -127,7 +127,7 @@ parse_log_msg(const char *buffer, log_msg *parsed_msg)
                          pmatch[4].rm_eo - pmatch[4].rm_so);
 }
 
-static inline te_bool
+static inline bool
 is_log_msg_sender_equal(const log_msg *left, const log_msg *right)
 {
     return (left->level == right->level) &&
@@ -240,7 +240,7 @@ main (int argc, char *argv[])
             }
 
             te_string_append_buf(&buffer_str, buffer, len);
-            te_string_process_lines(&buffer_str, TRUE, line_handler, &cur_msg);
+            te_string_process_lines(&buffer_str, true, line_handler, &cur_msg);
 
             if (current_timeout < 0)
                 current_timeout = interval;
@@ -263,7 +263,7 @@ main (int argc, char *argv[])
         }
     }
 
-    te_string_process_lines(&buffer_str, FALSE, line_handler, &cur_msg);
+    te_string_process_lines(&buffer_str, false, line_handler, &cur_msg);
     regfree(&log_msg_sep_regex);
 
     return EXIT_SUCCESS;

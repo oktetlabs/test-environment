@@ -45,7 +45,7 @@
 
 te_errno
 tapi_flow_conf_get(int argc, char **argv,
-                   te_bool do_preprocess, tapi_flow_t *flow)
+                   bool do_preprocess, tapi_flow_t *flow)
 {
     int rc;
     int syms;
@@ -985,11 +985,11 @@ tapi_flow_gen_base_ptrn(asn_value *rcv_ptrn, asn_value **base_ptrn_p)
         {
             if (strcmp(layer->name, "udp") == 0)
             {
-                rc = tapi_tad_tmpl_ptrn_add_layer(&base_ptrn, TRUE,
+                rc = tapi_tad_tmpl_ptrn_add_layer(&base_ptrn, true,
                                                   ndn_udp_header, "#udp",
                                                   &tmp_pdu);
             } else {
-                rc = tapi_tad_tmpl_ptrn_add_layer(&base_ptrn, TRUE,
+                rc = tapi_tad_tmpl_ptrn_add_layer(&base_ptrn, true,
                                                   ndn_tcp_header, "#tcp",
                                                   &tmp_pdu);
             }
@@ -1031,11 +1031,11 @@ tapi_flow_gen_base_ptrn(asn_value *rcv_ptrn, asn_value **base_ptrn_p)
 
             if (strcmp(layer->name, "ip4") == 0)
             {
-                rc = tapi_tad_tmpl_ptrn_add_layer(&base_ptrn, TRUE,
+                rc = tapi_tad_tmpl_ptrn_add_layer(&base_ptrn, true,
                                                   ndn_ip4_header, "#ip4",
                                                   &tmp_pdu);
             } else {
-                rc = tapi_tad_tmpl_ptrn_add_layer(&base_ptrn, TRUE,
+                rc = tapi_tad_tmpl_ptrn_add_layer(&base_ptrn, true,
                                                   ndn_eth_header, "#eth",
                                                   &tmp_pdu);
             }
@@ -1156,7 +1156,7 @@ tapi_flow_preprocess_args(int argc, char **argv)
 
 te_errno
 tapi_flow_prepare(int argc, char **argv,
-                  te_bool do_preprocess, tapi_flow_t *flow)
+                  bool do_preprocess, tapi_flow_t *flow)
 {
     RING("%s() started", __FUNCTION__);
 
@@ -1319,7 +1319,7 @@ tapi_flow_start(tapi_flow_t *flow, char *name)
              traffic->name);
     }
 
-    traffic->started = TRUE;
+    traffic->started = true;
 
     return 0;
 }
@@ -1378,7 +1378,7 @@ tapi_flow_stop(tapi_flow_t *flow, char *name,
     if (rcv_base_num_p != NULL)
         *rcv_base_num_p = rcv_base_num;
 
-    traffic->started = FALSE;
+    traffic->started = false;
 
     return 0;
 }

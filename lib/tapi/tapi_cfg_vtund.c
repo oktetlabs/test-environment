@@ -97,7 +97,7 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
      * Synchronize configuration trees and get assigned interfaces
      */
 
-    rc = cfg_synchronize_fmt(TRUE, "/agent:%s", ta_srv);
+    rc = cfg_synchronize_fmt(true, "/agent:%s", ta_srv);
     if (rc != 0)
         return rc;
 
@@ -151,7 +151,7 @@ tapi_cfg_vtund_create_tunnel(const char            *ta_srv,
         *ta_srv_if = tmp;
 
 
-    rc = cfg_synchronize_fmt(TRUE, "/agent:%s", ta_clnt);
+    rc = cfg_synchronize_fmt(true, "/agent:%s", ta_clnt);
     if (rc != 0)
         return rc;
 

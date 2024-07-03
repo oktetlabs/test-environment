@@ -35,7 +35,7 @@ typedef struct test_iter_arg {
     const char                 *name;   /**< Parameter name */
     const char                 *value;  /**< Current parameter value */
     struct test_requirements    reqs;   /**< Associated requirements */
-    te_bool                     variable; /**< Is this argument in fact a variable */
+    bool variable; /**< Is this argument in fact a variable */
 } test_iter_arg;
 
 
@@ -260,7 +260,7 @@ typedef enum testing_direction {
  *                      run item
  * @param next_id       Next iteration ID to which Tester is
  *                      going to move
- * @param skip          If @c TRUE, all the next acts which
+ * @param skip          If @c true, all the next acts which
  *                      are within [start_id, next_id) should
  *                      be skipped
  *
@@ -270,7 +270,7 @@ extern testing_direction scenario_step(const testing_act **act,
                                        unsigned int       *act_id,
                                        unsigned int        start_id,
                                        unsigned int        next_id,
-                                       te_bool             skip);
+                                       bool skip);
 
 /**
  * String representation of testing scenario.

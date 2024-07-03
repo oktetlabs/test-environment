@@ -18,7 +18,7 @@
 
 /* See description in te_alloc.h */
 void *
-te_alloc_internal(size_t size, te_bool initialize,
+te_alloc_internal(size_t size, bool initialize,
                   const char *filename, int line)
 {
     void *result;
@@ -54,7 +54,7 @@ te_realloc_internal(void *oldptr, size_t newsize, const char *filename,
     void *result;
 
     if (oldptr == NULL)
-        return te_alloc_internal(newsize, TRUE, filename, line);
+        return te_alloc_internal(newsize, true, filename, line);
 
     /*
      * The allowed behaviour of `realloc(ptr, 0)` when @c ptr is not @c NULL
@@ -90,7 +90,7 @@ te_realloc_internal(void *oldptr, size_t newsize, const char *filename,
 
 /* See description in te_alloc.h */
 void *
-te_memdup_internal(const void *src, te_bool zero_terminated,
+te_memdup_internal(const void *src, bool zero_terminated,
                    size_t maxsize, const char *filename, int line)
 {
     void *copy;
@@ -112,7 +112,7 @@ te_memdup_internal(const void *src, te_bool zero_terminated,
         maxsize = copy_size + 1;
     }
 
-    copy = te_alloc_internal(maxsize, FALSE, filename, line);
+    copy = te_alloc_internal(maxsize, false, filename, line);
     memcpy(copy, src, copy_size);
     if (zero_terminated)
         ((char *)copy)[copy_size] = '\0';

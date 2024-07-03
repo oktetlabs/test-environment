@@ -52,7 +52,7 @@ extern te_errno tad_send_recv_generate_pattern(csap_p      csap,
  *
  * @return zero on success, otherwise error code.
  */
-extern int tad_confirm_pdus(csap_p csap, te_bool recv,
+extern int tad_confirm_pdus(csap_p csap, bool recv,
                             asn_value *pdus, void **layer_opaque);
 
 

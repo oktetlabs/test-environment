@@ -15,7 +15,7 @@
 
 /* Callbacks opaque */
 typedef struct opaque_t {
-    te_bool expected_found;
+    bool expected_found;
     int     num_found;
 } opaque_t;
 
@@ -47,7 +47,7 @@ main(int argc, char **argv)
     int          num_expected_missing;
     int          i;
     opaque_t     op;
-    te_bool      test_ok = TRUE;
+    bool test_ok = true;
 
     TEST_START;
 
@@ -59,27 +59,27 @@ main(int argc, char **argv)
     TEST_STEP("Remove instance from the cache");
     CHECK_RC(tapi_cache_del("%s", instance));
     TEST_STEP("Check whether it has not removed unexpected instances");
-    op.expected_found = TRUE;
+    op.expected_found = true;
     for (i = 0; i < num_expected_existing; i++)
     {
         op.num_found = 0;
         CHECK_RC(tapi_cache_find(cb_func, &op, "%s", expected_existing[i]));
         if (op.num_found == 0)
         {
-            test_ok = FALSE;
+            test_ok = false;
             ERROR("Unexpected removed '%s'", expected_existing[i]);
             ERROR_VERDICT("Unexpected instances have been removed");
         }
     }
     TEST_STEP("Check whether it has removed requested instances properly");
-    op.expected_found = FALSE;
+    op.expected_found = false;
     for (i = 0; i < num_expected_missing; i++)
     {
         op.num_found = 0;
         CHECK_RC(tapi_cache_find(cb_func, &op, "%s", expected_missing[i]));
         if (op.num_found != 0)
         {
-            test_ok = FALSE;
+            test_ok = false;
             ERROR_VERDICT("Requested instances have not been removed");
         }
     }

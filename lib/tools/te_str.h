@@ -33,9 +33,9 @@ extern "C" {
  *
  * @param str           Byte string.
  *
- * @return @c TRUE if the string is @c NULL or zero-length; @c FALSE otherwise.
+ * @return @c true if the string is @c NULL or zero-length; @c false otherwise.
  */
-static inline te_bool
+static inline bool
 te_str_is_null_or_empty(const char *str)
 {
     return (str == NULL || *str == '\0');
@@ -66,9 +66,9 @@ te_str_empty_if_null(const char *str)
  * @param str1  the first string
  * @param str2  the second string
  *
- * @return @c TRUE iff @p str1 and @p str2 are equal up to space difference.
+ * @return @c true iff @p str1 and @p str2 are equal up to space difference.
  */
-extern te_bool te_str_is_equal_nospace(const char *str1, const char *str2);
+extern bool te_str_is_equal_nospace(const char *str1, const char *str2);
 
 /**
  * Convert lowercase letters of the @p string to uppercase. The function does
@@ -517,14 +517,14 @@ extern te_errno te_strtol_silent(const char *input, int base, long int *result);
 extern te_errno te_strtol(const char *input, int base, long int *result);
 
 /**
- * Convert string to bool where @c 0 means @c FALSE, not @c 0 --- @c TRUE.
+ * Convert string to bool where @c 0 means @c false, not @c 0 --- @c true.
  *
  * @param input        String to convert.
  * @param[out] bresult Storage for result (may be @c NULL).
  *
  * @return 0 or error
  */
-extern te_errno te_strtol_bool(const char *input, te_bool *bresult);
+extern te_errno te_strtol_bool(const char *input, bool *bresult);
 
 /**
  * Convert a string to an integer which must fit into a given range.

@@ -32,7 +32,7 @@
 
 /* See the description in trc_diff.h */
 trc_diff_set *
-trc_diff_find_set(trc_diff_sets *sets, unsigned int id, te_bool create)
+trc_diff_find_set(trc_diff_sets *sets, unsigned int id, bool create)
 {
     trc_diff_set *p;
 
@@ -68,7 +68,7 @@ trc_diff_set_name(trc_diff_sets *sets, unsigned int id,
     if (sets == NULL || id >= TRC_DIFF_IDS || name == NULL)
         return TE_EINVAL;
 
-    p = trc_diff_find_set(sets, id, TRUE);
+    p = trc_diff_find_set(sets, id, true);
     if (p == NULL)
         return TE_ENOMEM;
 
@@ -92,7 +92,7 @@ trc_diff_set_log(trc_diff_sets *sets, unsigned int id,
     if (sets == NULL || id >= TRC_DIFF_IDS || log == NULL)
         return TE_EINVAL;
 
-    p = trc_diff_find_set(sets, id, TRUE);
+    p = trc_diff_find_set(sets, id, true);
     if (p == NULL)
         return TE_ENOMEM;
 
@@ -116,7 +116,7 @@ trc_diff_set_url(trc_diff_sets *sets, unsigned int id,
     if (sets == NULL || id >= TRC_DIFF_IDS || url == NULL)
         return TE_EINVAL;
 
-    p = trc_diff_find_set(sets, id, TRUE);
+    p = trc_diff_find_set(sets, id, true);
     if (p == NULL)
         return TE_ENOMEM;
 
@@ -139,11 +139,11 @@ trc_diff_show_keys(trc_diff_sets *sets, unsigned int id)
     if (sets == NULL || id >= TRC_DIFF_IDS)
         return TE_EINVAL;
 
-    p = trc_diff_find_set(sets, id, TRUE);
+    p = trc_diff_find_set(sets, id, true);
     if (p == NULL)
         return TE_ENOMEM;
 
-    p->show_keys = TRUE;
+    p->show_keys = true;
 
     return 0;
 }
@@ -158,7 +158,7 @@ trc_diff_add_tag(trc_diff_sets *sets, unsigned int id, const char *tag)
     if (sets == NULL || id >= TRC_DIFF_IDS || tag == NULL)
         return TE_EINVAL;
 
-    p = trc_diff_find_set(sets, id, TRUE);
+    p = trc_diff_find_set(sets, id, true);
     if (p == NULL)
         return TE_ENOMEM;
 
@@ -182,7 +182,7 @@ trc_diff_add_ignore(trc_diff_sets *sets, unsigned int id,
     if (sets == NULL || id >= TRC_DIFF_IDS || ignore == NULL)
         return TE_EINVAL;
 
-    p = trc_diff_find_set(sets, id, TRUE);
+    p = trc_diff_find_set(sets, id, true);
     if (p == NULL)
         return TE_ENOMEM;
 

@@ -97,7 +97,7 @@ typedef struct trc_test_iter {
                                          the list of all its siblings
                                          belonging to the same file */
 
-    te_bool             log_found;  /**< Whether this iteration was
+    bool log_found;  /**< Whether this iteration was
                                          found in log by TRC
                                          Update Tool or not */
 } trc_test_iter;
@@ -131,7 +131,7 @@ typedef struct trc_test {
     trc_test_iter  *parent;         /**< Back reference */
 
     trc_test_type   type;           /**< Type of the test */
-    te_bool         aux;            /**< Is test auxiliary? */
+    bool aux;            /**< Is test auxiliary? */
     char           *name;           /**< Test name */
     char           *path;           /**< Test path */
 
@@ -166,7 +166,7 @@ struct te_trc_db {
     trc_tests       tests;      /**< Tree of tests */
     unsigned int    user_id;    /**< ID of the next user */
     trc_globals     globals;
-    te_bool         last_match; /**< Choose the last match expectation */
+    bool last_match; /**< Choose the last match expectation */
 };
 
 /** Kinds of matching of iteration TRC with iteration from XML log */
@@ -355,7 +355,7 @@ extern te_errno trc_exp_result_entry_to_xml(
  */
 extern te_errno trc_exp_result_to_xml(trc_exp_result *exp_result,
                                       xmlNodePtr result_node,
-                                      te_bool is_default);
+                                      bool is_default);
 
 /**
  * Get XML representation of TRC expected results.
@@ -370,7 +370,7 @@ extern te_errno trc_exp_result_to_xml(trc_exp_result *exp_result,
  */
 extern te_errno trc_exp_results_to_xml(trc_exp_results *exp_results,
                                        xmlNodePtr node,
-                                       te_bool insert_after);
+                                       bool insert_after);
 
 /**
  * Get expected verdict from XML.
@@ -406,7 +406,7 @@ extern te_errno get_expected_rentry(xmlNodePtr node,
  */
 extern te_errno get_expected_result(xmlNodePtr node,
                                     trc_exp_result *result,
-                                    te_bool tags_tolerate);
+                                    bool tags_tolerate);
 
 /**
  * Get expected results from XML.
@@ -451,7 +451,7 @@ extern te_errno trc_db_get_text_content(xmlNodePtr node, char **content);
  * @param to_save       Function to determine whether to
  *                      save a given test or iteration
  *                      (takes user data and boolean which
- *                      is TRUE if iteration is considered as
+ *                      is @c true if iteration is considered as
  *                      parameters)
  * @param set_user_attr Function determining which value
  *                      should be assigned to "user_attr"
@@ -463,8 +463,8 @@ extern te_errno trc_db_get_text_content(xmlNodePtr node, char **content);
  */
 extern te_errno trc_db_save(te_trc_db *db, const char *filename,
                             int flags, int uid,
-                            te_bool (*to_save)(void *, te_bool),
-                            char *(*set_user_attr)(void *, te_bool),
+                            bool (*to_save)(void *, bool),
+                            char *(*set_user_attr)(void *, bool),
                             char *cmd);
 
 extern void trc_db_free(te_trc_db *db);
@@ -621,7 +621,7 @@ extern void *trc_db_iter_get_user_data(const trc_test_iter *iter,
  * @return Data associated by user or NULL.
  */
 extern te_errno trc_db_set_user_data(void *db_item,
-                                     te_bool is_iter,
+                                     bool is_iter,
                                      unsigned int user_id,
                                      void *user_data);
 
@@ -665,7 +665,7 @@ extern te_errno trc_db_test_set_user_data(trc_test *test,
 extern int test_iter_args_match(const trc_test_iter_args  *db_args,
                                 unsigned int               n_args,
                                 trc_report_argument       *args,
-                                te_bool                    is_strict);
+                                bool is_strict);
 
 /**
  * Get test iteration expected result.
@@ -681,7 +681,7 @@ extern int test_iter_args_match(const trc_test_iter_args  *db_args,
 extern const trc_exp_result *trc_db_iter_get_exp_result(
                                  const trc_test_iter    *iter,
                                  const tqh_strings      *tags,
-                                 te_bool                 last_match);
+                                 bool last_match);
 
 #ifdef __cplusplus
 } /* extern "C" */

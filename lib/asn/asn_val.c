@@ -714,7 +714,7 @@ asn_get_type_name(const asn_type *type)
 }
 
 /* See description in asn_usr.h */
-te_bool
+bool
 asn_check_type(const asn_value *value, const asn_type *type)
 {
     assert(value != NULL && type != NULL);
@@ -1178,7 +1178,7 @@ asn_put_child_by_index(asn_value *container, asn_value *new_value,
 {
     int     index = 0;
     int     new_len;
-    te_bool named_value = TRUE;
+    bool named_value = true;
 
     container->txt_len = -1;
 
@@ -1186,7 +1186,7 @@ asn_put_child_by_index(asn_value *container, asn_value *new_value,
     {
         case SEQUENCE_OF:
         case SET_OF:
-            named_value = FALSE;
+            named_value = false;
             new_len = container->len;
 
             while (leaf_type_index < 0)
@@ -1548,12 +1548,12 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
     case BOOL:
         if (d_len == 0) return TE_EINVAL;
 
-        if (* (char*)data) /* TRUE */
+        if (* (char*)data) /* true */
         {
             value->data.integer = ASN_TRUE;
             value->txt_len = 4;
         }
-        else  /* FALSE */
+        else  /* false */
         {
             value->data.integer = ASN_FALSE;
             value->txt_len = 5;
@@ -1801,12 +1801,12 @@ asn_impl_write_value_field(asn_value *container,
     case BOOL:
         if (d_len == 0) return TE_EINVAL;
 
-        if (* (char*)data) /* TRUE */
+        if (* (char*)data) /* true */
         {
             container->data.integer = ASN_TRUE;
             container->txt_len = 4;
         }
-        else  /* FALSE */
+        else  /* false */
         {
             container->data.integer = ASN_FALSE;
             container->txt_len = 5;
@@ -2086,14 +2086,14 @@ asn_read_uint32(const asn_value *container, uint32_t *value,
 
 /* see description in asn_usr.h */
 te_errno
-asn_write_bool(asn_value *container, te_bool value, const char *labels)
+asn_write_bool(asn_value *container, bool value, const char *labels)
 {
     return asn_write_value_field(container, &value, sizeof(value), labels);
 }
 
 /* see description in asn_usr.h */
 te_errno
-asn_read_bool(const asn_value *container, te_bool *value,
+asn_read_bool(const asn_value *container, bool *value,
               const char *labels)
 {
     uint8_t  val;
@@ -2102,7 +2102,7 @@ asn_read_bool(const asn_value *container, te_bool *value,
 
     rc = asn_read_value_field(container, &val, &len, labels);
     if (rc == 0)
-        *value = (val == ASN_FALSE ? FALSE : TRUE);
+        *value = (val == ASN_FALSE ? false : true);
 
     return rc;
 }
@@ -3289,7 +3289,7 @@ asn_impl_get_label_by_index(asn_value *value, unsigned int index,
  * and could be obtained in the 'func' using asn_get_value_path function.
  */
 static te_errno
-asn_impl_walk_depth(asn_value *container, te_bool only_leafs, char *path,
+asn_impl_walk_depth(asn_value *container, bool only_leafs, char *path,
                     te_errno *status, walk_method func, void *user_ptr)
 {
     te_errno     rc = 0;
@@ -3352,7 +3352,7 @@ asn_impl_walk_depth(asn_value *container, te_bool only_leafs, char *path,
 
 /* See description in asn_usr.h */
 te_errno
-asn_walk_depth(asn_value *container, te_bool only_leafs,
+asn_walk_depth(asn_value *container, bool only_leafs,
                te_errno *status, walk_method func, void *user_ptr)
 {
     char    *path = NULL;
@@ -3368,7 +3368,7 @@ asn_walk_depth(asn_value *container, te_bool only_leafs,
 
 /* See description in asn_usr.h */
 te_errno
-asn_walk_breadth(asn_value *container, te_bool only_leafs,
+asn_walk_breadth(asn_value *container, bool only_leafs,
                  te_errno *status, walk_method func, void *user_ptr)
 {
     UNUSED(container);
@@ -3545,7 +3545,7 @@ asn_search_to_asn_value(const char *search_str,
 te_errno
 asn_path_from_extended(asn_value *node, const char *ext_path,
                        char *asn_path, unsigned int asn_path_len,
-                       te_bool auto_insert)
+                       bool auto_insert)
 {
     char *search_start = NULL;
     char *search_end = NULL;
@@ -3682,7 +3682,7 @@ asn_path_from_extended(asn_value *node, const char *ext_path,
     /* Check if we found anything */
     if (i == container->len) /* Nothing was found */
     {
-        if (auto_insert == FALSE)
+        if (auto_insert == false)
         {
             /*
              * fixme: previously it was an error message
@@ -3820,7 +3820,7 @@ asn_insert_value_extended_path(asn_value *root_node,
         return TE_ENOMEM;
     }
     rc = asn_path_from_extended(root_node, ext_path, expanded_path,
-                                expanded_len, TRUE);
+                                expanded_len, true);
     if (rc != 0)
     {
         ERROR("%s(): Failed to get expanded path for insertion, rc=%r",
@@ -4039,7 +4039,7 @@ asn_check_value_contains(asn_value *container, asn_value *value)
          container->asn_type->name, container->syntax,
          value->asn_type->name, value->syntax);
 #endif
-    rc = asn_walk_depth(value, TRUE, &status,
+    rc = asn_walk_depth(value, true, &status,
                         asn_impl_check_contains_callback, (void *)&cc);
 
     if (rc == 0)

@@ -278,19 +278,19 @@ create_optional_ipversion(const void *value, const void *priv, te_vec *args)
 /**@} <!-- END custom tapi_job_opt_formatting --> */
 
 #define CREATE_OPT_PORT(_prefix, _struct, _field) \
-    {create_optional_port, _prefix, FALSE, NULL, \
+    {create_optional_port, _prefix, false, NULL, \
      offsetof(_struct, _field) }
 
 #define CREATE_OPT_TEST_SPEC(_prefix, _struct, _field) \
-    {create_optional_test_spec, _prefix, FALSE, NULL, \
+    {create_optional_test_spec, _prefix, false, NULL, \
      offsetof(_struct, _field) }
 
 #define CREATE_OPT_TEST_NAME(_prefix, _struct, _field) \
-    {create_optional_test_name, _prefix, FALSE, NULL, \
+    {create_optional_test_name, _prefix, false, NULL, \
      offsetof(_struct, _field) }
 
 #define CREATE_OPT_IPVERSION(_struct, _field) \
-    {create_optional_ipversion, NULL, FALSE, NULL, \
+    {create_optional_ipversion, NULL, false, NULL, \
      offsetof(_struct, _field) }
 
 /**
@@ -389,11 +389,11 @@ tapi_netperf_create_client(tapi_job_factory_t *factory,
 
     const tapi_job_opt_bind netperf_binds[] = TAPI_JOB_OPT_SET(
         CREATE_OPT_TEST_NAME("-t", tapi_netperf_opt, test_name),
-        TAPI_JOB_OPT_SOCKADDR_PTR("-H", FALSE, tapi_netperf_opt, dst_host),
+        TAPI_JOB_OPT_SOCKADDR_PTR("-H", false, tapi_netperf_opt, dst_host),
         CREATE_OPT_IPVERSION(tapi_netperf_opt, ipversion),
-        TAPI_JOB_OPT_SOCKADDR_PTR("-L", FALSE, tapi_netperf_opt, src_host),
+        TAPI_JOB_OPT_SOCKADDR_PTR("-L", false, tapi_netperf_opt, src_host),
         CREATE_OPT_PORT("-p", tapi_netperf_opt, port),
-        TAPI_JOB_OPT_UINT("-l", FALSE, NULL, tapi_netperf_opt, duration),
+        TAPI_JOB_OPT_UINT("-l", false, NULL, tapi_netperf_opt, duration),
         CREATE_OPT_TEST_SPEC("--", tapi_netperf_opt, test_opt)
     );
 
@@ -412,12 +412,12 @@ tapi_netperf_create_client(tapi_job_factory_t *factory,
         goto out;
 
     rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(app->out_chs[0]),
-                                "netperf out", FALSE, TE_LL_RING, NULL);
+                                "netperf out", false, TE_LL_RING, NULL);
     if (rc != 0)
         goto out;
 
     rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(app->out_chs[1]),
-                                "netperf err", FALSE, TE_LL_ERROR, NULL);
+                                "netperf err", false, TE_LL_ERROR, NULL);
     if (rc != 0)
         goto out;
 
@@ -428,7 +428,8 @@ tapi_netperf_create_client(tapi_job_factory_t *factory,
         case TAPI_NETPERF_TEST_UDP_RR:
         case TAPI_NETPERF_TEST_TCP_RR:
             rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(app->out_chs[0]),
-                                        "RR filter", TRUE, 0, &app->rr.trps_filter);
+                                        "RR filter", true, 0,
+                                        &app->rr.trps_filter);
             if (rc != 0)
                 goto out;
             rc = tapi_job_filter_add_regexp(app->rr.trps_filter,
@@ -440,7 +441,8 @@ tapi_netperf_create_client(tapi_job_factory_t *factory,
         case TAPI_NETPERF_TEST_TCP_MAERTS:
         case TAPI_NETPERF_TEST_TCP_STREAM:
             rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(app->out_chs[0]),
-                                        "TCP STREAM filter", TRUE, 0, &app->stream.mbps_send_filter);
+                                        "TCP STREAM filter", true, 0,
+                                        &app->stream.mbps_send_filter);
             if (rc != 0)
                 goto out;
             rc = tapi_job_filter_add_regexp(app->stream.mbps_send_filter,
@@ -451,7 +453,8 @@ tapi_netperf_create_client(tapi_job_factory_t *factory,
 
         case TAPI_NETPERF_TEST_UDP_STREAM:
             rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(app->out_chs[0]),
-                                        "UDP STREAM filter", TRUE, 0, &app->stream.mbps_send_filter);
+                                        "UDP STREAM filter", true, 0,
+                                        &app->stream.mbps_send_filter);
             if (rc != 0)
                 goto out;
 
@@ -461,7 +464,8 @@ tapi_netperf_create_client(tapi_job_factory_t *factory,
                 goto out;
 
             rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(app->out_chs[0]),
-                                        "UDP STREAM filter", TRUE, 0, &app->stream.mbps_recv_filter);
+                                        "UDP STREAM filter", true, 0,
+                                        &app->stream.mbps_recv_filter);
             if (rc != 0)
                 goto out;
 
@@ -501,7 +505,7 @@ tapi_netperf_create_server(tapi_job_factory_t *factory,
         goto out;
 
     const tapi_job_opt_bind netserver_binds[] = TAPI_JOB_OPT_SET(
-        TAPI_JOB_OPT_SOCKADDR_PTR("-L", FALSE, tapi_netperf_opt, dst_host),
+        TAPI_JOB_OPT_SOCKADDR_PTR("-L", false, tapi_netperf_opt, dst_host),
         CREATE_OPT_PORT("-p", tapi_netperf_opt, port),
         CREATE_OPT_IPVERSION(tapi_netperf_opt, ipversion),
         TAPI_JOB_OPT_DUMMY("-D")
@@ -523,12 +527,12 @@ tapi_netperf_create_server(tapi_job_factory_t *factory,
         goto out;
 
     rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(app->out_chs[0]),
-                                "netserver out", FALSE, TE_LL_RING, NULL);
+                                "netserver out", false, TE_LL_RING, NULL);
     if (rc != 0)
         goto out;
 
     rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(app->out_chs[1]),
-                                "netserver err", FALSE, TE_LL_ERROR, NULL);
+                                "netserver err", false, TE_LL_ERROR, NULL);
     if (rc != 0)
         goto out;
 

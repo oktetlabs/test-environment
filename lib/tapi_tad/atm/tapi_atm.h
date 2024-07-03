@@ -54,8 +54,8 @@ extern te_errno tapi_atm_add_csap_layer(asn_value      **csap_spec,
                                         ndn_atm_type     type,
                                         const uint16_t  *vpi,
                                         const uint16_t  *vci,
-                                        te_bool         *congestion,
-                                        te_bool         *clp);
+                                        bool *congestion,
+                                        bool *clp);
 
 /**
  * Add AAL5 layer in CSAP specification.
@@ -97,12 +97,12 @@ extern te_errno tapi_atm_aal5_add_csap_layer(asn_value     **csap_spec,
  * @return Status code.
  */
 extern te_errno tapi_atm_add_pdu(asn_value      **tmpl_or_ptrn,
-                                 te_bool          is_pattern,
+                                 bool is_pattern,
                                  const uint8_t   *gfc,
                                  const uint16_t  *vpi,
                                  const uint16_t  *vci,
                                  const uint8_t   *payload_type,
-                                 te_bool         *clp);
+                                 bool *clp);
 
 /**
  * Add ATM cell payload to traffic template or pattern unit.
@@ -135,7 +135,7 @@ extern te_errno tapi_atm_add_payload(asn_value      *container,
  * @return Status code.
  */
 extern te_errno tapi_atm_aal5_add_pdu(asn_value     **tmpl_or_ptrn,
-                                      te_bool         is_pattern,
+                                      bool is_pattern,
                                       const uint8_t  *cpcs_uu,
                                       const uint8_t  *cpi);
 

@@ -123,23 +123,23 @@ typedef struct tad_ip6_proto_pdu_data {
 static const tad_bps_pkt_frag tad_ip6_bps_hdr[] =
 {
     { "version",          4, BPS_FLD_CONST(6),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "traffic-class",    8, BPS_FLD_CONST_DEF(NDN_TAG_IP6_TCL, 0),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
     { "flow-label",      20, BPS_FLD_CONST_DEF(NDN_TAG_IP6_FLAB, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "payload-length",  16, BPS_FLD_CONST_DEF(NDN_TAG_IP6_LEN, 0),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
     { "next-header",      8, BPS_FLD_SIMPLE(NDN_TAG_IP6_NEXT_HEADER),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "hop-limit",        8, BPS_FLD_CONST_DEF(NDN_TAG_IP6_HLIM, 64),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "src-addr",       128, NDN_TAG_IP6_SRC_ADDR,
       NDN_TAG_IP6_LOCAL_ADDR, NDN_TAG_IP6_REMOTE_ADDR, 0,
-      TAD_DU_OCTS, FALSE },
+      TAD_DU_OCTS, false },
     { "dst-addr",       128, NDN_TAG_IP6_DST_ADDR,
       NDN_TAG_IP6_REMOTE_ADDR, NDN_TAG_IP6_LOCAL_ADDR, 0,
-      TAD_DU_OCTS, FALSE },
+      TAD_DU_OCTS, false },
 };
 
 /**
@@ -150,27 +150,27 @@ static const tad_bps_pkt_frag tad_ip6_bps_hdr[] =
 static const tad_bps_pkt_frag tad_ip6_ext_hdr_opts_bps_hdr[] =
 {
     { "next-header", 8, BPS_FLD_NO_DEF(NDN_TAG_IP6_NEXT_HEADER),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "length", 8, BPS_FLD_NO_DEF(NDN_TAG_IP6_EXT_HEADER_LEN),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 /* Generic TLV Option */
 static const tad_bps_pkt_frag tad_ip6_tlv_option[] =
 {
     { "type",   8, BPS_FLD_NO_DEF(NDN_TAG_IP6_EXT_HEADER_OPT_TYPE),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "length", 8, BPS_FLD_NO_DEF(NDN_TAG_IP6_EXT_HEADER_OPT_LEN),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "data",   0,
       BPS_FLD_CONST_DEF(NDN_TAG_IP6_EXT_HEADER_OPT_DATA, 0),
-      TAD_DU_OCTS, FALSE },
+      TAD_DU_OCTS, false },
 };
 
 /* PAD1 Option */
 static const tad_bps_pkt_frag tad_ip6_pad1_option[] =
 {
-    { "type", 8, BPS_FLD_CONST(IP6OPT_PAD1), TAD_DU_I32, FALSE },
+    { "type", 8, BPS_FLD_CONST(IP6OPT_PAD1), TAD_DU_I32, false },
 };
 
 /* FIXME: This constant should be defined in the proper place. */
@@ -181,32 +181,32 @@ static const tad_bps_pkt_frag tad_ip6_pad1_option[] =
 /* Router Alert Option (see RFC 2711) */
 static const tad_bps_pkt_frag tad_ip6_ra_option[] =
 {
-    { "type",   8, BPS_FLD_CONST(IP6OPT_ROUTER_ALERT), TAD_DU_I32, FALSE },
-    { "length", 8, BPS_FLD_CONST(2), TAD_DU_I32, FALSE },
+    { "type",   8, BPS_FLD_CONST(IP6OPT_ROUTER_ALERT), TAD_DU_I32, false },
+    { "length", 8, BPS_FLD_CONST(2), TAD_DU_I32, false },
     { "value", 16, BPS_FLD_NO_DEF(NDN_TAG_IP6_EXT_HEADER_OPT_VALUE),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 /** IPv6 Fragment extension header */
 static const tad_bps_pkt_frag tad_ip6_ext_hdr_fragment_bps_hdr[] =
 {
     { "next-header", 8, BPS_FLD_NO_DEF(NDN_TAG_IP6_NEXT_HEADER),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "res1", 8,
       BPS_FLD_CONST_DEF(NDN_TAG_IP6_EXT_HEADER_FRAGMENT_RES1, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "offset", 13,
       BPS_FLD_CONST_DEF(NDN_TAG_IP6_EXT_HEADER_FRAGMENT_OFFSET, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "res2", 2,
       BPS_FLD_CONST_DEF(NDN_TAG_IP6_EXT_HEADER_FRAGMENT_RES2, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "m-flag", 1,
       BPS_FLD_CONST_DEF(NDN_TAG_IP6_EXT_HEADER_FRAGMENT_M_FLAG, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "id", 32,
       BPS_FLD_CONST_DEF(NDN_TAG_IP6_EXT_HEADER_FRAGMENT_ID, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
 };
 
 /** Length of IPv6 Fragment Extension header in bytes */
@@ -970,7 +970,7 @@ typedef struct tad_ip6_gen_bin_cb_per_sdu_data {
     uint32_t    frag_hdr_off;     /**< Offset of IPv6 Fragment extension
                                        header in hdr, if it is present */
 
-    te_bool     use_phdr;
+    bool use_phdr;
     uint32_t    init_checksum;
     int         upper_checksum_offset;
 } tad_ip6_gen_bin_cb_per_sdu_data;
@@ -1079,9 +1079,9 @@ tad_ip6_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
         uint32_t    hdr_len = 0;
         uint32_t    real_offset = 0;
         uint32_t    hdr_offset = 0;
-        te_bool     more_frags = FALSE;
+        bool more_frags = false;
         uint32_t    id = 0;
-        te_bool     set_id = FALSE;
+        bool set_id = false;
         uint16_t   *pld_len = NULL;
         uint8_t    *p = NULL;
 
@@ -1110,7 +1110,7 @@ tad_ip6_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
 
             rc = asn_read_uint32(frag_spec, &id, "id");
             if (rc == 0)
-                set_id = TRUE;
+                set_id = true;
 
             if (hdr_offset % 8 != 0)
             {
@@ -1192,12 +1192,12 @@ tad_ip6_upper_checksum_seg_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
     const uint8_t                      *seg_data_ptr;
     const uint8_t                      *data_ptr;
     size_t                              data_len;
-    te_bool                             last_segment;
+    bool last_segment;
 
     if (seg_num == (tad_pkt_seg_num(pkt) - 1))
-        last_segment = TRUE;
+        last_segment = true;
     else
-        last_segment = FALSE;
+        last_segment = false;
 
     if (seg->data_len == 0)
     {
@@ -1454,7 +1454,7 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
     /* Calculate upper layer checksum */
     tmp = htons((uint16_t)(proto_data->upper_protocol));
     cb_data.init_checksum = calculate_checksum(&tmp, sizeof(tmp));
-    cb_data.use_phdr = TRUE;
+    cb_data.use_phdr = true;
     switch(proto_data->upper_protocol)
     {
         case IPPROTO_TCP:
@@ -1473,7 +1473,7 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
             if (gre_opt_cksum != NULL)
             {
                 cb_data.upper_checksum_offset = WORD_4BYTE;
-                cb_data.use_phdr = FALSE;
+                cb_data.use_phdr = false;
             }
             else
             {
@@ -1482,7 +1482,7 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
             break;
         default:
             cb_data.init_checksum = 0;
-            cb_data.use_phdr = FALSE;
+            cb_data.use_phdr = false;
             cb_data.upper_checksum_offset = -1;
             break;
     }
@@ -1570,7 +1570,7 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
      * Prepend each packet with space necessary for
      * IPv6 Header together with all extension headers.
     */
-    rc = tad_pkts_add_new_seg(sdus, TRUE, NULL, hdrlen, NULL);
+    rc = tad_pkts_add_new_seg(sdus, true, NULL, hdrlen, NULL);
     if (rc != 0)
         goto cleanup;
 

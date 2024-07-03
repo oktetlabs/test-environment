@@ -41,7 +41,7 @@
 /** Structure for the common UPnP Control Point settings. */
 typedef struct upnp_cp_settings {
     pid_t   pid;                   /**< UPnP Control Point PID. */
-    te_bool enable;                /**< UPnP Control Point enable flag. */
+    bool enable;                /**< UPnP Control Point enable flag. */
     char    target[RCF_MAX_VAL];   /**< Search Target for UPnP devices
                                         and/or services. */
     char    iface[RCF_MAX_VAL];    /**< Network interface. */
@@ -67,7 +67,7 @@ upnp_cp_start_process(void)
     };
     te_errno rc = 0;
 
-    rc = rcf_ch_start_process(&upnp_cp_conf.pid, -1, argv[0], TRUE,
+    rc = rcf_ch_start_process(&upnp_cp_conf.pid, -1, argv[0], true,
                               TE_ARRAY_LEN(argv) - 1, (void **)argv);
     if (rc != 0)
     {
@@ -99,12 +99,12 @@ upnp_cp_stop_process(void)
  * @return Status code.
  */
 static inline te_errno
-set_boolean(const char *oid, const char *new_value, te_bool *value)
+set_boolean(const char *oid, const char *new_value, bool *value)
 {
     if (strcmp(new_value, "0") == 0)
-        *value = FALSE;
+        *value = false;
     else if (strcmp(new_value, "1") == 0)
-        *value = TRUE;
+        *value = true;
     else
     {
         ERROR("The new value of \"%s\" variable is not set: new value is "
@@ -125,7 +125,7 @@ set_boolean(const char *oid, const char *new_value, te_bool *value)
  * @return Status code. De facto, always returns zero.
  */
 static inline te_errno
-get_boolean(const char *oid, te_bool value, char *buf)
+get_boolean(const char *oid, bool value, char *buf)
 {
     UNUSED(oid);
 
@@ -254,7 +254,7 @@ static te_errno
 upnp_cp_set_enable(unsigned int gid, const char *oid, const char *value)
 {
     UNUSED(gid);
-    te_bool  new_value;
+    bool new_value;
     te_errno rc;
 
     rc = set_boolean(oid, value, &new_value);
@@ -332,10 +332,10 @@ ta_unix_conf_upnp_cp_release(void)
 {
     te_errno rc = 0;    /* Kill process result. */
 
-    if (upnp_cp_conf.enable == TRUE)
+    if (upnp_cp_conf.enable == true)
     {
         rc = upnp_cp_stop_process();
-        upnp_cp_conf.enable = FALSE;
+        upnp_cp_conf.enable = false;
     }
     return rc;
 }

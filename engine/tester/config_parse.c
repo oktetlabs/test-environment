@@ -268,7 +268,7 @@ get_node_with_text_content(xmlNodePtr *node, const char *name,
  * @return Allocated path or NULL.
  */
 static char *
-name_to_path(tester_cfg *cfg, const char *name, te_bool is_package)
+name_to_path(tester_cfg *cfg, const char *name, bool is_package)
 {
     char *path = NULL;
 
@@ -411,8 +411,8 @@ alloc_and_get_tqe_string(xmlNodePtr node, tqh_strings *strs)
 static te_errno
 alloc_and_get_test_suite_info(xmlNodePtr        node,
                               test_suites_info *suites_info,
-                              te_bool           build,
-                              te_bool           verbose)
+                              bool build,
+                              bool verbose)
 {
     test_suite_info *p;
 
@@ -608,16 +608,16 @@ alloc_and_get_option(xmlNodePtr node, test_options *opts)
  * @retval TE_ENOENT    Property does not exists. Value is not modified.
  */
 static te_errno
-get_bool_prop(xmlNodePtr node, const char *name, te_bool *value)
+get_bool_prop(xmlNodePtr node, const char *name, bool *value)
 {
     xmlChar *s = xmlGetProp(node, CONST_CHAR2XML(name));
 
     if (s == NULL)
         return TE_RC(TE_TESTER, TE_ENOENT);
     if (xmlStrcmp(s, CONST_CHAR2XML("true")) == 0)
-        *value = TRUE;
+        *value = true;
     else if (xmlStrcmp(s, CONST_CHAR2XML("false")) == 0)
-        *value = FALSE;
+        *value = false;
     else
     {
         ERROR("Invalid value '%s' of the boolean property '%s'",
@@ -749,7 +749,7 @@ get_handdown_attr(xmlNodePtr node, const char *name,
  */
 static te_errno
 alloc_and_get_requirement(xmlNodePtr node, test_requirements *reqs,
-                          te_bool allow_sticky)
+                          bool allow_sticky)
 {
     te_errno            rc;
     test_requirement   *p;
@@ -789,7 +789,7 @@ alloc_and_get_requirement(xmlNodePtr node, test_requirements *reqs,
 #endif
 
     /* 'sticky' is optional, default value is false */
-    p->sticky = FALSE;
+    p->sticky = false;
     rc = get_bool_prop(node, "sticky", &p->sticky);
     if (rc != 0 && rc != TE_RC(TE_TESTER, TE_ENOENT))
         return rc;
@@ -818,7 +818,7 @@ alloc_and_get_requirement(xmlNodePtr node, test_requirements *reqs,
         new = TE_ALLOC(sizeof(*r));
         new->id = strdup(p->id);
         new->ref = NULL;
-        new->sticky = FALSE;
+        new->sticky = false;
         if (before != NULL)
             TAILQ_INSERT_BEFORE(before, new, links);
         else
@@ -840,7 +840,7 @@ req_exists:
  */
 static te_errno
 get_requirements(xmlNodePtr *node, test_requirements *reqs,
-                 te_bool allow_sticky)
+                 bool allow_sticky)
 {
     te_errno rc;
 
@@ -1067,7 +1067,7 @@ get_script(xmlNodePtr node, tester_cfg *cfg, test_script *script)
     }
 
     /* Get optional set of tested 'requirement's */
-    rc = get_requirements(&node, &script->reqs, FALSE);
+    rc = get_requirements(&node, &script->reqs, false);
     if (rc != 0)
     {
         ERROR("Failed to get requirements of the script '%s'",
@@ -1083,7 +1083,7 @@ get_script(xmlNodePtr node, tester_cfg *cfg, test_script *script)
     }
     else
     {
-        script->execute = name_to_path(cfg, script->name, FALSE);
+        script->execute = name_to_path(cfg, script->name, false);
     }
     if (script->execute == NULL)
     {
@@ -1203,7 +1203,7 @@ alloc_and_get_value(xmlNodePtr node, const test_session *session,
     if (tmp != NULL)
     {
         char       *s = tmp;
-        te_bool     end;
+        bool end;
 
         do {
             size_t              len = strcspn(s, ",");
@@ -1400,7 +1400,7 @@ alloc_and_get_enum(xmlNodePtr node, const test_session *session,
  * @return Status code.
  */
 static te_errno
-alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var,
+alloc_and_get_var_arg(xmlNodePtr node, bool is_var,
                       const test_session *session, test_vars_args *list)
 {
     xmlNodePtr          root = node;
@@ -1413,9 +1413,9 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var,
 
     ENTRY("session=%p", session);
     p = TE_ALLOC(sizeof(*p));
-    p->handdown = TRUE;
+    p->handdown = true;
     p->variable = is_var;
-    p->global = FALSE;
+    p->global = false;
     TAILQ_INIT(&p->values.head);
     TAILQ_INSERT_TAIL(list, p, links);
 
@@ -1545,11 +1545,11 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var,
             test_entity_value *v = TAILQ_FIRST(&p->values.head);
 
             val = v->plain;
-            v->global = TRUE;
+            v->global = true;
             te_asprintf(&v->name, "VAR.%s", p->name);
             te_var_name2env(v->name, env_name, sizeof(env_name));
         }
-        p->global = TRUE;
+        p->global = true;
 
         VERB("%s: setenv %s=%s", __FUNCTION__, env_name, val);
         rc = setenv(env_name, val, 1);
@@ -1566,7 +1566,7 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var,
 
 static te_errno
 vars_process(xmlNodePtr *node, test_session *session,
-             te_bool children, int *parse_break)
+             bool children, int *parse_break)
 {
     te_errno rc = 0;
     xmlNodePtr local_node = *node;
@@ -1582,10 +1582,10 @@ vars_process(xmlNodePtr *node, test_session *session,
     {
         VERB("%s: node->name=%s", __FUNCTION__, (*node)->name);
         if (xmlStrcmp((*node)->name, CONST_CHAR2XML("arg")) == 0)
-            rc = alloc_and_get_var_arg(*node, FALSE, session,
+            rc = alloc_and_get_var_arg(*node, false, session,
                                        &session->vars);
         else if (xmlStrcmp((*node)->name, CONST_CHAR2XML("var")) == 0)
-            rc = alloc_and_get_var_arg(*node, TRUE, session,
+            rc = alloc_and_get_var_arg(*node, true, session,
                                        &session->vars);
         else if (xmlStrcmp((*node)->name, CONST_CHAR2XML("enum")) == 0)
             rc = alloc_and_get_enum(*node, session, &session->types);
@@ -1598,7 +1598,7 @@ vars_process(xmlNodePtr *node, test_session *session,
         else if (xmlStrcmp((*node)->name, CONST_CHAR2XML("vars")) == 0)
         {
             VERB("%s: vars list", __FUNCTION__);
-            rc = vars_process(node, session, TRUE, parse_break);
+            rc = vars_process(node, session, true, parse_break);
             *node = local_node;
         }
         else
@@ -1740,12 +1740,12 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
                     return rc;
                 }
                 if (strcasecmp(run_monitor, "yes") == 0)
-                    monitor->run_monitor = TRUE;
+                    monitor->run_monitor = true;
                 else if (strcasecmp(run_monitor, "no") == 0)
-                    monitor->run_monitor = FALSE;
+                    monitor->run_monitor = false;
                 else
                     monitor->run_monitor =
-                        (atoi(run_monitor) == 0 ? FALSE : TRUE);
+                        (atoi(run_monitor) == 0 ? false : true);
                 free(run_monitor);
             }
             else
@@ -1804,7 +1804,7 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
         return rc;
 
     /* 'simultaneous' is optional, default value is false */
-    session->simultaneous = FALSE;
+    session->simultaneous = false;
     rc = get_bool_prop(node, "simultaneous", &session->simultaneous);
     if (rc != 0 && rc != TE_RC(TE_TESTER, TE_ENOENT))
         return rc;
@@ -1816,7 +1816,7 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
     /* Get information about variables */
     while (node != NULL)
     {
-        if ((rc = vars_process(&node, session, FALSE, &parse_break)) == 0 &&
+        if ((rc = vars_process(&node, session, false, &parse_break)) == 0 &&
                  parse_break == 1)
             break;
 
@@ -1829,7 +1829,7 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
     }
 
     /* Information about requirements is optional */
-    rc = get_requirements(&node, &session->reqs, TRUE);
+    rc = get_requirements(&node, &session->reqs, true);
     if (rc != 0)
     {
         ERROR("Failed to get information about session requirements");
@@ -2112,7 +2112,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
     while (node != NULL &&
            xmlStrcmp(node->name, CONST_CHAR2XML("arg")) == 0)
     {
-        rc = alloc_and_get_var_arg(node, FALSE, session, &p->args);
+        rc = alloc_and_get_var_arg(node, false, session, &p->args);
         if (rc != 0)
         {
             ERROR("Processing of the run item '%s' arguments "
@@ -2220,7 +2220,7 @@ get_test_package(xmlNodePtr root, tester_cfg *cfg,
     }
 
     /* Information about requirements is optional */
-    rc = get_requirements(&node, &pkg->reqs, TRUE);
+    rc = get_requirements(&node, &pkg->reqs, true);
     if (rc != 0)
     {
         ERROR("Failed to get information about Test Package requirements");
@@ -2305,7 +2305,7 @@ get_target_reqs(xmlNodePtr *node, logic_expr **targets)
  */
 static te_errno
 get_tester_config(xmlNodePtr root, tester_cfg *cfg,
-                  te_bool build, te_bool verbose)
+                  bool build, bool verbose)
 {
     xmlNodePtr  node;
     xmlChar    *s;
@@ -2610,7 +2610,7 @@ parse_test_package(tester_cfg *cfg, const test_session *session,
 
     if ((pkg->path = name_to_path(cfg,
                                 src != NULL ? src : pkg->name,
-                                src != NULL ? FALSE : TRUE)) == NULL)
+                                src != NULL ? false : true)) == NULL)
     {
         ERROR("Failed to make path to Test Package file by name and "
               "context");
@@ -2620,7 +2620,7 @@ parse_test_package(tester_cfg *cfg, const test_session *session,
     cur_pkg_save = cfg->cur_pkg;
     cfg->cur_pkg = pkg;
 
-    ti_path = name_to_path(cfg, "tests-info.xml", FALSE);
+    ti_path = name_to_path(cfg, "tests-info.xml", false);
     if (ti_path == NULL)
     {
         ERROR("Failed to make path to Test Package file by name and "
@@ -2723,7 +2723,7 @@ cleanup:
  * @return Status code.
  */
 static te_errno
-tester_parse_config(tester_cfg *cfg, te_bool build, te_bool verbose)
+tester_parse_config(tester_cfg *cfg, bool build, bool verbose)
 {
     xmlParserCtxtPtr    parser;
     xmlDocPtr           doc;
@@ -2779,7 +2779,7 @@ tester_parse_config(tester_cfg *cfg, te_bool build, te_bool verbose)
 
 /* See the description in tester_conf.h */
 te_errno
-tester_parse_configs(tester_cfgs *cfgs, te_bool build, te_bool verbose)
+tester_parse_configs(tester_cfgs *cfgs, bool build, bool verbose)
 {
     te_errno    rc;
     tester_cfg *cfg;

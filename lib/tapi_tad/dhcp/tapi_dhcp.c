@@ -82,7 +82,7 @@ struct dhcp_rcv_pkt_info {
 /** */
 static struct dhcp_rcv_pkt_info rcv_pkt;
 /** Indicates if TAPI DHCP can issue request on receiving DHCP packet */
-static te_bool rcv_op_busy = FALSE;
+static bool rcv_op_busy = false;
 
 /* If pthread mutexes are supported - OK; otherwise hope for the best... */
 #ifdef HAVE_PTHREAD_H
@@ -136,14 +136,14 @@ ndn_dhcpv4_packet_to_plain(const asn_value *pkt,
             rc = asn_read_value_field(pkt, (ptr_),                 \
                                       &len, #field_ ".#plain");    \
             if (rc == 0)                                           \
-                (*dhcp_msg)->is_ ## field_ ## _set = TRUE;         \
+                (*dhcp_msg)->is_ ## field_ ## _set = true;         \
             else if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)     \
             {                                                      \
                 /*                                                 \
                  * Field name is valid but the value               \
                  * is not specified                                \
                  */                                                \
-                (*dhcp_msg)->is_ ## field_ ## _set = FALSE;        \
+                (*dhcp_msg)->is_ ## field_ ## _set = false;        \
                 rc = 0;                                            \
             }                                                      \
             else                                                   \
@@ -336,7 +336,7 @@ ndn_dhcpv4_plain_to_packet(const struct dhcp_message *dhcp_msg,
 
 #define PKT_SET_SIMPLE_VALUE(field_) \
     do {                                                          \
-        if (rc == 0 && (dhcp_msg)->is_ ## field_ ## _set == TRUE) \
+        if (rc == 0 && (dhcp_msg)->is_ ## field_ ## _set == true) \
         {                                                         \
             rc = asn_write_int32(*pkt, (dhcp_msg)->field_,        \
                                  #field_ ".#plain");              \
@@ -346,7 +346,7 @@ ndn_dhcpv4_plain_to_packet(const struct dhcp_message *dhcp_msg,
 #define PKT_SET_ARRAY_VALUE(field_) \
     do {                                                          \
         len = sizeof((dhcp_msg)->field_);                         \
-        if (rc == 0 && (dhcp_msg)->is_ ## field_ ## _set == TRUE) \
+        if (rc == 0 && (dhcp_msg)->is_ ## field_ ## _set == true) \
         {                                                         \
             rc = asn_write_value_field(*pkt, ((dhcp_msg)->field_),\
                                        len, #field_ ".#plain");   \
@@ -433,11 +433,11 @@ dhcpv4_bootp_message_create(uint8_t op)
         return NULL;
 
     dhcp_msg->op = op;
-    dhcp_msg->is_op_set = TRUE;
+    dhcp_msg->is_op_set = true;
     dhcp_msg->htype = DHCP_HW_TYPE_ETHERNET_10MB;
-    dhcp_msg->is_htype_set = TRUE;
+    dhcp_msg->is_htype_set = true;
     dhcp_msg->hlen = ETHER_ADDR_LEN;
-    dhcp_msg->is_hlen_set = TRUE;
+    dhcp_msg->is_hlen_set = true;
 
     return dhcp_msg;
 }
@@ -765,10 +765,10 @@ dhcpv4_message_fill_reply_from_req(struct dhcp_message *dhcp_rep,
  * @param type  Option type to check if Option 55 has it in the list
  *
  * @return Result of the checking
- * @retval TRUE   Option 55 contains option code 'type' in its list
- * @retval FALSE  Option 55 does not contain option code 'type' in its list
+ * @retval @c true   Option 55 contains option code 'type' in its list
+ * @retval @c false  Option 55 does not contain option code 'type' in its list
  */
-te_bool
+bool
 dhcpv4_option55_has_code(const struct dhcp_option *opt, uint8_t type)
 {
     unsigned int i;
@@ -776,9 +776,9 @@ dhcpv4_option55_has_code(const struct dhcp_option *opt, uint8_t type)
     for (i = 0; i < opt->val_len; i++)
     {
         if (opt->val[i] == type)
-            return TRUE;
+            return true;
     }
-    return FALSE;
+    return false;
 }
 
 /**
@@ -1035,7 +1035,7 @@ dhcpv4_message_start_recv(const char *ta_name, csap_handle_t dhcp_csap,
 #endif
         return TE_EBUSY;
     }
-    rcv_op_busy = TRUE;
+    rcv_op_busy = true;
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&tapi_dhcp_lock);
 #endif
@@ -1057,7 +1057,7 @@ dhcpv4_message_start_recv(const char *ta_name, csap_handle_t dhcp_csap,
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_lock(&tapi_dhcp_lock);
 #endif
-        rcv_op_busy = FALSE;
+        rcv_op_busy = false;
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&tapi_dhcp_lock);
 #endif
@@ -1099,7 +1099,7 @@ dhcpv4_message_capture(const char *ta_name, csap_handle_t dhcp_csap,
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&tapi_dhcp_lock);
 #endif
-    rcv_op_busy = FALSE;
+    rcv_op_busy = false;
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&tapi_dhcp_lock);
 #endif
@@ -1129,7 +1129,7 @@ tapi_dhcpv4_send_recv(const char *ta_name, csap_handle_t dhcp_csap,
 #endif
         return NULL;
     }
-    rcv_op_busy = TRUE;
+    rcv_op_busy = true;
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&tapi_dhcp_lock);
 #endif
@@ -1167,7 +1167,7 @@ free_rcv_op:
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_lock(&tapi_dhcp_lock);
 #endif
-    rcv_op_busy = FALSE;
+    rcv_op_busy = false;
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&tapi_dhcp_lock);
 #endif
@@ -1216,13 +1216,13 @@ tapi_dhcpv4_csap_get_ipaddr(const char *ta_name, csap_handle_t dhcp_csap,
  *
  * @return boolean success
  */
-static te_bool
+static bool
 dhcp_request_reply(const char *ta, csap_handle_t csap,
                         const struct sockaddr *lladdr,
-                        int type, te_bool broadcast,
+                        int type, bool broadcast,
                         struct in_addr *myaddr,
                         struct in_addr *srvaddr,
-                        unsigned long *xid, te_bool set_ciaddr)
+                        unsigned long *xid, bool set_ciaddr)
 {
     struct dhcp_message *request = NULL;
     uint16_t             flags = (broadcast ? FLAG_BROADCAST : 0);
@@ -1366,15 +1366,15 @@ tapi_dhcp_request_ip_addr(char const *ta, char const *if_name,
         goto cleanup0;
     }
 
-    if ((rc = dhcp_request_reply(ta, csap, &mac_addr, DHCPDISCOVER, TRUE,
-                                 &myaddr, &srvaddr, &xid, FALSE)) != 0)
+    if ((rc = dhcp_request_reply(ta, csap, &mac_addr, DHCPDISCOVER, true,
+                                 &myaddr, &srvaddr, &xid, false)) != 0)
     {
         ERROR("DHCP discovery failed");
         goto cleanup1;
     }
 
-    if ((rc = dhcp_request_reply(ta, csap, &mac_addr, DHCPREQUEST, TRUE,
-                                 &myaddr, &srvaddr, &xid, FALSE)) != 0)
+    if ((rc = dhcp_request_reply(ta, csap, &mac_addr, DHCPREQUEST, true,
+                                 &myaddr, &srvaddr, &xid, false)) != 0)
     {
         ERROR("DHCP lease cannot be obtained");
         goto cleanup1;
@@ -1410,8 +1410,8 @@ tapi_dhcp_release_ip_addr(char const *ta, char const *if_name,
         goto cleanup0;
     }
 
-    if ((rc = dhcp_request_reply(ta, csap, addr, DHCPRELEASE, FALSE,
-                                 &myaddr, &srvaddr, &xid, TRUE)) != 0)
+    if ((rc = dhcp_request_reply(ta, csap, addr, DHCPRELEASE, false,
+                                 &myaddr, &srvaddr, &xid, true)) != 0)
     {
         ERROR("Error releasing DHCP lease");
         goto cleanup1;

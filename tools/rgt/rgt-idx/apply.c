@@ -38,16 +38,16 @@
  * @param psize Location of/for the buffer size.
  * @param len   Contents length to fit into the buffer.
  *
- * @return TRUE if grown successfully, FALSE otherwise
+ * @return @c true if grown successfully, @c false otherwise
  */
-static te_bool
+static bool
 grow_buf(uint8_t **pbuf, size_t *psize, size_t len)
 {
     uint8_t    *buf     = *pbuf;
     size_t      size    = *psize;
 
     if (len <= size)
-        return TRUE;
+        return true;
 
     if (size < MIN_BUF_SIZE)
         size = MIN_BUF_SIZE;
@@ -57,12 +57,12 @@ grow_buf(uint8_t **pbuf, size_t *psize, size_t len)
 
     buf = realloc(buf, size);
     if (buf == NULL)
-        return FALSE;
+        return false;
 
     *pbuf = buf;
     *psize = size;
 
-    return TRUE;
+    return true;
 }
 
 
@@ -114,7 +114,7 @@ read_message(FILE *input, uint8_t **pbuf, size_t *psize, size_t *plen)
      * Abort on the special terminating field length.
      */
     req_var_field_num = 3;
-    while (TRUE)
+    while (true)
     {
         /* Extract next field length */
 #if SIZEOF_TE_LOG_NFL == 4
@@ -151,10 +151,10 @@ read_message(FILE *input, uint8_t **pbuf, size_t *psize, size_t *plen)
  * @param index     The stream to read from.
  * @param poffset   Location for the offset.
  *
- * @return TRUE if the entry was read successfully, FALSE if an error
+ * @return @c true if the entry was read successfully, @c false if an error
  *         occurred or EOF was reached.
  */
-static te_bool
+static bool
 read_entry_offset(FILE *index, uint64_t *poffset)
 {
     uint64_t    offset;
@@ -162,14 +162,14 @@ read_entry_offset(FILE *index, uint64_t *poffset)
     ssize_t     i;
 
     if (fread(&buf, sizeof(buf), 1, index) != 1)
-        return FALSE;
+        return false;
 
     for (offset = 0, i = 0; i <= 7; i++)
         offset = (offset << 8) | buf[i];
 
     *poffset = offset;
 
-    return TRUE;
+    return true;
 }
 
 
@@ -243,7 +243,7 @@ run(const char *input_name, const char *index_name, const char *output_name)
         ERROR_CLEANUP("Failed to write log file version to the output: %s",
                       strerror(errno));
 
-    while (TRUE)
+    while (true)
     {
         /* Read an index entry offset */
         if (!read_entry_offset(index, &offset))

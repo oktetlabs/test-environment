@@ -55,7 +55,7 @@ extern te_errno tapi_upnp_cp_stop(const char *ta);
  *
  * @return The UPnP CP started condition.
  */
-extern te_bool tapi_upnp_cp_started(const char *ta);
+extern bool tapi_upnp_cp_started(const char *ta);
 
 
 /* Functions to manage TA UPnP Control Point proxy. */

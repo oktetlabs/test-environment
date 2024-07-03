@@ -145,13 +145,13 @@ main(int argc, char *argv[])
                                   &ip4_send_csap));
 
     /* Prepare data-sending template */
-    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(&template, FALSE,
+    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(&template, false,
                                           ndn_ip4_header,
                                           "#ip4", NULL));
-    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(&template, FALSE,
+    CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(&template, false,
                                           ndn_eth_header,
                                           "#eth", NULL));
-    CHECK_RC(tapi_tad_tmpl_ptrn_set_payload_plain(&template, FALSE,
+    CHECK_RC(tapi_tad_tmpl_ptrn_set_payload_plain(&template, false,
                                                   send_buf, send_buf_len));
 
     /* 'hcsum' parameter processing */

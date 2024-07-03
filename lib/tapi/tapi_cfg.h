@@ -538,7 +538,7 @@ extern te_errno tapi_cfg_get_neigh_entry(const char *ta,
                                          const char *ifname,
                                          const struct sockaddr *net_addr,
                                          void *ret_addr,
-                                         te_bool *is_static,
+                                         bool *is_static,
                                          cs_neigh_entry_state *state);
 
 /**
@@ -562,7 +562,7 @@ extern te_errno tapi_cfg_add_neigh_entry(const char *ta,
                                          const char *ifname,
                                          const struct sockaddr *net_addr,
                                          const void *link_addr,
-                                         te_bool is_static);
+                                         bool is_static);
 
 /**
  * Set a new value for neighbour entry.
@@ -585,7 +585,7 @@ extern te_errno tapi_cfg_set_neigh_entry(const char *ta,
                                          const char *ifname,
                                          const struct sockaddr *net_addr,
                                          const void *link_addr,
-                                         te_bool is_static);
+                                         bool is_static);
 
 /**
  * Delete a neighbour entry.
@@ -1026,7 +1026,7 @@ extern int te_vasprintf(char **strp, const char *fmt, va_list ap);
  *
  * @return True if string has configurator link prefix, False otherwise.
  */
-static inline te_bool
+static inline bool
 tapi_is_cfg_link(char *s)
 {
     return (strncmp(s, TAPI_CFG_LINK_PREFIX,
@@ -1248,7 +1248,7 @@ extern te_errno tapi_cfg_add_new_user(const char *agent, int uid);
 /**
  * Add a user on TA if no such user already exists.
  *
- * @p added is set to @c TRUE if a user has been added and to @c FALSE
+ * @p added is set to @c true if a user has been added and to @c false
  * if it existed already, so that the caller might decide whether it
  * should call tapi_cfg_del_user().
  *
@@ -1262,7 +1262,7 @@ extern te_errno tapi_cfg_add_new_user(const char *agent, int uid);
  * @return Status code.
  */
 extern te_errno tapi_cfg_add_user_if_needed(const char *agent, int uid,
-                                            te_bool *added);
+                                            bool *added);
 
 /**
  * Remove a user previously added by tapi_cfg_add_new_user().

@@ -240,7 +240,7 @@ cleanup:
 te_errno
 tapi_cfg_changed_remove_region(const char *tag, size_t start)
 {
-    te_errno rc = cfg_del_instance_fmt(FALSE,
+    te_errno rc = cfg_del_instance_fmt(false,
                                        CFG_CHANGED_OID_PFX "%s/region:%zu",
                                        tag, start);
 
@@ -335,7 +335,7 @@ tapi_cfg_changed_process_regions(const char *tag, tapi_cfg_changed_callback *cb,
         else
         {
             if (rc == 0)
-                rc = cfg_del_instance(r->h, FALSE);
+                rc = cfg_del_instance(r->h, false);
             if (rc != 0)
                 goto cleanup;
         }
@@ -350,7 +350,7 @@ cleanup:
 te_errno
 tapi_cfg_changed_clear_tag(const char *tag)
 {
-    te_errno rc = cfg_del_instance_fmt(TRUE,
+    te_errno rc = cfg_del_instance_fmt(true,
                                        CFG_CHANGED_OID_PFX "%s", tag);
 
     if (TE_RC_GET_ERROR(rc) == TE_ENOENT)

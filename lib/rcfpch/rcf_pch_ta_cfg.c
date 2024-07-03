@@ -160,7 +160,7 @@ ta_obj_free(ta_cfg_obj_t *obj)
         obj->user_data = NULL;
     }
 
-    obj->in_use = FALSE;
+    obj->in_use = false;
 }
 
 /* See the description in rcf_pch_ta_cfg.h */
@@ -190,7 +190,7 @@ ta_obj_find(const char *type, const char *name,
 te_errno
 ta_obj_find_create(const char *type, const char *name,
                    unsigned int gid, ta_obj_cb cb_func,
-                   ta_cfg_obj_t **obj, te_bool *created)
+                   ta_cfg_obj_t **obj, bool *created)
 {
     ta_cfg_obj_t *tmp = NULL;
     int           rc;
@@ -199,7 +199,7 @@ ta_obj_find_create(const char *type, const char *name,
     if (tmp != NULL)
     {
         if (created != NULL)
-            *created = FALSE;
+            *created = false;
 
         *obj = tmp;
 
@@ -217,7 +217,7 @@ ta_obj_find_create(const char *type, const char *name,
     }
 
     if (created != NULL)
-        *created = TRUE;
+        *created = true;
 
     tmp->action = TA_CFG_OBJ_SET;
     tmp->gid = gid;
@@ -281,7 +281,7 @@ ta_obj_add(const char *type, const char *name, const char *value,
         }
     }
 
-    ta_objs[i].in_use = TRUE;
+    ta_objs[i].in_use = true;
     ta_objs[i].type = strdup(type);
     ta_objs[i].name = strdup(name);
     ta_objs[i].value = ((value != NULL) ? strdup(value) : NULL);
@@ -311,7 +311,7 @@ ta_obj_value_set(const char *type, const char *name, const char *value,
                  unsigned int gid, ta_obj_cb cb_func)
 {
     ta_cfg_obj_t *obj = NULL;
-    te_bool       locally_created = FALSE;
+    bool locally_created = false;
     te_errno      rc;
 
     rc = ta_obj_find_create(type, name, gid, cb_func,
@@ -339,7 +339,7 @@ ta_obj_set(const char *type, const char *name,
            unsigned int gid, ta_obj_cb cb_func)
 {
     ta_cfg_obj_t *obj = NULL;
-    te_bool       locally_created = FALSE;
+    bool locally_created = false;
     int           rc;
 
     rc = ta_obj_find_create(type, name, gid, cb_func,

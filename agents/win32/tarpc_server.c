@@ -81,7 +81,7 @@ _setlibname_1_svc(tarpc_setlibname_in *in, tarpc_setlibname_out *out,
     UNUSED(rqstp);
     UNUSED(in);
     memset(out, 0, sizeof(*out));
-    return TRUE;
+    return true;
 }
 
 /*-------------- sizeof() -------------------------------*/
@@ -126,7 +126,7 @@ get_sizeof(tarpc_get_sizeof_in *in)
     if (in->typename == NULL)
     {
         ERROR("Type name not specified");
-        return FALSE;
+        return false;
     }
 
     if (in->typename[0] == '*')
@@ -183,7 +183,7 @@ _protocol_info_cmp_1_svc(tarpc_protocol_info_cmp_in *in,
     else
         protocol_len = protocol_widelen;
 
-    out->retval = TRUE;
+    out->retval = true;
 
     if ( (info1->dwServiceFlags1 != info2->dwServiceFlags1) ||
        (info1->dwServiceFlags2 != info2->dwServiceFlags2) ||
@@ -205,7 +205,7 @@ _protocol_info_cmp_1_svc(tarpc_protocol_info_cmp_in *in,
        (info1->iNetworkByteOrder != info2->iNetworkByteOrder) ||
        (info1->iSecurityScheme != info2->iSecurityScheme) ||
        (info1->dwMessageSize != info2->dwMessageSize) )
-        out->retval = FALSE;
+        out->retval = false;
 
     if (in->is_wide1 && !in->is_wide2)
     {
@@ -224,15 +224,15 @@ _protocol_info_cmp_1_svc(tarpc_protocol_info_cmp_in *in,
     if (!in->is_wide1 && !in->is_wide2)
     {
         if (strcmp(info1->szProtocol, info2->szProtocol) != 0)
-            out->retval = FALSE;
+            out->retval = false;
     }
     else
     {
         if (strcmp(info1_char, info2_char) != 0)
-             out->retval = FALSE;
+             out->retval = false;
     }
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- get_addrof() ---------------------------------*/
@@ -246,7 +246,7 @@ _get_addrof_1_svc(tarpc_get_addrof_in *in, tarpc_get_addrof_out *out,
 
     out->addr = addr == NULL ? 0 : rcf_pch_mem_alloc(addr);
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- get_var() ---------------------------------*/
@@ -261,11 +261,11 @@ _get_var_1_svc(tarpc_get_var_in *in, tarpc_get_var_out *out,
     if (addr == NULL)
     {
         ERROR("Variable %s is not found", in->name);
-        out->found = FALSE;
-        return TRUE;
+        out->found = false;
+        return true;
     }
 
-    out->found = TRUE;
+    out->found = true;
 
     switch (in->size)
     {
@@ -273,10 +273,10 @@ _get_var_1_svc(tarpc_get_var_in *in, tarpc_get_var_out *out,
         case 2: out->val = *(uint16_t *)addr; break;
         case 4: out->val = *(uint32_t *)addr; break;
         case 8: out->val = *(uint64_t *)addr; break;
-        default: return FALSE;
+        default: return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- set_var() ---------------------------------*/
@@ -292,11 +292,11 @@ _set_var_1_svc(tarpc_set_var_in *in, tarpc_set_var_out *out,
     if (addr == NULL)
     {
         ERROR("Variable %s is not found", in->name);
-        out->found = FALSE;
-        return TRUE;
+        out->found = false;
+        return true;
     }
 
-    out->found = TRUE;
+    out->found = true;
 
     switch (in->size)
     {
@@ -304,10 +304,10 @@ _set_var_1_svc(tarpc_set_var_in *in, tarpc_set_var_out *out,
         case 2: *(uint16_t *)addr = in->val; break;
         case 4: *(uint32_t *)addr = in->val; break;
         case 8: *(uint64_t *)addr = in->val; break;
-        default: return FALSE;
+        default: return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 /**
@@ -315,8 +315,8 @@ _set_var_1_svc(tarpc_set_var_in *in, tarpc_set_var_out *out,
  *
  * @param name          RPC server name
  * @param pid           location for process identifier
- * @param inherit       if TRUE, inherit file handles
- * @param net_init      if TRUE, initialize network
+ * @param inherit       if @c true, inherit file handles
+ * @param net_init      if @c true, initialize network
  *
  * @return Status code
  */
@@ -574,7 +574,7 @@ accept_callback(LPWSABUF caller_id, LPWSABUF caller_data, LPQOS sqos,
     if (cond == NULL)
         return CF_ACCEPT;
 
-    SleepEx(cond->timeout, TRUE);
+    SleepEx(cond->timeout, true);
 
     if (caller_id == NULL || caller_id->len == 0)
         return CF_REJECT;
@@ -970,8 +970,8 @@ TARPC_FUNC(get_sys_info, {},
 /* Lock */
 static void *vm_trasher_lock;
 
-/* Is set to TRUE when the VM trasher thread must exit */
-static volatile te_bool vm_trasher_stop = FALSE;
+/* Is set to @c true when the VM trasher thread must exit */
+static volatile bool vm_trasher_stop = false;
 
 /* VM trasher thread identifier */
 static uint32_t vm_trasher_thread_id;
@@ -1008,7 +1008,7 @@ vm_trasher_thread(void *arg)
     srand(tv.tv_usec);
 
     /* Perform VM trashing to keep memory pressure */
-    while (vm_trasher_stop == FALSE)
+    while (vm_trasher_stop == false)
     {
         /* Choose a random page */
         dpos = (double)rand() / (double)RAND_MAX * (double)(len / 4096 - 1);
@@ -1047,14 +1047,14 @@ TARPC_FUNC(vm_trasher, {},
             int rc;
 
             /* Stop the VM trasher thread */
-            vm_trasher_stop = TRUE;
+            vm_trasher_stop = true;
             /* Wait for VM trasher thread exit */
             if ((rc = thread_join(vm_trasher_thread_id, NULL)) != 0)
             {
                 INFO("vm_trasher: thread_join() failed %r", rc);
             }
             /* Allow another one VM trasher thread to start later */
-            vm_trasher_stop = FALSE;
+            vm_trasher_stop = false;
             vm_trasher_thread_id = 0;
         }
     }
@@ -1148,7 +1148,7 @@ TARPC_FUNC(wsa_recv_ex,
 /** This variable is used to minimize side-effects on tests
  *  which do not call lseek()
  */
-static te_bool lseek_has_been_called = FALSE;
+static bool lseek_has_been_called = false;
 
 static void
 set_overlapped_filepos(WSAOVERLAPPED *ovr, HANDLE handle)
@@ -1357,7 +1357,7 @@ TARPC_FUNC(lseek, {},
 {
     int mode;
 
-    lseek_has_been_called = TRUE;
+    lseek_has_been_called = true;
     switch (in->mode)
     {
         case RPC_SEEK_SET:
@@ -1651,7 +1651,7 @@ _fd_set_new_1_svc(tarpc_fd_set_new_in *in, tarpc_fd_set_new_out *out,
         out->retval = rcf_pch_mem_alloc(set);
     }
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- fd_set destructor ----------------------------*/
@@ -1670,7 +1670,7 @@ _fd_set_delete_1_svc(tarpc_fd_set_delete_in *in,
     rcf_pch_mem_free(in->set);
     out->common._errno = RPC_ERRNO;
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- FD_ZERO --------------------------------*/
@@ -1684,7 +1684,7 @@ _do_fd_zero_1_svc(tarpc_do_fd_zero_in *in, tarpc_do_fd_zero_out *out,
     memset(out, 0, sizeof(*out));
 
     FD_ZERO(IN_FDSET);
-    return TRUE;
+    return true;
 }
 
 /*-------------- FD_SET --------------------------------*/
@@ -1698,7 +1698,7 @@ _do_fd_set_1_svc(tarpc_do_fd_set_in *in, tarpc_do_fd_set_out *out,
     memset(out, 0, sizeof(*out));
 
     FD_SET((unsigned int)in->fd, IN_FDSET);
-    return TRUE;
+    return true;
 }
 
 /*-------------- FD_CLR --------------------------------*/
@@ -1712,7 +1712,7 @@ _do_fd_clr_1_svc(tarpc_do_fd_clr_in *in, tarpc_do_fd_clr_out *out,
     memset(out, 0, sizeof(*out));
 
     FD_CLR((unsigned int)in->fd, IN_FDSET);
-    return TRUE;
+    return true;
 }
 
 /*-------------- FD_ISSET --------------------------------*/
@@ -1726,7 +1726,7 @@ _do_fd_isset_1_svc(tarpc_do_fd_isset_in *in, tarpc_do_fd_isset_out *out,
     memset(out, 0, sizeof(*out));
 
     out->retval = FD_ISSET(in->fd, IN_FDSET);
-    return TRUE;
+    return true;
 }
 
 /*-------------- select() --------------------------------*/
@@ -2425,7 +2425,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         if (delay / 1000000 > (time_t)in->time2run - (now - start) + 1)
             break;
 
-        SleepEx(delay / 1000 + 1, TRUE);
+        SleepEx(delay / 1000 + 1, true);
 
         len = send(in->s, buf, size, 0);
 
@@ -2523,8 +2523,8 @@ simple_receiver(tarpc_simple_receiver_in *in,
 
     for (start = now = time(NULL);
          (in->time2run != 0) ?
-          ((unsigned int)(now - start) <= in->time2run) : TRUE;
-         now = time(NULL))
+          ((unsigned int)(now - start) <= in->time2run) : true;
+          now = time(NULL))
     {
         tv.tv_sec = 1;
         tv.tv_usec = 0;
@@ -2613,7 +2613,7 @@ flooder(tarpc_flooder_in *in)
     int       sndnum = in->sndrs.sndrs_len;
     int       bulkszs = in->bulkszs;
     int       time2run = in->time2run;
-    te_bool   rx_nb = in->rx_nonblock;
+    bool rx_nb = in->rx_nonblock;
 
     uint32_t *tx_stat = (uint32_t *)(in->tx_stat.tx_stat_val);
     uint32_t *rx_stat = (uint32_t *)(in->rx_stat.rx_stat_val);
@@ -2632,8 +2632,8 @@ flooder(tarpc_flooder_in *in)
     struct timeval  timeout;
     struct timeval  timestamp;
     struct timeval  call_timeout;
-    te_bool         time2run_not_expired = TRUE;
-    te_bool         session_rx = TRUE;
+    bool time2run_not_expired = true;
+    bool session_rx = true;
 
     memset(rcv_buf, 0x0, FLOODER_BUF);
     memset(snd_buf, 0xA, FLOODER_BUF);
@@ -2690,7 +2690,7 @@ flooder(tarpc_flooder_in *in)
         else
         {
             FD_ZERO(&wfds);
-            session_rx = FALSE;
+            session_rx = false;
         }
         rfds = rfds0;
 
@@ -2747,7 +2747,7 @@ flooder(tarpc_flooder_in *in)
                         rx_stat[i] += received;
                     if (!time2run_not_expired)
                         VERB("FD=%d Rx=%d", rcvrs[i], received);
-                    session_rx = TRUE;
+                    session_rx = true;
                 }
             }
         }
@@ -2769,7 +2769,7 @@ flooder(tarpc_flooder_in *in)
             }
             if (call_timeout.tv_sec < 0)
             {
-                time2run_not_expired = FALSE;
+                time2run_not_expired = false;
                 INFO("%s(): time2run expired", __FUNCTION__);
             }
         }
@@ -2856,8 +2856,8 @@ echoer(tarpc_echoer_in *in)
     struct timeval  timeout;
     struct timeval  timestamp;
     struct timeval  call_timeout;
-    te_bool         time2run_not_expired = TRUE;
-    te_bool         session_rx;
+    bool time2run_not_expired = true;
+    bool session_rx;
 
     memset(buf, 0x0, FLOODER_BUF);
 
@@ -2885,7 +2885,7 @@ echoer(tarpc_echoer_in *in)
          time2run, (long)timeout.tv_sec, (long)timeout.tv_usec);
 
     do {
-        session_rx = FALSE;
+        session_rx = false;
 
         /* Prepare sets of file descriptors */
         FD_ZERO(&rfds);
@@ -2911,7 +2911,7 @@ echoer(tarpc_echoer_in *in)
                 }
                 if (rx_stat != NULL)
                     rx_stat[i] += received;
-                session_rx = TRUE;
+                session_rx = true;
 
                 sent = send(sockets[i], buf, received, 0);
                 if (sent < 0)
@@ -2949,9 +2949,9 @@ echoer(tarpc_echoer_in *in)
             }
             if (call_timeout.tv_sec < 0)
             {
-                time2run_not_expired = FALSE;
+                time2run_not_expired = false;
                 /* Just to make sure that we'll get all from buffers */
-                session_rx = TRUE;
+                session_rx = true;
                 INFO("%s(): time2run expired", __FUNCTION__);
             }
 #ifdef DEBUG
@@ -3096,7 +3096,7 @@ _create_window_1_svc(tarpc_create_window_in *in,
                      tarpc_create_window_out *out,
                      struct svc_req *rqstp)
 {
-    static te_bool init = FALSE;
+    static bool init = false;
 
     UNUSED(rqstp);
     UNUSED(in);
@@ -3125,9 +3125,9 @@ _create_window_1_svc(tarpc_create_window_in *in,
         {
             ERROR("Failed to register class\n");
             out->hwnd = 0;
-            return TRUE;
+            return true;
         }
-        init = TRUE;
+        init = true;
     }
 
     out->hwnd = rcf_pch_mem_alloc(
@@ -3135,7 +3135,7 @@ _create_window_1_svc(tarpc_create_window_in *in,
                                  WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
                                  0, CW_USEDEFAULT, 0, NULL, NULL,
                                  GetModuleHandle(NULL), NULL));
-    return TRUE;
+    return true;
 }
 
 /*-------------- DestroyWindow ----------------------------*/
@@ -3166,7 +3166,7 @@ _wsa_async_select_1_svc(tarpc_wsa_async_select_in *in,
     out->retval = WSAAsyncSelect(in->sock, IN_HWND, WM_USER + 1,
                                  network_event_rpc2h(in->event));
     out->common._errno = RPC_ERRNO;
-    return TRUE;
+    return true;
 }
 
 /*-------------- PeekMessage ---------------------------------*/
@@ -3195,7 +3195,7 @@ _peek_message_1_svc(tarpc_peek_message_in *in,
         out->event = network_event_h2rpc(msg.lParam);
     }
 
-    return TRUE;
+    return true;
 }
 
 /*-------------- Create WSAOVERLAPPED --------------------------*/
@@ -3451,7 +3451,7 @@ TARPC_FUNC(duplicate_socket,
     {
         ERROR("Too short buffer for protocol info is provided");
         out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
-        return TRUE;
+        return true;
     }
     COPY_ARG(info);
 },
@@ -3473,19 +3473,19 @@ TARPC_FUNC(duplicate_handle, {},
     HANDLE new_fd;
 
     if ((src = OpenProcess(SYNCHRONIZE | PROCESS_DUP_HANDLE,
-                           FALSE, in->src)) == NULL)
+                           false, in->src)) == NULL)
     {
         out->common._errno = RPC_ERRNO;
-        out->retval = FALSE;
+        out->retval = false;
         ERROR("Cannot open process, error = %d\n", GetLastError());
         goto finish;
     }
 
-    if ((tgt = OpenProcess(SYNCHRONIZE | PROCESS_DUP_HANDLE, FALSE,
+    if ((tgt = OpenProcess(SYNCHRONIZE | PROCESS_DUP_HANDLE, false,
                            in->tgt)) == NULL)
     {
         out->common._errno = RPC_ERRNO;
-        out->retval = FALSE;
+        out->retval = false;
         ERROR("Cannot open process, error = %d\n", GetLastError());
         CloseHandle(src);
         goto finish;
@@ -3494,7 +3494,7 @@ TARPC_FUNC(duplicate_handle, {},
     old_fd = (HANDLE)(in->fd);
 
     MAKE_CALL(out->retval = DuplicateHandle(src, old_fd, tgt, &new_fd,
-                                            0, TRUE,
+                                            0, true,
                                             DUPLICATE_SAME_ACCESS));
 
     out->fd = (tarpc_int)new_fd;
@@ -3512,7 +3512,7 @@ TARPC_FUNC(wait_for_multiple_events,
     {
         ERROR("Too many events are awaited");
         out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
-        return TRUE;
+        return true;
     }
 },
 {
@@ -3811,7 +3811,7 @@ TARPC_FUNC(wsa_recv_msg,
     {
         ERROR("Too long iovec is provided");
         out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
-        return TRUE;
+        return true;
     }
     COPY_ARG(msg);
     COPY_ARG(bytes_received);
@@ -3943,7 +3943,7 @@ TARPC_FUNC(kill, {},
 {
     HANDLE hp;
 
-    if ((hp = OpenProcess(SYNCHRONIZE | PROCESS_TERMINATE, FALSE,
+    if ((hp = OpenProcess(SYNCHRONIZE | PROCESS_TERMINATE, false,
                           in->pid)) == NULL)
     {
         out->common._errno = RPC_ERRNO;
@@ -3969,7 +3969,7 @@ TARPC_FUNC(ta_kill_death, {},
     HANDLE hp;
     DWORD ex_code;
 
-    if ((hp = OpenProcess(SYNCHRONIZE | PROCESS_TERMINATE, FALSE,
+    if ((hp = OpenProcess(SYNCHRONIZE | PROCESS_TERMINATE, false,
                           in->pid)) == NULL)
     {
         out->common._errno = RPC_ERRNO;
@@ -4036,7 +4036,7 @@ TARPC_FUNC(te_shell_cmd,{},
     /* INSERT content of the first #if 0 here */
 
     if (CreateProcess(NULL, in->cmd.cmd_val, NULL, NULL,
-                      TRUE, 0, NULL, NULL,
+                      true, 0, NULL, NULL,
                       &si, &info))
     {
         out->pid = info.dwProcessId;
@@ -4443,7 +4443,7 @@ TARPC_FUNC(wsa_connect, {},
     QOS *psqos;
     PREPARE_ADDR(serv_addr, in->addr, 0);
 
-    if (in->sqos_is_null == TRUE)
+    if (in->sqos_is_null == true)
         psqos = NULL;
     else
     {
@@ -4844,7 +4844,7 @@ TARPC_FUNC(wsa_join_leaf, {},
     QOS *psqos;
     PREPARE_ADDR(addr, in->addr, 0);
 
-    if (in->sqos_is_null == TRUE)
+    if (in->sqos_is_null == true)
         psqos = NULL;
     else
     {
@@ -4874,7 +4874,7 @@ _rpc_is_op_done_1_svc(tarpc_rpc_is_op_done_in  *in,
                       tarpc_rpc_is_op_done_out *out,
                       struct svc_req           *rqstp)
 {
-    te_bool *is_done = (te_bool *)rcf_pch_mem_get(in->common.done);
+    bool *is_done = (bool *)rcf_pch_mem_get(in->common.done);
 
     UNUSED(rqstp);
 
@@ -4890,7 +4890,7 @@ _rpc_is_op_done_1_svc(tarpc_rpc_is_op_done_in  *in,
         out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);
     }
 
-    return TRUE;
+    return true;
 }
 
 /*------------ CreateIoCompletionPort() -------------------*/
@@ -5197,7 +5197,7 @@ completion_callback_register(const char *name,
 void
 sleep_ex(int msec)
 {
-    SleepEx(msec, TRUE);
+    SleepEx(msec, true);
 }
 
 /*-------------- memcmp() ------------------------------*/

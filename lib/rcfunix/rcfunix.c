@@ -269,10 +269,10 @@ typedef struct unix_ta {
                                          copy TA image */
     unsigned int    kill_timeout;   /**< TA kill timeout */
 
-    te_bool sudo;       /**< Manipulate process using sudo */
-    te_bool is_local;   /**< TA is started on the local PC */
+    bool sudo;       /**< Manipulate process using sudo */
+    bool is_local;   /**< TA is started on the local PC */
 
-    te_bool ext_rcf_listener;  /**< Listener socket used to accept RCF
+    bool ext_rcf_listener;  /**< Listener socket used to accept RCF
                                     connection is created before
                                     exec(ta). This is useful when TA
                                     is created in another network
@@ -482,7 +482,7 @@ rcfunix_ta_type_prefix_len(const char *ta_type)
  * @return String with host or IP address to connect to.
  */
 static const char *
-rcfunix_connect_to(const unix_ta *ta, te_bool ignore_proxy)
+rcfunix_connect_to(const unix_ta *ta, bool ignore_proxy)
 {
     const char *host;
 
@@ -549,12 +549,12 @@ ta_form_clean_tce_ws_cmd(unix_ta *ta, te_string *cmd)
  * - it does not hold a space after the TA agent have been terminated.
  *
  * @param ta    The TA configuration.
- * @param rm_ws If TRUE remove the base directory of component builds also.
+ * @param rm_ws If @c true, remove the base directory of component builds also.
  *
  * @return The status code.
  */
 static te_errno
-ta_clean_tce(unix_ta *ta, te_bool rm_ws)
+ta_clean_tce(unix_ta *ta, bool rm_ws)
 {
     const rcf_tce_type_conf_t *type = ta->tce_type;
     const rcf_tce_comp_conf_t *comp = NULL;
@@ -768,7 +768,7 @@ ta_conf_tce(unix_ta *ta, const rcf_talib_param *param)
  * binaries.
  */
 static void
-start_core_watcher(unix_ta *ta, const char *core_pattern, te_bool all)
+start_core_watcher(unix_ta *ta, const char *core_pattern, bool all)
 {
     int i;
     long int len = 0;
@@ -844,7 +844,7 @@ start_core_watcher(unix_ta *ta, const char *core_pattern, te_bool all)
 static void
 stop_core_watcher(unix_ta *ta)
 {
-    te_bool terminated = FALSE;
+    bool terminated = false;
     int i;
     static const int time2wait = 5;
 
@@ -861,7 +861,7 @@ stop_core_watcher(unix_ta *ta)
             wait_rc = waitpid(ta->core_watcher_pid, NULL, WNOHANG);
             if (wait_rc > 0 || (wait_rc < 0 && errno == ECHILD))
             {
-                terminated = TRUE;
+                terminated = true;
                 break;
             }
 
@@ -915,7 +915,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     const char *val;
     char       *ta_list_file;
     const char *ld_preload = NULL;
-    te_bool     shell_is_bash = TRUE;
+    bool shell_is_bash = true;
 
     unsigned int timestamp;
 
@@ -995,13 +995,13 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     if (te_str_is_null_or_empty(val = te_kvpairs_get(conf, "host")))
     {
-        ta->is_local = TRUE;
+        ta->is_local = true;
         *flags |= TA_LOCAL;
         snprintf(ta->host, sizeof(ta->host), "127.0.0.1");
     }
     else
     {
-        ta->is_local = FALSE;
+        ta->is_local = false;
         te_strlcpy(ta->host, val, RCF_MAX_NAME);
     }
     VERB("Test Agent host %s", ta->host);
@@ -1060,11 +1060,11 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     if ((val = te_kvpairs_get(conf, "sudo")) != NULL)
     {
-        ta->sudo = TRUE;
+        ta->sudo = true;
     }
     else
     {
-        ta->sudo = FALSE;
+        ta->sudo = false;
     }
 
     if (!te_str_is_null_or_empty(val = te_kvpairs_get(conf, "connect")))
@@ -1079,7 +1079,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     if ((val = te_kvpairs_get(conf, "ext_rcf_listener")) != NULL)
     {
-        ta->ext_rcf_listener = TRUE;
+        ta->ext_rcf_listener = true;
     }
 
     shell = te_kvpairs_get(conf, "shell");
@@ -1121,7 +1121,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
             rc = te_string_append(&ta->start_prefix, "%s", ta->cmd_prefix.ptr);
         if (rc == 0 && ta->ssh_proxy[0] != '\0')
             rc = te_string_append(&ta->start_prefix, " -L %s:%s:%s",
-                                  ta->port, rcfunix_connect_to(ta, TRUE),
+                                  ta->port, rcfunix_connect_to(ta, true),
                                   ta->port);
 
         /* Add common SSH options including host to connect to */
@@ -1263,11 +1263,11 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
             RING("Shell is: %s", cmd_stdout.ptr);
             if (strcmp(cmd_stdout.ptr, "/bin/bash") != 0)
-                shell_is_bash = FALSE;
+                shell_is_bash = false;
         }
     }
 
-    if ((rc = ta_clean_tce(ta, FALSE)) != 0)
+    if ((rc = ta_clean_tce(ta, false)) != 0)
     {
         te_string_free(&cfg_str);
         te_string_free(&cmd);
@@ -1363,11 +1363,12 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     {
         if (strcasecmp(val, "yes") == 0 || strcasecmp(val, "ta_dir") == 0)
         {
-            start_core_watcher(ta, te_kvpairs_get(conf, "core_pattern"), FALSE);
+            start_core_watcher(ta, te_kvpairs_get(conf, "core_pattern"),
+                               false);
         }
         else if (strcasecmp(val, "all") == 0)
         {
-            start_core_watcher(ta, te_kvpairs_get(conf, "core_pattern"), TRUE);
+            start_core_watcher(ta, te_kvpairs_get(conf, "core_pattern"), true);
         }
     }
 
@@ -1488,7 +1489,7 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
             goto done;
     }
 
-    ta_clean_tce(ta, TRUE);
+    ta_clean_tce(ta, true);
 
     if (ta->start_pid > 0)
     {
@@ -1608,7 +1609,7 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
             tries = rc;
     }
 
-    host = rcfunix_connect_to(ta, FALSE);
+    host = rcfunix_connect_to(ta, false);
 
     tmp = strchr(host, '@');
     if (tmp != NULL)
@@ -1674,9 +1675,9 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
  *
  * @param cmd The command.
  *
- * @return TRUE on the reboot command or FALSE otherwise.
+ * @return @c true on the reboot command or @c false otherwise.
  */
-static te_bool
+static bool
 cmd_is_reboot(const char *cmd)
 {
     int pos = 0;
@@ -1719,12 +1720,12 @@ rcfunix_transmit(rcf_talib_handle handle, const void *data, size_t len)
  *
  * @param handle        TA handle
  *
- * @return TRUE, if data are pending; FALSE otherwise
+ * @return @c true, if data are pending; @c false otherwise
  */
-static te_bool
+static bool
 rcfunix_is_ready(rcf_talib_handle handle)
 {
-    return (handle == NULL) ? FALSE :
+    return (handle == NULL) ? false :
                rcf_net_engine_is_ready(((unix_ta *)handle)->conn);
 }
 

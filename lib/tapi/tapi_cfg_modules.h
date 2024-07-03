@@ -33,7 +33,7 @@ extern "C" {
  * @return 0 or error
  */
 te_errno tapi_cfg_module_add(const char *ta_name, const char *mod_name,
-                             te_bool load);
+                             bool load);
 
 /**
  * Load module with pre-configured parameters.
@@ -163,7 +163,7 @@ extern te_errno tapi_cfg_module_param_get_int(const char *ta_name,
  */
 extern te_errno tapi_cfg_module_add_from_ta_dir(const char *ta_name,
                                                 const char *module_name,
-                                                te_bool     load_dependencies);
+                                                bool load_dependencies);
 
 /**
  *
@@ -179,7 +179,7 @@ extern te_errno tapi_cfg_module_add_from_ta_dir(const char *ta_name,
  */
 extern te_errno tapi_cfg_module_add_from_ta_dir_or_fallback(const char *ta_name,
                                                      const char *module_name,
-                                                     te_bool load_dependencies);
+                                                     bool load_dependencies);
 
 /**
  * Finish changing a module. The resource is set to shared and other
@@ -211,14 +211,14 @@ extern te_errno tapi_cfg_module_version_get(const char *ta_name,
  *
  * @param ta_name        Name of the agent
  * @param module_name    Name of the kernel module
- * @param all_grabbed    Will be set to @c TRUE if all devices are grabbed
- *                       and to @c FALSE otherwise.
+ * @param all_grabbed    Will be set to @c true if all devices are grabbed
+ *                       and to @c false otherwise.
  *
  * @return Status code.
  */
 extern te_errno tapi_cfg_module_check_devices(const char *ta_name,
                                               const char *module_name,
-                                              te_bool *all_grabbed);
+                                              bool *all_grabbed);
 
 #ifdef __cplusplus
 } /* extern "C" */

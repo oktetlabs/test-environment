@@ -137,7 +137,7 @@ ds_##_gh##_add(unsigned int gid, const char *oid, const char *value,    \
     gh->next = _gh##s;                                                  \
     _gh##s = gh;                                                        \
                                                                         \
-    dhcp_server_changed = TRUE;                                         \
+    dhcp_server_changed = true;                                         \
                                                                         \
     return 0;                                                           \
 }
@@ -170,7 +170,7 @@ ds_##_gh##_del(unsigned int gid, const char *oid,       \
         _gh##s = gh->next;                              \
     free_##_gh(gh);                                     \
                                                         \
-    dhcp_server_changed = TRUE;                         \
+    dhcp_server_changed = true;                         \
                                                         \
     return 0;                                           \
 }
@@ -239,7 +239,7 @@ ds_##_ghs##_##_attr##_set(unsigned int gid, const char *oid,    \
                                                                 \
     free(old_val);                                              \
                                                                 \
-    dhcp_server_changed = TRUE;                                 \
+    dhcp_server_changed = true;                                 \
                                                                 \
     return 0;                                                   \
 }
@@ -316,7 +316,7 @@ ds_##_ghs##_option_add(unsigned int gid, const char *oid,       \
     opt->next = ghs->options;                                   \
     ghs->options = opt;                                         \
                                                                 \
-    dhcp_server_changed = TRUE;                                 \
+    dhcp_server_changed = true;                                 \
                                                                 \
     return 0;                                                   \
 }
@@ -355,7 +355,7 @@ ds_##_ghs##_option_del(unsigned int gid, const char *oid,       \
                                                                 \
     FREE_OPTION(opt);                                           \
                                                                 \
-    dhcp_server_changed = TRUE;                                 \
+    dhcp_server_changed = true;                                 \
                                                                 \
     return 0;                                                   \
 }
@@ -399,7 +399,7 @@ ds_##_ghs##_option_set(unsigned int gid, const char *oid,       \
                                                                 \
     free(old);                                                  \
                                                                 \
-    dhcp_server_changed = TRUE;                                 \
+    dhcp_server_changed = true;                                 \
                                                                 \
     return 0;                                                   \
 }
@@ -457,10 +457,10 @@ ds_##_ghs##_option_get(unsigned int gid, const char *oid,       \
 }
 
 /*** Prototypes ***/
-static te_bool  check_dhcpserver_init(te_bool);
+static bool  check_dhcpserver_init(bool);
 static te_errno dhcpserver_init(void);
 static rcf_pch_cfg_object node_ds_dhcpserver;
-static te_bool ds_dhcpserver_is_run(void);
+static bool ds_dhcpserver_is_run(void);
 static te_errno ds_dhcpserver_script_stop(void);
 
 /*** Globals ***/
@@ -468,7 +468,7 @@ static te_errno ds_dhcpserver_script_stop(void);
  * IPv6 subnets are specified.
  * We must start dhcpd in dhcpv6 mode (with '-6' key )
  */
-static te_bool ipv6_subnets = FALSE;
+static bool ipv6_subnets = false;
 
 /** List of known possible locations of DHCP server scripts */
 static const char *dhcp_server_scripts[] = {
@@ -558,14 +558,14 @@ static const char *dhcp_server_aux_conf = NULL;
 static int dhcp_server_aux_conf_backup = -1;
 #else
 /** Was DHCP server enabled at TA start up? */
-static te_bool dhcp_server_was_run = FALSE;
+static bool dhcp_server_was_run = false;
 #endif
 
 /** DHCP server admin status */
-static te_bool dhcp_server_started = FALSE;
+static bool dhcp_server_started = false;
 
 /** Changed flag for DHCP server configuration */
-static te_bool dhcp_server_changed = FALSE;
+static bool dhcp_server_changed = false;
 
 #if defined __linux__
 /**
@@ -589,7 +589,7 @@ static char *isc_dhcp_quoted_options[] = {
 
 /** DHCP server interfaces */
 static char *dhcp_server_ifs = NULL;
-static te_bool allow_unknown_clients = FALSE;
+static bool allow_unknown_clients = false;
 
 static TAILQ_HEAD(te_dhcp_server_subnets, te_dhcp_server_subnet) subnets;
 
@@ -610,20 +610,20 @@ static FILE *f = NULL;  /* Pointer to opened /etc/dhcpd.conf */
 /*** Structures and variables initialisation functions ***/
 /**
  * Fuction to manage hidden variable 'dhcp_server_initialised'.
- * Returns current value before modification. Assignes it TRUE
- * if modify == TRUE
+ * Returns current value before modification. Assignes it @c true
+ * if modify == @c true
  */
-static te_bool
-check_dhcpserver_init(te_bool modify)
+static bool
+check_dhcpserver_init(bool modify)
 {
     /** DHCP server admin status */
-    static te_bool  dhcp_server_initialised = FALSE;
-    te_bool         retval;
+    static bool dhcp_server_initialised = false;
+    bool retval;
 
     retval = dhcp_server_initialised;
 
     if (modify)
-        dhcp_server_initialised = TRUE;
+        dhcp_server_initialised = true;
 
     return retval;
 }
@@ -633,7 +633,7 @@ dhcpserver_init(void)
 {
     int rc = 0;
 
-    if (check_dhcpserver_init(FALSE))
+    if (check_dhcpserver_init(false))
     {
         /* Already initialised. Nothing to do. */
         return 0;
@@ -643,7 +643,7 @@ dhcpserver_init(void)
 
     /* Find DHCP server executable */
     if ((rc = find_file(dhcp_server_n_execs,
-                        dhcp_server_execs, TRUE)) < 0)
+                        dhcp_server_execs, true)) < 0)
     {
         ERROR("Failed to find DHCP server executable"
               " - DHCP will not be available");
@@ -654,7 +654,7 @@ dhcpserver_init(void)
 
     /* Find DHCP server script */
     if ((rc = find_file(dhcp_server_n_scripts,
-                        dhcp_server_scripts, TRUE)) < 0)
+                        dhcp_server_scripts, true)) < 0)
     {
         ERROR("Failed to find DHCP server script"
               " - DHCP will not be available");
@@ -675,7 +675,7 @@ dhcpserver_init(void)
 #if defined TA_UNIX_ISC_DHCPS_NATIVE_CFG || defined __sun__
     /* Find DHCP server configuration file */
     if ((rc = find_file(dhcp_server_n_confs,
-                        dhcp_server_confs, FALSE)) < 0)
+                        dhcp_server_confs, false)) < 0)
     {
         ERROR("Failed to find DHCP server configuration file"
              " - DHCP will not be available");
@@ -750,13 +750,13 @@ dhcpserver_init(void)
             rcf_pch_del_node(&node_ds_dhcpserver);
             return rc;
         }
-        dhcp_server_was_run = TRUE;
+        dhcp_server_was_run = true;
     }
 #endif /* TA_UNIX_ISC_DHCPS_NATIVE_CFG */
 #endif
 
-    check_dhcpserver_init(TRUE);
-    dhcp_server_changed = TRUE;
+    check_dhcpserver_init(true);
+    dhcp_server_changed = true;
 
     return 0;
 }
@@ -764,16 +764,16 @@ dhcpserver_init(void)
 /*** Utilities ***/
 #if defined __linux__
 /* Check, if the option should be quoted */
-static te_bool
+static bool
 is_quoted(const char *opt_name)
 {
     unsigned int i;
 
     for (i = 0; i < sizeof(isc_dhcp_quoted_options) / sizeof(char *); i++)
         if (strcmp(opt_name, isc_dhcp_quoted_options[i]) == 0)
-            return TRUE;
+            return true;
 
-    return FALSE;
+    return false;
 }
 #endif
 
@@ -966,7 +966,7 @@ ds_dhcpserver_save_conf(void)
 #if defined __linux__
     te_dhcp_option         *opt;
     space                  *sp;
-    te_bool                 ipv4_subnets;
+    bool                    ipv4_subnets;
     /*
      * No need 'ipv4_subnets' to be global like 'ipv6_subnets'.
      * Used only here to check consistency of dhcpd configuration.
@@ -986,8 +986,8 @@ ds_dhcpserver_save_conf(void)
     }
 
 #if defined __linux__
-    ipv6_subnets = FALSE;
-    ipv4_subnets = FALSE;
+    ipv6_subnets = false;
+    ipv4_subnets = false;
 
     if (!allow_unknown_clients)
     {
@@ -1014,8 +1014,8 @@ ds_dhcpserver_save_conf(void)
         struct in_addr  mask;
         struct in6_addr addr;
         int             pton_retval;
-        te_bool         match;
-        te_bool         ipv4_subnet;
+        bool            match;
+        bool            ipv4_subnet;
 
 #define FAMILY_MATCH(_family, _addr_str, _af_match) \
         if ((pton_retval = inet_pton(_family, _addr_str, &addr)) == -1) \
@@ -1024,24 +1024,24 @@ ds_dhcpserver_save_conf(void)
         }                                                               \
         else if (pton_retval == 1)                                      \
         {                                                               \
-            _af_match = TRUE;                                           \
+            _af_match = true;                                           \
         }                                                               \
         else                                                            \
         {                                                               \
-            _af_match = FALSE;                                          \
+            _af_match = false;                                          \
         }
         do {
             FAMILY_MATCH(AF_INET, s->subnet, match)
             if (match)
             {
-                ipv4_subnet = TRUE;
+                ipv4_subnet = true;
                 break;
             }
 
             FAMILY_MATCH(AF_INET6, s->subnet, match)
             if (match)
             {
-                ipv4_subnet = FALSE;
+                ipv4_subnet = false;
                 break;
             }
 
@@ -1058,10 +1058,10 @@ ds_dhcpserver_save_conf(void)
             /*
              * 'subnet' (DHCPv4) specification is allowed:
              * because no 'subnet6' (DHCPv6) specifications done.
-             * Assign 'ipv4_subnets = TRUE' to forbid further
+             * Assign 'ipv4_subnets = true' to forbid further
              * 'subnet6' specifications.
              */
-            ipv4_subnets = TRUE;
+            ipv4_subnets = true;
             mask.s_addr = htonl(PREFIX2MASK(s->prefix_len));
             /* Add 'subnet' specification */
             fprintf(f, "subnet %s netmask %s {\n",
@@ -1072,10 +1072,10 @@ ds_dhcpserver_save_conf(void)
             /*
              * 'subnet6' (DHCPv6) specification is allowed:
              * because no 'subnet' (DHCPv4) specifications done.
-             * Assign 'ipv6_subnets = TRUE' to forbid further
+             * Assign 'ipv6_subnets = true' to forbid further
              * 'subnet' specifications.
              */
-            ipv6_subnets = TRUE;
+            ipv6_subnets = true;
             /* Add 'subnet6' specification */
             fprintf(f, "subnet6 %s/%d {\n",
                     s->subnet, s->prefix_len);
@@ -1110,7 +1110,7 @@ ds_dhcpserver_save_conf(void)
         /* Options in subnet specification block */
         for (opt = s->options; opt != NULL; opt = opt->next)
         {
-            te_bool quoted = is_quoted(opt->name);
+            bool quoted = is_quoted(opt->name);
 
             fprintf(f, "\toption %s %s%s%s;\n", opt->name,
                     quoted ? "\"" : "", opt->value, quoted ? "\"" : "");
@@ -1251,7 +1251,7 @@ ds_dhcpserver_save_conf(void)
 
             for (opt = h->options; opt != NULL; opt = opt->next)
             {
-                te_bool quoted = is_quoted(opt->name);
+                bool quoted = is_quoted(opt->name);
 
                 fprintf(f, "\toption %s %s%s%s;\n", opt->name,
                         quoted ? "\"" : "", opt->value, quoted ? "\"" : "");
@@ -1350,7 +1350,7 @@ ds_dhcpserver_save_conf(void)
 }
 
 #if defined __linux__
-static te_bool
+static bool
 check_dhcpd_pid(const char *pid_filename)
 {
     int     rc = 0;
@@ -1361,7 +1361,7 @@ check_dhcpd_pid(const char *pid_filename)
     if ((rc = ta_system(buf)) < 0 ||
         !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
     {
-        return FALSE;
+        return false;
     }
 
     if ((name = strrchr(dhcp_server_exec, '/')) == NULL)
@@ -1391,12 +1391,12 @@ check_dhcpd_pid(const char *pid_filename)
 #endif
 
 /** Is DHCP server daemon running */
-static te_bool
+static bool
 ds_dhcpserver_is_run(void)
 {
 #if defined __linux__
     if (check_dhcpd_pid(TE_DHCPD_PID_FILENAME))
-        return TRUE;
+        return true;
 
     return check_dhcpd_pid(TE_DHCPD6_PID_FILENAME);
 #elif defined __sun__
@@ -1410,7 +1410,7 @@ ds_dhcpserver_is_run(void)
 
     return !(rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0);
 #endif
-    return FALSE;
+    return false;
 }
 
 /** Stop DHCP server using script from /etc/init.d */
@@ -1603,7 +1603,7 @@ ds_dhcpserver_set(unsigned int gid, const char *oid, const char *value)
     dhcp_server_started = (strcmp(value, "1") == 0);
     if (dhcp_server_started != ds_dhcpserver_is_run())
     {
-        dhcp_server_changed = TRUE;
+        dhcp_server_changed = true;
     }
 
     return 0;
@@ -1662,7 +1662,7 @@ ds_dhcpserver_commit(unsigned int gid, const char *oid)
         }
     }
 
-    dhcp_server_changed = FALSE;
+    dhcp_server_changed = false;
 
     return rc;
 }
@@ -1701,9 +1701,9 @@ ds_dhcpserver_allow_unknown_clients_set(unsigned int gid, const char *oid,
     if (strcmp(value, "0") != 0 && strcmp(value, "1") != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    allow_unknown_clients = (atoi(value) > 0) ? TRUE : FALSE;
+    allow_unknown_clients = (atoi(value) > 0) ? true : false;
 
-    dhcp_server_changed = TRUE;
+    dhcp_server_changed = true;
 
     return 0;
 }
@@ -1748,7 +1748,7 @@ ds_dhcpserver_ifs_set(unsigned int gid, const char *oid, const char *value)
     free(dhcp_server_ifs);
     dhcp_server_ifs = copy;
 
-    dhcp_server_changed = TRUE;
+    dhcp_server_changed = true;
 
     return 0;
 }
@@ -1797,7 +1797,7 @@ ds_subnet_set(unsigned int gid, const char *oid, const char *value,
 
     s->prefix_len = prefix_len;
 
-    dhcp_server_changed = TRUE;
+    dhcp_server_changed = true;
 
     return 0;
 }
@@ -1836,7 +1836,7 @@ ds_subnet_add(unsigned int gid, const char *oid, const char *value,
 
     TAILQ_INSERT_TAIL(&subnets, s, links);
 
-    dhcp_server_changed = TRUE;
+    dhcp_server_changed = true;
 
     return 0;
 }
@@ -1859,7 +1859,7 @@ ds_subnet_del(unsigned int gid, const char *oid,
     TAILQ_REMOVE(&subnets, s, links);
     free_subnet(s);
 
-    dhcp_server_changed = TRUE;
+    dhcp_server_changed = true;
 
     return 0;
 }
@@ -2025,7 +2025,7 @@ ds_sp_opt_add(unsigned int gid, const char *oid,
     sp->options = opt;
     opt->type = NULL;
 
-    dhcp_server_changed = TRUE;
+    dhcp_server_changed = true;
 
     return 0;
 }
@@ -2064,7 +2064,7 @@ ds_sp_opt_del(unsigned int gid, const char *oid,
     free(opt->type);
     free(opt);
 
-    dhcp_server_changed = TRUE;
+    dhcp_server_changed = true;
 
     return 0;
 }
@@ -2122,7 +2122,7 @@ ds_host_group_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    dhcp_server_changed = TRUE;
+    dhcp_server_changed = true;
 
     return 0;
 }
@@ -2716,8 +2716,8 @@ dhcpserver_grab(const char *name)
         }
     }
 
-    dhcp_server_started = FALSE;
-    dhcp_server_changed = FALSE;
+    dhcp_server_started = false;
+    dhcp_server_changed = false;
 
     if ((rc = rcf_pch_add_node("/agent", &node_ds_dhcpserver)) != 0)
         return rc;
@@ -2734,7 +2734,7 @@ dhcpserver_release(const char *name)
 
     UNUSED(name);
 
-    if (!check_dhcpserver_init(FALSE))
+    if (!check_dhcpserver_init(false))
     {
         /* DHCP server was not initialised. Nothing to do. */
         return 0;
@@ -2782,7 +2782,7 @@ dhcpserver_release(const char *name)
             ERROR("Failed to start DHCP server on rollback"
                  " - DHCP server will not be available");
         }
-        dhcp_server_was_run = FALSE;
+        dhcp_server_was_run = false;
     }
 
     if (dhcp_server_conf != NULL && unlink(dhcp_server_conf) != 0 &&

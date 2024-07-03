@@ -55,8 +55,8 @@ typedef struct rgt_cap_idx_rec {
 typedef struct rgt_frag_rec {
     char frag_name[DEF_STR_LEN];    /**< Fragment name */
 
-    te_bool start_frag;             /**< @c TRUE if this is a start
-                                         fragment; @c FALSE if it is
+    bool start_frag;             /**< @c true if this is a start
+                                         fragment; @c false if it is
                                          an end fragment */
 
     unsigned int parent_id;         /**< Parent ID */
@@ -76,7 +76,7 @@ typedef struct rgt_frag_rec {
                                          which this test/session/package was
                                          split (excluding starting and
                                          terminating ones) */
-    te_bool sniff_logs;             /**< @c TRUE if sniffer logs are
+    bool sniff_logs;             /**< @c true if sniffer logs are
                                          present for this log item */
 } rgt_frag_rec;
 
@@ -185,7 +185,7 @@ usage(poptContext optCon, int exitcode, char *error, char *addl)
 /** Declare and initialize error variable */
 #define RGT_ERROR_INIT \
     int rgt_err_var = RGT_ERROR_OK; \
-    te_bool rgt_err_section = FALSE
+    bool rgt_err_section = false
 
 /**
  * Macro for starting a section to which error-checking macros
@@ -197,7 +197,7 @@ usage(poptContext optCon, int exitcode, char *error, char *addl)
  */
 #define RGT_ERROR_SECTION \
     error:                      \
-        rgt_err_section = TRUE
+        rgt_err_section = true
 
 /** Set error variable to error value */
 #define RGT_ERROR_SET rgt_err_var = RGT_ERROR_FAIL

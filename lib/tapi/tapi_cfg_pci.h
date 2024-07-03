@@ -98,9 +98,9 @@ extern te_errno tapi_cfg_pci_get_max_vfs_of_pf(const char *pf_oid,
  * Get VFs by a PCI PF object identifier.
  *
  * @param[in]  pf_oid        PF OID in string representation
- * @param[in]  pci_device    @c TRUE - get PCI device OID
+ * @param[in]  pci_device    @c true - get PCI device OID
  *                           (/agent/hardware/pci/device),
- *                           @c FALSE - get PCI instance OID
+ *                           @c false - get PCI instance OID
  *                           (/agent/hardware/pci/vendor/device/instance)
  * @param[out] n_pci_vfs     Number of discovered VFs (must not be @c NULL)
  * @param[out] pci_vfs       VF object identifiers (may be @c NULL to ignore)
@@ -109,7 +109,7 @@ extern te_errno tapi_cfg_pci_get_max_vfs_of_pf(const char *pf_oid,
  * @return Status code
  */
 extern te_errno tapi_cfg_pci_get_vfs_of_pf(const char *pf_oid,
-                                           te_bool pci_device,
+                                           bool pci_device,
                                            unsigned int *n_pci_vfs,
                                            cfg_oid ***pci_vfs,
                                            unsigned int **pci_vf_ids);
@@ -437,14 +437,14 @@ typedef enum tapi_cfg_pci_param_cmode {
  *
  * @param pci_oid      PCI device OID (/agent/hardware/pci/device)
  * @param param_name   Parameter name
- * @param present      Will be set to @c TRUE if device parameter is
- *                     present, to @c FALSE otherwise
+ * @param present      Will be set to @c true if device parameter is
+ *                     present, to @c false otherwise
  *
  * @return Status code.
  */
 extern te_errno tapi_cfg_pci_param_is_present(const char *pci_oid,
                                               const char *param_name,
-                                              te_bool *present);
+                                              bool *present);
 
 /**
  * Get device parameter value of string type.
@@ -537,7 +537,7 @@ extern te_errno tapi_cfg_pci_get_vendor_dev_ids(const char *pci_oid,
  * @param[in]  pci_oid   PCI device OID (/agent/hardware/pci/device or
  *                       /agent/hardware/pci/vendor/device/instance)
  * @param[in]  cfg_name  SPDK configuration name
- * @param[in]  create    if @c TRUE, create the requested configuration
+ * @param[in]  create    if @c true, create the requested configuration
  * @param[out] filename  JSON file name (at the agent)
  *
  * @note The PCI OID must refer to a NVME device.
@@ -546,11 +546,11 @@ extern te_errno tapi_cfg_pci_get_vendor_dev_ids(const char *pci_oid,
  * @retval TE_ENOTBLK  The device is not NVME.
  * @retval TE_ENOENT   The configuration or the device do not exist.
  * @retval TE_EEXIST   The configuration already exists
- *                     (if @p create is @c TRUE).
+ *                     (if @p create is @c true).
  */
 extern te_errno tapi_cfg_pci_get_spdk_config_filename(const char *pci_oid,
                                                       const char *cfg_name,
-                                                      te_bool create,
+                                                      bool create,
                                                       char **filename);
 
 /**@} <!-- END tapi_conf_pci --> */

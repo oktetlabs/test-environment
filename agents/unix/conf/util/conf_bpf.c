@@ -94,7 +94,7 @@ typedef struct bpf_map_entry {
     unsigned int key_size;
     unsigned int value_size;
     unsigned int max_entries;
-    te_bool writable;
+    bool writable;
     unsigned int n_values;
 } bpf_map_entry;
 
@@ -130,7 +130,7 @@ typedef struct bpf_perf_map_entry {
     char name[BPF_OBJ_NAME_LEN + 1];/**< Map name */
     unsigned int num_events;        /**< Number of pending events */
     unsigned int event_size;        /**< Size of data passing via an event */
-    te_bool events_enabled;         /**< Flag to enable/disable events
+    bool events_enabled;         /**< Flag to enable/disable events
                                          processing */
     te_vec events;                  /**< Array of event data */
     int poll_timeout;               /**< Polling timeout in ms */
@@ -367,7 +367,7 @@ bpf_init_map_info(struct bpf_map *map, struct bpf_map_entry *map_info)
     {
         map_info->n_values = 1;
     }
-    map_info->writable = FALSE;
+    map_info->writable = false;
 
     return 0;
 }
@@ -396,7 +396,7 @@ bpf_init_perf_map_info(struct bpf_map *map,
     map_info->fd = fd;
     te_strlcpy(map_info->name, bpf_map__name(map), sizeof(map_info->name));
 
-    map_info->events_enabled = FALSE;
+    map_info->events_enabled = false;
     map_info->num_events = 0;
     map_info->event_size = 0;
     map_info->events = TE_VEC_INIT(bpf_perf_map_event);
@@ -625,7 +625,7 @@ bpf_list(unsigned int gid, const char *oid, const char *sub_id,
          char **list)
 {
     te_string result = TE_STRING_INIT;
-    te_bool first = TRUE;
+    bool first = true;
     bpf_entry *bpf;
     te_errno rc;
 
@@ -636,7 +636,7 @@ bpf_list(unsigned int gid, const char *oid, const char *sub_id,
     LIST_FOREACH(bpf, &bpf_list_h, next)
     {
         rc = te_string_append(&result, "%s%u", first ? "" : " ", bpf->id);
-        first = FALSE;
+        first = false;
         if (rc != 0)
         {
             te_string_free(&result);
@@ -664,9 +664,9 @@ bpf_prog_map_list(unsigned int gid, const char *oid, const char *sub_id,
                   char **list,  const char *bpf_id)
 {
     te_string result = TE_STRING_INIT;
-    te_bool first = TRUE;
-    te_bool is_map = FALSE;
-    te_bool is_perf_map = FALSE;
+    bool first = true;
+    bool is_map = false;
+    bool is_perf_map = false;
     bpf_entry *bpf;
     unsigned int i;
     unsigned int entries_nb = 0;
@@ -688,12 +688,12 @@ bpf_prog_map_list(unsigned int gid, const char *oid, const char *sub_id,
     }
     else if (strcmp(sub_id, "map") == 0)
     {
-        is_map = TRUE;
+        is_map = true;
         entries_nb = bpf->map_number;
     }
     else if (strcmp(sub_id, "perf_map") == 0)
     {
-        is_perf_map = TRUE;
+        is_perf_map = true;
         entries_nb = bpf->perf_map_number;
     }
 
@@ -709,7 +709,7 @@ bpf_prog_map_list(unsigned int gid, const char *oid, const char *sub_id,
             name = bpf->progs[i].name;
 
         rc = te_string_append(&result, "%s%s", first ? "" : " ", name);
-        first = FALSE;
+        first = false;
         if (rc != 0)
         {
             te_string_free(&result);
@@ -1140,7 +1140,7 @@ bpf_list_map_kv_pair(unsigned int gid, const char *oid, const char *sub_id,
                      char **list, const char *bpf_id, const char *map_name)
 {
     te_string result = TE_STRING_INIT;
-    te_bool first = TRUE;
+    bool first = true;
     struct bpf_map_entry *map;
     void *key;
     void *prev_key = NULL;
@@ -1176,7 +1176,7 @@ bpf_list_map_kv_pair(unsigned int gid, const char *oid, const char *sub_id,
             goto fail;
 
         rc = te_string_append(&result, "%s%s", first ? "" : " ", buf_str.ptr);
-        first = FALSE;
+        first = false;
         if (rc != 0)
             goto fail;
 
@@ -1879,7 +1879,7 @@ bpf_xdp_perf_buf_free(bpf_perf_map_entry *map)
  * @return Status code
  */
 static te_errno
-bpf_xdp_perf_map_enable(bpf_perf_map_entry *map, te_bool enable)
+bpf_xdp_perf_map_enable(bpf_perf_map_entry *map, bool enable)
 {
     te_errno rc = 0;
 
@@ -1900,12 +1900,12 @@ bpf_xdp_perf_map_enable(bpf_perf_map_entry *map, te_bool enable)
             return rc;
         }
 
-        map->events_enabled = TRUE;
+        map->events_enabled = true;
     }
     else
     {
         bpf_xdp_perf_buf_free(map);
-        map->events_enabled = FALSE;
+        map->events_enabled = false;
         map->num_events = 0;
     }
 
@@ -1947,7 +1947,7 @@ bpf_set_perf_map_params(unsigned int gid, const char *oid, char *value,
     if ((strstr(oid, "/event_size:") != NULL))
         map->event_size = param;
     else if ((strstr(oid, "/events_enable:") != NULL))
-        rc = bpf_xdp_perf_map_enable(map, param != 0 ? TRUE : FALSE);
+        rc = bpf_xdp_perf_map_enable(map, param != 0 ? true : false);
 
     return rc;
 }

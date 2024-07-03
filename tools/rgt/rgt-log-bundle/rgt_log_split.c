@@ -80,7 +80,7 @@ typedef enum fragment_type {
 typedef struct node_info {
     int                    node_id;           /**< Log node ID */
     int                    parent;            /**< Parent ID */
-    te_bool                opened;            /**< TRUE if we have not yet
+    bool opened;            /**< @c true if we have not yet
                                                    encountered terminating
                                                    fragment */
     int                    opened_children;   /**< Number of opened child
@@ -90,7 +90,7 @@ typedef struct node_info {
     uint64_t               inner_frags_cnt;   /**< Number of inner
                                                    fragments related to
                                                    this node */
-    te_bool                after_frag;        /**< If @c TRUE, a fragment
+    bool after_frag;        /**< If @c true, a fragment
                                                    for messages after end
                                                    is present */
     uint64_t               cur_file_num;      /**< Current inner fragment
@@ -118,7 +118,7 @@ typedef struct node_info {
                                        number of messages, sniffed packets
                                        are split accordingly between
                                        multiple capture files) */
-    te_bool sniff_logs;           /**< If @c TRUE, the node has associated
+    bool sniff_logs;           /**< If @c true, the node has associated
                                        file(s) with sniffed network
                                        packets */
 } node_info;
@@ -144,9 +144,9 @@ typedef struct rgt_pcap_file {
     uint64_t pkt_offset;        /**< Offset of the current packet */
     te_pcap_pkthdr cur_hdr;     /**< PCAP header of the current packet */
 
-    te_bool no_caps;            /**< Set to @c TRUE if there is no
+    bool no_caps;            /**< Set to @c true if there is no
                                      packets left in this file */
-    te_bool other_byte_order;   /**< Set to @c TRUE if byte order
+    bool other_byte_order;   /**< Set to @c true if byte order
                                      in PCAP headers does not match
                                      host byte order */
     uint64_t start_pos;         /**< Position after the PCAP header of the
@@ -210,18 +210,18 @@ get_node_info(int node_id)
             nodes_info[i].node_id = i;
             nodes_info[i].parent = -1;
             /* Root node with ID=0 is opened by default */
-            nodes_info[i].opened = (i == 0 ? TRUE : FALSE);
+            nodes_info[i].opened = (i == 0 ? true : false);
             nodes_info[i].opened_children = 0;
             nodes_info[i].last_closed_child = -1;
             nodes_info[i].inner_frags_cnt = 0;
-            nodes_info[i].after_frag = FALSE;
+            nodes_info[i].after_frag = false;
             nodes_info[i].cur_file_num = 0;
             nodes_info[i].cur_file_size = 0;
             nodes_info[i].verdicts_num = 0;
 
             nodes_info[i].f_sniff = NULL;
             nodes_info[i].cur_sniff_file_num = 0;
-            nodes_info[i].sniff_logs = FALSE;
+            nodes_info[i].sniff_logs = false;
         }
     }
 
@@ -235,8 +235,8 @@ get_node_info(int node_id)
  *
  * @param parent_id       Parent node ID.
  * @param child_id        Child node ID.
- * @param child_opened    @c TRUE if a child is opened,
- *                        @c FALSE if it is closed.
+ * @param child_opened    @c true if a child is opened,
+ *                        @c false if it is closed.
  * @param leaf_nodes      List of all the opened nodes having no
  *                        opened children, which this function
  *                        updates.
@@ -245,7 +245,7 @@ get_node_info(int node_id)
  */
 static int
 update_children_state(int parent_id, int child_id,
-                      te_bool child_opened, node_info_list *leaf_nodes)
+                      bool child_opened, node_info_list *leaf_nodes)
 {
     node_info *parent_descr;
 
@@ -431,7 +431,7 @@ append_to_frag(int node_id, fragment_type frag_type,
         case FRAG_AFTER:
             CHECK_NOT_NULL(node_descr = get_node_info(node_id));
 
-            node_descr->after_frag = TRUE;
+            node_descr->after_frag = true;
 
             CHECK_TE_RC(te_string_append(&frag_name, "%s", "after"));
             break;
@@ -565,7 +565,7 @@ get_next_pcap(rgt_pcap_file *pfile, te_pcap_pkthdr *hdr,
     sz = fread(&pfile->cur_hdr, 1, sizeof(te_pcap_pkthdr), pfile->f);
     if (sz == 0)
     {
-        pfile->no_caps = TRUE;
+        pfile->no_caps = true;
         CHECK_FCLOSE(pfile->f);
     }
     else if (sz < sizeof(te_pcap_pkthdr))
@@ -618,7 +618,7 @@ get_pcap_head(rgt_pcap_file *pfile, FILE *f_caps_heads, FILE *f_caps_idx)
     struct pcap_file_header head;
     te_pcap_pkthdr phdr;
     rgt_cap_idx_rec idx_rec;
-    te_bool main_head_only = FALSE;
+    bool main_head_only = false;
 
     FILE *f = NULL;
     size_t sz;
@@ -632,11 +632,11 @@ get_pcap_head(rgt_pcap_file *pfile, FILE *f_caps_heads, FILE *f_caps_idx)
 
     if (head.magic == PCAP_MAGIC_HOST_ORDER)
     {
-        pfile->other_byte_order = FALSE;
+        pfile->other_byte_order = false;
     }
     else if (head.magic == PCAP_MAGIC_OTHER_ORDER)
     {
-        pfile->other_byte_order = TRUE;
+        pfile->other_byte_order = true;
     }
     else
     {
@@ -648,8 +648,8 @@ get_pcap_head(rgt_pcap_file *pfile, FILE *f_caps_heads, FILE *f_caps_idx)
     sz = fread(&pfile->cur_hdr, 1, sizeof(pfile->cur_hdr), f);
     if (sz == 0)
     {
-        pfile->no_caps = TRUE;
-        main_head_only = TRUE;
+        pfile->no_caps = true;
+        main_head_only = true;
     }
     else if (sz < sizeof(pfile->cur_hdr))
     {
@@ -979,7 +979,7 @@ append_pcap_to_node(const char *output_path, node_info *node,
 
     RGT_ERROR_INIT;
 
-    node->sniff_logs = TRUE;
+    node->sniff_logs = true;
 
     if (node->f_sniff != NULL)
     {
@@ -1075,7 +1075,7 @@ append_pcap_to_open_nodes(const char *output_path,
  *                          timestamps of the current packets.
  * @param ts_sec            Timestamp, seconds.
  * @param ts_usec           Timestamp, microseconds.
- * @param include_end       If @c TRUE, include packets having exactly
+ * @param include_end       If @c true, include packets having exactly
  *                          the target timestamp; otherwise exclude them.
  *
  * @return @c 0 on success, @c -1 on failure.
@@ -1085,12 +1085,12 @@ append_pcap_until_ts(const char *output_path,
                      node_info_list *leaf_nodes,
                      rgt_pcap_file_list *caps_list,
                      uint32_t ts_sec, uint32_t ts_usec,
-                     te_bool include_end)
+                     bool include_end)
 {
     te_ts_t ts;
     int rc;
 
-    while (TRUE)
+    while (true)
     {
         rc = update_pcap_files_list(caps_list, &ts);
         if (rc < 1)
@@ -1207,7 +1207,7 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
             CHECK_RC(append_pcap_until_ts(
                                   output_path, &leaf_nodes,
                                   &caps_list,
-                                  timestamp[0], timestamp[1], FALSE));
+                                  timestamp[0], timestamp[1], false));
         }
         else if (strcmp(msg_type, "END") == 0)
         {
@@ -1215,12 +1215,12 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
 
             CHECK_RC(append_pcap_until_ts(
                                 output_path, &leaf_nodes, &caps_list,
-                                timestamp[0], timestamp[1], TRUE));
+                                timestamp[0], timestamp[1], true));
 
             CHECK_NOT_NULL(node_descr = get_node_info(node_id));
-            node_descr->opened = FALSE;
+            node_descr->opened = false;
 
-            CHECK_RC(update_children_state(parent_id, node_id, FALSE,
+            CHECK_RC(update_children_state(parent_id, node_id, false,
                                            &leaf_nodes));
 
             LIST_REMOVE(node_descr, links);
@@ -1236,12 +1236,12 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
 
             CHECK_RC(append_pcap_until_ts(
                                   output_path, &leaf_nodes, &caps_list,
-                                  timestamp[0], timestamp[1], FALSE));
+                                  timestamp[0], timestamp[1], false));
 
             CHECK_NOT_NULL(node_descr = get_node_info(node_id));
 
-            node_descr->opened = TRUE;
-            CHECK_RC(update_children_state(parent_id, node_id, TRUE,
+            node_descr->opened = true;
+            CHECK_RC(update_children_state(parent_id, node_id, true,
                                            &leaf_nodes));
 
             node_descr->tin = tin_or_start_frag;
@@ -1262,7 +1262,7 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
             }
             else
             {
-                te_bool matching_frag_found = FALSE;
+                bool matching_frag_found = false;
 
                 /*
                  * Logs from TE components (such as Configurator) do not
@@ -1290,7 +1290,7 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
                                        f_raw_log, offset, length,
                                        f_recover, output_path));
                     }
-                    matching_frag_found = TRUE;
+                    matching_frag_found = true;
                 }
 
                 if (!matching_frag_found)
@@ -1340,7 +1340,7 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
 
     CHECK_RC(append_pcap_until_ts(
                          output_path, &leaf_nodes, &caps_list,
-                         UINT_MAX, UINT_MAX, TRUE));
+                         UINT_MAX, UINT_MAX, true));
 
     RGT_ERROR_SECTION;
 

@@ -62,7 +62,7 @@
 typedef struct {
     rpc_ptr_id_namespace    ns;     /**< Memory pointer namespace */
     void                   *memory; /**< Memory pointer */
-    te_bool                 used;   /**< If the node is used */
+    bool                    used;   /**< If the node is used */
     /** The offset of @p memory relative to the allocated buffer */
     size_t                  offset;
 } id_node;
@@ -95,7 +95,7 @@ static size_t namespaces_len = 0;
  * Enable the unsafe method of rpc pointers reallocation. Unsafe method
  * allows to use identical rpc pointers for identical memory pointers.
  */
-static te_bool te_rpc_ptr_unsafe = FALSE;
+static bool te_rpc_ptr_unsafe = false;
 
 /**
  * Compare @p node with given values @p ns and @p memory
@@ -104,9 +104,9 @@ static te_bool te_rpc_ptr_unsafe = FALSE;
  * @param [in] ns       Namespace
  * @param [in] memory   Memory pointer
  *
- * @return @c TRUE in case of equality and @c FALSE in other cases
+ * @return @c true in case of equality and @c false in other cases
  */
-static te_bool
+static bool
 id_nodes_equal(const id_node *node, const rpc_ptr_id_namespace ns,
                const void *memory)
 {
@@ -241,7 +241,7 @@ give_index(rpc_ptr_id_index index)
         return TE_RC(TE_RCF_PCH, TE_EINVAL);
 
     ids[index].ns       = RPC_PTR_ID_NS_INVALID;
-    ids[index].used     = FALSE;
+    ids[index].used     = false;
     ids_used--;
 
     return 0;
@@ -341,7 +341,7 @@ rcf_pch_mem_index_alloc(void *mem, rpc_ptr_id_namespace ns,
     assert(index < ids_len);
     ids[index].memory   = mem;
     ids[index].ns       = ns;
-    ids[index].used     = TRUE;
+    ids[index].used     = true;
     ids[index].offset   = 0;
     ids_used++;
 

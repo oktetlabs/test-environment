@@ -23,10 +23,10 @@ static char cmd_buf[COMMAND_BUFLEN];
 
 /*** Status variables and status control methods ***/
 /* radvd admin status */
-static te_bool radvd_started = FALSE;
+static bool radvd_started = false;
 
 /* Changed flag for radvd configuration */
-static te_bool radvd_changed = FALSE;
+static bool radvd_changed = false;
 
 /* This list keeps all managed radvd settings! */
 static TAILQ_HEAD(te_radvd_interfaces, te_radvd_interface) interfaces;
@@ -36,18 +36,18 @@ static TAILQ_HEAD(te_radvd_interfaces, te_radvd_interface) interfaces;
  * 2) initialize queue 'interfaces' and modify flag 'radvd_initialized'
  *    if required;
  */
-static te_bool
-radvd_init_check(te_bool initialize)
+static bool
+radvd_init_check(bool initialize)
 {
-    static te_bool  radvd_initialized = FALSE;
-    te_bool         retval;
+    static bool radvd_initialized = false;
+    bool retval;
 
     retval = radvd_initialized;
     if (initialize && !radvd_initialized)
     {
         TAILQ_INIT(&interfaces);
 
-        radvd_initialized = TRUE;
+        radvd_initialized = true;
     }
 
     return retval;
@@ -359,11 +359,11 @@ te_radvd_str2option(te_radvd_option *option, const char *value)
         case OPTTYPE_BOOLEAN:
             if (strcmp(value, "on") == 0)
             {
-                option->boolean = TRUE;
+                option->boolean = true;
             }
             else if (strcmp(value, "off") == 0)
             {
-                option->boolean = FALSE;
+                option->boolean = false;
             }
             else
             {
@@ -705,14 +705,14 @@ free_interface(te_radvd_interface *radvd_if)
         TE_SPRINTF(cmd_buf, TE_RADVD_FIND_CMD);     \
         rc = ta_system(cmd_buf);                    \
     } while (0)
-static te_bool
+static bool
 ds_radvd_is_run(void)
 {
     int     rc = 0;
 
     FIND_PID_FILE;
     if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
-        return FALSE;
+        return false;
 
     sprintf(cmd_buf,
             PS_ALL_PID_ARGS
@@ -757,7 +757,7 @@ ds_radvd_save_conf(void)
     FILE                                       *f = NULL;
     te_radvd_interface                         *interface;
     te_radvd_subnet                            *subnet;
-    te_bool                                     empty_cfg;
+    bool empty_cfg;
 
     INFO("%s()", __FUNCTION__);
 
@@ -769,7 +769,7 @@ ds_radvd_save_conf(void)
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-    empty_cfg = TRUE;
+    empty_cfg = true;
     TAILQ_FOREACH(interface, &interfaces, links)
     {
         const char         *ignore_if_missing = IGNOREIFMISSING_DFLT;
@@ -777,7 +777,7 @@ ds_radvd_save_conf(void)
         int                 max_rtr_adv_interval = MAXRTRADVINTERVAL_DFLT;
         te_radvd_option    *option;
         te_radvd_ip6_addr  *addr;
-        te_bool             no_prefices;
+        bool no_prefices;
         /*
          * Detect wrong interface configuration:
          */
@@ -787,7 +787,7 @@ ds_radvd_save_conf(void)
          * Valid interface specification must have at leas one valid
          * prefix specification;
          */
-        no_prefices = TRUE;
+        no_prefices = true;
         TAILQ_FOREACH(subnet, &interface->prefices, links)
         {
 #define VALIDATE_SUBNET \
@@ -801,7 +801,7 @@ ds_radvd_save_conf(void)
             VALIDATE_SUBNET;
 
             /* At least one valid prefix specification found */
-            no_prefices = FALSE;
+            no_prefices = false;
             break;
         }
 
@@ -945,16 +945,16 @@ ds_radvd_save_conf(void)
         /* list of clients */
         if (TAILQ_FIRST(&interface->addrs) != NULL)
         {
-            te_bool no_clients;
+            bool no_clients;
 
-            no_clients = TRUE;
+            no_clients = true;
             TAILQ_FOREACH(addr, &interface->addrs, links)
             {
 #define VALIDATE_ADDR \
                 if(addr->name == NULL || strlen(addr->name) == 0) continue
                 VALIDATE_ADDR;
 
-                no_clients = FALSE;
+                no_clients = false;
                 break;
             }
 
@@ -977,7 +977,7 @@ ds_radvd_save_conf(void)
 
         fprintf(f, IF_CFG_TAIL);
 
-        empty_cfg = FALSE;
+        empty_cfg = false;
     }
 
     if (empty_cfg)
@@ -1044,7 +1044,7 @@ ds_radvd_get(unsigned int gid, const char *oid, char *value)
 
     INFO("%s()", __FUNCTION__);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
     strcpy(value, ds_radvd_is_run() ? "1" : "0");
 
@@ -1062,12 +1062,12 @@ ds_radvd_set(unsigned int gid, const char *oid, const char *value)
 
     INFO("%s()", __FUNCTION__);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
     radvd_started = (strcmp(value, "1") == 0);
     if (radvd_started != ds_radvd_is_run())
     {
-        radvd_changed = TRUE;
+        radvd_changed = true;
     }
 
     return 0;
@@ -1084,7 +1084,7 @@ ds_radvd_commit(unsigned int gid, const char *oid)
     ENTRY("%s()", __FUNCTION__);
     INFO("%s()", __FUNCTION__);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
     /*
      * We don't need to change state of radvd:
@@ -1116,7 +1116,7 @@ ds_radvd_commit(unsigned int gid, const char *oid)
         }
     }
 
-    radvd_changed = FALSE;
+    radvd_changed = false;
 
     return rc;
 }
@@ -1130,10 +1130,10 @@ ds_radvd_commit(unsigned int gid, const char *oid)
  * defines action.
  *
  * _expect_to_find  interface_exists
- * TRUE             TRUE            method goes further
- * FALSE            FALSE           -//-
- * TRUE             FALSE           method returns with TE_ENOENT
- * FALSE            TRUE            method returns with TE_EEXIST
+ * true             true            method goes further
+ * false            false           -//-
+ * true             false           method returns with TE_ENOENT
+ * false            true            method returns with TE_EEXIST
  */
 #define FIND_RADVD_IF(_expect_to_find) \
     if (((radvd_if = find_interface(ifname)) != NULL &&                 \
@@ -1168,9 +1168,9 @@ ds_interface_add(unsigned int gid, const char *oid,
     UNUSED(value);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(FALSE);
+    FIND_RADVD_IF(false);
 
     if ((radvd_if = calloc(1, sizeof(*radvd_if))) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
@@ -1189,7 +1189,7 @@ ds_interface_add(unsigned int gid, const char *oid,
 
     TAILQ_INSERT_TAIL(&interfaces, radvd_if, links);
 
-    radvd_changed = TRUE;
+    radvd_changed = true;
 
     return 0;
 }
@@ -1204,15 +1204,15 @@ ds_interface_del(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     TAILQ_REMOVE(&interfaces, radvd_if, links);
 
     free_interface(radvd_if);
 
-    radvd_changed = TRUE;
+    radvd_changed = true;
 
     return 0;
 }
@@ -1229,7 +1229,7 @@ ds_interface_list(unsigned int gid, const char *oid,
     UNUSED(sub_id);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
     LIST_UNITS(interfaces, radvd_if);
 }
@@ -1252,9 +1252,9 @@ ds_interface_option_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((option = find_option(radvd_if, optname)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1277,13 +1277,13 @@ ds_interface_option_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((option = find_option(radvd_if, optname)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if ((retval = te_radvd_str2option(option, value)) == 0)
-        radvd_changed = TRUE;
+        radvd_changed = true;
 
     return retval;
 }
@@ -1309,7 +1309,7 @@ ds_interface_option_add(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((option = find_option(radvd_if, optname)) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
@@ -1328,7 +1328,7 @@ ds_interface_option_add(unsigned int gid, const char *oid,
 
     TAILQ_INSERT_TAIL(&radvd_if->options, option, links);
 
-    radvd_changed = TRUE;
+    radvd_changed = true;
 
     return 0;
 }
@@ -1346,7 +1346,7 @@ ds_interface_option_del(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((option = find_option(radvd_if, optname)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1355,7 +1355,7 @@ ds_interface_option_del(unsigned int gid, const char *oid,
 
     free_option(option);
 
-    radvd_changed = TRUE;
+    radvd_changed = true;
 
     return 0;
 }
@@ -1373,7 +1373,7 @@ ds_interface_option_list(unsigned int gid, const char *oid,
     UNUSED(sub_id);
     UNUSED(radvd);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     LIST_UNITS(radvd_if->options, option);
 }
@@ -1394,9 +1394,9 @@ ds_prefix_add(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((prefix = find_prefices(radvd_if, prefix_name)) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
@@ -1415,7 +1415,7 @@ ds_prefix_add(unsigned int gid, const char *oid,
 
     TAILQ_INSERT_TAIL(&radvd_if->prefices, prefix, links);
 
-    radvd_changed = TRUE;
+    radvd_changed = true;
 
     return 0;
 }
@@ -1433,9 +1433,9 @@ ds_prefix_del(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((prefix = find_prefices(radvd_if, prefix_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1444,7 +1444,7 @@ ds_prefix_del(unsigned int gid, const char *oid,
 
     free_subnet(prefix);
 
-    radvd_changed = TRUE;
+    radvd_changed = true;
 
     return 0;
 }
@@ -1462,9 +1462,9 @@ ds_prefix_list(unsigned int gid, const char *oid,
     UNUSED(sub_id);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     LIST_UNITS(radvd_if->prefices, prefix);
 }
@@ -1485,9 +1485,9 @@ ds_route_add(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((route = find_routes(radvd_if, route_name)) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
@@ -1506,7 +1506,7 @@ ds_route_add(unsigned int gid, const char *oid,
 
     TAILQ_INSERT_TAIL(&radvd_if->routes, route, links);
 
-    radvd_changed = TRUE;
+    radvd_changed = true;
 
     return 0;
 }
@@ -1524,9 +1524,9 @@ ds_route_del(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((route = find_routes(radvd_if, route_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1535,7 +1535,7 @@ ds_route_del(unsigned int gid, const char *oid,
 
     free_subnet(route);
 
-    radvd_changed = TRUE;
+    radvd_changed = true;
 
     return 0;
 }
@@ -1553,9 +1553,9 @@ ds_route_list(unsigned int gid, const char *oid,
     UNUSED(sub_id);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     LIST_UNITS(radvd_if->routes, route);
 }
@@ -1579,9 +1579,9 @@ ds_rdnss_add(unsigned int gid, const char *oid,
     UNUSED(radvd);
     UNUSED(value);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((rdnss = find_rdnss(radvd_if, rdnss_name)) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
@@ -1643,7 +1643,7 @@ ds_rdnss_add(unsigned int gid, const char *oid,
 
     TAILQ_INSERT_TAIL(&radvd_if->rdnss, rdnss, links);
 
-    radvd_changed = TRUE;
+    radvd_changed = true;
 
     return 0;
 }
@@ -1661,9 +1661,9 @@ ds_rdnss_del(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((rdnss = find_rdnss(radvd_if, rdnss_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1672,7 +1672,7 @@ ds_rdnss_del(unsigned int gid, const char *oid,
 
     free_subnet(rdnss);
 
-    radvd_changed = TRUE;
+    radvd_changed = true;
 
     return 0;
 }
@@ -1690,9 +1690,9 @@ ds_rdnss_list(unsigned int gid, const char *oid,
     UNUSED(sub_id);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     LIST_UNITS(radvd_if->rdnss, rdnss);
 }
@@ -1720,9 +1720,9 @@ ds_clients_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     *value = '\0';
     TAILQ_FOREACH(client, &radvd_if->addrs, links)
@@ -1749,9 +1749,9 @@ ds_clients_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     /* Firt cleanup existing list of clients */
     free_addrlist(radvd_if);
@@ -1796,7 +1796,7 @@ ds_clients_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, retval);
     }
 
-    radvd_changed = TRUE;
+    radvd_changed = true;
 
     return 0;
 }
@@ -1821,9 +1821,9 @@ ds_prefix_option_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((prefix = find_prefices(radvd_if, prefix_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1851,9 +1851,9 @@ ds_prefix_option_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((prefix = find_prefices(radvd_if, prefix_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1862,7 +1862,7 @@ ds_prefix_option_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if ((retval = te_radvd_str2option(option, value)) == 0)
-        radvd_changed = TRUE;
+        radvd_changed = true;
 
     return retval;
 }
@@ -1884,7 +1884,7 @@ ds_prefix_option_add(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
     if (optname == NULL || value == NULL ||
         strlen(optname) == 0 || strlen(value) == 0)
@@ -1892,7 +1892,7 @@ ds_prefix_option_add(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((prefix = find_prefices(radvd_if, prefix_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1914,7 +1914,7 @@ ds_prefix_option_add(unsigned int gid, const char *oid,
 
     TAILQ_INSERT_TAIL(&prefix->options, option, links);
 
-    radvd_changed = TRUE;
+    radvd_changed = true;
 
     return 0;
 }
@@ -1934,9 +1934,9 @@ ds_prefix_option_del(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((prefix = find_prefices(radvd_if, prefix_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1948,7 +1948,7 @@ ds_prefix_option_del(unsigned int gid, const char *oid,
 
     free_option(option);
 
-    radvd_changed = TRUE;
+    radvd_changed = true;
 
     return 0;
 }
@@ -1969,7 +1969,7 @@ ds_prefix_option_list(unsigned int gid, const char *oid,
     UNUSED(sub_id);
     UNUSED(radvd);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((prefix = find_prefices(radvd_if, prefix_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1997,9 +1997,9 @@ ds_route_option_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((route = find_routes(radvd_if, route_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -2027,9 +2027,9 @@ ds_route_option_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((route = find_routes(radvd_if, route_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -2038,7 +2038,7 @@ ds_route_option_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if ((retval = te_radvd_str2option(option, value)) == 0)
-        radvd_changed = TRUE;
+        radvd_changed = true;
 
     return retval;
 }
@@ -2060,7 +2060,7 @@ ds_route_option_add(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
     if (optname == NULL || value == NULL ||
         strlen(optname) == 0 || strlen(value) == 0)
@@ -2068,7 +2068,7 @@ ds_route_option_add(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((route = find_routes(radvd_if, route_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -2090,7 +2090,7 @@ ds_route_option_add(unsigned int gid, const char *oid,
 
     TAILQ_INSERT_TAIL(&route->options, option, links);
 
-    radvd_changed = TRUE;
+    radvd_changed = true;
 
     return 0;
 }
@@ -2110,9 +2110,9 @@ ds_route_option_del(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((route = find_routes(radvd_if, route_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -2124,7 +2124,7 @@ ds_route_option_del(unsigned int gid, const char *oid,
 
     free_option(option);
 
-    radvd_changed = TRUE;
+    radvd_changed = true;
 
     return 0;
 }
@@ -2145,7 +2145,7 @@ ds_route_option_list(unsigned int gid, const char *oid,
     UNUSED(sub_id);
     UNUSED(radvd);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((route = find_routes(radvd_if, route_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -2173,9 +2173,9 @@ ds_rdnss_option_get(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((rdnss = find_rdnss(radvd_if, rdnss_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -2203,9 +2203,9 @@ ds_rdnss_option_set(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((rdnss = find_rdnss(radvd_if, rdnss_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -2214,7 +2214,7 @@ ds_rdnss_option_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if ((retval = te_radvd_str2option(option, value)) == 0)
-        radvd_changed = TRUE;
+        radvd_changed = true;
 
     return retval;
 }
@@ -2236,7 +2236,7 @@ ds_rdnss_option_add(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
     if (optname == NULL || value == NULL ||
         strlen(optname) == 0 || strlen(value) == 0)
@@ -2244,7 +2244,7 @@ ds_rdnss_option_add(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((rdnss = find_rdnss(radvd_if, rdnss_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -2266,7 +2266,7 @@ ds_rdnss_option_add(unsigned int gid, const char *oid,
 
     TAILQ_INSERT_TAIL(&rdnss->options, option, links);
 
-    radvd_changed = TRUE;
+    radvd_changed = true;
 
     return 0;
 }
@@ -2286,9 +2286,9 @@ ds_rdnss_option_del(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(radvd);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((rdnss = find_rdnss(radvd_if, rdnss_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -2300,7 +2300,7 @@ ds_rdnss_option_del(unsigned int gid, const char *oid,
 
     free_option(option);
 
-    radvd_changed = TRUE;
+    radvd_changed = true;
 
     return 0;
 }
@@ -2321,7 +2321,7 @@ ds_rdnss_option_list(unsigned int gid, const char *oid,
     UNUSED(sub_id);
     UNUSED(radvd);
 
-    FIND_RADVD_IF(TRUE);
+    FIND_RADVD_IF(true);
 
     if ((rdnss = find_rdnss(radvd_if, rdnss_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -2420,7 +2420,7 @@ radvd_grab(const char *name)
 
     UNUSED(name);
 
-    radvd_init_check(TRUE);
+    radvd_init_check(true);
 
     if (ds_radvd_is_run())
     {
@@ -2434,8 +2434,8 @@ radvd_grab(const char *name)
         }
     }
 
-    radvd_started = FALSE;
-    radvd_changed = FALSE;
+    radvd_started = false;
+    radvd_changed = false;
 
     if ((rc = rcf_pch_add_node("/agent", &node_ds_radvd)) != 0)
         return rc;
@@ -2451,7 +2451,7 @@ radvd_release(const char *name)
 
     UNUSED(name);
 
-    if (!radvd_init_check(FALSE))
+    if (!radvd_init_check(false))
         return 0;
 
     if ((rc = rcf_pch_del_node(&node_ds_radvd)) != 0)

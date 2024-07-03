@@ -33,7 +33,7 @@ hex_diff_half_line(te_string *dest,
 
     for (i = 0; i < this_len; i++)
     {
-        te_bool equal = i < other_len && other_side[i] == this_side[i];
+        bool equal = i < other_len && other_side[i] == this_side[i];
 
         te_string_append(dest, "%c%02" PRIx8 "%c",
                          equal ? ' ' : '>',
@@ -53,7 +53,7 @@ te_hex_diff_dump(const void *expected, size_t exp_len,
 
     const uint8_t *exp_ptr = expected;
     const uint8_t *act_ptr = actual;
-    te_bool skip = FALSE;
+    bool skip = false;
     size_t max_len = MAX(exp_len, actual_len);
 
     te_string_append(dest, "%8s|", "");
@@ -76,7 +76,7 @@ te_hex_diff_dump(const void *expected, size_t exp_len,
                 te_string_append(dest, "%9s%*s\n", "...",
                                  COLUMN_WIDTH + 1, "...");
             }
-            skip = TRUE;
+            skip = true;
         }
         else
         {
@@ -88,7 +88,7 @@ te_hex_diff_dump(const void *expected, size_t exp_len,
                                exp_ptr, MIN(exp_len, frag_len), indent);
             te_string_append(dest, "\n");
 
-            skip = FALSE;
+            skip = false;
         }
 
         if (exp_len > 0)

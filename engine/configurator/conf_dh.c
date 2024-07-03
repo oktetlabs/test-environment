@@ -32,7 +32,7 @@ typedef struct cfg_dh_entry {
     cfg_val_type         type;    /**< Type of the old_val */
     cfg_inst_val         old_val; /**< Data for reversing delete and set */
     int                  seq;     /**< Sequence number for debugging */
-    te_bool              committed; /**< Whether the command kept in this
+    bool committed; /**< Whether the command kept in this
                                          entry is committed or not */
 } cfg_dh_entry;
 
@@ -121,20 +121,20 @@ xmlNodeNext(xmlNodePtr node)
  *
  * @param node      XML node
  *
- * @return @c FALSE in case attribute @b cond exists and it equals
- *         @b "false" or empty line. @c TRUE in other cases.
+ * @return @c false in case attribute @b cond exists and it equals
+ *         @b "false" or empty line. @c true in other cases.
  */
-static te_bool
+static bool
 xmlNodeCond(xmlNodePtr node)
 {
-    te_bool result = TRUE;
+    bool result = true;
     char *cond = xmlGetProp_exp(node, (xmlChar *)"cond");
 
     if (cond == NULL)
-        return TRUE;
+        return true;
 
     if (strcmp(cond, "false") == 0 || strcmp(cond, "") == 0)
-        result = FALSE;
+        result = false;
     xmlFree((xmlChar *)cond);
 
     return result;
@@ -259,7 +259,7 @@ cfg_dh_get_value_from_instance(xmlNodePtr node, te_kvpair_h *expand_vars)
     msg->len = sizeof(cfg_get_msg);
     msg->val_type = obj->type;
 
-    cfg_process_msg((cfg_msg **)&msg, TRUE);
+    cfg_process_msg((cfg_msg **)&msg, true);
 
     if (msg->rc != 0)
     {
@@ -397,7 +397,7 @@ cfg_dh_process_copy(xmlNodePtr node, te_kvpair_h *expand_vars)
         }
 
         memcpy(msg->dst_oid, oid, oid_len + 1);
-        msg->is_obj = (strchr(oid, ':') == NULL) ? TRUE : FALSE;
+        msg->is_obj = (strchr(oid, ':') == NULL) ? true : false;
 
         msg->type = CFG_COPY;
         msg->len = sizeof(cfg_copy_msg) + oid_len + 1;
@@ -416,7 +416,7 @@ cfg_dh_process_copy(xmlNodePtr node, te_kvpair_h *expand_vars)
 
         msg->src_handle = src_handle;
 
-        cfg_process_msg((cfg_msg **)&msg, TRUE);
+        cfg_process_msg((cfg_msg **)&msg, true);
         if (msg->rc != 0)
         {
             ERROR("Failed to execute the copy command for instance %s", oid);
@@ -516,7 +516,7 @@ cfg_dh_process_add(xmlNodePtr node, const te_kvpair_h *expand_vars)
         msg->oid_offset = msg->len;
         msg->len += strlen((char *)oid) + 1;
         strcpy((char *)msg + msg->oid_offset, (char *)oid);
-        cfg_process_msg((cfg_msg **)&msg, TRUE);
+        cfg_process_msg((cfg_msg **)&msg, true);
         if (msg->rc != 0)
             RETERR(msg->rc, "Failed(%r) to execute the add command "
                             "for instance %s", msg->rc, oid);
@@ -550,7 +550,7 @@ next:
  */
 int
 cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
-                    te_bool postsync)
+                    bool postsync)
 {
     xmlNodePtr cmd;
     int        len;
@@ -602,10 +602,10 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
             msg->type = CFG_REBOOT;
             msg->len = sizeof(*msg) + strlen(attr) + 1;
             msg->rc = 0;
-            msg->restore = FALSE;
+            msg->restore = false;
             strcpy(msg->ta_name, attr);
 
-            cfg_process_msg((cfg_msg **)&msg, TRUE);
+            cfg_process_msg((cfg_msg **)&msg, true);
             if (msg->rc != 0)
                 RETERR(msg->rc, "Failed to execute the reboot command");
 
@@ -676,8 +676,8 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                               xmlStrcmp(parent_dep,
                                         (const xmlChar *)"no") == 0);
                 msg->val_type = CVT_NONE;
-                msg->substitution = FALSE;
-                msg->unit = FALSE;
+                msg->substitution = false;
+                msg->unit = false;
 
                 strcpy(msg->oid, (char *)oid);
                 if (val_s != NULL)
@@ -706,7 +706,7 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                 if (attr != NULL)
                 {
                     if (strcmp(attr, "true") == 0)
-                        msg->vol = TRUE;
+                        msg->vol = true;
                     else if (strcmp(attr, "false") != 0)
                         RETERR(TE_EINVAL, "Volatile should be specified "
                                           "using \"true\" or \"false\"");
@@ -749,7 +749,7 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                 {
                     if (strcmp(attr, "true") == 0)
                     {
-                        msg->substitution = TRUE;
+                        msg->substitution = true;
                     }
                     else if (strcmp(attr, "false") != 0)
                     {
@@ -765,7 +765,7 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                 {
                     if (strcmp(attr, "true") == 0)
                     {
-                        msg->unit = TRUE;
+                        msg->unit = true;
                     }
                     else if (strcmp(attr, "false") != 0)
                     {
@@ -777,7 +777,7 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                     attr = NULL;
                 }
 
-                cfg_process_msg((cfg_msg **)&msg, TRUE);
+                cfg_process_msg((cfg_msg **)&msg, true);
                 if (msg->rc != 0)
                     RETERR(msg->rc, "Failed to execute register command "
                                     "for object %s", oid);
@@ -902,7 +902,7 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                 free(val_s);
                 val_s = NULL;
                 cfg_types[obj->type].free(val);
-                cfg_process_msg((cfg_msg **)&msg, TRUE);
+                cfg_process_msg((cfg_msg **)&msg, true);
 
                 if (msg->rc != 0)
                     RETERR(msg->rc, "Failed to execute the set command "
@@ -949,7 +949,7 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                 msg->rc = 0;
                 msg->handle = handle;
 
-                cfg_process_msg((cfg_msg **)&msg, TRUE);
+                cfg_process_msg((cfg_msg **)&msg, true);
                 if (msg->rc != 0)
                     RETERR(msg->rc, "Failed to execute the delete command "
                                     "for instance %s", oid);
@@ -978,7 +978,7 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
         }
         else
         {
-            assert(FALSE);
+            assert(false);
         }
         free(val_s);
         val_s = NULL;
@@ -1159,10 +1159,10 @@ cfg_dh_attach_backup(char *filename)
 }
 
 /**
- * Returns TRUE, if backup with specified name is associated
+ * Returns @c true, if backup with specified name is associated
  * with DH entry.
  */
-static te_bool
+static bool
 has_backup(cfg_dh_entry *entry, char *filename)
 {
     cfg_backup *tmp;
@@ -1184,7 +1184,7 @@ has_backup(cfg_dh_entry *entry, char *filename)
  *                      on restore backup. For instance if on deleting
  *                      some instance we got ESRCH or ENOENT, we should
  *                      keep processing without any error.
- * @param shutdown      if @c TRUE - the configurator shuts down.
+ * @param shutdown      if @c true - the configurator shuts down.
  *                      Do no stop restoring backup when error @c ENOENT
  *                      occurs (for example for @c CFG_SET command).
  *
@@ -1193,7 +1193,7 @@ has_backup(cfg_dh_entry *entry, char *filename)
  *                      the specified backup is attached
  */
 static int
-cfg_dh_restore_backup_ext(char *filename, te_bool hard_check, te_bool shutdown)
+cfg_dh_restore_backup_ext(char *filename, bool hard_check, bool shutdown)
 {
     cfg_dh_entry *limit = NULL;
     cfg_dh_entry *tmp;
@@ -1268,7 +1268,7 @@ cfg_dh_restore_backup_ext(char *filename, te_bool hard_check, te_bool shutdown)
             case CFG_ADD:
             {
                 cfg_del_msg msg = { .type = CFG_DEL, .len = sizeof(msg),
-                                    .rc = 0, .handle = 0, .local = FALSE };
+                                    .rc = 0, .handle = 0, .local = false };
                 cfg_msg    *p_msg = (cfg_msg *)&msg;
 
                 rc = cfg_db_find((char *)(tmp->cmd) +
@@ -1289,7 +1289,7 @@ cfg_dh_restore_backup_ext(char *filename, te_bool hard_check, te_bool shutdown)
                 /* Roll back only messages that were committed */
                 if (tmp->committed)
                 {
-                    cfg_process_msg(&p_msg, FALSE);
+                    cfg_process_msg(&p_msg, false);
                 }
                 else
                 {
@@ -1358,7 +1358,7 @@ cfg_dh_restore_backup_ext(char *filename, te_bool hard_check, te_bool shutdown)
 
                 if (tmp->committed)
                 {
-                    cfg_process_msg((cfg_msg **)&msg, FALSE);
+                    cfg_process_msg((cfg_msg **)&msg, false);
                 }
                 else
                 {
@@ -1400,7 +1400,7 @@ cfg_dh_restore_backup_ext(char *filename, te_bool hard_check, te_bool shutdown)
 
                 if (tmp->committed)
                 {
-                    cfg_process_msg((cfg_msg **)&msg, FALSE);
+                    cfg_process_msg((cfg_msg **)&msg, false);
                 }
                 else
                 {
@@ -1428,7 +1428,7 @@ cfg_dh_restore_backup_ext(char *filename, te_bool hard_check, te_bool shutdown)
                         }
                         else
                         {
-                            inst->remove = FALSE;
+                            inst->remove = false;
                         }
                     }
                 }
@@ -1457,16 +1457,16 @@ cfg_dh_restore_backup_ext(char *filename, te_bool hard_check, te_bool shutdown)
 
 /* See description in conf_dh.h */
 int
-cfg_dh_restore_backup(char *filename, te_bool hard_check)
+cfg_dh_restore_backup(char *filename, bool hard_check)
 {
-    return cfg_dh_restore_backup_ext(filename, hard_check, FALSE);
+    return cfg_dh_restore_backup_ext(filename, hard_check, false);
 }
 
 /* See description in conf_dh.h */
 int
 cfg_dh_restore_backup_on_shutdown()
 {
-    return cfg_dh_restore_backup_ext(NULL, TRUE, TRUE);
+    return cfg_dh_restore_backup_ext(NULL, true, true);
 }
 
 
@@ -1485,7 +1485,7 @@ cfg_dh_restore_backup_on_shutdown()
  *                      history
  */
 int
-cfg_dh_push_command(cfg_msg *msg, te_bool local, const cfg_inst_val *old_val)
+cfg_dh_push_command(cfg_msg *msg, bool local, const cfg_inst_val *old_val)
 {
     cfg_dh_entry *entry = (cfg_dh_entry *)calloc(sizeof(cfg_dh_entry), 1);
 
@@ -1637,7 +1637,7 @@ cfg_dh_optimize(void)
     {
         cfg_dh_entry *tmp_del = NULL;
         char         *oid;
-        te_bool       found = FALSE;
+        bool found = false;
         unsigned int  len;
 
         if (tmp->cmd->type != CFG_ADD || tmp->backup != NULL)
@@ -1666,7 +1666,7 @@ cfg_dh_optimize(void)
              if (tmp_del->cmd->type == CFG_DEL &&
                  strcmp(tmp_del->old_oid, oid) == 0)
              {
-                 found = TRUE;
+                 found = true;
                  break;
              }
 
@@ -1859,7 +1859,7 @@ cfg_dh_apply_commit(const char *oid)
                     tmp->old_oid;
 
                 if (strncmp(entry_oid, oid, oid_len) == 0)
-                    tmp->committed = TRUE;
+                    tmp->committed = true;
 
                 break;
             }
@@ -1888,7 +1888,7 @@ restore_cmd_register(cfg_register_msg *msg)
     if (obj != NULL)
         return 0;
 
-    cfg_process_msg((cfg_msg **)&msg, FALSE);
+    cfg_process_msg((cfg_msg **)&msg, false);
     if (msg->rc != 0)
     {
         ERROR("%s(): failed to execute register command for "
@@ -1898,10 +1898,10 @@ restore_cmd_register(cfg_register_msg *msg)
     return msg->rc;
 }
 
-static te_bool
+static bool
 check_oid_contains_ta(const char *oid, const te_vec *ta_list)
 {
-    te_bool is_found = FALSE;
+    bool is_found = false;
     char * const *ta;
     char *ta_oid;
     int agent_subid_pos;
@@ -1921,7 +1921,7 @@ check_oid_contains_ta(const char *oid, const te_vec *ta_list)
     {
         if (strcmp(ta_oid, *ta) == 0)
         {
-            is_found = TRUE;
+            is_found = true;
             break;
         }
     }
@@ -1959,7 +1959,7 @@ restore_cmd_add(cfg_add_msg *msg, const te_vec *ta_list)
         return TE_EFAIL;
     }
 
-    cfg_process_msg((cfg_msg **)&msg, FALSE);
+    cfg_process_msg((cfg_msg **)&msg, false);
     if (msg->rc != 0)
     {
         ERROR("%s(): failed to add a new instance %s: %r",
@@ -2022,7 +2022,7 @@ restore_cmd_set_del(cfg_dh_entry *entry, const te_vec *ta_list)
         return rc;
     }
 
-    cfg_process_msg((cfg_msg **)&msg, FALSE);
+    cfg_process_msg((cfg_msg **)&msg, false);
     if (msg->rc != 0)
     {
         ERROR("%s(): failed to set/delete %s: %r",

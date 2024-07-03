@@ -37,7 +37,7 @@ extern "C" {
 static inline te_errno
 tapi_sh_env_set(rcf_rpc_server *pco,
                 const char *env_name, const char *env_value,
-                te_bool force, te_bool restart)
+                bool force, bool restart)
 {
     cfg_handle handle;
     te_errno rc = 0;
@@ -129,7 +129,7 @@ tapi_sh_env_get_int(rcf_rpc_server *pco, const char *env_name, int *val)
 static inline te_errno
 tapi_sh_env_set_int(rcf_rpc_server *pco,
                     const char *env_name, int env_value,
-                    te_bool force, te_bool restart)
+                    bool force, bool restart)
 {
     char env_value_str[32];
     int  res;
@@ -161,10 +161,10 @@ tapi_sh_env_set_int(rcf_rpc_server *pco,
  */
 static inline te_errno
 tapi_sh_env_save_set(rcf_rpc_server *pco,
-                     const char *env_name, te_bool *existed,
+                     const char *env_name, bool *existed,
                      char **old_value,
                      const char *new_value,
-                     te_bool restart)
+                     bool restart)
 {
     cfg_handle  handle;
     te_errno    rc = 0;
@@ -172,7 +172,7 @@ tapi_sh_env_save_set(rcf_rpc_server *pco,
     cfg_val_type     type;
 
     if (existed != NULL)
-        *existed = FALSE;
+        *existed = false;
     if (old_value != NULL)
         *old_value = NULL;
 
@@ -189,7 +189,7 @@ tapi_sh_env_save_set(rcf_rpc_server *pco,
     {
         /* exists */
         if (existed != NULL)
-            *existed = TRUE;
+            *existed = true;
 
         if (old_value != NULL)
         {
@@ -215,7 +215,7 @@ tapi_sh_env_save_set(rcf_rpc_server *pco,
  */
 static inline te_errno
 tapi_sh_env_unset(rcf_rpc_server *pco, const char *env_name,
-                   te_bool force, te_bool restart)
+                   bool force, bool restart)
 {
     cfg_handle handle;
     te_errno rc = 0;
@@ -250,7 +250,7 @@ tapi_sh_env_unset(rcf_rpc_server *pco, const char *env_name,
 static inline te_errno
 tapi_sh_env_save_set_int(rcf_rpc_server *pco,
                          const char *env_name, int env_value,
-                         te_bool restart, te_bool *existed,
+                         bool restart, bool *existed,
                          int *old_value)
 {
     char env_value_str[32];
@@ -291,12 +291,12 @@ tapi_sh_env_save_set_int(rcf_rpc_server *pco,
  */
 static inline te_errno
 tapi_sh_env_rollback_int(rcf_rpc_server *pco, const char *env_name,
-                         te_bool existed, int env_value, te_bool restart)
+                         bool existed, int env_value, bool restart)
 {
     if (!existed)
-        return tapi_sh_env_unset(pco, env_name, FALSE, restart);
+        return tapi_sh_env_unset(pco, env_name, false, restart);
 
-    return tapi_sh_env_set_int(pco, env_name, env_value, TRUE, restart);
+    return tapi_sh_env_set_int(pco, env_name, env_value, true, restart);
 }
 
 /**
@@ -312,12 +312,12 @@ tapi_sh_env_rollback_int(rcf_rpc_server *pco, const char *env_name,
  */
 static inline te_errno
 tapi_sh_env_rollback(rcf_rpc_server *pco, const char *env_name,
-                     te_bool existed, const char *env_value, te_bool restart)
+                     bool existed, const char *env_value, bool restart)
 {
     if (!existed)
-        return tapi_sh_env_unset(pco, env_name, FALSE, restart);
+        return tapi_sh_env_unset(pco, env_name, false, restart);
 
-    return tapi_sh_env_set(pco, env_name, env_value, TRUE, restart);
+    return tapi_sh_env_set(pco, env_name, env_value, true, restart);
 }
 
 /**
@@ -328,22 +328,22 @@ tapi_sh_env_rollback(rcf_rpc_server *pco, const char *env_name,
  *
  * @return Boolean value
  */
-static inline te_bool
+static inline bool
 tapi_getenv_bool(const char *var_name)
 {
     const char *val;
     val = getenv(var_name);
     if (val == NULL)
-        return FALSE;
+        return false;
 
     if (strcmp(val, "0") == 0)
-        return FALSE;
+        return false;
 
     if (strcmp(val, "1") != 0)
         TEST_FAIL("Environment variable %s keeps non-boolean value '%s'",
                   var_name, val);
 
-    return TRUE;
+    return true;
 }
 
 /**

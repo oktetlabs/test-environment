@@ -216,7 +216,7 @@ typedef struct te_radvd_option {
 
     te_radvd_optcode                code;
     union {
-        te_bool                     boolean;
+        bool                        boolean;
         preference_optval           preference;
         int                         integer;
         char                       *string;

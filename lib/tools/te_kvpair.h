@@ -236,9 +236,9 @@ extern unsigned int te_kvpairs_count(const te_kvpair_h *head, const char *key);
  * @param key    Key to check (if @c NULL, any key will suit).
  * @param value  Value to check (if @c NULL, any value will suit).
  *
- * @return @c TRUE if the kvpairs contain a given key-value pair.
+ * @return @c true if the kvpairs contain a given key-value pair.
  */
-extern te_bool te_kvpairs_has_kv(const te_kvpair_h *head, const char *key,
+extern bool te_kvpairs_has_kv(const te_kvpair_h *head, const char *key,
                                  const char *value);
 
 /**
@@ -252,9 +252,9 @@ extern te_bool te_kvpairs_has_kv(const te_kvpair_h *head, const char *key,
  * @param submap    Submap.
  * @param supermap  Supermap.
  *
- * @return @c TRUE if @p submap is a submap of @p supermap.
+ * @return @c true if @p submap is a submap of @p supermap.
  */
-extern te_bool te_kvpairs_is_submap(const te_kvpair_h *submap,
+extern bool te_kvpairs_is_submap(const te_kvpair_h *submap,
                                     const te_kvpair_h *supermap);
 
 /**

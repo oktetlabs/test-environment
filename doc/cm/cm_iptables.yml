@@ -33,7 +33,7 @@
       type: int32
       d: |
          Per-interface chain, may have name of built-in chain
-         If TRUE, then jump rule is added to the common chain (without prefix)
+         If true, then jump rule is added to the common chain (without prefix)
          Jump is always conditional with interface matching.
          Input or output direction is assumed by the chain name.
          Name: chain name without <interface>_ prefix

@@ -104,7 +104,7 @@ static char rsrc[RCF_MAX_VAL];
 static te_errno
 aggr_interface_get_free(const char *format, char ifname[IFNAMSIZ])
 {
-    te_bool shared = FALSE;
+    bool shared = false;
     int  i;
 
     for (i = 0; i < INT_MAX ; i++)
@@ -113,7 +113,7 @@ aggr_interface_get_free(const char *format, char ifname[IFNAMSIZ])
         snprintf(rsrc, RCF_MAX_VAL, "/agent:%s/interface:%s",
                  ta_name, ifname);
         if (if_nametoindex(ifname) == 0 &&
-            ta_rsrc_create_lock(rsrc, &shared, FALSE, 0) == 0)
+            ta_rsrc_create_lock(rsrc, &shared, false, 0) == 0)
         {
             break;
         }
@@ -210,7 +210,7 @@ trunk_create(aggregation *aggr)
     }
 
     /* Linux does not allow to add slave interfaces when master is not up */
-    ta_interface_status_set(aggr->ifname, TRUE);
+    ta_interface_status_set(aggr->ifname, true);
 
     return 0;
 }
@@ -220,7 +220,7 @@ trunk_destroy(aggregation *aggr)
 {
     FILE *f;
 
-    ta_interface_status_set(aggr->ifname, FALSE);
+    ta_interface_status_set(aggr->ifname, false);
     /* Down the interface and release the lock */
     /* Assert there are no members ? */
     f = fopen("/sys/class/net/bonding_masters", "a");
@@ -342,7 +342,7 @@ team_create(aggregation *aggr)
         return TE_RC(TE_TA_UNIX, TE_ENODEV);
     }
 
-    ta_interface_status_set(aggr->ifname, TRUE);
+    ta_interface_status_set(aggr->ifname, true);
 
     return 0;
 }
@@ -350,7 +350,7 @@ team_create(aggregation *aggr)
 static te_errno
 team_destroy(aggregation *aggr)
 {
-    ta_interface_status_set(aggr->ifname, FALSE);
+    ta_interface_status_set(aggr->ifname, false);
 
     snprintf(buf, sizeof(buf),
              "/usr/bin/teamd -t %s -k", aggr->ifname);
@@ -368,7 +368,7 @@ team_destroy(aggregation *aggr)
 static te_errno
 team_add(aggregation *aggr, const char *ifname)
 {
-    ta_interface_status_set(ifname, FALSE);
+    ta_interface_status_set(ifname, false);
     snprintf(buf, sizeof(buf),
              "/usr/bin/teamdctl %s port add %s", aggr->ifname, ifname);
     if (ta_system(buf) != 0)

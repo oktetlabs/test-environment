@@ -34,7 +34,7 @@
     do {                        \
         while (*(_ptr) == ' ')  \
             (_ptr)++;           \
-    } while (FALSE)
+    } while (false)
 
 /**
  * Send answer to the TEN and return (is called from default command
@@ -70,7 +70,7 @@
         RCF_CH_UNLOCK;                                          \
         EXIT("%d", _rc);                                        \
         return _rc;                                             \
-    } while (FALSE)
+    } while (false)
 
 
 #ifdef __cplusplus

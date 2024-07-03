@@ -37,7 +37,7 @@ main(int argc, char *argv[])
     TEST_START;
 
     TEST_STEP("Add the process");
-    CHECK_RC(tapi_cfg_ps_add(ta, ps_name, "ping", FALSE));
+    CHECK_RC(tapi_cfg_ps_add(ta, ps_name, "ping", false));
 
     TEST_STEP("Add options");
     CHECK_RC(tapi_cfg_ps_add_arg(ta, ps_name, 1, "localhost"));

@@ -385,7 +385,7 @@ static int
 tapi_iomux_select_add_events(tapi_iomux_handle *iomux)
 {
     tapi_iomux_evts_list *inst;
-    te_bool               await_err = RPC_AWAITING_ERROR(iomux->rpcs);
+    bool await_err = RPC_AWAITING_ERROR(iomux->rpcs);
     rcf_rpc_op            op = iomux->rpcs->op;
     int                   max_fd = 0;
 

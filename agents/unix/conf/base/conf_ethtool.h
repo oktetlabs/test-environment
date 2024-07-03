@@ -84,10 +84,10 @@ typedef union ta_ethtool_lsets_data {
 /** Generic structure to store link settings */
 typedef struct ta_ethtool_lsets {
     ta_ethtool_lsets_data sets; /**< Link settings */
-    te_bool use_xlinksettings;  /**< If @c TRUE, link settings were obtained
+    bool use_xlinksettings;  /**< If @c true, link settings were obtained
                                      via ETHTOOL_GLINKSETTINGS, otherwise
                                      ETHTOOL_GSET was used */
-    te_bool set_supported;      /**< If @c TRUE, changing link settings is
+    bool set_supported;      /**< If @c true, changing link settings is
                                      supported */
 } ta_ethtool_lsets;
 
@@ -251,28 +251,28 @@ extern te_errno ta_ethtool_lmode_parse(const char *name,
  *
  * @param lsets       Pointer to the link settings structure
  * @param mode        Link mode to check
- * @param supported   Will be set to @c TRUE if link mode is supported,
- *                    to @c FALSE otherwise
+ * @param supported   Will be set to @c true if link mode is supported,
+ *                    to @c false otherwise
  *
  * @return Status code.
  */
 extern te_errno ta_ethtool_lmode_supported(ta_ethtool_lsets *lsets,
                                            ta_ethtool_link_mode mode,
-                                           te_bool *supported);
+                                           bool *supported);
 
 /**
  * Check whether a given link mode is reported as advertised.
  *
  * @param lsets       Pointer to the link settings structure
  * @param mode        Link mode to check
- * @param advertised  Will be set to @c TRUE if link mode is advertised,
- *                    to @c FALSE otherwise
+ * @param advertised  Will be set to @c true if link mode is advertised,
+ *                    to @c false otherwise
  *
  * @return Status code.
  */
 extern te_errno ta_ethtool_lmode_advertised(ta_ethtool_lsets *lsets,
                                             ta_ethtool_link_mode mode,
-                                            te_bool *advertised);
+                                            bool *advertised);
 
 /**
  * Check whether a given link mode is reported as advertised by link
@@ -280,14 +280,14 @@ extern te_errno ta_ethtool_lmode_advertised(ta_ethtool_lsets *lsets,
  *
  * @param lsets           Pointer to the link settings structure
  * @param mode            Link mode to check
- * @param lp_advertised   Will be set to @c TRUE if link mode is advertised
- *                        by link partner, to @c FALSE otherwise
+ * @param lp_advertised   Will be set to @c true if link mode is advertised
+ *                        by link partner, to @c false otherwise
  *
  * @return Status code.
  */
 extern te_errno ta_ethtool_lmode_lp_advertised(ta_ethtool_lsets *lsets,
                                                ta_ethtool_link_mode mode,
-                                               te_bool *lp_advertised);
+                                               bool *lp_advertised);
 
 /**
  * Set a given link mode as advertised or not advertised.
@@ -300,7 +300,7 @@ extern te_errno ta_ethtool_lmode_lp_advertised(ta_ethtool_lsets *lsets,
  */
 extern te_errno ta_ethtool_lmode_advertise(ta_ethtool_lsets *lsets,
                                            ta_ethtool_link_mode mode,
-                                           te_bool enable);
+                                           bool enable);
 
 /**
  * Call @c SIOCETHTOOL ioctl() to get or set some values.
@@ -350,7 +350,7 @@ extern te_errno commit_ethtool_value(const char *if_name,
  * or advertised by link partner.
  *
  * @param lsets         Structure with link settings
- * @param link_partner  If @c TRUE, get list of link mode names advertised
+ * @param link_partner  If @c true, get list of link mode names advertised
  *                      by link partner, otherwise - list of link mode
  *                      names supported by the interface
  * @param list_str      Where to append names of link modes
@@ -358,7 +358,7 @@ extern te_errno commit_ethtool_value(const char *if_name,
  * @return Status code.
  */
 extern te_errno ta_ethtool_lmode_list_names(ta_ethtool_lsets *lsets,
-                                            te_bool link_partner,
+                                            bool link_partner,
                                             te_string *list_str);
 
 /**
@@ -439,12 +439,12 @@ typedef struct ta_ethtool_rxfh {
     /** Pointer to ethtool structure passed to ioctl(). */
     struct ethtool_rxfh *rxfh;
     /**
-     * Should be set to TRUE if change of RSS indirection table
+     * Should be set to @c true if change of RSS indirection table
      * is required.
      */
-    te_bool indir_change;
-    /** If TRUE, reset indirection table to default values. */
-    te_bool indir_reset;
+    bool indir_change;
+    /** If @c true, reset indirection table to default values. */
+    bool indir_reset;
 } ta_ethtool_rxfh;
 
 /**
@@ -488,7 +488,7 @@ extern te_errno ta_ethtool_commit_rssh(unsigned int gid,
 typedef struct ta_ethtool_rx_cls_rules {
     unsigned int table_size;  /**< Size of rules table */
     unsigned int rule_cnt;    /**< Current number of rules */
-    te_bool spec_loc_flag;    /**< If @c TRUE, special insert locations
+    bool spec_loc_flag;    /**< If @c true, special insert locations
                                    for rules are supported */
     unsigned int *locs;       /**< Locations of existing rules in rules
                                    table */

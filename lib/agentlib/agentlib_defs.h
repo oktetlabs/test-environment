@@ -29,7 +29,7 @@
 typedef struct rcf_symbol_entry {
     const char *name;     /**< Name of a symbol */
     void       *addr;     /**< Symbol address */
-    te_bool     is_func;  /**< Whether the symbol is function or variable */
+    bool is_func;  /**< Whether the symbol is function or variable */
 } rcf_symbol_entry;
 
 #endif /* __TE_AGENTLIB_DEFS_H__ */

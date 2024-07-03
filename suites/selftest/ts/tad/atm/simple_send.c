@@ -82,8 +82,8 @@ main(int argc, char *argv[])
     ndn_atm_type            type = NDN_ATM_UNI; /* PARAM */
     uint16_t                vpi;
     uint16_t                vci;
-    te_bool                 congestion;
-    te_bool                 clp;
+    bool congestion;
+    bool clp;
     uint8_t                 gfc;
 
     csap_handle_t           tcp_srv_csap = CSAP_INVALID_HANDLE;
@@ -132,7 +132,7 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_tad_csap_create(iut_host->ta, 0, "atm.socket",
                                   csap_spec, &csap));
 
-    CHECK_RC(tapi_atm_add_pdu(&tmpl, FALSE, &gfc, NULL, NULL, NULL, NULL));
+    CHECK_RC(tapi_atm_add_pdu(&tmpl, false, &gfc, NULL, NULL, NULL, NULL));
     CHECK_RC(tapi_atm_add_payload(tmpl, payload_len, payload));
     CHECK_RC(tapi_tad_trsend_start(iut_host->ta, 0, csap, tmpl,
                                    RCF_MODE_BLOCKING));

@@ -178,7 +178,7 @@ static uint32_t max_timestamp[2]  = {UINT32_MAX, UINT32_MAX};
     do {                                            \
         (node_ptr)->n_active_branches = 0;          \
         (node_ptr)->n_branches = 0;                 \
-        (node_ptr)->more_branches = TRUE;           \
+        (node_ptr)->more_branches = true;           \
         (node_ptr)->branches = NULL;                \
     } while (0)
 
@@ -209,7 +209,7 @@ msg_queue_init(msg_queue *q)
     q->queue = g_queue_new();
     assert(q->queue != NULL);
     q->cache = NULL;
-    q->offloaded = FALSE;
+    q->offloaded = false;
     memcpy(q->offload_ts, zero_timestamp, sizeof(q->offload_ts));
 }
 
@@ -246,7 +246,7 @@ ctrl_msg_data_init(ctrl_msg_data *data)
 {
     msg_queue_init(&data->verdicts);
     msg_queue_init(&data->artifacts);
-    data->not_mi_artifacts = FALSE;
+    data->not_mi_artifacts = false;
 }
 
 /**
@@ -459,7 +459,7 @@ flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
     cur_node->self = cur_node;
     cur_node->next = NULL;
 
-    if (par_node->more_branches == TRUE)
+    if (par_node->more_branches == true)
     {
         /* Create new branch */
         par_node->branches = realloc(par_node->branches, sizeof(branch_info) *
@@ -594,7 +594,7 @@ flow_tree_close_node(node_id_t parent_id, node_id_t node_id,
     g_hash_table_remove(close_set, &node_id);
 
 
-    par_node->more_branches = FALSE;
+    par_node->more_branches = false;
     par_node->n_active_branches--;
 
     /*
@@ -986,7 +986,7 @@ msg_queue_offload(msg_queue *q, uint32_t *end_ts)
 
         g_queue_pop_head(q->queue);
         free_log_msg_ptr(msg_ptr);
-        q->offloaded = TRUE;
+        q->offloaded = true;
     }
 
     q->cache = NULL;
@@ -1136,7 +1136,7 @@ msg_queue_reload(msg_queue *q, uint32_t *start_ts)
     fclose(f);
 
     if (truncate_length == 0)
-        q->offloaded = FALSE;
+        q->offloaded = false;
 
     if (truncate_length >= 0 &&
         truncate(path, truncate_length) < 0)
@@ -1195,11 +1195,11 @@ msg_queue_foreach(msg_queue *q, GFunc cb, void *user_data)
 }
 
 /* See description in the rgt_common.h */
-te_bool
+bool
 msg_queue_is_empty(msg_queue *q)
 {
     if (q == NULL || q->queue == NULL)
-        return TRUE;
+        return true;
     else
         return !(q->offloaded) && g_queue_is_empty(q->queue);
 }
@@ -1213,7 +1213,7 @@ msg_queue_is_empty(msg_queue *q)
 static void
 msg_queue_attach(msg_queue *q, log_msg_ptr *msg)
 {
-    static te_bool  first_msg = TRUE;
+    static bool first_msg = true;
 
     static uint64_t msg_counter = 0;
 
@@ -1221,7 +1221,7 @@ msg_queue_attach(msg_queue *q, log_msg_ptr *msg)
 
     if (first_msg)
     {
-        first_msg = FALSE;
+        first_msg = false;
         last_offload_ts[0] = msg->timestamp[0];
         last_offload_ts[1] = msg->timestamp[1];
     }
@@ -1433,7 +1433,7 @@ flow_tree_attach_message(log_msg *msg)
                 msg_queue_attach(&cur_node->ctrl_data.artifacts,
                                  log_msg_ref(msg));
                 if (~msg->level & TE_LL_MI)
-                    cur_node->ctrl_data.not_mi_artifacts = TRUE;
+                    cur_node->ctrl_data.not_mi_artifacts = true;
             }
             else
             {
@@ -1452,7 +1452,7 @@ wrapper_process_regular_msg(gpointer data, gpointer user_data)
 {
     log_msg_ptr *msg_ptr = (log_msg_ptr *)data;
     log_msg     *msg = NULL;
-    te_bool      msg_visible = TRUE;
+    bool msg_visible = true;
 
     UNUSED(user_data);
 
@@ -1492,7 +1492,7 @@ wrapper_process_regular_msg(gpointer data, gpointer user_data)
             }
             else if (strcmp(msg->user, TE_USER_STEP_RESET) == 0)
             {
-                msg_visible = FALSE;
+                msg_visible = false;
                 rgt_ctx.current_nest_lvl = 0;
             }
             else

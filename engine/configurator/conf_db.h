@@ -45,7 +45,7 @@ extern "C" {
 /** Configurator dependency item */
 typedef struct cfg_dependency {
     struct cfg_object     *depends;
-    te_bool                object_wide;
+    bool object_wide;
     struct cfg_dependency *next;
 } cfg_dependency;
 
@@ -58,7 +58,7 @@ typedef struct cfg_object {
     cfg_val_type       type;    /**< Type of the object instance value */
     uint8_t            access;  /**< Access rights */
     char              *def_val; /**< Default value */
-    te_bool            vol;     /**< The object is volatile */
+    bool vol;     /**< The object is volatile */
 
     /** @name Family */
     struct cfg_object *father;  /**< Link to father */
@@ -78,15 +78,15 @@ typedef struct cfg_object {
     struct cfg_object     *dep_prev; /**< The previous object in toplogical
                                           order */
 
-    te_bool substitution;   /**< The object uses substitution */
+    bool substitution;   /**< The object uses substitution */
 
-    te_bool unit; /**< If @c TRUE, object should be considered as a logical
+    bool unit; /**< If @c true, object should be considered as a logical
                        unit, not simply as a loose collection of child
                        objects. Configurator will take this into account when
                        managing dependencies and restoring configuration
                        from backup */
-    te_bool unit_part; /**< @c TRUE means the object is a descendant of an
-                            object having unit=TRUE */
+    bool unit_part; /**< @c true means the object is a descendant of an
+                            object having unit=true */
 
 } cfg_object;
 
@@ -97,7 +97,7 @@ extern cfg_object **cfg_all_obj;
 extern uint64_t cfg_all_obj_size;
 
 /** Check if object is /agent */
-static inline te_bool
+static inline bool
 cfg_object_agent(cfg_object *obj)
 {
     return (obj->father == &cfg_obj_root) &&
@@ -116,11 +116,11 @@ typedef struct cfg_instance {
     char       *oid;                /**< OID of the instance */
     char        name[CFG_INST_NAME_MAX];    /**< Own name of the instance */
     cfg_object *obj;                /**< Object of the instance */
-    te_bool     added;              /**< Whether this instance was added
+    bool added;              /**< Whether this instance was added
                                          to the Test Agent or not
                                          (has sense only for read-create
                                          instances) */
-    te_bool     remove;             /**< Whether this instance should be
+    bool remove;             /**< Whether this instance should be
                                          removed from TA when committing
                                          changes */
 
@@ -150,9 +150,9 @@ extern uint32_t cfg_inst_seq_num;
  *
  * @param inst  instance
  *
- * @return TRUE if instance is /agent:*
+ * @return @c true if instance is /agent:*
  */
-static inline te_bool
+static inline bool
 cfg_inst_agent(cfg_instance *inst)
 {
     return (inst->father == &cfg_inst_root) &&
@@ -165,9 +165,9 @@ cfg_inst_agent(cfg_instance *inst)
  * @param oid   instance identifier
  * @param ta    TA name location (RCF_MAX_NAME length)
  *
- * @return TRUE if name is extracted or FALSE if OID content is unexpected
+ * @return @c true if name is extracted or @c false if OID content is unexpected
  */
-static inline te_bool
+static inline bool
 cfg_get_ta_name(const char *oid, char *ta)
 {
     char *s = (char *)oid + strlen(CFG_TA_PREFIX);
@@ -175,17 +175,17 @@ cfg_get_ta_name(const char *oid, char *ta)
     int   n;
 
     if (strcmp_start(CFG_TA_PREFIX, oid) != 0)
-        return FALSE;
+        return false;
 
     n = ((tmp = strchr(s, '/')) == NULL) ? (int)strlen(s) : tmp - s;
 
     if (n >= RCF_MAX_NAME)
-        return FALSE;
+        return false;
 
     memcpy(ta, s, n);
     ta[n] = 0;
 
-    return TRUE;
+    return true;
 }
 
 #define CFG_INST_HANDLE_VALID(_handle) (                                \
@@ -363,9 +363,9 @@ extern void cfg_db_destroy(void);
  * @param [in]  oid_s        object identifier in string representation
  * @param [out] oid_out      the found object identifier in string
  *
- * @return TRUE (match) or FALSE (does not match)
+ * @return @c true (match) or @c false (does not match)
  */
-extern te_bool cfg_oid_match_volatile(const char *oid_s, char **oid_out);
+extern bool cfg_oid_match_volatile(const char *oid_s, char **oid_out);
 
 /** Delay for configuration changes accommodation */
 extern uint32_t cfg_conf_delay;

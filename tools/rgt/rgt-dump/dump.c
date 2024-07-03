@@ -51,14 +51,14 @@
 static void    *scrap_buf   = NULL;
 static size_t   scrap_size  = 0;
 
-te_bool
+bool
 scrap_grow(size_t size)
 {
     size_t  new_scrap_size  = scrap_size;
     void   *new_scrap_buf;
 
     if (size <= scrap_size)
-        return TRUE;
+        return true;
 
     if (new_scrap_size < SCRAP_MIN_SIZE)
         new_scrap_size = SCRAP_MIN_SIZE;
@@ -68,12 +68,12 @@ scrap_grow(size_t size)
 
     new_scrap_buf = realloc(scrap_buf, new_scrap_size);
     if (new_scrap_buf == NULL)
-        return FALSE;
+        return false;
 
     scrap_buf = new_scrap_buf;
     scrap_size = new_scrap_size;
 
-    return TRUE;
+    return true;
 }
 
 
@@ -92,7 +92,7 @@ typedef struct message_fld {
 } message_fld;
 
 
-static te_bool
+static bool
 message_fld_valid(const message_fld *f)
 {
     return f != NULL &&
@@ -100,17 +100,17 @@ message_fld_valid(const message_fld *f)
 }
 
 
-static te_bool
+static bool
 message_fld_list_valid(const message_fld *list, size_t num)
 {
     if (list == NULL && num > 0)
-        return FALSE;
+        return false;
 
     for (; num > 0; list++, num--)
         if (!message_fld_valid(list))
-            return FALSE;
+            return false;
 
-    return TRUE;
+    return true;
 }
 
 
@@ -130,7 +130,7 @@ typedef struct message {
 } message;
 
 
-static te_bool
+static bool
 message_valid(const message *m)
 {
     return m != NULL &&
@@ -142,7 +142,7 @@ message_valid(const message *m)
 }
 
 
-static te_bool
+static bool
 message_init(message *m)
 {
     memset(m, 0, sizeof(*m));
@@ -150,11 +150,11 @@ message_init(message *m)
     m->arg_list     = malloc(sizeof(*m->arg_list) *
                              MESSAGE_ARG_LIST_MIN_SIZE);
     if (m->arg_list == NULL)
-        return FALSE;
+        return false;
 
     m->arg_size     = MESSAGE_ARG_LIST_MIN_SIZE;
 
-    return TRUE;
+    return true;
 }
 
 
@@ -194,7 +194,7 @@ message_arg_list_clear(message *m)
 }
 
 
-static te_bool
+static bool
 message_arg_list_adda(message *m, uint8_t *buf, te_log_nfl len)
 {
     assert(message_valid(m));
@@ -209,7 +209,7 @@ message_arg_list_adda(message *m, uint8_t *buf, te_log_nfl len)
         new_arg_list = realloc(m->arg_list,
                                new_arg_size * sizeof(*new_arg_list));
         if (new_arg_list == NULL)
-            return FALSE;
+            return false;
         m->arg_list = new_arg_list;
         m->arg_size = new_arg_size;
     }
@@ -218,7 +218,7 @@ message_arg_list_adda(message *m, uint8_t *buf, te_log_nfl len)
     m->arg_list[m->arg_num].len = len;
     m->arg_num++;
 
-    return TRUE;
+    return true;
 }
 
 
@@ -307,7 +307,7 @@ read_message(FILE *input, message *m)
      * Read remaining required variable-length fields and optional format
      * arguments.
      */
-    while (TRUE)
+    while (true)
     {
         /* Read and convert the field length */
         if (fread(&len, sizeof(len), 1, input) != 1)
@@ -441,23 +441,23 @@ escape_fmt_byte(char *buf, uint8_t b)
  *
  * @param buf           Pointer to the buffer to escape.
  * @param len           Length of the buffer to escape.
- * @param pgot_space    Location for "got space" flag - set to TRUE if a
+ * @param pgot_space    Location for "got space" flag - set to @c true if a
  *                      space character was found in the buffer; could be
  *                      NULL.
  *
  * @return Number of characters required for output.
  */
 static size_t
-escape_eval_buf(void *buf, size_t len, te_bool *pgot_space)
+escape_eval_buf(void *buf, size_t len, bool *pgot_space)
 {
     size_t      esc_len     = 0;
-    te_bool     got_space   = FALSE;
+    bool got_space = false;
     uint8_t    *p;
 
     for (p = (uint8_t *)buf; len > 0; p++, len--)
     {
         if (*p == ' ')
-            got_space = TRUE;
+            got_space = true;
         esc_len += escape_eval_byte(*p);
     }
 
@@ -500,10 +500,10 @@ escape_fmt_buf(char *out_buf, void *in_buf, size_t in_len)
  *
  * @return True if dumped successfully, false otherwise.
  */
-static te_bool
+static bool
 write_dump_field(FILE *output, const message_fld *f)
 {
-    te_bool     quoted;
+    bool quoted;
     size_t      out_len;
     char       *p;
 
@@ -516,13 +516,13 @@ write_dump_field(FILE *output, const message_fld *f)
     else
     {
         out_len = 0;
-        quoted = TRUE;
+        quoted = true;
     }
     out_len += quoted ? 3 : 1;
 
     /* Grow the scrap buffer if necessary */
     if (!scrap_grow(out_len))
-        return FALSE;
+        return false;
 
     /* Output to the buffer */
     p = (char *)scrap_buf;
@@ -548,7 +548,7 @@ write_dump_field(FILE *output, const message_fld *f)
  *
  * @return True if dumped successfully, false otherwise.
  */
-static te_bool
+static bool
 write_dump(FILE *output, const message *m)
 {
     size_t  i;
@@ -560,21 +560,21 @@ write_dump(FILE *output, const message *m)
                 "%" PRIu8 " %" PRIu32 ".%.6" PRIu32 " %u %u",
                 m->version, m->ts_secs, m->ts_usecs,
                 (unsigned int)m->level, (unsigned int)m->id) < 0)
-        return FALSE;
+        return false;
 
     if (!write_dump_field(output, &m->entity_name) ||
         !write_dump_field(output, &m->user_name) ||
         !write_dump_field(output, &m->format))
-        return FALSE;
+        return false;
 
     for (i = 0; i < m->arg_num; i++)
         if (!write_dump_field(output, &m->arg_list[i]))
-            return FALSE;
+            return false;
 
     if (fputc('\n', output) == EOF)
-        return FALSE;
+        return false;
 
-    return TRUE;
+    return true;
 }
 
 
@@ -641,7 +641,7 @@ run(const char *input_name, const char *output_name)
                       strerror(errno));
 
 
-    while (TRUE)
+    while (true)
     {
         /* Retrieve current offset */
         /* Not checking the result - what could possibly go wrong? */

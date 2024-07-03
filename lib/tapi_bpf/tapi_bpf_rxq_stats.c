@@ -159,7 +159,7 @@ tapi_bpf_rxq_stats_set_params(const char *ta, unsigned int bpf_id,
                               int addr_family,
                               const struct sockaddr *src_addr,
                               const struct sockaddr *dst_addr,
-                              int protocol, te_bool enable)
+                              int protocol, bool enable)
 {
     te_bpf_rxq_stats_params params;
     uint32_t key = 0;
@@ -183,7 +183,7 @@ tapi_bpf_rxq_stats_set_params(const char *ta, unsigned int bpf_id,
 /* See description in tapi_bpf_rxq_stats.h */
 te_errno
 tapi_bpf_rxq_stats_enable(const char *ta, unsigned int bpf_id,
-                          te_bool enable)
+                          bool enable)
 {
     te_bpf_rxq_stats_params params;
     uint32_t key = 0;
@@ -370,9 +370,9 @@ tapi_bpf_rxq_stats_check_single(const char *ta, unsigned int bpf_id,
     unsigned int stats_count;
     unsigned int i;
     unsigned int exp_queue_recv = 0;
-    te_bool unexp_num = TRUE;
-    te_bool unexp_queue = FALSE;
-    te_bool failed = FALSE;
+    bool unexp_num = true;
+    bool unexp_queue = false;
+    bool failed = false;
     te_errno rc;
 
     if (vpref == NULL || *vpref == '\0')
@@ -406,12 +406,12 @@ tapi_bpf_rxq_stats_check_single(const char *ta, unsigned int bpf_id,
                 }
                 else
                 {
-                    unexp_num = FALSE;
+                    unexp_num = false;
                 }
             }
             else
             {
-                unexp_num = FALSE;
+                unexp_num = false;
             }
         }
         else
@@ -420,7 +420,7 @@ tapi_bpf_rxq_stats_check_single(const char *ta, unsigned int bpf_id,
             {
                 ERROR("Queue %u received packets unexpectedly",
                       stats[i].rx_queue);
-                unexp_queue = TRUE;
+                unexp_queue = true;
             }
         }
     }
@@ -430,13 +430,13 @@ tapi_bpf_rxq_stats_check_single(const char *ta, unsigned int bpf_id,
         ERROR_VERDICT("%s: expected Rx queue received %s packets",
                       vpref, (exp_queue_recv == 0 ?
                                       "zero" : "unexpected number of"));
-        failed = TRUE;
+        failed = true;
     }
     if (unexp_queue)
     {
         ERROR_VERDICT("%s: other queue than expected received packets",
                       vpref);
-        failed = TRUE;
+        failed = true;
     }
 
     free(stats);

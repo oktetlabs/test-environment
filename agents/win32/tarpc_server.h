@@ -87,7 +87,7 @@ getenv_reliable(const char *name)
                                                     \
         if (rc_ != 0 && out->common._errno == 0)    \
             out->common._errno = rc_;               \
-    } while (FALSE)
+    } while (false)
 
 #define WSP_IPPROTO_TCP 200
 #define WSP_IPPROTO_UDP 201
@@ -426,7 +426,7 @@ thread_join(uint32_t tid, void **arg)
     HANDLE hp = rcf_pch_mem_get(tid);
     DWORD  rc;
 
-    while (TRUE)
+    while (true)
     {
         if (!GetExitCodeThread(hp, &rc))
             return win_rpc_errno(GetLastError());
@@ -434,7 +434,7 @@ thread_join(uint32_t tid, void **arg)
         if (rc != STILL_ACTIVE)
             break;
 
-        SleepEx(10, TRUE);
+        SleepEx(10, true);
     }
 
     if (arg != NULL)
@@ -776,7 +776,7 @@ check_args(checked_arg *list)
 typedef struct _func##_arg {                                            \
     tarpc_##_func##_in  in;                                             \
     tarpc_##_func##_out out;                                            \
-    te_bool             done;                                           \
+    bool             done;                                              \
 } _func##_arg;                                                          \
                                                                         \
 static void *                                                           \
@@ -794,7 +794,7 @@ _func##_proc(void *arg)                                                 \
                                                                         \
     { _actions }                                                        \
                                                                         \
-    ((_func##_arg *)arg)->done = TRUE;                                  \
+    ((_func##_arg *)arg)->done = true;                                  \
                                                                         \
     thread_exit(arg);                                                   \
                                                                         \
@@ -821,7 +821,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
     if (in->common.op == RCF_RPC_CALL_WAIT)                             \
     {                                                                   \
         _actions                                                        \
-        return TRUE;                                                    \
+        return true;                                                    \
     }                                                                   \
                                                                         \
     if (in->common.op == RCF_RPC_CALL)                                  \
@@ -831,12 +831,12 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
         if ((arg = malloc(sizeof(*arg))) == NULL)                       \
         {                                                               \
             out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);         \
-            return TRUE;                                                \
+            return true;                                                \
         }                                                               \
                                                                         \
         arg->in = *in;                                                  \
         arg->out = *out;                                                \
-        arg->done = FALSE;                                              \
+        arg->done = false;                                              \
                                                                         \
         if (thread_create(_func##_proc,                                 \
                           (void *)arg, &_tid) != 0)                     \
@@ -850,25 +850,25 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
         out->common.tid = _tid;                                         \
         out->common.done = rcf_pch_mem_alloc(&arg->done);               \
                                                                         \
-        return TRUE;                                                    \
+        return true;                                                    \
     }                                                                   \
                                                                         \
     if ((out->common._errno =                                           \
              thread_join(in->common.tid, (void *)(&arg))) != 0)         \
     {                                                                   \
-        return TRUE;                                                    \
+        return true;                                                    \
     }                                                                   \
     if (arg == NULL)                                                    \
     {                                                                   \
         ERROR("Internal error: thread_join() returned NULL");           \
         out->common._errno = TE_RC(TE_TA_WIN32, TE_EINVAL);             \
-        return TRUE;                                                    \
+        return true;                                                    \
     }                                                                   \
     xdr_tarpc_##_func##_out((XDR *)&op, out);                           \
     *out = arg->out;                                                    \
     rcf_pch_mem_free(in->common.done);                                  \
     free(arg);                                                          \
-    return TRUE;                                                        \
+    return true;                                                        \
 }
 
 #endif /* __TARPC_SERVER_H__ */

@@ -224,36 +224,36 @@ tapi_dpdk_append_argument(const char *argument, int *argc_p, char ***argv_p)
     *argv_p = argv;
 }
 
-static te_bool
+static bool
 is_prefixed(const char *str, const char *prefix)
 {
     return (strncmp(str, prefix, strlen(prefix)) == 0);
 }
 
-static te_bool
+static bool
 is_testpmd_arg(const char *arg)
 {
     return is_prefixed(arg, TAPI_DPDK_TESTPMD_ARG_PREFIX);
 }
 
-static te_bool
+static bool
 is_testpmd_command(const char *arg, testpmd_param_enum *param)
 {
     testpmd_param_enum i;
 
     if (!is_prefixed(arg, TAPI_DPDK_TESTPMD_COMMAND_PREFIX))
-        return FALSE;
+        return false;
 
     for (i = 0; i < TE_ARRAY_LEN(default_testpmd_params); i++)
     {
         if (strcmp(arg, default_testpmd_params[i].key) == 0)
         {
             *param = i;
-            return TRUE;
+            return true;
         }
     }
 
-    return FALSE;
+    return false;
 }
 
 static void
@@ -326,25 +326,25 @@ append_testpmd_command(unsigned int port_number, te_string *setup_cmd,
                        te_string *start_cmd, testpmd_param_enum param,
                        const char *cmd_val_fmt, ...)
 {
-    te_bool start = FALSE;
-    te_bool add_val = TRUE;
-    te_bool add_port = FALSE;
+    bool start = false;
+    bool add_val = true;
+    bool add_port = false;
 
     switch (param)
     {
         case TESTPMD_PARAM_FLOW_CTRL_AUTONEG:
             CHECK_RC(te_string_append(setup_cmd, "set flow_ctrl autoneg "));
-            add_port = TRUE;
+            add_port = true;
             break;
 
         case TESTPMD_PARAM_FLOW_CTRL_RX:
             CHECK_RC(te_string_append(setup_cmd, "set flow_ctrl rx "));
-            add_port = TRUE;
+            add_port = true;
             break;
 
         case TESTPMD_PARAM_FLOW_CTRL_TX:
             CHECK_RC(te_string_append(setup_cmd, "set flow_ctrl tx "));
-            add_port = TRUE;
+            add_port = true;
             break;
 
         case TESTPMD_PARAM_LPBK_MODE:
@@ -358,18 +358,18 @@ append_testpmd_command(unsigned int port_number, te_string *setup_cmd,
 
         case TESTPMD_PARAM_START_TX_FIRST:
             CHECK_RC(te_string_append(start_cmd, "start tx_first "));
-            start = TRUE;
+            start = true;
             break;
 
         case TESTPMD_PARAM_START:
             CHECK_RC(te_string_append(start_cmd, "start"));
-            start = TRUE;
-            add_val = FALSE;
+            start = true;
+            add_val = false;
             break;
 
         case TESTPMD_PARAM_TXPKTS:
             CHECK_RC(te_string_append(start_cmd, "set txpkts "));
-            start = TRUE;
+            start = true;
             break;
 
         default:
@@ -416,7 +416,7 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
 {
     const te_kvpair *pair;
     testpmd_param *params;
-    te_bool *param_is_set;
+    bool *param_is_set;
     uint64_t txpkts_size;
     uint64_t maxseg_size;
     unsigned int mbuf_size;
@@ -444,7 +444,7 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
                             return rc;
                         }
                         strcpy(params[i].str_val, pair->value);
-                        param_is_set[i] = TRUE;
+                        param_is_set[i] = true;
                         break;
 
                     case TESTPMD_PARAM_TYPE_UINT64:
@@ -455,7 +455,7 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
                             free(param_is_set);
                             return rc;
                         }
-                        param_is_set[i] = TRUE;
+                        param_is_set[i] = true;
                         break;
 
                     default:
@@ -639,7 +639,7 @@ out:
 }
 
 static te_errno
-tapi_dpdk_dbells_available(tapi_job_channel_t *dbells_skip_filter, te_bool *res)
+tapi_dpdk_dbells_available(tapi_job_channel_t *dbells_skip_filter, bool *res)
 {
     tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;
     te_errno rc;
@@ -687,7 +687,7 @@ tapi_dpdk_stats_log_dbells(tapi_job_channel_t *dbells_filter,
     te_meas_stats_t meas_stats_dbells = {0};
     te_mi_logger *logger = NULL;
     unsigned int num_datapoints;
-    te_bool dbells_available;
+    bool dbells_available;
     unsigned long dbells_ps;
     unsigned long pps_mean;
     unsigned int i;
@@ -955,7 +955,7 @@ tapi_dpdk_testpmd_prepare_eal_init(tapi_dpdk_testpmd_prep_eal *prep_eal)
 
 static void
 tapi_dpdk_testpmd_prepare_eal_cleanup(tapi_dpdk_testpmd_prep_eal *prep_eal,
-                                      te_bool release_cpus_rsrc, const char *ta)
+                                      bool release_cpus_rsrc, const char *ta)
 {
     int i;
 
@@ -1071,7 +1071,7 @@ fail_get_port_number:
 fail_build_eal_args:
 fail_get_testpmd_path:
 fail_grab_cpus:
-    tapi_dpdk_testpmd_prepare_eal_cleanup(prep_eal, TRUE, rpcs->ta);
+    tapi_dpdk_testpmd_prepare_eal_cleanup(prep_eal, true, rpcs->ta);
     free(working_dir);
 fail_get_working_dir:
 fail_get_service_cores:
@@ -1165,33 +1165,33 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
                                 .stdout_loc = &testpmd_job->out_channels[0],
                                 .stderr_loc = &testpmd_job->out_channels[1],
                                 .filters = TAPI_JOB_SIMPLE_FILTERS(
-                                    {.use_stdout = TRUE,
-                                     .readable = TRUE,
+                                    {.use_stdout = true,
+                                     .readable = true,
                                      .re = "(?m)Tx-pps:\\s*([0-9]+)",
                                      .extract = 1,
                                      .filter_var = &testpmd_job->tx_pps_filter,
                                     },
-                                    {.use_stdout = TRUE,
-                                     .readable = TRUE,
+                                    {.use_stdout = true,
+                                     .readable = true,
                                      .re = "(?m)Rx-pps:\\s*([0-9]+)",
                                      .extract = 1,
                                      .filter_var = &testpmd_job->rx_pps_filter,
                                     },
-                                    {.use_stdout = TRUE,
-                                     .readable = TRUE,
+                                    {.use_stdout = true,
+                                     .readable = true,
                                      .re = "(?m)^Link speed: ([0-9]+ [MG])bps$",
                                      .extract = 1,
                                      .filter_var = &testpmd_job->link_speed_filter,
                                     },
-                                    {.use_stderr = TRUE,
+                                    {.use_stderr = true,
                                      .log_level = TE_LL_ERROR,
-                                     .readable = TRUE,
+                                     .readable = true,
                                      .filter_var = &testpmd_job->err_filter,
                                      .filter_name = "err",
                                     },
-                                    {.use_stdout = TRUE,
+                                    {.use_stdout = true,
                                      .log_level = TE_LL_RING,
-                                     .readable = FALSE,
+                                     .readable = false,
                                      .filter_name = "out",
                                     }
                                  )
@@ -1217,7 +1217,7 @@ out:
         free(testpmd_argv[i]);
     free(testpmd_argv);
 
-    tapi_dpdk_testpmd_prepare_eal_cleanup(&prep_eal, FALSE, NULL);
+    tapi_dpdk_testpmd_prepare_eal_cleanup(&prep_eal, false, NULL);
 
     if (rc != 0)
         tapi_job_factory_destroy(factory);
@@ -1227,7 +1227,7 @@ out:
 
 te_errno
 tapi_dpdk_testpmd_is_opt_supported(rcf_rpc_server *rpcs, tapi_env *env,
-                                   te_kvpair_h *opt, te_bool *opt_supported)
+                                   te_kvpair_h *opt, bool *opt_supported)
 {
     int testpmd_argc = 0;
     char **testpmd_argv = NULL;
@@ -1287,10 +1287,10 @@ tapi_dpdk_testpmd_is_opt_supported(rcf_rpc_server *rpcs, tapi_env *env,
     testpmd_job->ta = tapi_strdup(rpcs->ta);
     testpmd_job->port_number = prep_eal.port_number;
 
-    *opt_supported = tapi_job_start(testpmd_job->job) == 0 ? TRUE : FALSE;
+    *opt_supported = tapi_job_start(testpmd_job->job) == 0 ? true : false;
     if (*opt_supported)
     {
-        *opt_supported = FALSE;
+        *opt_supported = false;
         rc = te_string_append(&stop_testpmd_cmd, "\r");
         if (rc != 0)
         {
@@ -1323,7 +1323,7 @@ tapi_dpdk_testpmd_is_opt_supported(rcf_rpc_server *rpcs, tapi_env *env,
         }
 
         if ((status.type == TAPI_JOB_STATUS_EXITED) && (status.value == 0))
-            *opt_supported = TRUE;
+            *opt_supported = true;
     }
 
     tapi_dpdk_testpmd_destroy(testpmd_job);
@@ -1333,7 +1333,7 @@ out:
         free(testpmd_argv[i]);
     free(testpmd_argv);
 
-    tapi_dpdk_testpmd_prepare_eal_cleanup(&prep_eal, TRUE, rpcs->ta);
+    tapi_dpdk_testpmd_prepare_eal_cleanup(&prep_eal, true, rpcs->ta);
     te_string_free(&stop_testpmd_cmd);
 
     if (rc != 0)
@@ -1526,17 +1526,17 @@ out:
     return rc;
 }
 
-te_bool
+bool
 tapi_dpdk_mtu_by_pkt_size(unsigned int packet_size, unsigned int *mtu)
 {
     unsigned int sufficient_mtu = packet_size -
                                   MIN(ETHER_HDR_LEN, packet_size);
 
     *mtu = sufficient_mtu;
-    return (sufficient_mtu > ETHER_DATA_LEN) ? TRUE : FALSE;
+    return (sufficient_mtu > ETHER_DATA_LEN) ? true : false;
 }
 
-te_bool
+bool
 tapi_dpdk_mbuf_size_by_pkt_size(unsigned int packet_size,
                                 unsigned int *mbuf_size)
 {
@@ -1545,12 +1545,12 @@ tapi_dpdk_mbuf_size_by_pkt_size(unsigned int packet_size,
     if (minimal_mbuf_size <=
         default_testpmd_params[TESTPMD_PARAM_MBUF_SIZE].val)
     {
-        return FALSE;
+        return false;
     }
 
     *mbuf_size = minimal_mbuf_size;
 
-    return TRUE;
+    return true;
 }
 
 te_errno
@@ -1561,14 +1561,14 @@ tapi_dpdk_attach_dbells_filter_rx(tapi_dpdk_testpmd_job_t *testpmd_job)
         .stdout_loc = &testpmd_job->out_channels[0],
         .stderr_loc = &testpmd_job->out_channels[1],
         .filters = TAPI_JOB_SIMPLE_FILTERS(
-            {.use_stdout = TRUE,
-             .readable = TRUE,
+            {.use_stdout = true,
+             .readable = true,
              .re = "(?m)rx_dbells\\s*([0-9]+)\\s*([0-9]+)",
              .extract = 2,
              .filter_var = &testpmd_job->rx_dbells_filter,
             },
-            {.use_stderr = TRUE,
-             .readable = TRUE,
+            {.use_stderr = true,
+             .readable = true,
              .re = "(?m)No\\sxstat\\s'rx_dbells'",
              .extract = 0,
              .filter_var = &testpmd_job->rx_dbells_skip_filter,
@@ -1587,14 +1587,14 @@ tapi_dpdk_attach_dbells_filter_tx(tapi_dpdk_testpmd_job_t *testpmd_job)
         .stdout_loc = &testpmd_job->out_channels[0],
         .stderr_loc = &testpmd_job->out_channels[1],
         .filters = TAPI_JOB_SIMPLE_FILTERS(
-            {.use_stdout = TRUE,
-             .readable = TRUE,
+            {.use_stdout = true,
+             .readable = true,
              .re = "(?m)tx_dbells\\s*([0-9]+)\\s*([0-9]+)",
              .extract = 2,
              .filter_var = &testpmd_job->tx_dbells_filter,
             },
-            {.use_stderr = TRUE,
-             .readable = TRUE,
+            {.use_stderr = true,
+             .readable = true,
              .re = "(?m)No\\sxstat\\s'tx_dbells'",
              .extract = 0,
              .filter_var = &testpmd_job->tx_dbells_skip_filter,
@@ -1643,14 +1643,14 @@ tapi_dpdk_attach_rx_pkts_bytes_filters(tapi_dpdk_testpmd_job_t *testpmd_job)
         .stdout_loc = &testpmd_job->out_channels[0],
         .stderr_loc = &testpmd_job->out_channels[1],
         .filters = TAPI_JOB_SIMPLE_FILTERS(
-            {.use_stdout = TRUE,
-             .readable = TRUE,
+            {.use_stdout = true,
+             .readable = true,
              .re = "(?m)RX-packets:\\s*([0-9]+)",
              .extract = 1,
              .filter_var = &testpmd_job->rx_pkts_filter,
             },
-            {.use_stdout = TRUE,
-             .readable = TRUE,
+            {.use_stdout = true,
+             .readable = true,
              .re = "(?m)RX-bytes:\\s*([0-9]+)",
              .extract = 1,
              .filter_var = &testpmd_job->rx_bytes_filter,

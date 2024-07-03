@@ -107,7 +107,7 @@ extern te_errno tapi_ip6_eth_csap_create(const char *ta_name, int sid,
  * @return Status code.
  */
 extern te_errno tapi_ip6_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
-                                 te_bool is_pattern,
+                                 bool is_pattern,
                                  const uint8_t *src_addr,
                                  const uint8_t *dst_addr,
                                  int next_header, int hop_limit);

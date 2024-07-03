@@ -306,7 +306,7 @@ wait_connectivity_changes(tsa_session *ss)
 
 /* See the tapi_tcp_states.h file for the description. */
 void
-tsa_gw_preconf(tsa_session *ss, te_bool preconfigured)
+tsa_gw_preconf(tsa_session *ss, bool preconfigured)
 {
     ss->config.gw_preconf = preconfigured;
 }
@@ -351,15 +351,15 @@ configure_gateway(tsa_session *ss)
                                         ss->config.iut_if->if_name,
                                         ss->config.pco_gw->ta,
                                         ss->config.gw_iut_if->if_name,
-                                        ss->config.gw_iut_addr, NULL, FALSE));
+                                        ss->config.gw_iut_addr, NULL, false));
         CHECK_NZ_RETURN(tapi_update_arp(ss->config.pco_gw->ta,
                                         ss->config.gw_iut_if->if_name,
                                         ss->config.pco_iut->ta,
                                         ss->config.iut_if->if_name,
-                                        ss->config.iut_addr, NULL, FALSE));
+                                        ss->config.iut_addr, NULL, false));
     }
 
-    ss->state.sock.route_dst_added = TRUE;
+    ss->state.sock.route_dst_added = true;
 
     /*
      * Add route on 'pco_tst': 'iut_addr' via gateway
@@ -375,7 +375,7 @@ configure_gateway(tsa_session *ss)
     if (rc != 0)
         return rc;
 
-    ss->state.sock.route_src_added = TRUE;
+    ss->state.sock.route_src_added = true;
 
     /* Turn on forwarding on router host */
     if (family == RPC_AF_INET)
@@ -383,16 +383,16 @@ configure_gateway(tsa_session *ss)
         CHECK_NZ_RETURN(tapi_cfg_base_ipv4_fw_enabled(
                                             ss->config.pco_gw->ta,
                                             &ss->state.sock.ipv4_fw));
-        CHECK_NZ_RETURN(tapi_cfg_base_ipv4_fw(ss->config.pco_gw->ta, TRUE));
-        ss->state.sock.ipv4_fw_enabled = TRUE;
+        CHECK_NZ_RETURN(tapi_cfg_base_ipv4_fw(ss->config.pco_gw->ta, true));
+        ss->state.sock.ipv4_fw_enabled = true;
     }
     else if (family == RPC_AF_INET6)
     {
         CHECK_NZ_RETURN(tapi_cfg_base_ipv6_fw_enabled(
                                             ss->config.pco_gw->ta,
                                             &ss->state.sock.ipv6_fw));
-        CHECK_NZ_RETURN(tapi_cfg_base_ipv6_fw(ss->config.pco_gw->ta, TRUE));
-        ss->state.sock.ipv6_fw_enabled = TRUE;
+        CHECK_NZ_RETURN(tapi_cfg_base_ipv6_fw(ss->config.pco_gw->ta, true));
+        ss->state.sock.ipv6_fw_enabled = true;
     }
 
     return 0;
@@ -579,7 +579,7 @@ tsa_create_session(tsa_session *ss, uint32_t flags)
                                                         sin_addr.s_addr;
         rc = tapi_tcp_reset_hack_init(ss->config.pco_tst->ta,
                                       ss->state.sock.sid,
-                                      ss->config.tst_if->if_name, TRUE,
+                                      ss->config.tst_if->if_name, true,
                                       &ss->state.sock.rst_hack_c);
         if (rc != 0)
             return rc;
@@ -658,14 +658,14 @@ tsa_destroy_session(tsa_session *ss)
             if (tapi_tcp_wait_open(ss->state.csap.csap_tst_s,
                                    MAX_CHANGE_TIMEOUT) != 0)
                 ss->state.csap.csap_tst_s = -1;
-            ss->state.tst_wait_connect = FALSE;
+            ss->state.tst_wait_connect = false;
         }
 
         RPC_AWAIT_ERROR(ss->config.pco_iut);
         rpc_connect(ss->config.pco_iut, ss->state.iut_s,
                     ss->config.tst_addr);
 
-        ss->state.iut_wait_connect = FALSE;
+        ss->state.iut_wait_connect = false;
     }
 
     if (ss->state.tst_wait_connect &&
@@ -676,7 +676,7 @@ tsa_destroy_session(tsa_session *ss)
         rpc_connect(ss->config.pco_tst, ss->state.sock.tst_s,
                     ss->config.tst_addr);
 
-        ss->state.tst_wait_connect = FALSE;
+        ss->state.tst_wait_connect = false;
     }
 
     if (ss->config.pco_iut != NULL)
@@ -862,20 +862,20 @@ tsa_break_tst_iut_conn(tsa_session *ss)
         rc = tapi_update_arp(ss->config.pco_tst->ta,
                              ss->config.tst_if->if_name,
                              NULL, NULL, ss->config.gw_tst_addr,
-                             ss->config.alien_link_addr, TRUE);
+                             ss->config.alien_link_addr, true);
     }
     else
     {
         rc = tapi_update_arp(ss->config.pco_tst->ta,
                              ss->config.tst_if->if_name,
                              NULL, NULL, ss->config.iut_addr,
-                             ss->config.alien_link_addr, TRUE);
+                             ss->config.alien_link_addr, true);
     }
 
     if (rc != 0)
         return rc;
 
-    ss->state.iut_alien_arp_added = TRUE;
+    ss->state.iut_alien_arp_added = true;
     return 0;
 }
 
@@ -897,20 +897,20 @@ tsa_break_iut_tst_conn(tsa_session *ss)
         rc = tapi_update_arp(ss->config.pco_gw->ta,
                              ss->config.gw_tst_if->if_name,
                              NULL, NULL, ss->config.tst_addr,
-                             ss->config.alien_link_addr, TRUE);
+                             ss->config.alien_link_addr, true);
     }
     else
     {
         rc = tapi_update_arp(ss->config.pco_iut->ta,
                              ss->config.iut_if->if_name,
                              NULL, NULL, ss->config.tst_addr,
-                             ss->config.alien_link_addr, TRUE);
+                             ss->config.alien_link_addr, true);
     }
 
     if (rc != 0)
         return rc;
 
-    ss->state.tst_alien_arp_added = TRUE;
+    ss->state.tst_alien_arp_added = true;
     return 0;
 }
 
@@ -933,7 +933,7 @@ tsa_repair_tst_iut_conn(tsa_session *ss)
                              ss->config.tst_if->if_name,
                              ss->config.pco_gw->ta,
                              ss->config.gw_tst_if->if_name,
-                             ss->config.gw_tst_addr, NULL, FALSE);
+                             ss->config.gw_tst_addr, NULL, false);
     }
     else
     {
@@ -941,13 +941,13 @@ tsa_repair_tst_iut_conn(tsa_session *ss)
                              ss->config.tst_if->if_name,
                              ss->config.pco_iut->ta,
                              ss->config.iut_if->if_name,
-                             ss->config.iut_addr, NULL, FALSE);
+                             ss->config.iut_addr, NULL, false);
     }
 
     if (rc != 0)
         return rc;
 
-    ss->state.iut_alien_arp_added = FALSE;
+    ss->state.iut_alien_arp_added = false;
 
     return 0;
 }
@@ -971,7 +971,7 @@ tsa_repair_iut_tst_conn(tsa_session *ss)
                              ss->config.gw_tst_if->if_name,
                              ss->config.pco_tst->ta,
                              ss->config.tst_if->if_name,
-                             ss->config.tst_addr, NULL, FALSE);
+                             ss->config.tst_addr, NULL, false);
     }
     else
     {
@@ -979,13 +979,13 @@ tsa_repair_iut_tst_conn(tsa_session *ss)
                              ss->config.iut_if->if_name,
                              ss->config.pco_tst->ta,
                              ss->config.tst_if->if_name,
-                             ss->config.tst_addr, NULL, FALSE);
+                             ss->config.tst_addr, NULL, false);
     }
 
     if (rc != 0)
         return rc;
 
-    ss->state.tst_alien_arp_added = FALSE;
+    ss->state.tst_alien_arp_added = false;
 
     return 0;
 }
@@ -1202,7 +1202,7 @@ tsa_do_moves_str(tsa_session *ss,
     rpc_tcp_state   next_state = RPC_TCP_CLOSE;
     rpc_tcp_state   prev_state = RPC_TCP_CLOSE;
     uint32_t        move_flags = flags;
-    te_bool         first_state = TRUE;
+    bool first_state = true;
     te_errno        rc = 0;
 
     const char *delims = TSA_DELIMETERS;
@@ -1286,7 +1286,7 @@ tsa_do_moves_str(tsa_session *ss,
                     }
                 }
 
-                first_state = FALSE;
+                first_state = false;
 
                 if (tsa_state_cur(ss) == stop_state &&
                     next_state == stop_state)

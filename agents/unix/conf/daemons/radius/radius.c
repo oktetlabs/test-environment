@@ -46,13 +46,13 @@ enum radius_parameters {
 /** Node of the configuration file */
 typedef struct radius_parameter
 {
-    te_bool deleted;
+    bool deleted;
     enum radius_parameters kind;
     char *name;
     char *value;
     /* The following two are only meaningful for RP_FILE */
     int backup_index;
-    te_bool modified;
+    bool modified;
     struct radius_parameter *parent;
     struct radius_parameter *next;
     struct radius_parameter *children, *last_child;
@@ -88,8 +88,8 @@ make_rp(enum radius_parameters kind,
         return NULL;
     }
 
-    parm->deleted = FALSE;
-    parm->modified = FALSE;
+    parm->deleted = false;
+    parm->modified = false;
     parm->kind = kind;
     parm->backup_index = UNIX_SERVICE_MAX;
     parm->name = (name != NULL) ? strdup(name) : NULL;
@@ -327,7 +327,7 @@ write_radius(radius_parameter *top)
     }
     else
     {
-        top->modified = FALSE;
+        top->modified = false;
         ds_config_touch(top->backup_index);
         outfile = fopen(top->name, "w");
         if (outfile == NULL)
@@ -370,25 +370,26 @@ resolve_rp_name (radius_parameter *origin, const char **name)
 
 /**
  * Finds a RADIUS parameter inside 'name' and creates it if there isn't one and
- * 'create' is TRUE.
+ * @p create is @c true.
  *
  * @param create_now  This parameter is for recursive calls on RP_FILE records.
                       A user should normally set it equal to 'create'.
  * @param enumerator  If not NULL, the function that is called on every parameter
-                      with matching name. If it returns FALSE, the parameter is
+                      with matching name. If it returns @c false, the parameter is
                       not considered matching.
  * @param extra       Passed to 'enumerator' as its second argument
  */
 static radius_parameter *
-find_rp (radius_parameter *base, const char *name, te_bool create, te_bool create_now,
-         te_bool (*enumerator)(radius_parameter *rp, void *extra), void *extra)
+find_rp (radius_parameter *base, const char *name, bool create,
+         bool create_now,
+         bool (*enumerator)(radius_parameter *rp, void *extra), void *extra)
 {
     radius_parameter *iter;
     const char *next  = NULL;
     const char *value = NULL;
     size_t      name_length;
     size_t      value_length  = 0;
-    te_bool     wildcard      = FALSE;
+    bool wildcard = false;
 
     VERB("looking for RADIUS parameter %s", name);
 
@@ -437,14 +438,15 @@ find_rp (radius_parameter *base, const char *name, te_bool create, te_bool creat
     name_length = (value == NULL ? next : value - 1) - name;
     if (name[name_length - 1] == '*')
     {
-        wildcard = TRUE;
+        wildcard = true;
         name_length--;
     }
     for (iter = base->children; iter != NULL; iter = iter->next)
     {
         if (iter->kind == RP_FILE)
         {
-            radius_parameter *tmp = find_rp(iter, name, create, FALSE, enumerator, extra);
+            radius_parameter *tmp = find_rp(iter, name, create, false,
+                                            enumerator, extra);
             if (tmp != NULL)
                 return tmp;
         }
@@ -463,7 +465,7 @@ find_rp (radius_parameter *base, const char *name, te_bool create, te_bool creat
                         if (enumerator == NULL || enumerator(iter, extra))
                         {
                             if (iter->deleted)
-                                iter->deleted = FALSE;
+                                iter->deleted = false;
                             break;
                         }
                     }
@@ -501,28 +503,28 @@ find_rp (radius_parameter *base, const char *name, te_bool create, te_bool creat
 /**
  * Finds a RADIUS parameter 'name' inside 'top'. The name is absolutized.
  *
- * @returns TRUE if the parameter is found, FALSE otherwise
+ * @return @c true if the parameter is found, @c false otherwise
  *
  * @param top   The root of the tree to search
  * @param name  The parameter name
  * @param value The value of the found parameter (OUT)
  */
-static te_bool
+static bool
 retrieve_rp (radius_parameter *top, const char *name, const char **value)
 {
     radius_parameter *rp;
 
     top = resolve_rp_name(top, &name);
-    rp = find_rp(top, name, FALSE, FALSE, NULL, NULL);
+    rp = find_rp(top, name, false, false, NULL, NULL);
     if (rp != NULL)
     {
         if (value != NULL)
             *value = rp->value;
-        return TRUE;
+        return true;
     }
     if (value != NULL)
         *value = NULL;
-    return FALSE;
+    return false;
 }
 
 /**
@@ -608,7 +610,7 @@ mark_rp_changes(radius_parameter *rp)
 
     for (file = rp->parent; file->kind != RP_FILE; file = file->parent)
         ;
-    file->modified = TRUE;
+    file->modified = true;
 }
 
 /**
@@ -622,7 +624,7 @@ wipe_rp_section(radius_parameter *rp)
     {
         if (rp->kind != RP_FILE)
         {
-            rp->deleted = TRUE;
+            rp->deleted = true;
             if (rp->kind != RP_SECTION && rp->value != NULL)
             {
                 free(rp->value);
@@ -647,7 +649,7 @@ static int
 update_rp(radius_parameter *top, enum radius_parameters kind,
           const char *name, const char *value)
 {
-    radius_parameter *rp = find_rp(top, name, TRUE, TRUE, NULL, NULL);
+    radius_parameter *rp = find_rp(top, name, true, true, NULL, NULL);
 
     if (rp == NULL)
     {
@@ -662,7 +664,7 @@ update_rp(radius_parameter *top, enum radius_parameters kind,
     }
     if (value == RP_DELETE_VALUE)
     {
-        rp->deleted = TRUE;
+        rp->deleted = true;
         if (rp->kind == RP_SECTION)
             wipe_rp_section(rp);
 
@@ -670,7 +672,7 @@ update_rp(radius_parameter *top, enum radius_parameters kind,
     }
     else
     {
-        rp->deleted = FALSE;
+        rp->deleted = false;
         rp->kind = kind;
         if (value != NULL)
             rp->value = strdup(value);
@@ -731,7 +733,7 @@ typedef struct radius_attr_array {
 /** A record for a RADIUS user */
 typedef struct radius_user
 {
-    te_bool             reject;
+    bool reject;
     char               *name;
     radius_attr_array   checks;
     radius_attr_array   accept_replies;
@@ -764,7 +766,7 @@ make_radius_user(const char *name)
         ERROR("%s(): not enough memory", __FUNCTION__);
         return NULL;
     }
-    user->reject = FALSE;
+    user->reject = false;
     if ((user->name = strdup(name)) == NULL)
     {
         ERROR("%s(): not enough memory", __FUNCTION__);
@@ -945,7 +947,7 @@ radius_set_attr_array(radius_attr_array *attr_array, const char *attr_string)
     radius_attr  *attrs = NULL;
 
     RING("%s('%s')", __FUNCTION__, attr_string);
-    while (TRUE)
+    while (true)
     {
         char        *name;
         char        *value;
@@ -1019,24 +1021,24 @@ stringify_attr_array(char *dest, radius_attr_array *attr_array)
  * @param attrs1    First array
  * @param attrs2    Second array
  *
- * @return TRUE if arrays are equal, FALSE otherwise.
+ * @return @c true if arrays are equal, @c false otherwise.
  */
-static te_bool
+static bool
 radius_equal_attr_array(const radius_attr_array *attrs1,
                         const radius_attr_array *attrs2)
 {
     unsigned int i;
 
     if (attrs1->len != attrs2->len)
-        return FALSE;
+        return false;
 
     for (i = 0; i < attrs1->len; i++)
     {
         if (strcmp(attrs1->data[i].name, attrs2->data[i].name) != 0 ||
             strcmp(attrs1->data[i].value, attrs2->data[i].value) != 0)
-            return FALSE;
+            return false;
     }
-    return TRUE;
+    return true;
 }
 #endif
 
@@ -1538,17 +1540,17 @@ ds_radius_client_del(unsigned int gid, const char *oid,
     return 0;
 }
 
-static te_bool client_count(radius_parameter *rp, void *extra)
+static bool client_count(radius_parameter *rp, void *extra)
 {
     int *count = extra;
 
     UNUSED(rp);
     if (rp->value != NULL)
         (*count) += strlen(rp->value) + 1;
-    return FALSE;
+    return false;
 }
 
-static te_bool client_list(radius_parameter *rp, void *extra)
+static bool client_list(radius_parameter *rp, void *extra)
 {
     char **iter = extra;
 
@@ -1559,7 +1561,7 @@ static te_bool client_list(radius_parameter *rp, void *extra)
         (*iter)[len] = ' ';
         (*iter) += len + 1;
     }
-    return FALSE;
+    return false;
 }
 
 static te_errno
@@ -1576,10 +1578,10 @@ ds_radius_client_list(unsigned int gid, const char *oid,
     UNUSED(instance);
 
     VERB("obtaining client list");
-    find_rp(radius_conf, "client", FALSE, FALSE, client_count, &size);
+    find_rp(radius_conf, "client", false, false, client_count, &size);
     VERB("allocation %d bytes for list of clients", size);
     c_iter = *list = malloc(size + 1);
-    find_rp(radius_conf, "client", FALSE, FALSE, client_list, &c_iter);
+    find_rp(radius_conf, "client", false, false, client_list, &c_iter);
     *c_iter = '\0';
     VERB("client list is '%s'", *list);
     return 0;
@@ -1858,7 +1860,7 @@ const char *radius_predefined_params[] = {
     NULL, NULL
 };
 
-static te_bool
+static bool
 rp_delete_all(radius_parameter *rp, void *extra)
 {
     UNUSED(extra);
@@ -1870,11 +1872,11 @@ rp_delete_all(radius_parameter *rp, void *extra)
         free(rp->value);
         rp->value = NULL;
     }
-    rp->deleted = TRUE;
+    rp->deleted = true;
     if (rp->kind == RP_SECTION)
         wipe_rp_section(rp);
     mark_rp_changes(rp);
-    return FALSE;
+    return false;
 }
 
 /**
@@ -1907,7 +1909,7 @@ radiusserver_grab(const char *name)
 
     for (param = radius_ignored_params; *param != NULL; param++)
     {
-        find_rp(radius_conf, *param, FALSE, FALSE, rp_delete_all, NULL);
+        find_rp(radius_conf, *param, false, false, rp_delete_all, NULL);
     }
     for (param = radius_predefined_params; *param != NULL; param += 2)
     {

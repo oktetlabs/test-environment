@@ -58,7 +58,7 @@ extern "C" {
  *
  * @return status code
  */
-extern int rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
+extern int rpc_get_rw_ability(bool *answer, rcf_rpc_server *rpcs,
                               int s, int timeout, char *type);
 
 /**

@@ -24,15 +24,15 @@
  * Configure network connectivity.
  *
  * @param ss          Pointer to TSA session structure.
- * @param iut_tst     If @c TRUE, connection IUT->Tester should be
+ * @param iut_tst     If @c true, connection IUT->Tester should be
  *                    working, otherwise it should be broken.
- * @param tst_iut     If @c TRUE, connection Tester->IUT should be
+ * @param tst_iut     If @c true, connection Tester->IUT should be
  *                    working, otherwise it should be broken.
  *
  * @return Status code.
  */
 static te_errno
-tsa_set_connectivity(tsa_session *ss, te_bool iut_tst, te_bool tst_iut)
+tsa_set_connectivity(tsa_session *ss, bool iut_tst, bool tst_iut)
 {
     te_errno rc = TE_EFAIL;
 
@@ -67,7 +67,7 @@ iut_syn_sock_handler(tsa_session *ss)
 {
     te_errno rc = 0;
 
-    rc = tsa_set_connectivity(ss, FALSE, FALSE);
+    rc = tsa_set_connectivity(ss, false, false);
     if (rc != 0)
         return rc;
 
@@ -77,7 +77,7 @@ iut_syn_sock_handler(tsa_session *ss)
         RPC_ERRNO(ss->config.pco_iut) != RPC_EINPROGRESS)
         return RPC_ERRNO(ss->config.pco_iut);
 
-    ss->state.iut_wait_connect = TRUE;
+    ss->state.iut_wait_connect = true;
     rc = tsa_update_cur_state(ss);
     if (rc != 0)
         return rc;
@@ -105,7 +105,7 @@ tst_syn_sock_handler(tsa_session *ss)
 {
     te_errno rc = 0;
 
-    rc = tsa_set_connectivity(ss, FALSE, FALSE);
+    rc = tsa_set_connectivity(ss, false, false);
     if (rc != 0)
         return rc;
 
@@ -127,7 +127,7 @@ tst_syn_sock_handler(tsa_session *ss)
                     ss->config.iut_addr) < 0)
         return RPC_ERRNO(ss->config.pco_tst);
 
-    ss->state.tst_wait_connect = TRUE;
+    ss->state.tst_wait_connect = true;
     return 0;
 }
 
@@ -144,7 +144,7 @@ iut_syn_ack_sock_handler(tsa_session *ss)
 {
     te_errno rc = 0;
 
-    rc = tsa_set_connectivity(ss, FALSE, TRUE);
+    rc = tsa_set_connectivity(ss, false, true);
     if (rc != 0)
         return rc;
 
@@ -172,7 +172,7 @@ tst_syn_ack_sock_handler(tsa_session *ss)
 {
     te_errno rc = 0;
 
-    rc = tsa_set_connectivity(ss, TRUE, TRUE);
+    rc = tsa_set_connectivity(ss, true, true);
     if (rc != 0)
         return rc;
 
@@ -183,7 +183,7 @@ tst_syn_ack_sock_handler(tsa_session *ss)
         RPC_ERRNO(ss->config.pco_iut) != RPC_EINPROGRESS)
         rc = RPC_ERRNO(ss->config.pco_iut);
 
-    ss->state.iut_wait_connect = FALSE;
+    ss->state.iut_wait_connect = false;
 
     if (rc == 0)
     {
@@ -212,7 +212,7 @@ iut_ack_sock_handler(tsa_session *ss)
 {
     te_errno rc = 0;
 
-    rc = tsa_set_connectivity(ss, FALSE, TRUE);
+    rc = tsa_set_connectivity(ss, false, true);
     if (rc != 0)
         return rc;
 
@@ -236,7 +236,7 @@ tst_ack_sock_handler(tsa_session *ss)
     te_errno  rc_aux = 0;
     int       fdflags = 0;
 
-    rc = tsa_set_connectivity(ss, TRUE, TRUE);
+    rc = tsa_set_connectivity(ss, true, true);
     if (rc != 0)
         return rc;
 
@@ -251,7 +251,7 @@ tst_ack_sock_handler(tsa_session *ss)
                             ss->config.tst_addr) != 0 &&
                 RPC_ERRNO(ss->config.pco_iut) != RPC_EALREADY)
                 rc = RPC_ERRNO(ss->config.pco_iut);
-            ss->state.iut_wait_connect = FALSE;
+            ss->state.iut_wait_connect = false;
 
             if (rc != 0)
             {
@@ -260,7 +260,7 @@ tst_ack_sock_handler(tsa_session *ss)
                      "prevent timeout on TESTER connect() call");
                 ss->state.sock.tst_s = -1;
                 ss->state.sock.tst_s_aux = -1;
-                ss->state.tst_wait_connect = FALSE;
+                ss->state.tst_wait_connect = false;
                 rcf_rpc_server_restart(ss->config.pco_tst);
             }
         }
@@ -274,13 +274,13 @@ tst_ack_sock_handler(tsa_session *ss)
             if (rpc_connect(ss->config.pco_tst, ss->state.sock.tst_s,
                             ss->config.iut_addr) < 0)
                 rc = RPC_ERRNO(ss->config.pco_tst);
-            ss->state.tst_wait_connect = FALSE;
+            ss->state.tst_wait_connect = false;
 
             if (tsa_state_cur(ss) == RPC_TCP_LISTEN && rc == 0)
             {
                 ss->state.iut_s_aux = ss->state.iut_s;
                 INFINITE_LOOP_BEGIN(loop);
-                while (TRUE)
+                while (true)
                 {
                     RPC_AWAIT_ERROR(ss->config.pco_iut);
                     ss->state.iut_s =
@@ -366,7 +366,7 @@ iut_fin_sock_handler(tsa_session *ss)
 {
     te_errno rc = 0;
 
-    rc = tsa_set_connectivity(ss, FALSE, FALSE);
+    rc = tsa_set_connectivity(ss, false, false);
     if (rc != 0)
         return rc;
 
@@ -391,7 +391,7 @@ tst_fin_sock_handler(tsa_session *ss)
 {
     te_errno rc = 0;
 
-    rc = tsa_set_connectivity(ss, FALSE, FALSE);
+    rc = tsa_set_connectivity(ss, false, false);
     if (rc != 0)
         return rc;
 
@@ -454,7 +454,7 @@ tst_rst_sock_handler(tsa_session *ss)
         tsa_state_cur(ss) != RPC_TCP_CLOSE)
     {
 
-        rc = tsa_set_connectivity(ss, FALSE, TRUE);
+        rc = tsa_set_connectivity(ss, false, true);
         if (rc != 0)
             return rc;
 
@@ -487,9 +487,9 @@ tst_rst_sock_handler(tsa_session *ss)
 
         ss->state.sock.tst_s = -1;
         ss->state.sock.tst_s_aux = -1;
-        ss->state.tst_wait_connect = FALSE;
+        ss->state.tst_wait_connect = false;
 
-        rc = tsa_set_connectivity(ss, TRUE, TRUE);
+        rc = tsa_set_connectivity(ss, true, true);
         if (rc != 0)
             return rc;
 
@@ -507,7 +507,7 @@ tst_rst_sock_handler(tsa_session *ss)
         if (rc != 0)
             return rc;
 
-        rc = tsa_set_connectivity(ss, FALSE, TRUE);
+        rc = tsa_set_connectivity(ss, false, true);
         if (rc != 0)
             return rc;
 

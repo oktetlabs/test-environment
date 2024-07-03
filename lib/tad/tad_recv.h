@@ -91,7 +91,7 @@ typedef struct tad_recv_ptrn_unit_data {
 
     unsigned int        n_actions;      /**< Number of actions */
     tad_action_spec    *actions;        /**< Actions specification */
-    te_bool             no_report;      /**< Disable reporting of packets
+    bool no_report;      /**< Disable reporting of packets
                                              matched with the unit */
 
     void              **layer_opaque;

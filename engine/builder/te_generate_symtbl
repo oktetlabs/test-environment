@@ -26,12 +26,12 @@ NF != 7 { next }
 
     if ($3 == "T" || (($3 == "D" || $3 == "B" || $3 == "C") && $4 == "FUNC"))
     {
-        SYMBOLS[$1] = "TRUE";
+        SYMBOLS[$1] = "true";
         printf "extern void %s(void);\n", $1
     }
     else if (($3 == "D" || $3 == "B" || $3 == "C") && $4 != "FUNC")
     {
-        SYMBOLS[$1] = "FALSE";
+        SYMBOLS[$1] = "false";
         printf "extern int %s;\n", $1
     }
 }

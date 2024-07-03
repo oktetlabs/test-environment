@@ -33,7 +33,7 @@ cs_server_name(void)
 #define CONFIGURATOR_SERVER     cs_server_name()
 
 /** Type of IPC used by Configurator */
-#define CONFIGURATOR_IPC        (TRUE) /* Connection-oriented IPC */
+#define CONFIGURATOR_IPC        (true) /* Connection-oriented IPC */
 
 /** Message types */
 enum {
@@ -88,10 +88,10 @@ typedef struct cfg_msg {
 typedef struct cfg_register_msg {
     CFG_MSG_FIELDS
     cfg_val_type  val_type; /**< Type of the object instance value */
-    te_bool       vol;      /**< Object is volatile */
-    te_bool       no_parent_dep; /**< Object should not depend on parent */
-    te_bool       substitution;  /**< The object uses substitution */
-    te_bool       unit;     /**< The object is a single logical unit, its
+    bool vol;      /**< Object is volatile */
+    bool no_parent_dep; /**< Object should not depend on parent */
+    bool substitution;  /**< The object uses substitution */
+    bool unit;     /**< The object is a single logical unit, its
                                  descendants are properties of that unit */
     uint8_t       access;   /**< Access rights */
     uint16_t      def_val;  /**< Default value offset from start of OID
@@ -159,14 +159,14 @@ typedef struct cfg_family_msg {
 typedef struct cfg_add_msg {
     CFG_MSG_FIELDS
     cfg_handle      handle;         /**< OUT: object instance handle */
-    te_bool         local;          /**< Local add */
+    bool local;          /**< Local add */
     cfg_val_type    val_type;       /**< Object value type */
     uint16_t        oid_offset;     /**< Offset to OID from the
                                          message start */
     union {
         struct sockaddr val_addr[0];    /**< start of sockaddr value */
         char            val_str[0];     /**< start of string value*/
-        te_bool         val_bool;       /**< te_bool value */
+        bool            val_bool;       /**< bool value */
         int8_t          val_int8;       /**< int8_t value */
         uint8_t         val_uint8;      /**< uint8_t value */
         int16_t         val_int16;      /**< int16_t value */
@@ -183,7 +183,7 @@ typedef struct cfg_add_msg {
 typedef struct cfg_del_msg {
     CFG_MSG_FIELDS
     cfg_handle handle;  /**< IN: object to be deleted */
-    te_bool    local;   /**< IN: local delete */
+    bool local;   /**< IN: local delete */
 } cfg_del_msg;
 
 /** CFG_SET message content  */
@@ -191,12 +191,12 @@ typedef struct cfg_set_msg {
     CFG_MSG_FIELDS
     /* IN fields - should not be in answer */
     cfg_handle   handle;        /**< Object instance handle */
-    te_bool      local;         /**< Local set */
+    bool local;         /**< Local set */
     cfg_val_type val_type;      /**< Object value type */
     union {
         struct sockaddr val_addr[0]; /**< start of sockaddr value */
         char            val_str[0];  /**< start of string value */
-        te_bool         val_bool;    /**< te_bool value */
+        bool            val_bool;    /**< bool value */
         int8_t          val_int8;    /**< int8_t value */
         uint8_t         val_uint8;   /**< uint8_t value */
         int16_t         val_int16;   /**< int16_t value */
@@ -218,13 +218,13 @@ typedef struct cfg_commit_msg {
 /** CFG_GET message content  */
 typedef struct cfg_get_msg {
     CFG_MSG_FIELDS
-    te_bool         sync;        /**< Synchronization get */
+    bool sync;        /**< Synchronization get */
     cfg_handle      handle;      /**< IN */
     cfg_val_type    val_type;    /**< Object value type */
     union {
         struct sockaddr val_addr[0]; /**< start of sockaddr value */
         char            val_str[0];  /**< start of string value */
-        te_bool         val_bool;    /**< te_bool value */
+        bool            val_bool;    /**< bool value */
         int8_t          val_int8;    /**< int8_t value */
         uint8_t         val_uint8;   /**< uint8_t value */
         int16_t         val_int16;   /**< int16_t value */
@@ -241,14 +241,14 @@ typedef struct cfg_get_msg {
 typedef struct cfg_copy_msg {
     CFG_MSG_FIELDS
     cfg_handle src_handle;   /**< Source handle */
-    te_bool    is_obj;       /**< Destination is an object */
+    bool is_obj;       /**< Destination is an object */
     char       dst_oid[0];   /**< Destination OID */
 } cfg_copy_msg;
 
 /** CFG_SYNC message content  */
 typedef struct cfg_sync_msg {
     CFG_MSG_FIELDS
-    te_bool subtree;  /**< subtree synchronization*/
+    bool subtree;  /**< subtree synchronization*/
     char    oid[0];   /**< start of object identifier */
 } cfg_sync_msg;
 
@@ -257,7 +257,7 @@ typedef struct cfg_reboot_msg {
     CFG_MSG_FIELDS
     /* IN fields - should not be in the answer */
     rcf_reboot_type reboot_type; /** Reboot type */
-    te_bool restore;    /**< Restore current configuration */
+    bool restore;    /**< Restore current configuration */
     char    ta_name[0]; /**< start of Test Agent name*/
 } cfg_reboot_msg;
 
@@ -290,7 +290,7 @@ typedef struct cfg_backup_msg {
 /** CFG_CONFIG message content  */
 typedef struct cfg_config_msg {
     CFG_MSG_FIELDS
-    te_bool history;     /**< add to command history (if true) */
+    bool history;     /**< add to command history (if true) */
     char    filename[0]; /**< IN */
 } cfg_config_msg;
 
@@ -305,7 +305,7 @@ typedef struct cfg_conf_touch_msg {
 typedef struct cfg_add_dependency_msg {
     CFG_MSG_FIELDS
     cfg_handle    handle;   /**< IN: object handle */
-    te_bool       object_wide; /**< IN: whether dependency is object wide */
+    bool object_wide; /**< IN: whether dependency is object wide */
     char          oid[0];   /**< IN: start of the master
                                  instance identifier */
 } cfg_add_dependency_msg;
@@ -341,7 +341,7 @@ extern "C" {
  *                      or re-allocated by the function)
  * @param update_dh     if true, add the command to dynamic history
  */
-extern void cfg_process_msg(cfg_msg **msg, te_bool update_dh);
+extern void cfg_process_msg(cfg_msg **msg, bool update_dh);
 
 #ifdef __cplusplus
 } /* extern "C" */

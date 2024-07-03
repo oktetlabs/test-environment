@@ -80,9 +80,9 @@ typedef enum tapi_cfg_key_mode {
  * @param ta         Agent name
  * @param key_name   Key name
  *
- * @return @c TRUE if the key exists
+ * @return @c true if the key exists
  */
-extern te_bool tapi_cfg_key_exists(const char *ta, const char *key_name);
+extern bool tapi_cfg_key_exists(const char *ta, const char *key_name);
 
 /**
  * Add or replace a key with given parameters.

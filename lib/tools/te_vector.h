@@ -579,7 +579,7 @@ te_vec_get_index(const te_vec *vec, const void *ptr)
  *                               The original content is **not** destroyed,
  *                               new items are added to the end.
  * @param[in]     sep            Separator character.
- * @param[in]     empty_is_none  If @c TRUE, empty string is treated
+ * @param[in]     empty_is_none  If @c true, empty string is treated
  *                               as having no chunks (so @p strvec is
  *                               not changed). Otherwise, an empty string
  *                               is treated as having a single empty chunk.
@@ -587,7 +587,7 @@ te_vec_get_index(const te_vec *vec, const void *ptr)
  * @return Status code (always 0).
  */
 extern te_errno te_vec_split_string(const char *str, te_vec *strvec, char sep,
-                                    te_bool empty_is_none);
+                                    bool empty_is_none);
 
 /**
  * Sort the elements of @p vec in place according to @p compar.
@@ -628,9 +628,9 @@ extern void te_vec_sort(te_vec *vec, int (*compar)(const void *elt1,
  *                     If they are both @c NULL, the function just checks
  *                     for an existence of a matching element.
  *
- * @return TRUE iff an element matching @p key is found.
+ * @return @c true iff an element matching @p key is found.
  */
- extern te_bool te_vec_search(const te_vec *vec, const void *key,
+ extern bool te_vec_search(const te_vec *vec, const void *key,
                               int (*compar)(const void *key, const void *elt),
                               unsigned int *minpos, unsigned int *maxpos);
 

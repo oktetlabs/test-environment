@@ -32,7 +32,7 @@ extern "C" {
  * @return Status code
  */
 extern te_errno tapi_cfg_vm_add(const char *ta, const char *vm_name,
-                                const char *tmpl, te_bool start);
+                                const char *tmpl, bool start);
 
 /**
  * Delete virtual machine.
@@ -77,7 +77,7 @@ extern te_errno tapi_cfg_vm_stop(const char *ta, const char *vm_name);
  */
 extern te_errno tapi_cfg_vm_add_drive(const char *ta, const char *vm_name,
                                       const char *drive_name, const char *file,
-                                      te_bool snapshot);
+                                      bool snapshot);
 
 /**
  * Pass PCI function to virtual machine.

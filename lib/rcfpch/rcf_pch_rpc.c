@@ -110,13 +110,13 @@ typedef struct rpcserver {
 
     uint32_t  timeout;     /**< Timeout for the last sent request */
     int       last_sid;    /**< SID received with the last command */
-    te_bool   dead;        /**< RPC server does not respond */
-    te_bool   finished;    /**< RPC server process (or thread) was
+    bool dead;        /**< RPC server does not respond */
+    bool finished;    /**< RPC server process (or thread) was
                                 terminated, waitpid() (pthread_join())
                                 was already  called (if required) */
     char     *config;      /**< Opaque configuration string */
     time_t    sent;        /**< Time of the last request sending */
-    te_bool   async_call;  /**< True if async call in progress */
+    bool async_call;  /**< True if async call in progress */
     uint64_t  last_jobid;  /**< Last async call job id */
 
     rcf_rpc_op  last_rpc_op; /** Operation type of last rpc call **/
@@ -234,9 +234,9 @@ static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
  *
  * @param rpc_name The name of rpc function
  *
- * @return @c TRUE iff the function is special
+ * @return @c true iff the function is special
  */
-static te_bool
+static bool
 is_special_rpc(const char *rpc_name)
 {
     return (strcmp(rpc_name, "rpc_is_op_done") == 0 ||
@@ -251,15 +251,15 @@ is_special_rpc(const char *rpc_name)
  * @param op        The operation type for rpc call
  * @param rpc_name  The name of rpc function
  *
- * @return @c TRUE if the current rpc call is valid
+ * @return @c true if the current rpc call is valid
  */
-static te_bool
+static bool
 check_rpc_call(rpcserver *rpcs, rcf_rpc_op op, const char *rpc_name)
 {
     if (rpcs->last_rpc_op != RCF_RPC_CALL)
     {
         if (op != RCF_RPC_WAIT)
-            return TRUE;
+            return true;
 
         if (strncmp(rpcs->last_rpc_name, rpc_name, RCF_MAX_NAME) != 0)
         {
@@ -275,25 +275,25 @@ check_rpc_call(rpcserver *rpcs, rcf_rpc_op op, const char *rpc_name)
                   "the previous rpc call has wrong op %d (expect %d)",
                   rpcs->name, rpc_name, rpcs->last_rpc_op, RCF_RPC_CALL);
         }
-        return FALSE;
+        return false;
     }
 
     if (op == RCF_RPC_WAIT)
     {
         if (strncmp(rpcs->last_rpc_name, rpc_name, RCF_MAX_NAME) == 0)
-            return TRUE;
+            return true;
 
         ERROR("RPC server %s is busy with another function (%s) "
               "and cannot call the function \"%s\"",
               rpcs->name, rpcs->last_rpc_name, rpc_name);
-        return FALSE;
+        return false;
     }
 
     ERROR("RPC server %s is busy "
           "(the async call \"%s\" is not completed) "
           "and cannot call the function \"%s\"",
           rpcs->name, rpcs->last_rpc_name, rpc_name);
-    return FALSE;
+    return false;
 }
 
 /**
@@ -330,7 +330,7 @@ call(rpcserver *rpcs, char *name, void *in, void *out)
          * the error message. This behaviour allows to collect statistics
          * about rpc calls.
          */
-        if (FALSE)
+        if (false)
             return TE_RC(TE_RCF_PCH, TE_EBUSY);
     }
     rpcs->last_rpc_op = in_arg->op;
@@ -555,7 +555,7 @@ waitpid_child(rpcserver *rpcs)
  * @return Status code
  */
 static te_errno
-fork_child(rpcserver *rpcs, te_bool exec)
+fork_child(rpcserver *rpcs, bool exec)
 {
     int rc;
 
@@ -694,7 +694,7 @@ send_response(const rpcserver *rpcs, struct rcf_comm_connection *conn,
  */
 static te_errno
 get_out_arg_props(void *rpc_buf, size_t len,
-                  uint64_t *jobid, te_bool *unsolicited)
+                  uint64_t *jobid, bool *unsolicited)
 {
     XDR           xdr;
     tarpc_out_arg out_arg;
@@ -726,7 +726,7 @@ dispatch(void *arg)
 {
     UNUSED(arg);
 
-    while (TRUE)
+    while (true)
     {
         rpcserver *rpcs;
         time_t     now;
@@ -756,7 +756,7 @@ dispatch(void *arg)
         for (rpcs = list; rpcs != NULL; rpcs = rpcs->next)
         {
             uint64_t jobid;
-            te_bool  unsolicited;
+            bool unsolicited;
 
             if (rpcs->dead || (rpcs->sent == 0 && !rpcs->async_call))
                 continue;
@@ -780,7 +780,7 @@ dispatch(void *arg)
                 {
                     ERROR("Timeout on server %s (timeout=%ds)",
                           rpcs->name, rpcs->timeout);
-                    rpcs->dead = TRUE;
+                    rpcs->dead = true;
                     rpc_error(rpcs, TE_ERPCTIMEOUT);
                     continue;
                 }
@@ -793,7 +793,7 @@ dispatch(void *arg)
                 if (TE_RC_GET_ERROR(rc) == TE_ETIMEDOUT)
                     continue;
 
-                rpcs->dead = TRUE;
+                rpcs->dead = true;
                 rpc_error(rpcs, TE_ERPCDEAD);
                 continue;
             }
@@ -810,7 +810,7 @@ dispatch(void *arg)
             {
                 if (rpcs->last_jobid != 0 &&
                     jobid == rpcs->last_jobid)
-                    rpcs->async_call = FALSE;
+                    rpcs->async_call = false;
                 else
                     rpcs->last_jobid = jobid;
             }
@@ -841,7 +841,7 @@ dispatch(void *arg)
                 old_handle = rpcs->handle;
                 if (connect_getpid(rpcs) != 0)
                 {
-                    rpcs->dead = TRUE;
+                    rpcs->dead = true;
                     continue;
                 }
                 rpc_transport_close(old_handle);
@@ -1139,7 +1139,7 @@ rpcserver_dead_set(unsigned int gid, const char *oid, char *value,
                    const char *name)
 {
     rpcserver *rpcs;
-    te_bool    dead;
+    bool dead;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1167,7 +1167,7 @@ rpcserver_dead_set(unsigned int gid, const char *oid, char *value,
             pthread_mutex_unlock(&lock);
             return TE_RC(TE_RCF_PCH, TE_EPERM);
         }
-        rpcs->dead = TRUE;
+        rpcs->dead = true;
         if (rpcs->sent > 0)
             rpc_error(rpcs, TE_RC(TE_RPC, TE_ERPCDEAD));
     }
@@ -1227,7 +1227,7 @@ rpcserver_finished_set(unsigned int gid, const char *oid, char *value,
                      const char *name)
 {
     rpcserver *rpcs;
-    te_bool    finished;
+    bool finished;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1255,9 +1255,9 @@ rpcserver_finished_set(unsigned int gid, const char *oid, char *value,
             pthread_mutex_unlock(&lock);
             return TE_RC(TE_RCF_PCH, TE_EPERM);
         }
-        rpcs->finished = TRUE;
+        rpcs->finished = true;
         /** If it is finished, it is dead */
-        rpcs->dead = TRUE;
+        rpcs->dead = true;
     }
 
     pthread_mutex_unlock(&lock);
@@ -1465,8 +1465,8 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     rpcserver  *father = NULL;
     const char *father_name = NULL;
     int         rc;
-    te_bool     registration = FALSE;
-    te_bool     thread = FALSE, exec = FALSE;
+    bool registration = false;
+    bool        thread = false, exec = false;
     char        new_val[RCF_RPC_NAME_LEN];
 
     UNUSED(gid);
@@ -1482,14 +1482,14 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     if (strcmp_start("thread_", value) == 0)
     {
         father_name = value + strlen("thread_");
-        thread = TRUE;
+        thread = true;
     }
     else if (strcmp_start("fork_register_", value) == 0)
     {
         father_name = value + strlen("fork_register_");
         TE_SPRINTF(new_val, "fork_%s", father_name);
         value = (const char *)new_val;
-        registration = TRUE;
+        registration = true;
     }
     else if (strcmp_start("fork_", value) == 0)
         father_name = value + strlen("fork_");
@@ -1498,12 +1498,12 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         father_name = value + strlen("forkexec_register_");
         TE_SPRINTF(new_val, "forkexec_%s", father_name);
         value = (const char *)new_val;
-        registration = TRUE;
+        registration = true;
     }
     else if (strcmp_start("forkexec_", value) == 0)
     {
         father_name = value + strlen("forkexec_");
-        exec = TRUE;
+        exec = true;
     }
     else if (value[0] != '\0')
     {
@@ -1533,7 +1533,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_RCF_PCH, TE_EEXIST);
     }
 
-    if (thread == TRUE)
+    if (thread == true)
     {
         if (father->tid != 0)
         {
@@ -1570,7 +1570,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
 
         if ((rc = rcf_ch_start_process((pid_t *)&rpcs->pid, 0,
                                        "rcf_pch_rpc_server_argv",
-                                       TRUE, 1, argv)) != 0)
+                                       true, 1, argv)) != 0)
         {
             pthread_mutex_unlock(&lock);
             free(rpcs);
@@ -1651,7 +1651,7 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
     te_errno   rc = 0;
     uint8_t buf[64];
     size_t  len = sizeof(buf);
-    te_bool soft_shutdown = FALSE;
+    bool soft_shutdown = false;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1696,7 +1696,7 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
                                sizeof("FIN")) != 0 ||
             rpc_transport_recv(rpcs->handle, buf, &len, 5) != 0 ||
             strcmp((char *)buf, "OK") != 0 ||
-            !(soft_shutdown = TRUE))
+            !(soft_shutdown = true))
         {
             RING("Kill RPC server '%s'", rpcs->name);
             if (rpcs->tid > 0)
@@ -1890,7 +1890,7 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
              * the error message. This behaviour allows to collect statistics
              * about rpc calls.
              */
-            if (FALSE)
+            if (false)
             {
                 pthread_mutex_unlock(&lock);
                 RETERR(TE_EBUSY);
@@ -1930,7 +1930,7 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
         result.common.jobid = rpcs->last_jobid;
         result.done = !rpcs->async_call;
 
-        rc = rpc_xdr_encode_result(rpc_name, TRUE, enc_result, &enc_len,
+        rc = rpc_xdr_encode_result(rpc_name, true, enc_result, &enc_len,
                                    &result);
         if (rc != 0)
         {
@@ -1958,13 +1958,13 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
                     result.common._errno = TE_OS_RC(TE_TA_UNIX, errno);
                 else
                 {
-                    rpcs->dead = TRUE;
+                    rpcs->dead = true;
                     result.common._errno = TE_RC(TE_RCF_PCH, TE_ERPCDEAD);
                 }
             }
         }
 
-        rc = rpc_xdr_encode_result(rpc_name, TRUE, enc_result, &enc_len,
+        rc = rpc_xdr_encode_result(rpc_name, true, enc_result, &enc_len,
                                    &result);
         if (rc != 0)
         {
@@ -1979,7 +1979,7 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
     }
     else if (common_arg.op == RCF_RPC_CALL)
     {
-        rpcs->async_call = TRUE;
+        rpcs->async_call = true;
         rpcs->last_jobid = 0;
     }
 

@@ -459,7 +459,7 @@ indir_set(unsigned int gid, const char *oid,
     if (value_int != rxfh->rxfh->rss_config[idx])
     {
         rxfh->rxfh->rss_config[idx] = value_int;
-        rxfh->indir_change = TRUE;
+        rxfh->indir_change = true;
     }
 
     return 0;
@@ -551,7 +551,7 @@ indir_default_set(unsigned int gid, const char *oid,
     if (rc != 0)
         return rc;
 
-    rxfh->indir_reset = TRUE;
+    rxfh->indir_reset = true;
     return 0;
 #endif
 }

@@ -33,15 +33,6 @@ uppercase, the prefix will be uppercase as well):
 
 ## Types
 
-### Boolean
-
-In TE `te_bool` should be used instead of C standard `bool`.
-The corresponding Boolean constants are `TRUE` and `FALSE`,
-not `true` and `false`.
-
-This is due to purely historical reasons.
-`te_bool` is guaranteed to be compatible with C standard `bool`.
-
 ## Error handling
 
 ### Status code

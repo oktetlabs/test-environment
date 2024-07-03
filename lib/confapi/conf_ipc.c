@@ -13,7 +13,7 @@
 /* See description in conf_ipc.h */
 te_errno
 cfg_ipc_mk_get(cfg_get_msg *msg, size_t msg_buf_size,
-               cfg_handle handle, te_bool sync)
+               cfg_handle handle, bool sync)
 {
     if (msg_buf_size < sizeof(cfg_get_msg))
         return TE_RC(TE_CONF_API, TE_ESMALLBUF);
@@ -71,7 +71,7 @@ cfg_ipc_mk_find_fmt(cfg_find_msg *msg, size_t msg_buf_size,
 /* See description in conf_ipc.h */
 te_errno
 cfg_ipc_mk_set(cfg_set_msg *msg, size_t msg_buf_size,
-               cfg_handle handle, te_bool local,
+               cfg_handle handle, bool local,
                cfg_val_type type, cfg_inst_val value)
 {
     size_t value_size = 0;
@@ -96,7 +96,7 @@ cfg_ipc_mk_set(cfg_set_msg *msg, size_t msg_buf_size,
 
 te_errno
 cfg_ipc_mk_del(cfg_del_msg *msg, size_t msg_buf_size,
-               cfg_handle handle, te_bool local)
+               cfg_handle handle, bool local)
 {
     if (msg_buf_size < sizeof(cfg_get_msg))
         return TE_RC(TE_CONF_API, TE_ESMALLBUF);

@@ -89,12 +89,12 @@ rpc_server_sem_init(rcf_rpc_server *rpcs)
 
 /**
  * Get @c rpcserver_force_restart flag from Configurator. If the flag is
- * @c TRUE, ignore errors returned when RPC server is destroyed and try to
+ * @c true, ignore errors returned when RPC server is destroyed and try to
  * continue restart process. Delete operation may return non-zero value if
  * @c ta_waitpid() returns non-zero status code, e.g. if the process is
  * killed or segfaults.
  */
-static te_bool
+static bool
 cfg_get_force_restart_flag(void)
 {
     const char *cfg_line = "/local:/rpcserver_force_restart:";
@@ -144,7 +144,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
                    const char *father, int flags,
                    rcf_rpc_server **p_handle)
 {
-    te_bool  save_sid = FALSE;
+    bool save_sid = false;
     int      sid = 0;
     char    *val0 = NULL;
     int      rc, rc1;
@@ -227,7 +227,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
          * no necessity to destroy sessions - it is just sequence
          * number.
          */
-        save_sid = TRUE;
+        save_sid = true;
     }
 
     /* FIXME: thread support to be done */
@@ -301,25 +301,25 @@ rcf_rpc_server_get(const char *ta, const char *name,
          * Since RPC server is deleted and added again it is required
          * to restore SID after addition.
          */
-        save_sid = TRUE;
+        save_sid = true;
         /* Restart it */
-        if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/rpcserver:%s",
+        if ((rc = cfg_del_instance_fmt(false, "/agent:%s/rpcserver:%s",
                                        ta, name)) != 0)
         {
-            te_bool force_restart = cfg_get_force_restart_flag();
+            bool force_restart = cfg_get_force_restart_flag();
 
             if (TE_RC_GET_ERROR(rc) != TE_ENOENT && !force_restart)
                 RETERR(rc, "Failed to delete RPC server %s", name);
             else
             {
-                if ((rc = cfg_synchronize_fmt(FALSE,
+                if ((rc = cfg_synchronize_fmt(false,
                                               "/agent:%s/rpcserver:%s",
                                               ta, name)) != 0)
                     RETERR(rc,
                            "Failed to synchronize '/agent:%s/rpcserver:%s'",
                            ta, name);
                 CFG_WAIT_CHANGES;
-                if ((rc = cfg_del_instance_fmt(FALSE,
+                if ((rc = cfg_del_instance_fmt(false,
                                                "/agent:%s/rpcserver:%s",
                                                ta, name)) != 0)
                 {
@@ -360,8 +360,8 @@ rcf_rpc_server_get(const char *ta, const char *name,
     /* Create RPC server structure and fill it */
     strcpy(rpcs->ta, ta);
     strcpy(rpcs->name, name);
-    rpcs->iut_err_jump = TRUE;
-    rpcs->err_jump = TRUE;
+    rpcs->iut_err_jump = true;
+    rpcs->err_jump = true;
     rpcs->op = RCF_RPC_CALL_WAIT;
     rpcs->def_timeout = default_timeout;
     rpcs->timeout = RCF_RPC_UNSPEC_TIMEOUT;
@@ -607,7 +607,7 @@ rcf_rpc_server_destroy(rcf_rpc_server *rpcs)
         ERROR("%s(): pthread_mutex_lock() failed", __FUNCTION__);
 #endif
 
-    if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/rpcserver:%s",
+    if ((rc = cfg_del_instance_fmt(false, "/agent:%s/rpcserver:%s",
                                    rpcs->ta, rpcs->name)) != 0 &&
         TE_RC_GET_ERROR(rc) != TE_ENOENT)
     {
@@ -638,8 +638,8 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     tarpc_in_arg  *in = (tarpc_in_arg *)in_arg;
     tarpc_out_arg *out = (tarpc_out_arg *)out_arg;
 
-    te_bool     op_is_done;
-    te_bool     is_alive;
+    bool op_is_done;
+    bool is_alive;
 
     if (rpcs == NULL)
     {
@@ -663,7 +663,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
 #endif
     rpcs->_errno = 0;
     rpcs->err_msg[0] = '\0';
-    rpcs->err_log = FALSE;
+    rpcs->err_log = false;
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
         rpcs->timeout = rpcs->def_timeout;
 
@@ -674,7 +674,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
         if (rpcs->jobid0 != 0)
         {
             rpcs->_errno = TE_RC(TE_RCF_API, TE_EBUSY);
-            rpcs->timed_out = TRUE;
+            rpcs->timed_out = true;
 #ifdef HAVE_PTHREAD_H
             pthread_mutex_unlock(&rpcs->lock);
 #endif
@@ -687,7 +687,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
         {
             ERROR("Try to wait not called RPC");
             rpcs->_errno = TE_RC(TE_RCF_API, TE_EALREADY);
-            rpcs->timed_out = TRUE;
+            rpcs->timed_out = true;
 #ifdef HAVE_PTHREAD_H
             pthread_mutex_unlock(&rpcs->lock);
 #endif
@@ -698,7 +698,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
             ERROR("Try to wait RPC %s instead called RPC %s",
                   proc, rpcs->proc);
             rpcs->_errno = TE_RC(TE_RCF_API, TE_EPERM);
-            rpcs->timed_out = TRUE;
+            rpcs->timed_out = true;
 #ifdef HAVE_PTHREAD_H
             pthread_mutex_unlock(&rpcs->lock);
 #endif
@@ -730,12 +730,12 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     if (rpcs->op != RCF_RPC_CALL)
         rpcs->timeout = RCF_RPC_UNSPEC_TIMEOUT;
     rpcs->start = 0;
-    rpcs->use_libc_once = FALSE;
+    rpcs->use_libc_once = false;
     if (TE_RC_GET_ERROR(rpcs->_errno) == TE_ERPCTIMEOUT ||
         TE_RC_GET_ERROR(rpcs->_errno) == TE_ETIMEDOUT ||
         TE_RC_GET_ERROR(rpcs->_errno) == TE_ERPCDEAD)
     {
-        rpcs->timed_out = TRUE;
+        rpcs->timed_out = true;
     }
 
     if (rpcs->_errno == 0)
@@ -749,7 +749,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
 		       RPC_ERROR_MAX_LEN);
         }
 
-        rpcs->timed_out = FALSE;
+        rpcs->timed_out = false;
         if (rpcs->op == RCF_RPC_CALL)
         {
             rpcs->jobid0 = out->jobid;
@@ -769,7 +769,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
 
 /* See description in rcf_rpc.h */
 te_errno
-rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs, te_bool *done)
+rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs, bool *done)
 {
     tarpc_rpc_is_op_done_in  in;
     tarpc_rpc_is_op_done_out out;
@@ -799,7 +799,7 @@ rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs, te_bool *done)
 }
 
 /* See description in rcf_rpc.h */
-te_bool
+bool
 rcf_rpc_server_is_alive(rcf_rpc_server *rpcs)
 {
     tarpc_rpc_is_alive_in   in;
@@ -807,7 +807,7 @@ rcf_rpc_server_is_alive(rcf_rpc_server *rpcs)
     rcf_rpc_op              old_op;
 
     if (rpcs == NULL)
-        return FALSE;
+        return false;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -821,12 +821,12 @@ rcf_rpc_server_is_alive(rcf_rpc_server *rpcs)
     {
         ERROR("Failed to call rpc_is_alive() on the RPC server %s: %r",
               rpcs->name, rpcs->_errno);
-        return FALSE;
+        return false;
     }
     else
         RING("RPC server %s is alive", rpcs->name);
 
-    return TRUE;
+    return true;
 }
 
 /* See description in rcf_rpc.h */
@@ -989,19 +989,19 @@ rcf_ta_call_rpc(const char *ta_name, int session,
 }
 
 /* See description in rcf_rpc.h */
-te_bool
+bool
 rcf_rpc_server_has_children(rcf_rpc_server *rpcs)
 {
     unsigned int num, i;
     cfg_handle  *servers;
 
     if (rpcs == NULL)
-        return FALSE;
+        return false;
 
     if (cfg_find_pattern_fmt(&num, &servers, "/agent:%s/rpcserver:*",
                              rpcs->ta) != 0)
     {
-        return FALSE;
+        return false;
     }
 
     for (i = 0; i < num; i++)
@@ -1016,13 +1016,13 @@ rcf_rpc_server_has_children(rcf_rpc_server *rpcs)
         {
             free(name);
             free(servers);
-            return TRUE;
+            return true;
         }
         free(name);
     }
 
     free(servers);
-    return FALSE;
+    return false;
 }
 
 /* See description in rcf_rpc.h */

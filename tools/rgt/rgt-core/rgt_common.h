@@ -82,14 +82,6 @@ extern "C" {
 #include "te_defs.h"
 #include "te_raw_log.h"
 
-#ifndef TRUE
-#define TRUE 1
-#endif
-
-#ifndef FALSE
-#define FALSE 0
-#endif
-
 #ifndef UINT32_MAX
 #define UINT32_MAX (4294967295U)
 #endif
@@ -205,17 +197,17 @@ typedef struct rgt_gen_ctx {
      */
     f_fetch_log_msg fetch_log_msg;
 
-    te_bool         proc_cntrl_msg; /**< Whether Rgt should process control
+    bool proc_cntrl_msg; /**< Whether Rgt should process control
                                          messages or not */
 
     /** Include MI artifacts in <meta> section */
-    te_bool mi_meta;
+    bool mi_meta;
 
-    te_bool         proc_incomplete; /**< Whether Rgt should process
+    bool proc_incomplete; /**< Whether Rgt should process
                                           incomplete log reports as normal
                                           or give error message */
 
-    te_bool         verb; /**< Whether to use verbose output or not */
+    bool verb; /**< Whether to use verbose output or not */
     int             current_nest_lvl;  /**< Current nesting level */
 } rgt_gen_ctx_t;
 
@@ -315,7 +307,7 @@ typedef struct msg_queue {
                                      the next message pointer
                                      could be added with high probability */
 
-    te_bool   offloaded;        /**< Whether some message pointers
+    bool offloaded;        /**< Whether some message pointers
                                      are offloaded to a file */
     uint32_t  offload_ts[2];    /**< Timestamp of the most recent
                                      message pointer offloaded to
@@ -337,9 +329,9 @@ extern void msg_queue_foreach(msg_queue *q, GFunc cb, void *user_data);
  *
  * @param q     Queue of message pointers
  *
- * @return TRUE if queue is empty, FALSE otherwise.
+ * @return @c true if queue is empty, @c false otherwise.
  */
-extern te_bool msg_queue_is_empty(msg_queue *q);
+extern bool msg_queue_is_empty(msg_queue *q);
 
 #ifdef __cplusplus
 }

@@ -23,10 +23,10 @@ struct tapi_stress_app {
 };
 
 static const tapi_job_opt_bind stress_tool_binds[] = TAPI_JOB_OPT_SET(
-    TAPI_JOB_OPT_UINT_OMITTABLE("--cpu", FALSE, NULL, tapi_stress_opt, cpu),
-    TAPI_JOB_OPT_UINT_OMITTABLE("--io", FALSE, NULL, tapi_stress_opt, io),
-    TAPI_JOB_OPT_UINT_OMITTABLE("--vm", FALSE, NULL, tapi_stress_opt, vm),
-    TAPI_JOB_OPT_UINT_OMITTABLE("--timeout", FALSE, NULL, tapi_stress_opt,
+    TAPI_JOB_OPT_UINT_OMITTABLE("--cpu", false, NULL, tapi_stress_opt, cpu),
+    TAPI_JOB_OPT_UINT_OMITTABLE("--io", false, NULL, tapi_stress_opt, io),
+    TAPI_JOB_OPT_UINT_OMITTABLE("--vm", false, NULL, tapi_stress_opt, vm),
+    TAPI_JOB_OPT_UINT_OMITTABLE("--timeout", false, NULL, tapi_stress_opt,
                                 timeout_s)
 );
 
@@ -83,20 +83,20 @@ tapi_stress_create(tapi_job_factory_t *factory,
                                     .stdout_loc = &result->out_chs[0],
                                     .stderr_loc = &result->out_chs[1],
                                     .filters = TAPI_JOB_SIMPLE_FILTERS(
-                                        {.use_stderr = TRUE,
+                                        {.use_stderr = true,
                                          .log_level = TE_LL_ERROR,
-                                         .readable = FALSE,
+                                         .readable = false,
                                          .filter_name = "stress stderr",
                                         },
-                                        {.use_stdout = TRUE,
+                                        {.use_stdout = true,
                                          .log_level = TE_LL_RING,
-                                         .readable = FALSE,
+                                         .readable = false,
                                          .filter_name = "stress stdout",
                                         },
-                                        {.use_stdout = TRUE,
-                                         .use_stderr = TRUE,
+                                        {.use_stdout = true,
+                                         .use_stderr = true,
                                          .log_level = TE_LL_ERROR,
-                                         .readable = TRUE,
+                                         .readable = true,
                                          .filter_var = &result->wrong_usage_filter,
                                          .filter_name = "stress usage error",
                                          .re = "Usage:\\s*stress"

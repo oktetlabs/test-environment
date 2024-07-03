@@ -198,7 +198,7 @@ extern te_errno tapi_igmp_add_csap_layer(asn_value **csap_spec);
  */
 extern te_errno tapi_igmp2_add_pdu(asn_value          **tmpl_or_ptrn,
                                    asn_value          **pdu,
-                                   te_bool              is_pattern,
+                                   bool is_pattern,
                                    tapi_igmp_msg_type   type,
                                    int                  max_resp_time,
                                    in_addr_t            group_addr);
@@ -243,7 +243,7 @@ extern te_errno tapi_igmp_ip4_eth_csap_create(const char    *ta_name,
  */
 extern te_errno tapi_igmp_add_ip4_pdu(asn_value **tmpl_or_ptrn,
                       asn_value **pdu,
-                      te_bool     is_pattern,
+                      bool is_pattern,
                       in_addr_t   dst_addr,
                       in_addr_t   src_addr);
 
@@ -265,7 +265,7 @@ extern te_errno tapi_igmp_add_ip4_pdu(asn_value **tmpl_or_ptrn,
  */
 extern te_errno tapi_igmp_add_ip4_pdu_gen(asn_value **tmpl_or_ptrn,
                         asn_value **pdu,
-                        te_bool     is_pattern,
+                        bool is_pattern,
                         in_addr_t   dst_addr,
                         in_addr_t   src_addr,
                         int         ttl,
@@ -293,7 +293,7 @@ extern te_errno tapi_igmp_add_ip4_pdu_gen(asn_value **tmpl_or_ptrn,
  */
 extern te_errno tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
                           asn_value **pdu,
-                          te_bool     is_pattern,
+                          bool is_pattern,
                           in_addr_t   dst_addr,
                           in_addr_t   src_addr,
                           uint8_t    *eth_src);
@@ -322,7 +322,7 @@ extern te_errno tapi_igmp_add_ip4_eth_pdu(asn_value **tmpl_or_ptrn,
 extern te_errno tapi_igmp_add_ip4_eth_pdu_gen(
                             asn_value **tmpl_or_ptrn,
                             asn_value **pdu,
-                            te_bool     is_pattern,
+                            bool is_pattern,
                             in_addr_t   dst_addr,
                             in_addr_t   src_addr,
                             uint8_t    *eth_src,
@@ -420,7 +420,7 @@ tapi_igmp2_ip4_eth_send_query(const char    *ta_name,
                               int            max_resp_time,
                               in_addr_t      group_addr,
                               in_addr_t      src_addr,
-                              te_bool        skip_eth,
+                              bool skip_eth,
                               uint8_t       *eth_src);
 
 /**
@@ -438,7 +438,7 @@ tapi_igmp2_ip4_eth_send_query(const char    *ta_name,
 extern te_errno
 tapi_igmp3_add_report_pdu(asn_value               **tmpl_or_ptrn,
                           asn_value               **pdu,
-                          te_bool                   is_pattern,
+                          bool is_pattern,
                           tapi_igmp3_group_list_t  *group_list);
 
 /**
@@ -540,7 +540,7 @@ extern unsigned tapi_igmp3_qqic_to_qqi(uint8_t qqic);
 extern te_errno
 tapi_igmp3_add_query_pdu(asn_value               **tmpl_or_ptrn,
                          asn_value               **pdu,
-                         te_bool                   is_pattern,
+                         bool is_pattern,
                          int                       max_resp_code,
                          in_addr_t                 group_addr,
                          int                       s_flag,
@@ -588,7 +588,7 @@ tapi_igmp3_ip4_eth_send_query(const char            *ta_name,
                               int                    qqic,
                               tapi_igmp3_src_list_t *src_list,
                               in_addr_t              src_addr,
-                              te_bool                skip_eth,
+                              bool skip_eth,
                               uint8_t               *eth_src);
 
 /**
@@ -615,7 +615,7 @@ tapi_igmp3_ip4_eth_send_query_default(const char            *ta_name,
                                       in_addr_t              group_addr,
                                       tapi_igmp3_src_list_t *src_list,
                                       in_addr_t              src_addr,
-                                      te_bool                skip_eth,
+                                      bool skip_eth,
                                       uint8_t               *eth_src);
 
 /**

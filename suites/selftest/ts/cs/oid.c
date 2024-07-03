@@ -64,11 +64,11 @@ oid_action3(const char *oid, const cfg_oid *parsed_oid, void *ctx)
 static const cfg_oid_rule oid_rules[] = {
     {
         .object_oid = &object_oid,
-        .match_prefix = TRUE,
+        .match_prefix = true,
         .action = oid_action1
     },
-    CFG_OID_RULE(FALSE, oid_action2, {"agent"}, {"route"}),
-    CFG_OID_RULE(FALSE, oid_action3, {"agent"}, {"route"}, {"type"}),
+    CFG_OID_RULE(false, oid_action2, {"agent"}, {"route"}),
+    CFG_OID_RULE(false, oid_action3, {"agent"}, {"route"}, {"type"}),
     CFG_OID_RULE_END
 };
 
@@ -83,25 +83,25 @@ main(int argc, char **argv)
     TEST_STEP("Checking a whole-OID match");
     CHECK_NOT_NULL(inst_oid =
                    cfg_convert_oid_str("/agent:Agt_A/interface:eth0"));
-    if (!cfg_oid_match(inst_oid, &object_oid, FALSE))
+    if (!cfg_oid_match(inst_oid, &object_oid, false))
         TEST_VERDICT("OID expected to match but it did not");
     cfg_free_oid(inst_oid);
 
     CHECK_NOT_NULL(inst_oid =
                    cfg_convert_oid_str("/agent:Agt_A"));
-    if (cfg_oid_match(inst_oid, &object_oid, FALSE))
+    if (cfg_oid_match(inst_oid, &object_oid, false))
         TEST_VERDICT("A shorter OID expected not to match but it did");
     cfg_free_oid(inst_oid);
 
     CHECK_NOT_NULL(inst_oid =
                    cfg_convert_oid_str("/agent:Agt_A/route:1.2.3.4|24"));
-    if (cfg_oid_match(inst_oid, &object_oid, FALSE))
+    if (cfg_oid_match(inst_oid, &object_oid, false))
         TEST_VERDICT("OID expected not to match but it did");
     cfg_free_oid(inst_oid);
 
     CHECK_NOT_NULL(inst_oid =
                    cfg_convert_oid_str("/agent:Agt_A/interface:eth0/status:"));
-    if (cfg_oid_match(inst_oid, &object_oid, FALSE))
+    if (cfg_oid_match(inst_oid, &object_oid, false))
     {
         TEST_VERDICT("OID prefix matched though a whole OID match "
                      "was requested");
@@ -111,25 +111,25 @@ main(int argc, char **argv)
     TEST_STEP("Checking a prefix OID match");
     CHECK_NOT_NULL(inst_oid =
                    cfg_convert_oid_str("/agent:Agt_A/interface:eth0"));
-    if (!cfg_oid_match(inst_oid, &object_oid, TRUE))
+    if (!cfg_oid_match(inst_oid, &object_oid, true))
         TEST_VERDICT("OID expected to match but it did not");
     cfg_free_oid(inst_oid);
 
     CHECK_NOT_NULL(inst_oid =
                    cfg_convert_oid_str("/agent:Agt_A"));
-    if (cfg_oid_match(inst_oid, &object_oid, TRUE))
+    if (cfg_oid_match(inst_oid, &object_oid, true))
         TEST_VERDICT("A shorter OID expected not to match but it did");
     cfg_free_oid(inst_oid);
 
     CHECK_NOT_NULL(inst_oid =
                    cfg_convert_oid_str("/agent:Agt_A/route:1.2.3.4|24"));
-    if (cfg_oid_match(inst_oid, &object_oid, TRUE))
+    if (cfg_oid_match(inst_oid, &object_oid, true))
         TEST_VERDICT("OID expected not to match but it did");
     cfg_free_oid(inst_oid);
 
     CHECK_NOT_NULL(inst_oid =
                    cfg_convert_oid_str("/agent:Agt_A/interface:eth0/status:"));
-    if (!cfg_oid_match(inst_oid, &object_oid, TRUE))
+    if (!cfg_oid_match(inst_oid, &object_oid, true))
     {
         TEST_VERDICT("OID prefix did not match though a prefix OID match "
                      "was requested");

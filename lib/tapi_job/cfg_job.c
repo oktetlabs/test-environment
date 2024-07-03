@@ -216,9 +216,9 @@ cfg_job_start(const tapi_job_t *job)
     return rc;
 }
 
-/* When killpg is TRUE, send signal to process group, else to process */
+/* When killpg is @c true, send signal to process group, else to process */
 static te_errno
-cfg_job_kill_common(const tapi_job_t *job, int signo, te_bool killpg)
+cfg_job_kill_common(const tapi_job_t *job, int signo, bool killpg)
 {
     te_errno rc;
     const char *ta = tapi_job_get_ta(job);
@@ -260,14 +260,14 @@ cfg_job_kill_common(const tapi_job_t *job, int signo, te_bool killpg)
 te_errno
 cfg_job_kill(const tapi_job_t *job, int signo)
 {
-    return cfg_job_kill_common(job, signo, FALSE);
+    return cfg_job_kill_common(job, signo, false);
 }
 
 /* See descriptions in tapi_cfg_job.h */
 te_errno
 cfg_job_killpg(const tapi_job_t *job, int signo)
 {
-    return cfg_job_kill_common(job, signo, TRUE);
+    return cfg_job_kill_common(job, signo, true);
 }
 
 /**
@@ -276,17 +276,17 @@ cfg_job_killpg(const tapi_job_t *job, int signo)
  * @param[in]  ta       Test Agent.
  * @param[in]  ps_name  Process name.
  * @param[out] status   Process current status. For autorestart processes
- *                      @c TRUE means that the autorestart subsystem is working
+ *                      @c true means that the autorestart subsystem is working
  *                      with the process and it will be restarted when needed;
- *                      @c FALSE means that the process is most likely not
+ *                      @c false means that the process is most likely not
  *                      running and will not be started by the autorestart
- *                      subsystem. For other processes @c TRUE means that
- *                      the process is running, @c FALSE that it is not.
+ *                      subsystem. For other processes @c true means that
+ *                      the process is running, @c false that it is not.
  *
  * @return Status code
  */
 static te_errno
-cfg_job_get_process_status(const char *ta, const char *ps_name, te_bool *status)
+cfg_job_get_process_status(const char *ta, const char *ps_name, bool *status)
 {
     te_errno rc;
     int val;
@@ -302,11 +302,11 @@ cfg_job_get_process_status(const char *ta, const char *ps_name, te_bool *status)
     switch (val)
     {
         case 0:
-            *status = FALSE;
+            *status = false;
             break;
 
         case 1:
-            *status = TRUE;
+            *status = true;
             break;
 
         default:
@@ -406,7 +406,7 @@ cfg_job_wait(const tapi_job_t *job, int timeout_ms,
 
     while (1)
     {
-        te_bool status;
+        bool status;
 
         rc = cfg_job_get_process_status(ta, ps_name, &status);
         if (rc != 0)
@@ -482,7 +482,7 @@ cfg_job_destroy(const tapi_job_t *job, int term_timeout_ms)
     if (term_timeout_ms != -1)
         WARN_PARAM_NOT_SUPPORTED(term_timeout_ms);
 
-    rc = cfg_del_instance_fmt(FALSE, TE_CFG_TA_PS, ta, ps_name);
+    rc = cfg_del_instance_fmt(false, TE_CFG_TA_PS, ta, ps_name);
     if (rc != 0)
         ERROR("Cannot delete process '%s' from TA '%s': %r", ps_name, ta, rc);
 

@@ -283,14 +283,14 @@ te_log_msg_handle_trunc(te_log_msg_raw_data  *data,
     te_log_msg_arg_type   arg_type;
     size_t                fmt_len = saved_data->fmt_len;
     const char           *fmt     = saved_data->fmt;
-    te_bool               trunc;
+    bool trunc;
 
     do {
         rc = te_log_msg_prepare_raw_args(data, fmt, fmt_len);
         if (rc != 0)
             return rc;
 
-        trunc    = FALSE;
+        trunc    = false;
         arg_i    = data->args_n;
         arg_len  = saved_data->len;
         arg_type = data->args[arg_i - 1].type;
@@ -315,7 +315,7 @@ te_log_msg_handle_trunc(te_log_msg_raw_data  *data,
 
         if (arg_len > TE_LOG_FIELD_MAX)
         {
-            trunc = TRUE;
+            trunc = true;
             saved_data->len = arg_len - TE_LOG_FIELD_MAX;
             arg_len = TE_LOG_FIELD_MAX;
         }
@@ -327,7 +327,7 @@ te_log_msg_handle_trunc(te_log_msg_raw_data  *data,
 
         data->args_n++;
     } while (trunc);
-    data->trunc = FALSE;
+    data->trunc = false;
     return 0;
 }
 
@@ -419,7 +419,7 @@ fprintf(stderr, "%s(): INT len=%d\n", __FUNCTION__, arg_len);
                 arg_len = stat_buf.st_size;
                 if (arg_len > TE_LOG_FIELD_MAX)
                 {
-                    data->trunc = TRUE;
+                    data->trunc = true;
                     /* Save file descriptor of truncated file. */
                     saved_data.data.fd = fd;
                     /* Need to save pointer to modifier string. */
@@ -443,7 +443,7 @@ fprintf(stderr, "%s(): MEM len=%d\n", __FUNCTION__, arg_len);
             data->args[arg_i].u.a = arg_addr;
             if (arg_len > TE_LOG_FIELD_MAX)
             {
-                data->trunc = TRUE;
+                data->trunc = true;
                 /* Save the rest part of the message. */
                 saved_data.data.addr = arg_addr + TE_LOG_FIELD_MAX;
                 /* Need to save pointer to modifier string. */
@@ -500,7 +500,7 @@ te_log_msg_raw_put_no_check(te_log_msg_raw_data *data,
                             te_log_msg_arg_type  type,
                             const void          *addr,
                             size_t               len,
-                            te_bool              use_nfl)
+                            bool use_nfl)
 {
     if (use_nfl)
     {
@@ -589,7 +589,7 @@ te_log_msg_raw_put(te_log_msg_raw_data *data,
                    te_log_msg_arg_type  type,
                    const void          *addr,
                    size_t               len,
-                   te_bool              use_nfl)
+                   bool use_nfl)
 {
     te_errno    rc = 0;
     int         fd;
@@ -672,7 +672,7 @@ te_log_msg_raw_put_string(te_log_msg_raw_data *data, const char *str)
         str = "(null)";
 
     return te_log_msg_raw_put(data, TE_LOG_MSG_FMT_ARG_MEM,
-                              str, strlen(str), TRUE);
+                              str, strlen(str), true);
 }
 
 
@@ -692,7 +692,7 @@ te_log_vprintf(te_log_msg_out *out, const char *fmt, va_list ap)
     const char *fmt_dup;
     const char *fmt_start;
     const char *spec_start;
-    te_bool     fmt_needed = FALSE;
+    bool fmt_needed = false;
     va_list     ap_start;
 
 
@@ -725,7 +725,7 @@ te_log_vprintf(te_log_msg_out *out, const char *fmt, va_list ap)
                 goto cleanup;                               \
             *(char *)spec_start = _tmp;                     \
             fmt_start = spec_start;                         \
-            fmt_needed = FALSE;                             \
+            fmt_needed = false;                             \
         }                                                   \
         if (out->raw != NULL)                               \
         {                                                   \
@@ -917,7 +917,7 @@ case mod_:\
                     /* TODO */
                 }
                 (void)va_arg(ap, void *);
-                fmt_needed = TRUE;
+                fmt_needed = true;
                 break;
 
             case 'd':
@@ -969,7 +969,7 @@ case mod_:\
                         /* TODO */
                         break;
                 }
-                fmt_needed = TRUE;
+                fmt_needed = true;
                 break;
 
             case 'e':
@@ -997,7 +997,7 @@ case mod_:\
                         /* TODO */
                         break;
                 }
-                fmt_needed = TRUE;
+                fmt_needed = true;
                 break;
 
             case '%':
@@ -1051,18 +1051,18 @@ te_log_message_raw_va(te_log_msg_raw_data *data,
 
     data->ptr = data->buf;
     data->args_n = data->args_len = 0;
-    data->trunc = FALSE;
+    data->trunc = false;
 
     te_log_msg_raw_put(data, TE_LOG_MSG_FMT_ARG_INT,
-                       &log_version, sizeof(log_version), FALSE);
+                       &log_version, sizeof(log_version), false);
     te_log_msg_raw_put(data, TE_LOG_MSG_FMT_ARG_INT,
-                       &ts_sec, sizeof(ts_sec), FALSE);
+                       &ts_sec, sizeof(ts_sec), false);
     te_log_msg_raw_put(data, TE_LOG_MSG_FMT_ARG_INT,
-                       &ts_usec, sizeof(ts_usec), FALSE);
+                       &ts_usec, sizeof(ts_usec), false);
     te_log_msg_raw_put(data, TE_LOG_MSG_FMT_ARG_INT,
-                       &level, sizeof(level), FALSE);
+                       &level, sizeof(level), false);
     te_log_msg_raw_put(data, TE_LOG_MSG_FMT_ARG_INT,
-                       &log_id, sizeof(log_id), FALSE);
+                       &log_id, sizeof(log_id), false);
 
     te_log_msg_raw_put_string(data, entity);
     te_log_msg_raw_put_string(data, user);
@@ -1094,7 +1094,7 @@ te_log_message_raw_va(te_log_msg_raw_data *data,
         te_log_msg_raw_put_no_check(data, data->args[i].type,
             (data->args[i].type == TE_LOG_MSG_FMT_ARG_MEM) ?
                 data->args[i].u.a : &data->args[i].u.i,
-            data->args[i].len, TRUE);
+            data->args[i].len, true);
     }
     /* Find and close open descriptors if there aren't close already.*/
     for (fd_prev = -1, i = 0; i < data->args_n; ++i)

@@ -78,7 +78,7 @@ tapi_ip4_add_csap_layer(asn_value **csap_spec,
 /* See the description in tapi_ip4.h */
 te_errno
 tapi_ip4_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
-                 te_bool is_pattern,
+                 bool is_pattern,
                  in_addr_t src_addr, in_addr_t dst_addr,
                  int ip_proto, int ttl, int tos)
 {
@@ -118,7 +118,7 @@ tapi_ip4_pdu_tmpl_fragments(asn_value **tmpl, asn_value **pdu,
                             tapi_ip_frag_spec *fragments,
                             unsigned int num_frags)
 {
-    return tapi_ip_pdu_tmpl_fragments(tmpl, pdu, TRUE,
+    return tapi_ip_pdu_tmpl_fragments(tmpl, pdu, true,
                                       fragments, num_frags);
 }
 
@@ -300,7 +300,7 @@ ip4_pkt_handler(asn_value *pkt, void *user_param)
     rc = ndn_du_read_plain_int(ip_pdu, NDN_TAG_IP4_MORE_FRAGS, &hdr_field);
     CHECK_FAIL("%s(): get IP4 more_frags flag fails, rc = %r",
                __FUNCTION__, rc);
-    plain_pkt.more_frags = hdr_field != 0 ? TRUE : FALSE ;
+    plain_pkt.more_frags = hdr_field != 0 ? true : false ;
 
     cb_data->callback(&plain_pkt, cb_data->user_data);
 
@@ -400,7 +400,7 @@ tapi_ip4_template(tapi_ip_frag_spec *fragments, unsigned int num_frags,
     if (result_value == NULL)
         return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
-    rc = tapi_ip4_add_pdu(result_value, &ip4_pdu, FALSE /* template */,
+    rc = tapi_ip4_add_pdu(result_value, &ip4_pdu, false /* template */,
                           htonl(INADDR_ANY), htonl(INADDR_ANY),
                           protocol, ttl, -1 /* default TOS */);
     MY_CHECK_RC("%s(): tapi_ip4_add_pdu() failed: %r", __FUNCTION__, rc);

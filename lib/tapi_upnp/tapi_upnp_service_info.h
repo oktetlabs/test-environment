@@ -119,7 +119,7 @@ const char *tapi_upnp_get_state_variable_property_string(
 te_errno tapi_upnp_get_state_variable_property_boolean(
                         const tapi_upnp_state_variable     *variable,
                         te_upnp_state_variable_property_idx property_idx,
-                        te_bool                            *value);
+                        bool *value);
 
 /**
  * Get a Name of the certain state variable.
@@ -160,7 +160,7 @@ tapi_upnp_get_state_variable_type(const tapi_upnp_state_variable *variable)
 static inline te_errno
 tapi_upnp_get_state_variable_send_events(
                             const tapi_upnp_state_variable *variable,
-                            te_bool *value)
+                            bool *value)
 {
     return tapi_upnp_get_state_variable_property_boolean(variable,
                                                   VPROPERTY_SEND_EVENTS,

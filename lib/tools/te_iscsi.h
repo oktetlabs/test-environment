@@ -274,10 +274,10 @@ struct generic_pdu {
     /* bits: 0-5; reader: yes; writer: yes; */
     uint8_t   opcode;
     /* name: F_BIT; bit: 7; reader: yes; writer: yes; */
-    /* bittype: te_bool; */
+    /* bittype: bool; */
     /*-*/
     /* name: I_BIT; bit: 6; reader: yes; writer: yes; */
-    /* bittype: te_bool; */
+    /* bittype: bool; */
     /*-*/
     uint8_t   flags;
     uint8_t   version_max;

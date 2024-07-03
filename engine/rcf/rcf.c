@@ -238,19 +238,19 @@ resolve_ta_methods(ta *agent, char *libname)
  * @param node              XML node
  * @param attribute_name    XML attribute name
  *
- * @return  @c FALSE if attribute absents in @p node,
- *          @c TRUE  if attribute value equals @c "yes",
- *          @c FALSE in other cases.
+ * @return  @c false if attribute absents in @p node,
+ *          @c true  if attribute value equals @c "yes",
+ *          @c false in other cases.
  */
-static te_bool
+static bool
 attribute_contains_yes(xmlNodePtr node, const char *attribute_name)
 {
-    te_bool     value;
+    bool value;
     char       *attr;
 
     attr = xmlGetProp_exp(node, (const xmlChar *)attribute_name);
     if (attr == NULL)
-        return FALSE;
+        return false;
 
     value = (strcmp(attr, "yes") == 0);
     free(attr);
@@ -969,7 +969,7 @@ rcf_set_ta_dead(ta *agent)
             ERROR("Failed to close connection with TA '%s': rc=%r",
                   agent->name, rc);
         agent->flags |= TA_DEAD;
-        agent->conn_locked = FALSE;
+        agent->conn_locked = false;
     }
 }
 
@@ -1071,7 +1071,7 @@ rcf_init_agent(ta *agent)
     if (rc != 0)
         rcf_set_ta_unrecoverable(agent);
     else
-        agent->conn_locked = FALSE;
+        agent->conn_locked = false;
 
     return rc;
 }
@@ -1297,7 +1297,7 @@ process_reply(ta *agent)
     usrreq  *req = NULL;
     char    *ptr = cmd;
     char    *ba = NULL;
-    te_bool  ack = FALSE;
+    bool ack = false;
     rcf_op_t last_opcode;
 
 #define READ_INT(n) \
@@ -1382,7 +1382,7 @@ process_reply(ta *agent)
 
     if (TE_RC_GET_ERROR(error) == TE_EACK)
     {
-        ack = TRUE;
+        ack = true;
         goto push;
     }
 
@@ -1617,7 +1617,7 @@ process_reply(ta *agent)
 push:
     if (agent->conn_locked && sid == agent->lock_sid)
     {
-        agent->conn_locked = FALSE;
+        agent->conn_locked = false;
         req = agent->waiting.next;
 
         if (req != &agent->waiting)
@@ -1687,7 +1687,7 @@ transmit_cmd(ta *agent, usrreq *req)
     VERB("Transmit command \"%s\" to TA '%s'", cmd, agent->name);
 
     len = strlen(cmd) + 1;
-    while (TRUE)
+    while (true)
     {
         if ((rc = (agent->m.transmit)(agent->handle, data, len)) != 0)
         {
@@ -1736,7 +1736,7 @@ transmit_cmd(ta *agent, usrreq *req)
 
     VERB("The command is transmitted to %s", agent->name);
     req->sent = time(NULL);
-    agent->conn_locked = TRUE;
+    agent->conn_locked = true;
     agent->lock_sid = req->message->sid;
 
     return 0;
@@ -1846,7 +1846,7 @@ print_value(char *cmd, size_t size, unsigned char type, void *value)
             break;
 
         default:
-            assert(FALSE);
+            assert(false);
     }
     return ret;
 }
@@ -2195,8 +2195,8 @@ rcf_ta_check_all_done(void)
     VERB("%s()", __FUNCTION__);
     if (ta_checker.req != NULL && ta_checker.active == 0)
     {
-        te_bool     rebooting = FALSE;
-        te_bool     is_dead = FALSE;
+        bool rebooting = false;
+        bool is_dead = false;
         ta         *agent;
         const char *target = NULL;
 
@@ -2216,13 +2216,13 @@ rcf_ta_check_all_done(void)
                 );
             if (agent->flags & (TA_UNRECOVER | TA_DEAD))
             {
-                is_dead = TRUE;
+                is_dead = true;
                 continue;
             }
 
             if (agent->reboot_ctx.state != TA_REBOOT_STATE_IDLE)
             {
-                rebooting = TRUE;
+                rebooting = true;
                 continue;
             }
         }
@@ -2485,7 +2485,7 @@ process_user_request(usrreq *req)
                     break; /** Leave 'do/while' block */
                 }
 
-                agent->dynamic = TRUE;
+                agent->dynamic = true;
                 agent->next = agents;
                 agent->flags = msg->flags | TA_DEAD;
 
@@ -2498,7 +2498,7 @@ process_user_request(usrreq *req)
                     break; /** Leave 'do/while' block */
                 }
 
-                agent->enable_synch_time = msg->intparm ? TRUE : FALSE;
+                agent->enable_synch_time = msg->intparm ? true : false;
 
                 agent->sent.prev = agent->sent.next = &agent->sent;
                 agent->pending.prev = agent->pending.next = &agent->pending;

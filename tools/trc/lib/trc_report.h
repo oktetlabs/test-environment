@@ -140,7 +140,7 @@ typedef struct trc_report_test_iter_entry {
     int             test_id;    /**< Test ID */
     char           *hash;       /**< Test arguments hash */
     te_test_result  result;     /**< Obtained result */
-    te_bool         is_exp;     /**< Does obtained result match one of
+    bool is_exp;     /**< Does obtained result match one of
                                      expected? */
     unsigned int    args_max;   /**< Maximum number of arguments
                                      the space is allocated for */

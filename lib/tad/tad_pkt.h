@@ -125,7 +125,7 @@ struct tad_pkt_seg {
     tad_pkt_ctrl_free   my_free;       /**< Function to free this
                                             control block */
 
-    te_bool             layer_tag_set; /**< Custom layer tag is set below */
+    bool layer_tag_set; /**< Custom layer tag is set below */
     te_tad_protocols_t  layer_tag;     /**< TE protocol ID of the layer from
                                             which the segment originates */
 };
@@ -556,7 +556,7 @@ extern void tad_pkts_move(tad_pkts *dst, tad_pkts *src);
  *
  * @return Status code.
  */
-extern te_errno tad_pkts_add_new_seg(tad_pkts *pkts, te_bool header,
+extern te_errno tad_pkts_add_new_seg(tad_pkts *pkts, bool header,
                                      void *data_ptr, size_t data_len,
                                      tad_pkt_seg_free data_free);
 
@@ -613,7 +613,7 @@ extern te_errno tad_pkts_enumerate_first_segs(tad_pkts            *pkts,
  * @return Status code.
  */
 extern te_errno tad_pkt_fragment(tad_pkt *pkt, size_t frag_data_len,
-                                 ssize_t add_seg_len, te_bool header,
+                                 ssize_t add_seg_len, bool header,
                                  tad_pkts *pkts);
 
 
@@ -671,7 +671,7 @@ extern void tad_pkt_read_bits(const tad_pkt *pkt, size_t bitoff,
                               size_t bitlen, uint8_t *dst);
 
 /** Single-bit wrapper for @c tad_pkt_read_bits() */
-extern te_bool tad_pkt_read_bit(const tad_pkt *pkt,
+extern bool tad_pkt_read_bit(const tad_pkt *pkt,
                                 size_t         bitoff);
 
 /**
@@ -689,7 +689,7 @@ extern te_bool tad_pkt_read_bit(const tad_pkt *pkt,
 extern te_errno tad_pkt_match_mask(const tad_pkt *pkt, size_t len,
                                    const uint8_t *mask,
                                    const uint8_t *value,
-                                   te_bool exact_len);
+                                   bool exact_len);
 
 /**
  * Match packet content by payload.
@@ -704,7 +704,7 @@ extern te_errno tad_pkt_match_mask(const tad_pkt *pkt, size_t len,
  */
 extern te_errno tad_pkt_match_bytes(const tad_pkt *pkt, size_t len,
                                     const uint8_t *payload,
-                                    te_bool exact_len);
+                                    bool exact_len);
 
 /**
  * Alloc additional segments for the packet

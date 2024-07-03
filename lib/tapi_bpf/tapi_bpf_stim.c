@@ -94,12 +94,12 @@
  * @param handle        Congestion stimulus BPF handle.
  * @param prog_name     BPF program name.
  * @param type          Stimulus type.
- * @param egress        Link BPF program to TC egress if @c TRUE, otherwise
+ * @param egress        Link BPF program to TC egress if @c true, otherwise
  *                      link to TC ingress.
  */
 static void
 tapi_bpf_stim_ctx_create(tapi_bpf_stim_hdl *handle, const char *prog_name,
-                         tapi_bpf_stim_type type, te_bool egress)
+                         tapi_bpf_stim_type type, bool egress)
 {
 
     tapi_bpf_stim_ctx *bpf_ctx = tapi_calloc(1, sizeof(*bpf_ctx));
@@ -153,7 +153,7 @@ tapi_bpf_stim_ctrl_write(const char *ta, unsigned int bpfid, unsigned int key,
 /* See description in ts_congestion.h */
 void
 tapi_bpf_stim_init(rcf_rpc_server *pco, const char *ifname,
-                   unsigned int type, te_bool egress,
+                   unsigned int type, bool egress,
                    tapi_bpf_stim_hdl **handle)
 {
     tapi_bpf_stim_hdl *hdl = NULL;
@@ -265,7 +265,7 @@ tapi_bpf_stim_dup(tapi_bpf_stim_hdl *handle, unsigned int num)
             {
                 rc = tapi_bpf_stim_ctrl_write(handle->ta, bpf_ctx->bpf_id,
                                               TAPI_BPF_STIM_DUP_INGRESS_KEY,
-                                              TRUE);
+                                              true);
                 if (rc != 0)
                     return rc;
             }
@@ -302,7 +302,7 @@ tapi_bpf_stim_delay(tapi_bpf_stim_hdl *handle, unsigned int num)
             {
                 rc = tapi_bpf_stim_ctrl_write(handle->ta, bpf_ctx->bpf_id,
                                               TAPI_BPF_STIM_DELAY_INGRESS_KEY,
-                                              TRUE);
+                                              true);
                 if (rc != 0)
                     return rc;
             }

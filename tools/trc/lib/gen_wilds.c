@@ -202,7 +202,7 @@ static struct timeval *time_to_stop = NULL;
  * Whether DLX algorithm looked through all the possible solutions
  * by the moment or not
  */
-static te_bool work_done = FALSE;
+static bool work_done = false;
 
 /**
  * Cover column in DLX table. It means excluding the element
@@ -308,7 +308,7 @@ dlx(dlx_cell *h, int k)
 
         solutions_found++;
         if (k == 0)
-            work_done = TRUE;
+            work_done = true;
         return 0;
     }
 
@@ -351,7 +351,7 @@ dlx(dlx_cell *h, int k)
     /* Rollback decision of selecting the first element */
     column_uncover(c);
     if (k == 0 && rc >= 0)
-        work_done = TRUE; /* All the possible solutions were processed */
+        work_done = true; /* All the possible solutions were processed */
     return rc;
 }
 
@@ -517,7 +517,7 @@ get_fss_solution(problem *p, alg_type at)
     n = p->elm_num;
     m = p->set_num;
 
-    work_done = FALSE;
+    work_done = false;
     if (at == ALG_EXACT_COV_DLX || at == ALG_EXACT_COV_BOTH)
     {
         dlx_instance = gen_dlx(p);

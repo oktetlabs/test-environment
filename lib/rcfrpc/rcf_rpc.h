@@ -54,22 +54,22 @@
 
 /** Do not jump from the TAPI RPC library call in the case of IUT error */
 #define RPC_AWAIT_IUT_ERROR(_rpcs) \
-    (_rpcs)->iut_err_jump = FALSE
+    (_rpcs)->iut_err_jump = false
 
 /** Roll back RPC_AWAIT_IUT_ERROR effect */
 #define RPC_DONT_AWAIT_IUT_ERROR(_rpcs) \
     do {                                \
-        (_rpcs)->iut_err_jump = TRUE;   \
+        (_rpcs)->iut_err_jump = true;   \
         /* It does not make sense to    \
          * await only non-IUT error */  \
-        (_rpcs)->err_jump = TRUE;       \
+        (_rpcs)->err_jump = true;       \
     } while (0)
 
 /** Do not jump from the TAPI RPC library call in the case of any error */
 #define RPC_AWAIT_ERROR(_rpcs) \
     do {                                \
-        (_rpcs)->iut_err_jump = FALSE;  \
-        (_rpcs)->err_jump = FALSE;      \
+        (_rpcs)->iut_err_jump = false;  \
+        (_rpcs)->err_jump = false;      \
     } while (0)
 
 /** Roll back RPC_AWAIT_ERROR effect */
@@ -140,30 +140,30 @@ typedef struct rcf_rpc_server {
      * accesses iut_err_jump directly instead of using macros,
      * it should be fixed then.
      */
-    te_bool     err_jump;       /**< Jump if RPC call failed (this may occur
+    bool err_jump;       /**< Jump if RPC call failed (this may occur
                                      if the function called via this RPC
                                      returned error, or for other reasons
                                      such as segfault or timeout; true by
                                      default) */
-    te_bool     iut_err_jump;   /**< Jump if RPC call failed because
+    bool iut_err_jump;   /**< Jump if RPC call failed because
                                      function called via this RPC returned
                                      error (true by default; overrides
                                      err_jump) */
 
-    te_bool     err_log;        /**< Log error with ERROR log level */
-    te_bool     timed_out;      /**< Timeout was received from this
+    bool err_log;        /**< Log error with ERROR log level */
+    bool timed_out;      /**< Timeout was received from this
                                      RPC server - it is unusable
                                      unless someone has restarted it */
 
-    te_bool errno_change_check; /**< Check errno changes in the case
+    bool errno_change_check; /**< Check errno changes in the case
                                      of success */
 
     char       *nv_lib;         /**< Library name set for the server */
 
-    te_bool     use_libc;       /**< Use libc library instead of set one */
-    te_bool     use_libc_once;  /**< Same as use_libc, but one call only */
-    te_bool     last_use_libc;  /**< Last value of use_libc_once */
-    te_bool     use_syscall;    /**< Try to use syscall with library according
+    bool use_libc;       /**< Use libc library instead of set one */
+    bool use_libc_once;  /**< Same as use_libc, but one call only */
+    bool last_use_libc;  /**< Last value of use_libc_once */
+    bool use_syscall;    /**< Try to use syscall with library according
                                      to flag use_libc */
 
     /* Read-only fields filled by API internals when server is created */
@@ -183,14 +183,14 @@ typedef struct rcf_rpc_server {
     uint64_t        jobid0;       /**< Identifier of a deferred operation */
     char            proc[RCF_MAX_NAME];
                                 /**< Last called function */
-    te_bool         silent;     /**< Perform next RPC call without
+    bool silent;     /**< Perform next RPC call without
                                      logging */
-    te_bool         silent_default; /**< Turn on/off RPC calls logging, can
+    bool silent_default; /**< Turn on/off RPC calls logging, can
                                          be used to change the behavior for
                                          a few calls. */
-    te_bool         silent_pass;        /**< The same as @ref silent, but
+    bool silent_pass;        /**< The same as @ref silent, but
                                              error log still will be logged. */
-    te_bool         silent_pass_default;/**< The same as @ref silent_default,
+    bool silent_pass_default;/**< The same as @ref silent_default,
                                              applicable for @ref silent_pass.
                                              */
 
@@ -494,16 +494,16 @@ extern void rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
  * @return Status code
  */
 extern te_errno rcf_rpc_server_is_op_done(rcf_rpc_server *rpcs,
-                                          te_bool *done);
+                                          bool *done);
 
 /**
  * Check whether RPC server is alive.
  *
  * @param rpcs          existing RPC server handle
  *
- * @return @c TRUE or @c FALSE
+ * @return @c true or @c false
  */
-extern te_bool rcf_rpc_server_is_alive(rcf_rpc_server *rpcs);
+extern bool rcf_rpc_server_is_alive(rcf_rpc_server *rpcs);
 
 /** Free memory allocated by rcf_rpc_call */
 static inline void
@@ -529,7 +529,7 @@ rpcop2str(rcf_rpc_op op)
         case RCF_RPC_CALL:      return " call";
         case RCF_RPC_WAIT:      return " wait";
         case RCF_RPC_CALL_WAIT: return "";
-        default:                assert(FALSE);
+        default:                assert(false);
     }
     return " (unknown)";
 }
@@ -539,9 +539,9 @@ rpcop2str(rcf_rpc_op op)
  *
  * @param rpcs          RPC server
  *
- * @return TRUE if RPC server has children
+ * @return @c true if RPC server has children
  */
-extern te_bool rcf_rpc_server_has_children(rcf_rpc_server *rpcs);
+extern bool rcf_rpc_server_has_children(rcf_rpc_server *rpcs);
 
 
 /**

@@ -274,7 +274,7 @@ get_devices(const char *name, json_t **jout)
                 (friendly_name ? friendly_name : ""));
             /* Icon URL. */
             str = gupnp_device_info_get_icon_url(l->data, NULL, -1, -1, -1,
-                                                 TRUE, NULL, NULL, NULL,
+                                                 true, NULL, NULL, NULL,
                                                  NULL);
             params[DPROPERTY_ICON_URL] = json_string(str ? str : "");
             g_free(str);
@@ -1318,7 +1318,7 @@ send_reply(int fd, const void *buf, size_t size)
  * @param data          User data set in g_io_add_watch() or
  *                      g_io_add_watch_full().
  *
- * @return @c FALSE if the event source should be removed and @c TRUE
+ * @return @c false if the event source should be removed and @c true
  *         otherwise.
  */
 static gboolean
@@ -1330,7 +1330,7 @@ read_client_cb(GIOChannel  *source,
     UNUSED(data);
     int          s;
     read_status  rs;
-    gboolean     rc = TRUE;
+    gboolean     rc = true;
     char        *reply = NULL;
     size_t       reply_size;
 
@@ -1348,7 +1348,7 @@ read_client_cb(GIOChannel  *source,
     switch (rs)
     {
         case RS_PARTIAL:
-            return TRUE;    /* To continue a data waiting. */
+            return true;    /* To continue a data waiting. */
 
         case RS_OK:
 #if UPNP_DEBUG > 1
@@ -1361,7 +1361,7 @@ read_client_cb(GIOChannel  *source,
 #endif /* UPNP_DEBUG */
             if (process_request(&request, &reply, &reply_size) != 0)
             {
-                rc = FALSE;
+                rc = false;
                 break;
             }
 
@@ -1370,11 +1370,11 @@ read_client_cb(GIOChannel  *source,
             VERB("* Write reply: %lu bytes", reply_size);
 #endif /* UPNP_DEBUG */
             if (send_reply(s, reply, reply_size) == -1)
-                rc = FALSE;
+                rc = false;
             break;
 
         default:
-            rc = FALSE;
+            rc = false;
     }
     te_dbuf_reset(&request);
     free(reply);
@@ -1396,8 +1396,8 @@ read_client_cb(GIOChannel  *source,
  * @param data          User data set in g_io_add_watch() or
  *                      g_io_add_watch_full().
  *
- * @return The function return @c FALSE if the event source should be
- *         removed and @c TRUE otherwise.
+ * @return The function return @c false if the event source should be
+ *         removed and @c true otherwise.
  */
 static gboolean
 wait_for_client_cb(GIOChannel  *source,
@@ -1447,7 +1447,7 @@ wait_for_client_cb(GIOChannel  *source,
             }
         }
     }
-    return TRUE;
+    return true;
 }
 
 /**
@@ -1561,7 +1561,7 @@ te_upnp_cp(int argc, char *argv[])
                      G_CALLBACK(service_proxy_unavailable_cb), NULL);
 
     /* Tell the Control Point to start searching. */
-    gssdp_resource_browser_set_active(GSSDP_RESOURCE_BROWSER(cp), TRUE);
+    gssdp_resource_browser_set_active(GSSDP_RESOURCE_BROWSER(cp), true);
 
     /* Prepare the socket to receive a te_upnp protocol commands. */
     memset(&addr, 0, sizeof(addr));
@@ -1610,7 +1610,7 @@ te_upnp_cp(int argc, char *argv[])
      * Enter the main loop. This will start the search and result in
      * callbacks.
      */
-    main_loop = g_main_loop_new(NULL, FALSE);
+    main_loop = g_main_loop_new(NULL, false);
     g_main_loop_run(main_loop);
 
 cleanup:

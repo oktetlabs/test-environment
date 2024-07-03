@@ -111,7 +111,7 @@ start_compound_data(void *data, const XML_Char *elem, const XML_Char **atts)
     EXTRACT_RC(atts, rc_string);
     rc = (rc_string != NULL &&
           strncmp(rc_string, "FALSE", strlen("FALSE")) == 0) ?
-         FALSE : TRUE;
+         false : true;
     ((xml_app_data *)data)->rc = rc;
 
     return;
@@ -188,7 +188,7 @@ xmlxdr_int(XDR *xdrs, int *ip)
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
 
             memset(buf, ' ', indent);
@@ -204,7 +204,7 @@ xmlxdr_int(XDR *xdrs, int *ip)
                 >= *buflen || printed < 0)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
             *buflen -= printed;
             break;
@@ -223,7 +223,7 @@ xmlxdr_int(XDR *xdrs, int *ip)
             if (end == NULL)
             {
                 printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
             else
             {
@@ -234,7 +234,7 @@ xmlxdr_int(XDR *xdrs, int *ip)
                            __FUNCTION__, __LINE__,
                            XML_ErrorString(XML_GetErrorCode(parser)),
                            XML_GetCurrentLineNumber(parser));
-                    return FALSE;
+                    return false;
                 }
                 *buflen -= printed;
             }
@@ -246,10 +246,10 @@ xmlxdr_int(XDR *xdrs, int *ip)
         }
         default:
         {
-            return FALSE;
+            return false;
         }
     }
-    return TRUE;
+    return true;
 }
 
 /**
@@ -312,7 +312,7 @@ xmlxdr_uint8_t(XDR *xdrs, uint8_t *ip)
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
 
             memset(buf, ' ', indent);
@@ -328,7 +328,7 @@ xmlxdr_uint8_t(XDR *xdrs, uint8_t *ip)
                 >= *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
             *buflen -= printed;
             break;
@@ -347,7 +347,7 @@ xmlxdr_uint8_t(XDR *xdrs, uint8_t *ip)
             if (end == NULL)
             {
                 printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
             else
             {
@@ -358,7 +358,7 @@ xmlxdr_uint8_t(XDR *xdrs, uint8_t *ip)
                            __FUNCTION__, __LINE__,
                            XML_ErrorString(XML_GetErrorCode(parser)),
                            XML_GetCurrentLineNumber(parser));
-                    return FALSE;
+                    return false;
                 }
                 *buflen -= printed;
             }
@@ -370,10 +370,10 @@ xmlxdr_uint8_t(XDR *xdrs, uint8_t *ip)
         }
         default:
         {
-            return FALSE;
+            return false;
         }
     }
-    return TRUE;
+    return true;
 }
 
 /**
@@ -436,7 +436,7 @@ xmlxdr_uint16_t(XDR *xdrs, uint16_t *ip)
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
 
             memset(buf, ' ', indent);
@@ -452,7 +452,7 @@ xmlxdr_uint16_t(XDR *xdrs, uint16_t *ip)
                 >= *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
             *buflen -= printed;
             break;
@@ -471,7 +471,7 @@ xmlxdr_uint16_t(XDR *xdrs, uint16_t *ip)
             if (end == NULL)
             {
                 printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
             else
             {
@@ -482,7 +482,7 @@ xmlxdr_uint16_t(XDR *xdrs, uint16_t *ip)
                            __FUNCTION__, __LINE__,
                            XML_ErrorString(XML_GetErrorCode(parser)),
                            XML_GetCurrentLineNumber(parser));
-                    return FALSE;
+                    return false;
                 }
                 *buflen -= printed;
             }
@@ -494,10 +494,10 @@ xmlxdr_uint16_t(XDR *xdrs, uint16_t *ip)
         }
         default:
         {
-            return FALSE;
+            return false;
         }
     }
-    return TRUE;
+    return true;
 }
 
 /**
@@ -560,7 +560,7 @@ xmlxdr_int16_t(XDR *xdrs, int16_t *ip)
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
 
             memset(buf, ' ', indent);
@@ -576,7 +576,7 @@ xmlxdr_int16_t(XDR *xdrs, int16_t *ip)
                 >= *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
             *buflen -= printed;
             break;
@@ -595,7 +595,7 @@ xmlxdr_int16_t(XDR *xdrs, int16_t *ip)
             if (end == NULL)
             {
                 printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
             else
             {
@@ -606,7 +606,7 @@ xmlxdr_int16_t(XDR *xdrs, int16_t *ip)
                            __FUNCTION__, __LINE__,
                            XML_ErrorString(XML_GetErrorCode(parser)),
                            XML_GetCurrentLineNumber(parser));
-                    return FALSE;
+                    return false;
                 }
                 *buflen -= printed;
             }
@@ -618,10 +618,10 @@ xmlxdr_int16_t(XDR *xdrs, int16_t *ip)
         }
         default:
         {
-            return FALSE;
+            return false;
         }
     }
-    return TRUE;
+    return true;
 }
 
 /**
@@ -684,7 +684,7 @@ xmlxdr_int32_t(XDR *xdrs, int32_t *ip)
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
 
             memset(buf, ' ', indent);
@@ -700,7 +700,7 @@ xmlxdr_int32_t(XDR *xdrs, int32_t *ip)
                 >= *buflen)
             {
                 printf("%s %d: small biffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
             *buflen -= printed;
             break;
@@ -719,7 +719,7 @@ xmlxdr_int32_t(XDR *xdrs, int32_t *ip)
             if (end == NULL)
             {
                 printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
             else
             {
@@ -730,7 +730,7 @@ xmlxdr_int32_t(XDR *xdrs, int32_t *ip)
                            __FUNCTION__, __LINE__,
                            XML_ErrorString(XML_GetErrorCode(parser)),
                            XML_GetCurrentLineNumber(parser));
-                    return FALSE;
+                    return false;
                 }
                 *buflen -= printed;
             }
@@ -742,10 +742,10 @@ xmlxdr_int32_t(XDR *xdrs, int32_t *ip)
         }
         default:
         {
-            return FALSE;
+            return false;
         }
     }
-    return TRUE;
+    return true;
 }
 
 
@@ -809,7 +809,7 @@ xmlxdr_uint32_t(XDR *xdrs, uint32_t *ip)
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
 
             memset(buf, ' ', indent);
@@ -825,7 +825,7 @@ xmlxdr_uint32_t(XDR *xdrs, uint32_t *ip)
                 >= *buflen)
             {
                 printf("%s %d: small biffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
             *buflen -= printed;
             break;
@@ -844,7 +844,7 @@ xmlxdr_uint32_t(XDR *xdrs, uint32_t *ip)
             if (end == NULL)
             {
                 printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
             else
             {
@@ -855,7 +855,7 @@ xmlxdr_uint32_t(XDR *xdrs, uint32_t *ip)
                            __FUNCTION__, __LINE__,
                            XML_ErrorString(XML_GetErrorCode(parser)),
                            XML_GetCurrentLineNumber(parser));
-                    return FALSE;
+                    return false;
                 }
                 *buflen -= printed;
             }
@@ -867,10 +867,10 @@ xmlxdr_uint32_t(XDR *xdrs, uint32_t *ip)
         }
         default:
         {
-            return FALSE;
+            return false;
         }
     }
-    return TRUE;
+    return true;
 }
 
 /**
@@ -934,7 +934,7 @@ xmlxdr_uint64_t(XDR *xdrs, uint64_t *ip)
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
 
             memset(buf, ' ', indent);
@@ -948,7 +948,7 @@ xmlxdr_uint64_t(XDR *xdrs, uint64_t *ip)
                                     (name == NULL) ? "" : name, *ip)) >= *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
             *buflen -= printed;
             break;
@@ -968,7 +968,7 @@ xmlxdr_uint64_t(XDR *xdrs, uint64_t *ip)
             if (end == NULL)
             {
                 printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
             else
             {
@@ -979,7 +979,7 @@ xmlxdr_uint64_t(XDR *xdrs, uint64_t *ip)
                            __FUNCTION__, __LINE__,
                            XML_ErrorString(XML_GetErrorCode(parser)),
                            XML_GetCurrentLineNumber(parser));
-                    return FALSE;
+                    return false;
                 }
                 *buflen -= printed;
             }
@@ -991,10 +991,10 @@ xmlxdr_uint64_t(XDR *xdrs, uint64_t *ip)
         }
         default:
         {
-            return FALSE;
+            return false;
         }
     }
-    return TRUE;
+    return true;
 }
 
 /**
@@ -1100,7 +1100,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
 
             memset(buf, ' ', indent);
@@ -1119,7 +1119,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                                     (name == NULL) ? "" : name)) >= *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
             buf += printed;
             *buflen -= printed;
@@ -1131,7 +1131,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                 if ((printed = snprintf(buf, *buflen, "%s\"/>\n", *addrp)) >= *buflen)
                 {
                     printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                    return FALSE;
+                    return false;
                 }
                 buf += printed;
                 *buflen -= printed;
@@ -1145,7 +1145,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                     if ((printed = snprintf(buf, *buflen, "%02x ", *(uint8_t *)elem)) >= *buflen)
                     {
                         printf("%d: printed %d, buflen %d\n", __LINE__, printed, *buflen);
-                        return FALSE;
+                        return false;
                     }
                     buf += printed;
                     *buflen -= printed;
@@ -1155,7 +1155,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                     ((xml_app_data *)(xdrs->x_private))->name = NULL;
                     ((xml_app_data *)(xdrs->x_private))->depth++;
                     if (!elproc(xdrs, (void *)elem, LASTUNSIGNED))
-                        return FALSE;
+                        return false;
                     ((xml_app_data *)(xdrs->x_private))->depth--;
                 }
                 elem += elsize;
@@ -1173,7 +1173,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                                         "\"/>\n")) >= *buflen)
                 {
                     printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                    return FALSE;
+                    return false;
                 }
             }
             else
@@ -1187,7 +1187,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                                         "</param>\n")) >= *buflen)
                 {
                     printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                    return FALSE;
+                    return false;
                 }
             }
             buf += printed;
@@ -1216,7 +1216,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                 if (end == NULL)
                 {
                     printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
-                    return FALSE;
+                    return false;
                 }
                 else
                 {
@@ -1227,7 +1227,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                                __FUNCTION__, __LINE__,
                                XML_ErrorString(XML_GetErrorCode(parser)),
                                XML_GetCurrentLineNumber(parser));
-                        return FALSE;
+                        return false;
                     }
                     *buflen -= printed;
                 }
@@ -1249,7 +1249,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                 if (end == NULL)
                 {
                     printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
-                    return FALSE;
+                    return false;
                 }
                 else
                 {
@@ -1260,7 +1260,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                                __FUNCTION__, __LINE__,
                                XML_ErrorString(XML_GetErrorCode(parser)),
                                XML_GetCurrentLineNumber(parser));
-                        return FALSE;
+                        return false;
                     }
                     *buflen -= printed;
                 }
@@ -1279,7 +1279,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                 if (end == NULL)
                 {
                     printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
-                    return FALSE;
+                    return false;
                 }
                 else
                 {
@@ -1290,12 +1290,12 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                                __FUNCTION__, __LINE__,
                                XML_ErrorString(XML_GetErrorCode(parser)),
                                XML_GetCurrentLineNumber(parser));
-                        return FALSE;
+                        return false;
                     }
                     *buflen -= printed;
                     buf += printed;
                 }
-                while (TRUE)
+                while (true)
                 {
                     buf = xdrs->x_public + (strlen(xdrs->x_public)  + 1 - *buflen);
                     for (end = buf; *end == ' ' || *end == '\n'; end++);
@@ -1306,10 +1306,10 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                     if (array == NULL)
                     {
                         printf("%s %d: memory allocation failed", __FUNCTION__, __LINE__);
-                        return FALSE;
+                        return false;
                     }
                     if (!elproc(xdrs, (void *)(array + (array_size - 1) * elsize), LASTUNSIGNED))
-                        return FALSE;
+                        return false;
 
                 }
                 XML_SetUserData(parser, (void *)data);
@@ -1320,7 +1320,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                 if (end == NULL)
                 {
                     printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
-                    return FALSE;
+                    return false;
                 }
                 else
                 {
@@ -1331,7 +1331,7 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
                                __FUNCTION__, __LINE__,
                                XML_ErrorString(XML_GetErrorCode(parser)),
                                XML_GetCurrentLineNumber(parser));
-                        return FALSE;
+                        return false;
                     }
                     *buflen -= printed;
                     buf += printed;
@@ -1348,10 +1348,10 @@ xmlxdr_array(XDR *xdrs, caddr_t *addrp, u_int *sizep,
         }
         default:
         {
-            return FALSE;
+            return false;
         }
     }
-    return TRUE;
+    return true;
 }
 
 /**
@@ -1446,7 +1446,7 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
 
             memset(buf, ' ', indent);
@@ -1465,7 +1465,7 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
                                     (name == NULL) ? "" : name)) >= *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
             buf += printed;
             *buflen -= printed;
@@ -1478,7 +1478,7 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
                     if ((printed = snprintf(buf, *buflen, "%02x ", *(uint8_t *)elem)) >= *buflen)
                     {
                         printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                        return FALSE;
+                        return false;
                     }
                     buf += printed;
                     *buflen -= printed;
@@ -1488,7 +1488,7 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
                     ((xml_app_data *)(xdrs->x_private))->name = NULL;
                     ((xml_app_data *)(xdrs->x_private))->depth++;
                     if (!elproc(xdrs, (void *)elem, LASTUNSIGNED))
-                        return FALSE;
+                        return false;
                     ((xml_app_data *)(xdrs->x_private))->depth--;
                 }
                 elem += elsize;
@@ -1506,7 +1506,7 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
                                         "\"/>\n")) >= *buflen)
                 {
                     printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                    return FALSE;
+                    return false;
                 }
             }
             else
@@ -1520,7 +1520,7 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
                                         "</param>\n")) >= *buflen)
                 {
                     printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                    return FALSE;
+                    return false;
                 }
             }
             buf += printed;
@@ -1551,7 +1551,7 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
                 if (end == NULL)
                 {
                     printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
-                    return FALSE;
+                    return false;
                 }
                 else
                 {
@@ -1562,7 +1562,7 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
                                __FUNCTION__, __LINE__,
                                XML_ErrorString(XML_GetErrorCode(parser)),
                                XML_GetCurrentLineNumber(parser));
-                        return FALSE;
+                        return false;
                     }
                     *buflen -= printed;
                 }
@@ -1580,7 +1580,7 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
                 if (end == NULL)
                 {
                     printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
-                    return FALSE;
+                    return false;
                 }
                 else
                 {
@@ -1591,12 +1591,12 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
                                __FUNCTION__, __LINE__,
                                XML_ErrorString(XML_GetErrorCode(parser)),
                                XML_GetCurrentLineNumber(parser));
-                        return FALSE;
+                        return false;
                     }
                     *buflen -= printed;
                     buf += printed;
                 }
-                while (TRUE)
+                while (true)
                 {
                     buf = xdrs->x_public + (strlen(xdrs->x_public)  + 1 - *buflen);
                     for (end = buf; *end == ' ' || *end == '\n'; end++);
@@ -1606,15 +1606,15 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
                     if (++array_size > nelem)
                     {
                         printf("%s %d: parse error", __FUNCTION__, __LINE__);
-                        return FALSE;
+                        return false;
                     }
                     if (!elproc(xdrs, (void *)(array + (array_size - 1) * elsize), LASTUNSIGNED))
-                        return FALSE;
+                        return false;
                 }
                 if (array_size < nelem)
                 {
                     printf("%s %d: parse error", __FUNCTION__, __LINE__);
-                    return FALSE;
+                    return false;
                 }
 
                 XML_SetUserData(parser, (void *)data);
@@ -1625,7 +1625,7 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
                 if (end == NULL)
                 {
                     printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
-                    return FALSE;
+                    return false;
                 }
                 else
                 {
@@ -1636,7 +1636,7 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
                                __FUNCTION__, __LINE__,
                                XML_ErrorString(XML_GetErrorCode(parser)),
                                XML_GetCurrentLineNumber(parser));
-                        return FALSE;
+                        return false;
                     }
                     *buflen -= printed;
                     buf += printed;
@@ -1650,10 +1650,10 @@ xmlxdr_vector(XDR *xdrs, char *basep, u_int nelem,
         }
         default:
         {
-            return FALSE;
+            return false;
         }
     }
-    return TRUE;
+    return true;
 }
 
 
@@ -1717,7 +1717,7 @@ xmlxdr_string(XDR *xdrs, caddr_t *addrp, u_int maxsize)
             if (indent > *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
 
             memset(buf, ' ', indent);
@@ -1731,7 +1731,7 @@ xmlxdr_string(XDR *xdrs, caddr_t *addrp, u_int maxsize)
                                     (name == NULL) ? "" : name, *addrp)) >= *buflen)
             {
                 printf("%s %d: small buffer, exit\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
             buf += printed;
             *buflen -= printed;
@@ -1752,7 +1752,7 @@ xmlxdr_string(XDR *xdrs, caddr_t *addrp, u_int maxsize)
             if (end == NULL)
             {
                 printf("%s: %d: Cannot find \">\"\n", __FUNCTION__, __LINE__);
-                return FALSE;
+                return false;
             }
             else
             {
@@ -1763,7 +1763,7 @@ xmlxdr_string(XDR *xdrs, caddr_t *addrp, u_int maxsize)
                            __FUNCTION__, __LINE__,
                            XML_ErrorString(XML_GetErrorCode(parser)),
                            XML_GetCurrentLineNumber(parser));
-                    return FALSE;
+                    return false;
                 }
                 *buflen -= printed;
             }
@@ -1776,10 +1776,10 @@ xmlxdr_string(XDR *xdrs, caddr_t *addrp, u_int maxsize)
         }
         default:
         {
-            return FALSE;
+            return false;
         }
     }
-    return TRUE;
+    return true;
 }
 
 /**
@@ -1792,7 +1792,7 @@ xmlxdr_char(XDR *xdrs, char *ip)
 {
     UNUSED(xdrs);
     UNUSED(ip);
-    return FALSE;
+    return false;
 }
 
 /**
@@ -1804,11 +1804,11 @@ xmlxdr_char(XDR *xdrs, char *ip)
  *                  transmitting data
  * @param buflen    buffer size
  * @param op        rpc_xml_call or rpc_xml_result
- * @param rc        TRUE of FALSE, used only when op is rpc_xml_result
+ * @param rc        @c true or @c false, used only when op is rpc_xml_result
  * @param name      call/result name
  * @param x_op      XDR_ENCODE, XDR_DECODE of XDR_FREE
  *
- * @return TRUE of FALSE (in case of memory allocation failure)
+ * @return @c true or @c false (in case of memory allocation failure)
  */
 bool_t
 xdrxml_create(XDR *xdrs, caddr_t buf, u_int buflen,
@@ -1821,7 +1821,7 @@ xdrxml_create(XDR *xdrs, caddr_t buf, u_int buflen,
     if (data == NULL)
     {
         printf("%s %d: memory allocation failed", __FUNCTION__, __LINE__);
-        return FALSE;
+        return false;
     }
 
     data->op = op;
@@ -1839,7 +1839,7 @@ xdrxml_create(XDR *xdrs, caddr_t buf, u_int buflen,
     xdrs->x_private = (caddr_t)data;
 
     xdrs->x_op = x_op;
-    return TRUE;
+    return true;
 }
 
 /**
@@ -1855,7 +1855,7 @@ xdrxml_free(XDR *xdrs)
 
     XML_ParserFree(data->parser);
     free(data);
-    return TRUE;
+    return true;
 }
 
 /**

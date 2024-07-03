@@ -49,9 +49,9 @@ extern te_errno tapi_cfg_block_grab(const char *ta, const char *block_dev);
  * @param ta         Agent name
  * @param block_dev  Block device name
  *
- * @return TRUE iff @p block_dev refers to a loop block device on @p ta
+ * @return @c true iff @p block_dev refers to a loop block device on @p ta
  */
-extern te_bool tapi_cfg_block_is_loop(const char *ta, const char *block_dev);
+extern bool tapi_cfg_block_is_loop(const char *ta, const char *block_dev);
 
 /**
  * Get the name of a backing file for a loop device @p block_dev.

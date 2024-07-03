@@ -71,7 +71,7 @@ read_message_ts(FILE *input, uint64_t *pntimestamp)
      * Abort on the special terminating field length.
      */
     req_var_field_num = 3;
-    while (TRUE)
+    while (true)
     {
         /* Read next field length */
         if (fread(&len, sizeof(len), 1, input) != 1)
@@ -113,9 +113,9 @@ read_message_ts(FILE *input, uint64_t *pntimestamp)
  * @param offset        Message offset in the host byte order.
  * @param ntimestamp    Message timestamp in the network byte order.
  *
- * @return TRUE if the entry was written successfully, FALSE otherwise.
+ * @return @c true if the entry was written successfully, @c false otherwise.
  */
-static te_bool
+static bool
 write_entry(FILE *output, uint64_t offset, uint64_t ntimestamp)
 {
     uint8_t buf[sizeof(offset) + sizeof(ntimestamp)];
@@ -126,9 +126,9 @@ write_entry(FILE *output, uint64_t offset, uint64_t ntimestamp)
         buf[i] = offset & 0xFF;
 
     if (fwrite(&buf, sizeof(buf), 1, output) != 1)
-        return FALSE;
+        return false;
 
-    return TRUE;
+    return true;
 }
 
 
@@ -182,7 +182,7 @@ run(const char *input_name, const char *output_name)
     if (version != 1)
         ERROR_CLEANUP("Unsupported log file version %hhu", version);
 
-    while (TRUE)
+    while (true)
     {
         /* Retrieve current offset */
         /* Not checking the result - what could possibly go wrong? */

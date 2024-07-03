@@ -342,7 +342,7 @@ csap_command_under_lock(csap_p csap, tad_traffic_op_t command)
             break;
 
         default:
-            assert(FALSE);
+            assert(false);
             rc = TE_EINVAL;
     }
 
@@ -412,7 +412,7 @@ csap_command_under_lock(csap_p csap, tad_traffic_op_t command)
                 break;
 
             default:
-                assert(FALSE);
+                assert(false);
                 rc = TE_EINVAL;
         }
 

@@ -192,11 +192,11 @@ typedef struct tapi_dns_unbound_cfg_opt {
     tapi_job_opt_uint_t port;
 
     /**
-     * If @c TRUE, then open dedicated listening sockets for incoming queries
+     * If @c true, then open dedicated listening sockets for incoming queries
      * for each thread and try to set the @c SO_REUSEPORT socket option on each
      * socket.
      */
-    te_bool so_reuseport;
+    bool so_reuseport;
 
     /** Authority zones. */
     struct {
@@ -217,24 +217,24 @@ typedef struct tapi_dns_unbound_cfg_opt {
     tapi_job_opt_uint_t jostle_timeout;
 
     /**
-     * If @c TRUE, Unbound does not insert authority/additional sections into
+     * If @c true, Unbound does not insert authority/additional sections into
      * response messages when those sections are not required. This reduces
      * response size significantly, and may avoid TCP fallback for some
      * responses. This may cause a slight speedup.
      */
-    te_bool minimal_responses;
+    bool minimal_responses;
 
     /** Enable or disable whether IPv4 queries are answered or issued. */
-    te_bool do_ip4;
+    bool do_ip4;
 
     /** Enable or disable whether IPv6 queries are answered or issued. */
-    te_bool do_ip6;
+    bool do_ip6;
 
     /** Enable or disable whether UDP queries are answered or issued. */
-    te_bool do_udp;
+    bool do_udp;
 
     /** Enable or disable whether TCP queries are answered or issued. */
-    te_bool do_tcp;
+    bool do_tcp;
 
     /** Number of incoming TCP buffers to allocate per thread. */
     tapi_job_opt_uint_t incoming_num_tcp;

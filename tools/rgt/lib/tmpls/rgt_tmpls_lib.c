@@ -44,7 +44,7 @@ static rgt_attrs_t saved_attrs[ATTR_NUM];
 /** The number of attributes in attribute array */
 static unsigned int global_attr_num = 0;
 /** Wheter the attribute array is currently used or not */
-static te_bool      attr_locked = FALSE;
+static bool attr_locked = false;
 
 #define N_BUFS ATTR_NUM
 #define BUF_LEN 128
@@ -62,8 +62,8 @@ rgt_tmpls_attrs_new(const char **xml_attrs)
 {
     unsigned int i, j;
 
-    assert(attr_locked == FALSE);
-    attr_locked = TRUE;
+    assert(attr_locked == false);
+    attr_locked = true;
 
     global_attr_num = 0;
 
@@ -99,10 +99,10 @@ rgt_tmpls_attrs_new(const char **xml_attrs)
 void
 rgt_tmpls_attrs_free(rgt_attrs_t *attrs)
 {
-    assert(attr_locked == TRUE);
+    assert(attr_locked == true);
     assert(attrs == global_attrs);
     cur_buf = 0;
-    attr_locked = FALSE;
+    attr_locked = false;
 }
 
 /* The description see in rgt_tmpls_lib.h */
@@ -152,7 +152,7 @@ static void
 attrs_add_fstr(rgt_attrs_t *attrs, const char *name,
                const char *fmt_str, va_list ap)
 {
-    assert(attr_locked == TRUE);
+    assert(attr_locked == true);
     assert(global_attr_num + 2 <= ATTR_NUM);
     assert(cur_buf + 1 <= N_BUFS);
     assert(attrs == global_attrs);
@@ -188,7 +188,7 @@ rgt_tmpls_attrs_set_fstr(rgt_attrs_t *attrs, const char *name,
     va_list  ap;
     uint32_t i;
 
-    assert(attr_locked == TRUE);
+    assert(attr_locked == true);
     assert(global_attr_num + 2 <= ATTR_NUM);
     assert(attrs == global_attrs);
 
@@ -216,7 +216,7 @@ void
 rgt_tmpls_attrs_add_uint32(rgt_attrs_t *attrs, const char *name,
                            uint32_t val)
 {
-    assert(attr_locked == TRUE);
+    assert(attr_locked == true);
     assert(global_attr_num + 2 <= ATTR_NUM);
     assert(attrs == global_attrs);
 
@@ -236,7 +236,7 @@ rgt_tmpls_attrs_set_uint32(rgt_attrs_t *attrs, const char *name,
 {
     uint32_t i;
 
-    assert(attr_locked == TRUE);
+    assert(attr_locked == true);
     assert(global_attr_num + 2 <= ATTR_NUM);
     assert(attrs == global_attrs);
 
@@ -446,7 +446,7 @@ rgt_resource_files_prefix_get(const char *util_path, const char *argv0,
                               size_t size, char *prefix)
 {
     static char prefix_static[PATH_MAX] = {0};
-    static te_bool got_prefix = FALSE;
+    static bool got_prefix = false;
 
     const char *getcwd_error = "getcwd failed";
     const char *snprintf_error = "error writing path to buffer";
@@ -529,7 +529,7 @@ rgt_resource_files_prefix_get(const char *util_path, const char *argv0,
             return 1;
         }
 
-        got_prefix = TRUE;
+        got_prefix = true;
     }
 
     n = snprintf(prefix, size, "%s", prefix_static);

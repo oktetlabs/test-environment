@@ -28,7 +28,7 @@
 te_errno
 tapi_cfg_block_initialize_loop(const char *ta)
 {
-    return tapi_cfg_module_add(ta, LOOP_BLOCK_KMOD, TRUE);
+    return tapi_cfg_module_add(ta, LOOP_BLOCK_KMOD, true);
 }
 
 te_errno
@@ -47,7 +47,7 @@ tapi_cfg_block_grab(const char *ta, const char *block_dev)
     return rc;
 }
 
-te_bool
+bool
 tapi_cfg_block_is_loop(const char *ta, const char *block_dev)
 {
     int is_loop = 0;

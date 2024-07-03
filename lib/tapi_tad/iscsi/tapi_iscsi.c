@@ -138,7 +138,7 @@ tapi_iscsi_tgt_csap_create(const char        *ta_name,
     int rc;
 
     rc = rcf_ta_call(ta_name, 0 /* sid */,
-                     "iscsi_target_connect", &sock, 0, FALSE);
+                     "iscsi_target_connect", &sock, 0, false);
     if (rc != 0)
     {
         ERROR("Failed to call iscsi_target_connect() on TA "
@@ -1428,7 +1428,7 @@ tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
     iscsi_key_values   key_values;
     int                key_values_num;
     int                key_values_index;
-    te_bool            found;
+    bool found;
     int                i = 0;
 
     va_list list;
@@ -1471,9 +1471,9 @@ tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
         char *search_value = va_arg(list, char *);
         char *key_value;
 
-        found = FALSE;
+        found = false;
         for (key_values_index = 0;
-             (key_values_index < key_values_num) && (found == FALSE);
+             (key_values_index < key_values_num) && (found == false);
              key_values_index++)
         {
             if ((rc =
@@ -1488,11 +1488,11 @@ tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
             }
             if (strcmp(search_value, key_value) == 0)
             {
-                found = TRUE;
+                found = true;
                 break;
             }
         }
-        if (found == FALSE)
+        if (found == false)
         {
             va_end(list);
             ERROR("%s, %d: cannot find value '%s' for key %s",
@@ -1658,7 +1658,7 @@ tapi_iscsi_send_target_msg(const char *ta, const char *msg,
 
     local_rc = rcf_ta_call(ta, 0, "iscsi_target_send_simple_msg",
                            &remote_rc,
-                           2, FALSE,
+                           2, false,
                            RCF_STRING, msg, RCF_STRING, buffer);
     return (local_rc == 0 ? remote_rc : local_rc);
 }
@@ -1768,7 +1768,7 @@ tapi_iscsi_target_cause_renegotiate(const char *ta, int id, int timeout)
 
 
 int
-tapi_iscsi_target_will_drop(const char *ta, int id, te_bool drop_all,
+tapi_iscsi_target_will_drop(const char *ta, int id, bool drop_all,
                             int time2wait, int time2retain)
 {
     int  rc;
@@ -1821,7 +1821,7 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
                                    iscsi_target_id target_id,
                                    iscsi_cid cid,
                                    tapi_iscsi_parameter param,
-                                   te_bool advertize)
+                                   bool advertize)
 {
     static uint32_t offer_mapping[] = {
         OFFER_HEADER_DIGEST,
@@ -1872,7 +1872,7 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
 
     if (offer_mapping[param] != 0)
     {
-        if (advertize == TRUE)
+        if (advertize == true)
             par2adv |= offer_mapping[param];
         else
             par2adv &= ~(offer_mapping[param]);
@@ -1905,7 +1905,7 @@ tapi_iscsi_initiator_set_parameter(const char *ta,
                                    iscsi_cid cid,
                                    tapi_iscsi_parameter param,
                                    const char *value,
-                                   te_bool advertize)
+                                   bool advertize)
 {
     int rc = -1;
 
@@ -2094,7 +2094,7 @@ tapi_iscsi_initiator_conn_del(const char *ta,
         return rc;
     }
 
-    rc = cfg_del_instance(handle, FALSE);
+    rc = cfg_del_instance(handle, false);
     if (rc != 0)
     {
         ERROR("Failed to delete connection with ID %d from agent %s",
@@ -2147,7 +2147,7 @@ tapi_iscsi_initiator_add_target(const char *ta,
                                             ISCSI_ALL_CONNECTIONS,
                                             ISCSI_PARAM_TARGET_ADDRESS,
                                             (void *)target_addr_param,
-                                            FALSE);
+                                            false);
     if (rc != 0)
     {
         ERROR("Failed to set TargetAddress parameter of "
@@ -2162,7 +2162,7 @@ tapi_iscsi_initiator_add_target(const char *ta,
                                             ISCSI_ALL_CONNECTIONS,
                                             ISCSI_PARAM_TARGET_PORT,
                                             (void *)port,
-                                            FALSE);
+                                            false);
     if (rc != 0)
     {
         ERROR("Failed to set TargetPort aprameter of the initiator, rc=%r");
@@ -2194,7 +2194,7 @@ tapi_iscsi_initiator_del_target(const char *ta,
         return rc;
     }
 
-    rc = cfg_del_instance(handle, FALSE);
+    rc = cfg_del_instance(handle, false);
     if (rc != 0)
     {
         ERROR("Failed to delete target with ID %d from agent %s",
@@ -2353,20 +2353,20 @@ tapi_iscsi_target_unmount(const char *ta)
                                 ta);
 }
 
-static te_bool
+static bool
 check_mounted(const char *ta)
 {
     char    *mountpoint;
     char    *expected_mountpoint;
     int      rc;
-    te_bool  mounted;
+    bool mounted;
 
     expected_mountpoint = get_target_mountpoint();
     rc  = cfg_get_instance_string_fmt(&mountpoint,
                                   "/agent:%s/iscsi_target:/backing_store_mp:",
                                   ta);
     if (rc != 0)
-        return FALSE;
+        return false;
 
     mounted = (strcmp(mountpoint, expected_mountpoint) != 0);
 
@@ -2459,9 +2459,9 @@ tapi_iscsi_target_file_write(const char *ta, const char *fname,
     if (!check_mounted(ta))
         return TE_RC(TE_TAPI, TE_ENXIO);
     /** tapi_file_create() may modify buf, but only if the
-     *  third parameter is TRUE, i.e. randomize the buffer
+     *  third parameter is @c true, i.e. randomize the buffer
      */
-    localfname = tapi_file_create(length, (void *)buf, FALSE);
+    localfname = tapi_file_create(length, (void *)buf, false);
     if (localfname == NULL)
         return TE_RC(TE_TAPI, TE_EBADF);
     if (multiply > 1)
@@ -2487,9 +2487,9 @@ tapi_iscsi_target_raw_write(const char *ta, off_t offset,
     if (remotefname == NULL)
         return TE_RC(TE_TAPI, TE_EBADF);
     /** tapi_file_create() may modify buf, but only if the
-     *  third parameter is TRUE, i.e. randomize the buffer
+     *  third parameter is @c true, i.e. randomize the buffer
      */
-    localfname = tapi_file_create(length, (void *)data, FALSE);
+    localfname = tapi_file_create(length, (void *)data, false);
     if (localfname == NULL)
         return TE_RC(TE_TAPI, TE_EBADF);
 
@@ -2579,12 +2579,12 @@ typedef struct iscsi_io_cmd
     volatile te_errno        status; /**< Status */
     int                      fd; /**< File descriptor to operate on */
     ssize_t                  length; /**< Data length or seek position */
-    te_bool                  spread_fd; /**< If TRUE, current fd is used for
+    bool spread_fd; /**< If @c true, current fd is used for
                                       later commands */
-    te_bool                  do_signal; /**< Signal when a task is done */
-    te_bool                  is_complete; /**< TRUE after the task
+    bool do_signal; /**< Signal when a task is done */
+    bool is_complete; /**< @c true after the task
                                            * completion */
-    te_bool                  leader; /**< Leading command */
+    bool leader; /**< Leading command */
     void                    *data; /**< Pointer to data */
     iscsi_io_data_destroy_t  destroy; /**< Data destruction function */
 } iscsi_io_cmd_t;
@@ -2596,9 +2596,9 @@ struct iscsi_io_handle_t
 {
     pthread_t       thread;     /**< A thread id that does all the stuff */
     rcf_rpc_server *rpcs;       /**< RPC server handler for actual I/O */
-    te_bool         use_signal; /**< TRUE if a signal is to be sent when an
+    bool use_signal; /**< @c true if a signal is to be sent when an
                                      operation is complete */
-    te_bool         use_fs;     /**< TRUE when using filesystem on the
+    bool use_fs;     /**< @c true when using filesystem on the
                                      device, as opposed to raw access */
     size_t          chunksize;  /**< Chunk size for file copying */
     size_t          bufsize;    /**< Current buffer size */
@@ -2611,7 +2611,7 @@ struct iscsi_io_handle_t
                                                  initiator's side */
     char            device[RCF_MAX_PATH]; /**< A SCSI device associated with
                                              an iSCSI initiator */
-    te_bool         terminate;  /**< The thread must terminate when TRUE */
+    bool terminate;  /**< The thread must terminate when @c true */
 };
 
 
@@ -2644,16 +2644,16 @@ get_host_device(const char *ta, unsigned id)
     return device;
 }
 
-te_bool
+bool
 tapi_iscsi_initiator_is_device_ready(const char *ta, iscsi_target_id id)
 {
-    static te_bool device_created[MAX_TARGETS_NUMBER];
+    static bool device_created[MAX_TARGETS_NUMBER];
 
     if (id >= MAX_TARGETS_NUMBER)
-        return FALSE;
+        return false;
 
     if (device_created[id])
-        return TRUE;
+        return true;
     else
     {
         char *status;
@@ -2666,7 +2666,7 @@ tapi_iscsi_initiator_is_device_ready(const char *ta, iscsi_target_id id)
         if (rc != 0)
         {
             ERROR("Cannot obtain host device status: %r", rc);
-            return FALSE;
+            return false;
         }
 
         device_created[id] = (atoi(status) == ISCSI_CONNECTION_UP);
@@ -2759,7 +2759,7 @@ tapi_iscsi_io_thread(void *param)
                     }
                 }
             }
-            cmd->is_complete = TRUE;
+            cmd->is_complete = true;
             if (ioh->use_signal && cmd->do_signal)
             {
                 RING("Sending task completion signal");
@@ -2829,7 +2829,7 @@ command_open(iscsi_io_handle_t *ioh, int *fd,
     return (*fd < 0 ? RPC_ERRNO(ioh->rpcs) : 0);
 }
 
-static te_bool
+static bool
 realloc_buffer(iscsi_io_handle_t *ioh, size_t bufsize)
 {
     if (ioh->bufsize < bufsize)
@@ -3024,7 +3024,7 @@ iscsi_io_signal_handler(int signo)
 
 te_errno
 tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
-                      te_bool use_signal, te_bool use_fs,
+                      bool use_signal, bool use_fs,
                       size_t chunksize,
                       iscsi_io_handle_t **ioh)
 {
@@ -3063,7 +3063,7 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
     (*ioh)->chunksize      = chunksize;
     (*ioh)->bufsize        = 0;
     (*ioh)->buffer         = RPC_NULL;
-    (*ioh)->terminate      = FALSE;
+    (*ioh)->terminate      = false;
 
     sprintf(name, "iscsi_%u", id);
     rc = rcf_rpc_server_create(ta, name, &((*ioh)->rpcs));
@@ -3080,10 +3080,10 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
         (*ioh)->cmds[i].cmd         = NULL;
         (*ioh)->cmds[i].data        = NULL;
         (*ioh)->cmds[i].fd          = -1;
-        (*ioh)->cmds[i].is_complete = TRUE;
+        (*ioh)->cmds[i].is_complete = true;
         (*ioh)->cmds[i].status      = 0;
-        (*ioh)->cmds[i].leader      = FALSE;
-        (*ioh)->cmds[i].do_signal   = FALSE;
+        (*ioh)->cmds[i].leader      = false;
+        (*ioh)->cmds[i].do_signal   = false;
         (*ioh)->cmds[i].destroy     = NULL;
     }
     (*ioh)->next_cmd = 0;
@@ -3111,10 +3111,10 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
     return 0;
 }
 
-te_bool
-tapi_iscsi_io_enable_signal(iscsi_io_handle_t *ioh, te_bool enable)
+bool
+tapi_iscsi_io_enable_signal(iscsi_io_handle_t *ioh, bool enable)
 {
-    te_bool prev = ioh->use_signal;
+    bool prev = ioh->use_signal;
     ioh->use_signal = enable;
     return prev;
 }
@@ -3125,7 +3125,7 @@ tapi_iscsi_io_finish(iscsi_io_handle_t *ioh)
     int rc = 0;
     int i;
 
-    ioh->terminate = TRUE;
+    ioh->terminate = true;
     sem_post(&ioh->cmd_wait);
     pthread_join(ioh->thread, NULL);
     for (i = 0; i < MAX_ISCSI_IO_CMDS; i++)
@@ -3161,10 +3161,10 @@ tapi_iscsi_io_reset(iscsi_io_handle_t *ioh)
             ioh->cmds[i].destroy     = NULL;
         }
         ioh->cmds[i].fd          = -1;
-        ioh->cmds[i].is_complete = TRUE;
+        ioh->cmds[i].is_complete = true;
         ioh->cmds[i].status      = 0;
-        ioh->cmds[i].leader      = FALSE;
-        ioh->cmds[i].do_signal   = FALSE;
+        ioh->cmds[i].leader      = false;
+        ioh->cmds[i].do_signal   = false;
     }
     ioh->next_cmd = 0;
     return 0;
@@ -3179,13 +3179,13 @@ tapi_iscsi_io_get_status(iscsi_io_handle_t *ioh, iscsi_io_taskid taskid)
         TE_RC(TE_TAPI, TE_EINPROGRESS);
 }
 
-te_bool
+bool
 tapi_iscsi_io_is_complete(iscsi_io_handle_t *ioh, iscsi_io_taskid taskid)
 {
     if (taskid >= MAX_ISCSI_IO_CMDS)
     {
         ERROR("Invalid task id %u", taskid);
-        return FALSE;
+        return false;
     }
     if (ioh->cmds[taskid].is_complete && completed_tasks != 0)
     {
@@ -3194,7 +3194,7 @@ tapi_iscsi_io_is_complete(iscsi_io_handle_t *ioh, iscsi_io_taskid taskid)
     return ioh->cmds[taskid].is_complete;
 }
 
-static inline te_bool
+static inline bool
 is_enough_cmds_avail(iscsi_io_handle_t *ioh, int ncmds)
 {
     return ioh->next_cmd + ncmds < MAX_ISCSI_IO_CMDS;
@@ -3219,7 +3219,7 @@ post_command(iscsi_io_handle_t *ioh, iscsi_io_cmd_t *src,
     tmp_fd           = src->fd >= 0 ? src->fd : ioc->fd;
     tmp_status       = ioc->status;
     *ioc             = *src;
-    ioc->is_complete = FALSE;
+    ioc->is_complete = false;
     ioc->fd          = tmp_fd;
     ioc->status      = tmp_status;
 
@@ -3235,7 +3235,7 @@ tapi_iscsi_initiator_mount(iscsi_io_handle_t *ioh, iscsi_io_taskid *taskid)
 {
     iscsi_io_cmd_t cmd;
 
-    cmd.leader    = TRUE;
+    cmd.leader    = true;
     cmd.do_signal = (taskid != NULL);
 
     if (!ioh->use_fs)
@@ -3244,7 +3244,7 @@ tapi_iscsi_initiator_mount(iscsi_io_handle_t *ioh, iscsi_io_taskid *taskid)
         cmd.fd        = -1;
         cmd.length    = (ssize_t)(RPC_O_RDWR | RPC_O_DIRECT);
         cmd.data      = ioh->device;
-        cmd.spread_fd = TRUE;
+        cmd.spread_fd = true;
         cmd.destroy   = NULL;
     }
     else
@@ -3258,7 +3258,7 @@ tapi_iscsi_initiator_mount(iscsi_io_handle_t *ioh, iscsi_io_taskid *taskid)
         cmd.fd        = 0;
         cmd.length    = 0;
         cmd.data      = strdup(mount);
-        cmd.spread_fd = FALSE;
+        cmd.spread_fd = false;
         cmd.destroy   = free;
     }
     return post_command(ioh, &cmd, taskid);
@@ -3270,7 +3270,7 @@ tapi_iscsi_initiator_unmount(iscsi_io_handle_t *ioh,
 {
     iscsi_io_cmd_t cmd;
 
-    cmd.leader    = FALSE;
+    cmd.leader    = false;
     cmd.do_signal = (taskid != NULL);
     if (!ioh->use_fs)
     {
@@ -3278,7 +3278,7 @@ tapi_iscsi_initiator_unmount(iscsi_io_handle_t *ioh,
         cmd.fd        = -1;
         cmd.length    = 0;
         cmd.data      = NULL;
-        cmd.spread_fd = FALSE;
+        cmd.spread_fd = false;
         cmd.destroy   = NULL;
     }
     else
@@ -3293,7 +3293,7 @@ tapi_iscsi_initiator_unmount(iscsi_io_handle_t *ioh,
         cmd.fd        = 0;
         cmd.length    = 0;
         cmd.data      = strdup(umount);
-        cmd.spread_fd = FALSE;
+        cmd.spread_fd = false;
         cmd.destroy   = free;
     }
     return post_command(ioh, &cmd, taskid);
@@ -3314,8 +3314,8 @@ tapi_iscsi_initiator_open(iscsi_io_handle_t *ioh,
     cmd.length    = fcntl_flags_h2rpc(mode)
         /* | RPC_O_SYNC | RPC_O_DIRECT */;
     cmd.data      = strdup(fname);
-    cmd.spread_fd = TRUE;
-    cmd.leader    = TRUE;
+    cmd.spread_fd = true;
+    cmd.leader    = true;
     cmd.do_signal = (taskid != NULL);
     cmd.destroy   = free;
     return post_command(ioh, &cmd, taskid);
@@ -3334,8 +3334,8 @@ tapi_iscsi_initiator_close(iscsi_io_handle_t *ioh,
     cmd.fd        = -1;
     cmd.length    = 0;
     cmd.data      = NULL;
-    cmd.spread_fd = FALSE;
-    cmd.leader    = TRUE;
+    cmd.spread_fd = false;
+    cmd.leader    = true;
     cmd.do_signal = (taskid != NULL);
     cmd.destroy   = NULL;
     return post_command(ioh, &cmd, taskid);
@@ -3351,8 +3351,8 @@ tapi_iscsi_initiator_noop(iscsi_io_handle_t *ioh,
     cmd.fd        = -1;
     cmd.length    = 0;
     cmd.data      = NULL;
-    cmd.spread_fd = FALSE;
-    cmd.leader    = TRUE;
+    cmd.spread_fd = false;
+    cmd.leader    = true;
     cmd.do_signal = (taskid != NULL);
     cmd.destroy   = NULL;
     return post_command(ioh, &cmd, taskid);
@@ -3369,8 +3369,8 @@ tapi_iscsi_initiator_fsync(iscsi_io_handle_t *ioh,
     cmd.fd        = -1;
     cmd.length    = 0;
     cmd.data      = NULL;
-    cmd.spread_fd = FALSE;
-    cmd.leader    = FALSE;
+    cmd.spread_fd = false;
+    cmd.leader    = false;
     cmd.do_signal = (taskid != NULL);
     cmd.destroy   = NULL;
     return post_command(ioh, &cmd, taskid);
@@ -3387,8 +3387,8 @@ tapi_iscsi_initiator_seek(iscsi_io_handle_t *ioh,
     cmd.fd        = -1;
     cmd.length    = pos;
     cmd.data      = NULL;
-    cmd.spread_fd = FALSE;
-    cmd.leader    = FALSE;
+    cmd.spread_fd = false;
+    cmd.leader    = false;
     cmd.do_signal = (taskid != NULL);
     cmd.destroy   = NULL;
     return post_command(ioh, &cmd, taskid);
@@ -3406,8 +3406,8 @@ tapi_iscsi_initiator_write(iscsi_io_handle_t *ioh,
     cmd.fd        = -1;
     cmd.length    = length;
     cmd.data      = data;
-    cmd.spread_fd = FALSE;
-    cmd.leader    = FALSE;
+    cmd.spread_fd = false;
+    cmd.leader    = false;
     cmd.do_signal = (taskid != NULL);
     cmd.destroy   = NULL;
     return post_command(ioh, &cmd, taskid);
@@ -3424,8 +3424,8 @@ tapi_iscsi_initiator_read(iscsi_io_handle_t *ioh,
     cmd.fd        = -1;
     cmd.length    = length;
     cmd.data      = data;
-    cmd.spread_fd = FALSE;
-    cmd.leader    = FALSE;
+    cmd.spread_fd = false;
+    cmd.leader    = false;
     cmd.do_signal = (taskid != NULL);
     cmd.destroy   = NULL;
     return post_command(ioh, &cmd, taskid);
@@ -3443,8 +3443,8 @@ tapi_iscsi_initiator_write_file(iscsi_io_handle_t *ioh,
     cmd.fd        = -1;
     cmd.length    = ISCSI_COPY_FILE_IN;
     cmd.data      = strdup(filename);
-    cmd.spread_fd = FALSE;
-    cmd.leader    = FALSE;
+    cmd.spread_fd = false;
+    cmd.leader    = false;
     cmd.do_signal = (taskid != NULL);
     cmd.destroy   = free;
     return post_command(ioh, &cmd, taskid);
@@ -3461,8 +3461,8 @@ tapi_iscsi_initiator_read_file(iscsi_io_handle_t *ioh,
     cmd.fd        = -1;
     cmd.length    = ISCSI_COPY_FILE_OUT;
     cmd.data      = strdup(filename);
-    cmd.spread_fd = FALSE;
-    cmd.leader    = FALSE;
+    cmd.spread_fd = false;
+    cmd.leader    = false;
     cmd.do_signal = (taskid != NULL);
     cmd.destroy   = free;
     return post_command(ioh, &cmd, taskid);

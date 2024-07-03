@@ -65,7 +65,7 @@ main(int argc, char *argv[])
     char *backup = NULL;
     const char *oid_name = NULL;
 
-    te_bool restore;
+    bool restore;
     rollback_type rollback;
 
     int32_t old_value = -1;

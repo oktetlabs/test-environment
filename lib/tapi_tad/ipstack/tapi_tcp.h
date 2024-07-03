@@ -278,8 +278,8 @@ extern te_errno tapi_tcp_make_msg(uint16_t        src_port,
                                   uint16_t        dst_port,
                                   tapi_tcp_pos_t  seqn,
                                   tapi_tcp_pos_t  ackn,
-                                  te_bool         syn_flag,
-                                  te_bool         ack_flag,
+                                  bool syn_flag,
+                                  bool ack_flag,
                                   uint8_t        *msg);
 
 /**
@@ -297,7 +297,7 @@ extern te_errno tapi_tcp_make_msg(uint16_t        src_port,
  */
 extern te_errno tapi_tcp_pdu(int src_port, int dst_port,
                              tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-                             te_bool syn_flag, te_bool ack_flag,
+                             bool syn_flag, bool ack_flag,
                              asn_value **pdu);
 
 /**
@@ -308,9 +308,9 @@ extern te_errno tapi_tcp_pdu(int src_port, int dst_port,
  * If it is not, fill there parameters in obtained traffic template
  * explicitely.
  *
- * @param is_eth_pdu    if TRUE include eth header PDU
- * @param force_ip6     TRUE for IPv6 PDU
- *                      FALSE for IPv4 PDU
+ * @param is_eth_pdu    if @c true include eth header PDU
+ * @param force_ip6     @c true for IPv6 PDU
+ *                      @c false for IPv4 PDU
  * @param seqn          sequence number in host byte order
  * @param ackn          acknowledge number in host byte order
  * @param syn_flag      syn flag
@@ -321,19 +321,19 @@ extern te_errno tapi_tcp_pdu(int src_port, int dst_port,
  *
  * @return Status code.
  */
-extern int tapi_tcp_template_gen(te_bool is_eth_pdu, te_bool force_ip6,
+extern int tapi_tcp_template_gen(bool is_eth_pdu, bool force_ip6,
                                  tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-                                 te_bool syn_flag, te_bool ack_flag,
+                                 bool syn_flag, bool ack_flag,
                                  uint8_t *data, size_t pld_len,
                                  asn_value **tmpl);
 
 /**
  * The same function as tapi_tcp_template_gen() with is_eth_pdu
- * parameter set to TRUE, so it prepares value for 'tcp.ip(4|6).eth' CSAP.
+ * parameter set to @c true, so it prepares value for 'tcp.ip(4|6).eth' CSAP.
  */
-extern int tapi_tcp_template(te_bool force_ip6, tapi_tcp_pos_t seqn,
-                             tapi_tcp_pos_t ackn, te_bool syn_flag,
-                             te_bool ack_flag, uint8_t *data, size_t pld_len,
+extern int tapi_tcp_template(bool force_ip6, tapi_tcp_pos_t seqn,
+                             tapi_tcp_pos_t ackn, bool syn_flag,
+                             bool ack_flag, uint8_t *data, size_t pld_len,
                              asn_value **tmpl);
 
 /**
@@ -343,7 +343,7 @@ extern int tapi_tcp_template(te_bool force_ip6, tapi_tcp_pos_t seqn,
  * If it is not, fill there parameters in obtained traffic template
  * explicitely.
  *
- * @param is_eth_pdu    if TRUE include eth header PDU
+ * @param is_eth_pdu    if @c true include eth header PDU
  * @param seqn          sequence number in host byte order
  * @param ackn          acknowledge number in host byte order
  * @param syn_flag      syn flag
@@ -352,27 +352,27 @@ extern int tapi_tcp_template(te_bool force_ip6, tapi_tcp_pos_t seqn,
  *
  * @return Status code.
  */
-extern int tapi_tcp_pattern_gen(te_bool is_eth_pdu,
+extern int tapi_tcp_pattern_gen(bool is_eth_pdu,
                                 tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-                                te_bool syn_flag, te_bool ack_flag,
+                                bool syn_flag, bool ack_flag,
                                 asn_value **pattern);
 
 /**
  * The same function as tapi_tcp_template_gen() with is_eth_pdu
- * parameter set to TRUE, so it prepares value for 'tcp.ip4.eth' CSAP.
+ * parameter set to @c true, so it prepares value for 'tcp.ip4.eth' CSAP.
  */
 extern int tapi_tcp_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
-                            te_bool syn_flag, te_bool ack_flag,
+                            bool syn_flag, bool ack_flag,
                             asn_value **pattern);
 
 /**
  * Prepare pattern for TCP segment to receive via
  * tcp.[ip4|ip6].eth and tcp.[ip4|ip6] CSAPs
  *
- * @param is_eth_layer  TRUE for tcp.[ip4|ip6].eth CSAPs
- *                      FALSE for tcp.[ip4|ip6] CSAPs
- * @param force_ip6     TRUE for tcp.ip6.eth and tcp.ip6 CSAPs
- *                      FALSE for tcp.ip4.eth and tcp.ip4 CSAPs
+ * @param is_eth_layer  @c true for tcp.[ip4|ip6].eth CSAPs
+ *                      @c false for tcp.[ip4|ip6] CSAPs
+ * @param force_ip6     @c true for tcp.ip6.eth and tcp.ip6 CSAPs
+ *                      @c false for tcp.ip4.eth and tcp.ip4 CSAPs
  * @param seqn          sequence number in host byte order
  * @param ackn          acknowledge number in host byte order
  * @param urg_flag      URG flag
@@ -385,26 +385,26 @@ extern int tapi_tcp_pattern(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn,
  *
  * @return Status code.
  */
-extern int tapi_tcp_ip_segment_pattern_gen(te_bool is_eth_layer,
-                                           te_bool force_ip6,
+extern int tapi_tcp_ip_segment_pattern_gen(bool is_eth_layer,
+                                           bool force_ip6,
                                            tapi_tcp_pos_t seqn,
                                            tapi_tcp_pos_t ackn,
-                                           te_bool urg_flag,
-                                           te_bool ack_flag,
-                                           te_bool psh_flag,
-                                           te_bool rst_flag,
-                                           te_bool syn_flag,
-                                           te_bool fin_flag,
+                                           bool urg_flag,
+                                           bool ack_flag,
+                                           bool psh_flag,
+                                           bool rst_flag,
+                                           bool syn_flag,
+                                           bool fin_flag,
                                            asn_value **pattern);
 
 /**
  * Prepare pattern for TCP segment to receive via
  * tcp.[ip4|ip6].eth and tcp.[ip4|ip6] CSAPs
  *
- * @param is_eth_layer  TRUE for tcp.[ip4|ip6].eth CSAPs
- *                      FALSE for tcp.[ip4|ip6] CSAPs
- * @param force_ip6     TRUE for tcp.ip6.eth and tcp.ip6 CSAPs
- *                      FALSE for tcp.ip4.eth and tcp.ip4 CSAPs
+ * @param is_eth_layer  @c true for tcp.[ip4|ip6].eth CSAPs
+ *                      @c false for tcp.[ip4|ip6] CSAPs
+ * @param force_ip6     @c true for tcp.ip6.eth and tcp.ip6 CSAPs
+ *                      @c false for tcp.ip4.eth and tcp.ip4 CSAPs
  * @param seqn          sequence number in host byte order
  * @param ackn          acknowledge number in host byte order
  * @param syn_flag      SYN flag
@@ -413,36 +413,36 @@ extern int tapi_tcp_ip_segment_pattern_gen(te_bool is_eth_layer,
  *
  * @return Status code.
  */
-extern int tapi_tcp_ip_pattern_gen(te_bool is_eth_layer,
-                                   te_bool force_ip6,
+extern int tapi_tcp_ip_pattern_gen(bool is_eth_layer,
+                                   bool force_ip6,
                                    tapi_tcp_pos_t seqn,
                                    tapi_tcp_pos_t ackn,
-                                   te_bool syn_flag,
-                                   te_bool ack_flag,
+                                   bool syn_flag,
+                                   bool ack_flag,
                                    asn_value **pattern);
 
 /**
  * The same function as tapi_tcp_segment_pattern_gen() with force_ip6
- * parameter set to FALSE and is_eth_pdu parameter set to TRUE
+ * parameter set to @c false and is_eth_pdu parameter set to @c true
  * to prepare pattern for 'tcp.ip4.eth' CSAP.
  */
 extern int tapi_tcp_segment_pattern(tapi_tcp_pos_t seqn,
                                     tapi_tcp_pos_t ackn,
-                                    te_bool urg_flag, te_bool ack_flag,
-                                    te_bool psh_flag, te_bool rst_flag,
-                                    te_bool syn_flag, te_bool fin_flag,
+                                    bool urg_flag, bool ack_flag,
+                                    bool psh_flag, bool rst_flag,
+                                    bool syn_flag, bool fin_flag,
                                     asn_value **pattern);
 
 /**
  * The same function as tapi_tcp_segment_pattern() with force_ip6
  * boolean parameter to create pattern for tcp.ip6.eth or tcp.ip4.eth CSAP
  */
-extern int tapi_tcp_ip_segment_pattern(te_bool force_ip6,
+extern int tapi_tcp_ip_segment_pattern(bool force_ip6,
                                        tapi_tcp_pos_t seqn,
                                        tapi_tcp_pos_t ackn,
-                                       te_bool urg_flag, te_bool ack_flag,
-                                       te_bool psh_flag, te_bool rst_flag,
-                                       te_bool syn_flag, te_bool fin_flag,
+                                       bool urg_flag, bool ack_flag,
+                                       bool psh_flag, bool rst_flag,
+                                       bool syn_flag, bool fin_flag,
                                        asn_value **pattern);
 
 /**
@@ -466,19 +466,19 @@ extern int tapi_tcp_ip_segment_pattern(te_bool force_ip6,
 extern int tapi_tcp_segment_pdu(int src_port, int dst_port,
                                 tapi_tcp_pos_t seqn,
                                 tapi_tcp_pos_t ackn,
-                                te_bool urg_flag, te_bool ack_flag,
-                                te_bool psh_flag, te_bool rst_flag,
-                                te_bool syn_flag, te_bool fin_flag,
+                                bool urg_flag, bool ack_flag,
+                                bool psh_flag, bool rst_flag,
+                                bool syn_flag, bool fin_flag,
                                 asn_value **pdu);
 
 /**
  * Prepare template for TCP segment to send via
  * tcp.[ip4|ip6].eth and tcp.[ip4|ip6] CSAPs
  *
- * @param is_eth_layer  TRUE for tcp.[ip4|ip6].eth CSAPs
- *                      FALSE for tcp.[ip4|ip6] CSAPs
- * @param force_ip6     TRUE for tcp.ip6.eth and tcp.ip6 CSAPs
- *                      FALSE for tcp.ip4.eth and tcp.ip4 CSAPs
+ * @param is_eth_layer  @c true for tcp.[ip4|ip6].eth CSAPs
+ *                      @c false for tcp.[ip4|ip6] CSAPs
+ * @param force_ip6     @c true for tcp.ip6.eth and tcp.ip6 CSAPs
+ *                      @c false for tcp.ip4.eth and tcp.ip4 CSAPs
  * @param seqn          sequence number in host byte order
  * @param ackn          acknowledge number in host byte order
  * @param urg_flag      URG flag
@@ -493,16 +493,16 @@ extern int tapi_tcp_segment_pdu(int src_port, int dst_port,
  *
  * @return Status code.
  */
-extern int tapi_tcp_ip_segment_template_gen(te_bool is_eth_layer,
-                                            te_bool force_ip6,
+extern int tapi_tcp_ip_segment_template_gen(bool is_eth_layer,
+                                            bool force_ip6,
                                             tapi_tcp_pos_t seqn,
                                             tapi_tcp_pos_t ackn,
-                                            te_bool urg_flag,
-                                            te_bool ack_flag,
-                                            te_bool psh_flag,
-                                            te_bool rst_flag,
-                                            te_bool syn_flag,
-                                            te_bool fin_flag,
+                                            bool urg_flag,
+                                            bool ack_flag,
+                                            bool psh_flag,
+                                            bool rst_flag,
+                                            bool syn_flag,
+                                            bool fin_flag,
                                             uint8_t *data, size_t pld_len,
                                             asn_value **tmpl);
 
@@ -510,10 +510,10 @@ extern int tapi_tcp_ip_segment_template_gen(te_bool is_eth_layer,
  * Prepare template for TCP segment to send via
  * tcp.[ip4|ip6].eth and tcp.[ip4|ip6] CSAPs
  *
- * @param is_eth_layer  TRUE for tcp.[ip4|ip6].eth CSAPs
- *                      FALSE for tcp.[ip4|ip6] CSAPs
- * @param force_ip6     TRUE for tcp.ip6.eth and tcp.ip6 CSAPs
- *                      FALSE for tcp.ip4.eth and tcp.ip4 CSAPs
+ * @param is_eth_layer  @c true for tcp.[ip4|ip6].eth CSAPs
+ *                      @c false for tcp.[ip4|ip6] CSAPs
+ * @param force_ip6     @c true for tcp.ip6.eth and tcp.ip6 CSAPs
+ *                      @c false for tcp.ip4.eth and tcp.ip4 CSAPs
  * @param seqn          sequence number in host byte order
  * @param ackn          acknowledge number in host byte order
  * @param syn_flag      SYN flag
@@ -524,25 +524,25 @@ extern int tapi_tcp_ip_segment_template_gen(te_bool is_eth_layer,
  *
  * @return Status code.
  */
-extern int tapi_tcp_ip_template_gen(te_bool is_eth_layer,
-                                    te_bool force_ip6,
+extern int tapi_tcp_ip_template_gen(bool is_eth_layer,
+                                    bool force_ip6,
                                     tapi_tcp_pos_t seqn,
                                     tapi_tcp_pos_t ackn,
-                                    te_bool syn_flag,
-                                    te_bool ack_flag,
+                                    bool syn_flag,
+                                    bool ack_flag,
                                     uint8_t *data, size_t pld_len,
                                     asn_value **tmpl);
 
 /**
  * The same function as tapi_tcp_ip_segment_template_gen() with
- * force_ip6 parameter set to FALSE and is_eth_pdu parameter set to TRUE
+ * force_ip6 parameter set to @c false and is_eth_pdu parameter set to @c true
  * to prepare template for 'tcp.ip4.eth' CSAP.
  */
 extern int tapi_tcp_segment_template(tapi_tcp_pos_t seqn,
                                      tapi_tcp_pos_t ackn,
-                                     te_bool urg_flag, te_bool ack_flag,
-                                     te_bool psh_flag, te_bool rst_flag,
-                                     te_bool syn_flag, te_bool fin_flag,
+                                     bool urg_flag, bool ack_flag,
+                                     bool psh_flag, bool rst_flag,
+                                     bool syn_flag, bool fin_flag,
                                      uint8_t *data, size_t pld_len,
                                      asn_value **tmpl);
 
@@ -550,12 +550,12 @@ extern int tapi_tcp_segment_template(tapi_tcp_pos_t seqn,
  * The same function as tapi_tcp_segment_template() with force_ip6
  * parameter to create template for tcp.ip6.eth or tcp.ip4.eth CSAP
  */
-extern int tapi_tcp_ip_segment_template(te_bool force_ip6,
+extern int tapi_tcp_ip_segment_template(bool force_ip6,
                                         tapi_tcp_pos_t seqn,
                                         tapi_tcp_pos_t ackn,
-                                        te_bool urg_flag, te_bool ack_flag,
-                                        te_bool psh_flag, te_bool rst_flag,
-                                        te_bool syn_flag, te_bool fin_flag,
+                                        bool urg_flag, bool ack_flag,
+                                        bool psh_flag, bool rst_flag,
+                                        bool syn_flag, bool fin_flag,
                                         uint8_t *data, size_t pld_len,
                                         asn_value **tmpl);
 
@@ -704,8 +704,8 @@ extern int tapi_tcp_init_connection_enc(const char *agt,
                                         const uint8_t *local_mac,
                                         const uint8_t *remote_mac,
                                         int window,
-                                        te_bool enc_vlan,
-                                        te_bool enc_snap,
+                                        bool enc_vlan,
+                                        bool enc_snap,
                                         tapi_tcp_handler_t *handler);
 
 /**
@@ -868,7 +868,7 @@ extern int tapi_tcp_send_template(tapi_tcp_handler_t handler,
  * @param seqn_got          Place for received SEQ number or NULL (OUT).
  * @param ackn_got          Place for received ACK number or NULL (OUT).
  * @param flags             Location for TCP flags or NULL (OUT).
- * @param no_unexp_seqn     If TRUE, ignore packets with unexpected TCP SEQN.
+ * @param no_unexp_seqn     If @c true, ignore packets with unexpected TCP SEQN.
  *
  * @return Status code
  */
@@ -879,7 +879,7 @@ extern int tapi_tcp_recv_msg_gen(tapi_tcp_handler_t handler,
                                  tapi_tcp_pos_t *seqn_got,
                                  tapi_tcp_pos_t *ackn_got,
                                  uint8_t *flags,
-                                 te_bool no_unexp_seqn);
+                                 bool no_unexp_seqn);
 
 /**
  * Wait for next incoming TCP message in connection, if buffer is empty,
@@ -1011,20 +1011,20 @@ extern size_t tapi_tcp_last_win_got(tapi_tcp_handler_t handler);
  *
  * @param handler       TAPI handler of TCP connection;
  *
- * @return @c TRUE if a message with FIN flag set was got,
- *         @c FALSE otherwise.
+ * @return @c true if a message with FIN flag set was got,
+ *         @c false otherwise.
  */
-extern te_bool tapi_tcp_fin_got(tapi_tcp_handler_t handler);
+extern bool tapi_tcp_fin_got(tapi_tcp_handler_t handler);
 
 /**
  * Check that a message with RST flag set was got.
  *
  * @param handler       TAPI handler of TCP connection;
  *
- * @return @c TRUE if a message with RST flag set was got,
- *         @c FALSE otherwise.
+ * @return @c true if a message with RST flag set was got,
+ *         @c false otherwise.
  */
-extern te_bool tapi_tcp_rst_got(tapi_tcp_handler_t handler);
+extern bool tapi_tcp_rst_got(tapi_tcp_handler_t handler);
 
 /**
  * Return next SEQ number to be sent in established TCP connection.
@@ -1088,7 +1088,7 @@ typedef struct {
     tapi_tcp_pos_t loc_start_seq;
     uint16_t       rem_port;
     uint16_t       loc_port;
-    te_bool        catched;
+    bool           catched;
 } tapi_tcp_reset_hack_t;
 
 /**
@@ -1101,13 +1101,13 @@ typedef struct {
  * @param sid           RCF session id
  * @param iface         Ethernet interface
  * @param dir_out       boolean flag wheather SYN-ACK will be outgoing;
- *                      TRUE if it is.
+ *                      @c true if it is.
  * @param context       pointer to structure with context data, IN/OUT
  *
  * @return status code
  */
 extern int tapi_tcp_reset_hack_init(const char *ta_name, int session,
-                                    const char *iface, te_bool dir_out,
+                                    const char *iface, bool dir_out,
                                     tapi_tcp_reset_hack_t *context);
 
 /**
@@ -1234,7 +1234,7 @@ extern int tapi_tcp_get_packets(tapi_tcp_handler_t handler);
  *
  * @param handler     TAPI TCP connection handler.
  * @param enable      Whether to enable or disable timestamp.
- * @param start_time  If @p enable is @c TRUE, this is the start value
+ * @param start_time  If @p enable is @c true, this is the start value
  *                    for TCP timestamp. Each new TCP timestamp will
  *                    be computed as this value + number of milliseconds
  *                    since the moment of time when the first packet
@@ -1244,7 +1244,7 @@ extern int tapi_tcp_get_packets(tapi_tcp_handler_t handler);
  * @return Status code.
  */
 extern te_errno tapi_tcp_conn_enable_ts(tapi_tcp_handler_t handler,
-                                        te_bool enable,
+                                        bool enable,
                                         uint32_t start_value);
 
 /**
@@ -1253,7 +1253,7 @@ extern te_errno tapi_tcp_conn_enable_ts(tapi_tcp_handler_t handler,
  *
  * @param handler           TAPI TCP connection handler.
  * @param enabled           Whether TCP timestamp is enabled. Other
- *                          parameters are filled only if this is @c TRUE.
+ *                          parameters are filled only if this is @c true.
  * @param dst_enabled       Whether peer sends TCP timestamp. If peer did
  *                          not sent TCP timestamp in its first packet,
  *                          we will not send it too.
@@ -1270,8 +1270,8 @@ extern te_errno tapi_tcp_conn_enable_ts(tapi_tcp_handler_t handler,
  * @return Status code.
  */
 extern te_errno tapi_tcp_conn_get_ts(tapi_tcp_handler_t handler,
-                                     te_bool *enabled,
-                                     te_bool *dst_enabled,
+                                     bool *enabled,
+                                     bool *dst_enabled,
                                      uint32_t *ts_value,
                                      uint32_t *last_ts_sent,
                                      uint32_t *last_ts_got,

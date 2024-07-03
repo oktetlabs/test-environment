@@ -246,7 +246,7 @@ tapi_rte_flow_validate_and_create_rule(rcf_rpc_server *rpcs, uint16_t port_id,
 
 void
 tapi_rte_flow_make_attr(rcf_rpc_server *rpcs, uint32_t group, uint32_t priority,
-                        te_bool ingress, te_bool egress, te_bool transfer,
+                        bool ingress, bool egress, bool transfer,
                         rpc_rte_flow_attr_p *attr)
 {
     asn_value *attr_pdu;

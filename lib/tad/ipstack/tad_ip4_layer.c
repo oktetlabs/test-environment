@@ -64,35 +64,35 @@ typedef struct tad_ip4_proto_pdu_data {
 static const tad_bps_pkt_frag tad_ip4_bps_hdr[] =
 {
     { "version",          4, BPS_FLD_CONST(4),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "h-length",         4, BPS_FLD_CONST_DEF(NDN_TAG_IP4_HLEN, 5),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
     { "type-of-service",  8, BPS_FLD_CONST_DEF(NDN_TAG_IP4_TOS, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "total-length",    16, BPS_FLD_CONST_DEF(NDN_TAG_IP4_LEN, 0),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
     { "ip-ident",        16, BPS_FLD_CONST_DEF(NDN_TAG_IP4_IDENT, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "flag-reserved",    1, BPS_FLD_CONST(0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "dont-frag",        1, BPS_FLD_CONST_DEF(NDN_TAG_IP4_DONT_FRAG, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "more-frags",       1, BPS_FLD_CONST_DEF(NDN_TAG_IP4_MORE_FRAGS, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "frag-offset",     13, BPS_FLD_CONST_DEF(NDN_TAG_IP4_FRAG_OFFSET, 0),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "time-to-live",     8, BPS_FLD_CONST_DEF(NDN_TAG_IP4_TTL, 64),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "protocol",         8, BPS_FLD_SIMPLE(NDN_TAG_IP4_PROTOCOL),
-      TAD_DU_I32, FALSE },
+      TAD_DU_I32, false },
     { "h-checksum",      16, BPS_FLD_CONST_DEF(NDN_TAG_IP4_H_CHECKSUM, 0),
-      TAD_DU_I32, TRUE },
+      TAD_DU_I32, true },
     { "src-addr",        32, NDN_TAG_IP4_SRC_ADDR,
       NDN_TAG_IP4_LOCAL_ADDR, NDN_TAG_IP4_REMOTE_ADDR, 0,
-      TAD_DU_OCTS, FALSE },
+      TAD_DU_OCTS, false },
     { "dst-addr",        32, NDN_TAG_IP4_DST_ADDR,
       NDN_TAG_IP4_REMOTE_ADDR, NDN_TAG_IP4_LOCAL_ADDR, 0,
-      TAD_DU_OCTS, FALSE },
+      TAD_DU_OCTS, false },
 };
 
 /**
@@ -101,7 +101,7 @@ static const tad_bps_pkt_frag tad_ip4_bps_hdr[] =
 static const tad_bps_pkt_frag tad_ip4_bps_opts[] =
 {
     { "options",          0, BPS_FLD_CONST_DEF(NDN_TAG_IP4_OPTIONS, 0),
-      TAD_DU_OCTS, FALSE },
+      TAD_DU_OCTS, false },
 };
 
 
@@ -308,12 +308,12 @@ tad_ip4_upper_checksum_seg_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
     const uint8_t                      *seg_data_ptr;
     const uint8_t                      *data_ptr;
     size_t                              data_len;
-    te_bool                             last_segment;
+    bool last_segment;
 
     if (seg_num == (tad_pkt_seg_num(pkt) - 1))
-        last_segment = TRUE;
+        last_segment = true;
     else
-        last_segment = FALSE;
+        last_segment = false;
 
     if (seg->data_len == 0)
     {
@@ -360,11 +360,11 @@ typedef struct tad_ip4_gen_bin_cb_per_sdu_data {
     tad_pkts   *pdus;   /**< List to put generated IPv4 PDUs */
     uint8_t    *hdr;    /**< Binary template of the IPv4 header */
     size_t      hlen;   /**< Length of the IPv4 header */
-    te_bool     hcsum;  /**< Should header checksum be calculated */
+    bool hcsum;  /**< Should header checksum be calculated */
 
     int         upper_chksm_offset; /**< Offset of the upper layer
                                          checksum in the IPv4 SDU */
-    te_bool     use_phdr;           /**< Should pseudo-header be included
+    bool use_phdr;           /**< Should pseudo-header be included
                                          in checksum calculation */
     uint32_t    init_chksm;         /**< Initial checksum value
                                          (includes requested checksum
@@ -485,7 +485,7 @@ tad_ip4_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
         asn_value  *frag_spec = NULL;
         int32_t     i32_tmp;
         int16_t     i16_tmp;
-        te_bool     bool_tmp;
+        bool bool_tmp;
         size_t      ip4_pld_real_len;
         int32_t     frag_offset;
         uint32_t    id;
@@ -660,14 +660,14 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
         case TAD_DU_OCTS:
         case TAD_DU_I32:
             /* Exact specification of IP header checksum */
-            cb_data.hcsum = FALSE;
+            cb_data.hcsum = false;
             break;
 
         case TAD_DU_UNDEF:
             /* Be default, correct checksum */
         case TAD_DU_EXPR:
             /* Expression is considered as checksum difference */
-            cb_data.hcsum = TRUE;
+            cb_data.hcsum = true;
             break;
 
         default:
@@ -734,18 +734,18 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
     {
         case IPPROTO_TCP:
             cb_data.upper_chksm_offset = 16;
-            cb_data.use_phdr = TRUE;
+            cb_data.use_phdr = true;
             break;
 
         case IPPROTO_UDP:
             cb_data.upper_chksm_offset = 6;
-            cb_data.use_phdr = TRUE;
+            cb_data.use_phdr = true;
             break;
 
         case IPPROTO_ICMP:
         case IPPROTO_IGMP:
             cb_data.upper_chksm_offset = 2;
-            cb_data.use_phdr = FALSE;
+            cb_data.use_phdr = false;
             break;
 
         case IPPROTO_GRE:
@@ -758,7 +758,7 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
             if (gre_opt_cksum != NULL)
             {
                 cb_data.upper_chksm_offset = WORD_4BYTE;
-                cb_data.use_phdr = FALSE;
+                cb_data.use_phdr = false;
             }
             else
             {

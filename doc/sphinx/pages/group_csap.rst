@@ -87,7 +87,7 @@ This is an example of using CSAP to receive and send TCP/IPv4/Ethernet packets.
 	static tapi_tcp_pos_t last_ackn_got = 0;
 	static tapi_tcp_pos_t last_seqn_got = 0;
 
-	static te_bool fin_received = FALSE;
+	static bool fin_received = false;
 
 	static void
 	user_pkt_handler(asn_value *packet, void *user_data)
@@ -107,7 +107,7 @@ This is an example of using CSAP to receive and send TCP/IPv4/Ethernet packets.
 	    CHECK_RC(ndn_du_read_plain_int(tcp_pdu, NDN_TAG_TCP_FLAGS, &pdu_field));
 
 	    if (pdu_field & TCP_FIN_FLAG)
-	        fin_received = TRUE;
+	        fin_received = true;
 
 	    if (pdu_field & TCP_ACK_FLAG)
 	    {
@@ -196,7 +196,7 @@ This is an example of using CSAP to receive and send TCP/IPv4/Ethernet packets.
 	    /* Create template of TCP packet with RST flag set. */
 
 	    CHECK_RC(tapi_tcp_template(last_ackn_got, last_seqn_got,
-	                               FALSE, TRUE, NULL, 0,
+	                               false, true, NULL, 0,
 	                               &rst_template));
 	    CHECK_RC(asn_write_int32(rst_template, TCP_ACK_FLAG | TCP_RST_FLAG,
 	                             "pdus.0.#tcp.flags.#plain"));

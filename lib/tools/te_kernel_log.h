@@ -40,17 +40,17 @@ extern int map_name_to_level(const char *name);
  *
  * @param host_name     Host name
  * @param host_ipv4     Here IPv4 address will be saved if not NULL
- * @param ipv4_found    Will be set to TRUE if IPv4 address found
+ * @param ipv4_found    Will be set to @c true if IPv4 address found
  * @param host_ipv6     Here IPv6 address will be saved if not NULL
- * @param ipv6_found    Will be set to TRUE if IPv6 address found
+ * @param ipv6_found    Will be set to @c true if IPv6 address found
  *
  * @return -1 on failue, 0 on success
  */
 extern int te_get_host_addrs(const char *host_name,
                              struct sockaddr_in *host_ipv4,
-                             te_bool *ipv4_found,
+                             bool *ipv4_found,
                              struct sockaddr_in6 *host_ipv6,
-                             te_bool *ipv6_found);
+                             bool *ipv6_found);
 
 /**
  * Log kernel output via Logger component

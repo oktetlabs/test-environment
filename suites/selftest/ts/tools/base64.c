@@ -26,7 +26,7 @@
 
 static void
 check_encoding(const uint8_t *src, size_t len, const char *exp_base64,
-               te_bool url_safe)
+               bool url_safe)
 {
     te_string encoded = TE_STRING_INIT;
     te_string decoded = TE_STRING_INIT;
@@ -62,7 +62,7 @@ main(int argc, char **argv)
     unsigned int min_len;
     unsigned int max_len;
     unsigned int n_iterations;
-    te_bool url_safe;
+    bool url_safe;
     unsigned int i;
 
     TEST_START;

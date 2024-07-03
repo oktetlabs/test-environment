@@ -41,7 +41,7 @@ te_enum_map_from_any_value(const te_enum_map map[], int value,
 
 int
 te_enum_parse_longest_match(const te_enum_map map[], int defval,
-                            te_bool exact_match, const char *str, char **next)
+                            bool exact_match, const char *str, char **next)
 {
     int result = defval;
     size_t max_len = 0;
@@ -98,7 +98,7 @@ te_enum_map_fill_by_conversion(te_enum_map map[],
 }
 
 int
-te_enum_translate(const te_enum_trn trn[], int value, te_bool reverse,
+te_enum_translate(const te_enum_trn trn[], int value, bool reverse,
                   int unknown_val)
 {
     for (; trn->from != INT_MIN; trn++)
@@ -111,7 +111,7 @@ te_enum_translate(const te_enum_trn trn[], int value, te_bool reverse,
 
 te_errno
 te_enum_bitmask_convert(const te_enum_bitmask_conv conv[],
-                        uint64_t bm, te_bool reverse,
+                        uint64_t bm, bool reverse,
                         uint64_t *result)
 {
     uint64_t bitmask = bm;

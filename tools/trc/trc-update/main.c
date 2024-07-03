@@ -227,7 +227,7 @@ static tqh_strings     args_registered;
  * Whether to set "pos" attribute in generated XML
  * or not
  */
-static te_bool         set_pos_attr = TRUE;
+static bool set_pos_attr = true;
 
 /**
  * Add new group of logs.
@@ -340,7 +340,7 @@ get_tags_list_from_file(char *fname, tqh_strings *tags)
 
 /* Predeclaration, see description below */
 static int trc_update_process_cmd_line_opts(int argc, char **argv,
-                                            te_bool main_call);
+                                            bool main_call);
 
 /**
  * Gets additional options from a file.
@@ -384,7 +384,7 @@ get_opts_from_file(char *fname)
         return -1;
     }
 
-    rc = trc_update_process_cmd_line_opts(argc, argv, FALSE);
+    rc = trc_update_process_cmd_line_opts(argc, argv, false);
 
     free(argv);
     free(s);
@@ -406,7 +406,7 @@ get_opts_from_file(char *fname)
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
 static int
-trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
+trc_update_process_cmd_line_opts(int argc, char **argv, bool main_call)
 {
     int             result = EXIT_FAILURE;
     poptContext     optCon;
@@ -417,8 +417,8 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
     tqe_string                     *tqe_str;
 
     char           *s;
-    static te_bool  no_use_ids = FALSE;
-    static te_bool  log_specified = FALSE;
+    static bool  no_use_ids = false;
+    static bool  log_specified = false;
     static uint64_t rtype_flags = 0;
 
     struct poptOption options_table[] = {
@@ -722,7 +722,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
 
                 TAILQ_INSERT_TAIL(&tag_logs->logs, tqe_str, links);
 
-                log_specified = TRUE;
+                log_specified = true;
 
                 break;
 
@@ -916,11 +916,11 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
                 break;
 
             case TRC_UPDATE_OPT_NO_USE_IDS:
-                no_use_ids = TRUE;
+                no_use_ids = true;
                 break;
 
             case TRC_UPDATE_OPT_NO_POS_ATTR:
-                set_pos_attr = FALSE;
+                set_pos_attr = false;
                 break;
 
             case TRC_UPDATE_OPT_NO_WILDS:
@@ -965,7 +965,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv, te_bool main_call)
 
             case TRC_UPDATE_OPT_LOGS_DUMP:
                 ctx.logs_dump = poptGetOptArg(optCon);
-                log_specified = TRUE;
+                log_specified = true;
                 break;
 
             case TRC_UPDATE_OPT_VERSION:
@@ -1041,7 +1041,7 @@ perl_prepare()
                 "                length($old{$arr[0]}) == 0);"
                 "   return 0;"
                 "}",
-                TRUE);
+                true);
 
         eval_pv("sub notcomm_old"
                 "{"
@@ -1052,7 +1052,7 @@ perl_prepare()
                 "   }"
                 "   return 1;"
                 "}",
-                TRUE);
+                true);
 
         eval_pv("sub notcomm_new"
                 "{"
@@ -1063,7 +1063,7 @@ perl_prepare()
                 "   }"
                 "   return 1;"
                 "}",
-                TRUE);
+                true);
 
         eval_pv("sub notcomm"
                 "{"
@@ -1075,7 +1075,7 @@ perl_prepare()
                 "   }"
                 "   return 1;"
                 "}",
-                TRUE);
+                true);
 
         eval_pv("sub comm_inc"
                 "{"
@@ -1090,7 +1090,7 @@ perl_prepare()
                 "   }"
                 "   return 1;"
                 "}",
-                TRUE);
+                true);
 
         eval_pv("sub comm_exc"
                 "{"
@@ -1104,7 +1104,7 @@ perl_prepare()
                 "   }"
                 "   return 1;"
                 "}",
-                TRUE);
+                true);
 
         eval_pv("sub comm_eq"
                 "{"
@@ -1125,7 +1125,7 @@ perl_prepare()
                 "   }"
                 "   return $rc;"
                 "}",
-                TRUE);
+                true);
 
         eval_pv("sub notcomm_chk"
                 "{"
@@ -1148,13 +1148,13 @@ perl_prepare()
                 "   }"
                 "   return 1;"
                 "}",
-                TRUE);
+                true);
 
-        eval_pv("sub test_path { return $test_path; }", TRUE);
-        eval_pv("sub old { return $old{$_[0]}; }", TRUE);
-        eval_pv("sub new { return $new{$_[0]}; }", TRUE);
-        eval_pv("sub old_e { return exists($old{$_[0]}); }", TRUE);
-        eval_pv("sub new_e { return exists($new{$_[0]}); }", TRUE);
+        eval_pv("sub test_path { return $test_path; }", true);
+        eval_pv("sub old { return $old{$_[0]}; }", true);
+        eval_pv("sub new { return $new{$_[0]}; }", true);
+        eval_pv("sub old_e { return exists($old{$_[0]}); }", true);
+        eval_pv("sub new_e { return exists($new{$_[0]}); }", true);
 
         eval_pv("sub add_val"
                 "{"
@@ -1184,7 +1184,7 @@ perl_prepare()
                 "   }"
                 "   return 1;"
                 "}",
-                TRUE);
+                true);
 
         eval_pv("sub add_arg"
                 "{"
@@ -1209,7 +1209,7 @@ perl_prepare()
                 "       return 1;"
                 "   }"
                 "}",
-                TRUE);
+                true);
 
         eval_pv("sub del_arg"
                 "{"
@@ -1234,11 +1234,11 @@ perl_prepare()
                 "       return 1;"
                 "   }"
                 "}",
-                TRUE);
+                true);
 
         eval_pv("my $rc;\n"
                 "my $filter;\n",
-                TRUE);
+                true);
 
         eval_pv("sub arg_diff\n"
                 "{\n"
@@ -1250,7 +1250,7 @@ perl_prepare()
                 "   return comm_exc($arg) && old_wild_eq($arg, $val1) &&\n"
                 "          new($arg) eq $val2;\n"
                 "}\n",
-                TRUE);
+                true);
         memset(&te_str, 0, sizeof(te_str));
         te_str.ptr = NULL;
 
@@ -1277,7 +1277,7 @@ perl_prepare()
                              "    return $filter;\n"
                              "}\n",
                              perl_expr);
-            eval_pv(te_str.ptr, TRUE);
+            eval_pv(te_str.ptr, true);
         }
         else
         {
@@ -1332,7 +1332,7 @@ perl_prepare()
                              "}",
                              script_text);
 
-            eval_pv(te_str.ptr, TRUE);
+            eval_pv(te_str.ptr, true);
 
             free(script_text);
             fclose(f);
@@ -1361,7 +1361,7 @@ perl_prepare()
 static int
 func_args_match(const void *iter_ptr,
                 unsigned int n_args, trc_report_argument *args,
-                te_bool filter_mode)
+                bool filter_mode)
 {
     trc_test_iter             *iter = (trc_test_iter *)iter_ptr;
     trc_test_iter_arg         *arg;
@@ -1444,7 +1444,7 @@ func_args_match(const void *iter_ptr,
 
                 te_string_append(&te_str, "sub %s { return \"%s\"; }",
                                  arg_name->v, arg_name->v);
-                eval_pv(te_str.ptr, TRUE);
+                eval_pv(te_str.ptr, true);
                 te_string_free(&te_str);
             }
         }
@@ -1569,7 +1569,7 @@ main(int argc, char **argv, char **envp)
                  TRC_UPDATE_RRESULTS | TRC_UPDATE_NO_PE |
                  TRC_UPDATE_NO_GEN_FSS;
 
-    if (trc_update_process_cmd_line_opts(argc, argv, TRUE) != EXIT_SUCCESS)
+    if (trc_update_process_cmd_line_opts(argc, argv, true) != EXIT_SUCCESS)
         goto exit;
 
     if (ctx.cmd == NULL)

@@ -337,7 +337,7 @@ tounit(double val, char unit, int factor)
  */
 static te_errno
 app_get_error(tapi_perf_app *app, tapi_perf_report *report,
-              te_bool ignore_connect_write_errors)
+              bool ignore_connect_write_errors)
 {
     size_t i;
     te_errno rc;
@@ -393,7 +393,7 @@ app_get_error(tapi_perf_app *app, tapi_perf_report *report,
  */
 static te_errno
 app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
-               tapi_perf_report *report, te_bool ignore_connect_write_errors)
+               tapi_perf_report *report, bool ignore_connect_write_errors)
 {
     const char *str;
     double time;
@@ -546,7 +546,7 @@ client_get_report(tapi_perf_client *client, tapi_perf_report_kind kind,
 {
     ENTRY("Get iperf client report");
 
-    return app_get_report(&client->app, kind, report, FALSE);
+    return app_get_report(&client->app, kind, report, false);
 }
 
 

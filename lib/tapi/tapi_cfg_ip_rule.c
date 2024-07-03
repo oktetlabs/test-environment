@@ -140,7 +140,7 @@ te_errno tapi_cfg_add_rule(const char *ta, int addr_family,
     }
     free(name);
 
-    rc = cfg_synchronize_fmt(TRUE, "/agent:%s/rule:*", ta);
+    rc = cfg_synchronize_fmt(true, "/agent:%s/rule:*", ta);
     if (rc != 0)
         ERROR("%s: Failed to synchronize '/agent:%s/rule:*' (%r)",
               __FUNCTION__, ta, rc);
@@ -187,7 +187,7 @@ tapi_cfg_del_rule(const char *ta, int addr_family, uint32_t required,
         if (cmp == TE_CONF_OBJ_COMPARE_EQUAL ||
             cmp == TE_CONF_OBJ_COMPARE_CONTAINS)
         {
-            rc = cfg_del_instance(handles[i], FALSE);
+            rc = cfg_del_instance(handles[i], false);
             if (rc != 0)
                 ERROR("%s: Cannot delete a rule (%r)", __FUNCTION__, rc);
             break;

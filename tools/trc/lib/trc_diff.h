@@ -53,7 +53,7 @@ typedef struct trc_diff_set {
     char           *name;       /**< Name of the set */
     char           *log;        /**< Raw log filename */
     char           *url;        /**< URL to HTML logs */
-    te_bool         show_keys;  /**< Show table with keys which explain
+    bool show_keys;  /**< Show table with keys which explain
                                      differences */
     tqh_strings     ignore;     /**< List of exclusions */
 
@@ -152,7 +152,7 @@ typedef struct trc_diff_entry {
     TAILQ_ENTRY(trc_diff_entry) links;  /**< List links */
 
     unsigned int    level;      /**< Level of the entry in the tree */
-    te_bool         is_iter;    /**< Is a test or an iteration? */
+    bool is_iter;    /**< Is a test or an iteration? */
     union {
         const trc_test      *test;   /**< Test entry data */
         const trc_test_iter *iter;   /**< Test iteration data */
@@ -206,7 +206,7 @@ trc_diff_iter_hash_get(const trc_test_iter *test_iter, int db_uid);
  * @return Status code.
  */
 extern trc_diff_set *
-trc_diff_find_set(trc_diff_sets *sets, unsigned int id, te_bool create);
+trc_diff_find_set(trc_diff_sets *sets, unsigned int id, bool create);
 
 /**
  * Set name of the compared set with specified ID.
@@ -311,7 +311,7 @@ extern void trc_diff_ctx_free(trc_diff_ctx *ctx);
  * @param lhv           Left hand value
  * @param rhv           Right hand value
  */
-extern te_bool trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
+extern bool trc_diff_is_exp_result_equal(const trc_exp_result *lhv,
                                             const trc_exp_result *rhv);
 
 /**

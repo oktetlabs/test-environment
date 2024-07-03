@@ -99,7 +99,7 @@ struct tapi_flow_traffic {
     int             plen;           /**< payload length */
     int             count;          /**< amount of times the pdu should be sent */
 
-    te_bool         started;        /**< operating status of receive operation */
+    bool started;        /**< operating status of receive operation */
 
     /* Traffic flow counters  */
     int             total;          /**< total count of received pdus
@@ -161,7 +161,7 @@ extern char **tapi_flow_preprocess_args(int argc, char **argv);
  * @return 0, if success, or -1 otherwise
  */
 extern te_errno tapi_flow_conf_get(int argc, char **argv,
-                                   te_bool do_preprocess,
+                                   bool do_preprocess,
                                    tapi_flow_t *flow);
 
 /**
@@ -197,7 +197,7 @@ extern te_errno tapi_flow_gen_base_ptrn(asn_value *rcv_ptrn,
 extern te_errno tapi_flow_setup_endpoints(tapi_flow_t *flow);
 
 extern te_errno tapi_flow_prepare(int argc, char **argv,
-                                  te_bool do_preprocess, tapi_flow_t *flow);
+                                  bool do_preprocess, tapi_flow_t *flow);
 
 extern void tapi_flow_init(tapi_flow_t *flow);
 

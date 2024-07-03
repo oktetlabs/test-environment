@@ -1098,8 +1098,8 @@ nginx_http_listen_entry_add(unsigned int gid, const char *oid, const char *value
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
-    entry->reuseport = FALSE;
-    entry->ssl = FALSE;
+    entry->reuseport = false;
+    entry->ssl = false;
 
     LIST_INSERT_HEAD(&srv->listen_entries, entry, links);
 
@@ -1305,19 +1305,19 @@ nginx_http_server_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
-    srv->access_log_enable = TRUE;
+    srv->access_log_enable = true;
 
     srv->proxy.conn_timeout = NGINX_HTTP_PROXY_CONN_TIMEOUT_DEF;
-    srv->proxy.buffering_enable = FALSE;
+    srv->proxy.buffering_enable = false;
     srv->proxy.buffering_num = 0;
     srv->proxy.buffering_def_size = 0;
     srv->proxy.buffering_init_size = 0;
 
-    srv->file_cache.enable = FALSE;
+    srv->file_cache.enable = false;
     srv->file_cache.max_num = NGINX_HTTP_FILE_CACHE_MAX_NUM_DEF;
     srv->file_cache.inactive_time = NGINX_HTTP_FILE_CACHE_INACT_TIMEOUT_DEF;
     srv->file_cache.valid_time = NGINX_HTTP_FILE_CACHE_VALID_TIMEOUT_DEF;
-    srv->file_cache.errors_enable = FALSE;
+    srv->file_cache.errors_enable = false;
 
     srv->client.body_timeout = NGINX_HTTP_CLI_BODY_TIMEOUT_DEF;
     srv->client.body_max_size = NGINX_HTTP_CLI_BODY_MAX_SIZE_DEF;
@@ -1329,10 +1329,10 @@ nginx_http_server_add(unsigned int gid, const char *oid, const char *value,
     srv->keepalive_timeout = NGINX_HTTP_SRV_KEEPALIVE_TIMEOUT_DEF;
     srv->keepalive_requests = NGINX_HTTP_SRV_KEEPALIVE_REQS_DEF;
     srv->send_timeout = NGINX_HTTP_SRV_SEND_TIMEOUT_DEF;
-    srv->sendfile = FALSE;
-    srv->tcp_nopush = FALSE;
-    srv->tcp_nodelay = TRUE;
-    srv->reset_timedout_conn = FALSE;
+    srv->sendfile = false;
+    srv->tcp_nopush = false;
+    srv->tcp_nodelay = true;
+    srv->reset_timedout_conn = false;
     srv->tokens_mode = NGINX_SERVER_TOKENS_MODE_ON;
 
     LIST_INIT(&srv->listen_entries);

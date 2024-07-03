@@ -30,9 +30,9 @@
 
 static void
 check_adjust_extent(size_t buf_size, size_t offset, size_t length,
-                    te_bool exp_adjusted, size_t exp_length)
+                    bool exp_adjusted, size_t exp_length)
 {
-    te_bool adjusted = te_alloc_adjust_extent(buf_size, offset, &length);
+    bool adjusted = te_alloc_adjust_extent(buf_size, offset, &length);
 
     if (exp_adjusted != adjusted)
     {
@@ -168,7 +168,7 @@ main(int argc, char **argv)
         size_t start = (size_t)rand_range(0, buf_size - 1);
         size_t length = (size_t)rand_range(0, buf_size - start);
 
-        check_adjust_extent(buf_size, start, length, FALSE, length);
+        check_adjust_extent(buf_size, start, length, false, length);
     }
 
     TEST_SUBSTEP("no overflow, with adjustment");
@@ -178,7 +178,7 @@ main(int argc, char **argv)
         size_t start = (size_t)rand_range(0, buf_size - 1);
         size_t length = buf_size - start + (size_t)rand_range(1, UINT16_MAX);
 
-        check_adjust_extent(buf_size, start, length, TRUE, buf_size - start);
+        check_adjust_extent(buf_size, start, length, true, buf_size - start);
     }
 
     TEST_SUBSTEP("overflow, with adjustment");
@@ -187,7 +187,7 @@ main(int argc, char **argv)
         size_t buf_size = (size_t)rand_range(1, UINT16_MAX);
         size_t start = (size_t)rand_range(0, buf_size - 1);
 
-        check_adjust_extent(buf_size, start, SIZE_MAX, TRUE, buf_size - start);
+        check_adjust_extent(buf_size, start, SIZE_MAX, true, buf_size - start);
     }
 
     TEST_SUCCESS;

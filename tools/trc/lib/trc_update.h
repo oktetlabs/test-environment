@@ -223,7 +223,7 @@ typedef struct trc_update_wilds_list_entry {
 
     trc_test_iter_args      *args;   /**< Wildcard arguments */
 
-    te_bool is_strict; /**< Can arguments be omitted in wildcard or not */
+    bool is_strict; /**< Can arguments be omitted in wildcard or not */
 } trc_update_wilds_list_entry;
 
 /** List of wildcards used in updating rules */
@@ -270,7 +270,7 @@ typedef struct trc_update_rule {
     trc_update_wilds_list          *wilds;       /**< Wildcards */
     tqh_strings                    *match_exprs; /**< Matching
                                                       expressions */
-    te_bool                         apply;       /**< Should this rule be
+    bool apply;       /**< Should this rule be
                                                       applied or not */
     int                             rule_id;     /**< Rule ID */
     trc_update_rtype                type;        /**< Rule type */
@@ -311,17 +311,17 @@ typedef struct trc_update_test_iter_data {
                                             because rules itself are
                                             cleared before saving
                                             resulting XML file */
-    te_bool               to_save;     /**< Should this iteration
+    bool to_save;     /**< Should this iteration
                                             be saved? */
-    te_bool               to_save_old; /**< Previous value of to_save */
+    bool to_save_old; /**< Previous value of to_save */
     int                   counter;     /**< This counter is used for
                                             discovering skipped iterations
                                             */
     int                   results_id;  /**< Results ID (used in wildcards
                                             generation) */
-    te_bool               in_wildcard; /**< Whether this iteration in
+    bool in_wildcard; /**< Whether this iteration in
                                             some wildcard already or not */
-    te_bool               filtered;    /**< Iteration was found in fake
+    bool filtered;    /**< Iteration was found in fake
                                             filter log */
     res_simpl_stat        r_simple;    /**< Results simplification status */
 
@@ -349,7 +349,7 @@ typedef struct trc_update_test_iter_data {
 
 /** TRC Update test data attached to test in TRC DB */
 typedef struct trc_update_test_data {
-    te_bool     to_save; /**< Should this test be saved? */
+    bool to_save; /**< Should this test be saved? */
 } trc_update_test_data;
 
 /** Entry of queue containing information about tests to be updated */
@@ -588,7 +588,7 @@ extern int trc_update_rentry_cmp(trc_exp_result_entry *p,
  */
 extern int trc_update_result_cmp_gen(trc_exp_result *p,
                                      trc_exp_result *q,
-                                     te_bool tags_cmp);
+                                     bool tags_cmp);
 /**
  * Compare expected results of iterations (used for ordering).
  *
@@ -715,10 +715,10 @@ extern trc_test_iter_args *trc_update_args_wild_dup(
  * @param data      User data attached to element
  * @param is_iter   Is element iteration or not
  *
- * @return TRUE if element should be saved,
- *         FALSE otherwise
+ * @return @c true if element should be saved,
+ *         @c false otherwise
  */
-extern te_bool trc_update_is_to_save(void *data, te_bool is_iter);
+extern bool trc_update_is_to_save(void *data, bool is_iter);
 
 /**
  * Function returning value of "user_attr" attribute to be set
@@ -729,7 +729,7 @@ extern te_bool trc_update_is_to_save(void *data, te_bool is_iter);
  *
  * @return String representing value or NULL
  */
-extern char *trc_update_set_user_attr(void *data, te_bool is_iter);
+extern char *trc_update_set_user_attr(void *data, bool is_iter);
 
 /**
  * Process test iteration.

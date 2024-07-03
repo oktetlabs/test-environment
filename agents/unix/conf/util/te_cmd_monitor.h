@@ -17,7 +17,7 @@
 /** Structure defining command monitor */
 typedef struct cmd_monitor_t {
     pthread_t thread;         /*< Monitoring thread */
-    te_bool   enable;         /*< Whether monitoring thread
+    bool   enable;            /*< Whether monitoring thread
                                   is run or not */
     char     *name;           /*< Command monitor object name */
     char     *command;        /*< Command to be monitored */

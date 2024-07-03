@@ -240,11 +240,11 @@ ndn_eth_packet_to_plain(const asn_value *pkt,
 
     if (TE_RC_GET_ERROR(rc) == TE_EASNINCOMPLVAL)
     {
-        eth_header->is_tagged = FALSE;
+        eth_header->is_tagged = false;
         return 0;
     }
     else
-        eth_header->is_tagged = TRUE;
+        eth_header->is_tagged = true;
 
     if (rc)
         return rc;

@@ -94,7 +94,7 @@ typedef struct json_stack_entry {
     SLIST_ENTRY(json_stack_entry) links; /**< List links */
 
     json_t  *json;           /**< Pointer to JSON object */
-    te_bool  ka_encountered; /**< Whether the keepalive item was already
+    bool ka_encountered; /**< Whether the keepalive item was already
                                   encountered within this item */
 } json_stack_entry;
 
@@ -105,7 +105,7 @@ typedef SLIST_HEAD(json_stack, json_stack_entry) json_stack;
 typedef struct tester_plan {
     json_t        *root;    /**< Root plan object */
     json_stack     stack;   /**< Current package/session path */
-    te_bool        pending; /**< Whether some run item is pending */
+    bool pending; /**< Whether some run item is pending */
     run_item_role  role;    /**< Role of run items to be added */
     const char    *test;    /**< Pending test name */
     int            iters;   /**< Pending test iterations */
@@ -125,13 +125,13 @@ typedef struct tester_ctx {
     tester_test_result  current_result; /**< Result of the current test
                                              in this context */
 
-    te_bool             group_step;     /**< Is group step should be done
+    bool group_step;     /**< Is group step should be done
                                              or group items have been
                                              enumerated one by one */
 
     const logic_expr   *targets;        /**< Target requirements
                                              expression */
-    te_bool             targets_free;   /**< Should target requirements
+    bool targets_free;   /**< Should target requirements
                                              be freed? */
     logic_expr         *dyn_targets;    /**< Dynamic target requirements
                                              expression */
@@ -140,7 +140,7 @@ typedef struct tester_ctx {
                                              requirements */
 
     char               *backup;         /**< Configuration backup name */
-    te_bool             backup_ok;      /**< Optimization to avoid
+    bool backup_ok;      /**< Optimization to avoid
                                              duplicate (subsequent)
                                              verifications */
 
@@ -155,7 +155,7 @@ typedef struct tester_ctx {
     te_trc_db_walker   *keepalive_walker; /**< Position in TRC database
                                                from which to look for
                                                keepalive test */
-    te_bool             do_trc_walker;  /**< Move TRC walker or not? */
+    bool do_trc_walker;  /**< Move TRC walker or not? */
 #endif
 } tester_ctx;
 
@@ -213,7 +213,7 @@ static enum interactive_mode_opts tester_run_interactive(
 static json_t *persons_info_to_json(const persons_info *persons);
 
 /* Check whether run item has keepalive handler */
-static te_bool
+static bool
 run_item_has_keepalive(run_item *ri)
 {
     return (ri->type == RUN_ITEM_SESSION &&
@@ -363,7 +363,7 @@ tester_plan_add_pending_test(tester_plan *plan)
         return rc;
     }
 
-    plan->pending = FALSE;
+    plan->pending = false;
     plan->test = NULL;
     plan->role = RI_ROLE_NORMAL;
     plan->iters = 0;
@@ -410,7 +410,7 @@ tester_plan_add_pending_skipped(tester_plan *plan)
         return rc;
     }
 
-    plan->pending = FALSE;
+    plan->pending = false;
     plan->skipped = 0;
 
     return 0;
@@ -442,7 +442,7 @@ tester_plan_add_skipped(tester_plan *plan)
     if (plan->test != NULL)
         tester_plan_add_pending_test(plan);
 
-    plan->pending = TRUE;
+    plan->pending = true;
     plan->skipped++;
     return 0;
 }
@@ -510,7 +510,7 @@ tester_plan_register_test(tester_plan *plan, const char *test_name,
         assert(e != NULL);
         if (e->ka_encountered)
             return 0;
-        e->ka_encountered = TRUE;
+        e->ka_encountered = true;
     }
 
     if (test_name != NULL && plan->test != NULL &&
@@ -530,7 +530,7 @@ tester_plan_register_test(tester_plan *plan, const char *test_name,
 
     if (test_name != NULL)
     {
-        plan->pending = TRUE;
+        plan->pending = true;
         plan->test = test_name;
         plan->role = role;
         plan->iters = 1;
@@ -779,12 +779,12 @@ tester_run_new_ctx(tester_flags flags, const logic_expr *targets)
 #endif
 
     new_ctx->targets = targets;
-    new_ctx->targets_free = FALSE;
+    new_ctx->targets_free = false;
     new_ctx->dyn_targets = NULL;
     TAILQ_INIT(&new_ctx->reqs);
 
     new_ctx->backup = NULL;
-    new_ctx->backup_ok = FALSE;
+    new_ctx->backup_ok = false;
     new_ctx->args = NULL;
     /* new_ctx->n_args = 0; */
 
@@ -793,7 +793,7 @@ tester_run_new_ctx(tester_flags flags, const logic_expr *targets)
 #if WITH_TRC
     new_ctx->trc_walker = NULL;
     new_ctx->keepalive_walker = NULL;
-    new_ctx->do_trc_walker = FALSE;
+    new_ctx->do_trc_walker = false;
 #endif
 
     return new_ctx;
@@ -808,7 +808,7 @@ tester_run_new_ctx(tester_flags flags, const logic_expr *targets)
  * @return Pointer to new Tester context.
  */
 static tester_ctx *
-tester_run_clone_ctx(const tester_ctx *ctx, te_bool new_group)
+tester_run_clone_ctx(const tester_ctx *ctx, bool new_group)
 {
     te_errno    rc;
     tester_ctx *new_ctx = tester_run_new_ctx(ctx->flags, ctx->targets);
@@ -933,7 +933,7 @@ tester_run_first_ctx(tester_run_data *data)
             tester_run_free_ctx(new_ctx);
             return NULL;
         }
-        new_ctx->do_trc_walker = FALSE;
+        new_ctx->do_trc_walker = false;
     }
 #endif
 
@@ -955,7 +955,7 @@ tester_run_first_ctx(tester_run_data *data)
  * @return Allocated context.
  */
 static tester_ctx *
-tester_run_more_ctx(tester_run_data *data, te_bool new_group)
+tester_run_more_ctx(tester_run_data *data, bool new_group)
 {
     tester_ctx *new_ctx;
 
@@ -1138,7 +1138,7 @@ persons_info_to_string(const persons_info *persons)
     size_t              rest = total;
     const person_info  *p;
     int                 printed;
-    te_bool             again;
+    bool again;
 
     if (res == NULL)
     {
@@ -1171,13 +1171,13 @@ persons_info_to_string(const persons_info *persons)
                 /* Locate current pointer */
                 s = res + strlen(res);
                 /* Print the last item again */
-                again = TRUE;
+                again = true;
             }
             else
             {
                 rest -= printed;
                 s += printed;
-                again = FALSE;
+                again = false;
             }
         } while (again);
     }
@@ -1343,7 +1343,7 @@ test_params_normalise(const char *param)
     const char *p;
     char *q;
     char *str = NULL;
-    te_bool skip_spaces = TRUE;
+    bool skip_spaces = true;
 
     if (param == NULL)
         return NULL;
@@ -1359,13 +1359,13 @@ test_params_normalise(const char *param)
             if (!skip_spaces)
             {
                 *q++ = ' ';
-                skip_spaces = TRUE;
+                skip_spaces = true;
             }
         }
         else
         {
             *q++ = *p;
-            skip_spaces = FALSE;
+            skip_spaces = false;
         }
     }
 
@@ -1979,7 +1979,7 @@ tester_test_status_to_te_test_result(tester_test_status status,
                     break;
 
                 default:
-                    assert(FALSE);
+                    assert(false);
             }
             break;
         }
@@ -2266,7 +2266,7 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
                "%Tf", exec_id, vg_filename);
     }
 
-    if (tester_check_serial_stop() == TRUE)
+    if (tester_check_serial_stop() == true)
         *status = TESTER_TEST_STOPPED;
 
     EXIT("%u", *status);
@@ -2451,7 +2451,7 @@ run_create_cfg_backup(tester_ctx *ctx, unsigned int track_conf)
             EXIT("FAULT");
             return rc;
         }
-        ctx->backup_ok = TRUE;
+        ctx->backup_ok = true;
     }
 
     return 0;
@@ -2477,7 +2477,7 @@ run_verify_cfg_backup(tester_ctx *ctx, unsigned int track_conf)
          * default for all tests.
          */
         if (track_conf & TESTER_TRACK_CONF_SYNC)
-            cfg_synchronize("/:", TRUE);
+            cfg_synchronize("/:", true);
 
         /* Check configuration backup */
         rc = cfg_verify_backup(ctx->backup);
@@ -2506,7 +2506,7 @@ run_verify_cfg_backup(tester_ctx *ctx, unsigned int track_conf)
             }
             else
             {
-                ctx->backup_ok = TRUE;
+                ctx->backup_ok = true;
             }
         }
         else if (rc != 0)
@@ -2516,7 +2516,7 @@ run_verify_cfg_backup(tester_ctx *ctx, unsigned int track_conf)
         }
         else
         {
-            ctx->backup_ok = TRUE;
+            ctx->backup_ok = true;
         }
     }
 }
@@ -2590,7 +2590,7 @@ run_cfg_start(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
         WARN("Options in Tester configuration files are ignored.");
 
     /* Clone Tester context */
-    ctx = tester_run_more_ctx(gctx, FALSE);
+    ctx = tester_run_more_ctx(gctx, false);
     if (ctx == NULL)
         return TESTER_CFG_WALK_FAULT;
 
@@ -2608,12 +2608,12 @@ run_cfg_start(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
                 ctx->current_result.status = TESTER_TEST_ERROR;
                 return TESTER_CFG_WALK_FAULT;
             }
-            ctx->targets_free = TRUE;
+            ctx->targets_free = true;
         }
         else
         {
             ctx->targets = cfg->targets;
-            ctx->targets_free = FALSE;
+            ctx->targets_free = false;
         }
     }
 
@@ -2677,7 +2677,7 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
 #if WITH_TRC
-    ctx->do_trc_walker = FALSE;
+    ctx->do_trc_walker = false;
 #endif
 
     if (~flags & TESTER_CFG_WALK_SERVICE)
@@ -2705,7 +2705,7 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                 break;
 
             default:
-                assert(FALSE);
+                assert(false);
                 ctx->current_result.status =
                     TE_RC(TE_TESTER, TE_EFAULT);
                 return TESTER_CFG_WALK_FAULT;
@@ -2741,8 +2741,8 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 #if WITH_TRC
     if ((~ctx->flags & TESTER_NO_TRC) && (test_get_name(ri) != NULL))
     {
-        trc_db_walker_step_test(ctx->trc_walker, test_get_name(ri), FALSE);
-        ctx->do_trc_walker = TRUE;
+        trc_db_walker_step_test(ctx->trc_walker, test_get_name(ri), false);
+        ctx->do_trc_walker = true;
     }
 #endif
 
@@ -2772,7 +2772,7 @@ run_item_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     if (ctx->do_trc_walker && test_get_name(ri) != NULL)
         trc_db_walker_step_back(ctx->trc_walker);
     else if (~ctx->flags & TESTER_NO_TRC)
-        ctx->do_trc_walker = TRUE;
+        ctx->do_trc_walker = true;
 #endif
 
     ctx->n_args = 0;
@@ -2802,7 +2802,7 @@ run_pkg_start(run_item *ri, test_package *pkg,
     assert(gctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
-    ctx = tester_run_more_ctx(gctx, TRUE);
+    ctx = tester_run_more_ctx(gctx, true);
     if (ctx == NULL)
         return TESTER_CFG_WALK_FAULT;
 
@@ -2844,7 +2844,7 @@ run_session_start(run_item *ri, test_session *session,
      */
     if (ri->type == RUN_ITEM_SESSION)
     {
-        ctx = tester_run_more_ctx(gctx, TRUE);
+        ctx = tester_run_more_ctx(gctx, true);
         if (ctx == NULL)
             return TESTER_CFG_WALK_FAULT;
     }
@@ -2930,7 +2930,7 @@ run_prologue_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
         return TESTER_CFG_WALK_SKIP;
     }
 
-    ctx = tester_run_more_ctx(gctx, FALSE);
+    ctx = tester_run_more_ctx(gctx, false);
     if (ctx == NULL)
         return TESTER_CFG_WALK_FAULT;
 
@@ -2982,7 +2982,7 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
                           "populated by test with ID=%u: %r", id, rc);
                     ctx->group_result.status = TESTER_TEST_PROLOG;
                     assert(SLIST_NEXT(ctx, links) != NULL);
-                    SLIST_NEXT(ctx, links)->group_step = TRUE;
+                    SLIST_NEXT(ctx, links)->group_step = true;
                     EXIT("SKIP");
                     return TESTER_CFG_WALK_SKIP;
                 }
@@ -2992,12 +2992,12 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
                     ctx->targets = logic_expr_binary(LOGIC_EXPR_AND,
                                                      (logic_expr *)ctx->targets,
                                                      ctx->dyn_targets);
-                    ctx->targets_free = TRUE;
+                    ctx->targets_free = true;
                 }
                 else
                 {
                     ctx->targets = ctx->dyn_targets;
-                    ctx->targets_free = FALSE;
+                    ctx->targets_free = false;
                 }
 
                 if (ctx->targets == NULL)
@@ -3025,14 +3025,14 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
         else if (status != TESTER_TEST_EMPTY)
             ctx->group_result.status = TESTER_TEST_PROLOG;
         assert(SLIST_NEXT(ctx, links) != NULL);
-        SLIST_NEXT(ctx, links)->group_step = TRUE;
+        SLIST_NEXT(ctx, links)->group_step = true;
         EXIT("SKIP");
         return TESTER_CFG_WALK_SKIP;
     }
 
     if (!(ctx->flags & (TESTER_NO_CS | TESTER_NO_CFG_TRACK)))
     {
-        rc = cfg_synchronize("/:", TRUE);
+        rc = cfg_synchronize("/:", true);
         if (rc != 0)
             ERROR("%s(): cfg_synchronize() failed returning %r",
                   __FUNCTION__, rc);
@@ -3068,7 +3068,7 @@ run_epilogue_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
         return TESTER_CFG_WALK_SKIP;
     }
 
-    ctx = tester_run_more_ctx(gctx, FALSE);
+    ctx = tester_run_more_ctx(gctx, false);
     if (ctx == NULL)
         return TESTER_CFG_WALK_FAULT;
 
@@ -3139,7 +3139,7 @@ run_keepalive_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
 
     if (ctx->keepalive_ctx == NULL)
     {
-        ctx->keepalive_ctx = tester_run_clone_ctx(ctx, FALSE);
+        ctx->keepalive_ctx = tester_run_clone_ctx(ctx, false);
         if (ctx->keepalive_ctx == NULL)
         {
             ctx->current_result.status = TESTER_TEST_ERROR;
@@ -3167,7 +3167,7 @@ run_keepalive_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
          */
 
         ctx->trc_walker = ctx->keepalive_walker;
-        ctx->do_trc_walker = TRUE;
+        ctx->do_trc_walker = true;
     }
 #endif
 
@@ -3247,7 +3247,7 @@ run_exception_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
     }
 
     /* Exception handler is always run in a new context */
-    ctx = tester_run_more_ctx(gctx, FALSE);
+    ctx = tester_run_more_ctx(gctx, false);
     if (ctx == NULL)
         return TESTER_CFG_WALK_FAULT;
 
@@ -3375,7 +3375,7 @@ run_get_value(const test_entity_value *value,
     }
     else
     {
-        assert(FALSE);
+        assert(false);
         return NULL;
     }
 }
@@ -3553,7 +3553,7 @@ run_prepare_args(const test_iter_arg *ctx_args,
     data.arg = args;
     SLIST_INIT(&data.lists);
 
-    rc = test_run_item_enum_args(ri, run_prepare_arg_cb, FALSE, &data);
+    rc = test_run_item_enum_args(ri, run_prepare_arg_cb, false, &data);
     if (!(rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT))
         rc = 0;
 
@@ -3574,7 +3574,7 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     tester_ctx         *ctx;
     tester_ctx         *parent_ctx;
     te_errno            rc;
-    te_bool             args_preparation_fail = FALSE;
+    bool args_preparation_fail = false;
 
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
@@ -3588,7 +3588,7 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
 #if WITH_TRC
-    ctx->do_trc_walker = FALSE;
+    ctx->do_trc_walker = false;
 #endif
 
     if (~flags & TESTER_CFG_WALK_SERVICE)
@@ -3616,7 +3616,7 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                 break;
 
             default:
-                assert(FALSE);
+                assert(false);
                 ctx->current_result.status =
                     TE_RC(TE_TESTER, TE_EFAULT);
                 return TESTER_CFG_WALK_FAULT;
@@ -3632,7 +3632,7 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                               parent_ctx != NULL ? parent_ctx->n_args : 0,
                               ri, iter, ctx->args);
         if (rc != 0)
-            args_preparation_fail = TRUE;
+            args_preparation_fail = true;
     }
 
     /*
@@ -3640,7 +3640,7 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
      * Preserve it when such arguments are resolved within subsessions.
      */
     if (flags & TESTER_CFG_WALK_SKIP_REPEAT)
-        args_preparation_fail = TRUE;
+        args_preparation_fail = true;
 
 #if WITH_TRC
     if ((~ctx->flags & TESTER_NO_TRC) && (test_get_name(ri) != NULL))
@@ -3657,13 +3657,13 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         /*
          * It is guaranteed that trc_db_walker_step_iter() does not
          * touch names and values with the last parameters equal to
-         * FALSE/0/NULL.
+         * false/0/NULL.
          */
         (void)trc_db_walker_step_iter(ctx->trc_walker,
                                       ctx->n_args,
                                       args, 0,
                                       0, NULL);
-        ctx->do_trc_walker = TRUE;
+        ctx->do_trc_walker = true;
     }
 
     /* Initialize as unknown by default */
@@ -3704,7 +3704,7 @@ run_iter_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     if (ctx->do_trc_walker && test_get_name(ri) != NULL)
         trc_db_walker_step_back(ctx->trc_walker);
     else if (~ctx->flags & TESTER_NO_TRC)
-        ctx->do_trc_walker = TRUE;
+        ctx->do_trc_walker = true;
 #endif
 
     /* TODO: Optimize arguments fill in */
@@ -3742,7 +3742,7 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         if (hash_str == NULL || strcmp(hash_str, gctx->act->hash) != 0)
         {
             ctx->current_result.status = TESTER_TEST_INCOMPLETE;
-            ctx->group_step = TRUE;
+            ctx->group_step = true;
             if (hash_str != NULL)
                 free(hash_str);
             return TESTER_CFG_WALK_SKIP;
@@ -3752,15 +3752,15 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
     if (ctx->flags & TESTER_ASSEMBLE_PLAN)
     {
-        te_bool             quiet_skip;
-        te_bool             required;
+        bool quiet_skip;
+        bool required;
 
         /* verb overwrites quiet */
         quiet_skip = (~ctx->flags & TESTER_VERB_SKIP) &&
                      (ctx->flags & TESTER_QUIET_SKIP);
         required = tester_is_run_required(ctx->targets, &ctx->reqs,
                                           ri, ctx->args, ctx->flags,
-                                          TRUE);
+                                          true);
         ri->plan_id = -1;
         if (required || !quiet_skip)
         {
@@ -3803,7 +3803,7 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         else
         {
             ctx->current_result.status = TESTER_TEST_INCOMPLETE;
-            ctx->group_step = TRUE;
+            ctx->group_step = true;
             EXIT("SKIP");
             return TESTER_CFG_WALK_SKIP;
         }
@@ -3814,7 +3814,7 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         if (!(ctx->flags & TESTER_ONLY_REQ_LOGUES) ||
             tester_is_run_required(ctx->targets, &ctx->reqs,
                                    ri, ctx->args, ctx->flags,
-                                   TRUE))
+                                   true))
         {
             if (ri->type == RUN_ITEM_SCRIPT &&
                 (~flags & TESTER_CFG_WALK_SERVICE))
@@ -3829,7 +3829,7 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         else
         {
             ctx->current_result.status = TESTER_TEST_INCOMPLETE;
-            ctx->group_step = TRUE;
+            ctx->group_step = true;
             EXIT("SKIP");
             return TESTER_CFG_WALK_SKIP;
         }
@@ -3844,17 +3844,17 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
          (~ctx->flags & TESTER_QUIET_SKIP) ||
          tester_is_run_required(ctx->targets, &ctx->reqs,
                                 ri, ctx->args, ctx->flags,
-                                TRUE)))
+                                true)))
         gctx->plan_id++;
 
     /* Go inside skipped packages and sessions */
     if (gctx->force_skip > 0 && run_item_container(ri) &&
         tester_is_run_required(ctx->targets, &ctx->reqs,
                                     ri, ctx->args, ctx->flags,
-                                    TRUE))
+                                    true))
     {
         ctx->current_result.status = TESTER_TEST_INCOMPLETE;
-        ctx->group_step = TRUE;
+        ctx->group_step = true;
         EXIT("CONT");
         return TESTER_CFG_WALK_CONT;
     }
@@ -3865,11 +3865,11 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         ((~ctx->flags & TESTER_VERB_SKIP) &&
          (ctx->flags & TESTER_QUIET_SKIP) &&
          !tester_is_run_required(ctx->targets, &ctx->reqs,
-                                 ri, ctx->args, ctx->flags, TRUE)))
+                                 ri, ctx->args, ctx->flags, true)))
     {
         /* Silently skip without any logs */
         ctx->current_result.status = TESTER_TEST_INCOMPLETE;
-        ctx->group_step = TRUE;
+        ctx->group_step = true;
         EXIT("SKIP - ENOENT");
         return TESTER_CFG_WALK_SKIP;
     }
@@ -3891,16 +3891,16 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     if (((ctx->flags & TESTER_VERB_SKIP) ||
         (~ctx->flags & TESTER_QUIET_SKIP)) &&
         !tester_is_run_required(ctx->targets, &ctx->reqs,
-                                ri, ctx->args, ctx->flags, FALSE))
+                                ri, ctx->args, ctx->flags, false))
     {
         ctx->current_result.status = TESTER_TEST_SKIPPED;
-        ctx->group_step = TRUE;
+        ctx->group_step = true;
         EXIT("SKIP - TESTER_TEST_SKIPPED");
         return TESTER_CFG_WALK_SKIP;
     }
     else
     {
-        ctx->backup_ok = FALSE;
+        ctx->backup_ok = false;
     }
 
     EXIT("CONT");
@@ -3967,7 +3967,7 @@ trc_exp_result_to_log_buf(te_log_buf *lb, const trc_exp_result *result)
 }
 #endif
 
-static te_bool
+static bool
 result_has_verdict(te_test_result *result, const char *verdict_str)
 {
     te_test_verdict *verdict = NULL;
@@ -3975,10 +3975,10 @@ result_has_verdict(te_test_result *result, const char *verdict_str)
     TAILQ_FOREACH(verdict, &result->verdicts, links)
     {
         if (strcmp(verdict->str, verdict_str) == 0)
-            return TRUE;
+            return true;
     }
 
-    return FALSE;
+    return false;
 }
 
 static tester_cfg_walk_ctl
@@ -3988,7 +3988,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     tester_run_data    *gctx = opaque;
     tester_ctx         *ctx;
     unsigned int        step;
-    te_bool             has_verdict = FALSE;
+    bool has_verdict = false;
     te_errno            rc;
 
     assert(gctx != NULL);
@@ -4246,12 +4246,12 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
         if (ri->type == RUN_ITEM_SCRIPT)
         {
-            ctx->group_step = FALSE;
+            ctx->group_step = false;
             step = 1;
         }
         else if (ctx->group_step)
         {
-            ctx->group_step = FALSE;
+            ctx->group_step = false;
             step = ri->weight;
         }
         else
@@ -4261,7 +4261,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
         if (gctx->direction != TESTING_BACKWARD)
         {
-            te_bool skip_tests = FALSE;
+            bool skip_tests = false;
 
             /*
              * By this time, all the acts which are within the current
@@ -4280,7 +4280,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
              * in it.
              */
             if (ri->type != RUN_ITEM_SCRIPT)
-                skip_tests = TRUE;
+                skip_tests = true;
 
             while (scenario_step(
                       &gctx->act, &gctx->act_id,
@@ -4301,7 +4301,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                             break;
 
                         default:
-                            assert(FALSE);
+                            assert(false);
                             /*@fallthrough@*/
 
                         case TESTER_INTERACTIVE_ERROR:
@@ -4335,7 +4335,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                 return TESTER_CFG_WALK_BACK;
 
             default:
-                assert(FALSE);
+                assert(false);
                 return TESTER_CFG_WALK_FAULT;
         }
     }
@@ -4370,9 +4370,9 @@ run_skip_end(void *opaque)
  * @param targets             Target requirements expression.
  * @param flags               Testing flags.
  *
- * @return @c TRUE if preparatory walk is helpful, @c FALSE otherwise.
+ * @return @c true if preparatory walk is helpful, @c false otherwise.
  */
-static te_bool
+static bool
 is_prerun_helpful(testing_scenario *scenario,
                   const logic_expr *targets,
                   tester_flags flags)
@@ -4386,7 +4386,7 @@ is_prerun_helpful(testing_scenario *scenario,
     TAILQ_FOREACH(act, scenario, links)
     {
         if (act->hash != NULL)
-            return TRUE;
+            return true;
     }
 
     /*
@@ -4394,9 +4394,9 @@ is_prerun_helpful(testing_scenario *scenario,
      * those iterations which do not match them.
      */
     if ((flags & TESTER_ONLY_REQ_LOGUES) && targets != NULL)
-        return TRUE;
+        return true;
 
-    return FALSE;
+    return false;
 }
 
 /* See the description in tester_run.h */
@@ -4440,21 +4440,21 @@ tester_run(testing_scenario   *scenario,
     };
 
     testing_act   *act;
-    te_bool        all_faked = TRUE;
+    bool all_faked = true;
     tester_flags   orig_flags;
 
     TAILQ_FOREACH(act, scenario, links)
     {
         if (!(act->flags & TESTER_FAKE))
         {
-            all_faked = FALSE;
+            all_faked = false;
             break;
         }
     }
 
     memset(&data, 0, sizeof(data));
     data.flags = flags;
-    if (all_faked == TRUE)
+    if (all_faked == true)
         data.flags |= TESTER_FAKE;
 
     data.verdict = verdict;
@@ -4491,7 +4491,7 @@ tester_run(testing_scenario   *scenario,
                 break;
 
             default:
-                assert(FALSE);
+                assert(false);
                 /*@fallthrough@*/
 
             case TESTER_INTERACTIVE_ERROR:
@@ -4600,7 +4600,7 @@ tester_run(testing_scenario   *scenario,
             break;
 
         default:
-            assert(FALSE);
+            assert(false);
             rc = TE_RC(TE_TESTER, TE_EFAULT);
     }
 
@@ -4658,7 +4658,7 @@ tester_run_interactive(tester_run_data *gctx)
             break;
 
         default:
-            assert(FALSE);
+            assert(false);
             /*@fallthrough@*/
 
         case TESTER_INTERACTIVE_ERROR:

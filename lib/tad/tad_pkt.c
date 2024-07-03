@@ -61,7 +61,7 @@ tad_pkt_init_seg_data(tad_pkt_seg *seg,
     seg->data_len = len;
     seg->data_free = free;
 
-    seg->layer_tag_set = FALSE;
+    seg->layer_tag_set = false;
     seg->layer_tag = TE_PROTO_INVALID;
 }
 
@@ -459,7 +459,7 @@ tad_pkts_move(tad_pkts *dst, tad_pkts *src)
 
 /* See description in tad_pkt.h */
 te_errno
-tad_pkts_add_new_seg(tad_pkts *pkts, te_bool header,
+tad_pkts_add_new_seg(tad_pkts *pkts, bool header,
                      void *data_ptr, size_t data_len,
                      tad_pkt_seg_free data_free)
 {
@@ -763,7 +763,7 @@ tad_pkt_next_not_empty_seg(tad_pkt *pkt, tad_pkt_seg *seg)
 
 /** Fragmentation callback data */
 typedef struct tad_pkt_fragment_cb_data {
-    te_bool         skip_first_seg; /**< Skip the first segment */
+    bool skip_first_seg; /**< Skip the first segment */
     size_t          frag_data_len;  /**< Maximum fragment length */
     tad_pkt        *src_pkt;        /**< Source packet pointer */
     tad_pkt_seg    *src_seg;        /**< Current segment of the source
@@ -859,7 +859,7 @@ tad_pkt_fragment_cb(tad_pkt *pkt, void *opaque)
         dst_seg = new_seg;
         F_VERB("%s(): New segment %p allocated", __FUNCTION__, new_seg);
 
-    } while (TRUE);
+    } while (true);
 
     return 0;
 }
@@ -867,12 +867,12 @@ tad_pkt_fragment_cb(tad_pkt *pkt, void *opaque)
 /* See description in tad_pkt.h */
 te_errno
 tad_pkt_fragment(tad_pkt *pkt, size_t frag_data_len,
-                 ssize_t add_seg_len, te_bool header,
+                 ssize_t add_seg_len, bool header,
                  tad_pkts *pkts)
 {
     struct tad_pkt_fragment_cb_data cb_data;
 
-    te_bool         add_seg = (add_seg_len != -1);
+    bool add_seg = (add_seg_len != -1);
     unsigned int    n_frags;
     tad_pkts        frags;
     te_errno        rc;
@@ -928,7 +928,7 @@ typedef struct tad_pkt_get_frag_cb_data {
     tad_pkt *dst;                 /**< Packet to appent segments of the
                                        interested packet */
 
-    te_bool  preserve_layer_tags; /**< Read TE protocol IDs from the source
+    bool preserve_layer_tags; /**< Read TE protocol IDs from the source
                                        segments and provide them for the
                                        destination segments */
 } tad_pkt_get_frag_cb_data;
@@ -999,7 +999,7 @@ tad_pkt_get_frag(tad_pkt *dst, tad_pkt *src,
                  tad_pkt_get_frag_mode mode)
 {
     tad_pkt_get_frag_cb_data  data =
-        { frag_off, frag_off + frag_len, 0, dst, FALSE };
+        { frag_off, frag_off + frag_len, 0, dst, false };
 
     int         add_seg_len;
     te_errno    rc;
@@ -1074,7 +1074,7 @@ tad_pkt_get_frag(tad_pkt *dst, tad_pkt *src,
                 ptr[i] = rand();
         }
         else
-            assert(FALSE);
+            assert(false);
 
         tad_pkt_append_seg(dst, seg);
         F_VERB("%s(): Additional segment appended", __FUNCTION__);
@@ -1188,12 +1188,12 @@ tad_pkt_read_bits(const tad_pkt *pkt, size_t bitoff, size_t bitlen,
     else
     {
         /* No support yet */
-        assert(FALSE);
+        assert(false);
     }
 }
 
 /* See description in 'tad_pkt.h' */
-te_bool
+bool
 tad_pkt_read_bit(const tad_pkt *pkt,
                  size_t         bitoff)
 {
@@ -1201,7 +1201,7 @@ tad_pkt_read_bit(const tad_pkt *pkt,
 
     tad_pkt_read_bits(pkt, bitoff, 1, &value);
 
-    return (value != 0) ? TRUE : FALSE;
+    return (value != 0) ? true : false;
 }
 
 
@@ -1220,7 +1220,7 @@ tad_pkt_read_bit(const tad_pkt *pkt,
  */
 te_errno
 tad_pkt_match_mask(const tad_pkt *pkt, size_t len, const uint8_t *mask,
-                   const uint8_t *value, te_bool exact_len)
+                   const uint8_t *value, bool exact_len)
 {
     const tad_pkt_seg  *seg;
     size_t              slen;
@@ -1263,7 +1263,7 @@ tad_pkt_match_mask(const tad_pkt *pkt, size_t len, const uint8_t *mask,
 /* See description in tad_pkt.h */
 te_errno
 tad_pkt_match_bytes(const tad_pkt *pkt, size_t len,
-                    const uint8_t *payload, te_bool exact_len)
+                    const uint8_t *payload, bool exact_len)
 {
     uint8_t   *mask;
     te_errno   rv;
@@ -1317,7 +1317,7 @@ tad_pkt_mark_layer_segments_cb(tad_pkt *pkt,
         if (seg->layer_tag_set)
             break;
 
-        seg->layer_tag_set = TRUE;
+        seg->layer_tag_set = true;
 
         if (layer_tagp != NULL)
             seg->layer_tag = *layer_tagp;

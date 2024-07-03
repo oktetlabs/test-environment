@@ -77,9 +77,9 @@ typedef struct flist_h_t flist_h_t;
  */
 typedef struct snif_id_l {
     sniffer_id  id;
-    te_bool     log_exst;
+    bool log_exst;
     char        res_fname[RCF_MAX_PATH];
-    te_bool     first_launch;
+    bool first_launch;
     flist_h_t   flist_h;
     unsigned    cap_file_ind;
     SLIST_ENTRY(snif_id_l)  ent_l;
@@ -126,9 +126,9 @@ static int polling_period;
  * @param snif              Location of sniffer parameters.
  * @param sniflist_head     Head of the sniffers list.
  *
- * @return TRUE if sniffer exists.
+ * @return @c true if sniffer exists.
  */
-static te_bool
+static bool
 check_snif_exist(snifidl_h_t *sniflist_head, snif_id_l *new_snif)
 {
     snif_id_l *snif;
@@ -139,11 +139,11 @@ check_snif_exist(snifidl_h_t *sniflist_head, snif_id_l *new_snif)
             strcmp(snif->id.ifname, new_snif->id.ifname) == 0 &&
             (snif->id.ssn == new_snif->id.ssn))
         {
-            snif->log_exst = TRUE;
-            return TRUE;
+            snif->log_exst = true;
+            return true;
         }
     }
-    return FALSE;
+    return false;
 }
 
 /**
@@ -411,9 +411,9 @@ sniffer_parse_list_buf(char *buf, size_t len, snifidl_h_t *sniflist_head,
         clen += strl;
         buf = ptr;
 
-        snif->log_exst = TRUE;
+        snif->log_exst = true;
 
-        if (check_snif_exist(sniflist_head, snif) == FALSE)
+        if (check_snif_exist(sniflist_head, snif) == false)
         {
             snif->cap_file_ind = 0;
             if (sniffer_make_file_name(agent, snif) != 0)
@@ -422,7 +422,7 @@ sniffer_parse_list_buf(char *buf, size_t len, snifidl_h_t *sniflist_head,
             SLIST_INIT(&snif->flist_h);
             SNIFFER_MALLOC(lfile, sizeof(file_list_s));
             strcpy(lfile->name, snif->res_fname);
-            snif->first_launch = TRUE;
+            snif->first_launch = true;
             SLIST_INSERT_HEAD(&snif->flist_h, lfile, ent_l_f);
             SLIST_INSERT_HEAD(sniflist_head, snif, ent_l);
         }
@@ -454,7 +454,7 @@ sniffer_parse_list_buf(char *buf, size_t len, snifidl_h_t *sniflist_head,
  * @param snif      Location of sniffer parameters.
  * @param ta_name   Test agent name.
  *
- * @return TRUE if marker should be inserted.
+ * @return @c true if marker should be inserted.
  */
 static snif_mark_l *
 sniffer_check_markers(size_t size, snif_id_l *snif, const char *agent)
@@ -645,7 +645,7 @@ sniffer_capture_file_proc(const char *fname, snif_id_l *snif,
     if (snif->first_launch)
     {
         lseek(fd_n, SNIF_PCAP_HSIZE, SEEK_SET);
-        snif->first_launch = FALSE;
+        snif->first_launch = false;
         size -= SNIF_PCAP_HSIZE;
     }
     else
@@ -683,9 +683,9 @@ cleanup_snif_fproc:
 /**
  * Check overall capture files size for all sniffers.
  *
- * @return TRUE if space is overflowed.
+ * @return @c true if space is overflowed.
  */
-static te_bool
+static bool
 sniffer_check_overall_space(unsigned fsize)
 {
     snif_ta_l           *snif_ta;
@@ -708,8 +708,8 @@ sniffer_check_overall_space(unsigned fsize)
     }
 
     if (filled_space + fsize > snifp_sets.osize)
-        return TRUE;
-    return FALSE;
+        return true;
+    return false;
 }
 
 /**
@@ -719,14 +719,14 @@ sniffer_check_overall_space(unsigned fsize)
  * @param fname     Name of the received file as it is saved.
  * @param agent     Test agent name.
  *
- * @return Status code. TRUE is a free space, else FALSE.
+ * @return Status code. @c true is a free space, else @c false.
  */
-static te_bool
+static bool
 sniffer_check_capture_space(snif_id_l *snif, const char *fname,
                             const char * agent)
 {
     size_t              total    = 0;
-    te_bool             overflow = FALSE;
+    bool overflow = false;
     struct stat         st;
     int                 res;
     file_list_s        *f;
@@ -748,7 +748,7 @@ sniffer_check_capture_space(snif_id_l *snif, const char *fname,
         SNIFFER_MALLOC(f, sizeof(file_list_s));
         res = sniffer_make_file_name(agent, snif);
         if (res != 0)
-            return FALSE;
+            return false;
 
         /* Copy the file header. */
         fd_n = open(snif->res_fname, O_WRONLY | O_CREAT, S_IRWXU |
@@ -757,7 +757,7 @@ sniffer_check_capture_space(snif_id_l *snif, const char *fname,
         {
             free(f);
             ERROR("Couldn't open/creat file for capture logs.");
-            return FALSE;
+            return false;
         }
         sysrc = write(fd_n, pcap_hbuf, SNIF_PCAP_HSIZE);
         if (sysrc != SNIF_PCAP_HSIZE)
@@ -765,7 +765,7 @@ sniffer_check_capture_space(snif_id_l *snif, const char *fname,
             ERROR("Couldn't not write %u bytes (pcap header): %s",
                   SNIF_PCAP_HSIZE, strerror(errno));
             close(fd_n);
-            return FALSE;
+            return false;
         }
         sniffer_save_info(agent, snif, fd_n);
         close(fd_n);
@@ -778,8 +778,8 @@ sniffer_check_capture_space(snif_id_l *snif, const char *fname,
         filled_space + st.st_size > snifp_sets.osize)
         overflow = sniffer_check_overall_space(st.st_size);
 
-    if (snifp_sets.sn_space == 0 && overflow == FALSE)
-        return TRUE;
+    if (snifp_sets.sn_space == 0 && overflow == false)
+        return true;
 
     total = 0;
     fnum  = 0;
@@ -794,11 +794,11 @@ sniffer_check_capture_space(snif_id_l *snif, const char *fname,
     if (stat(fname, &st) == 0)
         total += st.st_size;
 
-    if (total < snifp_sets.sn_space && overflow == FALSE &&
+    if (total < snifp_sets.sn_space && overflow == false &&
         ((fnum <= snifp_sets.rotation) || (snifp_sets.rotation == 0)))
-        return TRUE;
+        return true;
     if ((snifp_sets.ofill == TAIL_DROP) || (fnum < 2))
-        return FALSE;
+        return false;
 
     if (stat(flast->name, &st) == 0)
         filled_space -= st.st_size;
@@ -807,7 +807,7 @@ sniffer_check_capture_space(snif_id_l *snif, const char *fname,
     SLIST_REMOVE(&snif->flist_h, flast, file_list_s, ent_l_f);
     free(flast);
 
-    return TRUE;
+    return true;
 }
 
 /**
@@ -1060,7 +1060,7 @@ sniffer_ins_mark_all(char *mark_data)
     SLIST_INIT(&new_sniflist_h);
     SNIFFER_MALLOC(snif_buf, snif_len);
 
-    rc = rcf_ta_get_sniffers(ta_name, NULL, &snif_buf, &snif_len, TRUE);
+    rc = rcf_ta_get_sniffers(ta_name, NULL, &snif_buf, &snif_len, true);
     if ((snif_len != 0) && (rc == 0))
     {
         sniffer_parse_list_buf(snif_buf, snif_len, &new_sniflist_h,
@@ -1142,7 +1142,7 @@ sniffer_mark_handler(char *mark_data_in)
 
     SNIFFER_MALLOC(snif_buf, snif_len);
     rc = rcf_ta_get_sniffers(mark->agent, snif_id_str, &snif_buf,
-                             &snif_len, TRUE);
+                             &snif_len, true);
     if (snif_len == 0)
     {
         WARN("Couldn't get offset from the sniffer: %s", snif_id_str);
@@ -1198,7 +1198,7 @@ sniffers_handler(char *agent)
     snif_ta_l      *snif_ta;
     snif_id_l      *snif;
 
-    if (snifp_sets.errors == TRUE)
+    if (snifp_sets.errors == true)
     {
         ERROR("Sniffer polling configuration contains errors.");
         return;
@@ -1220,7 +1220,7 @@ sniffers_handler(char *agent)
         SNIF_LOG_SLEEP;
 
         snif_len = SNIF_MIN_LIST_SIZE;
-        rc = rcf_ta_get_sniffers(agent, NULL, &snif_buf, &snif_len, TRUE);
+        rc = rcf_ta_get_sniffers(agent, NULL, &snif_buf, &snif_len, true);
         if ((snif_len != 0) && (rc == 0))
         {
             sniffer_parse_list_buf(snif_buf, snif_len, &snif_ta->snif_hl,
@@ -1234,7 +1234,7 @@ sniffers_handler(char *agent)
                     if (rc == TE_RC(TE_RCF_API, TE_EIPC))
                         goto sniffers_handler_exit;
                 }
-                snif->log_exst = FALSE;
+                snif->log_exst = false;
             }
         }
         else if (rc != 0 && rc != TE_RC(TE_RCF, TE_ENODATA))

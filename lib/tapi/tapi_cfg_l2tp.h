@@ -245,7 +245,7 @@ extern te_errno tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
  * @return Status code
  */
 extern te_errno tapi_cfg_l2tp_lns_bit_add(const char *ta, const char *lns,
-                                          enum l2tp_bit bit, te_bool value);
+                                          enum l2tp_bit bit, bool value);
 
 /**
  * Delete the bit option value of the specified LNS.
@@ -278,12 +278,12 @@ extern te_errno tapi_cfg_l2tp_lns_bit_get(const char *ta, const char *lns,
  * @param ta            Test Agent.
  * @param lns           The name of the section.
  * @param param         Desired authentication.
- * @param value         @c TRUE(1) or @c FALSE(0).
+ * @param value         @c true(1) or @c false(0).
  *
  * @return Status code
  */
 extern te_errno tapi_cfg_l2tp_lns_add_auth(const char *ta, const char *lns,
-                                           l2tp_auth param, te_bool value);
+                                           l2tp_auth param, bool value);
 
 /**
  * Delete the instance value "/auth/refuse|require".
@@ -332,7 +332,7 @@ extern te_errno tapi_cfg_l2tp_lns_secret_delete(const char *ta, const char *lns,
  */
 extern te_errno tapi_cfg_l2tp_lns_set_use_challenge(const char *ta,
                                                     const char *lns,
-                                                    te_bool value);
+                                                    bool value);
 
 /**
  * Get the instance value "/use_challenge:".
@@ -345,7 +345,7 @@ extern te_errno tapi_cfg_l2tp_lns_set_use_challenge(const char *ta,
  */
 extern te_errno tapi_cfg_l2tp_lns_get_use_challenge(const char *ta,
                                                     const char *lns,
-                                                    te_bool *value);
+                                                    bool *value);
 
 /**
  * Set the instance value to yes or no for "/unix_auth:".
@@ -357,7 +357,7 @@ extern te_errno tapi_cfg_l2tp_lns_get_use_challenge(const char *ta,
  * @return Status code
  */
 extern te_errno tapi_cfg_l2tp_lns_set_unix_auth(const char *ta, const char *lns,
-                                                te_bool value);
+                                                bool value);
 
 /**
  * Get the instance value "/unix_auth:".
@@ -369,7 +369,7 @@ extern te_errno tapi_cfg_l2tp_lns_set_unix_auth(const char *ta, const char *lns,
  * @return Status code
  */
 extern te_errno tapi_cfg_l2tp_lns_get_unix_auth(const char *ta, const char *lns,
-                                                te_bool *value);
+                                                bool *value);
 
 /**
  * Set MTU size.
