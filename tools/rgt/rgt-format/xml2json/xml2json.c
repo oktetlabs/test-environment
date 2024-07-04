@@ -48,8 +48,11 @@ typedef struct depth_ctx_user {
 
     /** @c TRUE if we are inside log message */
     te_bool in_msg;
-    /** @c TRUE if the last message was not terminated in JSON */
-    te_bool terminate_msg;
+    /**
+      *  Number of log messages which are not finished yet
+      * (current message and all its parents in messages hierarchy).
+      */
+    int opened_msgs;
     /** @c TRUE if we started filling content in a message */
     te_bool in_content;
     /**
@@ -481,11 +484,12 @@ maybe_terminate_msg(depth_ctx_user *depth_user, int nl_num)
 {
     te_json_ctx_t *json_ctx = &depth_user->json_ctx;
 
-    if (!depth_user->terminate_msg)
+    if (depth_user->opened_msgs <= 0)
         return;
 
     /* Terminate the previous message */
     te_json_end(json_ctx);
+    depth_user->opened_msgs--;
 
     /*
      * Terminate children lists of previous messages with
@@ -521,6 +525,9 @@ maybe_terminate_msg(depth_ctx_user *depth_user, int nl_num)
                 te_json_end(json_ctx);
                 /* Terminate message */
                 te_json_end(json_ctx);
+
+                depth_user->opened_msgs--;
+                assert(depth_user->opened_msgs >= 0);
             }
             else
             {
@@ -567,8 +574,8 @@ RGT_XML2JSON_CB(proc_log_msg_start,
     {
         if (depth_user->cur_nl != nl_num - 1)
         {
-            fprintf(stderr, "Message at %d has nesting level %u "
-                    "while the current nesting level is %u\n",
+            fprintf(stderr, "Message at %d has nesting level %d "
+                    "while the current nesting level is %d\n",
                     depth_user->linum, nl_num, depth_user->cur_nl);
         }
 
@@ -617,7 +624,7 @@ RGT_XML2JSON_CB(proc_log_msg_start,
     te_json_start_array(json_ctx);
 
     depth_user->in_msg = TRUE;
-    depth_user->terminate_msg = TRUE;
+    depth_user->opened_msgs++;
 
     depth_user->in_content = FALSE;
     depth_user->append_chars = TRUE;
@@ -801,8 +808,8 @@ RGT_XML2JSON_CB(proc_logs_start,
 
 RGT_XML2JSON_CB(proc_logs_end,
 {
-    maybe_terminate_msg(depth_user, 0);
-    depth_user->terminate_msg = FALSE;
+    maybe_terminate_msg(depth_user, -1);
+    assert(depth_user->opened_msgs == 0);
 
     te_json_end(&depth_user->json_ctx);
     te_json_end(&depth_user->json_ctx);
