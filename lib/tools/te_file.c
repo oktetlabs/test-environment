@@ -408,6 +408,10 @@ te_file_read_string(te_string *dest, bool binary,
         goto out;
     }
 
+    /* Some filesystems, e.g. sysfs, do not report file size correctly. */
+    if (st.st_blocks == 0 && st.st_size > 0)
+        st.st_size = 0;
+
     if (maxsize != 0 && st.st_size > maxsize)
     {
         ERROR("File %s's size (%zu) is larger than %zu",
