@@ -431,6 +431,13 @@ te_file_read_string(te_string *dest, bool binary,
 
     if (st.st_size > 0)
     {
+        if (dest->ext_buf && dest->size < dest->len + st.st_size + 1)
+        {
+            ERROR("Not enough space in the external buffer to fit the contents of '%s'",
+                  pathname.ptr);
+            rc = TE_ESMALLBUF;
+            goto out;
+        }
         te_string_reserve(dest, dest->len + st.st_size + 1);
         actual = read(fd, dest->ptr + dest->len, st.st_size);
         if (actual < 0)
@@ -453,6 +460,22 @@ te_file_read_string(te_string *dest, bool binary,
         /* The value is pretty arbitrary */
         ssize_t chunk_size = 4096;
         ssize_t actual_chunk;
+
+        if (dest->ext_buf)
+        {
+            ssize_t space_left = dest->size - dest->len - 1;
+
+            if (space_left <= 0)
+            {
+                ERROR("No space in the external buffer");
+                rc = TE_ESMALLBUF;
+                goto out;
+            }
+            if (maxsize == 0)
+                maxsize = space_left;
+            else
+                maxsize = MIN(maxsize, space_left);
+        }
 
         do
         {
