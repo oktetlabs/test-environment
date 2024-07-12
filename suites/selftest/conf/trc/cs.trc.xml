@@ -277,5 +277,14 @@
                 <notes/>
             </iter>
         </test>
+
+        <test name="ts_subtree" type="script">
+            <objective>Check that TS-provided subtrees work correctly</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <notes/>
+            </iter>
+        </test>
     </iter>
 </test>
