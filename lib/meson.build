@@ -202,6 +202,8 @@ foreach l : all_libs
         deps = []
         # List of dependencies in TE library name format
         te_libs = []
+        # Whether this library needs to be linked wholly
+        link_whole = false
         # logger_core is required dependency for everything else
         if l != 'logger_core'
             te_libs += [ 'logger_core' ]
@@ -279,9 +281,15 @@ foreach l : all_libs
                 set_variable('te_lib_' + libname, lib)
                 lib_static = lib
 
-                dep = declare_dependency(link_with: lib,
-                                         include_directories: includes,
-                                         dependencies: deps_static)
+                if link_whole
+                    dep = declare_dependency(link_whole: lib,
+                                             include_directories: includes,
+                                             dependencies: deps_static)
+                else
+                    dep = declare_dependency(link_with: lib,
+                                             include_directories: includes,
+                                             dependencies: deps_static)
+                endif
                 set_variable('dep_lib_static_' + libname, dep)
             endif
             if build_lib_shared
