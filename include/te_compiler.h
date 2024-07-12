@@ -23,6 +23,7 @@
 #define __has_attribute_oldgcc_format 1
 #define __has_attribute_oldgcc_deprecated 1
 #define __has_attribute_oldgcc_sentinel 1
+#define __has_attribute_oldgcc_constructor 1
 #endif /* __GNUC__ */
 #endif
 
@@ -95,6 +96,20 @@
 #define TE_DEPRECATED __attribute__((deprecated))
 #else
 #define TE_DEPRECATED
+#endif
+
+#if __has_attribute(constructor)
+/**
+ * Mark a function as a constructor. It will be executed
+ * before the main function.
+ */
+#define TE_CONSTRUCTOR_AVAILABLE 1
+#define TE_CONSTRUCTOR_PRIORITY(n) __attribute__((constructor(n)))
+#define TE_CONSTRUCTOR __attribute__((constructor))
+#else
+#define TE_CONSTRUCTOR_AVAILABLE 0
+#define TE_CONSTRUCTOR_PRIORITY(n) CONSTRUCTOR ATTRIBUTE UNSUPPORTED BY COMPILER
+#define TE_CONSTRUCTOR CONSTRUCTOR ATTRIBUTE UNSUPPORTED BY COMPILER
 #endif
 
 /*
