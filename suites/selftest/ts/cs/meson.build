@@ -16,6 +16,7 @@ tests = [
     'process_autorestart',
     'process_ping',
     'set_restore',
+    'ts_subtree',
     'uname',
     'unused_backup',
     'user',
