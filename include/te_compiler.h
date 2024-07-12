@@ -97,6 +97,18 @@
 #define TE_DEPRECATED
 #endif
 
+#if __has_attribute(constructor)
+/**
+ * Mark a function as a constructor. It will be executed
+ * before the main function.
+ */
+#define TE_CONSTRUCTOR_PRIORITY(n) __attribute__((constructor(n)))
+#define TE_CONSTRUCTOR __attribute__((constructor))
+#else
+#define TE_CONSTRUCTOR_PRIORITY(n)
+#define TE_CONSTRUCTOR
+#endif
+
 /*
  * typeof is supported by gcc and clang and clang defines __GNUC__,
  * so a single check is sufficient.
