@@ -98,6 +98,7 @@ te_agent_libs = [
 ]
 
 all_libs = te_common_libs + te_engine_libs + te_agent_libs
+external_libs = []
 
 libs = get_option('libs').split()
 
@@ -108,6 +109,7 @@ foreach l : libs
     # depend on it
     if not all_libs.contains(l)
         all_libs += [ l ]
+        external_libs += [ l ]
     endif
 endforeach
 
