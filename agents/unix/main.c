@@ -1542,6 +1542,13 @@ rcf_ch_rpc_server_thread(void *ready, int argc, char *argv[])
 }
 #endif
 
+TE_CONSTRUCTOR_PRIORITY(101)
+static void
+log_init(void)
+{
+    te_log_init("(unix)", te_log_message_file);
+}
+
 /**
  * Entry point of the Unix Test Agent.
  *
@@ -1587,7 +1594,9 @@ main(int argc, char **argv)
 #endif /* AT_SYSINFO */
 #endif
 
-    te_log_init("(unix)", te_log_message_file);
+#if ! __has_attribute(constructor)
+    log_init();
+#endif
 
     te_kernel_log_set_system_func(&ta_system);
 
