@@ -18,6 +18,7 @@
 #include "te_errno.h"
 #include "conf_api.h"
 #include "tapi_test.h"
+#include "tapi_cfg_base.h"
 #include "tapi_cfg_pci.h"
 
 /* See the description from tapi_tags.h */
@@ -55,6 +56,52 @@ tapi_tags_add_tag(const char *tag, const char *value)
         ERROR("%s(): cfg_add_instance_fmt(" TE_CFG_TRC_TAGS_FMT ") failed: %r",
               __FUNCTION__, tag, rc);
     }
+    return rc;
+}
+
+/* See the description from tapi_tags.h */
+te_errno
+tapi_tags_add_linux_mm(const char *ta, const char *prefix)
+{
+    te_string name = TE_STRING_INIT;
+    te_string value = TE_STRING_INIT;
+    struct utsname utsn;
+    unsigned int major;
+    unsigned int minor;
+    te_errno rc;
+
+    if (prefix == NULL)
+        prefix = "";
+
+    rc = tapi_cfg_base_get_ta_uname(ta, &utsn);
+    if (rc != 0)
+        return rc;
+
+    if (strcmp(utsn.sysname, "Linux") != 0)
+    {
+        ERROR("%s is %s (not a Linux)", ta, utsn.sysname);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (sscanf(utsn.release, "%u.%u.", &major, &minor) != 2)
+    {
+        ERROR("Cannot parse Linux release %s", utsn.release);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    if (minor >= 100)
+    {
+        ERROR("Too big Linux minor number %u to format TRC tag", minor);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    te_string_append(&name, "%slinux-mm", prefix);
+    te_string_append(&value, "%u%02u", major, minor);
+
+    rc = tapi_tags_add_tag(te_string_value(&name), te_string_value(&value));
+
+    te_string_free(&name);
+    te_string_free(&value);
+
     return rc;
 }
 

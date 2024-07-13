@@ -36,6 +36,20 @@ extern "C" {
 extern te_errno tapi_tags_add_tag(const char *tag, const char *value);
 
 /**
+ * Add Linux kernel TRC tag with major and minor numbers suitable for
+ * comparison.
+ *
+ * This function should be used to pass the TRC tag from the root prologue
+ * only to the tester.
+ *
+ * @param ta        Test agent name.
+ * @param prefix    Tag name prefix or @c NULL
+ *
+ * @return          Status code.
+ */
+extern te_errno tapi_tags_add_linux_mm(const char *ta, const char *prefix);
+
+/**
  * Add PCI device tags of the network interface.
  *
  * This function should be used to pass the TRC tag from the root prologue
