@@ -35,6 +35,19 @@ extern "C" {
  */
 extern te_errno tapi_tags_add_tag(const char *tag, const char *value);
 
+/**
+ * Add PCI device tags of the network interface.
+ *
+ * This function should be used to pass the TRC tag from the root prologue
+ * only to the tester.
+ *
+ * @param ta        Test agent name.
+ * @param if_name   Network interface name.
+ *
+ * @return          Status code.
+ */
+extern te_errno tapi_tags_add_net_pci_tags(const char *ta, const char *if_name);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
