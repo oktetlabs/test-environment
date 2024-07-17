@@ -234,6 +234,15 @@
          Value: 0 (disabled) or 1 (enabled)
          Limit: 1
 
+    - oid: "/agent/interface/allmulti"
+      access: read_write
+      type: bool
+      d: |
+         Check whether the interface is in all-multicast mode
+         Name:  empty
+         Value: false (disabled) or true (enabled)
+         Limit: 1
+
     - oid: "/agent/interface/arp"
       access: read_write
       type: int32

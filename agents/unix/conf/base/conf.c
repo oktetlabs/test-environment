@@ -643,6 +643,11 @@ static te_errno promisc_get(unsigned int, const char *, char *,
 static te_errno promisc_set(unsigned int, const char *, const char *,
                             const char *);
 
+static te_errno allmulti_get(unsigned int, const char *, char *,
+                             const char *);
+static te_errno allmulti_set(unsigned int, const char *, const char *,
+                             const char *);
+
 static te_errno arp_get(unsigned int, const char *, char *,
                         const char *);
 static te_errno arp_set(unsigned int, const char *, const char *,
@@ -914,7 +919,10 @@ RCF_PCH_CFG_NODE_RW(node_rp_filter, "rp_filter", NULL, &node_vlans,
 RCF_PCH_CFG_NODE_RW(node_arp_ignore, "arp_ignore", NULL, &node_rp_filter,
                     arp_ignore_get, arp_ignore_set);
 
-RCF_PCH_CFG_NODE_RW(node_promisc, "promisc", NULL, &node_arp_ignore,
+RCF_PCH_CFG_NODE_RW(node_allmulti, "allmulti", NULL, &node_arp_ignore,
+                    allmulti_get, allmulti_set);
+
+RCF_PCH_CFG_NODE_RW(node_promisc, "promisc", NULL, &node_allmulti,
                     promisc_get, promisc_set);
 
 RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_promisc,
@@ -6812,6 +6820,48 @@ promisc_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
 
     return iff_flag_set_str(ifname, IFF_PROMISC, value);
+}
+
+/**
+ * Get all-multicast mode of the interface ("0" - normal or "1" -
+ * all-multicast)
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+allmulti_get(unsigned int gid, const char *oid, char *value,
+             const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return iff_flag_get_str(ifname, IFF_ALLMULTI, value);
+}
+
+/**
+ * Change the all-multicast mode of the interface
+ * ("1" - enable, "0" - disable)
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+allmulti_set(unsigned int gid, const char *oid, const char *value,
+             const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return iff_flag_set_str(ifname, IFF_ALLMULTI, value);
 }
 
 #if defined(USE_LIBNETCONF)
