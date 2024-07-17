@@ -692,6 +692,44 @@ tapi_cfg_base_if_get_promisc(const char *ta,
 }
 
 /**
+ * Set all-multicast mode for an interface.
+ *
+ * @param ta          Test Agent name.
+ * @param ifname      Interface name.
+ * @param enable      Whether to enable or to disable all-multicast mode.
+ *
+ * @return Status code.
+ */
+static inline te_errno
+tapi_cfg_base_if_set_allmulti(const char *ta,
+                              const char *ifname,
+                              bool enable)
+{
+    return cfg_set_instance_fmt(CFG_VAL(BOOL, enable),
+                                "/agent:%s/interface:%s/allmulti:",
+                                ta, ifname);
+}
+
+/**
+ * Get all-multicast mode for an interface.
+ *
+ * @param ta          Test Agent name.
+ * @param ifname      Interface name.
+ * @param enabled     Will be set to @c true if all-multicast mode is enabled
+ *                    and to @c false otherwise.
+ *
+ * @return Status code.
+ */
+static inline te_errno
+tapi_cfg_base_if_get_allmulti(const char *ta,
+                              const char *ifname,
+                              bool *enabled)
+{
+    return cfg_get_bool(enabled, "/agent:%s/interface:%s/allmulti:",
+                        ta, ifname);
+}
+
+/**
  * Delete VLAN interface.
  *
  * @param ta            Test Agent name
