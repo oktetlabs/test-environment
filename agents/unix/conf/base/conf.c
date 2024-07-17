@@ -5957,6 +5957,109 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
 }
 
 /**
+ * Get interface flag value.
+ *
+ * @param ifname        name of the interface (like "eth0")
+ * @param flag          flag to get
+ * @param value         value location
+ *
+ * @return              Status code
+ */
+static te_errno
+iff_flag_get(const char *ifname, int flag, bool *value)
+{
+    te_errno rc;
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    strcpy(req.my_ifr_name, ifname);
+    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
+
+    *value = ((req.my_ifr_flags & flag) != 0);
+
+    return 0;
+}
+
+/**
+ * Get interface flag value as string in CS value.
+ *
+ * @param ifname        name of the interface (like "eth0")
+ * @param flag          flag to get
+ * @param value         value location
+ *
+ * @return              Status code
+ */
+static te_errno
+iff_flag_get_str(const char *ifname, int flag, char *value)
+{
+    te_errno rc;
+    bool flag_set;
+
+    rc = iff_flag_get(ifname, flag, &flag_set);
+    if (rc != 0)
+        return rc;
+
+    sprintf(value, "%d", flag_set);
+
+    return 0;
+}
+
+/**
+ * Change interface flag value.
+ *
+ * @param ifname        name of the interface (like "eth0")
+ * @param flag          flag to set or clear
+ * @param set           set or clear the flag
+ *
+ * @return              Status code
+ */
+static te_errno
+iff_flag_set(const char *ifname, int flag, bool set)
+{
+    te_errno rc;
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    te_strlcpy(req.my_ifr_name, ifname, IFNAMSIZ);
+    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
+
+    if (set)
+        req.my_ifr_flags |= flag;
+    else
+        req.my_ifr_flags &= ~flag;
+
+    CFG_IOCTL(cfg_socket, MY_SIOCSIFFLAGS, &req);
+
+    return 0;
+}
+
+/**
+ * Change interface flag value specified in string.
+ *
+ * @param ifname        name of the interface (like "eth0")
+ * @param flag          flag to set or clear
+ * @param value         set (1) or clear (0) the flag
+ *
+ * @return              Status code
+ */
+static te_errno
+iff_flag_set_str(const char *ifname, int flag, const char *value)
+{
+    bool flag_set;
+
+    if (strcmp(value, "0") == 0)
+        flag_set = false;
+    else if (strcmp(value, "1") == 0)
+        flag_set = true;
+    else
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    return iff_flag_set(ifname, flag, flag_set);
+}
+
+/**
  * Check if ARP is enabled on the interface
  * ("0" - arp disable, "1" - arp enable).
  *
@@ -5971,17 +6074,16 @@ static te_errno
 arp_get(unsigned int gid, const char *oid, char *value, const char *ifname)
 {
     te_errno rc;
+    bool flag_set;
 
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((rc = CHECK_INTERFACE(ifname)) != 0)
-        return TE_RC(TE_TA_UNIX, rc);
+    rc = iff_flag_get(ifname, IFF_NOARP, &flag_set);
+    if (rc != 0)
+        return rc;
 
-    strcpy(req.my_ifr_name, ifname);
-    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
-
-    sprintf(value, "%d", (req.my_ifr_flags & IFF_NOARP) != IFF_NOARP);
+    sprintf(value, "%d", !flag_set);
 
     return 0;
 }
@@ -6001,28 +6103,19 @@ static te_errno
 arp_set(unsigned int gid, const char *oid, const char *value,
         const char *ifname)
 {
-    te_errno rc;
+    bool flag_set;
 
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((rc = CHECK_INTERFACE(ifname)) != 0)
-        return TE_RC(TE_TA_UNIX, rc);
-
-    te_strlcpy(req.my_ifr_name, ifname, IFNAMSIZ);
-    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
-
-    if (strcmp(value, "1") == 0)
-        req.my_ifr_flags &= (~IFF_NOARP);
-    else if (strcmp(value, "0") == 0)
-        req.my_ifr_flags |= (IFF_NOARP);
+    if (strcmp(value, "0") == 0)
+        flag_set = true;
+    else if (strcmp(value, "1") == 0)
+        flag_set = false;
     else
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    te_strlcpy(req.my_ifr_name, ifname, IFNAMSIZ);
-    CFG_IOCTL(cfg_socket, MY_SIOCSIFFLAGS, &req);
-
-    return 0;
+    return iff_flag_set(ifname, IFF_NOARP, flag_set);
 }
 
 /**
@@ -6040,12 +6133,9 @@ ta_interface_oper_status_get(const char *ifname, bool *status)
 
     assert(status != NULL);
 
-    if ((rc = CHECK_INTERFACE(ifname)) != 0)
-        return TE_RC(TE_TA_UNIX, rc);
-
-    strcpy(req.my_ifr_name, ifname);
-    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
-    *status = !!(req.my_ifr_flags & IFF_RUNNING);
+    rc = iff_flag_get(ifname, IFF_RUNNING, status);
+    if (rc != 0)
+        return rc;
 
 #if defined(__sun__)
     rc = ioctl(cfg6_socket, MY_SIOCGIFFLAGS, &req);
@@ -6073,12 +6163,9 @@ ta_interface_status_get(const char *ifname, bool *status)
 
     assert(status != NULL);
 
-    if ((rc = CHECK_INTERFACE(ifname)) != 0)
-        return TE_RC(TE_TA_UNIX, rc);
-
-    strcpy(req.my_ifr_name, ifname);
-    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
-    *status = !!(req.my_ifr_flags & IFF_UP);
+    rc = iff_flag_get(ifname, IFF_UP, status);
+    if (rc != 0)
+        return rc;
 
 #if defined(__sun__)
     rc = ioctl(cfg6_socket, MY_SIOCGIFFLAGS, &req);
@@ -6700,20 +6787,10 @@ static te_errno
 promisc_get(unsigned int gid, const char *oid, char *value,
             const char *ifname)
 {
-    te_errno rc;
-
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((rc = CHECK_INTERFACE(ifname)) != 0)
-        return TE_RC(TE_TA_UNIX, rc);
-
-    strcpy(req.my_ifr_name, ifname);
-    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
-
-    sprintf(value, "%d", (req.my_ifr_flags & IFF_PROMISC) != 0);
-
-    return 0;
+    return iff_flag_get_str(ifname, IFF_PROMISC, value);
 }
 
 /**
@@ -6731,27 +6808,10 @@ static te_errno
 promisc_set(unsigned int gid, const char *oid, const char *value,
            const char *ifname)
 {
-    te_errno rc;
-
     UNUSED(gid);
     UNUSED(oid);
 
-    if ((rc = CHECK_INTERFACE(ifname)) != 0)
-        return TE_RC(TE_TA_UNIX, rc);
-
-    te_strlcpy(req.my_ifr_name, ifname, IFNAMSIZ);
-    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
-
-    if (strcmp(value, "0") == 0)
-        req.my_ifr_flags &= ~IFF_PROMISC;
-    else if (strcmp(value, "1") == 0)
-        req.my_ifr_flags |= IFF_PROMISC;
-    else
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    CFG_IOCTL(cfg_socket, MY_SIOCSIFFLAGS, &req);
-
-    return 0;
+    return iff_flag_set_str(ifname, IFF_PROMISC, value);
 }
 
 #if defined(USE_LIBNETCONF)
