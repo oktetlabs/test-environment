@@ -1226,11 +1226,28 @@ extern te_errno tapi_cfg_set_uint64_fmt(uint64_t value, uint64_t *old_value,
  * @param addr2     The second IP address pointer location
  * @param prefix    The prefix length
  *
+ * @sa tapi_cfg_alloc_af_net_addr_pair
+ *
  * @return Status code
  */
 extern te_errno tapi_cfg_alloc_net_addr_pair(struct sockaddr **addr1,
                                              struct sockaddr **addr2,
                                              int *prefix);
+
+/**
+ * Allocate two IPv4 or IPv6 addresses from a free net_pool.
+ *
+ * @param af        Address family (@c AF_INET or @c AF_INET6)
+ * @param addr1     The first IP address pointer location
+ * @param addr2     The second IP address pointer location
+ * @param prefix    The prefix length
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_alloc_af_net_addr_pair(int af,
+                                                struct sockaddr **addr1,
+                                                struct sockaddr **addr2,
+                                                int *prefix);
 
 /**
  * Add a new user on TA.

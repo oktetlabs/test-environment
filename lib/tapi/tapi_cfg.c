@@ -2816,14 +2816,26 @@ cleanup:
 
 /* See description in tapi_cfg.h */
 te_errno
-tapi_cfg_alloc_net_addr_pair(struct sockaddr **addr1, struct sockaddr **addr2,
-                             int *prefix)
+tapi_cfg_alloc_af_net_addr_pair(int af, struct sockaddr **addr1,
+                                struct sockaddr **addr2, int *prefix)
 {
     cfg_handle  cfgh_net;
     char       *net_pool;
     te_errno    rc;
 
-    rc = tapi_cfg_alloc_ip4_net(&cfgh_net);
+    switch (af)
+    {
+        case AF_INET:
+            rc = tapi_cfg_alloc_ip4_net(&cfgh_net);
+            break;
+
+        case AF_INET6:
+            rc = tapi_cfg_alloc_ip6_net(&cfgh_net);
+            break;
+
+        default:
+            return TE_RC(TE_TAPI, TE_EINVAL);
+    }
     if (rc != 0)
         return rc;
 
@@ -2859,6 +2871,14 @@ tapi_cfg_alloc_net_addr_pair(struct sockaddr **addr1, struct sockaddr **addr2,
     }
 
     return 0;
+}
+
+/* See description in tapi_cfg.h */
+te_errno
+tapi_cfg_alloc_net_addr_pair(struct sockaddr **addr1, struct sockaddr **addr2,
+                             int *prefix)
+{
+    return tapi_cfg_alloc_af_net_addr_pair(AF_INET, addr1, addr2, prefix);
 }
 
 /* See description in tapi_cfg.h */
