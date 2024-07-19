@@ -1220,7 +1220,7 @@ extern te_errno tapi_cfg_set_uint64_fmt(uint64_t value, uint64_t *old_value,
                                         const char *format, ...);
 
 /**
- * Allocate two IP addresses from a free net_pool.
+ * Allocate two IPv4 addresses from a free net_pool.
  *
  * @param addr1     The first IP address pointer location
  * @param addr2     The second IP address pointer location
