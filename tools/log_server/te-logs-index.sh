@@ -21,7 +21,7 @@
 function print_dir_entry()
 {
     local entry="$1"
-    local href="${entry//:/%3A}"
+    local href="${entry}"
 
     if test ! -e "${entry}" ; then
         icon="/icons/link.gif"
@@ -29,7 +29,7 @@ function print_dir_entry()
         icon="/icons/folder.gif"
     fi
     printf "<img src=\"%s\" alt=\"[DIR]\"> " "$icon"
-    printf "<a href=\"%s/\">%-32s %10s\n" "${href}" "${entry}/</a>" "&lt;DIR&gt;"
+    printf "<a href=\"./%s/\">%-32s %10s\n" "${href}" "${entry}/</a>" "&lt;DIR&gt;"
 }
 
 #############################
@@ -42,7 +42,7 @@ function print_dir_entry()
 function print_file_entry()
 {
     local entry="$1"
-    local href="${entry//:/%3A}"
+    local href="${entry}"
 
     if test ! -e "${entry}" ; then
         icon="/icons/link.gif"
@@ -59,7 +59,7 @@ function print_file_entry()
     fi
 
     printf "<img src=\"%s\" alt=\"[   ]\"> " "$icon"
-    printf "<a href=\"%s\">%-32s %10s\n" "${href}" "${entry}</a>" "$size"
+    printf "<a href=\"./%s\">%-32s %10s\n" "${href}" "${entry}</a>" "$size"
 }
 
 printf "Content-Type: text/html\r\n\r\n"
