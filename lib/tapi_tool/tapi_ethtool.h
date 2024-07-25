@@ -38,6 +38,7 @@ typedef enum tapi_ethtool_cmd {
     TAPI_ETHTOOL_CMD_SHOW_PAUSE, /**< Show pause parameters (--show-pause
                                       command) */
     TAPI_ETHTOOL_CMD_SHOW_RING, /**< Show ring size (--show-ring command)*/
+    TAPI_ETHTOOL_CMD_REG_DUMP, /**< Show registers dump. */
 } tapi_ethtool_cmd;
 
 /** Command line options for ethtool */
@@ -80,6 +81,11 @@ typedef struct tapi_ethtool_report {
     te_string err_data;    /**< Text printed to stderr */
     te_errno err_code;     /**< Error code determined from parsing
                                 stderr output */
+
+    /** @c true if something was printed to stdout. */
+    te_bool out;
+    /** Text printed to stdout. */
+    te_string out_data;
 
     union {
         tapi_ethtool_if_props if_props; /**< Interface properties printed

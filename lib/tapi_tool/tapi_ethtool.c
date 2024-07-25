@@ -30,6 +30,8 @@ const tapi_ethtool_report tapi_ethtool_default_report = {
     .err_out = false,
     .err_data = TE_STRING_INIT,
     .err_code = TE_EOK,
+
+    .out_data = TE_STRING_INIT,
 };
 
 /** Filters used to parse ethtool output when no command is supplied */
@@ -65,6 +67,7 @@ typedef struct tapi_ethtool_app {
     tapi_job_channel_t *out_chs[2]; /**< Channels for stdout and stderr */
 
     tapi_job_channel_t *err_filter; /**< Filter for reading stderr */
+    tapi_job_channel_t *out_filter; /**< Filter for reading stdout */
 
     union {
         if_props_filters if_props; /**< Filters for interface properties */
@@ -123,6 +126,10 @@ fill_cmd_arg(const void *value, const void *priv, te_vec *args)
 
         case TAPI_ETHTOOL_CMD_SHOW_RING:
             cmd_str = "--show-ring";
+            break;
+
+        case TAPI_ETHTOOL_CMD_REG_DUMP:
+            cmd_str = "--register-dump";
             break;
 
         default:
@@ -359,6 +366,7 @@ create_app(tapi_job_factory_t *factory,
             .readable    = true,
             .log_level   = TE_LL_RING,
             .filter_name = "out",
+            .filter_var = &result->out_filter,
         },
         {
             .use_stderr  = true,
@@ -672,6 +680,48 @@ cleanup:
 }
 
 /**
+ * Obtain stdout output.
+ *
+ * @param app           Pointer to application structure
+ * @param report        Where to save obtained data
+ *
+ * @return Status code.
+ */
+static te_errno
+get_stdout(tapi_ethtool_app *app,
+           tapi_ethtool_report *report)
+{
+    tapi_job_buffer_t *buffers = NULL;
+    unsigned int count = 0;
+    unsigned int i;
+    te_errno rc = 0;
+
+    rc = tapi_job_receive_many(TAPI_JOB_CHANNEL_SET(app->out_filter),
+                               0, &buffers, &count);
+    if (rc != 0)
+        return rc;
+
+    for (i = 0; i < count; i++)
+    {
+        if (buffers[i].eos)
+            break;
+
+        report->out = true;
+
+        rc = te_string_append(&report->out_data, "%s",
+                              te_string_value(&buffers[i].data));
+        if (rc != 0)
+            goto cleanup;
+    }
+
+cleanup:
+
+    tapi_job_buffers_free(buffers, count);
+
+    return rc;
+}
+
+/**
  * Get data parsed from ethtool output.
  *
  * @param app           Pointer to application structure
@@ -695,6 +745,10 @@ get_report(tapi_ethtool_app *app,
     if (rc != 0)
         return TE_RC(TE_TAPI, rc);
 
+    rc = get_stdout(app, report);
+    if (rc != 0)
+        return TE_RC(TE_TAPI, rc);
+
     if (!parse_stdout)
         return 0;
 
@@ -711,6 +765,10 @@ get_report(tapi_ethtool_app *app,
 
         case TAPI_ETHTOOL_CMD_SHOW_RING:
             return get_ring(app, &report->data.ring);
+
+        case TAPI_ETHTOOL_CMD_REG_DUMP:
+            /* Stdout is not parsed since it is vendor-specific. */
+            return 0;
 
         default:
             ERROR("%s(): no report is defined for the current command",
@@ -781,6 +839,7 @@ tapi_ethtool_destroy_report(tapi_ethtool_report *report)
     }
 
     te_string_free(&report->err_data);
+    te_string_free(&report->out_data);
 
     *report = (tapi_ethtool_report)tapi_ethtool_default_report;
 }
