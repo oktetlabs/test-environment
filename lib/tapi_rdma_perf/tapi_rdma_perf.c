@@ -441,8 +441,33 @@ tapi_rdma_perf_app_init(tapi_job_factory_t *factory,
     tapi_job_simple_desc_t  job_descr;
     tapi_rdma_perf_app     *handle = NULL;
 
+    const char *tx_depth_limit_str = getenv("TE_RDMA_PERFTEST_LIMIT_TX_DEPTH");
+
     if (factory == NULL || opts == NULL || app == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
+
+    if (tx_depth_limit_str != NULL)
+    {
+        unsigned int tx_depth_limit;
+
+        rc = te_strtoui(tx_depth_limit_str, 0, &tx_depth_limit);
+        if (rc != 0)
+        {
+            ERROR("Failed to parse TE_RDMA_PERFTEST_LIMIT_TX_DEPTH ('%s'): %r",
+                  tx_depth_limit_str, rc);
+            return rc;
+        }
+        if (opts->bw.tx_depth.defined && opts->bw.tx_depth.value > tx_depth_limit)
+        {
+            ERROR("User-specified Tx depth (%u) is bigger than the configuration-provided limit (%u)",
+                  opts->bw.tx_depth.value, tx_depth_limit);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+        else if (!opts->bw.tx_depth.defined)
+        {
+            opts->bw.tx_depth = TE_OPTIONAL_UINT_VAL(tx_depth_limit);
+        }
+    }
 
     handle = TE_ALLOC(sizeof(*handle));
     switch (opts->tst_type)
