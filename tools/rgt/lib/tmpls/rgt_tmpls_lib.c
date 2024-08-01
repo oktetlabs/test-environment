@@ -47,7 +47,7 @@ static unsigned int global_attr_num = 0;
 static bool attr_locked = false;
 
 #define N_BUFS ATTR_NUM
-#define BUF_LEN 128
+#define BUF_LEN 512
 /** The array of buffers for keeping string value attributes */
 static char bufs[N_BUFS][BUF_LEN];
 /** Currently used buffer */
