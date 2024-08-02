@@ -549,6 +549,25 @@ client_get_report(tapi_perf_client *client, tapi_perf_report_kind kind,
     return app_get_report(&client->app, kind, report, false);
 }
 
+/*
+ * Log measurement results using MI.
+ *
+ * @param[in]  logger       MI logger entity.
+ * @param[in]  report       Report with results.
+ */
+static void
+iperf_report_mi_log(te_mi_logger *logger, const tapi_perf_report *report)
+{
+    const char *tool = "iperf";
+
+    te_mi_logger_add_meas_vec(logger, NULL, TE_MI_MEAS_V(
+            TE_MI_MEAS(THROUGHPUT,
+                       "Transfer", SINGLE,
+                       report->bits_per_second,
+                       PLAIN)));
+    te_mi_logger_add_meas_key(logger, NULL, "tool", "%s", tool);
+}
+
 
 /*
  * iperf server specific methods.
@@ -556,6 +575,7 @@ client_get_report(tapi_perf_client *client, tapi_perf_report_kind kind,
 static tapi_perf_server_methods server_methods = {
     .build_args = build_server_args,
     .get_report = server_get_report,
+    .mi_report = iperf_report_mi_log,
 };
 
 /*
@@ -565,6 +585,7 @@ static tapi_perf_client_methods client_methods = {
     .build_args = build_client_args,
     .wait = client_wait,
     .get_report = client_get_report,
+    .mi_report = iperf_report_mi_log,
 };
 
 /* See description in tapi_iperf.h */

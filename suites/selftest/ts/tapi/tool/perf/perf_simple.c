@@ -90,6 +90,9 @@ main(int argc, char **argv)
     CHECK_RC(tapi_perf_server_get_dump_check_report(perf_server, "server",
                                                     &perf_server_report));
 
+    CHECK_RC(tapi_perf_client_report_mi_log(perf_client, &perf_client_report));
+    CHECK_RC(tapi_perf_server_report_mi_log(perf_server, &perf_server_report));
+
     TEST_SUCCESS;
 
 cleanup:

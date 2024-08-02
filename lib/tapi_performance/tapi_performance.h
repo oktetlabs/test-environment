@@ -86,6 +86,11 @@
  *     CHECK_RC(tapi_perf_server_get_dump_check_report(perf_server, "server",
  *                                                     &perf_server_report));
  *
+ *     CHECK_RC(tapi_perf_client_report_mi_log(perf_client,
+ *                                             &perf_client_report));
+ *     CHECK_RC(tapi_perf_server_report_mi_log(perf_server,
+ *                                             &perf_server_report));
+ *
  *     // Analyze the obtained reports
  *     ...
  *
@@ -109,6 +114,7 @@
 #include "te_string.h"
 #include "tapi_job.h"
 #include "te_vector.h"
+#include "te_mi_log.h"
 
 
 #ifdef __cplusplus
@@ -216,11 +222,20 @@ typedef te_errno (* tapi_perf_server_method_get_report)(
                                                 tapi_perf_report     *report);
 
 /**
+ * Log measurement results using MI for server.
+ *
+ * @param[in]  logger       MI logger entity.
+ * @param[in]  report       Report with results.
+ */
+typedef void (* tapi_perf_server_method_mi_report)(te_mi_logger           *logger,
+                                                   const tapi_perf_report *report);
+/**
  * Methods to operate the server network throughput test tool.
  */
 typedef struct tapi_perf_server_methods {
     tapi_perf_server_method_build_args build_args;
     tapi_perf_server_method_get_report get_report;
+    tapi_perf_server_method_mi_report  mi_report;
 } tapi_perf_server_methods;
 
 
@@ -267,12 +282,21 @@ typedef te_errno (* tapi_perf_client_method_get_report)(
                                                 tapi_perf_report     *report);
 
 /**
+ * Log measurement results using MI for client.
+ *
+ * @param[in]  logger       MI logger entity.
+ * @param[in]  report       Report with results.
+ */
+typedef void (* tapi_perf_client_method_mi_report)(te_mi_logger           *logger,
+                                                   const tapi_perf_report *report);
+/**
  * Methods to operate the client network throughput test tool.
  */
 typedef struct tapi_perf_client_methods {
     tapi_perf_client_method_build_args build_args;
     tapi_perf_client_method_wait       wait;
     tapi_perf_client_method_get_report get_report;
+    tapi_perf_client_method_mi_report  mi_report;
 } tapi_perf_client_methods;
 
 
@@ -706,6 +730,28 @@ extern void tapi_perf_log_cumulative_report(const tapi_perf_server *server[],
  */
 extern bool tapi_perf_opts_cmp(const tapi_perf_opts *opts_a,
                                   const tapi_perf_opts *opts_b);
+
+/**
+ * Log measurement results collected on server using MI.
+ *
+ * @param[in]     server        Server context.
+ * @param[in]     report        Report with results.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_perf_server_report_mi_log(const tapi_perf_server *server,
+                                               const tapi_perf_report *report);
+
+/**
+ * Log measurement results collected on client using MI.
+ *
+ * @param[in]     client        Client context.
+ * @param[in]     report        Report with results.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_perf_client_report_mi_log(const tapi_perf_client *client,
+                                               const tapi_perf_report *report);
 
 /**@} <!-- END tapi_performance --> */
 

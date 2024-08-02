@@ -535,3 +535,55 @@ tapi_perf_log_cumulative_report(const tapi_perf_server *server[],
     free(report_name);
     te_string_free(&buf);
 }
+
+/* See description in tapi_performance.h */
+te_errno
+tapi_perf_server_report_mi_log(const tapi_perf_server *server,
+                               const tapi_perf_report *report)
+{
+    te_mi_logger *logger;
+    const char *side = "server";
+    const tapi_perf_app *app = &server->app;
+
+    ENTRY("Get perf server specific report");
+
+    if (server == NULL ||
+        server->methods == NULL ||
+        server->methods->mi_report == NULL)
+        return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
+
+    CHECK_RC(te_mi_logger_meas_create("perfomance", &logger));
+
+    server->methods->mi_report(logger, report);
+    te_mi_logger_add_meas_key(logger, NULL, "side", "%s", side);
+    te_mi_logger_add_comment(logger, NULL, "command", "%s", app->cmd);
+
+    te_mi_logger_destroy(logger);
+    return 0;
+}
+
+/* See description in tapi_performance.h */
+te_errno
+tapi_perf_client_report_mi_log(const tapi_perf_client *client,
+                               const tapi_perf_report *report)
+{
+    te_mi_logger *logger;
+    const char *side = "client";
+    const tapi_perf_app *app = &client->app;
+
+    ENTRY("Get perf client specific report");
+
+    if (client == NULL ||
+        client->methods == NULL ||
+        client->methods->mi_report == NULL)
+        return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
+
+    CHECK_RC(te_mi_logger_meas_create("perfomance", &logger));
+
+    client->methods->mi_report(logger, report);
+    te_mi_logger_add_meas_key(logger, NULL, "side", "%s", side);
+    te_mi_logger_add_comment(logger, NULL, "command", "%s", app->cmd);
+
+    te_mi_logger_destroy(logger);
+    return 0;
+}
