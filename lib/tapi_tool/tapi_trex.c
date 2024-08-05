@@ -51,15 +51,9 @@
     "\\s+m_traffic_duration\\s+\\|\\s+([0-9]+\\.[0-9]{2})\\s+sec\\s+\\|" \
     "\\s+([0-9]+\\.[0-9]{2})\\s+sec\\s+\\|\\s+measured traffic duration"
 
-/** TRex tcps_sndbyte filter for client (1) and server (2). */
-#define TAPI_TREX_TCPS_SNDBYTE \
-    "\\s+tcps_sndbyte\\s+\\|\\s+([0-9]+)\\s+\\|" \
-    "\\s+([0-9]+)\\s+\\|\\s+data bytes sent by application"
-
-/** TRex tcps_rcvbyte filter for client (1) and server (2). */
-#define TAPI_TREX_TCPS_RCVBYTE \
-    "\\s+tcps_rcvbyte\\s+\\|\\s+([0-9]+)\\s+\\|" \
-    "\\s+([0-9]+)\\s+\\|\\s+bytes received in sequence"
+/** TRex optional filter template: client (1) and server (2). */
+#define TAPI_TREX_OPT_FLT_TEMPL \
+    "\\s+%s\\s+\\|\\s+([0-9]+)\\s+\\|\\s+([0-9]+)\\s+\\|\\s+%s"
 
 #define TAPI_TREX_PORT_STAT_ONE_COUNTER_FLT "\\s+\\|\\s+([0-9]+)"
 #define TAPI_TREX_PORT_STAT_TIME_FLT "\\s+:\\s+([0-9]+\\.[0-9]+)\\s+sec"
@@ -68,6 +62,19 @@ typedef enum tapi_trex_val_type {
     TAPI_TREX_VAL_TYPE_UINT64,
     TAPI_TREX_VAL_TYPE_DOUBLE,
 } tapi_trex_val_type;
+
+typedef struct tapi_trex_opt_flt_descr {
+    const char *name;
+    const char *descr;
+} tapi_trex_opt_flt_descr;
+
+#define TAPI_TREX_OPT_FLT(_name, _descr) \
+    {.name = _name, .descr = _descr }
+
+static const tapi_trex_opt_flt_descr opt_filters[] = {
+    TAPI_TREX_OPT_FLT("tcps_sndbyte", "data bytes sent by application"),
+    TAPI_TREX_OPT_FLT("tcps_rcvbyte", "bytes received in sequence"),
+};
 
 typedef struct tapi_trex_port_stat_type {
     const char *name;
@@ -1049,6 +1056,72 @@ tapi_trex_ports_count(const tapi_trex_opt *opt)
 }
 
 /**
+ * Attach (dynamically) optional filters.
+ */
+static te_errno
+tapi_trex_optional_flts_attach(tapi_trex_app *app, const tapi_trex_opt *opt)
+{
+    te_errno rc = 0;
+    unsigned int i;
+    te_string buf = TE_STRING_INIT;
+    te_string re = TE_STRING_INIT;
+    tapi_trex_opt_flt *flts;
+
+    flts = TE_ALLOC(sizeof(*flts) * TE_ARRAY_LEN(opt_filters));
+
+    for (i = 0; i < TE_ARRAY_LEN(opt_filters); i++)
+    {
+        te_string_reset(&buf);
+        te_string_append(&buf, "%s_cl_flt", opt_filters[i].name);
+        rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(app->out_chs[0]),
+                                    buf.ptr, true, 0, &flts[i].cl_flt);
+        if (rc != 0)
+        {
+            ERROR("%s() failed to attach %s: %r", __func__, buf.ptr, rc);
+            goto out;
+        }
+
+        te_string_reset(&re);
+        te_string_append(&re, TAPI_TREX_OPT_FLT_TEMPL, opt_filters[i].name,
+                         opt_filters[i].descr);
+        rc = tapi_job_filter_add_regexp(flts[i].cl_flt, re.ptr, 1);
+        if (rc != 0)
+        {
+            ERROR("%s() failed to add client regexp '%s': %r", __func__,
+                  re.ptr, rc);
+            goto out;
+        }
+
+        te_string_reset(&buf);
+        te_string_append(&buf, "%s_srv_flt", opt_filters[i].name);
+        rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(app->out_chs[0]),
+                                    buf.ptr, true, 0, &flts[i].srv_flt);
+        if (rc != 0)
+        {
+            ERROR("%s() failed to attach %s: %r", __func__, buf.ptr, rc);
+            goto out;
+        }
+        rc = tapi_job_filter_add_regexp(flts[i].srv_flt, re.ptr, 2);
+        if (rc != 0)
+        {
+            ERROR("%s() failed to add srv regexp '%s': %r", __func__,
+                  re.ptr, rc);
+            goto out;
+        }
+    }
+
+out:
+    if (rc == 0)
+        app->opt_flts = flts;
+    else
+        free(flts);
+
+    te_string_free(&buf);
+    te_string_free(&re);
+    return rc;
+}
+
+/**
  * Attach (dynamically) filters to capture per port statistics.
  * It makes sense to do this when the '--iom 1' option is enabled.
  */
@@ -1253,34 +1326,6 @@ tapi_trex_create(tapi_job_factory_t *factory,
                                 {
                                     .use_stdout = true,
                                     .readable = true,
-                                    .re = TAPI_TREX_TCPS_SNDBYTE,
-                                    .extract = 1,
-                                    .filter_var = &new_app->tcps_sndbyte_cl_flt,
-                                },
-                                {
-                                    .use_stdout = true,
-                                    .readable = true,
-                                    .re = TAPI_TREX_TCPS_SNDBYTE,
-                                    .extract = 2,
-                                    .filter_var = &new_app->tcps_sndbyte_srv_flt,
-                                },
-                                {
-                                    .use_stdout = true,
-                                    .readable = true,
-                                    .re = TAPI_TREX_TCPS_RCVBYTE,
-                                    .extract = 1,
-                                    .filter_var = &new_app->tcps_rcvbyte_cl_flt,
-                                },
-                                {
-                                    .use_stdout = true,
-                                    .readable = true,
-                                    .re = TAPI_TREX_TCPS_RCVBYTE,
-                                    .extract = 2,
-                                    .filter_var = &new_app->tcps_rcvbyte_srv_flt,
-                                },
-                                {
-                                    .use_stdout = true,
-                                    .readable = true,
                                     .re = "Total-tx-bytes\\s+:\\s+([0-9]+)\\s+byte",
                                     .extract = 1,
                                     .filter_var = &new_app->total_tx_bytes_flt,
@@ -1311,6 +1356,15 @@ tapi_trex_create(tapi_job_factory_t *factory,
     if (rc != 0)
     {
         ERROR("Failed to create '%s' job: %r", opt->trex_exec, rc);
+        te_vec_deep_free(&args);
+        free(yaml_config_path);
+        free(new_app);
+        return rc;
+    }
+
+    rc = tapi_trex_optional_flts_attach(new_app, opt);
+    if (rc != 0)
+    {
         te_vec_deep_free(&args);
         free(yaml_config_path);
         free(new_app);
@@ -1473,6 +1527,7 @@ tapi_trex_destroy(const char *ta, tapi_trex_app *app, tapi_trex_opt *opt)
         ERROR("Failed to destroy TRex job: %r", rc);
 
     te_vec_deep_free(&app->cmd);
+    free(app->opt_flts);
     free(app);
 
     tapi_trex_destroy_clients(opt->clients);
@@ -1773,27 +1828,40 @@ cleanup:
 }
 
 static te_errno
-tapi_trex_process_optional_filters(tapi_trex_app *app, tapi_trex_report *report)
+tapi_trex_optional_flts_process(tapi_trex_app *app, tapi_trex_report *report)
 {
-    te_errno rc;
+    te_errno rc = 0;
+    unsigned int i;
+    tapi_trex_opt_flt *flt;
+    tapi_trex_opt_flt_vals *flt_vals;
 
-    rc = get_single_uint64_opt(app->tcps_sndbyte_cl_flt,
-                               &report->tcps_sndbyte_cl);
-    if (rc != 0)
-        return rc;
+    flt_vals = TE_ALLOC(sizeof(*flt_vals) * TE_ARRAY_LEN(opt_filters));
 
-    rc = get_single_uint64_opt(app->tcps_sndbyte_srv_flt,
-                               &report->tcps_sndbyte_srv);
-    if (rc != 0)
-        return rc;
+    for (i = 0; i < TE_ARRAY_LEN(opt_filters); i++)
+    {
+        flt = &app->opt_flts[i];
+        rc = get_single_uint64_opt(flt->cl_flt, &flt_vals[i].cl_val);
+        if (rc != 0)
+        {
+            ERROR("%s() failed to process client %s filter: %r",
+                  opt_filters[i].name, rc);
+            break;
+        }
 
-    rc = get_single_uint64_opt(app->tcps_rcvbyte_cl_flt,
-                               &report->tcps_rcvbyte_cl);
-    if (rc != 0)
-        return rc;
+        rc = get_single_uint64_opt(flt->srv_flt, &flt_vals[i].srv_val);
+        if (rc != 0)
+        {
+            ERROR("%s() failed to process server %s filter: %r",
+                  opt_filters[i].name, rc);
+            break;
+        }
+    }
 
-    rc = get_single_uint64_opt(app->tcps_rcvbyte_srv_flt,
-                               &report->tcps_rcvbyte_srv);
+    if (rc == 0)
+        report->opt_flts_vals = flt_vals;
+    else
+        free(flt_vals);
+
     return rc;
 }
 
@@ -1843,7 +1911,7 @@ tapi_trex_get_report(tapi_trex_app *app, tapi_trex_report *report)
     if (rc != 0)
         return rc;
 
-    rc = tapi_trex_process_optional_filters(app, report);
+    rc = tapi_trex_optional_flts_process(app, report);
     if (rc != 0)
         return rc;
 
@@ -1906,6 +1974,8 @@ tapi_trex_destroy_report(tapi_trex_report *report)
 
         free(report->per_port_stat.ports);
     }
+
+    free(report->opt_flts_vals);
 
     return 0;
 }
@@ -2099,4 +2169,38 @@ tapi_trex_port_stat_data_get(tapi_trex_report *report,
     free(meds);
 
     return rc;
+}
+
+te_errno
+tapi_trex_opt_flt_cl_get(tapi_trex_report *report, const char *name,
+                         uint64_t *value)
+{
+    unsigned int i;
+
+    for (i = 0; i < TE_ARRAY_LEN(opt_filters); i++)
+    {
+        if (strcmp(opt_filters[i].name, name) == 0)
+        {
+            *value = report->opt_flts_vals[i].cl_val;
+            return 0;
+        }
+    }
+    return TE_RC(TE_TAPI, TE_EINVAL);
+}
+
+te_errno
+tapi_trex_opt_flt_srv_get(tapi_trex_report *report, const char *name,
+                          uint64_t *value)
+{
+    unsigned int i;
+
+    for (i = 0; i < TE_ARRAY_LEN(opt_filters); i++)
+    {
+        if (strcmp(opt_filters[i].name, name) == 0)
+        {
+            *value = report->opt_flts_vals[i].srv_val;
+            return 0;
+        }
+    }
+    return TE_RC(TE_TAPI, TE_EINVAL);
 }

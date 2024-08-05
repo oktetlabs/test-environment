@@ -201,6 +201,12 @@ typedef struct tapi_trex_per_port_stat {
     unsigned int n_ports;
 } tapi_trex_per_port_stat;
 
+/** TRex one optional filter. */
+typedef struct tapi_trex_opt_flt {
+    tapi_job_channel_t *cl_flt;
+    tapi_job_channel_t *srv_flt;
+} tapi_trex_opt_flt;
+
 /** TRex tool information. */
 typedef struct tapi_trex_app {
     /** TAPI job handle. */
@@ -229,19 +235,13 @@ typedef struct tapi_trex_app {
     /** m_traffic_duration server filter. */
     tapi_job_channel_t *m_traff_dur_srv_flt;
 
-    /** tcps_sndbyte client filter. */
-    tapi_job_channel_t *tcps_sndbyte_cl_flt;
-    /** tcps_sndbyte server filter. */
-    tapi_job_channel_t *tcps_sndbyte_srv_flt;
-    /** tcps_rcvbyte client filter. */
-    tapi_job_channel_t *tcps_rcvbyte_cl_flt;
-    /** tcps_rcvbyte server filter. */
-    tapi_job_channel_t *tcps_rcvbyte_srv_flt;
-
     /** total-tx-bytes filter. */
     tapi_job_channel_t *total_tx_bytes_flt;
     /** total-rx-bytes filter. */
     tapi_job_channel_t *total_rx_bytes_flt;
+
+    /** Optional filters. */
+    tapi_trex_opt_flt *opt_flts;
 
     /** Per port stat filters */
     tapi_trex_per_port_stat_flts per_port_stat_flts;
@@ -640,6 +640,12 @@ typedef struct tapi_trex_opt {
 /** Default TRex options initializer. */
 extern const tapi_trex_opt tapi_trex_default_opt;
 
+/** TRex one optional filter values. */
+typedef struct tapi_trex_opt_flt_vals {
+    uint64_t cl_val;
+    uint64_t srv_val;
+} tapi_trex_opt_flt_vals;
+
 /** TRex information from the stdout. */
 typedef struct tapi_trex_report {
     /** Average Tx per second, bps. */
@@ -657,20 +663,13 @@ typedef struct tapi_trex_report {
     /** Diration of server traffic, sec. */
     double m_traff_dur_srv;
 
-    /** Data bytes sent by client. */
-    uint64_t tcps_sndbyte_cl;
-    /** Data bytes sent by server. */
-    uint64_t tcps_sndbyte_srv;
-    /** Data bytes received by client. */
-    uint64_t tcps_rcvbyte_cl;
-    /** Data bytes received by server. */
-    uint64_t tcps_rcvbyte_srv;
-
     /** Total bytes sent. */
     uint64_t total_tx_bytes;
     /** Total bytes received. */
     uint64_t total_rx_bytes;
 
+    /** Optional filter values. */
+    tapi_trex_opt_flt_vals *opt_flts_vals;
     /** Per port statistics. */
     tapi_trex_per_port_stat per_port_stat;
 } tapi_trex_report;
@@ -1059,6 +1058,35 @@ extern te_errno tapi_trex_port_stat_data_get(tapi_trex_report *report,
                             tapi_trex_port_stat_enum param, unsigned int index,
                             double time_start, double time_end, double *min,
                             double *avg, double *median, double *max);
+
+/**
+ * Get the value of the optional TRex filter for the client side.
+ *
+ * @param[in]  report   TRex report.
+ * @param[in]  name     Filter name.
+ * @param[out] value    Filter value.
+ *
+ * @return Status code.
+ * @retval TE_EINVAL    There is no filter with that name.
+ * @retval @c 0         The result is successful.
+ */
+extern te_errno tapi_trex_opt_flt_cl_get(tapi_trex_report *report,
+                                         const char *name, uint64_t *value);
+
+/**
+ * Get the value of the optional TRex filter for the server side.
+ *
+ * @param[in]  app      TRex app handle.
+ * @param[in]  name     Filter name.
+ * @param[out] value    Filter value.
+ *
+ * @return Status code.
+ * @retval TE_EINVAL    There is no filter with that name.
+ * @retval @c 0         The result is successful.
+ */
+extern te_errno tapi_trex_opt_flt_srv_get(tapi_trex_report *report,
+                                          const char *name, uint64_t *value);
+
 /**@}*/
 
 #ifdef __cplusplus
