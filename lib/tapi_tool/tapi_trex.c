@@ -1594,6 +1594,59 @@ get_single_uint64(tapi_job_channel_t *filter, uint64_t *value)
 }
 
 /**
+ * Get a single optional unit64_t value,
+ * and allow that this value may be missing.
+ *
+ * @param filter[in]    from where to read the message
+ * @param value[out]    where to save the value
+ *
+ * @return Status code.
+ */
+static te_errno
+get_single_uint64_opt(tapi_job_channel_t *filter, uint64_t *value)
+{
+    te_errno rc;
+    tapi_job_buffer_t *bufs = NULL;
+    unsigned int n_bufs = 0;
+
+    rc = tapi_job_receive_many(TAPI_JOB_CHANNEL_SET(filter),
+                               TAPI_TREX_TIMEOUT_MS, &bufs, &n_bufs);
+    if (rc != 0)
+    {
+        ERROR("%s() tapi_job_receive_many returned unexpected result: %r",
+              __func__, rc);
+        return rc;
+    }
+
+    if (n_bufs == 1)
+    {
+        if (bufs[0].eos)
+        {
+            *value = 0;
+        }
+        else
+        {
+            ERROR("%s() the expected eos was not found (%s)",
+                  __func__, bufs[0].data.ptr);
+            rc = TE_RC(TE_TAPI, TE_EINVAL);
+        }
+    }
+    else if (n_bufs == 2)
+    {
+        rc = te_str_to_uint64(bufs[0].data.ptr, 10, value);
+    }
+    else
+    {
+        ERROR("%s() tapi_job_receive_many returned more than one buffers (%u)",
+              __func__, n_bufs);
+        rc = TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    tapi_job_buffers_free(bufs, n_bufs);
+    return rc;
+}
+
+/**
  * Get a single double value.
  *
  * @param filter[in]    from where to read the message
@@ -1719,6 +1772,31 @@ cleanup:
     return rc;
 }
 
+static te_errno
+tapi_trex_process_optional_filters(tapi_trex_app *app, tapi_trex_report *report)
+{
+    te_errno rc;
+
+    rc = get_single_uint64_opt(app->tcps_sndbyte_cl_flt,
+                               &report->tcps_sndbyte_cl);
+    if (rc != 0)
+        return rc;
+
+    rc = get_single_uint64_opt(app->tcps_sndbyte_srv_flt,
+                               &report->tcps_sndbyte_srv);
+    if (rc != 0)
+        return rc;
+
+    rc = get_single_uint64_opt(app->tcps_rcvbyte_cl_flt,
+                               &report->tcps_rcvbyte_cl);
+    if (rc != 0)
+        return rc;
+
+    rc = get_single_uint64_opt(app->tcps_rcvbyte_srv_flt,
+                               &report->tcps_rcvbyte_srv);
+    return rc;
+}
+
 /* See description in tapi_trex.h */
 te_errno
 tapi_trex_get_report(tapi_trex_app *app, tapi_trex_report *report)
@@ -1749,6 +1827,14 @@ tapi_trex_get_report(tapi_trex_app *app, tapi_trex_report *report)
     if (rc != 0)
         return rc;
 
+    rc = get_single_uint64(app->total_tx_bytes_flt, &report->total_tx_bytes);
+    if (rc != 0)
+        return rc;
+
+    rc = get_single_uint64(app->total_rx_bytes_flt, &report->total_rx_bytes);
+    if (rc != 0)
+        return rc;
+
     rc = get_single_double(app->m_traff_dur_cl_flt, &report->m_traff_dur_cl);
     if (rc != 0)
         return rc;
@@ -1757,27 +1843,7 @@ tapi_trex_get_report(tapi_trex_app *app, tapi_trex_report *report)
     if (rc != 0)
         return rc;
 
-    rc = get_single_uint64(app->tcps_sndbyte_cl_flt, &report->tcps_sndbyte_cl);
-    if (rc != 0)
-        return rc;
-
-    rc = get_single_uint64(app->tcps_sndbyte_srv_flt, &report->tcps_sndbyte_srv);
-    if (rc != 0)
-        return rc;
-
-    rc = get_single_uint64(app->tcps_rcvbyte_cl_flt, &report->tcps_rcvbyte_cl);
-    if (rc != 0)
-        return rc;
-
-    rc = get_single_uint64(app->tcps_rcvbyte_srv_flt, &report->tcps_rcvbyte_srv);
-    if (rc != 0)
-        return rc;
-
-    rc = get_single_uint64(app->total_tx_bytes_flt, &report->total_tx_bytes);
-    if (rc != 0)
-        return rc;
-
-    rc = get_single_uint64(app->total_rx_bytes_flt, &report->total_rx_bytes);
+    rc = tapi_trex_process_optional_filters(app, report);
     if (rc != 0)
         return rc;
 
