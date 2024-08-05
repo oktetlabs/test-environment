@@ -48,7 +48,12 @@
 
 #define MAX_OUTPUT_CHANNELS_PER_JOB 32
 #define MAX_INPUT_CHANNELS_PER_JOB 32
-#define MAX_FILTERS_PER_CHANNEL 32
+/*
+ * @note: If it is necessary to use more than 256 filters, then it may be worth
+ * redesigning the structure for storing filters (channel_t) in order
+ * to allocate exactly as much memory as necessary.
+ */
+#define MAX_FILTERS_PER_CHANNEL 256
 #define MAX_CHANNELS_AND_FILTERS_OVERALL UINT_MAX
 #define MAX_JOBS UINT_MAX
 
