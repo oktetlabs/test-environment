@@ -75,6 +75,7 @@ typedef struct tapi_trex_opt_flt_descr {
     {.name = _name, .descr = "\\*" _descr }
 
 static const tapi_trex_opt_flt_descr opt_filters[] = {
+    /* TCP counters */
     TAPI_TREX_OPT_FLT("tcps_connattempt", "connections initiated"),
     TAPI_TREX_OPT_FLT("tcps_accepts", "connections accepted"),
     TAPI_TREX_OPT_FLT("tcps_connects", "connections established"),
@@ -173,6 +174,13 @@ static const tapi_trex_opt_flt_descr opt_filters[] = {
     TAPI_TREX_OPT_FLT("tcps_ecn_ect1", "ECN Capable Transport"),
     TAPI_TREX_OPT_FLT("tcps_ecn_shs", "ECN successful handshakes"),
     TAPI_TREX_OPT_FLT("tcps_ecn_rcwnd", "times ECN reduced the cwnd"),
+
+    /*
+     * Flow table.
+     * The list is not exhaustive - only what is needed at the moment.
+     */
+    TAPI_TREX_OPT_FLT_ERR("err_cwf", "client pkt without flow"),
+    TAPI_TREX_OPT_FLT_ERR("err_no_syn", "server first flow packet with no SYN"),
 };
 
 typedef struct tapi_trex_port_stat_type {
