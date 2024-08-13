@@ -791,6 +791,7 @@ RGT_XML2JSON_CB(proc_meta_page_end,
 {
     if (multi_opts.docs_url != NULL)
     {
+        te_json_append_string(json_ctx, ".html");
         te_json_end(json_ctx);
         te_json_end(json_ctx);
         depth_user->append_chars = false;
