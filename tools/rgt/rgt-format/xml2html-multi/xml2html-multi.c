@@ -643,9 +643,11 @@ control_node_end(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
         rgt_tmpls_output(fd, &xml2fmt_tmpls[DOC_END], NULL);
         fclose(fd);
         free(depth_user->fname);
+        depth_user->fname = NULL;
     }
 
     free(depth_user->name);
+    depth_user->name = NULL;
 
     lf_end(ctx, depth_ctx);
 }
@@ -1669,6 +1671,9 @@ static void
 free_depth_user_data_cb(void *data)
 {
     depth_ctx_user_t *depth_user = data;
+
+    free(depth_user->name);
+    free(depth_user->fname);
 
     te_dbuf_free(&depth_user->json_data);
 }
