@@ -124,8 +124,12 @@ void rgt_process_cmdline(rgt_gen_ctx_t *ctx, poptContext con, int val)
 /* Add common global template parameters */
 void rgt_tmpls_attrs_add_globals(rgt_attrs_t *attrs)
 {
-    rgt_tmpls_attrs_add_fstr(attrs, "shared_url", "%s", multi_opts.shared_url);
-    rgt_tmpls_attrs_add_fstr(attrs, "docs_url", "%s", multi_opts.docs_url);
+    rgt_tmpls_attrs_add_fstr(attrs, "shared_url", "%s",
+                             multi_opts.shared_url != NULL ?
+                                multi_opts.shared_url : "");
+    rgt_tmpls_attrs_add_fstr(attrs, "docs_url", "%s",
+                             multi_opts.docs_url != NULL ?
+                                multi_opts.docs_url : "");
 }
 
 RGT_DEF_FUNC(proc_document_start)
