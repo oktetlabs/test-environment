@@ -73,7 +73,7 @@ RGT_DEF_FUNC(proc_document_start)
     }
 
     attrs = rgt_tmpls_attrs_new(xml_attrs);
-    rgt_tmpls_attrs_add_fstr(attrs, "DATADIR", prefix);
+    rgt_tmpls_attrs_add_fstr(attrs, "DATADIR", "%s", prefix);
     rgt_tmpls_output(gen_user->fd, &xml2fmt_tmpls[DOCUMENT_START], attrs);
     rgt_tmpls_attrs_free(attrs);
 }
