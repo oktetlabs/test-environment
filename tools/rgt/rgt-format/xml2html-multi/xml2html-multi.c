@@ -124,8 +124,8 @@ void rgt_process_cmdline(rgt_gen_ctx_t *ctx, poptContext con, int val)
 /* Add common global template parameters */
 void rgt_tmpls_attrs_add_globals(rgt_attrs_t *attrs)
 {
-    rgt_tmpls_attrs_add_fstr(attrs, "shared_url", multi_opts.shared_url);
-    rgt_tmpls_attrs_add_fstr(attrs, "docs_url", multi_opts.docs_url);
+    rgt_tmpls_attrs_add_fstr(attrs, "shared_url", "%s", multi_opts.shared_url);
+    rgt_tmpls_attrs_add_fstr(attrs, "docs_url", "%s", multi_opts.docs_url);
 }
 
 RGT_DEF_FUNC(proc_document_start)
@@ -431,7 +431,7 @@ lf_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx, const char *result,
 
             rgt_tmpls_attrs_set_uint32(attrs, "depth", i + 1);
             rgt_tmpls_attrs_set_uint32(attrs, "seq", cur_ctx->seq);
-            rgt_tmpls_attrs_set_fstr(attrs, "name", cur_user->name);
+            rgt_tmpls_attrs_set_fstr(attrs, "name", "%s", cur_user->name);
 
             rgt_tmpls_output(depth_user->dir_fd,
                              &xml2fmt_tmpls[LF_REF_PART], attrs);
@@ -457,11 +457,11 @@ lf_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx, const char *result,
 
         rgt_tmpls_attrs_set_uint32(attrs, "depth", ctx->depth);
         rgt_tmpls_attrs_set_uint32(attrs, "seq", depth_ctx->seq);
-        rgt_tmpls_attrs_set_fstr(attrs, "name", depth_user->name);
-        rgt_tmpls_attrs_set_fstr(attrs, "class", node_class);
+        rgt_tmpls_attrs_set_fstr(attrs, "name", "%s", depth_user->name);
+        rgt_tmpls_attrs_set_fstr(attrs, "class", "%s", node_class);
         if (is_test)
         {
-            rgt_tmpls_attrs_add_fstr(attrs, "result", result);
+            rgt_tmpls_attrs_add_fstr(attrs, "result", "%s", result);
             rgt_tmpls_output(prev_depth_user->dir_fd,
                              &xml2fmt_tmpls[LF_ROW_TEST], attrs);
         }
@@ -573,12 +573,12 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     rgt_tmpls_attrs_add_uint32(attrs, "seq", depth_ctx->seq);
     rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[DOC_START], attrs);
 
-    rgt_tmpls_attrs_add_fstr(attrs, "node_type", node_type_str);
-    rgt_tmpls_attrs_add_fstr(attrs, "name", name);
-    rgt_tmpls_attrs_add_fstr(attrs, "result", result);
-    rgt_tmpls_attrs_add_fstr(attrs, "tin", tin);
-    rgt_tmpls_attrs_add_fstr(attrs, "test_id", node_id);
-    rgt_tmpls_attrs_add_fstr(attrs, "err", err);
+    rgt_tmpls_attrs_add_fstr(attrs, "node_type", "%s", node_type_str);
+    rgt_tmpls_attrs_add_fstr(attrs, "name", "%s", name);
+    rgt_tmpls_attrs_add_fstr(attrs, "result", "%s", result);
+    rgt_tmpls_attrs_add_fstr(attrs, "tin", "%s", tin);
+    rgt_tmpls_attrs_add_fstr(attrs, "test_id", "%s", node_id);
+    rgt_tmpls_attrs_add_fstr(attrs, "err", "%s", err);
     rgt_tmpls_output(depth_user->fd,
                      &xml2fmt_tmpls[DOC_CNTRL_NODE_TITLE], attrs);
 
@@ -588,8 +588,8 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
                          &xml2fmt_tmpls[DOC_CNTRL_NODE_HASH], attrs);
     }
 
-    rgt_tmpls_attrs_add_fstr(attrs, "fname", fname);
-    rgt_tmpls_attrs_add_fstr(attrs, "class", node_class);
+    rgt_tmpls_attrs_add_fstr(attrs, "fname", "%s", fname);
+    rgt_tmpls_attrs_add_fstr(attrs, "class", "%s", node_class);
 
     fname[0] = '\0';
     if (depth_user->is_test)
@@ -597,7 +597,7 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
         snprintf(fname, sizeof(fname), "n_%d_%d",
                  ctx->depth - 1, prev_depth_ctx->seq);
     }
-    rgt_tmpls_attrs_add_fstr(attrs, "par_name", fname);
+    rgt_tmpls_attrs_add_fstr(attrs, "par_name", "%s", fname);
 
     rgt_tmpls_output(prev_depth_user->fd,
                      &xml2fmt_tmpls[DOC_REF_TO_NODE], attrs);
@@ -721,7 +721,7 @@ RGT_DEF_FUNC(proc_log_msg_start)
         }
         else
         {
-            rgt_tmpls_attrs_add_fstr(attrs, "style_class_add", "");
+            rgt_tmpls_attrs_add_fstr(attrs, "style_class_add", "%s", "");
         }
 
         rgt_tmpls_attrs_add_uint32(attrs, "level_id",
@@ -1174,7 +1174,7 @@ RGT_DEF_FUNC(proc_log_msg_end)
             }
         }
 
-        rgt_tmpls_attrs_add_fstr(attrs, "level", depth_user->log_level);
+        rgt_tmpls_attrs_add_fstr(attrs, "level", "%s", depth_user->log_level);
         rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOG_MSG_END],
                          attrs);
         rgt_tmpls_attrs_free(attrs);
@@ -1256,7 +1256,7 @@ RGT_DEF_FUNC(proc_logs_start)
         if (multi_opts.page_selector_set && multi_opts.cur_page >= 1)
         {
             rgt_tmpls_attrs_add_fstr(attrs, "selector_name", "top");
-            rgt_tmpls_attrs_add_fstr(attrs, "fname", depth_user->fname);
+            rgt_tmpls_attrs_add_fstr(attrs, "fname", "%s", depth_user->fname);
             rgt_tmpls_attrs_add_uint32(attrs, "cur_page",
                                        multi_opts.cur_page);
             rgt_tmpls_attrs_add_uint32(attrs, "pages_count",
@@ -1298,7 +1298,7 @@ RGT_DEF_FUNC(proc_logs_end)
         if (multi_opts.page_selector_set && multi_opts.cur_page >= 1)
         {
             rgt_tmpls_attrs_add_fstr(attrs, "selector_name", "bottom");
-            rgt_tmpls_attrs_add_fstr(attrs, "fname", depth_user->fname);
+            rgt_tmpls_attrs_add_fstr(attrs, "fname", "%s", depth_user->fname);
             rgt_tmpls_attrs_add_uint32(attrs, "cur_page",
                                        multi_opts.cur_page);
             rgt_tmpls_attrs_add_uint32(attrs, "pages_count",
@@ -1373,7 +1373,7 @@ RGT_DEF_FUNC(proc_meta_author_start)
     if (depth_user->fd != NULL)
     {
         attrs = rgt_tmpls_attrs_new(xml_attrs);
-        rgt_tmpls_attrs_add_fstr(attrs, "name", name);
+        rgt_tmpls_attrs_add_fstr(attrs, "name", "%s", name);
 
         rgt_tmpls_output(depth_user->fd,
                          &xml2fmt_tmpls[META_AUTHOR_START], attrs);
