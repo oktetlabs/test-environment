@@ -107,6 +107,85 @@ static netconsole_targets     targets;
 
 static bool netconsole_was_loaded = true;
 
+static te_errno
+get_remote_mac(const struct sockaddr_in *local_ip,
+               const char *ifname,
+               const struct sockaddr_in *remote_ip,
+               struct sockaddr *remote_mac)
+{
+    int           s = -1;
+    struct arpreq remote_hwaddr_req;
+    te_errno      rc;
+    int           ret;
+    ssize_t       sent;
+
+    static const struct timespec arp_sleep = {
+        .tv_sec = 0,
+        .tv_nsec = TE_MS2NS(500),
+    };
+
+    s = socket(AF_INET, SOCK_DGRAM, 0);
+    if (s == -1)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("%s(): failed to create datagram socket: %r",
+              __FUNCTION__, rc);
+        return rc;
+    }
+
+    memset(&remote_hwaddr_req, 0, sizeof(remote_hwaddr_req));
+    memcpy(&remote_hwaddr_req.arp_pa, remote_ip, sizeof(*remote_ip));
+    SIN(&remote_hwaddr_req.arp_pa)->sin_port = 0;
+#ifdef HAVE_STRUCT_ARPREQ_ARP_DEV
+    te_strlcpy(remote_hwaddr_req.arp_dev, ifname,
+               sizeof(remote_hwaddr_req.arp_dev));
+#endif
+    SIN(&remote_hwaddr_req.arp_ha)->sin_family = ARPHRD_ETHER;
+
+    if (ioctl(s, SIOCGARP, &remote_hwaddr_req) == 0)
+    {
+        *remote_mac = remote_hwaddr_req.arp_ha;
+        close(s);
+        return 0;
+    }
+
+    ret = bind(s, SA(local_ip), sizeof(*local_ip));
+    if (ret < 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("%s(): failed to bind datagram socket: %r",
+              __FUNCTION__, rc);
+        close(s);
+        return rc;
+    }
+
+    sent = sendto(s, "", sizeof(""), 0, SA(remote_ip), sizeof(*remote_ip));
+    if (sent < 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("%s(): failed to send data from datagram socket: %r",
+              __FUNCTION__, rc);
+        close(s);
+        return rc;
+    }
+    /* Wait for ARP information to propagate */
+    nanosleep(&arp_sleep, NULL);
+
+    if (ioctl(s, SIOCGARP, &remote_hwaddr_req) < 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("%s(): ioctl(SIOCGARP) failed: %r",
+              __FUNCTION__, rc);
+        close(s);
+        return rc;
+    }
+
+    *remote_mac = remote_hwaddr_req.arp_ha;
+
+    close(s);
+    return 0;
+}
+
 /**
  * Configure netconsole kernel module.
  *
@@ -130,14 +209,12 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
 
     struct sockaddr_in  local_ipv4_addr;
     struct sockaddr_in  remote_ipv4_addr;
-    bool remote_ipv4_found = false;
-    int                 rc;
-    int                 s = -1;
-    struct arpreq       remote_hwaddr_req;
+    struct sockaddr_in  gateway_ipv4_addr;
+    struct sockaddr     remote_hwaddr;
+    bool                remote_ipv4_found = false;
+    te_errno            rc;
 
     char    cmdline[MAX_STR];
-    int     tmp_err;
-
     char    local_ip_str[RCF_MAX_VAL];
     char    remote_ip_str[RCF_MAX_VAL];
     char    remote_hwaddr_str[RCF_MAX_VAL];
@@ -161,71 +238,36 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
     }
 
     rc = netconf_route_get_src_addr_and_iface(nh, SA(&remote_ipv4_addr),
-                                              SA(&local_ipv4_addr), ifname);
+                                              SA(&local_ipv4_addr), ifname,
+                                              SA(&gateway_ipv4_addr));
     if (rc != 0)
     {
-        ERROR("%s(): failed to get source address and interface, errno '%s'",
-              __FUNCTION__, strerror(rc));
-        return te_rc_os2te(rc);
-    }
-
-    s = socket(AF_INET, SOCK_DGRAM, 0);
-    if (s == -1)
-    {
-        tmp_err = errno;
-        ERROR("%s(): failed to create datagram socket, errno '%s'",
-              __FUNCTION__, strerror(errno));
-        return te_rc_os2te(tmp_err);
+        rc = TE_OS_RC(TE_TA_UNIX, rc);
+        ERROR("%s(): failed to get source address and interface: %r",
+              __FUNCTION__, rc);
+        return rc;
     }
 
     local_ipv4_addr.sin_port = htons(local_port);
     remote_ipv4_addr.sin_port = htons(remote_port);
+    gateway_ipv4_addr.sin_port = htons(remote_port);
 
-    rc = bind(s, (struct sockaddr *)&local_ipv4_addr,
-              sizeof(local_ipv4_addr));
-    if (rc < 0)
+    if (gateway_ipv4_addr.sin_family == AF_UNSPEC)
     {
-        tmp_err = errno;
-        ERROR("%s(): failed to bind datagram socket, errno '%s'",
-              __FUNCTION__, strerror(errno));
-        close(s);
-        return te_rc_os2te(tmp_err);
+        rc = get_remote_mac(&local_ipv4_addr, ifname, &remote_ipv4_addr,
+                            &remote_hwaddr);
     }
-
-    rc = sendto(s, "", strlen("") + 1, 0,
-                (struct sockaddr *)&remote_ipv4_addr,
-                sizeof(remote_ipv4_addr));
-    if (rc < 0)
+    else
     {
-        tmp_err = errno;
-        ERROR("%s(): failed to send data from datagram socket, errno '%s'",
-              __FUNCTION__, strerror(errno));
-        close(s);
-        return te_rc_os2te(tmp_err);
+        rc = get_remote_mac(&local_ipv4_addr, ifname, &gateway_ipv4_addr,
+                            &remote_hwaddr);
     }
-    usleep(500000);
-
-    memset(&remote_hwaddr_req, 0, sizeof(remote_hwaddr_req));
-    memcpy(&remote_hwaddr_req.arp_pa, &remote_ipv4_addr,
-           sizeof(remote_ipv4_addr));
-    ((struct sockaddr_in *)&remote_hwaddr_req.arp_pa)->sin_port = 0;
-#ifdef HAVE_STRUCT_ARPREQ_ARP_DEV
-    te_strlcpy(remote_hwaddr_req.arp_dev, ifname,
-               sizeof(remote_hwaddr_req.arp_dev));
-#endif
-    ((struct sockaddr_in *)&remote_hwaddr_req.arp_ha)->sin_family =
-                                                            ARPHRD_ETHER;
-
-    if (ioctl(s, SIOCGARP, &remote_hwaddr_req) < 0)
+    if (rc != 0)
     {
-        tmp_err = errno;
-        ERROR("%s(): ioctl(SIOCGARP) failed with errno '%s'",
-              __FUNCTION__, strerror(errno));
-        close(s);
-        return te_rc_os2te(tmp_err);
+        ERROR("%s(): failed to get remote MAC address: %r",
+              __FUNCTION__, rc);
+        return rc;
     }
-
-    close(s);
 
     inet_ntop(AF_INET, &local_ipv4_addr.sin_addr, local_ip_str,
               RCF_MAX_VAL);
@@ -234,13 +276,8 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
     SNPRINTF(remote_hwaddr_str, RCF_MAX_VAL,
              "failed to obtain string representation of remote "
              "hardware address",
-             "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
-             0xff & (int)(remote_hwaddr_req.arp_ha.sa_data[0]),
-             0xff & (int)(remote_hwaddr_req.arp_ha.sa_data[1]),
-             0xff & (int)(remote_hwaddr_req.arp_ha.sa_data[2]),
-             0xff & (int)(remote_hwaddr_req.arp_ha.sa_data[3]),
-             0xff & (int)(remote_hwaddr_req.arp_ha.sa_data[4]),
-             0xff & (int)(remote_hwaddr_req.arp_ha.sa_data[5]));
+             TE_PRINTF_MAC_FMT,
+             TE_PRINTF_MAC_VAL(remote_hwaddr.sa_data));
 
     if (SLIST_EMPTY(&targets) &&
         ta_system("lsmod | grep netconsole || exit 1") != 0)

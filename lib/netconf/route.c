@@ -599,7 +599,8 @@ int
 netconf_route_get_src_addr_and_iface(netconf_handle         nh,
                                      const struct sockaddr  *dst_addr,
                                      const struct sockaddr  *src_addr,
-                                     char                   *ifname)
+                                     char                   *ifname,
+                                     struct sockaddr        *gateway)
 {
     netconf_list    *l;
     netconf_route   *route;
@@ -622,6 +623,17 @@ netconf_route_get_src_addr_and_iface(netconf_handle         nh,
     }
     SIN(src_addr)->sin_family = route->family;
     memcpy(&(SIN(src_addr)->sin_addr.s_addr), route->src, sizeof(in_addr_t));
+
+    if (route->gateway != NULL)
+    {
+        SIN(gateway)->sin_family = route->family;
+        memcpy(&(SIN(gateway)->sin_addr.s_addr), route->gateway,
+               sizeof(in_addr_t));
+    }
+    else
+    {
+        SIN(gateway)->sin_family = AF_UNSPEC;
+    }
 
     if (if_indextoname(route->oifindex, ifname) == NULL)
     {
