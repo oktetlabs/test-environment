@@ -627,13 +627,15 @@ netconf_list *netconf_route_get_entry_for_addr(netconf_handle nh,
  * @param dst_addr     Destination address
  * @param src_addr     Source address (OUT)
  * @param ifname       Source interface. Must be at least IF_NAMESIZE. (OUT)
+ * @param gateway      Gateway address. (OUT)
  *
  * @return Status code
  */
 int netconf_route_get_src_addr_and_iface(netconf_handle         nh,
                                          const struct sockaddr  *dst_addr,
                                          const struct sockaddr  *src_addr,
-                                         char                   *ifname);
+                                         char                   *ifname,
+                                         struct sockaddr        *gateway);
 
 /**
  * Set default values to fields in rule struct.
