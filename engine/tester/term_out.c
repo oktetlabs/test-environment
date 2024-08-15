@@ -32,6 +32,16 @@
 #ifdef HAVE_COLOR
 #include <curses.h>
 #include <term.h>
+#else
+/* Unused, but still need to be defined */
+#define A_BOLD          0
+#define A_STANDOUT      0
+#define COLOR_CYAN      0
+#define COLOR_MAGENTA   0
+#define COLOR_YELLOW    0
+#define COLOR_RED       0
+#define COLOR_GREEN     0
+#define COLOR_BLUE      0
 #endif
 
 #include "te_defs.h"
@@ -238,7 +248,6 @@ colored_verdict(const colored_verdict_data *what)
         fputc('\n', stdout);
     }
 #else
-    UNUSED(color);
     fputs(what->no_color_text, stdout);
     fputc('\n', stdout);
 #endif
@@ -469,7 +478,9 @@ tester_term_out_done(tester_flags flags,
 int
 tester_term_cleanup(void)
 {
+#if HAVE_COLOR
     if (cur_term != NULL)
         return (del_curterm(cur_term) == OK) ? 0 : -1;
+#endif
     return 0;
 }
