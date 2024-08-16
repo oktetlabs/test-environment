@@ -365,6 +365,7 @@ Generic options:
   --tce=<list>                  Do TCE processing for specific components (comma-separated) or 'all'
 
   --no-meta                     Do not generate testing metadata.
+  --meta=<name>[:<value>]       Set metadata variable.
   --publish=<script>            Use a given script to publish testing logs
                                 (metadata must be enabled to do this).
 
@@ -710,6 +711,18 @@ process_opts()
                   echo "  --no-meta option is passed not directly." >&2
               fi
               ;;
+
+            --meta=*)
+                  var_def="${1#--meta=}"
+                  if [[ "${var_def}" == *:* ]] ; then
+                      var_name="${var_def%%:*}"
+                      var_value="${var_def#*:}"
+                  else
+                      var_name="${var_def}"
+                      var_value=
+                  fi
+                  te_meta_set "${var_name}" "${var_value}"
+                  ;;
 
             --publish=*)
                   TE_PUBLISH_SCRIPT="${1#--publish=}"
