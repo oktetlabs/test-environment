@@ -313,6 +313,26 @@ tapi_rdma_perf_def_opts_init(tapi_rdma_perf_opts *opts,
 extern const char * tapi_rdma_perf_conn_str_get(
                         tapi_rdma_perf_conn_type_t conn_type);
 
+
+/**
+ * Initiate RDMA perf app with specific environment.
+ *
+ * @param[in]  factory    Job factory.
+ * @param[in]  opts       RDMA perf options.
+ * @param[in]  env        Environment for the app. May be @c NULL.
+ * @param[in]  is_client  Are options for server or client side.
+ * @param[out] app        The application handle.
+ *
+ * @return Status code.
+ *
+ * @sa tapi_rdma_perf_app_destroy
+ */
+extern te_errno tapi_rdma_perf_app_init_with_env(tapi_job_factory_t *factory,
+                                                 tapi_rdma_perf_opts *opts,
+                                                 const char **env,
+                                                 bool is_client,
+                                                 tapi_rdma_perf_app **app);
+
 /**
  * Initiate RDMA perf app.
  *
@@ -325,10 +345,13 @@ extern const char * tapi_rdma_perf_conn_str_get(
  *
  * @sa tapi_rdma_perf_app_destroy
  */
-extern te_errno tapi_rdma_perf_app_init(tapi_job_factory_t *factory,
-                                        tapi_rdma_perf_opts *opts,
-                                        bool is_client,
-                                        tapi_rdma_perf_app **app);
+static inline te_errno
+tapi_rdma_perf_app_init(tapi_job_factory_t *factory, tapi_rdma_perf_opts *opts,
+                        bool is_client, tapi_rdma_perf_app **app)
+{
+    return tapi_rdma_perf_app_init_with_env(factory, opts, NULL,
+                                            is_client, app);
+}
 
 /**
  * Destroy RDMA perf app.
