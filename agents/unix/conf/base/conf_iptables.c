@@ -249,7 +249,8 @@ iptables_table_list(unsigned int  gid, const char *oid,
         }
     }
 
-    *list = strdup(table_list.ptr);
+    if (table_list.ptr != NULL)
+        *list = strdup(table_list.ptr);
 
     return 0;
 }
