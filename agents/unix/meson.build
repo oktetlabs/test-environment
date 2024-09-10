@@ -42,8 +42,13 @@ ta_non_symtbl_libs = [
     'logger_core',
 ]
 
+ta_external_libs = []
+ta_external_deps = []
+
 foreach extra_lib : get_option('agent-unix-libs')
-    if not ta_symtbl_libs.contains(extra_lib)
+    if external_libs.contains(extra_lib)
+        ta_external_libs += [ extra_lib ]
+    elif not ta_symtbl_libs.contains(extra_lib)
         ta_symtbl_libs += [ extra_lib ]
     endif
 endforeach
@@ -200,6 +205,10 @@ endif
 
 foreach l : ta_non_symtbl_libs + ta_symtbl_libs
     deps += [ get_variable('dep_lib_static_' + l) ]
+endforeach
+
+foreach l : ta_external_libs
+    ta_external_deps += [ get_variable('dep_lib_static_' + l) ]
 endforeach
 
 #
@@ -463,7 +472,7 @@ executable('ta', sources, generated_sources,
            include_directories: includes,
            c_args: c_args,
            link_args: link_args,
-           dependencies: deps)
+           dependencies: deps + ta_external_deps)
 
 #
 # Build ta_rcf_listener
@@ -473,6 +482,7 @@ rcf_listener_sources = files(
 )
 
 # Just use the ta dependencies: this seems to be enough
+# Skip external libraries, however
 executable('ta_rcf_listener', rcf_listener_sources,
            install: true, install_dir: tadir,
            include_directories: includes,
