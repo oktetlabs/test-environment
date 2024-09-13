@@ -493,7 +493,9 @@ tapi_cfg_net_find_net_by_node(const char *oid, char *net)
 {
     te_errno        rc;
     unsigned int    net_num;
+    cfg_handle     *node_handles = NULL;
     cfg_handle     *net_handles = NULL;
+    char           *net_name = NULL;
     unsigned int    i;
 
 
@@ -507,10 +509,14 @@ tapi_cfg_net_find_net_by_node(const char *oid, char *net)
 
     for (i = 0, rc = TE_ESRCH; i < net_num; ++i, rc = TE_ESRCH)
     {
-        char           *net_name;
         unsigned int    node_num;
-        cfg_handle     *node_handles = NULL;
         unsigned int    j;
+
+        free(node_handles);
+        free(net_name);
+
+        node_handles = NULL;
+        net_name = NULL;
 
         rc = cfg_get_inst_name(net_handles[i], &net_name);
         if (rc != 0)
@@ -538,7 +544,7 @@ tapi_cfg_net_find_net_by_node(const char *oid, char *net)
             if (rc != 0)
             {
                 ERROR("Failed(%x) to get value by cfg handle", rc);
-                break;
+                goto exit;
             }
 
             res = strcmp(oid, val);
@@ -546,16 +552,15 @@ tapi_cfg_net_find_net_by_node(const char *oid, char *net)
             if (res == 0)
             {
                 strcpy(net, net_name);
-                free(net_name);
-                free(node_handles);
-                free(net_handles);
-                return 0;
+                goto exit;
             }
         }
-        free(node_handles);
-        free(net_name);
     }
+
+exit:
+    free(node_handles);
     free(net_handles);
+    free(net_name);
 
     return rc;
 
