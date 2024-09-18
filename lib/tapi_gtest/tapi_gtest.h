@@ -53,6 +53,8 @@ typedef struct tapi_gtest {
     tapi_gtest_opts opts;   /**< Options for Gtest binary */
 
     tapi_gtest_impl impl;   /**< Internal implementation struct */
+
+    te_vec args;         /**< Arguments that are used when running the tool. */
 } tapi_gtest;
 
 /** Defaults for implementation for GTest handler */
@@ -68,6 +70,7 @@ typedef struct tapi_gtest {
     .opts.verbs_mtu = TAPI_JOB_OPT_UINT_UNDEF, \
     .opts.rand_seed = TAPI_JOB_OPT_UINT_UNDEF, \
     .impl = TAPI_GTEST_IMPL_DEFAULTS,          \
+    .args = {TE_DBUF_INIT(0), 0, NULL},        \
 }
 
 /** A way for read gtest option from test arguments */
@@ -83,6 +86,7 @@ typedef struct tapi_gtest {
     .opts.no_col = true,                                                  \
     .opts.dev_name = NULL,                                                \
     .impl = TAPI_GTEST_IMPL_DEFAULTS,                                     \
+    .args = TE_VEC_INIT(char *),                                          \
 }
 
 /** A way for read gtest option from test arguments */
@@ -135,6 +139,19 @@ extern te_errno tapi_gtest_wait(tapi_gtest *gtest, int timeout_ms);
  * @return Status code
  */
 extern te_errno tapi_gtest_fini(tapi_gtest *gtest);
+
+/**
+ * Get CMD in string representation that will be used to run gtest app.
+ *
+ * @param[in]  gtest        GTest handler
+ * @param[out] cmd          Resulting command line.
+ *
+ * @note It is expected that @p cmd is allocated.
+ *       Can be called only after @b tapi_gtest_init().
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_gtest_get_cmd_str(tapi_gtest *gtest, te_string *cmd);
 
 #ifdef __cplusplus
 } /* extern "C" */
