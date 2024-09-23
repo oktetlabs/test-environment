@@ -341,31 +341,33 @@
             </documentation>
         </annotation>
         <sequence>
-            <element name="description" type="string" minOccurs="0">
-                <annotation>
-                    <documentation>
-                        Description of the test provided by the script.
-                    </documentation>
-                </annotation>
-            </element>
-            <element name="req" type="Requirement" minOccurs="0"
-                                                   maxOccurs="unbounded">
-                <annotation>
-                    <documentation>
-                        Complete set of requiremetns verified by the
-                        script.
-                    </documentation>
-                </annotation>
-            </element>
-            <element name="execute" type="string" minOccurs="0">
-                <annotation>
-                    <documentation>
-                        Name of the file to execute in current package
-                        directory. If the element is skipped, it's
-                        equal to the 'name' attribute.
-                    </documentation>
-                </annotation>
-            </element>
+            <choice minOccurs="0" maxOccurs="unbounded">
+                <element name="description" type="string" minOccurs="0">
+                    <annotation>
+                        <documentation>
+                            Description of the test provided by the script.
+                        </documentation>
+                    </annotation>
+                </element>
+                <element name="req" type="Requirement" minOccurs="0"
+                                                       maxOccurs="unbounded">
+                    <annotation>
+                        <documentation>
+                            Complete set of requiremetns verified by the
+                            script.
+                        </documentation>
+                    </annotation>
+                </element>
+                <element name="execute" type="string" minOccurs="0">
+                    <annotation>
+                        <documentation>
+                            Name of the file to execute in current package
+                            directory. If the element is skipped, it's
+                            equal to the 'name' attribute.
+                        </documentation>
+                    </annotation>
+                </element>
+            </choice>
         </sequence>
         <attribute name="name" type="Name">
             <annotation>
