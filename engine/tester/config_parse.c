@@ -1011,6 +1011,8 @@ get_script(xmlNodePtr node, tester_cfg *cfg, test_script *script)
 {
     te_errno            rc;
     const test_info    *ti;
+    bool                objective_found = false;
+    bool                execute_found = false;
 
     /* 'name' is mandatory */
     script->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
@@ -1027,54 +1029,65 @@ get_script(xmlNodePtr node, tester_cfg *cfg, test_script *script)
 
     node = xmlNodeChildren(node);
 
-    /* Get optional 'objective' */
-    if (node != NULL &&
-        (rc = get_node_with_text_content(&node, "objective",
-                                         &script->objective)) != 0)
+    while (node != NULL)
     {
-        if (rc != TE_ENOENT)
-            return rc;
+        /* Get optional 'objective' */
+        if (xmlStrcmp(node->name, CONST_CHAR2XML("objective")) == 0)
+        {
+            if (objective_found)
+            {
+                ERROR("Multiple 'objective' elements in script '%s'",
+                      script->name);
+                return TE_RC(TE_TESTER, TE_EINVAL);
+            }
+            if ((rc = get_node_with_text_content(&node, "objective",
+                                                 &script->objective)) != 0)
+                return rc;
+            objective_found = true;
+
+            ti = find_test_info(cfg->cur_pkg->ti, script->name);
+            if (ti != NULL)
+            {
+                if (script->objective == NULL)
+                {
+                    script->objective = TE_STRDUP(ti->objective);
+                }
+                script->page = TE_STRDUP(ti->page);
+            }
+            continue;
+        }
+
+        /* Get optional test requirements */
+        if (xmlStrcmp(node->name, CONST_CHAR2XML("req")) == 0)
+        {
+            rc = alloc_and_get_requirement(node, &script->reqs, false);
+            if (rc != 0)
+            {
+                ERROR("Failed to get requirements of the script '%s'",
+                      script->name);
+                return rc;
+            }
+            node = xmlNodeNext(node);
+            continue;
+        }
+        /* Get optional 'execute' parameter */
+        if (xmlStrcmp(node->name, CONST_CHAR2XML("execute")) == 0)
+        {
+            if (execute_found)
+            {
+                ERROR("Munltiple 'execute' elements in script '%s'",
+                      script->name);
+                return TE_RC(TE_TESTER, TE_EINVAL);
+            }
+            execute_found = true;
+            script->execute = XML2CHAR_DUP(node->content);
+            node = xmlNodeNext(node);
+            continue;
+        }
+        break;
     }
 
-    ti = find_test_info(cfg->cur_pkg->ti, script->name);
-    if (ti != NULL)
-    {
-        if (ti->objective != NULL && script->objective == NULL)
-        {
-            script->objective = strdup(ti->objective);
-            if (script->objective == NULL)
-            {
-                ERROR("strdup(%s) failed", ti->objective);
-                return TE_RC(TE_TESTER, TE_ENOMEM);
-            }
-        }
-        if (ti->page != NULL)
-        {
-            script->page = strdup(ti->page);
-            if (script->page == NULL)
-            {
-                ERROR("strdup(%s) failed", ti->page);
-                return TE_RC(TE_TESTER, TE_ENOMEM);
-            }
-        }
-    }
-
-    /* Get optional set of tested 'requirement's */
-    rc = get_requirements(&node, &script->reqs, false);
-    if (rc != 0)
-    {
-        ERROR("Failed to get requirements of the script '%s'",
-              script->name);
-        return rc;
-    }
-    /* Get optional 'execute' parameter */
-    if (node != NULL &&
-        xmlStrcmp(node->name, CONST_CHAR2XML("execute")) == 0)
-    {
-        script->execute = XML2CHAR_DUP(node->content);
-        node = xmlNodeNext(node);
-    }
-    else
+    if (!execute_found)
     {
         script->execute = name_to_path(cfg, script->name, false);
     }
