@@ -347,6 +347,20 @@ rgt_log_end_element(void *user_data, const rgt_xmlChar *xml_tag)
             ctx->state = RGT_XML2HTML_STATE_META;
             break;
 
+        case RGT_XML2HTML_STATE_REQS:
+            assert(ctx->depth >= 1);
+
+            if (strcmp(tag, "reqs") != 0)
+            {
+                assert(strcmp(tag, "req") == 0);
+                proc_meta_req_end(ctx, depth_ctx, NULL);
+                break;
+            }
+
+            proc_meta_reqs_end(ctx, depth_ctx, NULL);
+            ctx->state = RGT_XML2HTML_STATE_META;
+            break;
+
         case RGT_XML2HTML_STATE_FILE:
             if (strcmp(tag, "file") == 0)
             {
@@ -471,6 +485,12 @@ rgt_log_start_element(void *user_data,
                                        RGT_XML2CHAR(attrs));
                 ctx->state = RGT_XML2HTML_STATE_PARAMS;
             }
+            else if (strcmp(tag, "reqs") == 0)
+            {
+                proc_meta_reqs_start(ctx, depth_ctx,
+                                     RGT_XML2CHAR(attrs));
+                ctx->state = RGT_XML2HTML_STATE_REQS;
+            }
             else
             {
                 fprintf(stderr, "Unexpected TAG '%s' in META state\n",
@@ -511,6 +531,11 @@ rgt_log_start_element(void *user_data,
         case RGT_XML2HTML_STATE_PARAMS:
             assert(strcmp(tag, "param") == 0);
             proc_meta_param_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
+            break;
+
+        case RGT_XML2HTML_STATE_REQS:
+            assert(strcmp(tag, "req") == 0);
+            proc_meta_req_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
             break;
 
         case RGT_XML2HTML_STATE_LOGS:
@@ -691,7 +716,8 @@ rgt_get_entity(void *user_data, const rgt_xmlChar *xml_name)
      * work later as well, but who knows).
      */
 
-    if (ctx->state == RGT_XML2HTML_STATE_PARAMS)
+    if (ctx->state == RGT_XML2HTML_STATE_PARAMS ||
+        ctx->state == RGT_XML2HTML_STATE_REQS)
     {
         ent.etype = XML_INTERNAL_GENERAL_ENTITY;
         ent.content = NULL;

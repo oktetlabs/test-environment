@@ -65,6 +65,7 @@ typedef struct depth_ctx_user {
                                       key - entity name,
                                       value - array of user names */
     uint32_t linum; /**< Line number in HTML */
+    unsigned int req_idx; /**< Current requirement index */
 
     te_dbuf json_data;    /**< Buffer for collecting JSON before it can
                                be parsed */
@@ -1202,6 +1203,44 @@ RGT_DEF_FUNC(proc_meta_param_start)
 
 RGT_DEF_DUMMY_FUNC(proc_meta_param_end)
 
+RGT_DEF_FUNC(proc_meta_reqs_start)
+{
+    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
+
+    RGT_FUNC_UNUSED_PRMS();
+
+    depth_user->req_idx = 0;
+
+    if (depth_user->fd != NULL)
+    {
+        rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[META_REQS_START],
+                         NULL);
+    }
+}
+
+RGT_DEF_FUNC(proc_meta_req_start)
+{
+    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
+    rgt_attrs_t      *attrs;
+
+    RGT_FUNC_UNUSED_PRMS();
+
+    if (depth_user->fd != NULL)
+    {
+        if (depth_user->req_idx > 0)
+            fprintf(depth_user->fd, ", ");
+
+        attrs = rgt_tmpls_attrs_new(xml_attrs);
+        rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[REQ_START],
+                         attrs);
+        rgt_tmpls_attrs_free(attrs);
+    }
+
+    depth_user->req_idx++;
+}
+
+RGT_DEF_DUMMY_FUNC(proc_meta_req_end)
+
 RGT_DEF_FUNC(proc_logs_start)
 {
     depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
@@ -1355,6 +1394,7 @@ DEF_FUNC_WITHOUT_ATTRS(proc_meta_artifacts_start, META_ARTIFACTS_START)
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_artifacts_end, META_ARTIFACTS_END)
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_params_start, META_PARAMS_START)
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_params_end, META_PARAMS_END)
+DEF_FUNC_WITHOUT_ATTRS(proc_meta_reqs_end, META_REQS_END)
 DEF_FUNC_WITHOUT_ATTRS(proc_mem_dump_start, MEM_DUMP_START)
 DEF_FUNC_WITHOUT_ATTRS(proc_mem_dump_end, MEM_DUMP_END)
 DEF_FUNC_WITHOUT_ATTRS(proc_mem_row_start, MEM_ROW_START)

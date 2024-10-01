@@ -98,6 +98,27 @@ print_params(param *prms)
     }
 }
 
+static void
+print_reqs(requirement *reqs)
+{
+    requirement *r = reqs;
+    int i = 0;
+
+    if (r != NULL)
+    {
+        fprintf(rgt_ctx.out_fd, "|- Requirements: ");
+    }
+
+    while (r != NULL)
+    {
+        fprintf(rgt_ctx.out_fd, "%s%s", (i > 0 ? ", " : ""), r->id);
+        r = r->next;
+        i++;
+    }
+
+    fprintf(rgt_ctx.out_fd, "\n");
+}
+
 static inline int
 live_process_start_event(node_info_t *node, const char *node_name,
                          ctrl_msg_data *data)
@@ -141,6 +162,7 @@ live_process_start_event(node_info_t *node, const char *node_name,
         fprintf(rgt_ctx.out_fd, "\n");
     }
 
+    print_reqs(node->reqs);
     print_params(node->params);
 
     fprintf(rgt_ctx.out_fd, "\n");

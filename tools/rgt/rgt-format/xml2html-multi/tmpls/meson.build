@@ -54,6 +54,8 @@ xml2html_multi_tmpls = files(
     'meta_page_start.tmpl',
     'meta_params_end.tmpl',
     'meta_params_start.tmpl',
+    'meta_reqs_end.tmpl',
+    'meta_reqs_start.tmpl',
     'meta_start_ts_end.tmpl',
     'meta_start_ts_start.tmpl',
     'meta_verdict_end.tmpl',
@@ -66,6 +68,7 @@ xml2html_multi_tmpls = files(
     'meta_artifact_start.tmpl',
     'page_selector.tmpl',
     'param_start.tmpl',
+    'req_start.tmpl',
 )
 
 install_data(

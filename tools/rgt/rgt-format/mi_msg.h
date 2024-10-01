@@ -134,6 +134,8 @@ typedef struct te_rgt_mi_test_start {
     const char       *name;       /**< Name */
     te_rgt_mi_kv     *params;     /**< Array of parameters */
     size_t            params_num; /**< Number of parameters */
+    const char      **reqs;       /**< Array of test requirements */
+    size_t            reqs_num;   /**< Number of requirements */
     te_rgt_mi_person *authors;    /**< Array of authors */
     size_t            authors_num;/**< Number of authors */
     const char       *objective;  /**< Objective */

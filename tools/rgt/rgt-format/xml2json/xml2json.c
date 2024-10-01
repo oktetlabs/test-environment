@@ -732,6 +732,17 @@ RGT_XML2JSON_CB(proc_meta_param_start,
 
 RGT_DEF_DUMMY_FUNC(proc_meta_param_end)
 
+RGT_XML2JSON_META_ARRAY_PROP_CB(reqs, requirements)
+
+RGT_XML2JSON_CB(proc_meta_req_start,
+{
+    const char *id = rgt_tmpls_xml_attrs_get(xml_attrs, "id");
+
+    te_json_add_string(json_ctx, "%s", id);
+})
+
+RGT_DEF_DUMMY_FUNC(proc_meta_req_end)
+
 RGT_XML2JSON_META_ARRAY_PROP_CB(authors, authors)
 
 RGT_XML2JSON_CB(proc_meta_author_start,

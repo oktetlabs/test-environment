@@ -51,6 +51,14 @@ typedef struct param {
     char *val;  /**< Parameter value in string representation */
 } param;
 
+/** Structure that represents test requirement */
+typedef struct requirement {
+    /** Pointer to the next requirement */
+    struct requirement *next;
+    /** Requirement Id */
+    char *id;
+} requirement;
+
 /** Possible results of test, package or session */
 typedef enum result_status {
     RES_STATUS_PASSED,
@@ -179,6 +187,7 @@ typedef struct node_info {
     int             plan_id;     /**< ID of the next run item in
                                       the execution plan */
     param          *params;      /**< List of parameters */
+    requirement    *reqs;        /**< List of requirements */
     uint32_t        start_ts[2]; /**< Timestamp of a "node start" event */
     uint32_t        end_ts[2];   /**< Timestamp of a "node end" event */
     result_info_t   result;      /**< Node result info */

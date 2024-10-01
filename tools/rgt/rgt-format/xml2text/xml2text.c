@@ -425,6 +425,8 @@ RGT_DEF_DUMMY_FUNC(proc_branch_start)
 RGT_DEF_DUMMY_FUNC(proc_branch_end)
 RGT_DEF_DUMMY_FUNC(proc_meta_param_start)
 RGT_DEF_DUMMY_FUNC(proc_meta_param_end)
+RGT_DEF_DUMMY_FUNC(proc_meta_req_start)
+RGT_DEF_DUMMY_FUNC(proc_meta_req_end)
 RGT_DEF_DUMMY_FUNC(proc_logs_start)
 RGT_DEF_DUMMY_FUNC(proc_logs_end)
 RGT_DEF_DUMMY_FUNC(proc_meta_start)
@@ -451,6 +453,8 @@ RGT_DEF_DUMMY_FUNC(proc_meta_artifacts_start)
 RGT_DEF_DUMMY_FUNC(proc_meta_artifacts_end)
 RGT_DEF_DUMMY_FUNC(proc_meta_params_start)
 RGT_DEF_DUMMY_FUNC(proc_meta_params_end)
+RGT_DEF_DUMMY_FUNC(proc_meta_reqs_start)
+RGT_DEF_DUMMY_FUNC(proc_meta_reqs_end)
 RGT_DEF_DUMMY_FUNC(proc_meta_page_start)
 RGT_DEF_DUMMY_FUNC(proc_meta_page_end)
 
@@ -710,6 +714,18 @@ log_mi_test_start(gen_ctx_user_t *ctx, te_rgt_mi *mi)
         fprintf_log(ctx, "\nTIN: %d", data->tin);
     if (data->hash != NULL)
         fprintf_log(ctx, "\nHash: %s", data->hash);
+
+    if (data->reqs != NULL)
+    {
+        fprintf_log(ctx, "\nRequirements: ");
+        for(i = 0; i < data->reqs_num; i++)
+        {
+            if (i > 0)
+                fprintf_log(ctx, ", ");
+
+            fprintf_log(ctx, "%s", data->reqs[i]);
+        }
+    }
 
     if (data->params != NULL)
     {

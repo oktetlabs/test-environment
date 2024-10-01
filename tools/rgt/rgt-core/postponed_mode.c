@@ -198,6 +198,25 @@ print_params(node_info_t *node)
     }
 }
 
+static void
+print_reqs(node_info_t *node)
+{
+    if (node->reqs != NULL)
+    {
+        requirement *p = node->reqs;
+
+        fprintf(rgt_ctx.out_fd, "<reqs>\n");
+        while (p != NULL)
+        {
+            fprintf(rgt_ctx.out_fd, "<req");
+            append_attr("id", p->id);
+            fprintf(rgt_ctx.out_fd, "/>\n");
+            p = p->next;
+        }
+        fprintf(rgt_ctx.out_fd, "</reqs>\n");
+    }
+}
+
 /**
  * Process verdict or artifact message.
  *
@@ -366,6 +385,7 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
         }
     }
 
+    print_reqs(node);
     print_params(node);
     fprintf(rgt_ctx.out_fd, "</meta>\n");
     logs_opened = 0;

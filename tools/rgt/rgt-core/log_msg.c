@@ -1037,6 +1037,44 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
         }
     }
 
+    if (reqs != NULL && !json_is_null(reqs))
+    {
+        size_t index;
+        json_t *json_req;
+        const char *id = NULL;
+        requirement **p_req;
+
+        if (json_is_array(reqs))
+        {
+            p_req = &(node->reqs);
+            json_array_foreach(reqs, index, json_req)
+            {
+                ret = json_unpack_ex(json_req, &err, JSON_STRICT,
+                                     "s", &id);
+                if (ret != 0)
+                {
+                    FMT_TRACE("Error unpacking parameters: %s "
+                              "(line %d, column %d)",
+                              err.text, err.line, err.column);
+                }
+                else
+                {
+                    *p_req = (requirement *)node_info_obstack_alloc(
+                                                      sizeof(requirement));
+                    (*p_req)->id =
+                        node_info_obstack_copy0(id, strlen(id));
+                    p_req = &((*p_req)->next);
+                }
+            }
+            *p_req = NULL;
+        }
+        else
+        {
+            FMT_TRACE("Invalid type for the \"reqs\" value: %s",
+                      get_json_type(reqs));
+        }
+    }
+
     return node;
 }
 

@@ -883,6 +883,35 @@ te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
         }
     }
 
+    if (reqs != NULL)
+    {
+        data->reqs_num = json_array_size(reqs);
+        if (data->reqs_num == 0)
+        {
+            te_rgt_mi_parse_error(mi, TE_EINVAL,
+                                  "test_start requirement list cannot be "
+                                  "an empty array. If there are no "
+                                  "requirements, this field must be "
+                                  "omitted");
+            goto cleanup;
+        }
+        data->reqs = TE_ALLOC(sizeof(char *) * data->reqs_num);
+
+        json_array_foreach(reqs, i, item)
+        {
+            ret = json_unpack_ex(item, &err, JSON_STRICT,
+                                 "s", &data->reqs[i]);
+            if (ret != 0)
+            {
+                te_rgt_mi_parse_error(mi, TE_EINVAL,
+                                      "Error unpacking JSON requirement "
+                                      "object: %s (line %d, column %d)",
+                                      err.text, err.line, err.column);
+                goto cleanup;
+            }
+        }
+    }
+
     if (authors != NULL)
     {
         data->authors_num = json_array_size(authors);
