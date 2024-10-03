@@ -43,6 +43,7 @@ typedef struct tapi_gtest_opts {
 
     const char *dev_name;          /**< RDMA device name for GTest */
     tapi_job_opt_uint_t verbs_mtu; /**< MTU for RDMA QP */
+    tapi_job_opt_uint_t compl_wait_mult; /**< Complition timeout multiplier */
 } tapi_gtest_opts;
 
 /** GTest handler */
@@ -58,19 +59,20 @@ typedef struct tapi_gtest {
 } tapi_gtest;
 
 /** Defaults for implementation for GTest handler */
-#define TAPI_GTEST_DEFAULTS (tapi_gtest)       \
-{                                              \
-    .bin = NULL,                               \
-    .group = NULL,                             \
-    .name = NULL,                              \
-    .opts.dev_name = NULL,                     \
-    .opts.run_disabled = false,                \
-    .opts.ipv4_only = false,                   \
-    .opts.no_col = true,                       \
-    .opts.verbs_mtu = TAPI_JOB_OPT_UINT_UNDEF, \
-    .opts.rand_seed = TAPI_JOB_OPT_UINT_UNDEF, \
-    .impl = TAPI_GTEST_IMPL_DEFAULTS,          \
-    .args = {TE_DBUF_INIT(0), 0, NULL},        \
+#define TAPI_GTEST_DEFAULTS (tapi_gtest)             \
+{                                                    \
+    .bin = NULL,                                     \
+    .group = NULL,                                   \
+    .name = NULL,                                    \
+    .opts.dev_name = NULL,                           \
+    .opts.run_disabled = false,                      \
+    .opts.ipv4_only = false,                         \
+    .opts.no_col = true,                             \
+    .opts.compl_wait_mult = TAPI_JOB_OPT_UINT_UNDEF, \
+    .opts.verbs_mtu = TAPI_JOB_OPT_UINT_UNDEF,       \
+    .opts.rand_seed = TAPI_JOB_OPT_UINT_UNDEF,       \
+    .impl = TAPI_GTEST_IMPL_DEFAULTS,                \
+    .args = {TE_DBUF_INIT(0), 0, NULL},              \
 }
 
 /** A way for read gtest option from test arguments */
@@ -79,6 +81,7 @@ typedef struct tapi_gtest {
     .bin = TEST_STRING_PARAM(_gtest##_bin),                               \
     .group = TEST_STRING_PARAM(_gtest##_group),                           \
     .name = TEST_STRING_PARAM(_gtest##_name),                             \
+    .opts.compl_wait_mult = TAPI_JOB_OPT_UINT_UNDEF,                      \
     .opts.verbs_mtu = TAPI_JOB_OPT_UINT_UNDEF,                            \
     .opts.rand_seed = TE_OPTIONAL_UINT_VAL(TEST_INT_PARAM(te_rand_seed)), \
     .opts.ipv4_only = false,                                              \

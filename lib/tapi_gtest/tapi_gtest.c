@@ -33,7 +33,9 @@ gtest_build_argv(tapi_gtest *gtest, te_vec *argv)
         TAPI_JOB_OPT_UINT_T("--gtest_random_seed=", true, NULL,
                             tapi_gtest_opts, rand_seed),
         TAPI_JOB_OPT_UINT_T("--verbs_mtu=", true, NULL,
-                            tapi_gtest_opts, verbs_mtu)
+                            tapi_gtest_opts, verbs_mtu),
+        TAPI_JOB_OPT_UINT_T("--completion_wait_multiplier=", true, NULL,
+                            tapi_gtest_opts, compl_wait_mult)
     );
 
     rc = tapi_job_opt_build_args(gtest->bin, opts_binds, opts, argv);
