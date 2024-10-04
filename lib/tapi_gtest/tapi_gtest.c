@@ -114,7 +114,17 @@ tapi_gtest_wait(tapi_gtest *gtest, int timeout_ms)
     assert(gtest->group != NULL);
     assert(gtest->impl.job != NULL);
 
-    if ((rc = tapi_job_wait(gtest->impl.job, timeout_ms, &status)) != 0)
+    rc = tapi_job_wait(gtest->impl.job, timeout_ms, &status);
+    if (TE_RC_GET_ERROR(rc) == TE_EINPROGRESS)
+    {
+        rc = tapi_job_kill(gtest->impl.job, SIGTERM);
+
+        if (rc == 0)
+            /* Wait 2 ms after killing process */
+            rc = tapi_job_wait(gtest->impl.job, 2, &status);
+    }
+
+    if (rc != 0)
         return rc;
 
     if (status.value == 0 && status.type == TAPI_JOB_STATUS_EXITED)
