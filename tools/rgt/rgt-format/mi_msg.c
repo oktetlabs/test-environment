@@ -781,6 +781,7 @@ te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
     json_t *root;
     json_t *name = NULL;
     json_t *params = NULL;
+    json_t *reqs = NULL;
     json_t *authors = NULL;
     json_t *objective = NULL;
     json_t *page = NULL;
@@ -807,13 +808,15 @@ te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
 
     data->plan_id = -1;
     ret = json_unpack_ex(root, &err, JSON_STRICT,
-                         "{s:i, s:i, s?i, s:s, s?o, s?o, s?o, s?o, s?o, s?o, s?o}",
+                         "{s:i, s:i, s?i, s:s, s?o, s?o, s?o, s?o, s?o, "
+                         "s?o, s?o, s?o}",
                          "id", &data->node_id,
                          "parent", &data->parent_id,
                          "plan_id", &data->plan_id,
                          "node_type", &data->node_type,
                          "name", &name,
                          "params", &params,
+                         "reqs", &reqs,
                          "authors", &authors,
                          "objective", &objective,
                          "page", &page,

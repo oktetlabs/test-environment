@@ -1331,6 +1331,106 @@ test_params_to_json(const unsigned int n_args, const test_iter_arg *args)
 }
 
 /**
+ * Add requirements to JSON array.
+ *
+ * @param array   JSON array.
+ * @param reqs    Requirements.
+ * @param n_args  Number of test arguments.
+ * @param args    Test arguments (used when requirement has a
+ *                "ref" attribute).
+ *
+ * @return 0 on success or -1 on failure.
+ */
+static int
+add_test_reqs_to_array(json_t *array, const test_requirements *reqs,
+                       unsigned int n_args, const test_iter_arg *args)
+{
+    json_t *item;
+    test_requirement *p;
+
+    TAILQ_FOREACH(p, reqs, links)
+    {
+        item = json_pack("s", test_req_id(p, n_args, args));
+        if (item == NULL)
+        {
+            ERROR("%s(): json_pack() failed", __FUNCTION__);
+            return -1;
+        }
+
+        if (json_array_append_new(array, item) != 0)
+        {
+            ERROR("%s(): failed to add item to the array", __FUNCTION__);
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Convert test requirements to JSON representation.
+ *
+ * @param sticky_reqs     Sticky requirements.
+ * @param ri              Run item.
+ * @param args            Iteration arguments.
+ *
+ * @return JSON array or NULL.
+ */
+static json_t *
+test_reqs_to_json(const test_requirements *sticky_reqs,
+                  const run_item *ri, const test_iter_arg *args)
+{
+    json_t *result;
+    const test_requirements *reqs;
+    int rc;
+    unsigned int i;
+
+    result = json_array();
+    if (result == NULL)
+    {
+        ERROR("%s(): failed to allocate memory for array", __FUNCTION__);
+        return NULL;
+    }
+
+    rc = add_test_reqs_to_array(result, sticky_reqs, ri->n_args, args);
+    if (rc < 0)
+    {
+        json_decref(result);
+        return NULL;
+    }
+
+    reqs = tester_get_ri_reqs(ri);
+    if (reqs != NULL)
+    {
+        rc = add_test_reqs_to_array(result, reqs, ri->n_args, args);
+        if (rc < 0)
+        {
+            json_decref(result);
+            return NULL;
+        }
+    }
+
+    for (i = 0; i < ri->n_args; i++)
+    {
+        rc = add_test_reqs_to_array(result, &args[i].reqs,
+                                    ri->n_args, args);
+        if (rc < 0)
+        {
+            json_decref(result);
+            return NULL;
+        }
+    }
+
+    if (json_array_size(result) == 0)
+    {
+        json_decref(result);
+        return NULL;
+    }
+
+    return result;
+}
+
+/**
  * Normalize parameter value. Remove trailing spaces and newlines.
  *
  * @param param   Parameter value to normalize
@@ -1552,11 +1652,12 @@ log_test_start(unsigned int flags,
      * jansson-2.10, which is currently the newest version available on
      * CentOS/RHEL-7.x
      */
-    result = json_pack("{s:i, s:i, s:i, s:o?}",
+    result = json_pack("{s:i, s:i, s:i, s:o?, s:o?}",
                        "id", test,
                        "parent", parent,
                        "plan_id", ri->plan_id,
-                       "params", test_params_to_json(ri->n_args, ctx->args));
+                       "params", test_params_to_json(ri->n_args, ctx->args),
+                       "reqs", test_reqs_to_json(&ctx->reqs, ri, ctx->args));
     if (result == NULL)
     {
         ERROR("JSON object creation failed in %s", __FUNCTION__);

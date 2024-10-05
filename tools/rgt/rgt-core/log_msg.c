@@ -836,6 +836,7 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
 
     json_t     *authors = NULL;
     json_t     *params = NULL;
+    json_t     *reqs = NULL;
     json_t     *name_opt = NULL;
     json_t     *objective_opt = NULL;
     json_t     *page_opt = NULL;
@@ -867,7 +868,7 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
      * values and type-checked manually.
      */
     ret = json_unpack_ex(msg, &err, JSON_STRICT,
-                         "{s:i, s:i, s:s, s?o, s?o, s?o, s?o, s?o, s?o, s?o, s?i}",
+                         "{s:i, s:i, s:s, s?o, s?o, s?o, s?o, s?o, s?o, s?o, s?o, s?i}",
                          "id", &node->node_id,
                          "parent", &node->parent_id,
                          "node_type", &type,
@@ -878,6 +879,7 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
                          "tin", &tin_opt,
                          "authors", &authors,
                          "params", &params,
+                         "reqs", &reqs,
                          "plan_id", &node->plan_id);
     if (ret != 0)
     {

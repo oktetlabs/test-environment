@@ -158,19 +158,10 @@ test_requirements_free(test_requirements *reqs)
     }
 }
 
-
-/**
- * Get requirement identifier in specified context of parameters.
- *
- * @param req           A requirement
- * @param n_args        Number of arguments
- * @param args          Test iteration arguments
- *
- * @return Requirement ID.
- */
-static const char *
-req_get(const test_requirement *req,
-        unsigned int n_args, const test_iter_arg *args)
+/* See the description in tester_reqs.h */
+const char *
+test_req_id(const test_requirement *req,
+            unsigned int n_args, const test_iter_arg *args)
 {
     assert(req != NULL);
     assert((args == NULL) == (n_args == 0));
@@ -209,7 +200,7 @@ is_req_in_set(const char *req, const test_requirements *set,
          s != NULL;
          s = TAILQ_NEXT(s, links))
     {
-        if (strcmp(req, req_get(s, n_args, args)) == 0)
+        if (strcmp(req, test_req_id(s, n_args, args)) == 0)
         {
             return true;
         }
@@ -450,7 +441,7 @@ reqs_list_to_string_buf(const test_requirements  *reqs,
     {
         out = snprintf(s, *left, "%s%s",
                        (p == TAILQ_FIRST(reqs)) ? "" : ", ",
-                       req_get(p, n_args, args));
+                       test_req_id(p, n_args, args));
     }
     *buf = s;
 }
@@ -524,6 +515,33 @@ params_reqs_list_to_string(const unsigned int   n_args,
     return out_buf;
 }
 
+/* See description in tester_reqs.h */
+const test_requirements *
+tester_get_ri_reqs(const run_item *ri)
+{
+    const test_requirements *reqs;
+
+    switch (ri->type)
+    {
+        case RUN_ITEM_SCRIPT:
+            reqs = &ri->u.script.reqs;
+            break;
+
+        case RUN_ITEM_SESSION:
+            reqs = &ri->u.session.reqs;
+            break;
+
+        case RUN_ITEM_PACKAGE:
+            reqs = &ri->u.package->reqs;
+            break;
+
+        default:
+            assert(false);
+            return NULL;
+    }
+
+    return reqs;
+}
 
 /* See description in tester_reqs.h */
 bool
@@ -538,24 +556,9 @@ tester_is_run_required(const logic_expr        *targets,
     bool force = false;
     const test_requirements    *reqs;
 
-    switch (test->type)
-    {
-        case RUN_ITEM_SCRIPT:
-            reqs = &test->u.script.reqs;
-            break;
-
-        case RUN_ITEM_SESSION:
-            reqs = &test->u.session.reqs;
-            break;
-
-        case RUN_ITEM_PACKAGE:
-            reqs = &test->u.package->reqs;
-            break;
-
-        default:
-            assert(false);
-            return false;
-    }
+    reqs = tester_get_ri_reqs(test);
+    if (reqs == NULL)
+        return false;
 
     if (targets != NULL)
     {

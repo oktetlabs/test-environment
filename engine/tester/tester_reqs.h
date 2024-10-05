@@ -107,6 +107,28 @@ extern te_errno tester_get_sticky_reqs(test_requirements *sticky_reqs,
                                        const test_requirements *reqs);
 
 /**
+ * Get pointer to requirements for a run item.
+ *
+ * @param ri      Run item.
+ *
+ * @return Pointer to associated requirements.
+ */
+const test_requirements *tester_get_ri_reqs(const struct run_item *ri);
+
+/**
+ * Get requirement identifier in specified context of parameters.
+ *
+ * @param req           A requirement.
+ * @param n_args        Number of arguments.
+ * @param args          Test iteration arguments.
+ *
+ * @return Requirement Id.
+ */
+extern const char *test_req_id(const test_requirement *req,
+                               unsigned int n_args,
+                               const struct test_iter_arg *args);
+
+/**
  * Print requirements expression to static buffer.
  *
  * @param expr      Requirements expression
