@@ -205,6 +205,7 @@ struct test_session {
     const struct test_session  *parent; /**< Parent test session */
 
     char               *name;           /**< Name or NULL */
+    char               *objective;      /**< Objective */
     test_attrs          attrs;          /**< Test attributes */
     test_value_types    types;          /**< Types declared in session */
     test_vars_args      vars;           /**< List of variables */

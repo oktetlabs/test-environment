@@ -1734,6 +1734,12 @@ log_test_start(unsigned int flags,
             assert(tin == TE_TIN_INVALID);
             SET_JSON_STRING(tmp, "session");
             SET_NEW_JSON(result, "node_type", tmp);
+
+            if (ri->u.session.objective != NULL)
+            {
+                SET_JSON_STRING(tmp, ri->u.session.objective);
+                SET_NEW_JSON(result, "objective", tmp);
+            }
             break;
 
         case RUN_ITEM_PACKAGE:

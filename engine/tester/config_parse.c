@@ -1804,6 +1804,15 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
 
     node = xmlNodeChildren(node);
 
+    /* Get optional 'objective' */
+    if (node != NULL &&
+        (rc = get_node_with_text_content(&node, "objective",
+                                         &session->objective)) != 0)
+    {
+        if (rc != TE_ENOENT)
+            return rc;
+    }
+
     monitors_process(&node, ritem);
 
     /* Get information about variables */
@@ -2936,6 +2945,7 @@ static void
 test_session_free(test_session *p)
 {
     free(p->name);
+    free(p->objective);
     test_vars_args_free(&p->vars);
     test_value_types_free(&p->types);
     if (~p->flags & TEST_INHERITED_EXCEPTION)
