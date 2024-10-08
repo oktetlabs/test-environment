@@ -1039,15 +1039,8 @@ get_script(xmlNodePtr node, tester_cfg *cfg, test_script *script)
     ti = find_test_info(cfg->cur_pkg->ti, script->name);
     if (ti != NULL)
     {
-        if (script->objective != NULL && ti->objective != NULL &&
-            strcmp(script->objective, ti->objective) != 0)
+        if (ti->objective != NULL && script->objective == NULL)
         {
-            WARN("Inconsistency in test '%s' objective from package.xml "
-                 "and tests-info.xml", script->name);
-        }
-        if (ti->objective != NULL)
-        {
-            free(script->objective);
             script->objective = strdup(ti->objective);
             if (script->objective == NULL)
             {
