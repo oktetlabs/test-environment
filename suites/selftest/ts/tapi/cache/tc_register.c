@@ -5,6 +5,13 @@
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
+/** @page cache-tc_register Testing tapi_cache_register()
+ *
+ * @objective Check that tapi_cache_register() works properly
+ *
+ * @par Scenario:
+ */
+
 #define TE_TEST_NAME  "tc_register"
 
 #include "te_defs.h"

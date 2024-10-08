@@ -10,8 +10,11 @@
     <session track_conf="silent">
         <run name="registration">
             <session track_conf="silent">
+                <objective>Test registration of cache callbacks</objective>
                 <run name="tc_register_single_area">
-                    <script name="tc_register"/>
+                    <script name="tc_register">
+                      <objective>Test callback registration for a single area</objective>
+                    </script>
                     <arg name="areas">
                         <value>foo</value>
                         <value>foo/bar</value>
@@ -48,6 +51,7 @@
         </run>
         <run name="invalidation">
             <session track_conf="silent">
+                <objective>Test invalidating cache areas</objective>
                 <run name="tc_invalidate_all">
                     <script name="tc_invalidate_all"/>
                     <arg name="areas">
