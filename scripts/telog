@@ -18,7 +18,7 @@ hash "$TE_BAT" >/dev/null 2>&1 || TE_BAT=batcat
 TE_BAT_COMMON_OPTS=(
     --language telog
 )
-[ -z "$BAT_THEME" ] && TE_BAT_COMMON_OPTS+=(--theme ansi-light)
+[ -z "$BAT_THEME" ] && TE_BAT_COMMON_OPTS+=(--theme ansi)
 
 LOG_FILE=log.txt
 TERMINAL_LINES=$(tput lines)
