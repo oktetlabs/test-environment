@@ -853,17 +853,8 @@ te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
     if (hash != NULL)
         data->hash = json_string_value(hash);
 
-    if (params != NULL)
+    if (params != NULL && (data->params_num = json_array_size(params)) > 0)
     {
-        data->params_num = json_array_size(params);
-        if (data->params_num == 0)
-        {
-            te_rgt_mi_parse_error(mi, TE_EINVAL,
-                                  "test_start parameter list cannot be an "
-                                  "empty array. If there are no arguments,"
-                                  "this field must be omitted");
-            goto cleanup;
-        }
         data->params = TE_ALLOC(sizeof(te_rgt_mi_kv) * data->params_num);
 
         json_array_foreach(params, i, item)
@@ -883,18 +874,8 @@ te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
         }
     }
 
-    if (reqs != NULL)
+    if (reqs != NULL && (data->reqs_num = json_array_size(reqs)) > 0)
     {
-        data->reqs_num = json_array_size(reqs);
-        if (data->reqs_num == 0)
-        {
-            te_rgt_mi_parse_error(mi, TE_EINVAL,
-                                  "test_start requirement list cannot be "
-                                  "an empty array. If there are no "
-                                  "requirements, this field must be "
-                                  "omitted");
-            goto cleanup;
-        }
         data->reqs = TE_ALLOC(sizeof(char *) * data->reqs_num);
 
         json_array_foreach(reqs, i, item)
