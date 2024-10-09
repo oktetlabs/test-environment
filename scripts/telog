@@ -45,6 +45,14 @@ do_fzf=false
 do_fzf_preview=false
 
 if [ -n "$1" ] ; then
+    case "$1" in
+        --fzf-exact|-E)
+            do_fzf_exact=true
+            shift
+            ;;
+        *)
+            ;;
+    esac
     MODE=$1
     shift
 fi
@@ -68,6 +76,7 @@ $ telog -F "'[ERROR"        : search for the first ERROR
 $ telog -P                  : open with preview mode on the right
 $ telog -P "'[ERROR"        : open a preview around the first ERROR
 $ telog -P  and press Alt-P : search for previous string
+$ telog -E ...              : open with preview mode on the right
 
 Help:
            --help : help
@@ -220,6 +229,10 @@ esac
 
 if $do_fzf ; then
     [ -n "$1" ] && FZF_INITIAL=(--query "$1")
+
+    if $do_fzf_exact ; then
+        TE_FZF_COMMON_OPTS="$TE_FZF_COMMON_OPTS --exact"
+    fi
 
     if $do_fzf_preview ; then
         cat -n $LOG_FILE | \
