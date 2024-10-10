@@ -775,12 +775,25 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                 monitor->enabled = false;
                 monitor->run_monitor = true;
                 if (ta != NULL)
+                {
                     monitor->ta = strdup(ta);
+                    rc = cmd_monitor_set_type(monitor, TESTER_CMD_MONITOR_TA,
+                                              "--cmd-monitor option");
+                    if (rc != 0)
+                        return rc;
+                }
                 else
                 {
                     ta = getenv("TE_IUT_TA_NAME");
                     if (ta != NULL)
+                    {
                         monitor->ta = strdup(ta);
+                        rc = cmd_monitor_set_type(
+                            monitor, TESTER_CMD_MONITOR_TA,
+                            "TE_IUT_TA_NAME env variable");
+                        if (rc != 0)
+                            return rc;
+                    }
                 }
                 monitor->command = strdup(command);
                 monitor->time_to_wait = atoi(time_to_wait);
