@@ -1701,11 +1701,9 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
                     return rc;
                 }
             }
-            if (xmlStrcmp(p->name,
-                          CONST_CHAR2XML("ta")) == 0)
+            else if (xmlStrcmp(p->name, CONST_CHAR2XML("ta")) == 0)
             {
-                if ((rc = cmd_monitor_get_prop(&p, &monitor->ta,
-                                               "ta")) != 0)
+                if ((rc = cmd_monitor_get_prop(&p, &monitor->ta, "ta")) != 0)
                 {
                     free_cmd_monitor(monitor);
                     return rc;
