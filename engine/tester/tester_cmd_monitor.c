@@ -26,6 +26,21 @@
 int tester_monitor_id = -1;
 
 /* See description in tester_cmd_monitor.h */
+const char *
+cmd_monitor_type2str(cmd_monitor_type type)
+{
+    switch (type)
+    {
+        case TESTER_CMD_MONITOR_NONE:
+            return "Dummy";
+        case TESTER_CMD_MONITOR_TA:
+            return "TA";
+    }
+
+    return "(UNKNOWN)";
+}
+
+/* See description in tester_cmd_monitor.h */
 void
 free_cmd_monitor(cmd_monitor_descr *monitor)
 {
@@ -56,19 +71,30 @@ start_cmd_monitors(cmd_monitor_descrs *monitors)
 
     TAILQ_FOREACH(monitor, monitors, links)
     {
-        if (monitor->ta != NULL && monitor->run_monitor)
+        te_errno status;
+
+        switch (monitor->type)
         {
-            if (tapi_cfg_cmd_monitor_begin(monitor->ta,
-                                           monitor->name,
-                                           monitor->command,
-                                           monitor->time_to_wait) == 0)
-                monitor->enabled = true;
-            else
-            {
-                ERROR("Failed to enable command monitor for '%s'",
-                      monitor->command);
-                rc = -1;
-            }
+            case TESTER_CMD_MONITOR_NONE:
+                continue;
+            case TESTER_CMD_MONITOR_TA:
+                assert(monitor->ta != NULL);
+                if (!monitor->run_monitor)
+                    continue;
+                status = tapi_cfg_cmd_monitor_begin(
+                    monitor->ta, monitor->name, monitor->command,
+                    monitor->time_to_wait);
+                break;
+        }
+
+        if (status == 0)
+            monitor->enabled = true;
+        else
+        {
+            ERROR("Failed to enable TA command monitor for '%s': %r",
+                  cmd_monitor_type2str(monitor->type), monitor->command,
+                  status);
+            rc = -1;
         }
     }
 
@@ -84,19 +110,48 @@ stop_cmd_monitors(cmd_monitor_descrs *monitors)
 
     TAILQ_FOREACH(monitor, monitors, links)
     {
-        if (monitor->ta != NULL && monitor->enabled)
+        te_errno status;
+
+        if (!monitor->enabled)
+            continue;
+
+        switch (monitor->type)
         {
-            if (tapi_cfg_cmd_monitor_end(monitor->ta,
-                                         monitor->name) == 0)
-                monitor->enabled = false;
-            else
-            {
-                ERROR("Failed to enable command monitor for '%s'",
-                      monitor->command);
-                rc = -1;
-            }
+            case TESTER_CMD_MONITOR_NONE:
+                continue;
+            case TESTER_CMD_MONITOR_TA:
+                status = tapi_cfg_cmd_monitor_end(monitor->ta, monitor->name);
+                break;
+        }
+
+        if (status == 0)
+            monitor->enabled = false;
+        else
+        {
+            ERROR("Failed to disable %s command monitor for '%s': %r",
+                  cmd_monitor_type2str(monitor->type), monitor->command,
+                  status);
+            rc = -1;
         }
     }
 
     return rc;
+}
+
+/* See description in tester_cmd_monitor.h */
+te_errno
+cmd_monitor_set_type(cmd_monitor_descr *monitor, cmd_monitor_type type,
+                     const char *reason)
+{
+    if (monitor->type != type && monitor->type != TESTER_CMD_MONITOR_NONE)
+    {
+        ERROR("Failed to change command monitor type "
+              "from %s to %s during processing %s",
+              cmd_monitor_type2str(monitor->type), cmd_monitor_type2str(type),
+              reason);
+        return TE_OS_RC(TE_TESTER, EINVAL);
+    }
+
+    monitor->type = type;
+    return 0;
 }

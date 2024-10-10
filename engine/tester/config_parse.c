@@ -1708,6 +1708,11 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
                     free_cmd_monitor(monitor);
                     return rc;
                 }
+
+                rc = cmd_monitor_set_type(monitor, TESTER_CMD_MONITOR_TA,
+                                          "ta node");
+                if (rc != 0)
+                    return rc;
             }
             else if (xmlStrcmp(p->name,
                                CONST_CHAR2XML("time_to_wait")) == 0)
@@ -1752,12 +1757,18 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
         snprintf(monitor->name, TESTER_CMD_MONITOR_NAME_LEN,
                  "tester_monitor%d", tester_monitor_id);
 
-        if (monitor->ta == NULL)
+        if (monitor->type == TESTER_CMD_MONITOR_NONE)
         {
             char *ta = getenv("TE_IUT_TA_NAME");
 
             if (ta != NULL)
+            {
                 monitor->ta = strdup(ta);
+                rc = cmd_monitor_set_type(monitor, TESTER_CMD_MONITOR_TA,
+                                          "TE_IUT_TA_NAME env variable");
+                if (rc != 0)
+                    return rc;
+            }
         }
 
         TAILQ_INSERT_TAIL(&ritem->cmd_monitors, monitor, links);
