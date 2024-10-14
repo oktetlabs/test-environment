@@ -58,11 +58,11 @@ nc_wd_mode_rpc2h(RPC_NC_WD_MODE mode)
 {
     switch (mode)
     {
-        RPC2H_CHECK(NC_WD_UNKNOWN);
-        RPC2H_CHECK(NC_WD_ALL);
-        RPC2H_CHECK(NC_WD_ALL_TAG);
-        RPC2H_CHECK(NC_WD_TRIM);
-        RPC2H_CHECK(NC_WD_EXPLICIT);
+        RPC2H(NC_WD_UNKNOWN);
+        RPC2H(NC_WD_ALL);
+        RPC2H(NC_WD_ALL_TAG);
+        RPC2H(NC_WD_TRIM);
+        RPC2H(NC_WD_EXPLICIT);
         default:
             WARN("%s is converted to NC_WD_UNKNOWN(%u)",
                  nc_wd_mode_rpc2str(mode), NC_WD_UNKNOWN);
@@ -76,11 +76,11 @@ nc_wd_mode_h2rpc(int mode)
 {
     switch (mode)
     {
-        H2RPC_CHECK(NC_WD_UNKNOWN);
-        H2RPC_CHECK(NC_WD_ALL);
-        H2RPC_CHECK(NC_WD_ALL_TAG);
-        H2RPC_CHECK(NC_WD_TRIM);
-        H2RPC_CHECK(NC_WD_EXPLICIT);
+        H2RPC(NC_WD_UNKNOWN);
+        H2RPC(NC_WD_ALL);
+        H2RPC(NC_WD_ALL_TAG);
+        H2RPC(NC_WD_TRIM);
+        H2RPC(NC_WD_EXPLICIT);
         default: return RPC_NC_WD_INVAL;
     }
 }
@@ -110,12 +110,12 @@ nc_datastore_rpc2h(RPC_NC_DATASTORE datastore)
 {
     switch (datastore)
     {
-        RPC2H_CHECK(NC_DATASTORE_ERROR);
-        RPC2H_CHECK(NC_DATASTORE_CONFIG);
-        RPC2H_CHECK(NC_DATASTORE_URL);
-        RPC2H_CHECK(NC_DATASTORE_RUNNING);
-        RPC2H_CHECK(NC_DATASTORE_STARTUP);
-        RPC2H_CHECK(NC_DATASTORE_CANDIDATE);
+        RPC2H(NC_DATASTORE_ERROR);
+        RPC2H(NC_DATASTORE_CONFIG);
+        RPC2H(NC_DATASTORE_URL);
+        RPC2H(NC_DATASTORE_RUNNING);
+        RPC2H(NC_DATASTORE_STARTUP);
+        RPC2H(NC_DATASTORE_CANDIDATE);
         default:
             WARN("%s is converted to NC_DATASTORE_ERROR(%u)",
                  nc_datastore_rpc2str(datastore), NC_DATASTORE_ERROR);
@@ -129,12 +129,12 @@ nc_datastore_h2rpc(int datastore)
 {
     switch (datastore)
     {
-        H2RPC_CHECK(NC_DATASTORE_ERROR);
-        H2RPC_CHECK(NC_DATASTORE_CONFIG);
-        H2RPC_CHECK(NC_DATASTORE_URL);
-        H2RPC_CHECK(NC_DATASTORE_RUNNING);
-        H2RPC_CHECK(NC_DATASTORE_STARTUP);
-        H2RPC_CHECK(NC_DATASTORE_CANDIDATE);
+        H2RPC(NC_DATASTORE_ERROR);
+        H2RPC(NC_DATASTORE_CONFIG);
+        H2RPC(NC_DATASTORE_URL);
+        H2RPC(NC_DATASTORE_RUNNING);
+        H2RPC(NC_DATASTORE_STARTUP);
+        H2RPC(NC_DATASTORE_CANDIDATE);
         default: return RPC_NC_DATASTORE_INVAL;
     }
 }
@@ -163,10 +163,10 @@ nc_rpc_edit_dfltop_rpc2h(RPC_NC_RPC_EDIT_DFLTOP dfltop)
 {
     switch (dfltop)
     {
-        RPC2H_CHECK(NC_RPC_EDIT_DFLTOP_UNKNOWN);
-        RPC2H_CHECK(NC_RPC_EDIT_DFLTOP_MERGE);
-        RPC2H_CHECK(NC_RPC_EDIT_DFLTOP_REPLACE);
-        RPC2H_CHECK(NC_RPC_EDIT_DFLTOP_NONE);
+        RPC2H(NC_RPC_EDIT_DFLTOP_UNKNOWN);
+        RPC2H(NC_RPC_EDIT_DFLTOP_MERGE);
+        RPC2H(NC_RPC_EDIT_DFLTOP_REPLACE);
+        RPC2H(NC_RPC_EDIT_DFLTOP_NONE);
         default:
             WARN("%s is converted to NC_RPC_EDIT_DFLTOP_UNKNOWN(%u)",
                  nc_rpc_edit_dfltop_rpc2str(dfltop),
@@ -181,10 +181,10 @@ nc_rpc_edit_dfltop_h2rpc(int dfltop)
 {
     switch (dfltop)
     {
-        H2RPC_CHECK(NC_RPC_EDIT_DFLTOP_UNKNOWN);
-        H2RPC_CHECK(NC_RPC_EDIT_DFLTOP_MERGE);
-        H2RPC_CHECK(NC_RPC_EDIT_DFLTOP_REPLACE);
-        H2RPC_CHECK(NC_RPC_EDIT_DFLTOP_NONE);
+        H2RPC(NC_RPC_EDIT_DFLTOP_UNKNOWN);
+        H2RPC(NC_RPC_EDIT_DFLTOP_MERGE);
+        H2RPC(NC_RPC_EDIT_DFLTOP_REPLACE);
+        H2RPC(NC_RPC_EDIT_DFLTOP_NONE);
         default: return RPC_NC_RPC_EDIT_DFLTOP_INVAL;
     }
 }
@@ -213,10 +213,10 @@ nc_rpc_edit_testopt_rpc2h(RPC_NC_RPC_EDIT_TESTOPT testopt)
 {
     switch (testopt)
     {
-        RPC2H_CHECK(NC_RPC_EDIT_TESTOPT_UNKNOWN);
-        RPC2H_CHECK(NC_RPC_EDIT_TESTOPT_TESTSET);
-        RPC2H_CHECK(NC_RPC_EDIT_TESTOPT_SET);
-        RPC2H_CHECK(NC_RPC_EDIT_TESTOPT_TEST);
+        RPC2H(NC_RPC_EDIT_TESTOPT_UNKNOWN);
+        RPC2H(NC_RPC_EDIT_TESTOPT_TESTSET);
+        RPC2H(NC_RPC_EDIT_TESTOPT_SET);
+        RPC2H(NC_RPC_EDIT_TESTOPT_TEST);
         default:
             WARN("%s is converted to NC_RPC_EDIT_TESTOPT_UNKNOWN(%u)",
                  nc_rpc_edit_testopt_rpc2str(testopt),
@@ -231,10 +231,10 @@ nc_rpc_edit_testopt_h2rpc(int testopt)
 {
     switch (testopt)
     {
-        H2RPC_CHECK(NC_RPC_EDIT_TESTOPT_UNKNOWN);
-        H2RPC_CHECK(NC_RPC_EDIT_TESTOPT_TESTSET);
-        H2RPC_CHECK(NC_RPC_EDIT_TESTOPT_SET);
-        H2RPC_CHECK(NC_RPC_EDIT_TESTOPT_TEST);
+        H2RPC(NC_RPC_EDIT_TESTOPT_UNKNOWN);
+        H2RPC(NC_RPC_EDIT_TESTOPT_TESTSET);
+        H2RPC(NC_RPC_EDIT_TESTOPT_SET);
+        H2RPC(NC_RPC_EDIT_TESTOPT_TEST);
         default: return RPC_NC_RPC_EDIT_TESTOPT_INVAL;
     }
 }
@@ -263,10 +263,10 @@ nc_rpc_edit_erropt_rpc2h(RPC_NC_RPC_EDIT_ERROPT erropt)
 {
     switch (erropt)
     {
-        RPC2H_CHECK(NC_RPC_EDIT_ERROPT_UNKNOWN);
-        RPC2H_CHECK(NC_RPC_EDIT_ERROPT_STOP);
-        RPC2H_CHECK(NC_RPC_EDIT_ERROPT_CONTINUE);
-        RPC2H_CHECK(NC_RPC_EDIT_ERROPT_ROLLBACK);
+        RPC2H(NC_RPC_EDIT_ERROPT_UNKNOWN);
+        RPC2H(NC_RPC_EDIT_ERROPT_STOP);
+        RPC2H(NC_RPC_EDIT_ERROPT_CONTINUE);
+        RPC2H(NC_RPC_EDIT_ERROPT_ROLLBACK);
         default:
             WARN("%s is converted to NC_RPC_EDIT_ERROPT_UNKNOWN(%u)",
                  nc_rpc_edit_erropt_rpc2str(erropt),
@@ -281,10 +281,10 @@ nc_rpc_edit_erropt_h2rpc(int erropt)
 {
     switch (erropt)
     {
-        H2RPC_CHECK(NC_RPC_EDIT_ERROPT_UNKNOWN);
-        H2RPC_CHECK(NC_RPC_EDIT_ERROPT_STOP);
-        H2RPC_CHECK(NC_RPC_EDIT_ERROPT_CONTINUE);
-        H2RPC_CHECK(NC_RPC_EDIT_ERROPT_ROLLBACK);
+        H2RPC(NC_RPC_EDIT_ERROPT_UNKNOWN);
+        H2RPC(NC_RPC_EDIT_ERROPT_STOP);
+        H2RPC(NC_RPC_EDIT_ERROPT_CONTINUE);
+        H2RPC(NC_RPC_EDIT_ERROPT_ROLLBACK);
         default: return RPC_NC_RPC_EDIT_ERROPT_INVAL;
     }
 }
@@ -318,15 +318,15 @@ nc_msg_type_rpc2h(RPC_NC_MSG_TYPE msg)
 {
     switch (msg)
     {
-        RPC2H_CHECK(NC_MSG_ERROR);
-        RPC2H_CHECK(NC_MSG_WOULDBLOCK);
-        RPC2H_CHECK(NC_MSG_NONE);
-        RPC2H_CHECK(NC_MSG_HELLO);
-        RPC2H_CHECK(NC_MSG_BAD_HELLO);
-        RPC2H_CHECK(NC_MSG_RPC);
-        RPC2H_CHECK(NC_MSG_REPLY);
-        RPC2H_CHECK(NC_MSG_REPLY_ERR_MSGID);
-        RPC2H_CHECK(NC_MSG_NOTIF);
+        RPC2H(NC_MSG_ERROR);
+        RPC2H(NC_MSG_WOULDBLOCK);
+        RPC2H(NC_MSG_NONE);
+        RPC2H(NC_MSG_HELLO);
+        RPC2H(NC_MSG_BAD_HELLO);
+        RPC2H(NC_MSG_RPC);
+        RPC2H(NC_MSG_REPLY);
+        RPC2H(NC_MSG_REPLY_ERR_MSGID);
+        RPC2H(NC_MSG_NOTIF);
         default:
             WARN("%s is converted to NC_MSG_ERROR(%u)",
                  nc_msg_type_rpc2str(msg), NC_MSG_ERROR);
@@ -340,15 +340,15 @@ nc_msg_type_h2rpc(int msg)
 {
     switch (msg)
     {
-        H2RPC_CHECK(NC_MSG_ERROR);
-        H2RPC_CHECK(NC_MSG_WOULDBLOCK);
-        H2RPC_CHECK(NC_MSG_NONE);
-        H2RPC_CHECK(NC_MSG_HELLO);
-        H2RPC_CHECK(NC_MSG_BAD_HELLO);
-        H2RPC_CHECK(NC_MSG_RPC);
-        H2RPC_CHECK(NC_MSG_REPLY);
-        H2RPC_CHECK(NC_MSG_REPLY_ERR_MSGID);
-        H2RPC_CHECK(NC_MSG_NOTIF);
+        H2RPC(NC_MSG_ERROR);
+        H2RPC(NC_MSG_WOULDBLOCK);
+        H2RPC(NC_MSG_NONE);
+        H2RPC(NC_MSG_HELLO);
+        H2RPC(NC_MSG_BAD_HELLO);
+        H2RPC(NC_MSG_RPC);
+        H2RPC(NC_MSG_REPLY);
+        H2RPC(NC_MSG_REPLY_ERR_MSGID);
+        H2RPC(NC_MSG_NOTIF);
         default: return RPC_NC_MSG_INVAL;
     }
 }
