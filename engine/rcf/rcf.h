@@ -328,6 +328,13 @@ extern int rcf_send_cmd(ta *agent, usrreq *req);
 extern usrreq *rcf_alloc_usrreq(void);
 
 /**
+ * Release allocated memory for user request.
+ *
+ * @param req   User request
+ */
+extern void rcf_free_usrreq(usrreq *req);
+
+/**
  * Entry point of reboot state machine.
  *
  * @param agent Test Agent structure

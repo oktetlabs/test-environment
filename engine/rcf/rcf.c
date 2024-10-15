@@ -875,12 +875,7 @@ rcf_answer_user_request(usrreq *req)
     }
     if (!(req->message->flags & INTERMEDIATE_ANSWER))
     {
-        free(req->message);
-        if (req->prev != NULL)
-            (req->prev)->next = req->next;
-        if (req->next != NULL)
-            (req->next)->prev = req->prev;
-        free(req);
+        rcf_free_usrreq(req);
     }
     else
     {
@@ -2184,6 +2179,18 @@ rcf_alloc_usrreq(void)
     return req;
 }
 
+/* See description in rcf.h */
+void
+rcf_free_usrreq(usrreq * req)
+{
+    free(req->message);
+    if (req->prev != NULL)
+        (req->prev)->next = req->next;
+    if (req->next != NULL)
+        (req->next)->prev = req->prev;
+    free(req);
+}
+
 
 /**
  * This function is used to finish check that all running TA are
@@ -3089,8 +3096,7 @@ main(int argc, const char *argv[])
             if (rc != 0)
             {
                 ERROR("Failed to receive user request: errno %r", rc);
-                free(req->message);
-                free(req);
+                rcf_free_usrreq(req);
                 continue;
             }
 
@@ -3100,8 +3106,7 @@ main(int argc, const char *argv[])
                       "data_len field does not match to IPC "
                       "message size: %d != %d + %d",
                       len, req->message->data_len, sizeof(rcf_msg));
-                free(req->message);
-                free(req);
+                rcf_free_usrreq(req);
                 continue;
             }
 
