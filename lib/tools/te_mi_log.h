@@ -233,6 +233,7 @@ typedef enum te_mi_meas_type {
     TE_MI_MEAS_THROUGHPUT, /**< Throughput in bits per second */
     TE_MI_MEAS_BANDWIDTH_USAGE, /**< Bandwidth usage ratio */
     TE_MI_MEAS_TEMP, /**< Temperature in degrees Celsius */
+    TE_MI_MEAS_CPS, /**< Connections per second */
     TE_MI_MEAS_RPS, /**< Requests per second */
     TE_MI_MEAS_RTT, /**< Rount trip time in seconds */
     TE_MI_MEAS_RETRANS, /**< TCP retransmissons */

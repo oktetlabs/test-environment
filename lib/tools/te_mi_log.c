@@ -106,6 +106,7 @@ typedef enum te_mi_meas_base_unit_type {
     TE_MI_MEAS_BASE_UNIT_SECOND, /**< Seconds */
     TE_MI_MEAS_BASE_UNIT_BPS, /**< Bits per second */
     TE_MI_MEAS_BASE_UNIT_CELSIUS, /**< Degrees of celsius */
+    TE_MI_MEAS_BASE_UNIT_CPS, /**< Connections per second */
     TE_MI_MEAS_BASE_UNIT_RPS, /**< Requests per second */
     TE_MI_MEAS_BASE_UNIT_HZ, /**< Events per seconds (Hz) */
     TE_MI_MEAS_BASE_UNIT_IOPS, /**< Input/Output operations per second */
@@ -118,6 +119,7 @@ static te_mi_meas_base_unit_type meas_base_unit_by_type_map[] = {
     [TE_MI_MEAS_THROUGHPUT] = TE_MI_MEAS_BASE_UNIT_BPS,
     [TE_MI_MEAS_BANDWIDTH_USAGE] = TE_MI_MEAS_BASE_UNITLESS,
     [TE_MI_MEAS_TEMP] = TE_MI_MEAS_BASE_UNIT_CELSIUS,
+    [TE_MI_MEAS_CPS] = TE_MI_MEAS_BASE_UNIT_CPS,
     [TE_MI_MEAS_RPS] = TE_MI_MEAS_BASE_UNIT_RPS,
     [TE_MI_MEAS_RTT] = TE_MI_MEAS_BASE_UNIT_SECOND,
     [TE_MI_MEAS_RETRANS] = TE_MI_MEAS_BASE_UNITLESS,
@@ -135,6 +137,7 @@ static const te_enum_map meas_base_unit_names[] = {
     {.value = TE_MI_MEAS_BASE_UNIT_SECOND, .name = "second"},
     {.value = TE_MI_MEAS_BASE_UNIT_BPS, .name = "bps"},
     {.value = TE_MI_MEAS_BASE_UNIT_CELSIUS, .name = "degrees celsius"},
+    {.value = TE_MI_MEAS_BASE_UNIT_CPS, .name = "cps"},
     {.value = TE_MI_MEAS_BASE_UNIT_RPS, .name = "rps"},
     {.value = TE_MI_MEAS_BASE_UNIT_HZ, .name = "Hz"},
     {.value = TE_MI_MEAS_BASE_UNIT_IOPS, .name = "iops"},
@@ -167,6 +170,7 @@ static const te_enum_map meas_type_names[] = {
     {.value = TE_MI_MEAS_THROUGHPUT, .name = "throughput"},
     {.value = TE_MI_MEAS_BANDWIDTH_USAGE, .name = "bandwidth-usage"},
     {.value = TE_MI_MEAS_TEMP, .name = "temperature"},
+    {.value = TE_MI_MEAS_CPS, .name = "connections-per-second"},
     {.value = TE_MI_MEAS_RPS, .name = "rps"},
     {.value = TE_MI_MEAS_RTT, .name = "rtt"},
     {.value = TE_MI_MEAS_RETRANS, .name = "TCP retransmissions"},
@@ -695,6 +699,9 @@ te_mi_meas_type2descr(te_mi_meas_type type)
 
         case TE_MI_MEAS_TEMP:
             return "Temperature in degrees Celsius";
+
+        case TE_MI_MEAS_CPS:
+            return "Connections per second";
 
         case TE_MI_MEAS_RPS:
             return "Requests per second";
