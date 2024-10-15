@@ -39,6 +39,7 @@
 #include <jansson.h>
 
 #include "te_alloc.h"
+#include "tq_string.h"
 #include "conf_api.h"
 #include "log_bufs.h"
 #include "te_trc.h"
@@ -1331,26 +1332,44 @@ test_params_to_json(const unsigned int n_args, const test_iter_arg *args)
 }
 
 /**
- * Add requirements to JSON array.
+ * Add requirements to a strings queue ensuring that every requirement
+ * is included only once.
  *
- * @param array   JSON array.
+ * @param strs    Queue head.
  * @param reqs    Requirements.
  * @param n_args  Number of test arguments.
  * @param args    Test arguments (used when requirement has a
  *                "ref" attribute).
- *
- * @return 0 on success or -1 on failure.
  */
-static int
-add_test_reqs_to_array(json_t *array, const test_requirements *reqs,
-                       unsigned int n_args, const test_iter_arg *args)
+static void
+add_test_reqs_to_strings(tqh_strings *strs, const test_requirements *reqs,
+                         unsigned int n_args, const test_iter_arg *args)
 {
-    json_t *item;
     test_requirement *p;
 
     TAILQ_FOREACH(p, reqs, links)
     {
-        item = json_pack("s", test_req_id(p, n_args, args));
+        tq_strings_add_uniq_dup(strs, test_req_id(p, n_args, args));
+    }
+}
+
+/**
+ * Add strings from a queue to JSON array.
+ *
+ * @param array   JSON array.
+ * @param strs    Queue head.
+ *
+ * @return 0 on success or -1 on failure.
+ */
+static int
+add_strings_to_array(json_t *array, tqh_strings *strs)
+{
+    json_t *item;
+    tqe_string *str;
+
+    TAILQ_FOREACH(str, strs, links)
+    {
+        item = json_pack("s", str->v);
         if (item == NULL)
         {
             ERROR("%s(): json_pack() failed", __FUNCTION__);
@@ -1384,41 +1403,37 @@ test_reqs_to_json(const test_requirements *sticky_reqs,
     const test_requirements *reqs;
     int rc;
     unsigned int i;
+    tqh_strings reqs_unique;
+
+    TAILQ_INIT(&reqs_unique);
+
+    add_test_reqs_to_strings(&reqs_unique, sticky_reqs,
+                             ri->n_args, args);
+
+    reqs = tester_get_ri_reqs(ri);
+    if (reqs != NULL)
+        add_test_reqs_to_strings(&reqs_unique, reqs, ri->n_args, args);
+
+    for (i = 0; i < ri->n_args; i++)
+    {
+        add_test_reqs_to_strings(&reqs_unique, &args[i].reqs,
+                                 ri->n_args, args);
+    }
 
     result = json_array();
     if (result == NULL)
     {
         ERROR("%s(): failed to allocate memory for array", __FUNCTION__);
+        tq_strings_free(&reqs_unique, free);
         return NULL;
     }
 
-    rc = add_test_reqs_to_array(result, sticky_reqs, ri->n_args, args);
+    rc = add_strings_to_array(result, &reqs_unique);
+    tq_strings_free(&reqs_unique, free);
     if (rc < 0)
     {
         json_decref(result);
         return NULL;
-    }
-
-    reqs = tester_get_ri_reqs(ri);
-    if (reqs != NULL)
-    {
-        rc = add_test_reqs_to_array(result, reqs, ri->n_args, args);
-        if (rc < 0)
-        {
-            json_decref(result);
-            return NULL;
-        }
-    }
-
-    for (i = 0; i < ri->n_args; i++)
-    {
-        rc = add_test_reqs_to_array(result, &args[i].reqs,
-                                    ri->n_args, args);
-        if (rc < 0)
-        {
-            json_decref(result);
-            return NULL;
-        }
     }
 
     if (json_array_size(result) == 0)
