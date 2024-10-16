@@ -1416,6 +1416,9 @@ test_reqs_to_json(const test_requirements *sticky_reqs,
 
     for (i = 0; i < ri->n_args; i++)
     {
+        if (args[i].variable)
+            continue;
+
         add_test_reqs_to_strings(&reqs_unique, &args[i].reqs,
                                  ri->n_args, args);
     }
