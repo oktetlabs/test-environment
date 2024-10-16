@@ -160,7 +160,8 @@ extern void rgt_tmpls_attrs_saved_free(rgt_attrs_t *attrs);
  *                 the list of arguments
  */
 extern void rgt_tmpls_attrs_add_fstr(rgt_attrs_t *attrs, const char *name,
-                                     const char *fmt_str, ...);
+                                     const char *fmt_str, ...)
+                                     TE_LIKE_PRINTF(3, 4);
 
 /**
  * Update the value of string attribute in the list of rgt attributes.
@@ -172,7 +173,8 @@ extern void rgt_tmpls_attrs_add_fstr(rgt_attrs_t *attrs, const char *name,
  *                 the list of arguments
  */
 extern void rgt_tmpls_attrs_set_fstr(rgt_attrs_t *attrs, const char *name,
-                                     const char *fmt_str, ...);
+                                     const char *fmt_str, ...)
+                                     TE_LIKE_PRINTF(3, 4);
 
 /**
  * Add a new uint32_t attribute into the list of rgt attributes.
