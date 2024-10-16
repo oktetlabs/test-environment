@@ -41,6 +41,35 @@ static ta_events_param_list ta_events_params =
 static char buf[4096];
 
 /**
+ * Check that given TA events @p param is match for TA @p event
+ *
+ * @param param   TA events parameters
+ * @param event   Required name of TA event
+ *
+ * @return @c true if TA events parameter is suitable for this @p event
+ */
+static bool
+ta_events_param_match(ta_events_param *param, const char* event)
+{
+    int   len = strlen(event);
+    char *ptr;
+
+    assert(len > 0);
+
+    for (ptr = param->value; ptr != NULL; ptr++)
+    {
+        char *base = ptr;
+
+        ptr = strstr(base, event);
+        if ((ptr == base || ptr[-1] == ',') &&
+            (ptr[len] == '\0' || ptr[len] == ','))
+            return true;
+    }
+
+    return false;
+}
+
+/**
  * Find TA events parameters by unique @ref name
  *
  * @param name       Required TA events parameters name
@@ -221,4 +250,27 @@ te_errno
 rcf_pch_ta_events_conf_init(void)
 {
     return rcf_pch_add_node("/agent", &node_ta_events);
+}
+
+/* See description in rcf_pch_ta_events.h */
+int
+rcf_pch_ta_events_collect_rcf_clients(const char *event, te_string *rcf_clients)
+{
+    int              cnt = 0;
+    ta_events_param *param;
+
+    SLIST_FOREACH (param, &ta_events_params, links)
+    {
+        if (ta_events_param_match(param, event))
+        {
+            char *last_delim = strrchr(param->name, '_');
+
+            if (cnt++ != 0)
+                te_string_append(rcf_clients, ",");
+            te_string_append_buf(rcf_clients, param->name,
+                                 last_delim - param->name);
+        }
+    }
+
+    return cnt;
 }

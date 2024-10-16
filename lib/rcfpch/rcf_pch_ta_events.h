@@ -11,6 +11,7 @@
 #define __TE_RCF_PCH_TA_EVENTS_H__
 
 #include "te_errno.h"
+#include "te_string.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,6 +19,17 @@ extern "C" {
 
 /** Initialize ta_events agent configuration subtree. */
 extern te_errno rcf_pch_ta_events_conf_init(void);
+
+/**
+ * Collect list of RCF clients by given @ref event
+ *
+ * @param event         TA event name to find
+ * @param rcf_clients   List RCF clients subscribed to this TA event
+ *
+ * @return Number of RCF clients
+ */
+extern int rcf_pch_ta_events_collect_rcf_clients(const char *event,
+                                                 te_string  *rcf_clients);
 
 #ifdef __cplusplus
 } /* extern "C" */

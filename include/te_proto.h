@@ -52,6 +52,7 @@
 
 #define TE_PROTO_TA_EVENTS               "ta_events"
 #define TE_PROTO_TA_EVENTS_TRIGGER_EVENT "trigger_event"
+#define TE_PROTO_TA_EVENTS_EVENT         "event"
 
 
 #ifdef RCF_NEED_TYPES
