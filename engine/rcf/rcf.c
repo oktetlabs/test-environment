@@ -1544,6 +1544,11 @@ process_reply(ta *agent)
             case RCFOP_TRPOLL_CANCEL:
                 break;
 
+            case RCFOP_TA_EVENTS:
+                assert(strcmp(ptr, TE_PROTO_TA_EVENTS_TRIGGER_EVENT) == 0);
+                msg->intparm = RCF_TA_EVENTS_TYPE_TRIGGER_EVENT;
+                break;
+
             case RCFOP_CONFGET:
                 if (ba != NULL)
                     save_attachment(agent, msg, len, ba);
@@ -2262,6 +2267,22 @@ rcf_send_cmd(ta *agent, usrreq *req)
                     return -1;
             }
             PUT(" %u", msg->handle);
+            req->timeout = RCF_CMD_TIMEOUT;
+            break;
+
+        case RCFOP_TA_EVENTS:
+            switch (msg->intparm)
+            {
+            case RCF_TA_EVENTS_TYPE_TRIGGER_EVENT:
+                PUT("%s %s %s", TE_PROTO_TA_EVENTS,
+                    TE_PROTO_TA_EVENTS_TRIGGER_EVENT, msg->value);
+                break;
+            default:
+                ERROR("Incorrect TA events type: %d", msg->intparm);
+                msg->error = TE_RC(TE_RCF, TE_EINVAL);
+                rcf_answer_user_request(req);
+                return -1;
+            }
             req->timeout = RCF_CMD_TIMEOUT;
             break;
 

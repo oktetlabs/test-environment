@@ -373,6 +373,7 @@ get_opcode(char **ptr, rcf_op_t *opcode)
     TRY_CMD(KILL);
     TRY_CMD(GET_SNIFFERS);
     TRY_CMD(GET_SNIF_DUMP);
+    TRY_CMD(TA_EVENTS);
 
 #undef TRY_CMD
 
@@ -1305,6 +1306,22 @@ rcf_pch_run(const char *confstr, const char *info)
                 else
                     SEND_ANSWER("%d", rcf_ch_kill_thread(pid));
 
+                break;
+            }
+
+            case RCFOP_TA_EVENTS:
+            {
+                char *type;
+
+                if (*ptr == 0 || transform_str(&ptr, &type) != 0)
+                    goto bad_protocol;
+
+                if (strcmp(TE_PROTO_TA_EVENTS_TRIGGER_EVENT, type) != 0)
+                    goto bad_protocol;
+
+                WARN("Trigger TA event: %s", ptr);
+
+                SEND_ANSWER("0 %s", TE_PROTO_TA_EVENTS_TRIGGER_EVENT);
                 break;
             }
 
