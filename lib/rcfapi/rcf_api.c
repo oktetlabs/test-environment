@@ -3069,3 +3069,16 @@ rcf_ta_events_unsubscribe(unsigned int pid, unsigned int tid)
     snprintf(msg.value, sizeof(msg.value), "%u_%u", pid, tid);
     return rcf_ta_events_send_recv_msg(&msg);
 }
+
+/* See description in rcf_api.h */
+te_errno
+rcf_ta_events_trigger_event(const char *ta, const char *event,
+                            const char *value)
+{
+    rcf_msg msg;
+
+    rcf_ta_events_init_msg(&msg, RCF_TA_EVENTS_TYPE_TRIGGER_EVENT);
+    strcpy(msg.ta, ta);
+    snprintf(msg.value, sizeof(msg.value), "%s %s", event, value);
+    return rcf_ta_events_send_recv_msg(&msg);
+}

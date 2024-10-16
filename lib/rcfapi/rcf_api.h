@@ -1198,6 +1198,18 @@ extern te_errno rcf_ta_events_subscribe(unsigned int pid, unsigned int tid);
  */
 extern te_errno rcf_ta_events_unsubscribe(unsigned int pid, unsigned int tid);
 
+/**
+ * Trigger TA event
+ *
+ * @param ta        Agent from which we want to receive TA events
+ * @param event     The name of event to trigger
+ * @param value     Event payload to trigger
+ *
+ * @return          Status code
+ */
+extern te_errno rcf_ta_events_trigger_event(const char *ta, const char *event,
+                                            const char *value);
+
 /**@} <!-- END rcfapi_base --> */
 
 #ifdef __cplusplus
