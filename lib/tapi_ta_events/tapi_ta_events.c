@@ -16,6 +16,7 @@
 #include "te_alloc.h"
 #include "te_vector.h"
 
+#include "conf_api.h"
 #include "logger_api.h"
 #include "rcf_api.h"
 #include "tapi_ta_events.h"
@@ -84,6 +85,12 @@ tapi_ta_events_subscribe(const char *ta, const char *events,
     if (rc != 0)
         return rc;
 
+    rc = cfg_add_instance_fmt(NULL, CVT_STRING, events,
+                              "/agent:%s/ta_events:%u_%u_%u", ta, pid, tid,
+                              *handle);
+    if (rc != 0)
+        return rc;
+
     return 0;
 }
 
@@ -105,6 +112,11 @@ tapi_ta_events_unsubscribe(tapi_ta_events_handle handle)
               entry == NULL ? "unknown" : "disabled", handle);
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
+
+    rc = cfg_del_instance_fmt(false, "/agent:%s/ta_events:%u_%u_%u",
+                              entry->ta, pid, tid, handle);
+    if (rc != 0)
+        return rc;
 
     rc = rcf_ta_events_unsubscribe(pid, tid);
     if (rc != 0)
