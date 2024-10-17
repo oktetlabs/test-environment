@@ -9,10 +9,15 @@
 
 #include "te_config.h"
 
+#ifdef HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
+
 #include "te_alloc.h"
 #include "te_vector.h"
 
 #include "logger_api.h"
+#include "rcf_api.h"
 #include "tapi_ta_events.h"
 
 /** Test context to handle specified subset of TA events */
@@ -52,6 +57,8 @@ tapi_ta_events_subscribe(const char *ta, const char *events,
                          tapi_ta_events_cb      callback,
                          tapi_ta_events_handle *handle)
 {
+    unsigned int       pid = (unsigned int)getpid();
+    unsigned int       tid = (unsigned int)pthread_self();
     te_errno           rc;
     ta_events_handler *new_entry = ta_events_get_unused_handler();
 
@@ -73,6 +80,10 @@ tapi_ta_events_subscribe(const char *ta, const char *events,
 
     *handle = new_entry - (ta_events_handler *)ta_events_handlers.data.ptr;
 
+    rc = rcf_ta_events_subscribe(pid, tid);
+    if (rc != 0)
+        return rc;
+
     return 0;
 }
 
@@ -80,6 +91,8 @@ tapi_ta_events_subscribe(const char *ta, const char *events,
 te_errno
 tapi_ta_events_unsubscribe(tapi_ta_events_handle handle)
 {
+    unsigned int       pid = (unsigned int)getpid();
+    unsigned int       tid = (unsigned int)pthread_self();
     te_errno           rc;
     ta_events_handler *entry = NULL;
 
@@ -92,6 +105,10 @@ tapi_ta_events_unsubscribe(tapi_ta_events_handle handle)
               entry == NULL ? "unknown" : "disabled", handle);
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
+
+    rc = rcf_ta_events_unsubscribe(pid, tid);
+    if (rc != 0)
+        return rc;
 
     free(entry->ta);
     free(entry->events);

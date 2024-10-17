@@ -65,6 +65,8 @@ enum {
     RCF_SID_GET_LOG = 1,
     /** Session used for TA check */
     RCF_SID_TACHECK,
+    /** Session used for TA event gathering */
+    RCF_SID_TA_EVENTS,
 
     /** Unused SID, must be the last in the enum */
     RCF_SID_UNUSED,

@@ -35,6 +35,14 @@ extern "C" {
 /** Special SID for TA get log operation */
 #define RCF_TA_GET_LOG_SID      1
 
+/** Special SID for TA events operation */
+#define RCF_TA_EVENTS_SID       3
+
+/** @name TA event operation types */
+#define RCF_TA_EVENTS_TYPE_SUBSCRIBE     1
+#define RCF_TA_EVENTS_TYPE_UNSUBSCRIBE   2
+/*@}*/
+
 /** @name Message flags */
 #define BINARY_ATTACHMENT       1   /**< Binary attachment is provided;
                                          file is saved in lfile */
@@ -97,6 +105,7 @@ typedef enum {
     RCFOP_TADEAD,           /**< Inform RCF that TA is dead */
     RCFOP_GET_SNIFFERS,     /**< Obtain the list of sniffers */
     RCFOP_GET_SNIF_DUMP,    /**< Pull out capture logs of the sniffer */
+    RCFOP_TA_EVENTS,        /**< TA events */
 } rcf_op_t;
 
 
@@ -218,6 +227,7 @@ rcf_op_to_string(rcf_op_t op)
         case RCFOP_KILL:            return "kill";
         case RCFOP_GET_SNIFFERS:    return "get sniffers";
         case RCFOP_GET_SNIF_DUMP:   return "get snif dump";
+        case RCFOP_TA_EVENTS:       return "TA events";
         default:                    return "(unknown)";
     }
 }

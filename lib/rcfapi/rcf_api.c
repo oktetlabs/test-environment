@@ -3014,3 +3014,58 @@ rcf_get_dead_agents(te_vec *dead_agents)
 
     return rc;
 }
+
+/** Initialize @ref msg as TA event with given TA event @ref type */
+static void
+rcf_ta_events_init_msg(rcf_msg* msg, int type)
+{
+    memset(msg, 0, sizeof(*msg));
+
+    msg->opcode = RCFOP_TA_EVENTS;
+    msg->sid = RCF_TA_EVENTS_SID;
+    msg->intparm = type;
+}
+
+/** Send given @ref msg to TE RCF */
+static te_errno
+rcf_ta_events_send_recv_msg(rcf_msg *msg)
+{
+    rcf_msg *ans = NULL;
+    int      rc;
+    size_t   anslen = sizeof(*msg);
+
+    rc = rcf_send_recv_msg(msg, sizeof(rcf_msg), msg, &anslen, &ans);
+
+    if (ans != NULL)
+        msg = ans;
+
+    if (rc == 0)
+        rc = msg->error;
+
+    if (ans != NULL)
+        free(ans);
+
+    return rc;
+}
+
+/* See description in rcf_api.h */
+te_errno
+rcf_ta_events_subscribe(unsigned int pid, unsigned int tid)
+{
+    rcf_msg msg;
+
+    rcf_ta_events_init_msg(&msg, RCF_TA_EVENTS_TYPE_SUBSCRIBE);
+    snprintf(msg.value, sizeof(msg.value), "%u_%u", pid, tid);
+    return rcf_ta_events_send_recv_msg(&msg);
+}
+
+/* See description in rcf_api.h */
+te_errno
+rcf_ta_events_unsubscribe(unsigned int pid, unsigned int tid)
+{
+    rcf_msg msg;
+
+    rcf_ta_events_init_msg(&msg, RCF_TA_EVENTS_TYPE_UNSUBSCRIBE);
+    snprintf(msg.value, sizeof(msg.value), "%u_%u", pid, tid);
+    return rcf_ta_events_send_recv_msg(&msg);
+}

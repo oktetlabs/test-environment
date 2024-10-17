@@ -2707,6 +2707,26 @@ process_user_request(usrreq *req)
             rcf_answer_user_request(req);
             return;
 
+        case RCFOP_TA_EVENTS:
+            switch (msg->intparm)
+            {
+            case RCF_TA_EVENTS_TYPE_SUBSCRIBE:
+                msg = req->message;
+                msg->data_len = 0;
+                WARN("Subscribe RCF client for TA events");
+                rcf_answer_user_request(req);
+                return;
+            case RCF_TA_EVENTS_TYPE_UNSUBSCRIBE:
+                msg = req->message;
+                msg->data_len = 0;
+                WARN("Unsubscribe RCF client for TA events");
+                rcf_answer_user_request(req);
+                return;
+            default:
+                break;
+            }
+            break;
+
         default:
             /* The rest of commands are processed below */
             break;
