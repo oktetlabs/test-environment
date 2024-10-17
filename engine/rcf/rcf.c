@@ -58,6 +58,7 @@
 
 #include <dlfcn.h>
 
+#include "te_alloc.h"
 #include "te_stdint.h"
 #include "te_printf.h"
 #include "te_str.h"
@@ -124,6 +125,125 @@ static char *tmp_dir;
 static int write_str(char *s, size_t len);
 static void rcf_ta_check_done(usrreq *req);
 static void send_all_pending_commands(ta *agent);
+
+/** RCF client to receive TA events */
+typedef struct ta_events_client {
+    int     refcnt; /**< Number of active TA events patterns for this client */
+    char   *name;   /**< Unique name for this client (${pid}_${tid}) */
+    usrreq *req;    /**< User request to send TA events */
+} ta_events_client;
+
+/** Full set of RCF clients to receive TA events */
+static te_vec ta_events_clients = TE_VEC_INIT(ta_events_client);
+
+/**
+ * Get unused RCF client from @ref ta_events_clients vector
+ *
+ * @retval @c NULL   If there is no unused RCF clients
+ * @retval other     Pointer to unused RCF client
+ */
+static ta_events_client*
+ta_events_get_unused_client(void)
+{
+    ta_events_client *client;
+
+    TE_VEC_FOREACH (&ta_events_clients, client)
+    {
+        if (client->refcnt == 0)
+            return client;
+    }
+
+    return NULL;
+}
+
+/**
+ * Find RCF client from @ref ta_events_clients vector by unique @ref name
+ *
+ * @param name       Required RCF client name
+ *
+ * @retval @c NULL   If there is no RCF clients with this name
+ * @retval other     Pointer to required RCF client
+ */
+static ta_events_client*
+ta_events_find_client_by_name(const char* name)
+{
+    ta_events_client *client;
+
+    TE_VEC_FOREACH (&ta_events_clients, client)
+    {
+        if (client->refcnt > 0 && strcmp(client->name, name) == 0)
+            return client;
+    }
+
+    return NULL;
+}
+
+/**
+ * Register RCF client to receive TA events
+ *
+ * @param req        User request with information about RCF client
+ *
+ * @return Status code
+ */
+static te_errno
+ta_events_subscribe_client(usrreq *req)
+{
+    rcf_msg          *msg = req->message;
+    ta_events_client *client;
+
+    client = ta_events_find_client_by_name(msg->value);
+    if (client == NULL)
+    {
+        client = ta_events_get_unused_client();
+        if (client == NULL)
+        {
+            size_t size = te_vec_size(&ta_events_clients);
+
+            CHECK_NZ_RETURN(TE_VEC_APPEND(&ta_events_clients,
+                                          (ta_events_client){.refcnt = 0}));
+            client = te_vec_get(&ta_events_clients, size);
+        }
+
+        *client = (ta_events_client){
+            .name = TE_STRDUP(msg->value),
+            .refcnt = 0,
+            .req = rcf_alloc_usrreq(),
+        };
+        client->req->user = req->user;
+    }
+
+    client->refcnt++;
+
+    return 0;
+}
+
+/**
+ * Unregister RCF client to receive TA events
+ *
+ * @param req        User request with information about RCF client
+ *
+ * @return Status code
+ */
+static te_errno
+ta_events_unsubscribe_client(usrreq *req)
+{
+    rcf_msg          *msg = req->message;
+    ta_events_client *client = ta_events_find_client_by_name(msg->value);
+
+    if (client == NULL || client->refcnt <= 0)
+    {
+        ERROR("Failed to unsubscribe TA events RCF client with name: '%s'",
+              msg->value);
+        return TE_RC(TE_RCF, TE_EINVAL);
+    }
+
+    client->refcnt--;
+
+    if (client->refcnt == 0)
+        rcf_free_usrreq(client->req);
+
+    return 0;
+}
 
 /*
  * Release memory allocated for Test Agents structures.
@@ -2713,13 +2833,13 @@ process_user_request(usrreq *req)
             case RCF_TA_EVENTS_TYPE_SUBSCRIBE:
                 msg = req->message;
                 msg->data_len = 0;
-                WARN("Subscribe RCF client for TA events");
+                msg->error = ta_events_subscribe_client(req);
                 rcf_answer_user_request(req);
                 return;
             case RCF_TA_EVENTS_TYPE_UNSUBSCRIBE:
                 msg = req->message;
                 msg->data_len = 0;
-                WARN("Unsubscribe RCF client for TA events");
+                msg->error = ta_events_unsubscribe_client(req);
                 rcf_answer_user_request(req);
                 return;
             default:
