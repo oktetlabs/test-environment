@@ -89,6 +89,8 @@ static int csap_tr_recv_get(const char *ta_name, int session,
                             rcf_pkt_handler handler, void *user_param,
                             unsigned int *num, int opcode);
 
+static te_errno ta_events_process(rcf_msg **message, bool cleanup);
+
 /* If pthread mutexes are supported - OK; otherwise hope for best... */
 #ifdef HAVE_PTHREAD_H
 static pthread_once_t   once_control = PTHREAD_ONCE_INIT;
@@ -190,6 +192,13 @@ rcf_message_match(rcf_msg *msg, void *opaque)
         case RCFOP_SESSION:
         case RCFOP_REBOOT:
             if (strcmp(msg->ta, data->ta_name) != 0)
+                return 1;
+            return 0;
+
+        case RCFOP_TA_EVENTS:
+            if (msg->sid != data->sid)
+                return 1;
+            if (msg->intparm == RCF_TA_EVENTS_TYPE_EVENT)
                 return 1;
             return 0;
     }
@@ -430,6 +439,10 @@ wait_rcf_ipc_message(struct ipc_client *ipcc,
              " waiting for SID %d",
              message->ta, message->sid, message->flags, message->sid);
 
+        if (message->opcode == RCFOP_TA_EVENTS &&
+            (rc = ta_events_process(&message, message != recv_msg)) != 0)
+            return rc;
+
         if (match_cb(message, opaque) == 0)
             break;
 
@@ -511,7 +524,11 @@ send_recv_rcf_ipc_message(thread_ctx_t *ctx,
 
     message = (p_answer != NULL && *p_answer != NULL) ? *p_answer
                                                       : recv_buf;
-    if (rcf_message_match(recv_buf, &match_data) == 0)
+    if (recv_buf->opcode == RCFOP_TA_EVENTS &&
+        (rc = ta_events_process(&message, message != recv_buf)) != 0)
+        return rc;
+
+    if (rcf_message_match(message, &match_data) == 0)
         return 0;
 
     if (msg_buffer_insert(&ctx->msg_buf_head, message) != 0)
@@ -3081,4 +3098,40 @@ rcf_ta_events_trigger_event(const char *ta, const char *event,
     strcpy(msg.ta, ta);
     snprintf(msg.value, sizeof(msg.value), "%s %s", event, value);
     return rcf_ta_events_send_recv_msg(&msg);
+}
+
+/* See description in lib/tapi_ta_events/tapi_ta_events.c */
+extern te_errno tapi_ta_events_process_event(char *ta, char *msg_value)
+    __attribute__((weak));
+
+/**
+ * Call special TAPI TA events handler for TA event RCF messages
+ *
+ * @param message   RCF message with TA event opcode to handle
+ * @param cleanup   Flag to release this message to avoid memory leak
+ *
+ * @return Status code
+ * @retval ENOENT if target platform doesn't have tapi_ta_events library.
+ */
+static te_errno
+ta_events_process(rcf_msg **message, bool cleanup)
+{
+    te_errno rc;
+    rcf_msg *ta_events = *message;
+
+    assert(ta_events->sid == RCF_TA_EVENTS_SID);
+    if (ta_events->intparm != RCF_TA_EVENTS_TYPE_EVENT)
+        return 0;
+
+    *message = NULL;
+
+    if (tapi_ta_events_process_event != NULL)
+        rc = tapi_ta_events_process_event(ta_events->ta, ta_events->value);
+    else
+        rc = TE_RC(TE_TAPI, TE_ENOENT);
+
+    if (cleanup)
+        free(ta_events);
+
+    return rc;
 }

@@ -32,6 +32,27 @@ typedef struct ta_events_handler {
 /** Array to describe full set of TA events to handle */
 static te_vec ta_events_handlers = TE_VEC_INIT(ta_events_handler);
 
+static bool
+ta_events_handler_match(ta_events_handler *handler, const char *event)
+{
+    int   len = strlen(event);
+    char *ptr;
+
+    assert(len > 0);
+
+    for (ptr = handler->events; ptr != NULL; ptr++)
+    {
+        char *base = ptr;
+
+        ptr = strstr(base, event);
+        if ((ptr == base || ptr[-1] == ',') &&
+            (ptr[len] == '\0' || ptr[len] == ','))
+            return true;
+    }
+
+    return false;
+}
+
 /**
  * Get unused entry from @ref ta_events_handlers array
  *
@@ -128,6 +149,39 @@ tapi_ta_events_unsubscribe(tapi_ta_events_handle handle)
     *entry = (ta_events_handler){
         .used = false,
     };
+
+    return 0;
+}
+
+/**
+ * Call suitable TA events handlers
+ *
+ * @param ta          TA event source name (TA name)
+ * @param msg_value   TA event name and value
+ *
+ * @return Status code
+ *
+ * @retval EINVAL    if there is only TA event name (without TA event value);
+ * @retval ECANCELED if one of handlers returns @c false
+ */
+te_errno
+tapi_ta_events_process_event(char *ta, char *msg_value)
+{
+    char              *value;
+    char              *event = strtok_r(msg_value, " ", &value);
+    ta_events_handler *handler;
+
+    if (event == NULL)
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+
+    TE_VEC_FOREACH (&ta_events_handlers, handler)
+    {
+        if (handler->used && ta_events_handler_match(handler, event))
+        {
+            if (!handler->callback(ta, event, value))
+                return TE_RC(TE_RCF_API, TE_ECANCELED);
+        }
+    }
 
     return 0;
 }

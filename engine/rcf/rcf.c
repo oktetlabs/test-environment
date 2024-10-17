@@ -289,7 +289,7 @@ ta_events_req_process_reply(char *buf, int error)
         msg->data_len = 0;
         strcpy(msg->value, event);
 
-        WARN("Forward TA event '%s' to '%s' client", event, client->name);
+        rcf_answer_user_request(client->req);
     }
 
     return true;
