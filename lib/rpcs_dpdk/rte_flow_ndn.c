@@ -199,23 +199,23 @@ rte_int_hton(uint32_t val, void *data, size_t size)
                                   #_name ".#plain");                        \
         if (rc == 0)                                                        \
         {                                                                   \
-            memcpy(spec->_field, __addr, __size);                           \
-            memset(mask->_field, 0xff, __size);                             \
+            memcpy(&spec->_field, __addr, __size);                          \
+            memset(&mask->_field, 0xff, __size);                            \
         }                                                                   \
         else if (rc == TE_EASNOTHERCHOICE)                                  \
         {                                                                   \
             rc = asn_read_value_field(_asn_val, __addr, &__size,            \
                                       #_name ".#range.first");              \
             if (rc == 0)                                                    \
-                memcpy(spec->_field, __addr, __size);                       \
+                memcpy(&spec->_field, __addr, __size);                      \
             rc = asn_read_value_field(_asn_val, __addr, &__size,            \
                                       #_name ".#range.last");               \
             if (rc == 0)                                                    \
-                memcpy(last->_field, __addr, __size);                       \
+                memcpy(&last->_field, __addr, __size);                      \
             rc = asn_read_value_field(_asn_val, __addr, &__size,            \
                                       #_name ".#range.mask");               \
             if (rc == 0)                                                    \
-                memcpy(mask->_field, __addr, __size);                       \
+                memcpy(&mask->_field, __addr, __size);                      \
         }                                                                   \
         if (rc != 0 && rc != TE_EASNINCOMPLVAL && rc != TE_EASNOTHERCHOICE) \
             goto out;                                                       \
@@ -805,13 +805,15 @@ rte_flow_item_ipv6_from_pdu(const asn_value *ipv6_pdu,
         return TE_EINVAL;
 
 #define FILL_FLOW_ITEM_IPV6(_field) \
-    do {                                                                                \
-        if (!rte_flow_is_zero_addr(_field->hdr.src_addr, sizeof(struct in6_addr)) ||    \
-            !rte_flow_is_zero_addr(_field->hdr.dst_addr, sizeof(struct in6_addr)) ||    \
-            _field->hdr.proto != 0)                                                     \
-            item->_field = _field;                                                      \
-        else                                                                            \
-            free(_field);                                                               \
+    do {                                                                     \
+        if (!rte_flow_is_zero_addr((const uint8_t *)&(_field)->hdr.src_addr, \
+                                   sizeof(struct in6_addr)) ||               \
+            !rte_flow_is_zero_addr((const uint8_t *)&(_field)->hdr.dst_addr, \
+                                   sizeof(struct in6_addr)) ||               \
+            _field->hdr.proto != 0)                                          \
+            item->_field = _field;                                           \
+        else                                                                 \
+            free(_field);                                                    \
     } while(0)
 
     rc = rte_alloc_mem_for_flow_item((void **)&spec,
