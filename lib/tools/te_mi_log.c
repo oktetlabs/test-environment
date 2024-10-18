@@ -111,6 +111,7 @@ typedef enum te_mi_meas_base_unit_type {
     TE_MI_MEAS_BASE_UNIT_HZ, /**< Events per seconds (Hz) */
     TE_MI_MEAS_BASE_UNIT_IOPS, /**< Input/Output operations per second */
     TE_MI_MEAS_BASE_UNIT_PERCENTAGE, /**< Percentage value */
+    TE_MI_MEAS_BASE_UNIT_BYTES, /**< Bytes */
 } te_mi_meas_base_unit_type;
 
 static te_mi_meas_base_unit_type meas_base_unit_by_type_map[] = {
@@ -129,6 +130,7 @@ static te_mi_meas_base_unit_type meas_base_unit_by_type_map[] = {
     [TE_MI_MEAS_LOADAVG] = TE_MI_MEAS_BASE_UNITLESS,
     [TE_MI_MEAS_PERCENTAGE] = TE_MI_MEAS_BASE_UNIT_PERCENTAGE,
     [TE_MI_MEAS_TIME] = TE_MI_MEAS_BASE_UNIT_SECOND,
+    [TE_MI_MEAS_MEMORY] = TE_MI_MEAS_BASE_UNIT_BYTES,
 };
 
 static const te_enum_map meas_base_unit_names[] = {
@@ -142,6 +144,7 @@ static const te_enum_map meas_base_unit_names[] = {
     {.value = TE_MI_MEAS_BASE_UNIT_HZ, .name = "Hz"},
     {.value = TE_MI_MEAS_BASE_UNIT_IOPS, .name = "iops"},
     {.value = TE_MI_MEAS_BASE_UNIT_PERCENTAGE, .name = "%"},
+    {.value = TE_MI_MEAS_BASE_UNIT_BYTES, .name = "bytes"},
     TE_ENUM_MAP_END
 };
 
@@ -180,6 +183,7 @@ static const te_enum_map meas_type_names[] = {
     {.value = TE_MI_MEAS_LOADAVG, .name = "load-average"},
     {.value = TE_MI_MEAS_PERCENTAGE, .name = "%"},
     {.value = TE_MI_MEAS_TIME, .name = "time"},
+    {.value = TE_MI_MEAS_MEMORY, .name = "memory"},
     TE_ENUM_MAP_END
 };
 
@@ -729,6 +733,9 @@ te_mi_meas_type2descr(te_mi_meas_type type)
 
         case TE_MI_MEAS_TIME:
             return "Time in seconds";
+
+        case TE_MI_MEAS_MEMORY:
+            return "Memory in bytes";
 
         default:
             return "Unknown type";

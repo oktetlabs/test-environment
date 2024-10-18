@@ -243,6 +243,7 @@ typedef enum te_mi_meas_type {
     TE_MI_MEAS_LOADAVG, /**< Load average */
     TE_MI_MEAS_PERCENTAGE, /**< Percentage value */
     TE_MI_MEAS_TIME, /**< Time in seconds */
+    TE_MI_MEAS_MEMORY, /**< Memory in bytes */
 
     TE_MI_MEAS_END, /**< End marker for a measurement vector.
                          Also is one past last valid type */
