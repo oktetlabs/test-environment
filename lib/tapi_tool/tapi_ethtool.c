@@ -11,6 +11,7 @@
 #include <signal.h>
 
 #include "te_defs.h"
+#include "te_enum.h"
 #include "te_str.h"
 #include "te_alloc.h"
 #include "tapi_ethtool.h"
@@ -22,6 +23,13 @@
 const tapi_ethtool_opt tapi_ethtool_default_opt = {
     .cmd = TAPI_ETHTOOL_CMD_NONE,
     .if_name = NULL,
+    .args = {
+        .eeprom_dump = {
+            .raw = TE_BOOL3_UNKNOWN,
+            .offset = TAPI_JOB_OPT_UINT_UNDEF,
+            .length = TAPI_JOB_OPT_UINT_UNDEF,
+        },
+    },
 };
 
 const tapi_ethtool_report tapi_ethtool_default_report = {
@@ -95,6 +103,23 @@ static const tapi_job_opt_bind basic_binds[] = TAPI_JOB_OPT_SET(
     BASIC_BINDS
 );
 
+/** Mapping for on/off parameters of ethtool. */
+static const te_enum_map ethtool_onoff_map[] = {
+    {.name = "on", .value = TE_BOOL3_TRUE},
+    {.name = "off", .value = TE_BOOL3_FALSE},
+    TE_ENUM_MAP_END
+};
+
+static const tapi_job_opt_bind eeprom_dump_binds[] = TAPI_JOB_OPT_SET(
+    BASIC_BINDS,
+    TAPI_JOB_OPT_ENUM_BOOL3("raw", false, tapi_ethtool_opt,
+                            args.eeprom_dump.raw, ethtool_onoff_map),
+    TAPI_JOB_OPT_UINT_T("offset", false, NULL, tapi_ethtool_opt,
+                        args.eeprom_dump.offset),
+    TAPI_JOB_OPT_UINT_T("length", false, NULL, tapi_ethtool_opt,
+                        args.eeprom_dump.length)
+);
+
 /**
  * Fill ethtool command in command line.
  *
@@ -132,6 +157,10 @@ fill_cmd_arg(const void *value, const void *priv, te_vec *args)
             cmd_str = "--register-dump";
             break;
 
+        case TAPI_ETHTOOL_CMD_EEPROM_DUMP:
+            cmd_str = "--eeprom-dump";
+            break;
+
         default:
             ERROR("%s(): unknown command code %d", __FUNCTION__, cmd);
             return TE_EINVAL;
@@ -152,6 +181,8 @@ get_binds_by_cmd(tapi_ethtool_cmd cmd)
 {
     switch (cmd)
     {
+        case TAPI_ETHTOOL_CMD_EEPROM_DUMP:
+            return eeprom_dump_binds;
         default:
             return basic_binds;
     }
@@ -768,6 +799,10 @@ get_report(tapi_ethtool_app *app,
 
         case TAPI_ETHTOOL_CMD_REG_DUMP:
             /* Stdout is not parsed since it is vendor-specific. */
+            return 0;
+
+        case TAPI_ETHTOOL_CMD_EEPROM_DUMP:
+            /* Stdout parsing is not supported yet. */
             return 0;
 
         default:

@@ -22,6 +22,7 @@
 
 #include "te_errno.h"
 #include "tapi_job.h"
+#include "tapi_job_opt.h"
 #include "te_kvpair.h"
 
 #ifdef __cplusplus
@@ -39,13 +40,30 @@ typedef enum tapi_ethtool_cmd {
                                       command) */
     TAPI_ETHTOOL_CMD_SHOW_RING, /**< Show ring size (--show-ring command)*/
     TAPI_ETHTOOL_CMD_REG_DUMP, /**< Show registers dump. */
+    TAPI_ETHTOOL_CMD_EEPROM_DUMP, /**< Show EEPROM dump. */
 } tapi_ethtool_cmd;
+
+/** EEPROM dump arguments (#TAPI_ETHTOOL_CMD_EEPROM_DUMP) */
+typedef struct tapi_ethtool_eeprom_dump_args {
+    te_bool3            raw;    /**< Dump raw data to stdout */
+    tapi_job_opt_uint_t offset; /**< Offset to begin reading */
+    tapi_job_opt_uint_t length; /**< Number of bytes to read */
+} tapi_ethtool_eeprom_dump_args;
 
 /** Command line options for ethtool */
 typedef struct tapi_ethtool_opt {
     tapi_ethtool_cmd cmd; /**< Ethtool command */
 
     const char *if_name;  /**< Interface name */
+
+    /*
+     * Logically it is a union, but use struct to be able to initialize
+     * defaults for different commands simultaneously.
+     */
+    struct {
+        /** EEPROM dump arguments */
+        tapi_ethtool_eeprom_dump_args   eeprom_dump;
+    } args; /**< Command-specific arguments */
 } tapi_ethtool_opt;
 
 /** Default options initializer */
