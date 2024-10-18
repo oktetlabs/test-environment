@@ -30,6 +30,15 @@ const tapi_ethtool_opt tapi_ethtool_default_opt = {
             .offset = TAPI_JOB_OPT_UINT_UNDEF,
             .length = TAPI_JOB_OPT_UINT_UNDEF,
         },
+        .dump_module_eeprom = {
+            .raw = TE_BOOL3_UNKNOWN,
+            .hex = TE_BOOL3_UNKNOWN,
+            .offset = TAPI_JOB_OPT_UINT_UNDEF,
+            .length = TAPI_JOB_OPT_UINT_UNDEF,
+            .page = TAPI_JOB_OPT_UINT_UNDEF,
+            .bank = TAPI_JOB_OPT_UINT_UNDEF,
+            .i2c = TAPI_JOB_OPT_UINT_UNDEF,
+        },
     },
 };
 
@@ -121,6 +130,24 @@ static const tapi_job_opt_bind eeprom_dump_binds[] = TAPI_JOB_OPT_SET(
                         args.eeprom_dump.length)
 );
 
+static const tapi_job_opt_bind dump_module_eeprom_binds[] = TAPI_JOB_OPT_SET(
+    BASIC_BINDS,
+    TAPI_JOB_OPT_ENUM_BOOL3("raw", false, tapi_ethtool_opt,
+                            args.dump_module_eeprom.raw, ethtool_onoff_map),
+    TAPI_JOB_OPT_ENUM_BOOL3("hex", false, tapi_ethtool_opt,
+                            args.dump_module_eeprom.hex, ethtool_onoff_map),
+    TAPI_JOB_OPT_UINT_T("offset", false, NULL, tapi_ethtool_opt,
+                        args.dump_module_eeprom.offset),
+    TAPI_JOB_OPT_UINT_T("length", false, NULL, tapi_ethtool_opt,
+                        args.dump_module_eeprom.length),
+    TAPI_JOB_OPT_UINT_T("page", false, NULL, tapi_ethtool_opt,
+                        args.dump_module_eeprom.page),
+    TAPI_JOB_OPT_UINT_T("bank", false, NULL, tapi_ethtool_opt,
+                        args.dump_module_eeprom.bank),
+    TAPI_JOB_OPT_UINT_T("i2c", false, NULL, tapi_ethtool_opt,
+                        args.dump_module_eeprom.i2c)
+);
+
 /**
  * Fill ethtool command in command line.
  *
@@ -162,6 +189,10 @@ fill_cmd_arg(const void *value, const void *priv, te_vec *args)
             cmd_str = "--eeprom-dump";
             break;
 
+        case TAPI_ETHTOOL_CMD_DUMP_MODULE_EEPROM:
+            cmd_str = "--dump-module-eeprom";
+            break;
+
         default:
             ERROR("%s(): unknown command code %d", __FUNCTION__, cmd);
             return TE_EINVAL;
@@ -184,6 +215,10 @@ get_binds_by_cmd(tapi_ethtool_cmd cmd)
     {
         case TAPI_ETHTOOL_CMD_EEPROM_DUMP:
             return eeprom_dump_binds;
+
+        case TAPI_ETHTOOL_CMD_DUMP_MODULE_EEPROM:
+            return dump_module_eeprom_binds;
+
         default:
             return basic_binds;
     }
@@ -803,6 +838,10 @@ get_report(tapi_ethtool_app *app,
             return 0;
 
         case TAPI_ETHTOOL_CMD_EEPROM_DUMP:
+            /* Stdout parsing is not supported yet. */
+            return 0;
+
+        case TAPI_ETHTOOL_CMD_DUMP_MODULE_EEPROM:
             /* Stdout parsing is not supported yet. */
             return 0;
 

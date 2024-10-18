@@ -41,6 +41,7 @@ typedef enum tapi_ethtool_cmd {
     TAPI_ETHTOOL_CMD_SHOW_RING, /**< Show ring size (--show-ring command)*/
     TAPI_ETHTOOL_CMD_REG_DUMP, /**< Show registers dump. */
     TAPI_ETHTOOL_CMD_EEPROM_DUMP, /**< Show EEPROM dump. */
+    TAPI_ETHTOOL_CMD_DUMP_MODULE_EEPROM, /**< Show module EEPROM dump. */
 } tapi_ethtool_cmd;
 
 /** EEPROM dump arguments (#TAPI_ETHTOOL_CMD_EEPROM_DUMP) */
@@ -49,6 +50,17 @@ typedef struct tapi_ethtool_eeprom_dump_args {
     tapi_job_opt_uint_t offset; /**< Offset to begin reading */
     tapi_job_opt_uint_t length; /**< Number of bytes to read */
 } tapi_ethtool_eeprom_dump_args;
+
+/** Module EEPROM dump arguments (#TAPI_ETHTOOL_CMD_DUMP_MODULE_EEPROM) */
+typedef struct tapi_ethtool_dump_module_eeprom_args {
+    te_bool3            raw;    /**< Dump raw data to stdout */
+    te_bool3            hex;    /**< Dump data in HEX to stdout */
+    tapi_job_opt_uint_t offset; /**< Offset to begin reading */
+    tapi_job_opt_uint_t length; /**< Number of bytes to read */
+    tapi_job_opt_uint_t page;   /**< Page to read */
+    tapi_job_opt_uint_t bank;   /**< Bank to read */
+    tapi_job_opt_uint_t i2c;    /**< I2C bus number to use */
+} tapi_ethtool_dump_module_eeprom_args;
 
 /** Command line options for ethtool */
 typedef struct tapi_ethtool_opt {
@@ -65,6 +77,8 @@ typedef struct tapi_ethtool_opt {
     struct {
         /** EEPROM dump arguments */
         tapi_ethtool_eeprom_dump_args   eeprom_dump;
+        /** Module EEPROM dump arguments */
+        tapi_ethtool_dump_module_eeprom_args    dump_module_eeprom;
     } args; /**< Command-specific arguments */
 } tapi_ethtool_opt;
 
