@@ -54,6 +54,8 @@ typedef struct tapi_ethtool_eeprom_dump_args {
 typedef struct tapi_ethtool_opt {
     tapi_ethtool_cmd cmd; /**< Ethtool command */
 
+    int timeout_ms; /**< Command execution timeout in milliseconds */
+
     const char *if_name;  /**< Interface name */
 
     /*

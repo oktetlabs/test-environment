@@ -22,6 +22,7 @@
 
 const tapi_ethtool_opt tapi_ethtool_default_opt = {
     .cmd = TAPI_ETHTOOL_CMD_NONE,
+    .timeout_ms = TAPI_ETHTOOL_TERM_TIMEOUT_MS,
     .if_name = NULL,
     .args = {
         .eeprom_dump = {
@@ -831,8 +832,7 @@ tapi_ethtool(tapi_job_factory_t *factory,
     if (rc != 0)
         goto out;
 
-    rc = tapi_job_wait(app->job, TAPI_ETHTOOL_TERM_TIMEOUT_MS,
-                       &status);
+    rc = tapi_job_wait(app->job, opt->timeout_ms, &status);
     if (rc != 0)
         goto out;
 
