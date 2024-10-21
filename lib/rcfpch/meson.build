@@ -34,6 +34,7 @@ sources += files(
     'rcf_pch_rpc.c',
     'rcf_pch_ta_cfg.c',
     'rcf_pch_var.c',
+    'rcf_pch_ta_events.c',
 )
 te_libs += [
     'tools',

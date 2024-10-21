@@ -169,6 +169,7 @@ typedef struct pam_message const pam_message_t;
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 #include "rcf_pch_ta_cfg.h"
+#include "rcf_pch_ta_events.h"
 #include "logger_api.h"
 #include "unix_internal.h"
 #include "conf_ovs.h"
@@ -1569,6 +1570,9 @@ rcf_ch_conf_init(void)
             goto fail;
 
         if (ta_unix_conf_selftest_init() != 0)
+            goto fail;
+
+        if (rcf_pch_ta_events_conf_init() != 0)
             goto fail;
 
         init = true;
