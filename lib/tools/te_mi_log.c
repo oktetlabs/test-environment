@@ -136,7 +136,7 @@ static te_mi_meas_base_unit_type meas_base_unit_by_type_map[] = {
 static const te_enum_map meas_base_unit_names[] = {
     {.value = TE_MI_MEAS_BASE_UNITLESS, .name = ""},
     {.value = TE_MI_MEAS_BASE_UNIT_PPS, .name = "pps"},
-    {.value = TE_MI_MEAS_BASE_UNIT_SECOND, .name = "second"},
+    {.value = TE_MI_MEAS_BASE_UNIT_SECOND, .name = "seconds"},
     {.value = TE_MI_MEAS_BASE_UNIT_BPS, .name = "bps"},
     {.value = TE_MI_MEAS_BASE_UNIT_CELSIUS, .name = "degrees celsius"},
     {.value = TE_MI_MEAS_BASE_UNIT_CPS, .name = "cps"},
