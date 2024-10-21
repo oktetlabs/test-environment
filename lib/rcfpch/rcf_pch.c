@@ -462,7 +462,7 @@ rcf_pch_attach_vfork(void)
 static int
 rcf_pch_ta_events_generate(int sid, const char *name, const char *value)
 {
-    int       rc = 0;
+    int       rc;
     char      buf[RCF_MAX_LEN];
     te_string reply = TE_STRING_EXT_BUF_INIT(buf, sizeof(buf));
 
@@ -476,7 +476,9 @@ rcf_pch_ta_events_generate(int sid, const char *name, const char *value)
 
     te_string_append(&reply, " %s %s", name, value);
 
-    WARN("Send TA event: %s", buf);
+    RCF_CH_LOCK;
+    rc = rcf_comm_agent_reply(conn, buf, strlen(buf) + 1);
+    RCF_CH_UNLOCK;
 
     return rc;
 }

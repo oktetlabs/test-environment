@@ -245,6 +245,56 @@ ta_events_unsubscribe_client(usrreq *req)
     return 0;
 }
 
+/**
+ * Process TA events reply
+ *
+ * @param buf        List of RCF clients + TA name and value
+ * @param error        User request with information about RCF client
+ *
+ * @return Status code
+ */
+static bool
+ta_events_req_process_reply(char *buf, int error)
+{
+    char *name;
+    char *rest = buf;
+    char *clients = strtok_r(rest, " ", &rest);
+    char *event = rest;
+
+    assert(error == 0);
+
+    if (rest[0] == '\0')
+    {
+        ERROR("No RCF clients to send TA event: buf = '%s'", buf);
+        return false;
+    }
+
+    rest = clients;
+    while ((name = strtok_r(rest, ",", &rest)) != NULL)
+    {
+        ta_events_client *client = ta_events_find_client_by_name(name);
+        rcf_msg          *msg;
+
+        if (client == NULL)
+        {
+            WARN("No RCF client (%s) to send TA event: '%s'", name, event);
+            continue;
+        }
+
+        msg = client->req->message;
+        msg->sid = RCF_TA_EVENTS_SID;
+        msg->opcode = RCFOP_TA_EVENTS;
+        msg->intparm = RCF_TA_EVENTS_TYPE_EVENT;
+        msg->flags = INTERMEDIATE_ANSWER;
+        msg->data_len = 0;
+        strcpy(msg->value, event);
+
+        WARN("Forward TA event '%s' to '%s' client", event, client->name);
+    }
+
+    return true;
+}
+
 /*
  * Release memory allocated for Test Agents structures.
  */
@@ -1462,6 +1512,25 @@ process_reply(ta *agent)
 
     ptr += strlen("SID ");
     READ_INT(sid);
+
+    if (sid == RCF_TA_EVENTS_SID)
+    {
+        char *delim = strchr(ptr, ' ');
+
+        if (delim != NULL &&
+            strcmp_start(TE_PROTO_TA_EVENTS_EVENT " ", delim + 1) == 0)
+        {
+            READ_INT(error);
+
+            ptr += strlen(TE_PROTO_TA_EVENTS_EVENT " ");
+            if (!ta_events_req_process_reply(ptr, error))
+            {
+                ERROR("BAD PROTO: %s, %d", __FILE__, __LINE__);
+                goto bad_protocol;
+            }
+            return;
+        }
+    }
 
     if ((req = rcf_find_user_request(&(agent->sent), sid)) == NULL)
     {

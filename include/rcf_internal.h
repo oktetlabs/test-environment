@@ -42,6 +42,7 @@ extern "C" {
 #define RCF_TA_EVENTS_TYPE_SUBSCRIBE     1
 #define RCF_TA_EVENTS_TYPE_UNSUBSCRIBE   2
 #define RCF_TA_EVENTS_TYPE_TRIGGER_EVENT 3
+#define RCF_TA_EVENTS_TYPE_EVENT         4
 /*@}*/
 
 /** @name Message flags */
