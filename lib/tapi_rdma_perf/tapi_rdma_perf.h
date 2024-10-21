@@ -18,6 +18,7 @@
 #include "te_string.h"
 #include "tapi_job.h"
 #include "tapi_job_opt.h"
+#include "te_mi_log.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -400,6 +401,18 @@ extern te_errno tapi_rdma_perf_app_wait(tapi_rdma_perf_app *app,
  * @return Status code.
  */
 te_errno tapi_rdma_perf_get_cmd_str(tapi_rdma_perf_app *app, te_string *cmd);
+
+/**
+ * Add RDMA perf report to MI logger.
+ *
+ * @param app       RDMA perf app context.
+ * @param is_client Whether RDMA perf is a client instance.
+ * @param stats     RDMA perf statistics report.
+ *
+ * @return Status code.
+ */
+te_errno tapi_rdma_perf_mi_report(tapi_rdma_perf_app *app, bool is_client,
+                                  const tapi_rdma_perf_stats *stats);
 
 /**
  * Destroy structure to hold perftest results.

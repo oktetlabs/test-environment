@@ -597,3 +597,98 @@ tapi_rdma_perf_get_cmd_str(tapi_rdma_perf_app *app, te_string *cmd)
 
     return 0;
 }
+
+static void
+tapi_rdma_perf_bw_mi_report(te_mi_logger *logger,
+                           const tapi_rdma_perf_bw_stats *stats)
+{
+    te_mi_logger_add_meas_vec(logger, NULL, TE_MI_MEAS_V(
+        TE_MI_MEAS(BANDWIDTH_USAGE, "Bandwidth peak", MAX,
+                   stats->peak, MEBI),
+        TE_MI_MEAS(BANDWIDTH_USAGE, "Bandwidth average", MEAN,
+                   stats->average, MEBI),
+        TE_MI_MEAS(PPS, "Messsage rate", SINGLE,
+                   stats->msg_rate, MEGA)));
+}
+
+static void
+tapi_rdma_perf_lat_mi_report(te_mi_logger *logger,
+                             const tapi_rdma_perf_lat_stats *stats)
+{
+    te_mi_logger_add_meas_vec(logger, NULL, TE_MI_MEAS_V(
+        TE_MI_MEAS(LATENCY, "Minimal latency", MIN,
+                   stats->min_usec, MICRO),
+        TE_MI_MEAS(LATENCY, "Maximum latency", MAX,
+                   stats->max_usec, MICRO),
+        TE_MI_MEAS(LATENCY, "Typical latency", MEDIAN,
+                   stats->typical_usec, MICRO),
+        TE_MI_MEAS(LATENCY, "Average latency", MEAN,
+                   stats->avg_usec, MICRO),
+        TE_MI_MEAS(LATENCY, "Standard deviation", SINGLE,
+                   stats->stdev_usec, MICRO),
+        TE_MI_MEAS(LATENCY, "99.00 percentile", PERCENTILE,
+                   stats->percent_99_00 / 1000, MICRO),
+        TE_MI_MEAS(LATENCY, "99.90 percentile", PERCENTILE,
+                   stats->percent_99_90 / 1000, MICRO)));
+}
+
+static void
+tapi_rdma_perf_lat_dur_mi_report(te_mi_logger *logger,
+                                 const tapi_rdma_perf_lat_dur_stats *stats)
+{
+    te_mi_logger_add_meas_vec(logger, NULL, TE_MI_MEAS_V(
+        TE_MI_MEAS(LATENCY, "Average latency", MEAN,
+                   stats->avg_usec, MICRO),
+        TE_MI_MEAS(RPS, "Average transactions per second", MEAN,
+                   stats->avg_tps, PLAIN)));
+}
+
+te_errno
+tapi_rdma_perf_mi_report(tapi_rdma_perf_app *app, bool is_client,
+                         const tapi_rdma_perf_stats *stats)
+{
+    te_errno rc = 0;
+    te_mi_logger *logger;
+    tapi_rdma_perf_report_type_t type = app->report_type;
+
+    if (stats == NULL)
+        return TE_EINVAL;
+
+    if (stats->parse_error)
+    {
+        RING("There is no stats on %s to create MI log",
+             is_client ? "client" : "server");
+        return 0;
+    }
+
+    rc = te_mi_logger_meas_create("rdma_perf", &logger);
+    if (rc != 0)
+    {
+        ERROR("Failed to create MI logger, error: %r", rc);
+        return rc;
+    }
+
+    te_mi_logger_add_meas_key(logger, NULL, "side", "%s",
+                              is_client ? "client" : "server");
+    te_mi_logger_add_meas_key(logger, NULL, "bytes", "%lu", stats->bytes);
+
+    switch (type)
+    {
+        case TAPI_RDMA_PERF_REPORT_BW:
+            tapi_rdma_perf_bw_mi_report(logger, &stats->bw);
+            break;
+
+        case TAPI_RDMA_PERF_REPORT_LAT:
+            tapi_rdma_perf_lat_mi_report(logger, &stats->lat);
+            break;
+
+        case TAPI_RDMA_PERF_REPORT_LAT_DUR:
+            tapi_rdma_perf_lat_dur_mi_report(logger, &stats->lat_dur);
+            break;
+        default:
+            assert(false);
+    }
+    te_mi_logger_destroy(logger);
+
+    return 0;
+}
