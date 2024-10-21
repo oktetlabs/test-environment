@@ -1159,3 +1159,18 @@ te_str_compare_versions(const char *v1, const char *v2, int *res)
 
     return rc;
 }
+
+char *
+te_str_replace_char(const char *src, char from, char to)
+{
+    char *dst;
+    char *res;
+
+    res = TE_ALLOC_UNINITIALIZED(strlen(src) + 1);
+
+    for (dst = res; *src != '\0'; src++, dst++)
+        *dst = (*src == from ? to : *src);
+    *dst = '\0';
+
+    return res;
+}

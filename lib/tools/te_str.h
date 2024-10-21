@@ -639,6 +639,19 @@ extern void te_str_free_array(char **str);
 extern te_errno te_str_compare_versions(const char *v1, const char *v2,
                                         int *res);
 
+/**
+ * Replace all occurrences  of one given character by another given character.
+ *
+ * @note Return value should be freed with free(3) when it is no longer needed.
+ *
+ * @param src  Source string.
+ * @param from Character to replace from.
+ * @param to   Character to replace to.
+ *
+ * @return String with replaced characters.
+ */
+extern char *te_str_replace_char(const char *src, char from, char to);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
