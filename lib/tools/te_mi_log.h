@@ -228,7 +228,8 @@ typedef enum te_mi_meas_aggr {
 
 /** Type of a measurement. First enum element must have value @c 0. */
 typedef enum te_mi_meas_type {
-    TE_MI_MEAS_PPS = 0, /**< Packets per second */
+    TE_MI_MEAS_UNITLESS_VALUE = 0, /**< Some unitless value */
+    TE_MI_MEAS_PPS, /**< Packets per second */
     TE_MI_MEAS_LATENCY, /**< Latency in seconds */
     TE_MI_MEAS_THROUGHPUT, /**< Throughput in bits per second */
     TE_MI_MEAS_BANDWIDTH_USAGE, /**< Bandwidth usage ratio */

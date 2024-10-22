@@ -115,6 +115,7 @@ typedef enum te_mi_meas_base_unit_type {
 } te_mi_meas_base_unit_type;
 
 static te_mi_meas_base_unit_type meas_base_unit_by_type_map[] = {
+    [TE_MI_MEAS_UNITLESS_VALUE] = TE_MI_MEAS_BASE_UNITLESS,
     [TE_MI_MEAS_PPS] = TE_MI_MEAS_BASE_UNIT_PPS,
     [TE_MI_MEAS_LATENCY] = TE_MI_MEAS_BASE_UNIT_SECOND,
     [TE_MI_MEAS_THROUGHPUT] = TE_MI_MEAS_BASE_UNIT_BPS,
@@ -168,6 +169,7 @@ static const te_enum_map meas_aggr_names[] = {
 };
 
 static const te_enum_map meas_type_names[] = {
+    {.value = TE_MI_MEAS_UNITLESS_VALUE, .name = ""},
     {.value = TE_MI_MEAS_PPS, .name = "pps"},
     {.value = TE_MI_MEAS_LATENCY, .name = "latency"},
     {.value = TE_MI_MEAS_THROUGHPUT, .name = "throughput"},
@@ -689,6 +691,9 @@ te_mi_meas_type2descr(te_mi_meas_type type)
 {
     switch (type)
     {
+        case TE_MI_MEAS_UNITLESS_VALUE:
+            return "";
+
         case TE_MI_MEAS_PPS:
             return "Packets per second";
 
