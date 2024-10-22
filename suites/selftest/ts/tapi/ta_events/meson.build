@@ -3,6 +3,7 @@
 
 tests = [
     'sample',
+    'trigger',
 ]
 
 foreach test : tests

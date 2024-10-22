@@ -11,5 +11,16 @@
         <run>
             <script name="sample"/>
         </run>
+        <run>
+            <script name="trigger"/>
+            <arg name="ta_wait" list="">
+                <value>Agt_A</value>
+                <value>Agt_A</value>
+            </arg>
+            <arg name="ta_trigger" list="">
+                <value>Agt_A</value>
+                <value>Agt_B</value>
+            </arg>
+        </run>
     </session>
 </package>

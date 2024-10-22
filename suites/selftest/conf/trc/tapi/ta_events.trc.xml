@@ -13,5 +13,19 @@
                 <notes/>
             </iter>
         </test>
+        <test name="trigger" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="ta_wait">Agt_A</arg>
+                <arg name="ta_trigger">Agt_A</arg>
+                <notes/>
+            </iter>
+            <iter result="PASSED">
+                <arg name="ta_wait">Agt_A</arg>
+                <arg name="ta_trigger">Agt_B</arg>
+                <notes/>
+            </iter>
+        </test>
     </iter>
 </test>
