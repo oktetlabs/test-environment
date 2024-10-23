@@ -175,12 +175,40 @@ static const tapi_trex_opt_flt_descr opt_filters[] = {
     TAPI_TREX_OPT_FLT("tcps_ecn_shs", "ECN successful handshakes"),
     TAPI_TREX_OPT_FLT("tcps_ecn_rcwnd", "times ECN reduced the cwnd"),
 
-    /*
-     * Flow table.
-     * The list is not exhaustive - only what is needed at the moment.
-     */
+    /* Flow table. */
+    TAPI_TREX_OPT_FLT("rss_redirect_rx", "rss rx packets redirected"),
+    TAPI_TREX_OPT_FLT("rss_redirect_tx", "rss tx packets redirected"),
+    TAPI_TREX_OPT_FLT_ERR("rss_redirect_drops",
+            "rss packets to redirect dropped"),
+    TAPI_TREX_OPT_FLT("rss_redirect_queue_full", "rss tx queue full"),
+    TAPI_TREX_OPT_FLT("ignored_macs", "ignored macs addr"),
+    TAPI_TREX_OPT_FLT("ignored_ips", "ignored ips addr"),
+
     TAPI_TREX_OPT_FLT_ERR("err_cwf", "client pkt without flow"),
-    TAPI_TREX_OPT_FLT_ERR("err_no_syn", "server first flow packet with no SYN"),
+    TAPI_TREX_OPT_FLT_ERR("err_no_syn",
+            "server first flow packet with no SYN"),
+    TAPI_TREX_OPT_FLT_ERR("err_len_err", "pkt with length error"),
+    TAPI_TREX_OPT_FLT_ERR("err_fragments_ipv4_drop", "fragments_ipv4_drop"),
+    TAPI_TREX_OPT_FLT("err_no_tcp_udp", "no tcp/udp packet"),
+    TAPI_TREX_OPT_FLT_ERR("err_no_template", "server can't match L7 template"),
+    TAPI_TREX_OPT_FLT_ERR("err_no_memory",
+            "No heap memory for allocating flows"),
+    TAPI_TREX_OPT_FLT_ERR("err_dct", "duplicate flow - more clients require"),
+    TAPI_TREX_OPT_FLT_ERR("err_l3_cs", "ip checksum error"),
+    TAPI_TREX_OPT_FLT_ERR("err_l4_cs", "tcp/udp checksum error"),
+
+    TAPI_TREX_OPT_FLT_ERR("err_redirect_rx", "redirect to rx error"),
+    TAPI_TREX_OPT_FLT("redirect_rx_ok", "redirect to rx OK"),
+    TAPI_TREX_OPT_FLT("err_rx_throttled", "rx thread was throttled"),
+    TAPI_TREX_OPT_FLT_ERR("err_c_nf_throttled", "client new flow throttled"),
+    TAPI_TREX_OPT_FLT_ERR("err_c_tuple_err",
+            "client new flow, not enough clients"),
+    TAPI_TREX_OPT_FLT_ERR("err_s_nf_throttled", "server new flow throttled"),
+    TAPI_TREX_OPT_FLT_ERR("err_flow_overflow", "too many flows errors"),
+    TAPI_TREX_OPT_FLT("defer_template",
+            "tcp L7 template matching deferred (by l7_map)"),
+    TAPI_TREX_OPT_FLT_ERR("err_defer_no_template",
+            "server can't match L7 template (deferred by l7_map)"),
 };
 
 typedef struct tapi_trex_port_stat_type {
