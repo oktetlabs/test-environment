@@ -23,6 +23,7 @@
 const tapi_ethtool_opt tapi_ethtool_default_opt = {
     .cmd = TAPI_ETHTOOL_CMD_NONE,
     .timeout_ms = TAPI_ETHTOOL_TERM_TIMEOUT_MS,
+    .stats = false,
     .if_name = NULL,
     .args = {
         .eeprom_dump = {
@@ -66,6 +67,8 @@ typedef struct pause_filters {
     tapi_job_channel_t *autoneg; /**< Pause auto-negotiation state */
     tapi_job_channel_t *rx; /**< Whether Rx pause frames are enabled */
     tapi_job_channel_t *tx; /**< Whether Tx pause frames are enabled */
+    tapi_job_channel_t *rx_pause_frames; /**< Rx pause frames number */
+    tapi_job_channel_t *tx_pause_frames; /**< Tx pause frames number */
 } pause_filters;
 
 /**
@@ -105,6 +108,7 @@ static te_errno fill_cmd_arg(const void *value, const void *priv, te_vec *args);
  */
 
 #define BASIC_BINDS \
+    TAPI_JOB_OPT_BOOL("--include-statistics", tapi_ethtool_opt, stats), \
     { &fill_cmd_arg, NULL, false, NULL, \
       offsetof(tapi_ethtool_opt, cmd) }, \
     TAPI_JOB_OPT_STRING(NULL, false, tapi_ethtool_opt, if_name)
@@ -332,8 +336,20 @@ attach_pause_filters(tapi_ethtool_app *app)
     if (rc != 0)
         return rc;
 
-    return add_value_filter(app, "Tx pause",
-                            &app->out_filters.pause.tx, "TX");
+    rc = add_value_filter(app, "Tx pause",
+                          &app->out_filters.pause.tx, "TX");
+    if (rc != 0)
+        return rc;
+
+    rc = add_value_filter(app, "Rx pause frames",
+                          &app->out_filters.pause.rx_pause_frames,
+                          "rx_pause_frames");
+    if (rc != 0)
+        return rc;
+
+    return add_value_filter(app, "Tx pause frames",
+                            &app->out_filters.pause.tx_pause_frames,
+                            "tx_pause_frames");
 }
 
 /**
@@ -611,6 +627,39 @@ out:
 }
 
 /**
+ * Get optional unsigned integer from a filter.
+ *
+ * @param filter      Filter to read from
+ * @param value       Will be set to undefined if filter catches nothing
+ *                    or parsed unsigned integer
+ *
+ * @return Status code.
+ */
+static te_errno
+get_opt_uintmax_value(tapi_job_channel_t *filter, te_optional_uintmax_t *value)
+{
+    te_errno rc;
+    te_string str_val = TE_STRING_INIT;
+
+    if (!tapi_job_filters_have_data(TAPI_JOB_CHANNEL_SET(filter), 0))
+    {
+            *value = TE_OPTIONAL_UINTMAX_UNDEF;
+            return 0;
+    }
+
+    rc = tapi_job_receive_single(filter, &str_val, 0);
+    if (rc == 0)
+    {
+        rc = te_strtoumax(str_val.ptr, 10, &value->value);
+        if (rc == 0)
+            value->defined = true;
+    }
+
+    te_string_free(&str_val);
+    return rc;
+}
+
+/**
  * Obtain pause parameters from ethtool output via filters.
  *
  * @param app       Ethtool application structure
@@ -635,8 +684,20 @@ get_pause(tapi_ethtool_app *app, tapi_ethtool_pause *pause)
     if (rc != 0)
         return rc;
 
-    return get_on_off_value(app->out_filters.pause.tx,
-                            &pause->tx);
+    rc = get_on_off_value(app->out_filters.pause.tx,
+                          &pause->tx);
+    if (rc != 0)
+        return rc;
+
+    rc = get_opt_uintmax_value(app->out_filters.pause.rx_pause_frames,
+                               &pause->rx_pause_frames);
+    if (rc != 0)
+        return rc;
+
+    rc = get_opt_uintmax_value(app->out_filters.pause.tx_pause_frames,
+                               &pause->tx_pause_frames);
+
+    return rc;
 }
 
 /**

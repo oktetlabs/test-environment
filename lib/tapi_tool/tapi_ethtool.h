@@ -68,6 +68,8 @@ typedef struct tapi_ethtool_opt {
 
     int timeout_ms; /**< Command execution timeout in milliseconds */
 
+    bool stats; /**< Request to include statistics in show command output */
+
     const char *if_name;  /**< Interface name */
 
     /*
@@ -96,6 +98,8 @@ typedef struct tapi_ethtool_pause {
     bool autoneg; /**< Pause auto-negotiation state */
     bool rx; /**< Whether reception of pause frames is enabled */
     bool tx; /**< Whether transmission of pause frames is enabled */
+    te_optional_uintmax_t rx_pause_frames; /**< Rx pause frames counter */
+    te_optional_uintmax_t tx_pause_frames; /**< Tx pause frames counter */
 } tapi_ethtool_pause;
 
 /** Ring parameters parsed in case of @c TAPI_ETHTOOL_CMD_SHOW_RING */
