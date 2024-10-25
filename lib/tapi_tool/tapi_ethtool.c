@@ -197,6 +197,10 @@ fill_cmd_arg(const void *value, const void *priv, te_vec *args)
             cmd_str = "--dump-module-eeprom";
             break;
 
+        case TAPI_ETHTOOL_CMD_SHOW_EEE:
+            cmd_str = "--show-eee";
+            break;
+
         default:
             ERROR("%s(): unknown command code %d", __FUNCTION__, cmd);
             return TE_EINVAL;
@@ -903,6 +907,10 @@ get_report(tapi_ethtool_app *app,
             return 0;
 
         case TAPI_ETHTOOL_CMD_DUMP_MODULE_EEPROM:
+            /* Stdout parsing is not supported yet. */
+            return 0;
+
+        case TAPI_ETHTOOL_CMD_SHOW_EEE:
             /* Stdout parsing is not supported yet. */
             return 0;
 

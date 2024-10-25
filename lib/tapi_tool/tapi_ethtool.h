@@ -42,6 +42,7 @@ typedef enum tapi_ethtool_cmd {
     TAPI_ETHTOOL_CMD_REG_DUMP, /**< Show registers dump. */
     TAPI_ETHTOOL_CMD_EEPROM_DUMP, /**< Show EEPROM dump. */
     TAPI_ETHTOOL_CMD_DUMP_MODULE_EEPROM, /**< Show module EEPROM dump. */
+    TAPI_ETHTOOL_CMD_SHOW_EEE, /**< Show EEE settings (--show-eee command) */
 } tapi_ethtool_cmd;
 
 /** EEPROM dump arguments (#TAPI_ETHTOOL_CMD_EEPROM_DUMP) */
