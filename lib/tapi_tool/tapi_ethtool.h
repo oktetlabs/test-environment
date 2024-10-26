@@ -44,6 +44,8 @@ typedef enum tapi_ethtool_cmd {
     TAPI_ETHTOOL_CMD_DUMP_MODULE_EEPROM, /**< Show module EEPROM dump. */
     TAPI_ETHTOOL_CMD_SHOW_EEE, /**< Show EEE settings (--show-eee command) */
     TAPI_ETHTOOL_CMD_SHOW_FEC, /**< Show FEC parameters (--show-fec command) */
+    TAPI_ETHTOOL_CMD_SHOW_MODULE, /**< Show the transceiver module's
+                                       parameters (--show-module command) */
 } tapi_ethtool_cmd;
 
 /** EEPROM dump arguments (#TAPI_ETHTOOL_CMD_EEPROM_DUMP) */
