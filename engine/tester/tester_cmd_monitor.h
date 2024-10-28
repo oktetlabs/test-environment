@@ -48,6 +48,8 @@ typedef struct cmd_monitor_descr {
     char     *ta;                            /**< Name of test agent on
                                                   which to run this
                                                   monitor */
+
+    pid_t test_pid; /**< PID of test command monitor */
 } cmd_monitor_descr;
 
 /** Head of a queue of cmd_monitor_descrs */
