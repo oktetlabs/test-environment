@@ -15,6 +15,11 @@
 #include "config.h"
 #endif
 
+#if HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
+#include <sys/wait.h>
+
 #include "te_defs.h"
 #include "te_queue.h"
 #include "te_errno.h"
@@ -22,6 +27,7 @@
 #include "conf_api.h"
 #include "tapi_cfg_cmd_monitor.h"
 #include "tester_cmd_monitor.h"
+#include "tester_defs.h"
 
 int tester_monitor_id = -1;
 
@@ -69,14 +75,65 @@ free_cmd_monitors(cmd_monitor_descrs *monitors)
  *
  * @param monitor   Monitor description structure pointer.
  *
+ * @note This function uses TE_LOG_ID_UNDEFINED to add logs from this monitor
+ *       inside tests running in parallel. But the default behaviour of
+ *       TEST_START is to stop the test for this ID. So you have to update
+ *       your test to take it into account.
+ *
  * @return Status code.
  */
 static te_errno
 test_cmd_monitor_begin(cmd_monitor_descr *monitor)
 {
+#define TEST_MAX_PARAMS 16
+    te_string params[TEST_MAX_PARAMS];
+    char     *argv[TEST_MAX_PARAMS];
+    int       next_id = 0;
+
+    int     i;
+    int     ret;
+    pid_t   pid;
+    test_id exec_id = TE_LOG_ID_UNDEFINED;
+    int     rand_seed = rand();
+
     ENTRY("name=%s cmd=%s", monitor->name, monitor->command);
 
-    EXIT();
+    for (i = 0; i < TE_ARRAY_LEN(params); i++)
+        params[i] = (te_string)TE_STRING_INIT;
+
+    te_string_append(&params[next_id++], "%s", monitor->command);
+    te_string_append(&params[next_id++], "te_test_id=%u", exec_id);
+    te_string_append(&params[next_id++], "te_test_name=%s", monitor->name);
+    te_string_append(&params[next_id++], "te_rand_seed=%d", rand_seed);
+
+    for (i = 0; i < next_id; i++)
+        argv[i] = params[i].ptr;
+    argv[i] = NULL;
+
+    VERB("ID=%d execvp(%s, ...)", exec_id, monitor->command);
+    pid = fork();
+
+    if (pid == 0)
+    {
+        ret = execvp(monitor->command, argv);
+        if (ret < 0)
+        {
+            ERROR("ID=%d execvp(%s, ...) failed: %s", exec_id,
+                  monitor->command, strerror(errno));
+            exit(1);
+        }
+        /* unreachable */
+    }
+
+    for (i = 0; i < next_id; i++)
+        te_string_free(&params[i]);
+
+    if (pid < 0)
+        return TE_OS_RC(TE_TESTER, errno);
+
+    monitor->test_pid = pid;
+
+    EXIT("pid:%d", pid);
     return 0;
 }
 
@@ -90,7 +147,33 @@ test_cmd_monitor_begin(cmd_monitor_descr *monitor)
 static te_errno
 test_cmd_monitor_end(cmd_monitor_descr *monitor)
 {
-    ENTRY("name=%s cmd=%s", monitor->name, monitor->command);
+    int   rc;
+    pid_t pid;
+
+    ENTRY("name=%s cmd=%s pid:%d", monitor->name, monitor->command,
+          monitor->test_pid);
+
+    if (waitpid(monitor->test_pid, NULL, WNOHANG) == 0)
+    {
+        rc = kill(monitor->test_pid, SIGUSR1);
+        if (rc < 0)
+        {
+            ERROR("Failed to kill test command monitor (%s)",
+                  monitor->command);
+            return TE_OS_RC(TE_TESTER, errno);
+        }
+    }
+
+    pid = waitpid(monitor->test_pid, &rc, 0);
+    if (pid < 0)
+    {
+        ERROR("Failed to wait test command monitor (%s) to end",
+              monitor->command);
+        return TE_OS_RC(TE_TESTER, errno);
+    }
+
+    if (rc < 0)
+        return TE_OS_RC(TE_TESTER, rc);
 
     EXIT();
     return 0;
