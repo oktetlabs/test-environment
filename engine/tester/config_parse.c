@@ -2128,12 +2128,13 @@ cmd_monitor_get_prop(xmlNodePtr *node, char **value, char *name)
  * Get command monitor descriptions from <command_monitor> nodes
  *
  * @param node    The first <command_monitor> node
+ * @param cfg     Tester configuration context
  * @param ritem   run_item where to store command monitor descriptions
  *
  * @return 0 on success, error code on failure
  */
 static te_errno
-monitors_process(xmlNodePtr *node, run_item *ritem)
+monitors_process(xmlNodePtr *node, tester_cfg *cfg, run_item *ritem)
 {
     te_errno rc = 0;
     xmlNodePtr p;
@@ -2223,7 +2224,7 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
                     return TE_RC(TE_TESTER, TE_ENOENT);
                 }
 
-                monitor->command = XML2CHAR_DUP(name);
+                monitor->command = name_to_path(cfg, XML2CHAR(name), false);
                 xmlFree(name);
 
                 rc = cmd_monitor_set_type(monitor, TESTER_CMD_MONITOR_TEST,
@@ -2318,7 +2319,7 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
             return rc;
     }
 
-    monitors_process(&node, ritem);
+    monitors_process(&node, cfg, ritem);
 
     /* Get information about variables */
     while (node != NULL)
@@ -2610,7 +2611,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
-    if (node != NULL && monitors_process(&node, p) != 0)
+    if (node != NULL && monitors_process(&node, cfg, p) != 0)
     {
         ERROR("Failed to process <command_monitor> nodes");
         return TE_RC(TE_TESTER, TE_EINVAL);
