@@ -75,11 +75,6 @@ free_cmd_monitors(cmd_monitor_descrs *monitors)
  *
  * @param monitor   Monitor description structure pointer.
  *
- * @note This function uses TE_LOG_ID_UNDEFINED to add logs from this monitor
- *       inside tests running in parallel. But the default behaviour of
- *       TEST_START is to stop the test for this ID. So you have to update
- *       your test to take it into account.
- *
  * @return Status code.
  */
 static te_errno
