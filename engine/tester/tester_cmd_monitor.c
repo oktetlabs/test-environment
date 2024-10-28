@@ -35,6 +35,8 @@ cmd_monitor_type2str(cmd_monitor_type type)
             return "Dummy";
         case TESTER_CMD_MONITOR_TA:
             return "TA";
+        case TESTER_CMD_MONITOR_TEST:
+            return "TEST";
     }
 
     return "(UNKNOWN)";
@@ -62,6 +64,38 @@ free_cmd_monitors(cmd_monitor_descrs *monitors)
     }
 }
 
+/**
+ * Start command monitor as generic test.
+ *
+ * @param monitor   Monitor description structure pointer.
+ *
+ * @return Status code.
+ */
+static te_errno
+test_cmd_monitor_begin(cmd_monitor_descr *monitor)
+{
+    ENTRY("name=%s cmd=%s", monitor->name, monitor->command);
+
+    EXIT();
+    return 0;
+}
+
+/**
+ * Stop test based command monitor.
+ *
+ * @param monitor   Monitor description structure pointer.
+ *
+ * @return Status code.
+ */
+static te_errno
+test_cmd_monitor_end(cmd_monitor_descr *monitor)
+{
+    ENTRY("name=%s cmd=%s", monitor->name, monitor->command);
+
+    EXIT();
+    return 0;
+}
+
 /* See description in tester_cmd_monitor.h */
 int
 start_cmd_monitors(cmd_monitor_descrs *monitors)
@@ -84,6 +118,9 @@ start_cmd_monitors(cmd_monitor_descrs *monitors)
                 status = tapi_cfg_cmd_monitor_begin(
                     monitor->ta, monitor->name, monitor->command,
                     monitor->time_to_wait);
+                break;
+            case TESTER_CMD_MONITOR_TEST:
+                status = test_cmd_monitor_begin(monitor);
                 break;
         }
 
@@ -121,6 +158,9 @@ stop_cmd_monitors(cmd_monitor_descrs *monitors)
                 continue;
             case TESTER_CMD_MONITOR_TA:
                 status = tapi_cfg_cmd_monitor_end(monitor->ta, monitor->name);
+                break;
+            case TESTER_CMD_MONITOR_TEST:
+                status = test_cmd_monitor_end(monitor);
                 break;
         }
 
