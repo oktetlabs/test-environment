@@ -26,6 +26,7 @@ extern "C" {
 typedef enum cmd_monitor_type {
     TESTER_CMD_MONITOR_NONE = 0, /**< Dummy command monitor */
     TESTER_CMD_MONITOR_TA,       /**< TA based command monitor */
+    TESTER_CMD_MONITOR_TEST,     /**< Test based command monitor */
 } cmd_monitor_type;
 
 /** Command monitor description */

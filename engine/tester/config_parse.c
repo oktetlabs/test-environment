@@ -2210,6 +2210,32 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
                         (atoi(run_monitor) == 0 ? false : true);
                 free(run_monitor);
             }
+            else if (xmlStrcmp(p->name, CONST_CHAR2XML("script")) == 0)
+            {
+                xmlChar *name;
+
+                assert(monitor->command == NULL);
+
+                name = xmlGetProp(p, CONST_CHAR2XML("name"));
+                if (name == NULL)
+                {
+                    free_cmd_monitor(monitor);
+                    return TE_RC(TE_TESTER, TE_ENOENT);
+                }
+
+                monitor->command = XML2CHAR_DUP(name);
+                xmlFree(name);
+
+                rc = cmd_monitor_set_type(monitor, TESTER_CMD_MONITOR_TEST,
+                                          "script node");
+                if (rc != 0)
+                {
+                    free_cmd_monitor(monitor);
+                    return rc;
+                }
+
+                p = xmlNodeNext(p);
+            }
             else
             {
                 ERROR("%s(): unexpected node name '%s' encountered",
