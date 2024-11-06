@@ -474,13 +474,19 @@ if 'comm_net_agent' in ta_libs
         'ta_rcf_listener.c',
     )
 
-    # Just use the ta dependencies: this seems to be enough
+    rcf_listener_deps = [
+        dep_lib_static_logger_core,
+        dep_lib_static_logger_file,
+        dep_lib_static_tools,
+        dep_lib_static_comm_net_agent,
+    ]
+
     executable('ta_rcf_listener', rcf_listener_sources,
                install: true, install_dir: tadir,
                include_directories: includes,
                c_args: c_args,
                link_args: link_args,
-               dependencies: deps)
+               dependencies: rcf_listener_deps)
 endif
 
 ta_scripts = files(
