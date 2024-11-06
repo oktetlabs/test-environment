@@ -5,6 +5,7 @@ conf_data = configuration_data()
 
 name = get_option('agent-unix-name')
 ta_platform = get_option('agent-unix-platform')
+ta_libs = get_option('agent-unix-libs')
 tadir = join_paths(get_option('agentsdir'), name)
 
 includes = []
@@ -42,7 +43,7 @@ ta_non_symtbl_libs = [
     'logger_core',
 ]
 
-foreach extra_lib : get_option('agent-unix-libs')
+foreach extra_lib : ta_libs
     if not ta_symtbl_libs.contains(extra_lib)
         ta_symtbl_libs += [ extra_lib ]
     endif
@@ -468,17 +469,19 @@ executable('ta', sources, generated_sources,
 #
 # Build ta_rcf_listener
 #
-rcf_listener_sources = files(
-    'ta_rcf_listener.c',
-)
+if 'comm_net_agent' in ta_libs
+    rcf_listener_sources = files(
+        'ta_rcf_listener.c',
+    )
 
-# Just use the ta dependencies: this seems to be enough
-executable('ta_rcf_listener', rcf_listener_sources,
-           install: true, install_dir: tadir,
-           include_directories: includes,
-           c_args: c_args,
-           link_args: link_args,
-           dependencies: deps)
+    # Just use the ta dependencies: this seems to be enough
+    executable('ta_rcf_listener', rcf_listener_sources,
+               install: true, install_dir: tadir,
+               include_directories: includes,
+               c_args: c_args,
+               link_args: link_args,
+               dependencies: deps)
+endif
 
 ta_scripts = files(
     'ta_clean_tce',
