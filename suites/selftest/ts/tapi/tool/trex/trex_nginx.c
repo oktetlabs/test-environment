@@ -51,7 +51,7 @@ main(int argc, char **argv)
     char astf_template[RCF_RPC_MAX_BUF];
 
     double trex_duration;
-    unsigned trex_multiplier;
+    double trex_multiplier;
 
     char *port = NULL;
     unsigned nginx_port;
@@ -70,7 +70,7 @@ main(int argc, char **argv)
 
     TEST_GET_UINT_PARAM(nginx_port);
     TEST_GET_DOUBLE_PARAM(trex_duration);
-    TEST_GET_UINT_PARAM(trex_multiplier);
+    TEST_GET_DOUBLE_PARAM(trex_multiplier);
 
     CHECK_RC(tapi_job_factory_rpc_create(pco_iut, &factory_iut));
     CHECK_RC(tapi_job_factory_rpc_create(pco_tst, &factory_tst));
@@ -95,7 +95,7 @@ main(int argc, char **argv)
     trex_opt.lro_disable = true;
     trex_opt.no_monitors = true;
     trex_opt.duration = TAPI_JOB_OPT_DOUBLE_VAL(trex_duration);
-    trex_opt.rate_multiplier = TAPI_JOB_OPT_UINT_VAL(trex_multiplier);
+    trex_opt.rate_multiplier = TAPI_JOB_OPT_DOUBLE_VAL(trex_multiplier);
 
     trex_opt.clients = TAPI_TREX_CLIENTS(
         TAPI_TREX_CLIENT(

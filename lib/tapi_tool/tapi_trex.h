@@ -412,7 +412,7 @@ typedef struct tapi_trex_opt {
      * Rate multiplier.
      * Multiply basic rate of templates by this number.
      */
-    tapi_job_opt_uint_t rate_multiplier;
+    tapi_job_opt_double_t rate_multiplier;
     /** If set, won't wait for all flows to be closed, before terminating. */
     bool force_close_at_end;
     /**
