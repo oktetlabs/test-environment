@@ -213,7 +213,9 @@ build_argv(const char *path, const tapi_rdma_perf_opts *opts,
                 TAPI_JOB_OPT_UINT_T("--qp=", true, NULL,
                                     tapi_rdma_perf_bw_opts, qp_num),
                 TAPI_JOB_OPT_UINT_T("--cq-mod=", true, NULL,
-                                    tapi_rdma_perf_bw_opts, cq_mod)
+                                    tapi_rdma_perf_bw_opts, cq_mod),
+                TAPI_JOB_OPT_BOOL("--report_gbits",
+                                  tapi_rdma_perf_bw_opts, report_gbits)
             );
 
             rc = tapi_job_opt_append_args(bw_opt_binds, &opts->bw, argv);
@@ -602,13 +604,20 @@ static void
 tapi_rdma_perf_bw_mi_report(te_mi_logger *logger,
                            const tapi_rdma_perf_bw_stats *stats)
 {
+#define PERF_BW_MI_MEAS(_type, _name, _aggr, _val, _gbits)   \
+    (te_mi_meas){ TE_MI_MEAS_ ## _type, (_name),                  \
+                  TE_MI_MEAS_AGGR_ ## _aggr, (_val),              \
+                  (_gbits) ? TE_MI_MEAS_MULTIPLIER_GIGA :         \
+                             TE_MI_MEAS_MULTIPLIER_MEBI }
+
     te_mi_logger_add_meas_vec(logger, NULL, TE_MI_MEAS_V(
-        TE_MI_MEAS(BANDWIDTH_USAGE, "Bandwidth peak", MAX,
-                   stats->peak, MEBI),
-        TE_MI_MEAS(BANDWIDTH_USAGE, "Bandwidth average", MEAN,
-                   stats->average, MEBI),
+        PERF_BW_MI_MEAS(BANDWIDTH_USAGE, "Bandwidth peak", MAX,
+                        stats->peak, stats->report_gbits),
+        PERF_BW_MI_MEAS(BANDWIDTH_USAGE, "Bandwidth average", MEAN,
+                        stats->average, stats->report_gbits),
         TE_MI_MEAS(PPS, "Messsage rate", SINGLE,
                    stats->msg_rate, MEGA)));
+#undef PERF_BW_MI_MEAS
 }
 
 static void
