@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2018-2022 OKTET Labs Ltd. All rights reserved.
+# Copyright (C) 2018-2024 OKTET Labs Ltd. All rights reserved.
 
 headers += files(
     'tapi_cache.h',
@@ -39,6 +39,7 @@ headers += files(
     'tapi_cfg_stats.h',
     'tapi_cfg_sys.h',
     'tapi_cfg_tbf.h',
+    'tapi_cfg_tunnel.h',
     'tapi_cfg_vm.h',
     'tapi_cfg_vtund.h',
     'tapi_cfg_xen.h',
@@ -99,6 +100,7 @@ sources += files(
     'tapi_cfg_stats.c',
     'tapi_cfg_sys.c',
     'tapi_cfg_tbf.c',
+    'tapi_cfg_tunnel.c',
     'tapi_cfg_vm.c',
     'tapi_cfg_vtund.c',
     'tapi_cfg_xen.c',
