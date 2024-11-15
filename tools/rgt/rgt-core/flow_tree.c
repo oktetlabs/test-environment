@@ -1507,15 +1507,15 @@ wrapper_process_regular_msg(gpointer data, gpointer user_data)
     }
 }
 
+static void flow_tree_wander(node_t *cur_node);
+
 /**
- * Performs wandering over the subtree started from cur_node.
+ * Auxiliary function used by flow_tree_wander() to process a node.
  *
- * @param  cur_node   Root of the subtree to be wander.
- *
- * @return  Nothing.
+ * @param cur_node    Node to process.
  */
 static void
-flow_tree_wander(node_t *cur_node)
+flow_tree_wander_aux(node_t *cur_node)
 {
     enum node_fltr_mode duration_filter_res = NFMODE_INCLUDE;
 
@@ -1588,8 +1588,23 @@ flow_tree_wander(node_t *cur_node)
         msg_queue_foreach(&cur_node->msg_after_att,
                           wrapper_process_regular_msg, NULL);
     }
+}
 
-    flow_tree_wander(cur_node->next);
+/**
+ * Performs wandering over the subtree started from cur_node.
+ *
+ * @param  cur_node   Root of the subtree to be wander.
+ *
+ * @return  Nothing.
+ */
+static void
+flow_tree_wander(node_t *cur_node)
+{
+    while (cur_node != NULL)
+    {
+        flow_tree_wander_aux(cur_node);
+        cur_node = cur_node->next;
+    }
 }
 
 /**
