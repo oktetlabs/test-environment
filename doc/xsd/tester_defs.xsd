@@ -334,6 +334,28 @@
         </attribute>
     </attributeGroup>
 
+    <complexType name="Script-Template">
+        <annotation>
+            <documentation>
+                Default arguments for Script.
+            </documentation>
+        </annotation>
+        <attribute name="name" type="Name">
+            <annotation>
+                <documentation>
+                    Test name.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="id" type="string">
+            <annotation>
+                <documentation>
+                    Identifier in case of default arguments.
+                </documentation>
+            </annotation>
+        </attribute>
+    </complexType>
+
     <complexType name="Script">
         <annotation>
             <documentation>
@@ -371,6 +393,13 @@
             <annotation>
                 <documentation>
                     Test name.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="ref" type="string">
+            <annotation>
+                <documentation>
+                    Reference to default arguments ID.
                 </documentation>
             </annotation>
         </attribute>

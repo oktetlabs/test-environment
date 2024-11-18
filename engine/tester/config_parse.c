@@ -70,6 +70,10 @@ enum {
 static const test_info * find_test_info(const tests_info *ti,
                                         const char *name);
 
+static te_errno alloc_and_get_var_arg(xmlNodePtr node, bool is_var,
+                                      const test_session *session,
+                                      test_vars_args *list);
+
 static te_errno alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg,
                                        unsigned int opts,
                                        run_item_role role,
@@ -996,6 +1000,144 @@ get_test_attrs(xmlNodePtr node, test_attrs *attrs)
     return 0;
 }
 
+/**
+ * Get default argument values for script.
+ *
+ * @param node        XML node with script call description
+ * @param session     Location for session description
+ *
+ * @return Status code.
+ */
+static te_errno
+get_script_defaults(xmlNodePtr node, const test_session *session)
+{
+    te_errno        rc;
+    script_def_arg *def_arg;
+    script_def_arg *darg;
+    char           *defaults_id;
+
+    def_arg = TE_ALLOC(sizeof(*def_arg));
+    TAILQ_INIT(&def_arg->args);
+
+    defaults_id = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("id")));
+    if (defaults_id == NULL)
+    {
+        ERROR("'id' attribute is missing in script with default argument "
+              "values");
+        return TE_RC(TE_TESTER, TE_EINVAL);
+    }
+
+    def_arg->id = defaults_id;
+    def_arg->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
+
+    node = xmlNodeChildren(node);
+
+    /* Get information about arguments */
+    while (node != NULL &&
+           xmlStrcmp(node->name, CONST_CHAR2XML("arg")) == 0)
+    {
+        rc = alloc_and_get_var_arg(node, false, session, &def_arg->args);
+        if (rc != 0)
+        {
+            ERROR("Processing default argument values of with script id '%s' "
+                  "failed: %r", defaults_id, rc);
+            return rc;
+        }
+        node = xmlNodeNext(node);
+    }
+
+    if (node != NULL)
+    {
+        ERROR("Unexpected element '%s' in default argument values for script "
+              "id '%s' call description", XML2CHAR(node->name), defaults_id);
+        return TE_RC(TE_TESTER, TE_EINVAL);
+    }
+
+    TAILQ_FOREACH(darg, &tester_global_context.def_args, links)
+    {
+        if (strcmp(darg->id, def_arg->id) == 0)
+        {
+            ERROR("Default value id '%s' is not unique.", def_arg->id);
+            return TE_RC(TE_TESTER, TE_EINVAL);
+        }
+    }
+    TAILQ_INSERT_TAIL(&tester_global_context.def_args, def_arg, links);
+    VERB("Got script defaults with id '%s'", defaults_id);
+
+    return 0;
+}
+
+/**
+ * Get default argument by default value ID.
+ *
+ * @param id        Default value ID
+ * @param def_arg   Location of default argument structure
+ *
+ * @return Status code.
+ */
+static te_errno
+get_default_arg_by_id(const char *id, script_def_arg **def_arg)
+{
+    script_def_arg *darg;
+
+    TAILQ_FOREACH(darg, &tester_global_context.def_args, links)
+    {
+        if (strcmp(darg->id, id) == 0)
+        {
+            *def_arg = darg;
+            return 0;
+        }
+    }
+    ERROR("There is no default argument value with ID '%s'", id);
+    return TE_RC(TE_TESTER, TE_ENOENT);
+}
+
+/**
+ * Add default argument values to run item argument list.
+ *
+ * @param id      Default value ID
+ * @param list    List of run item arguments
+ *
+ * @return Status code.
+ */
+static te_errno
+add_default_arg(const char *id, test_vars_args *list)
+{
+    te_errno        rc;
+    script_def_arg *def_arg = NULL;
+    bool            found;
+    test_var_arg   *arg;
+    test_var_arg   *darg;
+    test_var_arg   *p;
+
+    rc = get_default_arg_by_id(id, &def_arg);
+    if (rc != 0)
+        return rc;
+
+    TAILQ_FOREACH(darg, &def_arg->args, links)
+    {
+        found = false;
+        TAILQ_FOREACH(arg, list, links)
+        {
+            if (arg->variable)
+                continue;
+            if (strcmp(arg->name, darg->name) == 0)
+            {
+                found = true;
+                break;
+            }
+        }
+        if (found)
+            continue;
+
+        p = TE_ALLOC(sizeof(*p));
+        memcpy(p, darg, sizeof(*darg));
+        p->def_arg = true;
+        TAILQ_INSERT_TAIL(list, p, links);
+    }
+
+    return 0;
+}
 
 /**
  * Get script call description.
@@ -1009,13 +1151,22 @@ get_test_attrs(xmlNodePtr node, test_attrs *attrs)
 static te_errno
 get_script(xmlNodePtr node, tester_cfg *cfg, test_script *script)
 {
-    te_errno            rc;
-    const test_info    *ti;
-    bool                objective_found = false;
-    bool                execute_found = false;
+    te_errno         rc;
+    const test_info *ti;
+    bool             objective_found = false;
+    bool             execute_found = false;
+    script_def_arg  *darg = NULL;
 
+    script->ref = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("ref")));
     /* 'name' is mandatory */
     script->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
+    if (script->ref != NULL && script->name == NULL)
+    {
+        rc = get_default_arg_by_id(script->ref, &darg);
+        if (rc != 0)
+            return rc;
+        script->name = darg->name;
+    }
     if (script->name == NULL)
     {
         ERROR("'name' attribute is missing in script call description");
@@ -2150,6 +2301,12 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
         }
         node = xmlNodeNext(node);
     }
+    if (p->type == RUN_ITEM_SCRIPT && p->u.script.ref != NULL)
+    {
+        rc = add_default_arg(p->u.script.ref, &p->args);
+        if (rc != 0)
+            return rc;
+    }
 
     if (node != NULL)
     {
@@ -2254,6 +2411,16 @@ get_test_package(xmlNodePtr root, tester_cfg *cfg,
     {
         ERROR("Failed to get information about Test Package requirements");
         return rc;
+    }
+
+    /* Get optional default variables */
+    while (node != NULL &&
+           xmlStrcmp(node->name, CONST_CHAR2XML("script-template")) == 0)
+    {
+        rc = get_script_defaults(node, session);
+        if (rc != 0)
+            return rc;
+        node = xmlNodeNext(node);
     }
 
     if (node != NULL &&
@@ -2940,9 +3107,12 @@ test_value_types_free(test_value_types *types)
 static void
 test_var_arg_free(test_var_arg *p)
 {
-    free(p->name);
-    test_var_arg_values_free(&p->values);
-    free(p->list);
+    if (!p->def_arg)
+    {
+        free(p->name);
+        test_var_arg_values_free(&p->values);
+        free(p->list);
+    }
     free(p);
 }
 
