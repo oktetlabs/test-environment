@@ -64,6 +64,7 @@
 enum {
     TESTER_RUN_ITEM_SERVICE  = 1 << 0,
     TESTER_RUN_ITEM_INHERITABLE = 1 << 1,
+    TESTER_RUN_ITEM_TEMPLATE = 1 << 2,
 };
 
 
@@ -84,6 +85,7 @@ static te_errno parse_test_package(tester_cfg         *cfg,
 
 static void run_item_free(run_item *run);
 static void run_items_free(run_items *runs);
+static void test_var_arg_free(test_var_arg *p);
 
 
 /**
@@ -996,38 +998,128 @@ get_test_attrs(xmlNodePtr node, test_attrs *attrs)
     return 0;
 }
 
+/**
+ * Get run template by name.
+ *
+ * @param name      Template name
+ * @param session   Session the run item belongs to
+ * @param run_templ Location of run template item
+ *
+ * @return Status code.
+ */
+static te_errno
+get_template_by_name(const char *name, const test_session *session,
+                     const run_item **run_tmpl)
+{
+    run_item *rtmpl;
+    const test_session *s = session;
+
+    while (s != NULL)
+    {
+        TAILQ_FOREACH(rtmpl, &s->templates, links)
+        {
+            if (strcmp(rtmpl->name, name) == 0)
+            {
+                *run_tmpl = rtmpl;
+                return 0;
+            }
+        }
+        s = s->parent;
+    }
+    ERROR("There is no run template with name '%s'", name);
+    return TE_RC(TE_TESTER, TE_ENOENT);
+}
+
+/**
+ * Copy arguments from run template.
+ *
+ * @param run_templ Location of run template item
+ * @param list      List to copy arguments to it
+ */
+static void
+copy_template_args(const run_item *tmpl, test_vars_args *list)
+{
+    test_var_arg    *rtarg;
+    test_var_arg    *p;
+
+    if (tmpl == NULL)
+        return;
+
+    TAILQ_FOREACH(rtarg, &tmpl->args, links)
+    {
+        p = TE_MEMDUP(rtarg, sizeof(*rtarg));
+        p->tmpl_arg = true;
+        TAILQ_INSERT_TAIL(list, p, links);
+    }
+}
+
+/**
+ * Add argument to the appropriate place in the list.
+ *
+ * @param p         Argument
+ * @param list      List to add argument to it
+ */
+static void
+add_or_fix_arg(test_var_arg *p, test_vars_args *list)
+{
+    test_var_arg *arg;
+
+    TAILQ_FOREACH(arg, list, links)
+    {
+        if (strcmp(arg->name, p->name) == 0)
+        {
+            TAILQ_INSERT_AFTER(list, arg, p, links);
+            TAILQ_REMOVE(list, arg, links);
+            test_var_arg_free(arg);
+            return;
+        }
+    }
+    TAILQ_INSERT_TAIL(list, p, links);
+}
 
 /**
  * Get script call description.
  *
  * @param node      XML node with script call description
  * @param cfg       Tester configuration context
- * @param script    Location for script call description
+ * @param ritem     Run item with the script
  *
  * @return Status code.
  */
 static te_errno
-get_script(xmlNodePtr node, tester_cfg *cfg, test_script *script)
+get_script(xmlNodePtr node, tester_cfg *cfg, run_item *ritem)
 {
     te_errno            rc;
     const test_info    *ti;
     bool                objective_found = false;
     bool                execute_found = false;
+    test_script        *script = &ritem->u.script;
+    const test_script  *tmpl_script = NULL;
 
-    /* 'name' is mandatory */
-    script->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
-    if (script->name == NULL)
+    if (ritem->tmpl != NULL)
+        tmpl_script = &ritem->tmpl->u.script;
+
+    /* 'name' could be optional for template */
+    if (node != NULL)
+        script->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
+    if (script->name == NULL && tmpl_script != NULL)
+        script->name = TE_STRDUP(tmpl_script->name);
+
+    if (script->name == NULL && ritem->role != RI_ROLE_TEMPLATE)
     {
         ERROR("'name' attribute is missing in script call description");
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
-    /* Get run item attributes */
-    rc = get_test_attrs(node, &script->attrs);
-    if (rc != 0)
-        return rc;
+    if (node != NULL)
+    {
+        /* Get run item attributes */
+        rc = get_test_attrs(node, &script->attrs);
+        if (rc != 0)
+            return rc;
 
-    node = xmlNodeChildren(node);
+        node = xmlNodeChildren(node);
+    }
 
     while (node != NULL)
     {
@@ -1087,7 +1179,37 @@ get_script(xmlNodePtr node, tester_cfg *cfg, test_script *script)
         break;
     }
 
-    if (!execute_found)
+    if (node != NULL)
+    {
+        ERROR("Unexpected element '%s' in script '%s' call description",
+              XML2CHAR(node->name), script->name);
+        return TE_RC(TE_TESTER, TE_EINVAL);
+    }
+
+    if (ritem->role == RI_ROLE_TEMPLATE)
+        return 0;
+
+    /* Copy values from template */
+    if (tmpl_script != NULL)
+    {
+        if (script->objective == NULL)
+            script->objective = TE_STRDUP(tmpl_script->objective);
+        if (script->page == NULL)
+            script->page = TE_STRDUP(tmpl_script->page);
+        if (script->execute == NULL)
+            script->execute = TE_STRDUP(tmpl_script->execute);
+        if (script->attrs.timeout.tv_sec == TESTER_TIMEOUT_DEF)
+            script->attrs.timeout.tv_sec = tmpl_script->attrs.timeout.tv_sec;
+        if (script->attrs.track_conf == TESTER_TRACK_CONF_UNSPEC)
+            script->attrs.track_conf = tmpl_script->attrs.track_conf;
+        if (script->attrs.track_conf_hd == TESTER_HANDDOWN_CHILDREN)
+            script->attrs.track_conf_hd = tmpl_script->attrs.track_conf_hd;
+        rc = test_requirements_clone(&tmpl_script->reqs, &script->reqs);
+        if (rc != 0)
+            return rc;
+    }
+
+    if (script->execute == NULL)
     {
         script->execute = name_to_path(cfg, script->name, false);
     }
@@ -1098,12 +1220,6 @@ get_script(xmlNodePtr node, tester_cfg *cfg, test_script *script)
         return TE_RC(TE_TESTER, TE_ENOMEM);
     }
 
-    if (node != NULL)
-    {
-        ERROR("Unexpected element '%s' in script '%s' call description",
-              XML2CHAR(node->name), script->name);
-        return TE_RC(TE_TESTER, TE_EINVAL);
-    }
     VERB("Got script '%s'", script->name);
 
     return 0;
@@ -1423,7 +1539,6 @@ alloc_and_get_var_arg(xmlNodePtr node, bool is_var,
     p->variable = is_var;
     p->global = false;
     TAILQ_INIT(&p->values.head);
-    TAILQ_INSERT_TAIL(list, p, links);
 
     p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
     if (p->name == NULL)
@@ -1566,6 +1681,8 @@ alloc_and_get_var_arg(xmlNodePtr node, bool is_var,
         }
         VERB("%s: getenv->%s", __FUNCTION__, getenv(env_name));
     }
+
+    add_or_fix_arg(p, list);
 
     return 0;
 }
@@ -1800,6 +1917,7 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
     int parse_break;
 
     TAILQ_INIT(&session->reqs);
+    TAILQ_INIT(&session->templates);
 
     ENTRY("session=%p", session);
     session->parent = parent;
@@ -1816,6 +1934,18 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
         return rc;
 
     node = xmlNodeChildren(node);
+
+    /* Get optional run templates variables */
+    while (node != NULL &&
+           xmlStrcmp(node->name, CONST_CHAR2XML("run-template")) == 0)
+    {
+        rc = alloc_and_get_run_item(node, cfg, TESTER_RUN_ITEM_TEMPLATE,
+                                    RI_ROLE_TEMPLATE, session,
+                                    &session->templates, NULL);
+        if (rc != 0)
+            return rc;
+        node = xmlNodeNext(node);
+    }
 
     /* Get optional 'objective' */
     if (node != NULL &&
@@ -2011,6 +2141,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
 {
     run_item    *p;
     te_errno     rc;
+    char        *tmpl_name = NULL;
 
     assert((runs == NULL) != (p_run == NULL));
     p = TE_ALLOC(sizeof(*p));
@@ -2033,10 +2164,31 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
         *p_run = p;
     }
 
+    /* 'template' is optional */
+    tmpl_name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("template")));
+    if (tmpl_name != NULL)
+    {
+        if (opts & TESTER_RUN_ITEM_TEMPLATE)
+        {
+            ERROR("'template' attribute is forbidden in run template");
+            return TE_RC(TE_TESTER, TE_EINVAL);
+        }
+        rc = get_template_by_name(tmpl_name, session, &p->tmpl);
+        if (rc != 0)
+            return rc;
+        free(tmpl_name);
+        copy_template_args(p->tmpl, &p->args);
+    }
+
     if (~opts & TESTER_RUN_ITEM_SERVICE)
     {
-        /* 'name' is optional */
+        /* 'name' is optional, except for run template */
         p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
+        if ((p->name == NULL) && (opts & TESTER_RUN_ITEM_TEMPLATE))
+        {
+            ERROR("'name' attribute is missing in run template");
+            return TE_RC(TE_TESTER, TE_EINVAL);
+        }
         VERB("Preprocessing 'run' item '%s'", p->name ? : "(noname)");
 
         if (p->name != NULL)
@@ -2078,50 +2230,71 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
         return rc;
 
     node = xmlNodeChildren(node);
-    if (node == NULL)
+    if (node == NULL && (p->tmpl == NULL || p->tmpl->type != RUN_ITEM_SCRIPT))
     {
         ERROR("Empty 'run' item");
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
-    if (monitors_process(&node, p) != 0)
+    if (node != NULL && monitors_process(&node, p) != 0)
     {
         ERROR("Failed to process <command_monitor> nodes");
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
-    if (xmlStrcmp(node->name, CONST_CHAR2XML("script")) == 0)
+    if (node == NULL || xmlStrcmp(node->name, CONST_CHAR2XML("script")) == 0)
     {
         p->type = RUN_ITEM_SCRIPT;
         TAILQ_INIT(&p->u.script.reqs);
-        rc = get_script(node, cfg, &p->u.script);
+        rc = get_script(node, cfg, p);
         if (rc != 0)
             return rc;
+        /* add run template arguments to run item arguments */
+        if (node != NULL)
+            node = xmlNodeNext(node);
     }
     else if (xmlStrcmp(node->name, CONST_CHAR2XML("session")) == 0)
     {
+        if (opts & TESTER_RUN_ITEM_TEMPLATE)
+        {
+            ERROR("Session templates are not supported");
+            return TE_RC(TE_TESTER, TE_EINVAL);
+        }
+        if (p->tmpl != NULL && p->tmpl->type != RUN_ITEM_NONE)
+        {
+            ERROR("Incorrect type of template for session");
+            return TE_RC(TE_TESTER, TE_EINVAL);
+        }
         p->type = RUN_ITEM_SESSION;
         TAILQ_INIT(&p->u.session.vars);
         TAILQ_INIT(&p->u.session.run_items);
         rc = get_session(node, cfg, session, &p->u.session, p);
         if (rc != 0)
             return rc;
+        node = xmlNodeNext(node);
     }
     else if ((~opts & TESTER_RUN_ITEM_SERVICE) &&
              xmlStrcmp(node->name, CONST_CHAR2XML("package")) == 0)
     {
+        if ((opts & TESTER_RUN_ITEM_TEMPLATE) || (p->tmpl != NULL))
+        {
+            ERROR("Package templates are not supported");
+            return TE_RC(TE_TESTER, TE_EINVAL);
+        }
         p->type = RUN_ITEM_PACKAGE;
         rc = get_package(node, cfg, session, &p->u.package, p);
         if (rc != 0)
             return rc;
+        node = xmlNodeNext(node);
     }
-    else
+    else if ((~opts & TESTER_RUN_ITEM_TEMPLATE) ||
+             ((opts & TESTER_RUN_ITEM_TEMPLATE) &&
+              xmlStrcmp(node->name, CONST_CHAR2XML("arg")) != 0))
     {
         ERROR("The first element '%s' in run item is incorrect",
               XML2CHAR(node->name));
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
-    node = xmlNodeNext(node);
 
     /* Get information about arguments */
     while (node != NULL &&
@@ -2926,9 +3099,12 @@ test_value_types_free(test_value_types *types)
 static void
 test_var_arg_free(test_var_arg *p)
 {
-    free(p->name);
-    test_var_arg_values_free(&p->values);
-    free(p->list);
+    if (!p->tmpl_arg)
+    {
+        free(p->name);
+        test_var_arg_values_free(&p->values);
+        free(p->list);
+    }
     free(p);
 }
 
@@ -2968,6 +3144,7 @@ test_session_free(test_session *p)
     run_item_free(p->prologue);
     run_item_free(p->epilogue);
     run_items_free(&p->run_items);
+    run_items_free(&p->templates);
 }
 
 /**
