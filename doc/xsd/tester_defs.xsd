@@ -369,7 +369,7 @@
                 </element>
             </choice>
         </sequence>
-        <attribute name="name" type="Name">
+        <attribute name="name" type="Name" minOccurs="0">
             <annotation>
                 <documentation>
                     Test name.
@@ -377,6 +377,31 @@
             </annotation>
         </attribute>
         <attributeGroup ref="RunItemAttributes"/>
+    </complexType>
+
+    <complexType name="Run-Template">
+        <annotation>
+            <documentation>
+                Default argument Template.
+            </documentation>
+        </annotation>
+        <sequence>
+            <element name="script" type="Script" minOccurs="0">
+                <annotation>
+                    <documentation>
+                        Default script for template.
+                    </documentation>
+                </annotation>
+            </element>
+            <group ref="Arguments"/>
+        </sequence>
+        <attribute name="name" type="Name">
+            <annotation>
+                <documentation>
+                    Name of default argument template.
+                </documentation>
+            </annotation>
+        </attribute>
     </complexType>
 
     <group name="Executable">
@@ -520,6 +545,14 @@
                     </annotation>
                 </element>
             </choice>
+            <element name="run-template" type="Run-Template" minOccurs="0"
+                                         maxOccurs="unbounded">
+                <annotation>
+                    <documentation>
+                        Template with default values and script name.
+                    </documentation>
+                </annotation>
+            </element>
             <element name="exception" type="InheritableExecutable"
                                       minOccurs="0">
                 <annotation>
@@ -676,6 +709,13 @@
                 <documentation>
                     Name of this run item. It may be used to call
                     specific item of the package.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="template" type="Name" minOccurs="0">
+            <annotation>
+                <documentation>
+                    Template name to be used in this run item.
                 </documentation>
             </annotation>
         </attribute>

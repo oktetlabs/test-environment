@@ -186,6 +186,7 @@ typedef struct test_var_arg {
     bool variable;  /**< Is variable */
     bool global;    /**< In case it's a variable - is it
                                            global? */
+    bool tmpl_arg;  /**< Is it a argument from template */
 } test_var_arg;
 
 /** List of test session variables */
@@ -210,6 +211,7 @@ struct test_session {
     test_value_types    types;          /**< Types declared in session */
     test_vars_args      vars;           /**< List of variables */
     test_requirements   reqs;           /**< List of requirements */
+    run_items           templates;      /**< List of run templates */
     run_item           *exception;      /**< Exception handler */
     run_item           *keepalive;      /**< Keep-alive handler */
     run_item           *prologue;       /**< Prologue */
@@ -280,6 +282,7 @@ struct run_item {
     tester_handdown     handdown;   /**< Type of executable inheritance */
     run_item_type       type;       /**< Type of the run item */
     run_item_role       role;       /**< Role of the run item */
+    const run_item     *tmpl;       /**< Run template */
     union {
         test_script     script;     /**< Test script */
         test_session    session;    /**< Test session */

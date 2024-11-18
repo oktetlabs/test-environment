@@ -64,6 +64,7 @@ typedef enum run_item_role {
     RI_ROLE_EPILOGUE,
     RI_ROLE_KEEPALIVE,
     RI_ROLE_EXCEPTION,
+    RI_ROLE_TEMPLATE,
 } run_item_role;
 
 /** Convert role value to string */
