@@ -41,6 +41,7 @@ sources += files(
     'base/conf_stats.c',
     'base/conf_sys.c',
     'base/conf_sys_tree.c',
+    'base/conf_tap.c',
     'base/conf_veth.c',
     'base/conf_udp_tunnel.c',
     'process/conf_process.c',
