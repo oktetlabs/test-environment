@@ -95,6 +95,16 @@
         Name: switchid:portname
         Value: interface name
 
+    - oid: "/agent/tap"
+      access: read_create
+      type: none
+      depends:
+        - oid: "/agent/rsrc"
+      d: |
+         Virtual L2 (TAP) interface
+         Name: interface name
+         Value: none
+
     - oid: "/agent/interface"
       access: read_only
       type: none
@@ -104,6 +114,7 @@
           scope: object
         - oid: "/agent/bridge"
         - oid: "/agent/ovs/bridge"
+        - oid: "/agent/tap"
         - oid: "/agent/tunnel/geneve"
         - oid: "/agent/tunnel/vxlan"
       d: |
