@@ -1995,6 +1995,7 @@ static const char *te_interface_kinds[TE_INTERFACE_KIND_END] =
         [TE_INTERFACE_KIND_BOND] = "bond",
         [TE_INTERFACE_KIND_TEAM] = "team",
         [TE_INTERFACE_KIND_BRIDGE] = "bridge",
+        [TE_INTERFACE_KIND_TAP] = "tap",
         [TE_INTERFACE_KIND_TUN] = "tun",
     };
 
