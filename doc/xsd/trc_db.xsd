@@ -182,6 +182,15 @@
                 </xsd:documentation>
             </xsd:annotation>
         </xsd:attribute>
+        <xsd:attribute name="override" type="xsd:boolean">
+            <xsd:annotation>
+                <xsd:documentation>
+                    If true, iterations under this test should completely
+                    replace preexisting iterations when merging TRC databases.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+
     </xsd:complexType>
 
     <xsd:element name="trc_db">
@@ -214,6 +223,15 @@
                     <xsd:documentation>
                         Should the first (false) or the last (true) matching
                         expectation be used.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:attribute>
+            <xsd:attribute name="merged" type="xsd:boolean">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        If true, this TRC database was created by merging other
+                        TRC databases. So it may contain more than one iteration
+                        entry matching a given test iteration.
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:attribute>

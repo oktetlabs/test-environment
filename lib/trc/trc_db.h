@@ -128,6 +128,9 @@ typedef struct trc_test {
 
     trc_test_type   type;           /**< Type of the test */
     bool aux;            /**< Is test auxiliary? */
+    bool override_iters; /**< Should iteration records for this test be
+                              replaced when merging databases? */
+
     char           *name;           /**< Test name */
     char           *path;           /**< Test path */
 
@@ -163,6 +166,7 @@ struct te_trc_db {
     unsigned int    user_id;    /**< ID of the next user */
     trc_globals     globals;
     bool last_match; /**< Choose the last match expectation */
+    bool merged; /**< True if other databases were merged into this one */
 };
 
 /** Kinds of matching of iteration TRC with iteration from XML log */
@@ -485,6 +489,14 @@ extern void trc_free_trc_test(trc_test *test);
  * @param tests     List of tests to be freed
  */
 extern void trc_free_trc_tests(trc_tests *tests);
+
+/**
+ * Free resources allocated for the queue of test iterations.
+ * Queue of iterations will become empty as a result.
+ *
+ * @param iters     Queue of test iterations to be freed.
+ */
+extern void trc_free_test_iters(trc_test_iters *iters);
 
 /**
  * Free resources allocated for the test iteration.

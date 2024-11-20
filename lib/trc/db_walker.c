@@ -573,7 +573,6 @@ trc_report_argument_compare (const void *arg1, const void *arg2)
                   ((trc_report_argument *)arg2)->name);
 }
 
-
 /* See the description in te_trc.h */
 bool
 trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
@@ -770,7 +769,11 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
             }
         }
 
-        if (dup_detected)
+        /**
+         * For temporary merged database multiple matching entries
+         * are fine.
+         */
+        if (dup_detected && !walker->db->merged)
         {
             char *hash = trc_db_test_params_hash(n_args, args);
             ERROR("TEST='%s || %s'\n"

@@ -146,6 +146,22 @@ extern te_errno trc_db_open(const char *location, te_trc_db **db);
 extern te_errno trc_db_open_ext(const char *location, te_trc_db **db,
                                 int flags);
 
+/**
+ * Load TRC database and merge all data from it into another
+ * already opened TRC database. Expected test results from
+ * the merged database will have priority over the existing ones
+ * and may overwrite them completely.
+ *
+ * @param db        Opened TRC database to which to merge loaded
+ *                  data.
+ * @param location  Path to the main file of the TRC database to be
+ *                  loaded and merged.
+ * @param flags     Flags (see trc_open_flags).
+ *
+ * @return Status code.
+ */
+extern te_errno trc_db_open_merge(te_trc_db *db, const char *location,
+                                  int flags);
 
 /**
  * Close TRC database.

@@ -253,12 +253,8 @@ trc_free_test_iter(trc_test_iter *iter)
     trc_free_trc_tests(&iter->tests);
 }
 
-/**
- * Free resources allocated for the list of test iterations.
- *
- * @param iters     List of test iterations to be freed
- */
-static void
+/* See description in trc_db.h */
+void
 trc_free_test_iters(trc_test_iters *iters)
 {
     trc_test_iter  *p;

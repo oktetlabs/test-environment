@@ -987,6 +987,10 @@ alloc_and_get_test(xmlNodePtr node, te_trc_db *db, trc_tests *tests,
         free(tmp);
     }
 
+    rc = get_boolean_prop(node, "override", &p->override_iters);
+    if (rc != 0)
+        return rc;
+
     INFO("Parsing test '%s' type=%d aux=%d", p->name, p->type, p->aux);
 
     node = xmlNodeChildren(node);
@@ -1423,6 +1427,10 @@ trc_db_open_ext(const char *location, te_trc_db **db, int flags)
         if (rc != 0)
             return rc;
 
+        rc = get_boolean_prop(node, "merged", &(*db)->merged);
+        if (rc != 0)
+            return rc;
+
         (*db)->version = XML2CHAR(xmlGetProp(node,
                                           CONST_CHAR2XML("version")));
         if ((*db)->version == NULL)
@@ -1469,6 +1477,630 @@ te_errno
 trc_db_open(const char *location, te_trc_db **db)
 {
     return trc_db_open_ext(location, db, 0);
+}
+
+static void db_merge_tests(trc_test_iter *parent_iter,
+                           trc_tests *target_tests, trc_tests *merged_tests,
+                           te_trc_db *target_db, te_trc_db *merged_db);
+
+/**
+ * Resolve argument value in TRC DB.
+ *
+ * @param db        TRC database.
+ * @param value     Value to be resolved.
+ *
+ * @return Resolved value (the original one or value of
+ *         the global variable which is referenced by it).
+ */
+static const char *
+resolve_value(te_trc_db *db, const char *value)
+{
+    if (strcmp_start(TEST_ARG_VAR_PREFIX, value) == 0)
+    {
+        trc_global *g = NULL;
+
+        TAILQ_FOREACH(g, &db->globals.head, links)
+        {
+            if (strcmp(g->name, value + strlen(TEST_ARG_VAR_PREFIX)) == 0)
+                return g->value;
+        }
+
+        return NULL;
+    }
+    else
+    {
+        return value;
+    }
+}
+
+/** Possible results of iters_match() */
+typedef enum iters_match_result {
+    /** No match */
+    ITERS_MATCH_NO = 0,
+    /** Exact match: all arguments have the same values */
+    ITERS_MATCH_EXACT,
+    /**
+     * All test iterations matching the first record match
+     * the second one, but not necessarily the other way around
+     */
+    ITERS_MATCH_SUBSET,
+    /**
+     * All test iterations matching the second record match
+     * the first one, but not necessarily the other way around
+     */
+    ITERS_MATCH_SUPERSET,
+    /**
+     * Sets of iterations corresponding to the two iteration
+     * records may intersect
+     */
+    ITERS_MATCH_INTERSECT,
+} iters_match_result;
+
+/**
+ * Match the first iteration record against the second one.
+ *
+ * @param db      TRC database.
+ * @param iter1   The first iteration record.
+ * @param iter2   The second iteration record.
+ *
+ * @return One of the values in iters_match_result.
+ */
+static iters_match_result
+iters_match(te_trc_db *db, trc_test_iter *iter1, trc_test_iter *iter2)
+{
+    trc_test_iter_arg *arg1;
+    trc_test_iter_arg *arg2;
+    iters_match_result result = ITERS_MATCH_EXACT;
+
+    arg2 = TAILQ_FIRST(&iter2->args.head);
+    TAILQ_FOREACH(arg1, &iter1->args.head, links)
+    {
+        if (arg2 == NULL)
+            return ITERS_MATCH_NO;
+
+        if (strcmp(arg1->name, arg2->name) != 0)
+            return ITERS_MATCH_NO;
+
+        if (strcmp(arg1->value, arg2->value) != 0)
+        {
+            if (*(arg1->value) != '\0' && *(arg2->value) != '\0')
+            {
+                const char *val1 = resolve_value(db, arg1->value);
+                const char *val2 = resolve_value(db, arg2->value);
+
+                if (val1 == NULL || val2 == NULL)
+                    return ITERS_MATCH_NO;
+                if (trc_db_compare_values(val1, val2) != 0)
+                    return ITERS_MATCH_NO;
+            }
+            else
+            {
+                te_bool first_empty = (*(arg1->value) == '\0');
+                te_bool second_empty = (*(arg2->value) == '\0');
+
+                if (first_empty && second_empty)
+                {
+                    /* Do nothing */
+                }
+                else if (first_empty)
+                {
+                    if (result == ITERS_MATCH_EXACT)
+                        result = ITERS_MATCH_SUPERSET;
+                    else if (result == ITERS_MATCH_SUBSET)
+                        result = ITERS_MATCH_INTERSECT;
+                }
+                else
+                {
+                    if (result == ITERS_MATCH_EXACT)
+                        result = ITERS_MATCH_SUBSET;
+                    else if (result == ITERS_MATCH_SUPERSET)
+                        result = ITERS_MATCH_INTERSECT;
+                }
+            }
+        }
+
+        arg2 = TAILQ_NEXT(arg2, links);
+    }
+
+    if (arg2 != NULL)
+        return ITERS_MATCH_NO;
+
+    return result;
+}
+
+/**
+ * Merge expected results from the source iteration record to the
+ * destination one.
+ *
+ * @param dst               Destination iteration record.
+ * @param src               Source iteration record.
+ * @param dst_last_match    Value of 'last_match' attribute for the
+ *                          destination TRC database.
+ * @param src_last_match    Value of 'last_match' attribute for the
+ *                          source TRC database.
+ */
+static void
+merge_results(trc_test_iter *dst, trc_test_iter *src, bool dst_last_match,
+              bool src_last_match)
+{
+    trc_exp_result *r;
+    trc_exp_result *r_prev = NULL;
+    trc_exp_result *r_dup;
+
+    if (STAILQ_EMPTY(&src->exp_results))
+    {
+        if (src->exp_default != NULL)
+        {
+            /*
+             * Default expected result of the source iteration record
+             * replaces expected results of the destination iteration
+             * record.
+             */
+            trc_exp_results_free(&dst->exp_results);
+            dst->exp_default = src->exp_default;
+        }
+
+        return;
+    }
+
+    if (src_last_match != dst_last_match)
+    {
+        if (dst_last_match)
+        {
+#ifdef STAILQ_LAST
+            r_prev = STAILQ_LAST(&dst->exp_results, trc_exp_result, links);
+#else
+            STAILQ_FOREACH(r, &dst->exp_results, links)
+                r_prev = r;
+#endif
+        }
+    }
+
+    STAILQ_FOREACH(r, &src->exp_results, links)
+    {
+        r_dup = trc_exp_result_dup(r);
+        if (r_prev == NULL)
+        {
+            if (dst_last_match)
+                STAILQ_INSERT_TAIL(&dst->exp_results, r_dup, links);
+            else
+                STAILQ_INSERT_HEAD(&dst->exp_results, r_dup, links);
+        }
+        else
+        {
+            STAILQ_INSERT_AFTER(&dst->exp_results, r_prev, r_dup, links);
+        }
+
+        if (src_last_match == dst_last_match)
+            r_prev = r_dup;
+    }
+}
+
+/**
+ * Insert merged iteration record after a given one.
+ *
+ * @param iters     Queue of iteration records.
+ * @param tgt       Iteration record after which to insert.
+ *                  If NULL, the iteration record should be
+ *                  inserted at the beginning of the queue.
+ * @param iter      Iteration record to be inserted.
+ */
+static void
+insert_iter_after(trc_test_iters *iters, trc_test_iter *tgt,
+                  trc_test_iter *iter)
+{
+    trc_test_iter *p;
+
+    p = tgt;
+
+    while (true)
+    {
+        if (p == NULL)
+            p = TAILQ_FIRST(&iters->head);
+        else
+            p = TAILQ_NEXT(p, links);
+
+        /*
+         * NULL parent means this iteration record was inserted
+         * recently, and we should insert a new one after it
+         * to keep order of iteration records from the merged
+         * database.
+         */
+        if (p != NULL && p->parent == NULL)
+            tgt = p;
+        else
+            break;
+    }
+
+    if (tgt == NULL)
+        TAILQ_INSERT_HEAD(&iters->head, iter, links);
+    else
+        TAILQ_INSERT_AFTER(&iters->head, tgt, iter, links);
+}
+
+static void fix_merged_tests(trc_tests *tests);
+
+/**
+ * Reset pointers to XML nodes for iterations copied from
+ * a merged TRC database - these pointers are invalid
+ * in the target database.
+ *
+ * @param iters     Queue of iterations.
+ */
+static void
+fix_merged_iters(trc_test_iters *iters)
+{
+    trc_test_iter *iter;
+
+    TAILQ_FOREACH(iter, &iters->head, links)
+    {
+        iter->node = NULL;
+        fix_merged_tests(&iter->tests);
+    }
+}
+
+/**
+ * Reset pointers to XML nodes for tests copied from
+ * a merged TRC database - these pointers are invalid
+ * in the target database.
+ *
+ * @param tests    Queue of tests.
+ */
+static void
+fix_merged_tests(trc_tests *tests)
+{
+    trc_test *test;
+
+    TAILQ_FOREACH(test, &tests->head, links)
+    {
+        test->node = NULL;
+        fix_merged_iters(&test->iters);
+    }
+}
+
+static trc_test_iter *iter_dup(trc_test_iter *iter);
+
+/**
+ * Duplicate a given test.
+ *
+ * @param test      Test to duplicate.
+ *
+ * @return Created copy of the test.
+ */
+static trc_test *
+test_dup(trc_test *test)
+{
+    trc_test *dup_test;
+    trc_test_iter *iter;
+    trc_test_iter *dup_iter;
+
+    dup_test = TE_ALLOC(sizeof(*test));
+    dup_test->type = test->type;
+
+    if (test->name != NULL)
+        dup_test->name = strdup(test->name);
+    if (test->path != NULL)
+        dup_test->path = strdup(test->path);
+    if (test->notes != NULL)
+        dup_test->notes = strdup(test->notes);
+    if (test->objective != NULL)
+        dup_test->objective = strdup(test->objective);
+
+    TAILQ_INIT(&dup_test->iters.head);
+    TAILQ_FOREACH(iter, &test->iters.head, links)
+    {
+        dup_iter = iter_dup(iter);
+        dup_iter->parent = dup_test;
+        TAILQ_INSERT_TAIL(&dup_test->iters.head, dup_iter, links);
+    }
+
+    return dup_test;
+}
+
+/**
+ * Duplicate a given iteration.
+ *
+ * @param iter      Iteration to duplicate.
+ *
+ * @return Created copy of the iteration.
+ */
+static trc_test_iter *
+iter_dup(trc_test_iter *iter)
+{
+    trc_test_iter *dup_iter;
+    trc_test *test;
+    trc_test *dup_test;
+
+    dup_iter = TE_ALLOC(sizeof(*iter));
+    trc_test_iter_args_init(&dup_iter->args);
+    trc_test_iter_args_copy(&dup_iter->args, &iter->args);
+    dup_iter->exp_default = iter->exp_default;
+    STAILQ_INIT(&dup_iter->exp_results);
+    trc_exp_results_cpy(&dup_iter->exp_results, &iter->exp_results);
+
+    if (iter->notes != NULL)
+        dup_iter->notes = strdup(iter->notes);
+
+    TAILQ_INIT(&dup_iter->tests.head);
+    TAILQ_FOREACH(test, &iter->tests.head, links)
+    {
+        dup_test = test_dup(test);
+        dup_test->parent = dup_iter;
+        TAILQ_INSERT_TAIL(&dup_iter->tests.head, dup_test, links);
+    }
+
+    return dup_iter;
+}
+
+/**
+ * Merge iteration from another TRC database. This may result in
+ * adding new iterations and/or updating preexisting ones.
+ *
+ * @param target_test   Test where to merge iteration.
+ * @param merged_iter   Merged iteration.
+ * @param target_db     TRC database of the target test.
+ * @param merged_db     TRC database of the merged iteration.
+ */
+static void
+merge_iter(trc_test *target_test, trc_test_iter *merged_iter,
+           te_trc_db *target_db, te_trc_db *merged_db)
+{
+    trc_test_iter *p;
+    trc_test_iter *target_iter;
+    trc_test_iter_arg *arg1;
+    trc_test_iter_arg *arg2;
+    iters_match_result match;
+    bool add_same_iter = true;
+    bool same_results;
+
+    TAILQ_FOREACH(p, &target_test->iters.head, links)
+    {
+        /*
+         * Do not match against newly added iterations,
+         * only against preexisting ones.
+         */
+        if (p->parent == NULL)
+            continue;
+
+        match = iters_match(target_db, p, merged_iter);
+        if (match == ITERS_MATCH_NO)
+            continue;
+
+        same_results = false;
+        if (trc_exp_results_cmp(
+                &merged_iter->exp_results, &p->exp_results,
+                RESULTS_CMP_NO_NOTES) == 0)
+        {
+            same_results = true;
+        }
+
+        if (match == ITERS_MATCH_EXACT || match == ITERS_MATCH_SUBSET)
+        {
+            p->exp_default = merged_iter->exp_default;
+            if (!same_results)
+            {
+                merge_results(p, merged_iter, target_db->last_match,
+                              merged_db->last_match);
+            }
+
+            if (match == ITERS_MATCH_EXACT)
+                add_same_iter = false;
+        }
+        else if (match == ITERS_MATCH_SUPERSET)
+        {
+            add_same_iter = false;
+        }
+
+        if (match == ITERS_MATCH_EXACT || match == ITERS_MATCH_SUBSET ||
+            same_results)
+        {
+            target_iter = p;
+        }
+        else
+        {
+            /*
+             * If matching iteration record in the target database
+             * can describe not only test iterations matching
+             * the merged iteration record, create a new
+             * iteration record describing intersection of the
+             * matching iteration record and the merged iteration
+             * record.
+             */
+            target_iter = TE_ALLOC(sizeof(*merged_iter));
+
+            /*
+             * Parent is filled later to distinguish preexisting
+             * iterations and newly added ones and avoid matching
+             * the currently merged iteration to those merged from
+             * the same database before.
+             */
+            target_iter->parent = NULL;
+            trc_test_iter_args_init(&target_iter->args);
+            trc_test_iter_args_copy(&target_iter->args, &merged_iter->args);
+            /* exp_default is stored in a global queue */
+            target_iter->exp_default = merged_iter->exp_default;
+            STAILQ_INIT(&target_iter->exp_results);
+
+            /*
+             * Add expected results from both iteration records so
+             * that results from the merged iteration record
+             * will have priority when determining expected
+             * result.
+             */
+            merge_results(target_iter, p, target_db->last_match,
+                          merged_db->last_match);
+            merge_results(target_iter, merged_iter,
+                          target_db->last_match,
+                          merged_db->last_match);
+
+            arg2 = TAILQ_FIRST(&p->args.head);
+            TAILQ_FOREACH(arg1, &target_iter->args.head, links)
+            {
+                if (*(arg2->value) != '\0' && *(arg1->value) == '\0')
+                {
+                    free(arg1->value);
+                    arg1->value = strdup(arg2->value);
+                }
+
+                arg2 = TAILQ_NEXT(arg2, links);
+            }
+
+            insert_iter_after(&target_test->iters, p, target_iter);
+        }
+
+        if (!TAILQ_EMPTY(&merged_iter->tests.head))
+        {
+            db_merge_tests(target_iter, &target_iter->tests,
+                           &merged_iter->tests,
+                           target_db, merged_db);
+        }
+    }
+
+    if (add_same_iter)
+    {
+        /*
+         * If there was no exact or superset match, add copy
+         * of the merged iteration at the beginning to match
+         * test iterations not described by subset or intersect
+         * matches.
+         */
+        target_iter = iter_dup(merged_iter);
+        insert_iter_after(&target_test->iters, NULL, target_iter);
+    }
+}
+
+/**
+ * Merge iterations from another TRC database.
+ *
+ * @param target_test     Test where to merge iterations.
+ * @param merged_test     Test with merged iterations.
+ * @param target_db       Target TRC database.
+ * @param merged_db       Merged TRC database.
+ */
+static void
+db_merge_iters(trc_test *target_test, trc_test *merged_test,
+               te_trc_db *target_db, te_trc_db *merged_db)
+{
+    trc_test_iter *iter;
+    trc_test_iter *iter_aux;
+
+    if (merged_test->override_iters)
+    {
+        TAILQ_FOREACH(iter, &target_test->iters.head, links)
+        {
+            xmlUnlinkNode(iter->node);
+            xmlFreeNode(iter->node);
+        }
+
+        trc_free_test_iters(&target_test->iters);
+    }
+
+    TAILQ_FOREACH_SAFE(iter, &merged_test->iters.head, links, iter_aux)
+    {
+        merge_iter(target_test, iter, target_db, merged_db);
+    }
+
+    TAILQ_FOREACH(iter, &target_test->iters.head, links)
+        iter->parent = target_test;
+}
+
+/**
+ * Merge tests from another TRC database.
+ *
+ * @param parent_iter     Parent iteration in the target database.
+ * @param target_tests    Target queue of tests.
+ * @param merged_tests    Merged queue of tests.
+ * @param target_db       Target TRC database.
+ * @param merged_db       Merged TRC database.
+ */
+static void
+db_merge_tests(trc_test_iter *parent_iter,
+               trc_tests *target_tests, trc_tests *merged_tests,
+               te_trc_db *target_db, te_trc_db *merged_db)
+{
+    trc_test *merged_test;
+    trc_test *target_test;
+    bool found;
+
+    TAILQ_FOREACH(merged_test, &merged_tests->head, links)
+    {
+        found = false;
+        TAILQ_FOREACH(target_test, &target_tests->head, links)
+        {
+            if (strcmp(target_test->name, merged_test->name) == 0)
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            target_test = trc_db_new_test(target_tests, parent_iter,
+                                          merged_test->name);
+        }
+
+        target_test->type = merged_test->type;
+        if (target_test->objective == NULL && merged_test->objective != NULL)
+            target_test->objective = strdup(merged_test->objective);
+
+        db_merge_iters(target_test, merged_test,
+                       target_db, merged_db);
+    }
+}
+
+/**
+ * Merge globals from another database.
+ *
+ * @param target_globals    Target queue of globals.
+ * @param merged_globals    Merged queue of globals.
+ */
+static void
+db_merge_globals(trc_globals *target_globals, trc_globals *merged_globals)
+{
+    trc_global *p;
+    trc_global *p_aux;
+    trc_global *q;
+    bool found;
+
+    TAILQ_FOREACH_SAFE(p, &merged_globals->head, links, p_aux)
+    {
+        found = false;
+        TAILQ_FOREACH(q, &target_globals->head, links)
+        {
+            if (strcmp(p->name, q->name) == 0)
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            TAILQ_REMOVE(&merged_globals->head, p, links);
+            TAILQ_INSERT_TAIL(&target_globals->head, p, links);
+            p->node = NULL;
+        }
+    }
+}
+
+/* See description in te_trc.h */
+te_errno
+trc_db_open_merge(te_trc_db *db, const char *location, int flags)
+{
+    te_trc_db *merged_db = NULL;
+    te_errno rc;
+
+    rc = trc_db_open_ext(location, &merged_db, flags);
+    if (rc != 0)
+        return rc;
+
+    db_merge_globals(&db->globals, &merged_db->globals);
+    db_merge_tests(NULL, &db->tests, &merged_db->tests, db, merged_db);
+    trc_db_close(merged_db);
+
+    db->merged = true;
+    return 0;
 }
 
 static te_errno trc_update_tests(te_trc_db *db, trc_tests *tests, int flags,
@@ -2174,6 +2806,8 @@ trc_db_save(te_trc_db *db, const char *filename, int flags,
     te_errno             rc;
     trc_test            *test;
 
+    xmlNodePtr node;
+
     if (flags & TRC_SAVE_REMOVE_OLD)
     {
         xmlFreeDoc(db->xml_doc);
@@ -2182,8 +2816,6 @@ trc_db_save(te_trc_db *db, const char *filename, int flags,
 
     if (db->xml_doc == NULL)
     {
-        xmlNodePtr node;
-
         db->xml_doc = xmlNewDoc(BAD_CAST "1.0");
         if (db->xml_doc == NULL)
         {
@@ -2249,6 +2881,12 @@ trc_db_save(te_trc_db *db, const char *filename, int flags,
             }
         }
     }
+
+    node = xmlDocGetRootElement(db->xml_doc);
+    xmlSetProp(node, BAD_CAST "last_match",
+               BAD_CAST (db->last_match ? "true": "false"));
+    xmlSetProp(node, BAD_CAST "merged",
+               BAD_CAST (db->merged ? "true" : "false"));
 
     test = TAILQ_FIRST(&db->tests.head);
     if (flags & TRC_SAVE_POS_ATTR)
