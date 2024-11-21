@@ -103,5 +103,69 @@
                 <notes/>
             </iter>
         </test>
+        <test name="args_from_session_tmpl" type="script">
+            <objective>Testing default arguments correctness</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="test_arg1">111</arg>
+                <arg name="test_arg2">100</arg>
+            </iter>
+            <iter result="PASSED">
+                <arg name="test_arg1">111</arg>
+                <arg name="test_arg2">200</arg>
+            </iter>
+        </test>
+        <test name="args_from_session_and_script_tmpl" type="script">
+            <objective>Testing default arguments correctness</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="test_arg1">99</arg>
+                <arg name="test_arg2">100</arg>
+            </iter>
+            <iter result="PASSED">
+                <arg name="test_arg1">99</arg>
+                <arg name="test_arg2">200</arg>
+            </iter>
+        </test>
+        <test name="all_defs_in_tmpl" type="script">
+            <objective>Testing default arguments correctness</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="test_arg1">456</arg>
+                <arg name="test_arg2">7</arg>
+            </iter>
+            <iter result="PASSED">
+                <arg name="test_arg1">456</arg>
+                <arg name="test_arg2">8</arg>
+            </iter>
+        </test>
+        <test name="overwrite_script_and_arg" type="script">
+            <objective>Testing default arguments correctness</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="test_arg1">777</arg>
+                <arg name="test_arg2">5</arg>
+            </iter>
+        </test>
+        <test name="overwrite_arg_set_script" type="script">
+            <objective>Testing default arguments correctness</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="test_arg1">3</arg>
+                <arg name="test_arg2">100</arg>
+            </iter>
+            <iter result="PASSED">
+                <arg name="test_arg1">3</arg>
+                <arg name="test_arg2">200</arg>
+            </iter>
+            <iter result="PASSED">
+                <arg name="test_arg1">4</arg>
+                <arg name="test_arg2">100</arg>
+            </iter>
+            <iter result="PASSED">
+                <arg name="test_arg1">4</arg>
+                <arg name="test_arg2">200</arg>
+            </iter>
+        </test>
     </iter>
 </test>

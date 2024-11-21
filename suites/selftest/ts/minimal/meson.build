@@ -3,6 +3,7 @@
 
 tests = [
     'artifact',
+    'default_args',
     'env',
     'helloworld',
     'mi_meas_line_graph',

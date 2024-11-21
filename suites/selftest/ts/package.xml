@@ -6,6 +6,32 @@
     <author mailto="te-maint@oktetlabs.ru"/>
 
     <session track_conf="silent">
+        <run-template name="def_script_and_arg">
+          <script name="default_args"/>
+          <arg name="test_arg1" value="456"/>
+          <arg name="test_arg2">
+            <value reqs="VALUE_7">7</value>
+            <value>8</value>
+          </arg>
+        </run-template>
+
+        <run-template name="def_arg_bad_script">
+          <script name="missing_test"/>
+          <arg name="test_arg1" value="777"/>
+          <arg name="test_arg2">
+            <value>1</value>
+            <value>2</value>
+          </arg>
+        </run-template>
+
+        <run-template name="def_arg_wo_script">
+          <arg name="test_arg1" value="111"/>
+          <arg name="test_arg2">
+            <value>100</value>
+            <value>200</value>
+          </arg>
+        </run-template>
+
         <prologue>
             <script name="prologue"/>
             <arg name="env">

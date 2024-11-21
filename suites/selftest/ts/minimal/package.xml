@@ -133,5 +133,45 @@
                 <value>ENOENT:42</value>
             </arg>
         </run>
+
+        <run name="default_args" template="def_arg_wo_script">
+            <session>
+                <arg name="test_arg1"/>
+                <arg name="test_arg2"/>
+                <run name="args_from_session_tmpl">
+                    <script name="default_args"/>
+                </run>
+            </session>
+        </run>
+        <run name="default_args" template="def_arg_wo_script">
+            <session>
+                <arg name="test_arg2"/>
+                <run name="args_from_session_and_script_tmpl">
+                    <script name="default_args"/>
+                    <arg name="test_arg1">
+                        <value>99</value>
+                    </arg>
+                </run>
+            </session>
+        </run>
+        <run name="default_args">
+            <session>
+                <run name="all_defs_in_tmpl" template="def_script_and_arg"/>
+                <run name="overwrite_script_and_arg" template="def_arg_bad_script">
+                    <script name="default_args"/>
+                    <arg name="test_arg2">
+                        <value>5</value>
+                    </arg>
+                </run>
+                <run name="overwrite_arg_set_script" template="def_arg_wo_script">
+                    <script name="default_args"/>
+                    <arg name="test_arg1">
+                        <value>3</value>
+                        <value>4</value>
+                    </arg>
+                </run>
+            </session>
+        </run>
+
     </session>
 </package>
