@@ -5,6 +5,7 @@ tests = [
     'alloc',
     'base64',
     'compare_bufs',
+    'default_args',
     'enum_map',
     'expand',
     'expand_filters',
