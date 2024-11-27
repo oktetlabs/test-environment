@@ -1,0 +1,126 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2025 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+    <description>Check distributed TRC implementation</description>
+    <author mailto="te-maint@oktetlabs.ru"/>
+
+    <session>
+        <run>
+            <script name="test_new"/>
+            <arg name="a">
+                <value>1</value>
+                <value>2</value>
+                <value>3</value>
+            </arg>
+        </run>
+        <run>
+            <script name="test_subset"/>
+            <arg name="a">
+                <value>1</value>
+                <value>2</value>
+                <value>3</value>
+            </arg>
+        </run>
+        <run>
+            <script name="test_exact"/>
+            <arg name="a">
+                <value>1</value>
+                <value>2</value>
+            </arg>
+            <arg name="b">
+                <value>1</value>
+                <value>2</value>
+            </arg>
+        </run>
+        <run>
+            <script name="test_intersect"/>
+            <arg name="a">
+                <value>1</value>
+                <value>2</value>
+            </arg>
+            <arg name="b">
+                <value>1</value>
+                <value>2</value>
+            </arg>
+        </run>
+        <run>
+            <script name="test_superset"/>
+            <arg name="a">
+                <value>1</value>
+                <value>2</value>
+            </arg>
+            <arg name="b">
+                <value>1</value>
+                <value>2</value>
+            </arg>
+        </run>
+        <run>
+            <script name="test_mixed"/>
+            <arg name="a">
+                <value>1</value>
+                <value>2</value>
+            </arg>
+            <arg name="b">
+                <value>1</value>
+            </arg>
+            <arg name="c">
+                <value>1</value>
+            </arg>
+        </run>
+        <run>
+            <script name="test_mixed"/>
+            <arg name="a">
+                <value>1</value>
+                <value>2</value>
+            </arg>
+            <arg name="b">
+                <value>2</value>
+            </arg>
+            <arg name="c">
+                <value>1</value>
+                <value>2</value>
+            </arg>
+        </run>
+        <run>
+            <script name="test_mixed"/>
+            <arg name="a" list="">
+                <value>3</value>
+                <value>4</value>
+            </arg>
+            <arg name="b" list="">
+                <value>3</value>
+                <value>4</value>
+            </arg>
+            <arg name="c" list="">
+                <value>3</value>
+                <value>4</value>
+            </arg>
+        </run>
+        <run>
+            <script name="test_override"/>
+            <arg name="a">
+                <value>1</value>
+                <value>2</value>
+            </arg>
+            <arg name="b">
+                <value>1</value>
+                <value>2</value>
+            </arg>
+        </run>
+        <run>
+            <package name="iterated_package"/>
+            <arg name="a">
+                <value>1</value>
+                <value>2</value>
+            </arg>
+        </run>
+        <run>
+            <package name="new_package"/>
+            <arg name="a">
+                <value>1</value>
+                <value>2</value>
+            </arg>
+        </run>
+    </session>
+</package>

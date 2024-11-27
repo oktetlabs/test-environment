@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2025 OKTET Labs Ltd. All rights reserved. -->
+<test name="trc" type="package">
+    <objective>Package for checking TRC implementation</objective>
+    <iter result="PASSED">
+        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                    href="trc/distributed.trc.xml" parse="xml"/>
+    </iter>
+</test>

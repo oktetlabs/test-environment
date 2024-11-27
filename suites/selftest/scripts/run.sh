@@ -95,6 +95,8 @@ fi
 TS_DEFAULT_OPTS+="--conf-dirs=${TS_CONF_DIRS} "
 TS_DEFAULT_OPTS+="--build-parallel "
 TS_DEFAULT_OPTS+="--trc-db=\"${TS_TOPDIR}\"/conf/trc.xml "
+TS_DEFAULT_OPTS+="--trc-db=\"${TS_TOPDIR}\"/ts/trc/distributed/trc_db/top.xml "
+TS_DEFAULT_OPTS+="--trc-tag=trc_test1 --trc-tag=trc_test2 "
 
 # ta-def must be included at the end, when Test Agents are already
 # specified from processing of other options

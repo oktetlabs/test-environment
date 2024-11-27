@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2025 OKTET Labs Ltd. All rights reserved. -->
+<test name="distributed" type="package">
+    <objective>Package for checking distributed TRC database</objective>
+    <notes/>
+    <iter result="PASSED">
+        <notes/>
+        <test name="test_new" type="script">
+            <objective>Check distributed TRC when a test exists only in the merged database.</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="a">1</arg>
+                <notes/>
+            </iter>
+            <iter result="PASSED">
+                <arg name="a">2</arg>
+                <notes/>
+                <results>
+                    <result value="FAILED">
+                      <verdict>a is equal to 2</verdict>
+                    </result>
+                </results>
+            </iter>
+            <iter result="PASSED">
+                <arg name="a">3</arg>
+                <notes/>
+                <results>
+                    <result value="FAILED">
+                      <verdict>a is equal to 3</verdict>
+                    </result>
+                </results>
+            </iter>
+        </test>
+        <test name="test_subset" type="script">
+            <objective>Check distributed TRC when merged iterations are subsets.</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="a">1</arg>
+                <notes/>
+            </iter>
+            <iter result="PASSED">
+                <arg name="a">2</arg>
+                <notes/>
+                <results>
+                    <result value="FAILED">
+                      <verdict>a is equal to 2</verdict>
+                    </result>
+                </results>
+            </iter>
+            <iter result="PASSED">
+                <arg name="a">3</arg>
+                <notes/>
+                <results>
+                    <result value="FAILED">
+                      <verdict>a is equal to 3</verdict>
+                    </result>
+                </results>
+            </iter>
+        </test>
+        <test name="test_exact" type="script">
+            <objective>Check distributed TRC when merged iterations are exact matches.</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="a">1</arg>
+                <arg name="b">1</arg>
+                <notes/>
+            </iter>
+            <iter result="PASSED">
+                <arg name="a">2</arg>
+                <arg name="b">2</arg>
+                <notes/>
+            </iter>
+            <iter result="PASSED">
+                <arg name="a">1</arg>
+                <arg name="b">2</arg>
+                <notes/>
+                <results>
+                    <result value="FAILED">
+                      <verdict>Arguments are not equal</verdict>
+                    </result>
+                </results>
+            </iter>
+            <iter result="PASSED">
+                <arg name="a">2</arg>
+                <arg name="b">1</arg>
+                <notes/>
+                <results>
+                    <result value="FAILED">
+                      <verdict>Arguments are not equal</verdict>
+                    </result>
+                </results>
+            </iter>
+        </test>
+        <test name="test_intersect" type="script">
+            <objective>Check distributed TRC when merged iterations intersect with existing ones.</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="a"/>
+                <arg name="b">2</arg>
+                <notes/>
+                <results tags="trc_test2">
+                    <result value="PASSED">
+                      <verdict>b is equal to 2</verdict>
+                    </result>
+                </results>
+            </iter>
+        </test>
+        <test name="test_superset" type="script">
+            <objective>Check distributed TRC when merged iterations are supersets for existing ones.</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="a"/>
+                <arg name="b"/>
+                <notes/>
+            </iter>
+        </test>
+        <test name="test_mixed" type="script">
+            <objective>Check distributed TRC with different kinds of iteration matches.</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="a">1</arg>
+                <arg name="b">2</arg>
+                <arg name="c"/>
+                <notes/>
+                <results tags="trc_test1">
+                    <result value="PASSED">
+                      <verdict>a is equal to 1, b is equal to 2</verdict>
+                    </result>
+                </results>
+            </iter>
+           <iter result="PASSED">
+                <arg name="a"/>
+                <arg name="b">1</arg>
+                <arg name="c"/>
+                <notes/>
+                <results tags="trc_test1">
+                    <result value="PASSED">
+                      <verdict>b is equal to 1</verdict>
+                    </result>
+                </results>
+            </iter>
+           <iter result="PASSED">
+                <arg name="a">2</arg>
+                <arg name="b"/>
+                <arg name="c">2</arg>
+                <notes/>
+                <results tags="trc_test1">
+                    <result value="PASSED">
+                      <verdict>a and c are equal to 2</verdict>
+                    </result>
+                </results>
+            </iter>
+           <iter result="PASSED">
+                <arg name="a">3</arg>
+                <arg name="b">3</arg>
+                <arg name="c">3</arg>
+                <notes/>
+                <results tags="trc_test1">
+                    <result value="PASSED">
+                      <verdict>All parameters are equal to 3</verdict>
+                    </result>
+                </results>
+            </iter>
+           <iter result="PASSED">
+                <arg name="a">4</arg>
+                <arg name="b">4</arg>
+                <arg name="c">4</arg>
+                <notes/>
+                <results tags="unknown_tag">
+                    <result value="FAILED">
+                      <verdict>Too big parameter values</verdict>
+                    </result>
+                </results>
+                <results tags="trc_test1">
+                    <result value="PASSED">
+                      <verdict>All parameters are equal to 4</verdict>
+                    </result>
+                </results>
+            </iter>
+        </test>
+        <test name="test_override" type="script" override="true">
+            <objective>Check distributed TRC, the case when merged iterations completely overwrite existing ones.</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="a"/>
+                <arg name="b">1</arg>
+                <notes/>
+                <results tags="trc_test2">
+                    <result value="PASSED">
+                      <verdict>b is equal to 1</verdict>
+                    </result>
+                </results>
+            </iter>
+            <iter result="PASSED">
+                <arg name="a"/>
+                <arg name="b">2</arg>
+                <notes/>
+                <results tags="trc_test2">
+                    <result value="PASSED">
+                      <verdict>b is equal to 2</verdict>
+                    </result>
+                </results>
+            </iter>
+        </test>
+        <test name="iterated_package" type="package">
+            <objective>Test iterated package</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="a"/>
+                <notes/>
+                <test name="test_inner" type="script">
+                    <objective>Check distributed TRC when test is inside iterated package.</objective>
+                    <notes/>
+                    <iter result="PASSED">
+                        <arg name="a"/>
+                        <arg name="b">2</arg>
+                        <notes/>
+                        <results tags="trc_test2">
+                            <result value="PASSED">
+                              <verdict>b is equal to 2</verdict>
+                            </result>
+                        </results>
+                    </iter>
+                </test>
+            </iter>
+        </test>
+        <test name="new_package" type="package">
+            <objective>Test adding new package</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="a"/>
+                <notes/>
+                <test name="test_in_new_pkg" type="script">
+                    <objective>Check distributed TRC when test is inside new package.</objective>
+                    <notes/>
+                    <iter result="PASSED">
+                        <arg name="a"/>
+                        <arg name="b">2</arg>
+                        <notes/>
+                        <results tags="trc_test2">
+                            <result value="PASSED">
+                              <verdict>b is equal to 2</verdict>
+                            </result>
+                        </results>
+                    </iter>
+                    <iter result="PASSED">
+                        <arg name="a">1</arg>
+                        <arg name="b">1</arg>
+                        <notes/>
+                        <results tags="trc_test2">
+                            <result value="PASSED">
+                              <verdict>a is equal to 1</verdict>
+                            </result>
+                        </results>
+                    </iter>
+                    <iter result="PASSED">
+                        <arg name="a">2</arg>
+                        <arg name="b">1</arg>
+                        <notes/>
+                        <results tags="trc_test2">
+                            <result value="PASSED">
+                              <verdict>a is equal to 2</verdict>
+                            </result>
+                        </results>
+                    </iter>
+                </test>
+            </iter>
+        </test>
+    </iter>
+</test>

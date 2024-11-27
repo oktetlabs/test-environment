@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2025 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+    <description>Check TRC implementation</description>
+    <author mailto="te-maint@oktetlabs.ru"/>
+
+    <session>
+        <run>
+            <package name="distributed"/>
+        </run>
+    </session>
+</package>

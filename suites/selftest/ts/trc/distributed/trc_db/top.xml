@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2025 OKTET Labs Ltd. All rights reserved. -->
+<trc_db>
+    <test name="ts" type="package">
+        <objective>TE Seft Tests</objective>
+        <notes/>
+        <iter result="PASSED">
+            <notes/>
+            <test name="trc" type="package">
+                <objective>Package for checking TRC implementation</objective>
+                <iter result="PASSED">
+                    <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                                href="distributed.xml" parse="xml"/>
+                </iter>
+            </test>
+        </iter>
+    </test>
+</trc_db>

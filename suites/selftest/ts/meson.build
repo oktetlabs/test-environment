@@ -79,6 +79,7 @@ packages = [
     'rpc',
     'apps',
     'tad',
+    'trc',
 ]
 
 mydir = package_dir
