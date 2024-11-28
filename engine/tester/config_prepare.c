@@ -38,6 +38,12 @@
 #include "type_lib.h"
 
 
+/**
+ * Maximum number of iterations. INT_MAX is used because of
+ * Bublik implementation.
+ */
+#define TESTER_MAX_ITERS INT_MAX
+
 /** Tester context */
 typedef struct config_prepare_ctx {
     SLIST_ENTRY(config_prepare_ctx) links;  /**< List links */
@@ -71,6 +77,57 @@ typedef struct config_prepare_data {
 
 } config_prepare_data;
 
+/**
+ * Print error about too many iterations in test suite.
+ */
+static void
+too_many_iters_log(void)
+{
+    ERROR("Test suite can have no more than %u test iterations",
+          TESTER_MAX_ITERS);
+}
+
+/**
+ * Check whether sum may result in overflowing iteration
+ * counter.
+ *
+ * @param x: The first operand.
+ * @param y: The second operand.
+ *
+ * @return True if there is an overflow, false otherwise.
+ */
+static bool
+check_sum_overflow(unsigned int x, unsigned int y)
+{
+    if (x > TESTER_MAX_ITERS || TESTER_MAX_ITERS - x < y)
+    {
+        too_many_iters_log();
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Check whether multiplication may result in overflowing iteration
+ * counter.
+ *
+ * @param x: The first operand.
+ * @param y: The second operand.
+ *
+ * @return True if there is an overflow, false otherwise.
+ */
+static bool
+check_mul_overflow(unsigned int x, unsigned int y)
+{
+    if (x != 0 && TESTER_MAX_ITERS / x < y)
+    {
+        too_many_iters_log();
+        return true;
+    }
+
+    return false;
+}
 
 /**
  * Clone the most recent (current) Tester context.
@@ -119,19 +176,27 @@ config_prepare_new_ctx(config_prepare_data *gctx)
  *
  * @return Status code.
  */
-static void
+static te_errno
 config_prepare_destroy_ctx(config_prepare_data *gctx)
 {
     config_prepare_ctx *curr = SLIST_FIRST(&gctx->ctxs);
     config_prepare_ctx *prev;
+    te_errno result = 0;
 
     assert(curr != NULL);
     prev = SLIST_NEXT(curr, links);
     if (prev != NULL)
-        prev->total_iters += curr->total_iters;
+    {
+        if (check_sum_overflow(prev->total_iters, curr->total_iters))
+            gctx->rc = result = TE_RC(TE_TESTER, TE_EOVERFLOW);
+        else
+            prev->total_iters += curr->total_iters;
+    }
 
     SLIST_REMOVE(&gctx->ctxs, curr, config_prepare_ctx, links);
     free(curr);
+
+    return result;
 }
 
 
@@ -266,6 +331,14 @@ prepare_arg_cb(const test_var_arg *va, void *opaque)
 
     if (va->list == NULL)
     {
+        if (check_mul_overflow(data->n_iters, n_values))
+        {
+            ERROR("Enumeration of values of argument '%s' of the run item "
+                  "'%s' failed: too many iterations", va->name,
+                  run_item_name(data->ri));
+            return TE_RC(TE_TESTER, TE_EOVERFLOW);
+        }
+
         data->n_iters *= n_values;
         VERB("%s(): arg=%s: n_values=%u -> n_iters =%u",
              __FUNCTION__, va->name, n_values, data->n_iters);
@@ -285,6 +358,15 @@ prepare_arg_cb(const test_var_arg *va, void *opaque)
             assert(data->n_iters % p->len == 0);
             data->n_iters /= p->len;
             p->len = MAX(p->len, n_values);
+
+            if (check_mul_overflow(data->n_iters, p->len))
+            {
+                ERROR("Enumeration of values of argument '%s' of the run "
+                      "item '%s' failed: too many iterations", va->name,
+                      run_item_name(data->ri));
+                return TE_RC(TE_TESTER, TE_EOVERFLOW);
+            }
+
             data->n_iters *= p->len;
         }
         else
@@ -297,6 +379,14 @@ prepare_arg_cb(const test_var_arg *va, void *opaque)
             p->len = n_values;
             p->n_iters = data->n_iters;
             SLIST_INSERT_HEAD(&data->ri->lists, p, links);
+
+            if (check_mul_overflow(data->n_iters, n_values))
+            {
+                ERROR("Enumeration of values of argument '%s' of the run "
+                      "item '%s' failed: too many iterations", va->name,
+                      run_item_name(data->ri));
+                return TE_RC(TE_TESTER, TE_EOVERFLOW);
+            }
 
             data->n_iters *= n_values;
 
@@ -369,7 +459,8 @@ prepare_cfg_end(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
 
     cfg->total_iters = ctx->total_iters;
 
-    config_prepare_destroy_ctx(gctx);
+    if (config_prepare_destroy_ctx(gctx) != 0)
+        return TESTER_CFG_WALK_FAULT;
 
     return TESTER_CFG_WALK_CONT;
 }
@@ -461,7 +552,8 @@ prepare_session_end(run_item *ri, test_session *session,
     ri->weight = ctx->total_iters;
     ctx->total_iters = 0;
 
-    config_prepare_destroy_ctx(gctx);
+    if (config_prepare_destroy_ctx(gctx) != 0)
+        return TESTER_CFG_WALK_FAULT;
 
     return TESTER_CFG_WALK_CONT;
 }
@@ -532,7 +624,28 @@ prepare_test_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         /* Empty package/session may have zero weight */
         assert(ri->weight > 0 || ri->type != RUN_ITEM_SCRIPT);
         if (~flags & TESTER_CFG_WALK_SERVICE)
-            ctx->total_iters += ri->n_iters * ri->weight;
+        {
+            unsigned int ri_tot_iters;
+
+            if (check_mul_overflow(ri->weight, ri->n_iters))
+            {
+                ERROR("%s(): too many iterations for run item %s",
+                      __FUNCTION__, run_item_name(ri));
+                gctx->rc = TE_RC(TE_TESTER, TE_EOVERFLOW);
+                return TESTER_CFG_WALK_FAULT;
+            }
+
+            ri_tot_iters = ri->n_iters * ri->weight;
+            if (check_sum_overflow(ri_tot_iters, ctx->total_iters))
+            {
+                ERROR("%s(): too many iterations for run item %s",
+                      __FUNCTION__, run_item_name(ri));
+                gctx->rc = TE_RC(TE_TESTER, TE_EOVERFLOW);
+                return TESTER_CFG_WALK_FAULT;
+            }
+
+            ctx->total_iters += ri_tot_iters;
+        }
     }
 
     return TESTER_CFG_WALK_CONT;
@@ -602,6 +715,8 @@ tester_prepare_configs(tester_cfgs *cfgs)
         NULL, /* skip_end */
     };
 
+    te_errno rc;
+
     ENTRY();
 
     gctx.rc = 0;
@@ -619,19 +734,22 @@ tester_prepare_configs(tester_cfgs *cfgs)
 
         cfgs->total_iters = SLIST_FIRST(&gctx.ctxs)->total_iters;
 
-        config_prepare_destroy_ctx(&gctx);
+        rc = config_prepare_destroy_ctx(&gctx);
         assert(SLIST_EMPTY(&gctx.ctxs));
+        if (rc != 0)
+        {
+            EXIT("%r", rc);
+            return rc;
+        }
 
         EXIT("0 - total_iters=%u", cfgs->total_iters);
         return 0;
     }
     else
     {
-        te_errno    rc = gctx.rc;
-
         while (!SLIST_EMPTY(&gctx.ctxs))
             config_prepare_destroy_ctx(&gctx);
 
-        return rc;
+        return gctx.rc;
     }
 }
