@@ -529,5 +529,27 @@
                 </run>
             </session>
         </run>
+
+        <run name="default_args">
+            <session>
+                <run>
+                    <script ref="default_arg_test"/>
+                </run>
+                <run>
+                    <script name="default_args" ref="def_arg_test_bad_name"/>
+                    <arg name="test_arg2">
+                        <value>5</value>
+                    </arg>
+                </run>
+                <run>
+                    <script ref="def_arg_test_wo_name" name="default_args"/>
+                    <arg name="test_arg1">
+                        <value>3</value>
+                        <value>4</value>
+                    </arg>
+                </run>
+            </session>
+        </run>
+
     </session>
 </package>

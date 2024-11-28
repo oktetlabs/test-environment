@@ -164,6 +164,7 @@ typedef struct test_script {
     char               *objective;  /**< Objective */
     char               *page;       /**< HTML page with documentation */
     char               *execute;    /**< Full path to executable */
+    char               *ref;        /**< Default value ID */
     test_requirements   reqs;       /**< Set of requirements */
     test_attrs          attrs;      /**< Test attributes */
 } test_script;
@@ -186,6 +187,7 @@ typedef struct test_var_arg {
     bool variable;  /**< Is variable */
     bool global;    /**< In case it's a variable - is it
                                            global? */
+    bool def_arg;   /**< Is it a default argument */
 } test_var_arg;
 
 /** List of test session variables */

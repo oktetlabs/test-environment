@@ -1,0 +1,8 @@
+<test name="default_args" type="script">
+    <objective>Testing default arguments correctness</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="test_arg1"/>
+        <arg name="test_arg2"/>
+    </iter>
+</test>
