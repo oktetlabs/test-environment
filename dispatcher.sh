@@ -477,6 +477,10 @@ BUILDER_FROM_SCRATCH=
 BUILD_MAKEFLAGS=
 PROFILE_BUILD=
 
+# TRC databases. If there is more than one, they will be
+# merged with te-trc-merge tool.
+declare -a TRC_DBS
+
 LIVE_LOG=
 
 VG_OPTIONS="--tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=32"
@@ -799,8 +803,7 @@ process_opts()
             --trc-db=*)
                 TRC_DB="${1#--trc-db=}"
                 TRC_DB="$(resolve_conf_file_path "${TRC_DB}")"
-                TRC_OPTS="${TRC_OPTS} --db=${TRC_DB}"
-                TESTER_OPTS="${TESTER_OPTS} --trc-db=${TRC_DB}"
+                TRC_DBS+=("${TRC_DB}")
                 ;;
             --trc-comparison=*)
                 TRC_OPTS="${TRC_OPTS} --comparison=${1#--trc-comparison=}"
@@ -1289,6 +1292,29 @@ if test -n "${DAEMON}" ; then TE_ID=${DAEMON} ; else TE_ID=$$ ; fi
 export TE_RCF="TE_RCF_${TE_ID}"
 export TE_LOGGER="TE_LOGGER_${TE_ID}"
 export TE_CS="TE_CS_${TE_ID}"
+
+if [[ "${#TRC_DBS[@]}" -gt 0 ]] ; then
+    if [[ "${#TRC_DBS[@]}" -eq 1 ]] ; then
+        TRC_DB="${TRC_DBS[0]}"
+    else
+        TRC_DB="${TE_TMP}/merged_trc_db.xml"
+
+        declare -a merge_opts
+        for db in "${TRC_DBS[@]}" ; do
+            merge_opts+=("--db=${db}")
+        done
+        merge_opts+=("--output=${TRC_DB}")
+
+        te-trc-merge "${merge_opts[@]}"
+        if [[ "$?" -ne 0 ]] ; then
+            echo "Failed to merge TRC databases." >&2
+            exit_with_log
+        fi
+    fi
+
+    TRC_OPTS="${TRC_OPTS} --db=${TRC_DB}"
+    TESTER_OPTS="${TESTER_OPTS} --trc-db=${TRC_DB}"
+fi
 
 # Run RGT in live mode in background
 if test -n "${LIVE_LOG}" ; then
