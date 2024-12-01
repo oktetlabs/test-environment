@@ -683,6 +683,71 @@ extern const trc_exp_result *trc_db_iter_get_exp_result(
                                  const tqh_strings      *tags,
                                  bool last_match);
 
+/** Flags telling how to compare iteration results */
+typedef enum trc_results_cmp_flags {
+    /** Ignore tags */
+    RESULTS_CMP_NO_TAGS = 0x1,
+    /** Ignore notes */
+    RESULTS_CMP_NO_NOTES = 0x2,
+} trc_results_cmp_flags;
+
+/**
+ * Compare test iteration results.
+ *
+ * @param p     The first result
+ * @param q     The second result
+ *
+ * @result -1 if the first result is 'less' the second one,
+ *          0 if they are 'equal',
+ *          1 if the first result is 'greater' than the
+ *          second one.
+ */
+extern int trc_test_result_cmp(const te_test_result *p,
+                               const te_test_result *q);
+
+/**
+ * Compare test iteration result entries (content of single
+ * `<result>` tags).
+ *
+ * @param p       The first result.
+ * @param q       The second result.
+ * @param flags   Flags telling how to compare results.
+ *
+ * @result -1 if the first result is 'less' the second one,
+ *          0 if they are 'equal',
+ *          1 if the first result is 'greater' than the
+ *          second one.
+ */
+extern int trc_exp_rentry_cmp(const trc_exp_result_entry *p,
+                              const trc_exp_result_entry *q,
+                              trc_results_cmp_flags flags);
+
+/**
+ * Compare expected results of iterations.
+ *
+ * @param p         First expected result.
+ * @param q         Second expected result.
+ * @param flags     Flags telling how to compare results.
+ *
+ * @return -1, 0 or 1 as a result of comparison
+ */
+extern int trc_exp_result_cmp(const trc_exp_result *p,
+                              const trc_exp_result *q,
+                              trc_results_cmp_flags flags);
+
+/**
+ * Compare lists of expected results (used for ordering).
+ *
+ * @param p         First expected results list.
+ * @param q         Second expected results list.
+ * @param flags     Flags telling how to compare results.
+ *
+ * @return -1, 0 or 1 as a result of comparison
+ */
+extern int trc_exp_results_cmp(const trc_exp_results *p,
+                               const trc_exp_results *q,
+                               trc_results_cmp_flags flags);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

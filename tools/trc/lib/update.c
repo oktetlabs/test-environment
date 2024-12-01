@@ -55,27 +55,6 @@ typedef enum logs_dump_tag_ids {
                                      was encountered */
 } logs_dump_tag_ids;
 
-/**
- * This macro is used in comparing function only.
- * Check whether one or both of pointers are NULL;
- * if at least one of them is NULL - return result
- * of comparison.
- *
- * @param p_    The first pointer -  argument of
- *              a comparing function
- * @param q_    The second pointer - argument of
- *              a comparing function
- */
-#define DUMMY_CMP(p_, q_) \
-do {                                \
-    if (p_ == NULL && q_ == NULL)   \
-        return 0;                   \
-    else if (p_ == NULL)            \
-        return -1;                  \
-    else if (q_ == NULL)            \
-        return 1;                   \
-} while (0)
-
 /* See the description in trc_update.h */
 void
 trc_update_init_test_iter_data(trc_update_test_iter_data *data)
@@ -309,44 +288,6 @@ trc_update_args_wild_dup(trc_test_iter_args *args)
 }
 
 /* See the description in trc_update.h */
-int
-te_test_result_cmp(te_test_result *p, te_test_result *q)
-{
-    int              rc;
-    te_test_verdict *p_v;
-    te_test_verdict *q_v;
-
-    DUMMY_CMP(p, q);
-
-    rc = p->status - q->status;
-    if (rc != 0)
-        return rc;
-    else
-    {
-        p_v = TAILQ_FIRST(&p->verdicts);
-        q_v = TAILQ_FIRST(&q->verdicts);
-
-        while (p_v != NULL && q_v != NULL)
-        {
-            rc = strcmp(p_v->str, q_v->str);
-            if (rc != 0)
-                return rc;
-
-            p_v = TAILQ_NEXT(p_v, links);
-            q_v = TAILQ_NEXT(q_v, links);
-        }
-
-        if (p_v == NULL && q_v == NULL)
-            return 0;
-        else if (p_v != NULL)
-            return 1;
-        else
-            return -1;
-    }
-}
-
-
-/* See the description in trc_update.h */
 bool
 trc_update_is_to_save(void *data, bool is_iter)
 {
@@ -495,161 +436,11 @@ trc_update_tags_logs_remove_empty(trc_update_tags_logs *tags_logs)
 
 /* See the description in trc_update.h */
 int
-trc_update_rentry_cmp(trc_exp_result_entry *p,
-                      trc_exp_result_entry *q)
-{
-    int rc = 0;
-
-    DUMMY_CMP(p, q);
-
-    if (!p->is_expected && q->is_expected)
-        return -1;
-    else if (p->is_expected && !q->is_expected)
-        return 1;
-
-    rc = te_test_result_cmp(&p->result,
-                            &q->result);
-    if (rc != 0)
-        return rc;
-    else
-    {
-        rc = strcmp_null(p->key, q->key);
-        if (rc != 0)
-            return rc;
-        else
-        {
-            rc = strcmp_null(p->notes, q->notes);
-            if (rc != 0)
-                return rc;
-        }
-    }
-
-    return 0;
-}
-
-/* See the description in trc_update.h */
-int
-trc_update_result_cmp_gen(trc_exp_result *p, trc_exp_result *q,
-                          bool tags_cmp)
-{
-    int                      rc;
-    trc_exp_result_entry    *p_r;
-    trc_exp_result_entry    *q_r;
-    bool p_tags_str_void;
-    bool q_tags_str_void;
-
-    DUMMY_CMP(p, q);
-
-    if (!tags_cmp)
-        rc = 0;
-    else
-    {
-        p_tags_str_void = (p->tags_str == NULL ||
-                           strlen(p->tags_str) == 0);
-        q_tags_str_void = (q->tags_str == NULL ||
-                           strlen(q->tags_str) == 0);
-
-        if (p_tags_str_void && q_tags_str_void)
-            rc = 0;
-        else if (p_tags_str_void)
-            rc = -1;
-        else if (q_tags_str_void)
-            rc = 1;
-        else
-            rc = strcmp(p->tags_str, q->tags_str);
-    }
-
-    if (rc != 0)
-        return rc;
-    else
-    {
-        p_r = TAILQ_FIRST(&p->results);
-        q_r = TAILQ_FIRST(&q->results);
-
-        while (p_r != NULL && q_r != NULL)
-        {
-            rc = trc_update_rentry_cmp(p_r, q_r);
-            if (rc != 0)
-                return rc;
-
-            p_r = TAILQ_NEXT(p_r, links);
-            q_r = TAILQ_NEXT(q_r, links);
-        }
-
-        if (p_r == NULL && q_r == NULL)
-        {
-            rc = strcmp_null(p->key, q->key);
-            if (rc != 0)
-                return rc;
-            else
-                return strcmp_null(p->notes, q->notes);
-        }
-        else if (p_r != NULL)
-            return 1;
-        else
-            return -1;
-    }
-}
-
-/* See the description in trc_update.h */
-int
-trc_update_result_cmp(trc_exp_result *p, trc_exp_result *q)
-{
-    return trc_update_result_cmp_gen(p, q, true);
-}
-
-/* See the description in trc_update.h */
-int
-trc_update_result_cmp_no_tags(trc_exp_result *p, trc_exp_result *q)
-{
-    return trc_update_result_cmp_gen(p, q, false);
-}
-
-/* See the description in trc_update.h */
-int
-trc_update_results_cmp(trc_exp_results *p, trc_exp_results *q)
-{
-    int                  rc;
-    trc_exp_result      *p_r;
-    trc_exp_result      *q_r;
-    bool p_is_void = (p == NULL || STAILQ_EMPTY(p));
-    bool q_is_void = (q == NULL || STAILQ_EMPTY(q));
-
-    if (p_is_void && q_is_void)
-        return 0;
-    else if (!p_is_void && q_is_void)
-        return 1;
-    else if (p_is_void && !q_is_void)
-        return -1;
-
-    p_r = STAILQ_FIRST(p);
-    q_r = STAILQ_FIRST(q);
-
-    while (p_r != NULL && q_r != NULL)
-    {
-        rc = trc_update_result_cmp(p_r, q_r);
-        if (rc != 0)
-            return rc;
-
-        p_r = STAILQ_NEXT(p_r, links);
-        q_r = STAILQ_NEXT(q_r, links);
-    }
-
-    if (p_r == NULL && q_r == NULL)
-        return 0;
-    else if (p_r != NULL)
-        return 1;
-    else
-        return -1;
-}
-
-/* See the description in trc_update.h */
-int
 trc_update_rules_cmp(trc_update_rule *p, trc_update_rule *q)
 {
     int rc;
 
-    DUMMY_CMP(p, q);
+    TRC_DUMMY_CMP(p, q);
 
     if (p->type != q->type)
         return ((int)q->type - (int)p->type > 0 ? -1 : 1);
@@ -657,29 +448,29 @@ trc_update_rules_cmp(trc_update_rule *p, trc_update_rule *q)
     switch (p->type)
     {
         case TRC_UPDATE_RULE_RESULTS:
-            rc = trc_update_result_cmp(p->def_res, q->def_res);
+            rc = trc_exp_result_cmp(p->def_res, q->def_res, 0);
             if (rc != 0)
                 return rc;
-            rc = trc_update_results_cmp(p->confl_res, q->confl_res);
+            rc = trc_exp_results_cmp(p->confl_res, q->confl_res, 0);
             if (rc != 0)
                 return rc;
 
             /*@fallthrough@*/
 
         case TRC_UPDATE_RULE_RESULT:
-            rc = trc_update_results_cmp(p->new_res, q->new_res);
+            rc = trc_exp_results_cmp(p->new_res, q->new_res, 0);
             if (rc != 0)
                 return rc;
-            rc = trc_update_results_cmp(p->old_res, q->old_res);
+            rc = trc_exp_results_cmp(p->old_res, q->old_res, 0);
             return rc;
 
             break;
 
         case TRC_UPDATE_RULE_ENTRY:
-            rc = trc_update_rentry_cmp(p->new_re, q->new_re);
+            rc = trc_exp_rentry_cmp(p->new_re, q->new_re, 0);
             if (rc != 0)
                 return rc;
-            rc = trc_update_rentry_cmp(p->old_re, q->old_re);
+            rc = trc_exp_rentry_cmp(p->old_re, q->old_re, 0);
             return rc;
             break;
 
@@ -1797,7 +1588,7 @@ trc_update_find_result(trc_exp_result *find_result,
             if (no_tags || (rc == 0 && tags_fit))
             {
                 TAILQ_FOREACH(q, &p->results, links)
-                    if (te_test_result_cmp(
+                    if (trc_test_result_cmp(
                             &q->result,
                             &TAILQ_FIRST(
                                 &find_result->results)->result) == 0)
@@ -2270,7 +2061,7 @@ simplify_log_exprs(trc_exp_results *results,
                                   &STAILQ_FIRST(
                                         &iter->exp_results)->results,
                                   links)
-                        if (trc_update_rentry_cmp(entry_q, entry_p) == 0)
+                        if (trc_exp_rentry_cmp(entry_q, entry_p, 0) == 0)
                             break;
 
                     if (entry_q == NULL)
@@ -2365,7 +2156,7 @@ simplify_log_exprs(trc_exp_results *results,
          * by results - so we can use it to group log expressions
          * by OR operation which are for the same resul.
          */
-        if (trc_update_result_cmp(p, q) != 0)
+        if (trc_exp_result_cmp(p, q, 0) != 0)
         {
             if (r != NULL)
             {
@@ -2511,8 +2302,8 @@ trc_update_simplify_results(unsigned int db_uid,
                     else
                         new_res_aux = &iter_data_aux->new_results;
 
-                    if (trc_update_results_cmp(new_results,
-                                               new_res_aux) == 0)
+                    if (trc_exp_results_cmp(new_results,
+                                            new_res_aux, 0) == 0)
                         iter_data_aux->r_simple = RES_TO_REPLACE;
                 }
 
@@ -2526,7 +2317,8 @@ trc_update_simplify_results(unsigned int db_uid,
                          q = tvar)
 
                     {
-                        if (trc_update_result_cmp_no_tags(p, q) == 0)
+                        if (trc_exp_result_cmp(p, q,
+                                               RESULTS_CMP_NO_TAGS) == 0)
                         {
                             tags_expr = TE_ALLOC(sizeof(*tags_expr));
                             tags_expr->type = LOGIC_EXPR_OR;
@@ -2704,7 +2496,7 @@ trc_update_apply_rrentry(trc_test_iter *iter,
     UNUSED(iter_data);
     UNUSED(flags);
 
-    if (trc_update_rentry_cmp(rule->old_re, rule->new_re) == 0 ||
+    if (trc_exp_rentry_cmp(rule->old_re, rule->new_re, 0) == 0 ||
         rule->old_re == NULL || !rule->apply)
         return 0;
 
@@ -2712,8 +2504,8 @@ trc_update_apply_rrentry(trc_test_iter *iter,
     {
         TAILQ_FOREACH(iter_rentry, &iter_result->results, links)
         {
-            if (trc_update_rentry_cmp(iter_rentry,
-                                      rule->old_re) == 0)
+            if (trc_exp_rentry_cmp(iter_rentry,
+                                   rule->old_re, 0) == 0)
             {
                 if (rule->new_re != NULL)
                 {
@@ -2775,13 +2567,13 @@ trc_update_apply_rresult(trc_test_iter *iter,
     if (rule->new_res != NULL)
         new_result = STAILQ_FIRST(rule->new_res);
 
-    if (trc_update_result_cmp(old_result, new_result) == 0 ||
+    if (trc_exp_result_cmp(old_result, new_result, 0) == 0 ||
         old_result == NULL || !rule->apply)
         return 0;
 
     STAILQ_FOREACH(iter_result, &iter->exp_results, links)
     {
-        if (trc_update_result_cmp(iter_result, old_result) == 0)
+        if (trc_exp_result_cmp(iter_result, old_result, 0) == 0)
         {
             if (new_result != NULL)
             {
@@ -2837,21 +2629,18 @@ trc_update_apply_rresults(trc_test_iter *iter,
         ((rule->rule_id != 0 && iter_rule_id != 0 &&
           rule->rule_id == iter_rule_id) ||
          ((rule->def_res == NULL ||
-           trc_update_result_cmp(
-                              (struct trc_exp_result *)
+           trc_exp_result_cmp((struct trc_exp_result *)
                               iter->exp_default,
-                              rule->def_res) == 0) &&
+                              rule->def_res, 0) == 0) &&
           (rule->old_res == NULL ||
-           trc_update_results_cmp(
-                               (trc_exp_results *)
+           trc_exp_results_cmp((trc_exp_results *)
                                &iter->exp_results,
-                               rule->old_res) == 0) &&
+                               rule->old_res, 0) == 0) &&
           (rule->confl_res == NULL ||
-           trc_update_results_cmp(
-                               &iter_data->new_results,
-                               rule->confl_res) == 0))) &&
-        trc_update_results_cmp(&iter->exp_results,
-                               rule->new_res) != 0)
+           trc_exp_results_cmp(&iter_data->new_results,
+                               rule->confl_res, 0) == 0))) &&
+        trc_exp_results_cmp(&iter->exp_results,
+                            rule->new_res, 0) != 0)
     {
         results_dup = trc_exp_results_dup(rule->new_res);
 
@@ -3060,19 +2849,19 @@ trc_update_rule_match_iter(trc_update_rule *rule,
             if ((rule->rule_id != 0 && iter_data->rule_id != 0 &&
                  rule->rule_id == iter_data->rule_id) ||
                 ((rule->def_res == NULL ||
-                  trc_update_result_cmp(
+                  trc_exp_result_cmp(
                                   (struct trc_exp_result *)
                                   iter->exp_default,
-                                  rule->def_res) == 0) &&
+                                  rule->def_res, 0) == 0) &&
                  (rule->old_res == NULL ||
-                  trc_update_results_cmp(
+                  trc_exp_results_cmp(
                                    (trc_exp_results *)
                                    &iter->exp_results,
-                                   rule->old_res) == 0) &&
+                                   rule->old_res, 0) == 0) &&
                  (rule->confl_res == NULL ||
-                  trc_update_results_cmp(
+                  trc_exp_results_cmp(
                                    &iter_data->new_results,
-                                   rule->confl_res) == 0)))
+                                   rule->confl_res, 0) == 0)))
                 return true;
             break;
 
@@ -3081,7 +2870,7 @@ trc_update_rule_match_iter(trc_update_rule *rule,
             if (rule_result == NULL)
                 return true;
             STAILQ_FOREACH(iter_result, &iter->exp_results, links)
-                if (trc_update_result_cmp(iter_result, rule_result) == 0)
+                if (trc_exp_result_cmp(iter_result, rule_result, 0) == 0)
                     return true;
           break;
 
@@ -3090,8 +2879,8 @@ trc_update_rule_match_iter(trc_update_rule *rule,
                 return true;
             STAILQ_FOREACH(iter_result, &iter->exp_results, links)
                 TAILQ_FOREACH(iter_rentry, &iter_result->results, links)
-                    if (trc_update_rentry_cmp(iter_rentry,
-                                              rule->old_re) == 0)
+                    if (trc_exp_rentry_cmp(iter_rentry,
+                                           rule->old_re, 0) == 0)
                     return true;
           break;
 
@@ -3959,17 +3748,18 @@ trc_update_gen_rules(unsigned int db_uid,
                                 iter_data2->to_save == false)
                                 continue;
 
-                            if (trc_update_result_cmp(
+                            if (trc_exp_result_cmp(
                                     (struct trc_exp_result *)
                                         iter1->exp_default,
                                     (struct trc_exp_result *)
-                                        iter2->exp_default) == 0 &&
-                                trc_update_results_cmp(
+                                        iter2->exp_default,
+                                    0) == 0 &&
+                                trc_exp_results_cmp(
                                     &iter_data1->new_results,
-                                    &iter_data2->new_results) == 0 &&
-                                trc_update_results_cmp(
+                                    &iter_data2->new_results, 0) == 0 &&
+                                trc_exp_results_cmp(
                                     &iter1->exp_results,
-                                    &iter2->exp_results) == 0)
+                                    &iter2->exp_results, 0) == 0)
                             {
                                 iter_data2->rule = rule;
                                 iter_data2->rule_id = rule->rule_id;
@@ -4032,12 +3822,13 @@ trc_update_group_test_iters(unsigned int db_uid,
                 iter_data2->to_save == false)
                 continue;
 
-            if (trc_update_results_cmp(&iter1->exp_results,
-                                       &iter2->exp_results) == 0 &&
-                trc_update_result_cmp((struct trc_exp_result *)
+            if (trc_exp_results_cmp(&iter1->exp_results,
+                                    &iter2->exp_results, 0) == 0 &&
+                trc_exp_result_cmp((struct trc_exp_result *)
                                             iter1->exp_default,
-                                      (struct trc_exp_result *)
-                                            iter2->exp_default) == 0)
+                                   (struct trc_exp_result *)
+                                            iter2->exp_default,
+                                   0) == 0)
                 iter_data2->results_id = iter_data1->results_id;
         }
     }

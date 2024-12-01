@@ -1017,3 +1017,179 @@ trc_db_iter_get_exp_result(const trc_test_iter    *iter,
 
     return result;
 }
+
+/* See the description in trc_db.h */
+int
+trc_test_result_cmp(const te_test_result *p, const te_test_result *q)
+{
+    int              rc;
+    te_test_verdict *p_v;
+    te_test_verdict *q_v;
+
+    TRC_DUMMY_CMP(p, q);
+
+    rc = p->status - q->status;
+    if (rc != 0)
+        return rc;
+
+    p_v = TAILQ_FIRST(&p->verdicts);
+    q_v = TAILQ_FIRST(&q->verdicts);
+
+    while (p_v != NULL && q_v != NULL)
+    {
+        rc = strcmp(p_v->str, q_v->str);
+        if (rc != 0)
+            return rc;
+
+        p_v = TAILQ_NEXT(p_v, links);
+        q_v = TAILQ_NEXT(q_v, links);
+    }
+
+    if (p_v == NULL && q_v == NULL)
+        return 0;
+    else if (p_v != NULL)
+        return 1;
+    else
+        return -1;
+}
+
+/* See the description in trc_db.h */
+int
+trc_exp_rentry_cmp(const trc_exp_result_entry *p,
+                   const trc_exp_result_entry *q,
+                   trc_results_cmp_flags flags)
+{
+    int rc = 0;
+
+    TRC_DUMMY_CMP(p, q);
+
+    if (!p->is_expected && q->is_expected)
+        return -1;
+    else if (p->is_expected && !q->is_expected)
+        return 1;
+
+    rc = trc_test_result_cmp(&p->result,
+                             &q->result);
+    if (rc != 0)
+        return rc;
+
+    rc = strcmp_null(p->key, q->key);
+    if (rc != 0)
+        return rc;
+
+    if (flags & RESULTS_CMP_NO_NOTES)
+        return 0;
+
+    rc = strcmp_null(p->notes, q->notes);
+    if (rc != 0)
+        return rc;
+
+    return 0;
+}
+
+/* See the description in trc_db.h */
+int
+trc_exp_result_cmp(const trc_exp_result *p, const trc_exp_result *q,
+                   trc_results_cmp_flags flags)
+{
+    int rc;
+    trc_exp_result_entry *p_r;
+    trc_exp_result_entry *q_r;
+    bool p_tags_str_void;
+    bool q_tags_str_void;
+
+    TRC_DUMMY_CMP(p, q);
+
+    if (flags & RESULTS_CMP_NO_TAGS)
+    {
+        rc = 0;
+    }
+    else
+    {
+        p_tags_str_void = (p->tags_str == NULL ||
+                           strlen(p->tags_str) == 0);
+        q_tags_str_void = (q->tags_str == NULL ||
+                           strlen(q->tags_str) == 0);
+
+        if (p_tags_str_void && q_tags_str_void)
+            rc = 0;
+        else if (p_tags_str_void)
+            rc = -1;
+        else if (q_tags_str_void)
+            rc = 1;
+        else
+            rc = strcmp(p->tags_str, q->tags_str);
+    }
+
+    if (rc != 0)
+        return rc;
+
+    p_r = TAILQ_FIRST(&p->results);
+    q_r = TAILQ_FIRST(&q->results);
+
+    while (p_r != NULL && q_r != NULL)
+    {
+        rc = trc_exp_rentry_cmp(p_r, q_r, flags);
+        if (rc != 0)
+            return rc;
+
+        p_r = TAILQ_NEXT(p_r, links);
+        q_r = TAILQ_NEXT(q_r, links);
+    }
+
+    if (p_r == NULL && q_r == NULL)
+    {
+        rc = strcmp_null(p->key, q->key);
+        if (rc != 0)
+            return rc;
+        else
+            return strcmp_null(p->notes, q->notes);
+    }
+    else if (p_r != NULL)
+    {
+        return 1;
+    }
+    else
+    {
+        return -1;
+    }
+}
+
+/* See the description in trc_db.h */
+int
+trc_exp_results_cmp(const trc_exp_results *p, const trc_exp_results *q,
+                    trc_results_cmp_flags flags)
+{
+    int rc;
+    trc_exp_result *p_r;
+    trc_exp_result *q_r;
+    bool p_is_void = (p == NULL || STAILQ_EMPTY(p));
+    bool q_is_void = (q == NULL || STAILQ_EMPTY(q));
+
+    if (p_is_void && q_is_void)
+        return 0;
+    else if (!p_is_void && q_is_void)
+        return 1;
+    else if (p_is_void && !q_is_void)
+        return -1;
+
+    p_r = STAILQ_FIRST(p);
+    q_r = STAILQ_FIRST(q);
+
+    while (p_r != NULL && q_r != NULL)
+    {
+        rc = trc_exp_result_cmp(p_r, q_r, flags);
+        if (rc != 0)
+            return rc;
+
+        p_r = STAILQ_NEXT(p_r, links);
+        q_r = STAILQ_NEXT(q_r, links);
+    }
+
+    if (p_r == NULL && q_r == NULL)
+        return 0;
+    else if (p_r != NULL)
+        return 1;
+    else
+        return -1;
+}

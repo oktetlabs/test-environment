@@ -542,6 +542,26 @@ static inline te_errno trc_add_tag(tqh_strings *tags, const char *name)
     return 0;
 }
 
+/**
+ * This macro is used in comparing functions only.
+ * Check whether one or both of pointers are NULL;
+ * if at least one of them is NULL - return result
+ * of comparison.
+ *
+ * @param p_    The first pointer -  argument of
+ *              a comparing function.
+ * @param q_    The second pointer - argument of
+ *              a comparing function.
+ */
+#define TRC_DUMMY_CMP(p_, q_) \
+do {                                \
+    if (p_ == NULL && q_ == NULL)   \
+        return 0;                   \
+    else if (p_ == NULL)            \
+        return -1;                  \
+    else if (q_ == NULL)            \
+        return 1;                   \
+} while (0)
 
 #ifdef __cplusplus
 } /* extern "C" */
