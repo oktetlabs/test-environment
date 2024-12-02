@@ -602,7 +602,7 @@ tapi_rdma_perf_get_cmd_str(tapi_rdma_perf_app *app, te_string *cmd)
 
 static void
 tapi_rdma_perf_bw_mi_report(te_mi_logger *logger,
-                           const tapi_rdma_perf_bw_stats *stats)
+                           const tapi_rdma_perf_bw_stats_entry *stats_entry)
 {
 #define PERF_BW_MI_MEAS(_type, _name, _aggr, _val, _gbits)   \
     (te_mi_meas){ TE_MI_MEAS_ ## _type, (_name),                  \
@@ -612,44 +612,44 @@ tapi_rdma_perf_bw_mi_report(te_mi_logger *logger,
 
     te_mi_logger_add_meas_vec(logger, NULL, TE_MI_MEAS_V(
         PERF_BW_MI_MEAS(BANDWIDTH_USAGE, "Bandwidth peak", MAX,
-                        stats->peak, stats->report_gbits),
+                        stats_entry->peak, stats_entry->report_gbits),
         PERF_BW_MI_MEAS(BANDWIDTH_USAGE, "Bandwidth average", MEAN,
-                        stats->average, stats->report_gbits),
+                        stats_entry->average, stats_entry->report_gbits),
         TE_MI_MEAS(PPS, "Messsage rate", SINGLE,
-                   stats->msg_rate, MEGA)));
+                   stats_entry->msg_rate, MEGA)));
 #undef PERF_BW_MI_MEAS
 }
 
 static void
 tapi_rdma_perf_lat_mi_report(te_mi_logger *logger,
-                             const tapi_rdma_perf_lat_stats *stats)
+                             const tapi_rdma_perf_lat_stats_entry *stats_entry)
 {
     te_mi_logger_add_meas_vec(logger, NULL, TE_MI_MEAS_V(
         TE_MI_MEAS(LATENCY, "Minimal latency", MIN,
-                   stats->min_usec, MICRO),
+                   stats_entry->min_usec, MICRO),
         TE_MI_MEAS(LATENCY, "Maximum latency", MAX,
-                   stats->max_usec, MICRO),
+                   stats_entry->max_usec, MICRO),
         TE_MI_MEAS(LATENCY, "Typical latency", MEDIAN,
-                   stats->typical_usec, MICRO),
+                   stats_entry->typical_usec, MICRO),
         TE_MI_MEAS(LATENCY, "Average latency", MEAN,
-                   stats->avg_usec, MICRO),
+                   stats_entry->avg_usec, MICRO),
         TE_MI_MEAS(LATENCY, "Standard deviation", SINGLE,
-                   stats->stdev_usec, MICRO),
+                   stats_entry->stdev_usec, MICRO),
         TE_MI_MEAS(LATENCY, "99.00 percentile", PERCENTILE,
-                   stats->percent_99_00 / 1000, MICRO),
+                   stats_entry->percent_99_00 / 1000, MICRO),
         TE_MI_MEAS(LATENCY, "99.90 percentile", PERCENTILE,
-                   stats->percent_99_90 / 1000, MICRO)));
+                   stats_entry->percent_99_90 / 1000, MICRO)));
 }
 
 static void
 tapi_rdma_perf_lat_dur_mi_report(te_mi_logger *logger,
-                                 const tapi_rdma_perf_lat_dur_stats *stats)
+                        const tapi_rdma_perf_lat_dur_stats_entry *stats_entry)
 {
     te_mi_logger_add_meas_vec(logger, NULL, TE_MI_MEAS_V(
         TE_MI_MEAS(LATENCY, "Average latency", MEAN,
-                   stats->avg_usec, MICRO),
+                   stats_entry->avg_usec, MICRO),
         TE_MI_MEAS(RPS, "Average transactions per second", MEAN,
-                   stats->avg_tps, PLAIN)));
+                   stats_entry->avg_tps, PLAIN)));
 }
 
 te_errno

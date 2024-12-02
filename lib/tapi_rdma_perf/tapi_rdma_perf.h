@@ -162,8 +162,8 @@ extern const tapi_rdma_perf_read_opts tapi_rdma_perf_read_opts_def;
 /** Default values for options of RDMA perf tests with ATOMIC transactions. */
 extern const tapi_rdma_perf_atomic_opts tapi_rdma_perf_atomic_opts_def;
 
-/** Statistics for BW tests. */
-typedef struct tapi_rdma_perf_bw_stats {
+/** Entry for statistics for BW tests. */
+typedef struct tapi_rdma_perf_bw_stats_entry {
     /** Report Max/Average BW of test in Gbit/sec (instead of MB/sec). */
     bool report_gbits;
     /** BW peak. */
@@ -172,10 +172,10 @@ typedef struct tapi_rdma_perf_bw_stats {
     double average;
     /** MsgRate in Mpps. */
     double msg_rate;
-} tapi_rdma_perf_bw_stats;
+} tapi_rdma_perf_bw_stats_entry;
 
-/** Statistics for LAT tests. */
-typedef struct tapi_rdma_perf_lat_stats {
+/** Entry fo statistics for LAT tests. */
+typedef struct tapi_rdma_perf_lat_stats_entry {
     float min_usec; /**< Minimal latency. */
     float max_usec; /**< Maximum latency. */
     float typical_usec; /**< Typical latency. */
@@ -183,16 +183,16 @@ typedef struct tapi_rdma_perf_lat_stats {
     float stdev_usec; /**< Standard deviation. */
     float percent_99_00; /**< 99.00 percentile. */
     float percent_99_90; /**< 99.90 percentile. */
-} tapi_rdma_perf_lat_stats;
+} tapi_rdma_perf_lat_stats_entry;
 
-/** Statistics for LAT tests when duration option is set. */
-typedef struct tapi_rdma_perf_lat_dur_stats {
+/** Entry for statistics for LAT tests when duration option is set. */
+typedef struct tapi_rdma_perf_lat_dur_stats_entry {
     float avg_usec; /**< Average latency. */
     float avg_tps; /**< Average transactions per second. */
-} tapi_rdma_perf_lat_dur_stats;
+} tapi_rdma_perf_lat_dur_stats_entry;
 
-/** Common structure to hold perftest statistics. */
-typedef struct tapi_rdma_perf_stats
+/** Entry for statistics common for all types of perftest reports. */
+typedef struct tapi_rdma_perf_stats_entry
 {
     /** Number of bytes that was sent per each iteration. */
     unsigned long bytes;
@@ -200,15 +200,18 @@ typedef struct tapi_rdma_perf_stats
     uint64_t iterations;
     union {
         /** BW-specific test stats. */
-        tapi_rdma_perf_bw_stats bw;
+        tapi_rdma_perf_bw_stats_entry bw;
         /** LAT-specific test stats. */
-        tapi_rdma_perf_lat_stats lat;
+        tapi_rdma_perf_lat_stats_entry lat;
         /** LAT test stats when duration option is set. */
-        tapi_rdma_perf_lat_dur_stats lat_dur;
+        tapi_rdma_perf_lat_dur_stats_entry lat_dur;
     };
     /** Whether some error happened during the statistics parsing. */
     bool parse_error;
-} tapi_rdma_perf_stats;
+} tapi_rdma_perf_stats_entry;
+
+/** Common structure to hold perftest statistics. */
+typedef tapi_rdma_perf_stats_entry tapi_rdma_perf_stats;
 
 /** Performance test results structure. */
 typedef struct tapi_rdma_perf_results {
