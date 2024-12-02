@@ -125,7 +125,7 @@ typedef struct tapi_ethtool_report {
                                 stderr output */
 
     /** @c true if something was printed to stdout. */
-    te_bool out;
+    bool out;
     /** Text printed to stdout. */
     te_string out_data;
 

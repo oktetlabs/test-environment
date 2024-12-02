@@ -246,7 +246,7 @@ ovs_flow_rule_fini(ovs_flow_rule *rule)
 
 static te_errno
 ovs_flow_rule_to_string_impl(ovs_flow_rule *rule, char **rule_str,
-                             te_bool of_only)
+                             bool of_only)
 {
     unsigned int i;
     te_string    str = TE_STRING_INIT;
@@ -277,11 +277,11 @@ ovs_flow_rule_to_string_impl(ovs_flow_rule *rule, char **rule_str,
 te_errno
 ovs_flow_rule_to_string(ovs_flow_rule *rule, char **rule_str)
 {
-    return ovs_flow_rule_to_string_impl(rule, rule_str, FALSE);
+    return ovs_flow_rule_to_string_impl(rule, rule_str, false);
 }
 
 te_errno
 ovs_flow_rule_to_ofctl(ovs_flow_rule *rule, char **rule_str)
 {
-    return ovs_flow_rule_to_string_impl(rule, rule_str, TRUE);
+    return ovs_flow_rule_to_string_impl(rule, rule_str, true);
 }
