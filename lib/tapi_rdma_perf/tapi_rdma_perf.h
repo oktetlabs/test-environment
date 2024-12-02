@@ -194,6 +194,7 @@ typedef struct tapi_rdma_perf_lat_dur_stats_entry {
 /** Entry for statistics common for all types of perftest reports. */
 typedef struct tapi_rdma_perf_stats_entry
 {
+    SLIST_ENTRY(tapi_rdma_perf_stats_entry) entries;
     /** Number of bytes that was sent per each iteration. */
     unsigned long bytes;
     /* Number of iterations that was performed. */
@@ -206,12 +207,14 @@ typedef struct tapi_rdma_perf_stats_entry
         /** LAT test stats when duration option is set. */
         tapi_rdma_perf_lat_dur_stats_entry lat_dur;
     };
-    /** Whether some error happened during the statistics parsing. */
-    bool parse_error;
 } tapi_rdma_perf_stats_entry;
 
-/** Common structure to hold perftest statistics. */
-typedef tapi_rdma_perf_stats_entry tapi_rdma_perf_stats;
+/** Structure to hold perftest statistics. */
+typedef struct tapi_rdma_perf_stats {
+    SLIST_HEAD(, tapi_rdma_perf_stats_entry) list;
+    /** Whether some error happened during the statistics parsing. */
+    bool parse_error;
+} tapi_rdma_perf_stats;
 
 /** Performance test results structure. */
 typedef struct tapi_rdma_perf_results {
@@ -420,6 +423,13 @@ te_errno tapi_rdma_perf_get_cmd_str(tapi_rdma_perf_app *app, te_string *cmd);
  */
 te_errno tapi_rdma_perf_mi_report(tapi_rdma_perf_app *app, bool is_client,
                                   const tapi_rdma_perf_stats *stats);
+
+/**
+ * Destroy structure to hold perftest statistics.
+ *
+ * @param stats    RDMA perftest statistics.
+ */
+extern void tapi_rdma_perf_destroy_stats(tapi_rdma_perf_stats *stats);
 
 /**
  * Destroy structure to hold perftest results.

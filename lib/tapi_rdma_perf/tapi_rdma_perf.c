@@ -311,6 +311,20 @@ tapi_rdma_perf_app_start(tapi_rdma_perf_app *app)
     return tapi_job_start(app->job);
 }
 
+void
+tapi_rdma_perf_destroy_stats(tapi_rdma_perf_stats *stats)
+{
+    tapi_rdma_perf_stats_entry *stats_entry, *temp;
+
+    if (stats != NULL)
+    {
+        SLIST_FOREACH_SAFE(stats_entry, &stats->list, entries, temp)
+        {
+            free(stats_entry);
+        }
+    }
+}
+
 /**
  * Parse perftest statistics.
  *
@@ -324,40 +338,49 @@ parse_stats(const char *stats_str, tapi_rdma_perf_report_type_t type,
             tapi_rdma_perf_stats *stats)
 {
     int ret;
+    tapi_rdma_perf_stats_entry *stats_entry;
 
     assert(stats != NULL);
+
+    SLIST_INIT(&stats->list);
 
     stats->parse_error = true;
 
     switch (type)
     {
         case TAPI_RDMA_PERF_REPORT_BW:
+            stats_entry = TE_ALLOC(sizeof(tapi_rdma_perf_stats_entry));
             ret = sscanf(stats_str,
                          "%lu %" PRIu64 " %lf %lf %lf",
-                         &stats->bytes, &stats->iterations,
-                         &stats->bw.peak, &stats->bw.average,
-                         &stats->bw.msg_rate);
+                         &stats_entry->bytes, &stats_entry->iterations,
+                         &stats_entry->bw.peak, &stats_entry->bw.average,
+                         &stats_entry->bw.msg_rate);
             if (ret != 5)
                 return;
+            SLIST_INSERT_HEAD(&stats->list, stats_entry, entries);
             break;
 
         case TAPI_RDMA_PERF_REPORT_LAT:
+            stats_entry = TE_ALLOC(sizeof(tapi_rdma_perf_stats_entry));
             ret = sscanf(stats_str, "%lu %" PRIu64 " %f %f %f %f %f %f %f",
-                         &stats->bytes, &stats->iterations,
-                         &stats->lat.min_usec, &stats->lat.max_usec,
-                         &stats->lat.typical_usec, &stats->lat.avg_usec,
-                         &stats->lat.stdev_usec, &stats->lat.percent_99_00,
-                         &stats->lat.percent_99_90);
+                         &stats_entry->bytes, &stats_entry->iterations,
+                         &stats_entry->lat.min_usec, &stats_entry->lat.max_usec,
+                         &stats_entry->lat.typical_usec, &stats_entry->lat.avg_usec,
+                         &stats_entry->lat.stdev_usec, &stats_entry->lat.percent_99_00,
+                         &stats_entry->lat.percent_99_90);
             if (ret != 9)
                 return;
+            SLIST_INSERT_HEAD(&stats->list, stats_entry, entries);
             break;
 
         case TAPI_RDMA_PERF_REPORT_LAT_DUR:
+            stats_entry = TE_ALLOC(sizeof(tapi_rdma_perf_stats_entry));
             ret = sscanf(stats_str, "%lu %" PRIu64 " %f %f",
-                         &stats->bytes, &stats->iterations,
-                         &stats->lat_dur.avg_usec, &stats->lat_dur.avg_tps);
+                         &stats_entry->bytes, &stats_entry->iterations,
+                         &stats_entry->lat_dur.avg_usec, &stats_entry->lat_dur.avg_tps);
             if (ret != 4)
                 return;
+            SLIST_INSERT_HEAD(&stats->list, stats_entry, entries);
             break;
         default:
             assert(false);
@@ -659,6 +682,7 @@ tapi_rdma_perf_mi_report(tapi_rdma_perf_app *app, bool is_client,
     te_errno rc = 0;
     te_mi_logger *logger;
     tapi_rdma_perf_report_type_t type = app->report_type;
+    tapi_rdma_perf_stats_entry *stats_entry;
 
     if (stats == NULL)
         return TE_EINVAL;
@@ -670,34 +694,37 @@ tapi_rdma_perf_mi_report(tapi_rdma_perf_app *app, bool is_client,
         return 0;
     }
 
-    rc = te_mi_logger_meas_create("rdma_perf", &logger);
-    if (rc != 0)
+    SLIST_FOREACH(stats_entry, &stats->list, entries)
     {
-        ERROR("Failed to create MI logger, error: %r", rc);
-        return rc;
+        rc = te_mi_logger_meas_create("rdma_perf", &logger);
+        if (rc != 0)
+        {
+            ERROR("Failed to create MI logger, error: %r", rc);
+            return rc;
+        }
+
+        te_mi_logger_add_meas_key(logger, NULL, "side", "%s",
+                                  is_client ? "client" : "server");
+        te_mi_logger_add_meas_key(logger, NULL, "bytes", "%lu", stats_entry->bytes);
+
+        switch (type)
+        {
+            case TAPI_RDMA_PERF_REPORT_BW:
+                tapi_rdma_perf_bw_mi_report(logger, &stats_entry->bw);
+                break;
+
+            case TAPI_RDMA_PERF_REPORT_LAT:
+                tapi_rdma_perf_lat_mi_report(logger, &stats_entry->lat);
+                break;
+
+            case TAPI_RDMA_PERF_REPORT_LAT_DUR:
+                tapi_rdma_perf_lat_dur_mi_report(logger, &stats_entry->lat_dur);
+                break;
+            default:
+                assert(false);
+        }
+        te_mi_logger_destroy(logger);
     }
-
-    te_mi_logger_add_meas_key(logger, NULL, "side", "%s",
-                              is_client ? "client" : "server");
-    te_mi_logger_add_meas_key(logger, NULL, "bytes", "%lu", stats->bytes);
-
-    switch (type)
-    {
-        case TAPI_RDMA_PERF_REPORT_BW:
-            tapi_rdma_perf_bw_mi_report(logger, &stats->bw);
-            break;
-
-        case TAPI_RDMA_PERF_REPORT_LAT:
-            tapi_rdma_perf_lat_mi_report(logger, &stats->lat);
-            break;
-
-        case TAPI_RDMA_PERF_REPORT_LAT_DUR:
-            tapi_rdma_perf_lat_dur_mi_report(logger, &stats->lat_dur);
-            break;
-        default:
-            assert(false);
-    }
-    te_mi_logger_destroy(logger);
 
     return 0;
 }
