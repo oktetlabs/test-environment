@@ -27,6 +27,13 @@
 #include "tapi_job.h"
 #include "tapi_job_factory_rpc.h"
 
+/* The number of metrics in BW perftest report. */
+#define PERF_BW_STATS_METRIC_NUM 5
+/* The number of metrics in lat perftest report. */
+#define PERF_LAT_STATS_METRIC_NUM 9
+/* The number of metrics in dur_lat perftest report. */
+#define PERF_DUR_LAT_STATS_METRIC_NUM 4
+
 /** Default values for common options of RDMA perf. */
 const tapi_rdma_perf_common_opts tapi_rdma_perf_cmn_opts_def = {
     .port                              = TAPI_JOB_OPT_UINT_UNDEF,
@@ -325,98 +332,169 @@ tapi_rdma_perf_destroy_stats(tapi_rdma_perf_stats *stats)
     }
 }
 
+#define SSCANF_AND_STRTOK_STATS(_rem, _token, _format, _var ) \
+    if (_token == NULL || sscanf(_token, _format, _var) != 1) \
+        return _rem;                                          \
+    else                                                      \
+        _rem--;                                               \
+    _token = strtok(NULL, " \t\n")
+
 /**
- * Parse perftest statistics.
+ * Parse bw perftest statistics.
  *
- * @param[in]   stats_str  String with all statistics taken
- *                         from the perftest output.
- * @param[in]   type       Type of perftest report.
- * @param[out]  stats      Parsed perftest statistics.
+ * @param[in,out] token      Token with number from statistics string.
+ * @param[out]    stats      Parsed perftest statistics.
+ *
+ * @return Count of statistics that should be read but did not.
  */
-static void
-parse_stats(const char *stats_str, tapi_rdma_perf_report_type_t type,
-            tapi_rdma_perf_stats *stats)
+static int
+parse_bw_stats(char **token, tapi_rdma_perf_stats_entry *stats_entry)
 {
-    int ret;
+    int rem = PERF_BW_STATS_METRIC_NUM;
+
+    SSCANF_AND_STRTOK_STATS(rem, *token, "%lu", &stats_entry->bytes);
+    SSCANF_AND_STRTOK_STATS(rem, *token, "%" SCNu64, &stats_entry->iterations);
+    SSCANF_AND_STRTOK_STATS(rem, *token, "%lf", &stats_entry->bw.peak);
+    SSCANF_AND_STRTOK_STATS(rem, *token, "%lf", &stats_entry->bw.average);
+    SSCANF_AND_STRTOK_STATS(rem, *token, "%lf", &stats_entry->bw.msg_rate);
+
+    return rem;
+}
+
+/**
+ * Parse lat perftest statistics.
+ *
+ * @param[in,out] token      Token with number from statistics string.
+ * @param[out]    stats      Parsed perftest statistics.
+ *
+ * @return Count of statistics that should be read but did not.
+ */
+static int
+parse_lat_stats(char **token, tapi_rdma_perf_stats_entry *stats_entry)
+{
+    int rem = PERF_LAT_STATS_METRIC_NUM;
+
+    SSCANF_AND_STRTOK_STATS(rem, *token, "%lu", &stats_entry->bytes);
+    SSCANF_AND_STRTOK_STATS(rem, *token, "%" SCNu64, &stats_entry->iterations);
+    SSCANF_AND_STRTOK_STATS(rem, *token, "%f", &stats_entry->lat.min_usec);
+    SSCANF_AND_STRTOK_STATS(rem, *token, "%f", &stats_entry->lat.max_usec);
+    SSCANF_AND_STRTOK_STATS(rem, *token, "%f", &stats_entry->lat.typical_usec);
+    SSCANF_AND_STRTOK_STATS(rem, *token, "%f", &stats_entry->lat.avg_usec);
+    SSCANF_AND_STRTOK_STATS(rem, *token, "%f", &stats_entry->lat.stdev_usec);
+    SSCANF_AND_STRTOK_STATS(rem, *token, "%f", &stats_entry->lat.percent_99_00);
+    SSCANF_AND_STRTOK_STATS(rem, *token, "%f", &stats_entry->lat.percent_99_90);
+
+    return rem;
+}
+
+/**
+ * Parse lat_dur perftest statistics.
+ *
+ * @param[in,out] token      Token with number from statistics string.
+ * @param[out]    stats      Parsed perftest statistics.
+ *
+ * @return Count of statistics that should be read but did not.
+ */
+static int
+parse_lat_dur_stats(char **token, tapi_rdma_perf_stats_entry *stats_entry)
+{
+    int rem = PERF_DUR_LAT_STATS_METRIC_NUM;
+
+    SSCANF_AND_STRTOK_STATS(rem, *token, "%lu", &stats_entry->bytes);
+    SSCANF_AND_STRTOK_STATS(rem, *token, "%" SCNu64, &stats_entry->iterations);
+    SSCANF_AND_STRTOK_STATS(rem, *token, "%f", &stats_entry->lat_dur.avg_usec);
+    SSCANF_AND_STRTOK_STATS(rem, *token, "%f", &stats_entry->lat_dur.avg_tps);
+
+    return rem;
+}
+#undef SSCANF_AND_STRTOK_STATS
+
+/* See description in tapi_rdma_perf.h */
+te_errno
+tapi_rdma_perf_get_stats(tapi_rdma_perf_app *app,
+                         tapi_rdma_perf_stats *stats)
+{
+    te_errno rc;
+    int rem;
     tapi_rdma_perf_stats_entry *stats_entry;
+    char *token;
+    tapi_job_buffer_t buffer = TAPI_JOB_BUFFER_INIT;
 
     assert(stats != NULL);
 
     SLIST_INIT(&stats->list);
 
-    stats->parse_error = true;
+    rc = tapi_job_receive(TAPI_JOB_CHANNEL_SET(app->stats), 0, &buffer);
+    if (rc != 0)
+    {
+        ERROR("Failed to receive stats from perftest: %r", rc);
+        stats->parse_error = true;
+        te_string_free(&buffer.data);
+        return rc;
+    }
 
-    switch (type)
+    token = strtok(buffer.data.ptr, " \t\n");
+
+    switch (app->report_type)
     {
         case TAPI_RDMA_PERF_REPORT_BW:
-            stats_entry = TE_ALLOC(sizeof(tapi_rdma_perf_stats_entry));
-            ret = sscanf(stats_str,
-                         "%lu %" PRIu64 " %lf %lf %lf",
-                         &stats_entry->bytes, &stats_entry->iterations,
-                         &stats_entry->bw.peak, &stats_entry->bw.average,
-                         &stats_entry->bw.msg_rate);
-            if (ret != 5)
-                return;
-            SLIST_INSERT_HEAD(&stats->list, stats_entry, entries);
+            while (token != NULL)
+            {
+                stats_entry = TE_ALLOC(sizeof(tapi_rdma_perf_stats_entry));
+                rem = parse_bw_stats(&token, stats_entry);
+                if (rem != 0)
+                    goto fail;
+                SLIST_INSERT_HEAD(&stats->list, stats_entry, entries);
+            }
             break;
 
         case TAPI_RDMA_PERF_REPORT_LAT:
-            stats_entry = TE_ALLOC(sizeof(tapi_rdma_perf_stats_entry));
-            ret = sscanf(stats_str, "%lu %" PRIu64 " %f %f %f %f %f %f %f",
-                         &stats_entry->bytes, &stats_entry->iterations,
-                         &stats_entry->lat.min_usec, &stats_entry->lat.max_usec,
-                         &stats_entry->lat.typical_usec, &stats_entry->lat.avg_usec,
-                         &stats_entry->lat.stdev_usec, &stats_entry->lat.percent_99_00,
-                         &stats_entry->lat.percent_99_90);
-            if (ret != 9)
-                return;
-            SLIST_INSERT_HEAD(&stats->list, stats_entry, entries);
+            while (token != NULL)
+            {
+                stats_entry = TE_ALLOC(sizeof(tapi_rdma_perf_stats_entry));
+                rem = parse_lat_stats(&token, stats_entry);
+                if (rem != 0)
+                    goto fail;
+                SLIST_INSERT_HEAD(&stats->list, stats_entry, entries);
+            }
             break;
 
         case TAPI_RDMA_PERF_REPORT_LAT_DUR:
-            stats_entry = TE_ALLOC(sizeof(tapi_rdma_perf_stats_entry));
-            ret = sscanf(stats_str, "%lu %" PRIu64 " %f %f",
-                         &stats_entry->bytes, &stats_entry->iterations,
-                         &stats_entry->lat_dur.avg_usec, &stats_entry->lat_dur.avg_tps);
-            if (ret != 4)
-                return;
-            SLIST_INSERT_HEAD(&stats->list, stats_entry, entries);
+            while (token != NULL)
+            {
+                stats_entry = TE_ALLOC(sizeof(tapi_rdma_perf_stats_entry));
+                rem = parse_lat_dur_stats(&token, stats_entry);
+                if (rem != 0)
+                    goto fail;
+                SLIST_INSERT_HEAD(&stats->list, stats_entry, entries);
+            }
             break;
         default:
             assert(false);
     }
 
     stats->parse_error = false;
+    te_string_free(&buffer.data);
+
+    return 0;
+fail:
+    tapi_rdma_perf_destroy_stats(stats);
+    stats->parse_error = true;
+    te_string_free(&buffer.data);
+
+    return TE_RC(TE_TAPI, TE_EFAIL);
 }
 
 /* See description in tapi_rdma_perf.h */
 te_errno
-tapi_rdma_perf_app_wait(tapi_rdma_perf_app *app, int timeout_s,
-                        tapi_rdma_perf_results *results)
+tapi_rdma_perf_app_wait(tapi_rdma_perf_app *app, int timeout_s)
 {
     tapi_job_status_t   status = {0};
     te_errno            rc = 0;
-    tapi_job_buffer_t   buffer = TAPI_JOB_BUFFER_INIT;
 
     rc = tapi_job_wait(app->job, TE_SEC2MS(timeout_s), &status);
     if (rc != 0)
         return rc;
-
-    if (results != NULL)
-    {
-        rc = tapi_job_receive(TAPI_JOB_CHANNEL_SET(app->stats), 0, &buffer);
-        if (rc != 0)
-        {
-            ERROR("Failed to receive stats from perftest: %r", rc);
-            results->stats.parse_error = true;
-        }
-        else
-        {
-            parse_stats(buffer.data.ptr, app->report_type, &results->stats);
-        }
-
-        te_string_free(&buffer.data);
-    }
 
     if (status.type == TAPI_JOB_STATUS_SIGNALED)
     {

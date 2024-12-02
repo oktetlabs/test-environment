@@ -391,13 +391,22 @@ extern te_errno tapi_rdma_perf_app_start(tapi_rdma_perf_app *app);
  *
  * @param[in]  app             RDMA perf app context.
  * @param[in]  timeout_s       Time to wait for app results.
- * @param[out] results         Where app results should be stored.
  *
  * @return Status code.
  */
 extern te_errno tapi_rdma_perf_app_wait(tapi_rdma_perf_app *app,
-                                        int timeout_s,
-                                        tapi_rdma_perf_results *results);
+                                        int timeout_s);
+
+/**
+ * Receive and parse statistics reported by perftest.
+ *
+ * @param[in]   app        RDMA perf app context.
+ * @param[out]  stats      Parsed perftest statistics.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_rdma_perf_get_stats(tapi_rdma_perf_app *app,
+                                         tapi_rdma_perf_stats *stats);
 
 /**
  * Get CMD in string representation that will be used to run RDMA perf app.
