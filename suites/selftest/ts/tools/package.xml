@@ -403,6 +403,22 @@
         </run>
 
         <run>
+            <script name="compound" />
+            <arg name="min_len">
+                <value>16</value>
+            </arg>
+            <arg name="max_len">
+                <value>18</value>
+            </arg>
+            <arg name="min_items">
+                <value>10</value>
+            </arg>
+            <arg name="max_items">
+                <value>100</value>
+            </arg>
+        </run>
+
+        <run>
             <script name="strpbrk_balanced"/>
             <arg name="opening">
                 <value>(</value>

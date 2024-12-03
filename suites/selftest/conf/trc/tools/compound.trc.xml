@@ -1,0 +1,10 @@
+<test name="compound" type="script">
+    <objective>Testing compound string routines.</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="min_len" />
+        <arg name="max_len" />
+        <arg name="min_items" />
+        <arg name="max_items" />
+    </iter>
+</test>
