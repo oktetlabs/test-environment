@@ -399,14 +399,11 @@ extern te_errno get_expected_rentry(xmlNodePtr node,
  *
  * @param node          Location of the node of the test result
  * @param result        Location for the expected result data
- * @param tags_tolerate Whether to allow absence of tags attribute or
- *                      void string as its value or not
  *
  * @return Status code.
  */
 extern te_errno get_expected_result(xmlNodePtr node,
-                                    trc_exp_result *result,
-                                    bool tags_tolerate);
+                                    trc_exp_result *result);
 
 /**
  * Get expected results from XML.

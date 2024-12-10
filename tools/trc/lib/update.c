@@ -3195,7 +3195,7 @@ trc_update_load_rule(xmlNodePtr rule_node, trc_update_rule *rule)
                 TAILQ_INIT(&rule->def_res->results);
                 if (value == NULL)
                      get_expected_result(rule_section_node,
-                                         rule->def_res, true);
+                                         rule->def_res);
                 else
                 {
                     entry = TE_ALLOC(sizeof(*entry));

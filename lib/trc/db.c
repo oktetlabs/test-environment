@@ -982,7 +982,16 @@ trc_db_iter_get_exp_result(const trc_test_iter    *iter,
     STAILQ_FOREACH(p, &iter->exp_results, links)
     {
         VERB("%s: matching start", __FUNCTION__);
-        res = logic_expr_match(p->tags_expr, tags);
+
+        /*
+         * If there is no tag expression, consider result as matching
+         * any tags.
+         */
+        if (p->tags_expr == NULL)
+            res = 1;
+        else
+            res = logic_expr_match(p->tags_expr, tags);
+
         if (res != -1)
         {
             INFO("Matching tag found");

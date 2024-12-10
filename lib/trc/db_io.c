@@ -608,8 +608,7 @@ get_expected_rentry(xmlNodePtr node, trc_exp_result_entry *rentry)
 
 /* See description in trc_db.h */
 te_errno
-get_expected_result(xmlNodePtr node, trc_exp_result *result,
-                    bool tags_tolerate)
+get_expected_result(xmlNodePtr node, trc_exp_result *result)
 {
     te_errno                rc = 0;
     trc_exp_result_entry   *entry;
@@ -617,16 +616,9 @@ get_expected_result(xmlNodePtr node, trc_exp_result *result,
 
     result->tags_str = XML2CHAR(xmlGetProp(node,
                                            CONST_CHAR2XML("tags")));
-    if (result->tags_str == NULL && !tags_tolerate)
-    {
-        ERROR("%s: tags attribute should be specified for "
-              "<results> element", __FUNCTION__);
-        return TE_RC(TE_TRC, TE_EFMT);
-    }
-
     if (result->tags_str != NULL)
     {
-        if (strlen(result->tags_str) == 0 && tags_tolerate)
+        if (strlen(result->tags_str) == 0)
             result->tags_expr = NULL;
         else if (logic_expr_parse(result->tags_str,
                                   &result->tags_expr) != 0)
@@ -672,7 +664,7 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
 
         TAILQ_INIT(&result->results);
         STAILQ_INSERT_TAIL(results, result, links);
-        get_expected_result(*node, result, false);
+        get_expected_result(*node, result);
         *node = xmlNodeNext(*node);
     }
 
@@ -1527,7 +1519,7 @@ trc_exp_result_to_xml(trc_exp_result *exp_result, xmlNodePtr results_node,
     if (exp_result == NULL)
         return 0;
 
-    if (!is_default)
+    if (!is_default && exp_result->tags_str != NULL)
         xmlNewProp(results_node, BAD_CAST "tags",
                    BAD_CAST exp_result->tags_str);
 
