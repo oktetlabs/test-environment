@@ -325,15 +325,13 @@ te_calloc_fill(size_t num, size_t size, int byte)
     return buf;
 }
 
-
 bool
-te_compare_bufs(const void *exp_buf, size_t exp_len,
-                unsigned int n_copies,
-                const void *actual_buf, size_t actual_len,
-                unsigned int log_level)
+te_compare_bufs_at(const void *exp_buf, size_t exp_len,
+                   unsigned int n_copies,
+                   const void *actual_buf, size_t actual_len,
+                   unsigned int log_level, size_t log_offset)
 {
     bool result = true;
-    size_t offset = 0;
 
     if (n_copies * exp_len != actual_len)
     {
@@ -359,9 +357,9 @@ te_compare_bufs(const void *exp_buf, size_t exp_len,
 
             result = false;
             LOG_HEX_DIFF_DUMP_AT(log_level, exp_buf, exp_len,
-                                 actual_buf, chunk_len, offset);
+                                 actual_buf, chunk_len, log_offset);
         }
-        offset += chunk_len;
+        log_offset += chunk_len;
         actual_buf = (const uint8_t *)actual_buf + chunk_len;
         actual_len -= chunk_len;
         n_copies--;
@@ -370,8 +368,112 @@ te_compare_bufs(const void *exp_buf, size_t exp_len,
     if (actual_len > 0 && log_level != 0)
     {
         LOG_HEX_DIFF_DUMP_AT(log_level, exp_buf, 0,
-                             actual_buf, actual_len, offset);
+                             actual_buf, actual_len, log_offset);
     }
 
     return result;
 }
+
+#ifdef HAVE_SYS_UIO_H
+
+bool
+te_compare_iovecs(size_t n_exp, const struct iovec exp[n_exp],
+                  size_t n_actual, const struct iovec actual[n_actual],
+                  unsigned int log_level)
+{
+    size_t exp_offset = 0;
+    size_t actual_offset = 0;
+    size_t common_offset = 0;
+
+    while (n_exp > 0 && n_actual > 0)
+    {
+        size_t minlen = MIN(exp->iov_len - exp_offset,
+                            actual->iov_len - actual_offset);
+        bool result;
+
+        if (exp->iov_base == NULL)
+        {
+            result = te_compare_bufs_at("", 1, minlen,
+                                        (const uint8_t *)actual->iov_base +
+                                        actual_offset,
+                                        minlen,
+                                        log_level, common_offset);
+        }
+        else
+        {
+            result = te_compare_bufs_at((const uint8_t *)exp->iov_base +
+                                        exp_offset, minlen, 1,
+                                        (const uint8_t *)actual->iov_base +
+                                        actual_offset,
+                                        minlen,
+                                        log_level, common_offset);
+        }
+        if (!result)
+            return false;
+
+        exp_offset += minlen;
+        if (exp_offset == exp->iov_len)
+        {
+            exp++;
+            exp_offset = 0;
+            n_exp--;
+        }
+        actual_offset += minlen;
+        if (actual_offset == actual->iov_len)
+        {
+            actual++;
+            actual_offset = 0;
+            n_actual--;
+        }
+        common_offset += minlen;
+    }
+
+    while (n_exp > 0 && exp->iov_len == 0)
+    {
+        n_exp--;
+        exp++;
+    }
+    while (n_actual > 0 && actual->iov_len == 0)
+    {
+        n_actual--;
+        actual++;
+    }
+
+    if (n_exp == 0 && n_actual == 0)
+        return true;
+
+    if (log_level != 0)
+    {
+        if (n_exp > 0)
+        {
+            for (; n_exp > 0;
+                 exp_offset = 0, common_offset += exp->iov_len, n_exp--, exp++)
+            {
+                if (exp->iov_base == NULL)
+                    continue;
+                LOG_HEX_DIFF_DUMP_AT(log_level,
+                                     (const uint8_t *)exp->iov_base +
+                                     exp_offset,
+                                     exp->iov_len - exp_offset,
+                                     "", 0, common_offset);
+            }
+        }
+        else
+        {
+            for (; n_actual > 0;
+                 actual_offset = 0, common_offset += actual->iov_len,
+                     n_actual--, actual++)
+            {
+                LOG_HEX_DIFF_DUMP_AT(log_level, "", 0,
+                                     (const uint8_t *)actual->iov_base +
+                                     actual_offset,
+                                     actual->iov_len - actual_offset,
+                                     common_offset);
+            }
+        }
+    }
+
+    return false;
+}
+
+#endif /* HAVE_SYS_UIO_H */

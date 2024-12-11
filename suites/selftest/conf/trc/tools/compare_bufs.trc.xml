@@ -5,5 +5,8 @@
     <objective>Testing buffer comparison function.</objective>
     <notes/>
     <iter result="PASSED">
+        <arg name="n_iterations" />
+        <arg name="min_len" />
+        <arg name="max_len" />
     </iter>
 </test>

@@ -47,7 +47,16 @@
         <run name="bufs">
             <session>
                 <run>
-                    <script name="compare_bufs"/>
+                    <script name="compare_bufs" />
+                    <arg name="n_iterations">
+                        <value>1000</value>
+                    </arg>
+                    <arg name="min_len">
+                        <value>1</value>
+                    </arg>
+                    <arg name="max_len">
+                        <value>128</value>
+                    </arg>
                 </run>
 
                 <run>

@@ -15,10 +15,16 @@
 #ifndef __TE_TOOLS_BUFS_H__
 #define __TE_TOOLS_BUFS_H__
 
+#include "te_config.h"
+
 #include <stdlib.h>
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
 #endif
 
 #include "te_defs.h"
@@ -411,6 +417,34 @@ te_make_printable_buf_by_len(size_t len)
 extern void *te_calloc_fill(size_t num, size_t size, int byte);
 
 /**
+ * Like te_compare_bufs(), but the difference log will be shown as if
+ * the data start at @p log_offset.
+ *
+ * @note The value of @p log_offset does not in any way affect
+ *       the comparison itself --- it only modifies how offsets
+ *       are printed, so if @p log_level is zero, the function
+ *       behaves exactly as te_compare_bufs(), irrespective of
+ *       @p log_offset.
+ *
+ * @param exp_buf     Expected data.
+ * @param exp_len     Length of expected data.
+ * @param n_copies    Number of copies of the expected
+ *                    buffer that should be in the actual data.
+ * @param actual_buf  Actual data.
+ * @param actual_len  Length of actual data.
+ * @param log_level   Log level for diff dumps.
+ *                    If zero, no logging is done.
+ * @param log_offset  The virtual offset for logging.
+ *
+ * @return @c true if the lengths and the content of buffers are the same.
+ */
+extern bool te_compare_bufs_at(const void *exp_buf, size_t exp_len,
+                               unsigned int n_copies,
+                               const void *actual_buf, size_t actual_len,
+                               unsigned int log_level,
+                               size_t log_offset);
+
+/**
  * Compare and probably log the difference of two buffers.
  *
  * It can compare buffers of unequal size.
@@ -429,10 +463,44 @@ extern void *te_calloc_fill(size_t num, size_t size, int byte);
  *
  * @return @c true if the lengths and the content of buffers are the same.
  */
-extern bool te_compare_bufs(const void *exp_buf, size_t exp_len,
-                               unsigned int n_copies,
-                               const void *actual_buf, size_t actual_len,
-                               unsigned int log_level);
+static inline bool
+te_compare_bufs(const void *exp_buf, size_t exp_len,
+                unsigned int n_copies,
+                const void *actual_buf, size_t actual_len,
+                unsigned int log_level)
+{
+    return te_compare_bufs_at(exp_buf, exp_len, n_copies,
+                              actual_buf, actual_len,
+                              log_level, 0);
+}
+
+#ifdef HAVE_SYS_UIO_H
+
+/**
+ * Compare and probably log the difference of two iovecs.
+ *
+ * The number and layout of iovecs is completely arbitrary,
+ * i.e. the expected and the actual series may have different
+ * lengths and the data may be scattered across iovec differently.
+ *
+ * In some of the expected iovecs the data pointer @c iov_base may be
+ * @c NULL, in which case matching actual data must be zeroes.
+ *
+ * @param n_exp       Number of expected iovecs.
+ * @param exp         The array of expected iovecs.
+ * @param n_actual    Number of actual iovecs.
+ * @param actual      The array of actual iovecs.
+ * @param log_level   Log level for diff dumps.
+ *                    If zero, no logging is done.
+ *
+ * @return @c true if the total contents of iovec series are the same.
+ */
+extern bool te_compare_iovecs(size_t n_exp, const struct iovec exp[n_exp],
+                              size_t n_actual,
+                              const struct iovec actual[n_actual],
+                              unsigned int log_level);
+
+#endif /* HAVE_SYS_UIO_H */
 
 #ifdef __cplusplus
 } /* extern "C" */
