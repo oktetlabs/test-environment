@@ -5,6 +5,30 @@
     <description>TE Self Tests</description>
     <author mailto="te-maint@oktetlabs.ru"/>
 
+    <script-template id="default_arg_test" name="default_args">
+      <arg name="test_arg1" value="239"/>
+      <arg name="test_arg2">
+          <value>1</value>
+          <value>2</value>
+      </arg>
+    </script-template>
+
+    <script-template id="def_arg_test_bad_name" name="missing_test">
+      <arg name="test_arg1" value="239"/>
+      <arg name="test_arg2">
+          <value>1</value>
+          <value>2</value>
+      </arg>
+    </script-template>
+
+    <script-template id="def_arg_test_wo_name">
+      <arg name="test_arg1" value="239"/>
+      <arg name="test_arg2">
+          <value>1</value>
+          <value>2</value>
+      </arg>
+    </script-template>
+
     <session track_conf="silent">
         <prologue>
             <script name="prologue"/>

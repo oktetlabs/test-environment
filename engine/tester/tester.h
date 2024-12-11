@@ -26,6 +26,18 @@
 extern "C" {
 #endif
 
+/** Tester global default arguments */
+typedef struct script_def_arg {
+    TAILQ_ENTRY(script_def_arg)  links;  /**< List links */
+    char                        *id;     /**< Identifier */
+    char                        *name;   /**< Script name */
+    test_vars_args               args;   /**< Arguments */
+} script_def_arg;
+
+/** Head of the list of default values for scripts */
+typedef TAILQ_HEAD(script_def_args, script_def_arg)
+    script_def_args;
+
 /** Tester global context */
 typedef struct tester_global {
     unsigned int        rand_seed;  /**< Random seed */
@@ -39,6 +51,8 @@ typedef struct tester_global {
     testing_scenario    scenario;   /**< Testing scenario */
     test_requirements   reqs;       /**< List of requirements known by
                                      *   the tester */
+    script_def_args     def_args;   /**< List of script default arguments
+                                      *   for the package */
     char               *verdict;    /**< Verdict to stop tester run on */
 
     /** Percentage of all test iterations to choose randomly */
