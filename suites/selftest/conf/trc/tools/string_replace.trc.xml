@@ -1,0 +1,8 @@
+<test name="string_replace" type="script">
+    <objective>Testing string segment replacement routines.</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="n_iterations" />
+        <arg name="max_len" />
+    </iter>
+</test>

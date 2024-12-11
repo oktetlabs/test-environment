@@ -377,6 +377,16 @@
         </run>
 
         <run>
+            <script name="string_replace" />
+            <arg name="max_len">
+                <value>4096</value>
+            </arg>
+            <arg name="n_iterations">
+                <value>1000</value>
+            </arg>
+        </run>
+
+        <run>
             <script name="strpbrk_balanced"/>
             <arg name="opening">
                 <value>(</value>

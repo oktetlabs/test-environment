@@ -209,15 +209,111 @@ te_string_append_va(te_string *str, const char *fmt, va_list ap)
 te_errno
 te_string_append_buf(te_string *str, const char *buf, size_t len)
 {
-    if (len == 0)
+    if (str == NULL || len == 0)
         return 0;
 
     te_string_reserve(str, str->len + len + 1);
 
-    memcpy(str->ptr + str->len, buf, len);
+    if (buf == NULL)
+        memset(str->ptr + str->len, '\0', len);
+    else
+        memcpy(str->ptr + str->len, buf, len);
     str->len += len;
     str->ptr[str->len] = '\0';
     return 0;
+}
+
+size_t
+te_string_replace(te_string *str,
+                  size_t seg_start, size_t seg_len,
+                  const char *fmt, ...)
+{
+    size_t rep_len;
+    va_list args;
+
+    va_start(args, fmt);
+    rep_len = te_string_replace_va(str, seg_start, seg_len, fmt, args);
+    va_end(args);
+
+    return rep_len;
+}
+
+static void
+te_string_replace_va_int(te_string *str,
+                         size_t seg_start, size_t seg_len,
+                         size_t fmt_len,
+                         const char *fmt,
+                         va_list ap)
+{
+    char buf[fmt_len + 1];
+
+    vsnprintf(buf, sizeof(buf), fmt, ap);
+    te_string_replace_buf(str, seg_start, seg_len,
+                          buf, fmt_len);
+}
+
+size_t
+te_string_replace_va(te_string *str,
+                     size_t seg_start, size_t seg_len,
+                     const char *fmt,
+                     va_list ap)
+{
+    int fmt_size;
+    va_list ap_copy;
+
+    if (str == NULL)
+        return 0;
+    if (fmt == NULL)
+    {
+        te_string_replace_buf(str, seg_start, seg_len, NULL, 0);
+        return 0;
+    }
+    va_copy(ap_copy, ap);
+    fmt_size = vsnprintf(NULL, 0, fmt, ap_copy);
+    va_end(ap_copy);
+    assert(fmt_size >= 0);
+
+    te_string_replace_va_int(str, seg_start, seg_len,
+                             (size_t)fmt_size, fmt, ap);
+
+    return (size_t)fmt_size;
+}
+
+void
+te_string_replace_buf(te_string *str, size_t seg_start, size_t seg_len,
+                      const char *buf, size_t buf_len)
+{
+    if (str == NULL)
+        return;
+
+    if (seg_start == TE_STRING_POS_AUTO)
+        seg_start = seg_len < str->len ? str->len - seg_len : 0;
+
+    if (seg_start >= str->len)
+    {
+        te_string_append_buf(str, NULL, seg_start - str->len);
+        te_string_append_buf(str, buf, buf_len);
+        return;
+    }
+
+    /*
+     * The first check is to handle gracefully cases where
+     * the sum of start and len may overflow (e.g len is SIZE_MAX)
+     */
+    if (seg_len > str->len || seg_start + seg_len > str->len)
+        seg_len = str->len - seg_start;
+
+    te_string_reserve(str, str->len + buf_len - seg_len + 1);
+    memmove(str->ptr + seg_start + buf_len,
+            str->ptr + seg_start + seg_len,
+            str->len - seg_start - seg_len + 1);
+    if (buf == NULL)
+        memset(str->ptr + seg_start, '\0', buf_len);
+    else
+        memcpy(str->ptr + seg_start, buf, buf_len);
+
+    str->len -= seg_len;
+    str->len += buf_len;
 }
 
 te_errno
@@ -579,34 +675,6 @@ te_string_fmt(const char *fmt, ...)
     va_end(ap);
 
     return result;
-}
-
-void
-te_string_cut_beginning(te_string *str, size_t len)
-{
-    assert(str != NULL);
-    if (len > str->len)
-        len = str->len;
-
-    str->len -= len;
-
-    if (str->ptr != NULL)
-    {
-        memmove(str->ptr, str->ptr + len, str->len);
-        str->ptr[str->len] = '\0';
-    }
-}
-
-void
-te_string_cut(te_string *str, size_t len)
-{
-    assert(str != NULL);
-    if (len > str->len)
-        len = str->len;
-    assert(str->len >= len);
-    str->len -= len;
-    if (str->ptr != NULL)
-        str->ptr[str->len] = '\0';
 }
 
 void

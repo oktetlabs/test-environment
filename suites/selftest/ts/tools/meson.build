@@ -25,6 +25,7 @@ tests = [
     'scandir',
     'str_compare_versions',
     'string',
+    'string_replace',
     'strpbrk_balanced',
     'units',
     'uri',

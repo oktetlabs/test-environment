@@ -256,6 +256,82 @@ extern te_errno te_string_append_buf(te_string *str, const char *buf,
                                      size_t len);
 
 /**
+ * Used by functions like te_string_replace() to indicate that a starting
+ * position should be calculated from other values, such as the length of
+ * the string and/or the length of a segment.
+ */
+#define TE_STRING_POS_AUTO SIZE_MAX
+
+/**
+ * Format arguments according to @p fmt and replace a segment
+ * of @p str with the result.
+ *
+ * Refer to te_string_replace_buf() for the description of
+ * @p start and @p len handling.
+ *
+ * If @p fmt is @c NULL, the segment is deleted.
+ *
+ * @param str           TE string
+ * @param seg_start     Start of the segment to replace
+ * @param seg_len       Length of the segment to replace
+ * @param fmt           Format string (may be @c NULL!)
+ * @param ...           Format string arguments
+ *
+ * @return The length of the replacement string
+ */
+extern size_t te_string_replace(te_string *str,
+                                size_t seg_start, size_t seg_len,
+                                const char *fmt, ...) TE_LIKE_PRINTF(4, 5);
+
+/**
+ * Format the varargs according to @p fmt and replace a segment
+ * of @p str with the result.
+ *
+ * The function is the same as te_string_replace() save for
+ * the different varargs signature.
+ *
+ * @param str           TE string
+ * @param fmt           Format string (may be @c NULL)
+ * @param ap            List of arguments
+ *
+ * @return The length of the replacement string
+ */
+extern size_t te_string_replace_va(te_string *str,
+                                   size_t seg_start, size_t seg_len,
+                                   const char *fmt,
+                                   va_list ap) TE_LIKE_VPRINTF(4);
+
+/**
+ * Replace a segment within a string.
+ *
+ * If @p seg_start is #TE_STRING_POS_AUTO, the starting point
+ * is @p len bytes before the end of @p str.
+ *
+ * If @p seg_start is beyond the end of @p str,
+ * the string is first padded by binary zeroes to end at
+ * @p seg_start and then then contents of @p buf is appended to it,
+ * irrespective of the value of @p seg_len. So if @p seg_start
+ * points right after the end of string, this function behaves
+ * exactly like te_string_append_buf().
+ *
+ * If @p seg_start + @p seg_len is beyond the end of @p str,
+ * the whole suffix of @p str starting at @p seg_start is
+ * replaced.
+ *
+ * If @p buf is @c NULL, a block of @p buf_len binary
+ * zeroes is inserted.
+ *
+ * @param str         TE string
+ * @param seg_start   Start of the segment to replace
+ * @param seg_len     Length of the segment to replace
+ * @param buf         Buffer (may be @c NULL)
+ * @param buf_len     Length of the buffer
+ */
+extern void te_string_replace_buf(te_string *str,
+                                  size_t seg_start, size_t seg_len,
+                                  const char *buf, size_t buf_len);
+
+/**
  * Append arguments separated by space with required shell escaping
  * to avoid expansion and variable substitution.
  *
@@ -491,7 +567,11 @@ extern char *te_string_fmt(const char *fmt,
  * @param str           TE string
  * @param len           Number of characters to cut
  */
-extern void te_string_cut(te_string *str, size_t len);
+static inline void
+te_string_cut(te_string *str, size_t len)
+{
+    te_string_replace_buf(str, TE_STRING_POS_AUTO, len, NULL, 0);
+}
 
 /**
  * Cut specified number of characters from the beginning of the string.
@@ -499,7 +579,11 @@ extern void te_string_cut(te_string *str, size_t len);
  * @param str           TE string
  * @param len           Number of characters to cut from the beginning
  */
-extern void te_string_cut_beginning(te_string *str, size_t len);
+static inline void
+te_string_cut_beginning(te_string *str, size_t len)
+{
+    te_string_replace_buf(str, 0, len, NULL, 0);
+}
 
 /**
  * Chop off trailing characters from @p str that belong to @p trail.
