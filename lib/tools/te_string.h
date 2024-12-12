@@ -769,10 +769,11 @@ extern void te_substring_find(te_substring_t *substr, const char *str);
 
 /**
  * Replace a substring at a given position, modifying
- * the underlying `te_string`
+ * the underlying `te_string`. If @p str is @c NULL,
+ * the content of the substring is deleted.
  *
- * @param substr Substring
- * @param str    Replacement string
+ * @param substr Substring.
+ * @param str    Replacement string (may be @c NULL).
  *
  * @return Status code.
  * @retval TE_EINVAL  Substring position is out of bounds.
@@ -803,7 +804,7 @@ extern void te_substring_limit(te_substring_t *substr,
  * Replace all the substrings in a string
  *
  * @param str The string in which to replace.
- * @param new The new substring to replace.
+ * @param new The new substring to replace (may be @c NULL).
  * @param old The substring to be replaced.
  *
  * @return Status code (always 0).
@@ -816,7 +817,7 @@ extern te_errno te_string_replace_all_substrings(te_string *str,
  * Replace the substring in a string
  *
  * @param str The string in which to replace.
- * @param new The new substring to replace.
+ * @param new The new substring to replace (may be @c NULL).
  * @param old The substring to be replaced.
  *
  * @return Status code (always 0).

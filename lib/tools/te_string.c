@@ -776,25 +776,19 @@ te_substring_find(te_substring_t *substr, const char *str)
 te_errno
 te_substring_replace(te_substring_t *substr, const char *str)
 {
-    te_string tail = TE_STRING_INIT;
-
+    size_t rep_len = str == NULL ? 0 : strlen(str);
     if (substr->start + substr->len > substr->base->len)
     {
         ERROR("Substring position out of bounds");
         return TE_EINVAL;
     }
 
-    // TODO: Rewrite this using te_string_reserve, memmove and memcpy
-    te_string_append(&tail, "%s",
-                     substr->base->ptr + substr->start + substr->len);
+    te_string_replace_buf(substr->base, substr->start, substr->len,
+                          str, rep_len);
 
-    te_string_cut(substr->base, substr->base->len - substr->start);
-    te_string_append(substr->base, "%s%s", str, tail.ptr);
-
-    substr->start += strlen(str);
+    substr->start += rep_len;
     substr->len = 0;
 
-    te_string_free(&tail);
     return 0;
 }
 

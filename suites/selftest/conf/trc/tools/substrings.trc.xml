@@ -1,0 +1,10 @@
+<test name="substrings" type="script">
+    <objective>Testing substring find and replace routines.</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="n_iterations" />
+        <arg name="min_len" />
+        <arg name="max_len" />
+        <arg name="max_repl" />>
+    </iter>
+</test>

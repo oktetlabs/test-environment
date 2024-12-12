@@ -387,6 +387,22 @@
         </run>
 
         <run>
+            <script name="substrings" />
+            <arg name="min_len">
+                <value>16</value>
+            </arg>
+            <arg name="max_len">
+                <value>4096</value>
+            </arg>
+            <arg name="n_iterations">
+                <value>1000</value>
+            </arg>
+            <arg name="max_repl">
+                <value>8</value>
+            </arg>
+        </run>
+
+        <run>
             <script name="strpbrk_balanced"/>
             <arg name="opening">
                 <value>(</value>

@@ -55,6 +55,8 @@
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tools/strpbrk_balanced.trc.xml" parse="xml"/>
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                    href="tools/substrings.trc.xml" parse="xml"/>
+        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tools/timer.trc.xml" parse="xml"/>
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tools/trees.trc.xml" parse="xml"/>

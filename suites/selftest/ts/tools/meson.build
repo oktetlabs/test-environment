@@ -27,6 +27,7 @@ tests = [
     'string',
     'string_replace',
     'strpbrk_balanced',
+    'substrings',
     'units',
     'uri',
     'vector',

@@ -242,7 +242,7 @@ check_replace_fmt(size_t orig_len, char *orig, size_t rep_len, char *rep)
     fmt_len = te_string_replace(&str, seg_start, rep_len, NULL);
     if (fmt_len != 0)
         TEST_VERDICT("Non-zero replacement length on delete");
-    if (!te_compare_iovecs(4, (const struct iovec[4]){
+    if (!te_compare_iovecs(3, (const struct iovec[3]){
                 {.iov_base = orig, .iov_len = seg_start},
                 {.iov_base = rep, .iov_len = rep_len},
                 {.iov_base = orig + MIN(orig_len, seg_end + 1),
