@@ -118,7 +118,20 @@ tapi_dns_unbound_create(tapi_job_factory_t *factory,
                                         .log_level = TE_LL_ERROR,
                                         .filter_var = &unbound_app->err_filter,
                                         .filter_name = "unbound.err",
-                                    })
+                                    },
+                                    {
+                                       .use_stdout  = true,
+                                       .readable    = false,
+                                       .log_level = TE_LL_RING,
+                                       .filter_name = "unbound.stdout",
+                                    },
+                                    {
+                                       .use_stderr  = true,
+                                       .readable    = false,
+                                       .log_level   = TE_LL_WARN,
+                                       .filter_name = "unbound.stderr",
+                                    }
+                                )
                             });
     if (rc != 0)
     {
