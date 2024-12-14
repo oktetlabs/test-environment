@@ -40,6 +40,10 @@
         <run>
             <package name="tad"/>
         </run>
+
+        <run>
+            <package name="monitors"/>
+        </run>
     </session>
 
 </package>
