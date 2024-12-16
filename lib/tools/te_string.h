@@ -741,90 +741,158 @@ typedef struct te_substring_t {
 /**
  * Substring initializer
  *
- * @param _base Pointer to the base string
+ * @param base_ Pointer to the base string.
+ *
+ * @bug @p base_ may be a pointer to const #te_string without
+ *      a warning from the compiler, but in this case a user
+ *      shall not call te_substring_replace() on it and currenly
+ *      this is not enforced --- but that may be fixed later.
  */
-#define TE_SUBSTRING_INIT(_base) \
-    (te_substring_t){ .base = _base, .len = 0, .start = 0 }
+#define TE_SUBSTRING_INIT(base_) \
+    (te_substring_t){                                                   \
+        .base = TE_CONST_PTR_CAST(te_string, (base_)),                  \
+        .len = 0,                                                       \
+        .start = 0                                                      \
+    }
 
 /**
- * Check that substring is valid
+ * Check that substring is valid.
  *
- * @param substr Substring
+ * The substring is considered valid if it is completely
+ * contained within its base string or if it has a length of
+ * zero and points right after the end of its base string.
  *
- * @return @c true or @c false
+ * @param substr Substring.
+ *
+ * @return @c true if the substring is valid.
  */
 static inline bool
 te_substring_is_valid(const te_substring_t *substr)
 {
-    return substr->start < substr->base->len;
+    return substr != NULL && substr->base != NULL &&
+        substr->start <= substr->base->len &&
+        substr->start + substr->len <= substr->base->len;
 }
 
 /**
- * Find a @p str starting at @p substr position and update it accordingly
+ * Find a @p str starting at @p substr position and update it accordingly.
  *
- * @param substr Substring
- * @param str    The string to find
+ * @param substr Substring.
+ * @param str    The string to find.
+ *
+ * @return @c true if @p str has been found.
+ *
+ * @note If @p str has not been found, te_substring_is_valid() will also
+ *       return @c false after this call.
+ *
+ * @note If te_substring_find() is called the second time without calling
+ *       te_substring_advance(), it will effectively do nothing.
  */
-extern void te_substring_find(te_substring_t *substr, const char *str);
+extern bool te_substring_find(te_substring_t *substr, const char *str);
 
 /**
  * Replace a substring at a given position, modifying
- * the underlying `te_string`. If @p str is @c NULL,
- * the content of the substring is deleted.
+ * the underlying #te_string. If the substring is not valid,
+ * nothing happens. The starting position of the substring is
+ * moved past the end of the newly replaced segment.
+ *
+ * The replacement string is constructed by applying @c printf()
+ * format to the arguments.
+ *
+ * If @p fmt is @c NULL, the content of the substring is deleted.
+ * No variadic arguments shall be present in this case.
  *
  * @param substr Substring.
- * @param str    Replacement string (may be @c NULL).
+ * @param fmt    Replacement format (may be @c NULL).
+ * @param ...    Format arguments.
  *
- * @return Status code.
- * @retval TE_EINVAL  Substring position is out of bounds.
+ * @return The length of the replacement string.
+ *
+ * @since 1.45.0. Before that version, it accepted a fixed replacement
+ *        string, not a format. It also used to return a pretty
+ *        uninformative status code instead of the length.
  */
-extern te_errno te_substring_replace(te_substring_t *substr,
-                                     const char *str);
+extern size_t te_substring_replace(te_substring_t *substr,
+                                   const char *fmt, ...) TE_LIKE_PRINTF(2, 3);
 
 /**
- * Move the position by the length of the previously substring
+ * Same as te_substring_replace() but accepts a variadic list argument.
+ * If @p fmt is @c NULL, the content of the substring is deleted.
  *
- * @param substr Substring
+ * @param substr Substring.
+ * @param fmt    Replacement format (may be @c NULL).
+ * @param ...    Format arguments.
+ *
+ * @return The length of the replacement string.
  */
-extern void te_substring_advance(te_substring_t *substr);
+extern size_t te_substring_replace_va(te_substring_t *substr,
+                                      const char *fmt,
+                                      va_list args) TE_LIKE_VPRINTF(2);
 
 /**
- * Limit the length of the @p substr to position @p limit
- * so that it ended right before @p limit
+ * Move the position of a substring by its length.
  *
- * @param substr Substring
- * @param limit Limiting substring
+ * In other words, after this call the substring will point
+ * after the point where the substring ended initially.
+ * If the string was not valid initially, nothing happens.
+ *
+ * @param substr Substring.
+ *
+ * @return @c true if the substring has been advanced.
  */
-extern void te_substring_limit(te_substring_t *substr,
+extern bool te_substring_advance(te_substring_t *substr);
+
+/**
+ * Limit the length of the @p substr so that it would end
+ * right before the start of @p limit.
+ *
+ * If any of the substrings is not valid of if they have
+ * different base strings or if @p limit starts before
+ * @p substr, nothing happens.
+ *
+ * @param substr Substring.
+ * @param limit  Limiting substring.
+ *
+ * @return @c true if the substring has been limited.
+ */
+extern bool te_substring_limit(te_substring_t *substr,
                                const te_substring_t *limit);
+
+/**
+ * Replace all occurrences of a substring in a string.
+ *
+ * @param str The string in which to replace.
+ * @param new The replacement string (may be @c NULL).
+ * @param old The substring to be replaced.
+ *
+ * @return The number of performed replacements.
+ *
+ * @since 1.45.0. Before that version the function returned
+ *        a meaningless status code instead of the count.
+ */
+extern size_t te_string_replace_all_substrings(te_string *str,
+                                               const char *new,
+                                               const char *old);
+
+/**
+ * Replace the first occurrence of substring in a string.
+ *
+ * @param str The string in which to replace.
+ * @param new The replacement (may be @c NULL).
+ * @param old The substring to be replaced.
+ *
+ * @return @c true if a substring has been replaced.
+ *
+ * @since 1.45.0. Before that version the function returned
+ *        a meaningless status code instead of the success
+ *        flag.
+ */
+extern bool te_string_replace_substring(te_string *str,
+                                        const char *new,
+                                        const char *old);
 
 /**@} <!-- END te_tools_te_substring --> */
 
-/**
- * Replace all the substrings in a string
- *
- * @param str The string in which to replace.
- * @param new The new substring to replace (may be @c NULL).
- * @param old The substring to be replaced.
- *
- * @return Status code (always 0).
- */
-extern te_errno te_string_replace_all_substrings(te_string *str,
-                                                 const char *new,
-                                                 const char *old);
-
-/**
- * Replace the substring in a string
- *
- * @param str The string in which to replace.
- * @param new The new substring to replace (may be @c NULL).
- * @param old The substring to be replaced.
- *
- * @return Status code (always 0).
- */
-extern te_errno te_string_replace_substring(te_string *str,
-                                            const char *new,
-                                            const char *old);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

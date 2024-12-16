@@ -187,27 +187,21 @@ replace_substitutions_to_values(te_string *str, bool *is_subs_found)
 
     while (1)
     {
-        te_substring_find(&iter, CS_SUBSTITUTION_DELIMITER);
-
-        if (!te_substring_is_valid(&iter))
+        if (!te_substring_find(&iter, CS_SUBSTITUTION_DELIMITER))
             break;
 
         *is_subs_found = true;
         end = iter;
         oid_p = iter;
         te_substring_advance(&end);
-        te_substring_find(&end, CS_SUBSTITUTION_DELIMITER);
-
-        if (!te_substring_is_valid(&iter))
+        if (!te_substring_find(&end, CS_SUBSTITUTION_DELIMITER))
             break;
 
         te_substring_advance(&oid_p);
         te_substring_limit(&oid_p, &end);
 
-        rc = te_string_append(&oid, "%.*s", oid_p.len,
-                              oid_p.base->ptr + oid_p.start);
-        if (rc != 0)
-            break;
+        te_string_append(&oid, "%.*s", oid_p.len,
+                         oid_p.base->ptr + oid_p.start);
 
         rc = get_value_for_substitution(oid.ptr, &value);
         if (rc != 0)
@@ -221,13 +215,8 @@ replace_substitutions_to_values(te_string *str, bool *is_subs_found)
         te_substring_advance(&end);
         te_substring_limit(&iter, &end);
 
-        rc = te_substring_replace(&iter, value);
-        if (rc != 0)
-        {
-            ERROR("Failed to replace the substitution in %s: %r",
-                  str->ptr, rc);
-            break;
-        }
+        te_substring_replace(&iter, "%s", value);
+
         free(value);
         value = NULL;
     }

@@ -1808,19 +1808,13 @@ static te_errno
 subst_process(te_string *value, const char *subst,
               const char *replaced_value)
 {
-    te_errno rc = 0;
-    te_substring_t iter = TE_SUBSTRING_INIT(value);
-
     if (strcmp_start(replaced_value, value->ptr) == 0)
     {
-        iter.len = strlen(replaced_value);
-        rc = te_substring_replace(&iter, subst);
+        te_string_replace(value, 0, strlen(replaced_value),
+                          "%s", subst);
     }
 
-    if (rc != 0)
-        ERROR("Failed to make a substitution in '%s': %r", value, rc);
-
-    return rc;
+    return 0;
 }
 
 static const rcf_pch_cfg_substitution subst[] = RCF_PCH_CFG_SUBST_SET(

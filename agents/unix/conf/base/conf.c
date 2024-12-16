@@ -7876,13 +7876,12 @@ env_list(unsigned int gid, const char *oid,
     return 0;
 }
 
-static te_errno
+static void
 path_substitution_process(te_string *value, const char *subst,
                           const char *replaced_value,
                           const char *env_var)
 {
     te_substring_t iter = TE_SUBSTRING_INIT(value);
-    te_errno rc = 0;
     char *cur_pos = value->ptr;
     char *end_pos;
     char *ch;
@@ -7896,8 +7895,7 @@ path_substitution_process(te_string *value, const char *subst,
             {
                 iter.start = cur_pos - value->ptr;
                 iter.len = strlen(replaced_value);
-                rc = te_substring_replace(&iter, subst);
-                if (rc != 0)
+                if (!te_substring_replace(&iter, "%s", subst))
                     break;
             }
         }
@@ -7908,48 +7906,32 @@ path_substitution_process(te_string *value, const char *subst,
 
         cur_pos = ch + 1;
     }
-
-    if (rc != 0)
-    {
-        ERROR("Failed to make a substitution in '%s' env variable: %r",
-              env_var, rc);
-    }
-
-    return rc;
 }
 
 static te_errno
 env_subst_path_process(te_string *value, const char *subst,
                        const char *replaced_value)
 {
-    return path_substitution_process(value, subst, replaced_value, "PATH");
+    path_substitution_process(value, subst, replaced_value, "PATH");
+    return 0;
 }
 
 static te_errno
 env_subst_ld_lib_path_process(te_string *value, const char *subst,
                               const char *replaced_value)
 {
-    return path_substitution_process(value, subst, replaced_value,
-                                     "LD_LIBRARY_PATH");
+    path_substitution_process(value, subst, replaced_value, "LD_LIBRARY_PATH");
+    return 0;
 }
 
 static te_errno
 env_subst_underscore_process(te_string *value, const char *subst,
                              const char *replaced_value)
 {
-    te_errno rc = 0;
-    te_substring_t iter = TE_SUBSTRING_INIT(value);
-
     if (strcmp_start(replaced_value, value->ptr) == 0)
-    {
-        iter.len = strlen(replaced_value);
-        rc = te_substring_replace(&iter, subst);
-    }
+        te_string_replace(value, 0, strlen(replaced_value), "%s", subst);
 
-    if (rc != 0)
-        ERROR("Failed to make a substitution in '_' env variable: %r", rc);
-
-    return rc;
+    return 0;
 }
 
 /**

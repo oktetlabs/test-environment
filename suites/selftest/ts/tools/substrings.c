@@ -53,7 +53,8 @@ find_substrings(const char *base, const char *search, unsigned int n_repl)
         if (!te_substring_is_valid(&substr))
             TEST_VERDICT("The substring is not valid in the middle of search");
 
-        te_substring_find(&substr, search);
+        if (te_substring_find(&substr, search) != (n_repl != 0))
+            TEST_VERDICT("Unexpected result of finding a substring");
     } while(n_repl-- > 0);
 
     if (te_substring_is_valid(&substr))
@@ -94,9 +95,20 @@ replace_substrings(char *base, char *chunk,
     exp_vec[2 * n_repl].iov_len++;
 
     if (repl_all)
-        te_string_replace_all_substrings(&str, repl, chunk);
+    {
+        size_t performed = te_string_replace_all_substrings(&str, repl, chunk);
+
+        if (performed != n_repl)
+        {
+            TEST_VERDICT("Number of actual replacements"
+                         "differ from the expected");
+        }
+    }
     else
-        te_string_replace_substring(&str, repl, chunk);
+    {
+        if (!te_string_replace_substring(&str, repl, chunk))
+            TEST_VERDICT("The replacement is reported not to happen");
+    }
     if (!te_compare_iovecs(1 + 2 * n_repl, exp_vec,
                            1, (const struct iovec[1]){
                                {.iov_base = str.ptr,
@@ -108,6 +120,27 @@ replace_substrings(char *base, char *chunk,
     te_string_free(&str);
 }
 
+static void
+replace_none(const char *base, const char *chunk, const char *rep)
+{
+    te_string str = TE_STRING_INIT;
+
+    te_string_append(&str, "%s", base);
+
+    if (te_string_replace_substring(&str, rep, chunk))
+        TEST_VERDICT("Replacement is reported to happen");
+
+    if (strcmp(str.ptr, base) != 0)
+        TEST_VERDICT("Unexpected substring replacement");
+
+    if (te_string_replace_all_substrings(&str, rep, chunk) != 0)
+        TEST_VERDICT("Replacements are reported to happen");
+
+    if (strcmp(str.ptr, base) != 0)
+        TEST_VERDICT("Unexpected substring replacement");
+
+    te_string_free(&str);
+}
 
 int
 main(int argc, char **argv)
@@ -129,7 +162,7 @@ main(int argc, char **argv)
         char *base = te_make_printable_buf(min_len, max_len + 1, NULL);
         char *chunk = te_make_printable_buf(min_len, max_len + 1, NULL);
         char *rep = te_make_printable_buf(min_len, max_len + 1, NULL);
-        unsigned int n_repl = rand_range(0, max_repl);
+        unsigned int n_repl = rand_range(1, max_repl);
 
         /*
          * Extremely unlikely if min_len is not too small,
@@ -154,6 +187,9 @@ main(int argc, char **argv)
 
         TEST_SUBSTEP("Check for total replacement");
         replace_substrings(base, chunk, rep, n_repl, true);
+
+        TEST_SUBSTEP("Check for non-replacement");
+        replace_none(base, chunk, rep);
 
         free(base);
         free(chunk);

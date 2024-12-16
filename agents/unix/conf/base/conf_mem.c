@@ -345,23 +345,17 @@ split_proc_mounts_line(char *str, te_vec *vec)
     return rc;
 }
 
-static te_errno
+static void
 convert_mountpoint_name(const char *mountpoint, te_string *name, bool decode)
 {
-    te_errno rc;
-
     te_string_reset(name);
 
-    rc = te_string_append(name, "%s", mountpoint);
-    if (rc != 0)
-        return rc;
+    te_string_append(name, "%s", mountpoint);
 
     if (decode)
-        rc = te_string_replace_all_substrings(name, "/", PATH_DELIMITER);
+        te_string_replace_all_substrings(name, "/", PATH_DELIMITER);
     else
-        rc = te_string_replace_all_substrings(name, PATH_DELIMITER, "/");
-
-    return rc;
+        te_string_replace_all_substrings(name, PATH_DELIMITER, "/");
 }
 
 static te_errno
@@ -473,12 +467,7 @@ update_mountpoint_info(struct hugepage_info *hp_info, te_vec *mount_args)
     if (mp_info != NULL)
         return 0;
 
-    rc = convert_mountpoint_name(name, &encode_name, false);
-    if (rc != 0)
-    {
-        ERROR("%s(): Cannot encode mountpoint name: %r", __FUNCTION__, rc);
-        return rc;
-    }
+    convert_mountpoint_name(name, &encode_name, false);
 
     if (!rcf_pch_rsrc_accessible("/agent:%s/mem:/hugepages:%u/mountpoint:%s",
                                  ta_name, hp_info->size, encode_name.ptr))
@@ -679,12 +668,7 @@ hugepages_mountpoint_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EPERM);
     }
 
-    rc = convert_mountpoint_name(mountpoint, &decode_name, true);
-    if (rc != 0)
-    {
-        ERROR("%s(): Failed to decode mountpoint name: %r", __FUNCTION__, rc);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
+    convert_mountpoint_name(mountpoint, &decode_name, true);
 
     rc = scan_mounts_file(hp_info);
     if (rc != 0)
@@ -729,12 +713,7 @@ hugepages_mountpoint_del(unsigned int gid, const char *oid, const char *unused,
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    rc = convert_mountpoint_name(mountpoint, &decode_name, true);
-    if (rc != 0)
-    {
-        ERROR("%s(): Failed to decode mountpoint name: %r", __FUNCTION__, rc);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
+    convert_mountpoint_name(mountpoint, &decode_name, true);
 
     mp_info = find_mountpoint_info(hp_info, decode_name.ptr);
     te_string_free(&decode_name);

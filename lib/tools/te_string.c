@@ -24,6 +24,7 @@
 #include "te_intset.h"
 #include "te_defs.h"
 #include "te_alloc.h"
+#include "te_str.h"
 
 void
 te_string_free_heap(te_string *str)
@@ -750,100 +751,112 @@ raw2string(const uint8_t *data, size_t size)
     return str.ptr;
 }
 
-void
+bool
 te_substring_find(te_substring_t *substr, const char *str)
 {
-    char *ch;
+    const char *ch;
+    bool result;
 
     if (!te_substring_is_valid(substr))
-        return;
+        return false;
 
     ch = strstr(substr->base->ptr + substr->start, str);
     if (ch == NULL)
     {
         substr->start = SIZE_MAX;
         substr->len = 0;
+        result = false;
     }
     else
     {
        substr->start = ch - substr->base->ptr;
        substr->len = strlen(str);
+       result = true;
     }
 
-    return;
+    return result;
 }
 
-te_errno
-te_substring_replace(te_substring_t *substr, const char *str)
+
+size_t
+te_substring_replace_va(te_substring_t *substr, const char *fmt, va_list args)
 {
-    size_t rep_len = str == NULL ? 0 : strlen(str);
-    if (substr->start + substr->len > substr->base->len)
-    {
-        ERROR("Substring position out of bounds");
-        return TE_EINVAL;
-    }
+    if (!te_substring_is_valid(substr))
+        return 0;
 
-    te_string_replace_buf(substr->base, substr->start, substr->len,
-                          str, rep_len);
-
-    substr->start += rep_len;
-    substr->len = 0;
-
-    return 0;
+    substr->len = te_string_replace_va(substr->base, substr->start, substr->len,
+                                       fmt, args);
+    return substr->len;
 }
 
-void
+size_t
+te_substring_replace(te_substring_t *substr, const char *fmt, ...)
+{
+    size_t rep_len;
+    va_list args;
+
+    va_start(args, fmt);
+    rep_len = te_substring_replace_va(substr, fmt, args);
+    va_end(args);
+
+    return rep_len;
+}
+
+bool
 te_substring_advance(te_substring_t *substr)
 {
-    substr->start += substr->len;
-    substr->len = 0;
-}
-
-void
-te_substring_limit(te_substring_t *substr, const te_substring_t *limit)
-{
-    substr->len = limit->start - substr->start;
-}
-
-static void
-replace_substring(te_substring_t *substr, const char *new,
-                  const char *old)
-{
-    te_substring_find(substr, old);
+    bool advanced = false;
 
     if (!te_substring_is_valid(substr))
-        return;
+        return advanced;
 
-    /*
-     * No need to check for return code:
-     * substr is known to be valid.
-     */
-    te_substring_replace(substr, new);
+    advanced = substr->len > 0;
+    substr->start += substr->len;
+    substr->len = 0;
+
+    return advanced;
 }
 
-te_errno
+bool
+te_substring_limit(te_substring_t *substr, const te_substring_t *limit)
+{
+    if (!te_substring_is_valid(substr) || !te_substring_is_valid(limit) ||
+        limit->base != substr->base || limit->start < substr->start)
+        return false;
+    substr->len = limit->start - substr->start;
+    return true;
+}
+
+static bool
+replace_next_substring(te_substring_t *substr, const char *new,
+                       const char *old)
+{
+    if (!te_substring_find(substr, old))
+        return false;
+
+    te_substring_replace(substr, "%s", te_str_empty_if_null(new));
+
+    return true;
+}
+
+bool
 te_string_replace_substring(te_string *str, const char *new,
                             const char *old)
 {
     te_substring_t iter = TE_SUBSTRING_INIT(str);
 
-    replace_substring(&iter, new, old);
-    return 0;
+    return replace_next_substring(&iter, new, old);
 }
 
-te_errno
+size_t
 te_string_replace_all_substrings(te_string *str, const char *new,
                                  const char *old)
 {
     te_substring_t iter = TE_SUBSTRING_INIT(str);
+    size_t count = 0;
 
-    while (1)
-    {
-        replace_substring(&iter, new, old);
+    while (replace_next_substring(&iter, new, old))
+        count++;
 
-        if (!te_substring_is_valid(&iter))
-            break;
-    }
-
-    return 0;
+    return count;
 }
