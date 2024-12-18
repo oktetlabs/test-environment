@@ -368,8 +368,8 @@ if not cc.has_function('xdr_bytes', args: te_cflags, dependencies: deps)
         rpc_lib_found = true
     else
         dep_nsl = cc.find_library('nsl', required: false)
-        if dep_nsl.found() and
-           cc.has_function('xdr_bytes', args: te_cflags, dependencies: dep_nsl)
+        if dep_nsl.found() and cc.has_function('xdr_bytes', args: te_cflags,
+                                               dependencies: dep_nsl)
             deps += [ dep_nsl ]
             rpc_lib_found = true
         else

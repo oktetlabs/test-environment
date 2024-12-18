@@ -125,8 +125,8 @@ endif
 #
 if not cc.has_function('socket', args: te_cflags)
     dep_socket = cc.find_library('socket', required: false)
-    if dep_socket.found() and
-       cc.has_function('socket', args: te_cflags, dependencies: dep_socket)
+    if dep_socket.found() and cc.has_function('socket', args: te_cflags,
+                                              dependencies: dep_socket)
         deps += [ dep_socket ]
     endif
 endif
@@ -138,8 +138,8 @@ endif
 #
 if not cc.has_function('sendfile', args: te_cflags)
     dep_sendfile = cc.find_library('sendfile', required: false)
-    if dep_sendfile.found() and
-       cc.has_function('sendfile', args: te_cflags, dependencies: dep_sendfile)
+    if dep_sendfile.found() and cc.has_function('sendfile', args: te_cflags,
+                                                dependencies: dep_sendfile)
         deps += [ dep_sendfile ]
     endif
 endif
@@ -185,9 +185,8 @@ if not cc.has_function('aio_read', args: te_cflags)
             deps += [ dep_rt ]
         else
             dep_nsl = cc.find_library('nsl', required: false)
-            if dep_nsl.found() and
-               cc.has_function('aio_read', args: te_cflags,
-                               dependencies: [ dep_nsl, dep_rt ] )
+            if dep_nsl.found() and cc.has_function('aio_read', args: te_cflags,
+                                                   dependencies: [ dep_nsl, dep_rt ] )
                 aio_read_found = true
                 deps += [ dep_nsl, dep_rt ]
             endif
