@@ -751,6 +751,45 @@ raw2string(const uint8_t *data, size_t size)
     return str.ptr;
 }
 
+int
+te_substring_compare(const te_substring_t *substr1,
+                     const te_substring_t *substr2)
+{
+    size_t minlen;
+    int res;
+
+    if (!te_substring_is_valid(substr1))
+        return te_substring_is_valid(substr2) ? -1 : 0;
+    if (!te_substring_is_valid(substr2))
+        return 1;
+
+    minlen = MIN(substr1->len, substr2->len);
+    res = memcmp(substr1->base->ptr + substr1->start,
+                 substr2->base->ptr + substr2->start, minlen);
+    if (res != 0)
+        return res;
+
+    return substr1->len > substr2->len ? 1 :
+        substr1->len < substr2->len ? -1 : 0;
+}
+
+int
+te_substring_compare_str(const te_substring_t *substr, const char *str)
+{
+    int res;
+
+    if (!te_substring_is_valid(substr))
+        return str == NULL ? 0 : -1;
+    if (str == NULL)
+        return 1;
+
+    res = strncmp(substr->base->ptr + substr->start, str, substr->len);
+    if (res != 0)
+        return res;
+
+    return str[substr->len] == '\0' ? 0 : -1;
+}
+
 bool
 te_substring_find(te_substring_t *substr, const char *str)
 {
@@ -763,8 +802,7 @@ te_substring_find(te_substring_t *substr, const char *str)
     ch = strstr(substr->base->ptr + substr->start, str);
     if (ch == NULL)
     {
-        substr->start = SIZE_MAX;
-        substr->len = 0;
+        te_substring_invalidate(substr);
         result = false;
     }
     else
@@ -777,16 +815,178 @@ te_substring_find(te_substring_t *substr, const char *str)
     return result;
 }
 
+char
+te_substring_span(te_substring_t *substr, const char *cset, bool inverted)
+{
+    const char *start;
+    if (!te_substring_is_valid(substr))
+        return '\0';
+
+    start = substr->base->ptr + substr->start + substr->len;
+    substr->len += inverted ? strcspn(start, cset) : strspn(start, cset);
+    return substr->base->ptr[substr->start + substr->len];
+}
+
+size_t
+te_substring_skip(te_substring_t *substr, char skip,
+                  size_t at_most)
+{
+    size_t count = 0;
+
+    if (!te_substring_is_valid(substr))
+        return 0;
+
+    while (count < at_most &&
+           substr->start + substr->len <= substr->base->len &&
+           substr->base->ptr[substr->start] == skip)
+    {
+        substr->start++;
+        count++;
+        if (substr->len != 0)
+            substr->len--;
+    }
+
+    return count;
+}
+
+bool
+te_substring_strip_prefix(te_substring_t *substr, const char *prefix)
+{
+    size_t prefix_len;
+
+    if (te_str_is_null_or_empty(prefix))
+        return true;
+    if (!te_substring_is_valid(substr))
+        return false;
+
+    prefix_len = strlen(prefix);
+    if (substr->len < prefix_len)
+        return false;
+    if (memcmp(substr->base->ptr + substr->start, prefix, prefix_len) == 0)
+    {
+        substr->start += prefix_len;
+        substr->len -= prefix_len;
+        return true;
+    }
+
+    return false;
+}
+
+bool
+te_substring_strip_suffix(te_substring_t *substr, const char *suffix)
+{
+    size_t suffix_len;
+
+    if (te_str_is_null_or_empty(suffix))
+        return true;
+    if (!te_substring_is_valid(substr))
+        return false;
+
+    suffix_len = strlen(suffix);
+    if (substr->len < suffix_len)
+        return false;
+    if (memcmp(substr->base->ptr + substr->start +
+               substr->len - suffix_len, suffix, suffix_len) == 0)
+    {
+        substr->len -= suffix_len;
+        return true;
+    }
+
+    return false;
+}
+
+bool
+te_substring_strip_uint_suffix(te_substring_t *substr, uintmax_t *suffix_val)
+{
+    size_t pos;
+
+    if (!te_substring_is_valid(substr) || substr->len == 0)
+    {
+        if (suffix_val != NULL)
+            *suffix_val = 0;
+        return false;
+    }
+
+    for (pos = substr->len; pos != 0 &&
+             isdigit(substr->base->ptr[substr->start + pos - 1]);
+         pos--)
+        ;
+
+    if (isdigit(substr->base->ptr[substr->start + pos]))
+    {
+        char suffix[substr->len - pos + 1];
+
+        memcpy(suffix, substr->base->ptr + substr->start + pos,
+               sizeof(suffix) - 1);
+        suffix[sizeof(suffix) - 1] = '\0';
+        if (te_strtoumax(suffix, 10, suffix_val) == 0)
+        {
+            substr->len = pos;
+            return true;
+        }
+    }
+    if (suffix_val != NULL)
+        *suffix_val = 0;
+
+    return false;
+}
+
+size_t
+te_substring_modify_va(te_substring_t *substr, te_substring_mod_op op,
+                       const char *fmt, va_list args)
+{
+    size_t start;
+    size_t len;
+    size_t rep_len;
+
+    if (!te_substring_is_valid(substr))
+        return 0;
+
+    switch (op)
+    {
+        case TE_SUBSTRING_MOD_OP_PREPEND:
+            start = substr->start;
+            len = 0;
+            break;
+        case TE_SUBSTRING_MOD_OP_APPEND:
+            start = substr->start + substr->len;
+            len = 0;
+            break;
+        case TE_SUBSTRING_MOD_OP_REPLACE:
+            start = substr->start;
+            len = substr->len;
+            break;
+    }
+    rep_len = te_string_replace_va(substr->base, start, len, fmt, args);
+    if (op == TE_SUBSTRING_MOD_OP_REPLACE)
+        substr->len = rep_len;
+    else
+        substr->len += rep_len;
+    return rep_len;
+}
+
+size_t
+te_substring_modify(te_substring_t *substr, te_substring_mod_op op,
+                    const char *fmt, ...)
+{
+    size_t rep_len;
+    va_list args;
+
+    va_start(args, fmt);
+    rep_len = te_substring_modify_va(substr, op, fmt, args);
+    va_end(args);
+
+    return rep_len;
+}
 
 size_t
 te_substring_replace_va(te_substring_t *substr, const char *fmt, va_list args)
 {
-    if (!te_substring_is_valid(substr))
-        return 0;
+    size_t rep_len = te_substring_modify_va(substr, TE_SUBSTRING_MOD_OP_REPLACE,
+                                            fmt, args);
 
-    substr->len = te_string_replace_va(substr->base, substr->start, substr->len,
-                                       fmt, args);
-    return substr->len;
+    te_substring_advance(substr);
+    return rep_len;
 }
 
 size_t
@@ -796,10 +996,74 @@ te_substring_replace(te_substring_t *substr, const char *fmt, ...)
     va_list args;
 
     va_start(args, fmt);
-    rep_len = te_substring_replace_va(substr, fmt, args);
+    rep_len = te_substring_modify_va(substr, TE_SUBSTRING_MOD_OP_REPLACE,
+                                     fmt, args);
     va_end(args);
 
     return rep_len;
+}
+
+bool
+te_substring_insert_sep(te_substring_t *substr, char sep, bool at_bol)
+{
+    if (!te_substring_is_valid(substr))
+        return false;
+
+    if ((substr->start > 0 && substr->base->ptr[substr->start - 1] != sep) ||
+        (substr->start == 0 && at_bol))
+    {
+        te_substring_modify(substr, TE_SUBSTRING_MOD_OP_PREPEND,
+                            "%c", sep);
+        return true;
+    }
+
+    return false;
+}
+
+bool
+te_substring_copy(te_substring_t *dst, const te_substring_t *src,
+                  te_substring_mod_op op)
+{
+    size_t start;
+    size_t len;
+
+    if (!te_substring_is_valid(dst))
+        return false;
+
+    if (!te_substring_is_valid(src))
+    {
+        if (op != TE_SUBSTRING_MOD_OP_REPLACE)
+            return false;
+        te_string_replace_buf(dst->base, dst->start, dst->len, NULL, 0);
+        dst->len = 0;
+        return true;
+    }
+
+    if (src->base == dst->base)
+        TE_FATAL_ERROR("Cannot copy substrings of the same string");
+
+    switch (op)
+    {
+        case TE_SUBSTRING_MOD_OP_PREPEND:
+            start = dst->start;
+            len = 0;
+            break;
+        case TE_SUBSTRING_MOD_OP_APPEND:
+            start = dst->start + dst->len;
+            len = 0;
+            break;
+        case TE_SUBSTRING_MOD_OP_REPLACE:
+            start = dst->start;
+            len = dst->len;
+            break;
+    }
+    te_string_replace_buf(dst->base, start, len,
+                          src->base->ptr + src->start, src->len);
+    if (op == TE_SUBSTRING_MOD_OP_REPLACE)
+        dst->len = src->len;
+    else
+        dst->len += src->len;
+    return true;
 }
 
 bool

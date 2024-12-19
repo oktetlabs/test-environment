@@ -108,6 +108,25 @@ extern te_string_free_func te_string_free_heap;
  */
 #define TE_STRING_INIT_STATIC(_size) TE_STRING_BUF_INIT((char[_size]){'\0'})
 
+
+/**
+ * Initialize a TE string with a pointer to a plain C string.
+ *
+ * The produced TE string should only be used in a readonly manner,\
+ * so it is mostly useful in conjunction with #te_substring API.
+ *
+ * The reserved size is intentionally set to a zero so that any
+ * attempt to extend the TE string would immediately result in
+ * a failure.
+ *
+ * @param str_      A pointer to a plain C string.
+ */
+#define TE_STRING_INIT_RO_PTR(str_) \
+    { .ptr = TE_CONST_PTR_CAST(char, str_),     \
+      .size = 0, .len = strlen(str_),           \
+      .ext_buf = true,                          \
+      .free_func = &te_string_reset }
+
 /**
  * Reset TE string (mark its empty).
  *
@@ -117,7 +136,12 @@ static inline void
 te_string_reset(te_string *str)
 {
     str->len = 0;
-    if (str->ptr != NULL)
+    /*
+     * TODO: This check should be made simpler,
+     * once TE_STRING_INIT_RESERVE() issues
+     * are resolved
+     */
+    if (str->ptr != NULL && str->size > 0)
         *str->ptr = '\0';
 }
 
@@ -756,6 +780,22 @@ typedef struct te_substring_t {
     }
 
 /**
+ * Invalidate the substring so that it would be
+ * treated as pointing nowhere.
+ *
+ * @param substr Substring.
+ */
+static inline void
+te_substring_invalidate(te_substring_t *substr)
+{
+    if (substr != NULL)
+    {
+        substr->start = SIZE_MAX;
+        substr->len = 0;
+    }
+}
+
+/**
  * Check that substring is valid.
  *
  * The substring is considered valid if it is completely
@@ -775,6 +815,119 @@ te_substring_is_valid(const te_substring_t *substr)
 }
 
 /**
+ * Check whether a substring points past the end of its base string.
+ *
+ * If it is true, replacing a substring would effectively append data
+ * to the base string.
+ *
+ * @param substr Substring.
+ *
+ * @return @c true if the substring is valid and points past
+ *         the end of its base string.
+ */
+static inline bool
+te_substring_past_end(const te_substring_t *substr)
+{
+    return te_substring_is_valid(substr) && substr->start == substr->base->len;
+}
+
+/**
+ * Extend the length of the substring to reach the end of its base string.
+ *
+ * @param substr Substring.
+ */
+static inline void
+te_substring_till_end(te_substring_t *substr)
+{
+    if (te_substring_is_valid(substr))
+        substr->len = substr->base->len - substr->start;
+}
+
+/**
+ * Copy the content of a substring into the C array.
+ *
+ * The terminating @c '\0' is added to the array, so it
+ * should have enough space to hold @c src->len + 1 bytes.
+ *
+ * If the substring is not valid, a single @c '\0' is written
+ * to the buffer.
+ *
+ * @param dst  Target buffer.
+ * @param src  Substring.
+ *
+ * @return @c true if @p src is a valid substring.
+ */
+static inline bool
+te_substring_extract_buf(char *dst, const te_substring_t *src)
+{
+    if (!te_substring_is_valid(src))
+    {
+        *dst = '\0';
+        return false;
+    }
+
+    memcpy(dst, src->base->ptr + src->start, src->len);
+    dst[src->len] = '\0';
+
+    return true;
+}
+
+/**
+ * Copy the content of a substring into the target string.
+ *
+ * If the substring is not valid, nothing happens.
+ *
+ * @param dst  Target string.
+ * @param src  Substring.
+ *
+ * @return @c true if @p src is a valid substring.
+ *
+ * @note The function returns true if the substring is valid but empty,
+ *       so nothing is actually copied.
+ */
+static inline bool
+te_substring_extract(te_string *dst, const te_substring_t *src)
+{
+    if (!te_substring_is_valid(src))
+        return false;
+
+    te_string_append_buf(dst, src->base->ptr + src->start, src->len);
+    return true;
+}
+
+/**
+ * Compare two substrings like @c strcmp().
+ *
+ * An invalid substring always compares equal to another invalid substring
+ * and is considered less than any valid substring.
+ *
+ * @param substr1  First substring.
+ * @param substr2  Second substring.
+ *
+ * @return 0, -1 or 1 depending on whether @p substr1 is equal, less or
+ *         greater than @p substr2.
+ */
+extern int te_substring_compare(const te_substring_t *substr1,
+                                const te_substring_t *substr2);
+
+
+/**
+ * Compare a substring to a C string like @c strcmp().
+ *
+ * An invalid substring compares equal to @c NULL and is less than
+ * any non-null string. A valid substring is always greater than
+ * @c NULL.
+ *
+ * @param substr   Substring.
+ * @param str      C string to compare (may be @c NULL).
+ *
+ * @return 0, -1 or 1 depending on whether @p substr is equal, less or
+ *         greater than @p str.
+ */
+extern int te_substring_compare_str(const te_substring_t *substr,
+                                    const char *str);
+
+/**
  * Find a @p str starting at @p substr position and update it accordingly.
  *
  * @param substr Substring.
@@ -791,16 +944,162 @@ te_substring_is_valid(const te_substring_t *substr)
 extern bool te_substring_find(te_substring_t *substr, const char *str);
 
 /**
- * Replace a substring at a given position, modifying
- * the underlying #te_string. If the substring is not valid,
- * nothing happens. The starting position of the substring is
- * moved past the end of the newly replaced segment.
+ * Make the substring cover the longset segment of characters entirely
+ * from @p cset (or entirely *not* from @p cset if @p inverted is @c true).
+ *
+ * The starting point of the substring is not changed.
+ *
+ * @param substr    Substring.
+ * @param cset      Set of characters.
+ * @param inverted  If @c true, consider characters not in @p cset.
+ *
+ * @return The first character after the initial segment, may be @c '\0'.
+ */
+extern char te_substring_span(te_substring_t *substr, const char *cset,
+                              bool inverted);
+
+
+/**
+ * Skip at most @p at_most characters @p skip in @p substr.
+ *
+ * Unlike te_substring_span(), this function does move the starting
+ * point and the length is decreased if it's not zero.
+ *
+ * @return The number of characters actually skipped.
+ */
+extern size_t te_substring_skip(te_substring_t *substr, char skip,
+                                size_t at_most);
+
+/**
+ * Strip a prefix from a substring.
+ *
+ * If @p substr starts with @p prefix, its starting point
+ * is moved to skip that prefix.
+ *
+ * The underlying string is not modified.
+ *
+ * @param[in,out] substr  Substring.
+ * @param[in]     prefix  Prefix to strip.
+ *
+ * @return @c true if @p prefix has been stripped.
+ *
+ * @sa te_str_strip_prefix()
+ */
+extern bool te_substring_strip_prefix(te_substring_t *substr,
+                                      const char *prefix);
+
+/**
+ * Strip a suffix from a subsstring.
+ *
+ * If @p substr ends with @p suffix, the length of the suffix
+ * is substracted from the length of the substring.
+ *
+ * The underlying string is not modified.
+ *
+ * @param[in,out] substr  Substring.
+ * @param[in]     suffix  Suffix to strip.
+ *
+ * @return @c true if @p suffix has been stripped.
+ */
+extern bool te_substring_strip_suffix(te_substring_t *substr,
+                                      const char *suffix);
+
+/**
+ * Strip a sequence of digits from the end of @p substring.
+ *
+ * If the sequence is not empty, the resulting number is
+ * stored in @p suffix_val and the length of @p substr is
+ * diminished to exclude the numeric suffix.
+ *
+ * Otherwise, @p substr is untouched and @c 0 is stored in @p suffix_val.
+ *
+ * If the numeric suffix represent a number that does not fit
+ * into @c uintmax_t, it won't be stripped.
+ *
+ * The underlying string is never modified.
+ *
+ * @param[in,out] substr      Substring.
+ * @param[out]    suffix_val  Place to store the numeric value of
+ *                            a suffix or zero (may be @c NULL).
+ *
+ * @return @c true if any digits have been stripped off.
+ */
+extern bool te_substring_strip_uint_suffix(te_substring_t *str,
+                                           uintmax_t *suffix_val);
+
+/**
+ * The mode of operation for substring modifications.
+ */
+typedef enum te_substring_mod_op {
+    /** Prepend a new string to the content of a substring. */
+    TE_SUBSTRING_MOD_OP_PREPEND,
+    /** Append a new string to the content of a substring. */
+    TE_SUBSTRING_MOD_OP_APPEND,
+    /** Replace a substring with a new string. */
+    TE_SUBSTRING_MOD_OP_REPLACE,
+} te_substring_mod_op;
+
+/**
+ * Modify a substring at a given position, changing
+ * the underlying #te_string in place. If the substring is not valid,
+ * nothing happens. The exact behaviour depends on the value of @p op:
+ * - #TE_SUBSTRING_MOD_OP_PREPEND: the replacement string is inserted
+ *                                 at the beginning of the substring;
+ * - #TE_SUBSTRING_MOD_OP_APPEND: the replacement string is inserted
+ *                                after the end of the substring;
+ * - #TE_SUBSTRING_MOD_OP_REPLACE: the replacement string is inserted
+ *                                 in place of the whole substring.
  *
  * The replacement string is constructed by applying @c printf()
  * format to the arguments.
  *
- * If @p fmt is @c NULL, the content of the substring is deleted.
+ * If @p fmt is @c NULL, the content of the substring is deleted
+ * (if @p op is #TE_SUBSTRING_MOD_OP_REPLACE, otherwise it's a no-op).
  * No variadic arguments shall be present in this case.
+ *
+ * The starting point of the substring remains the same in all cases
+ * and the length is adjusted according to the operation and the length
+ * of the replacement string (in contrast to te_substring_replace()).
+ *
+ * @param substr Substring.
+ * @param op     Mode of operation.
+ * @param fmt    Replacement format (may be @c NULL).
+ * @param ...    Format arguments.
+ *
+ * @return The length of the replacement string.
+ *         Note that this does *not* include the length of the old substring
+ *         in case of appending/prepending.
+ */
+
+extern size_t te_substring_modify(te_substring_t *substr,
+                                  te_substring_mod_op op,
+                                  const char *fmt, ...) TE_LIKE_PRINTF(3, 4);
+
+/**
+ * Same as te_substring_modify() but accepts a variadic list argument.
+ * If @p fmt is @c NULL, the content of the substring is deleted
+ * (when @p op is #TE_SUBSTRING_MOD_OP_REPLACE).
+ *
+ * @param substr Substring.
+ * @param op     Mode of operation.
+ * @param fmt    Replacement format (may be @c NULL).
+ * @param ...    Format arguments.
+ *
+ * @return The length of the replacement string.
+ */
+extern size_t te_substring_modify_va(te_substring_t *substr,
+                                     te_substring_mod_op op,
+                                     const char *fmt,
+                                     va_list args) TE_LIKE_VPRINTF(3);
+
+/**
+ * Like te_substring_modify(), but the operation is always
+ * #TE_SUBSTRING_MOD_OP_REPLACE.
+ *
+ * Unlike te_substring_modify(), this function moves the starting
+ * point past the end of the replaced string and sets the substring
+ * length to zero, so it's basically equivalent to calling
+ * te_substring_advance() after te_substring_modify().
  *
  * @param substr Substring.
  * @param fmt    Replacement format (may be @c NULL).
@@ -817,7 +1116,6 @@ extern size_t te_substring_replace(te_substring_t *substr,
 
 /**
  * Same as te_substring_replace() but accepts a variadic list argument.
- * If @p fmt is @c NULL, the content of the substring is deleted.
  *
  * @param substr Substring.
  * @param fmt    Replacement format (may be @c NULL).
@@ -828,6 +1126,48 @@ extern size_t te_substring_replace(te_substring_t *substr,
 extern size_t te_substring_replace_va(te_substring_t *substr,
                                       const char *fmt,
                                       va_list args) TE_LIKE_VPRINTF(2);
+
+
+/**
+ * Inserts a separator at the start of the substring if there is no one
+ * already.
+ *
+ * The function checks the character immediately preceding the substring.
+ * If @p at_bol is true, the separator is also inserted if there is no
+ * preceding character at all.
+ *
+ * @param substr  Substring.
+ * @param sep     Separator.
+ * @param at_bol  If true, insert at the start of the string.
+ *
+ * @return @c true if the separator has been
+ */
+extern bool te_substring_insert_sep(te_substring_t *substr,
+                                    char sep, bool at_bol);
+
+
+/**
+ * Copy the content of a substring into another substring.
+ *
+ * If @p dst is invalid, no copying is done.
+ * If @p src is invalid, the content of @p dst is deleted.
+ *
+ * @p dst and @p src must have *different* base strings.
+ *
+ * The mode of operation is the same as for te_substring_modify().
+ *
+ * @param dst  Target substring.
+ * @param src  Source substring.
+ * @param op   Modification mode.
+ *
+ * @return @c true if copying took place.
+ *
+ * @exception #TE_FATAL_ERROR if @p dst and @p src refer to
+ *            the same string. This may change in the future.
+ */
+extern bool te_substring_copy(te_substring_t *dst,
+                              const te_substring_t *src,
+                              te_substring_mod_op op);
 
 /**
  * Move the position of a substring by its length.
