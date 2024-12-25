@@ -67,7 +67,7 @@ universal_read(FILE *fd, void *buf, size_t count, rgt_io_mode_t io_mode, const c
          * it is needed to inform main logging loop
          * when log file changed
          */
-        if ((io_mode == RGT_IO_MODE_BLK))
+        if (io_mode == RGT_IO_MODE_BLK)
         {
             if (stat(rawlog_fname, &statbuf) == 0)
             {
