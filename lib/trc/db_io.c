@@ -1597,7 +1597,18 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
     char           *user_attr;
     xmlNodePtr      node;
     xmlNodePtr      prev_node;
+    xmlNodePtr      prev_iter_node = NULL;
+    xmlNodePtr      first_iter_node = NULL;
     bool renew_content;
+
+    TAILQ_FOREACH(p, &iters->head, links)
+    {
+        if (p->node != NULL)
+        {
+            first_iter_node = p->node;
+            break;
+        }
+    }
 
     TAILQ_FOREACH(p, &iters->head, links)
     {
@@ -1631,12 +1642,24 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
             {
                 INFO("Add node for iteration %p node=%p", iters,
                      iters->node);
-                p->node = p->tests.node = xmlNewChild(iters->node, NULL,
-                                                      BAD_CAST "iter",
-                                                      NULL);
+                p->node = p->tests.node = xmlNewNode(NULL,
+                                                     BAD_CAST "iter");
                 if (p->tests.node == NULL)
                 {
-                    ERROR("xmlNewChild() failed for 'iter'");
+                    ERROR("xmlNewNode() failed for 'iter'");
+                    return TE_ENOMEM;
+                }
+
+                if (prev_iter_node != NULL)
+                    node = xmlAddNextSibling(prev_iter_node, p->node);
+                else if (first_iter_node != NULL)
+                    node = xmlAddPrevSibling(first_iter_node, p->node);
+                else
+                    node = xmlAddChild(iters->node, p->node);
+
+                if (node == NULL)
+                {
+                    ERROR("Failed to add 'iter' node to the tree");
                     return TE_ENOMEM;
                 }
             }
@@ -1799,6 +1822,8 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
                     return rc;
             }
         }
+
+        prev_iter_node = p->node;
     }
 
     return 0;
