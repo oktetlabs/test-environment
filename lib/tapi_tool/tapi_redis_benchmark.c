@@ -336,7 +336,7 @@ tapi_redis_benchmark_report_get_stat(tapi_redis_benchmark_report *report,
                                      const char *test_name)
 {
     tapi_redis_benchmark_stat *iter;
-    tapi_redis_benchmark_stat *stat;
+    tapi_redis_benchmark_stat *stat = NULL;
 
     if (report == NULL || test_name == NULL)
     {
