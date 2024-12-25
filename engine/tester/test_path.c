@@ -544,7 +544,9 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
             if (arg_bm == NULL)
             {
                 free(bm);
-                return TE_ENOMEM;
+                gctx->rc = TE_ENOMEM;
+                EXIT("FAULT");
+                return TESTER_CFG_WALK_FAULT;
             }
 
             value_data.ctx = ctx;
