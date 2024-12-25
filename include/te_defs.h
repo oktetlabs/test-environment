@@ -592,13 +592,17 @@ te_round_up_pow2(unsigned long long num)
  *
  * @note Casting away constness may still be dangerous, use with caution.
  *
+ * @note If @ptr_ does already have a compatible non-const pointer type,
+ *       the macro effectively does nothing.
+ *
  * @param type_  The expected type of the pointer @p ptr_.
  * @param ptr_   Object pointer.
  *
  * @return @p ptr_ casted to a pointer to non-const @p type_.
  */
 #define TE_CONST_PTR_CAST(type_, ptr_) \
-    ((type_ *)(uintptr_t)TE_TYPE_ASSERT(const type_ *, ptr_))
+    TE_TYPE_ALTERNATIVE(ptr_, const type_ *, (type_ *)(uintptr_t)(ptr_), \
+                        type_ *, ptr_)
 
 /**
  * Void function pointer. Can be casted to any other function
