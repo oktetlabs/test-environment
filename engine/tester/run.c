@@ -2190,7 +2190,7 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
     {
         if (flags & TESTER_FAIL_ON_LEAK)
         {
-            te_string_append(&params[--start_id], "--error-exitcode=%d ",
+            te_string_append(&params[--start_id], "--error-exitcode=%d",
                              EXIT_FAILURE);
         }
 
