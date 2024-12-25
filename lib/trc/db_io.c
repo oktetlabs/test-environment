@@ -276,25 +276,6 @@ exp_defaults_get(te_test_status status)
     return p;
 }
 
-
-/**
- * Skip 'comment' nodes.
- *
- * @param node      XML node
- *
- * @return Current, one of next or NULL.
- */
-static inline xmlNodePtr
-xmlNodeSkipComment(xmlNodePtr node)
-{
-    while ((node != NULL) &&
-           (xmlStrcmp(node->name, CONST_CHAR2XML("comment")) == 0))
-    {
-        node = node->next;
-    }
-    return node;
-}
-
 static xmlNodePtr
 xmlNodeSkipExtra(xmlNodePtr node)
 {
