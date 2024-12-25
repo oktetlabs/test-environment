@@ -2430,29 +2430,6 @@ trc_report_test_iter_entry_output(
             !TAILQ_EMPTY(&iter->result.artifacts));
 }
 
-/**
- * Modify keys string to alter substitution rule to generate
- * reference to link
- *
- * @param keys  Keys string to modify
- *
- * @return      Modified keys string.
- */
-static inline char *
-trc_link_keys(const char *keys)
-{
-    char *p;
-    char *link_keys = strdup((keys) ? keys : TRC_REPORT_KEY_UNSPEC);
-
-    if (link_keys == NULL)
-        return NULL;
-
-    for (p = link_keys; *p != '\0'; p++)
-        *p = tolower(*p);
-
-    return link_keys;
-}
-
 #if TRC_USE_STATS_POPUP
 /**
  * Convert iteration result to string.
