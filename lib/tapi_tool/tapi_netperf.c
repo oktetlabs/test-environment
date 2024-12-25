@@ -825,7 +825,7 @@ tapi_netperf_mi_report(const tapi_netperf_report *report)
             ERROR("Unknown test type");
             return TE_RC(TE_TAPI, TE_EINVAL);
     }
-    te_mi_logger_add_meas_key(logger, NULL, "Test name",
+    te_mi_logger_add_meas_key(logger, NULL, "Test name", "%s",
                               tapi_netperf_test_name_maps[report->tst_name]);
 
     te_mi_logger_destroy(logger);

@@ -584,7 +584,7 @@ get_stats(tapi_ethtool_app *app, te_kvpair_h *stats)
 
         *colon = '\0';
 
-        rc = te_kvpair_add(stats, bufs[i].data.ptr, colon + 1);
+        rc = te_kvpair_add(stats, bufs[i].data.ptr, "%s", colon + 1);
         if (rc != 0)
             break;
     }

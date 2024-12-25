@@ -177,7 +177,7 @@ tapi_cfg_net_get_net(cfg_handle net_handle, cfg_net_t *net)
             return rc;
         }
 
-        rc = te_kvpair_add(&net->gateways, target_network, gateway_node);
+        rc = te_kvpair_add(&net->gateways, target_network, "%s", gateway_node);
         free(target_network);
         free(gateway_node);
         if (rc != 0)
