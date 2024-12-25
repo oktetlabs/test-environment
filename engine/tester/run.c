@@ -3307,7 +3307,7 @@ run_keepalive_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
 {
     tester_run_data    *gctx = opaque;
     tester_ctx         *ctx;
-    te_test_status      status;
+    tester_test_status  status;
 
     UNUSED(ri);
 
@@ -3341,8 +3341,8 @@ run_keepalive_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     assert(ctx != NULL);
 
     if ((gctx->force_skip == 0) &&
-        ((int)status != TESTER_TEST_PASSED) &&
-        ((int)status != TESTER_TEST_FAKED))
+        (status != TESTER_TEST_PASSED) &&
+        (status != TESTER_TEST_FAKED))
     {
         ERROR("Keep-alive validation failed: %u", status);
         ctx->group_result.status =
