@@ -2811,6 +2811,7 @@ tapi_cfg_net_create_routes_to(unsigned int af, cfg_net_t *net_src, cfg_net_t *ne
     {
         WARN("Tried to create routes between networks '%s' and '%s' one of which is empty",
              net_src->name, net_tgt->name);
+        rc = TE_RC(TE_TAPI, TE_EINVAL);
         goto cleanup;
     }
 
