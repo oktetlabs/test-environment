@@ -621,7 +621,7 @@ tester_start_serial_thread(void)
     /* Check support of the serial parsing framework */
     SERIAL_WAIT_LOCAL_SEQ(cfg_get_instance_int_fmt(&enable,
                                                    "/local:/tester:/enable:"));
-    if ((rc != 0 && TE_RC(TE_CS, TE_ENOENT)) || enable == false)
+    if ((rc != 0 && rc != TE_RC(TE_CS, TE_ENOENT)) || enable == false)
         return 0;
 
     stop_thread = false;
