@@ -3023,8 +3023,7 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
             default:
                 assert(false);
-                ctx->current_result.status =
-                    TE_RC(TE_TESTER, TE_EFAULT);
+                ctx->current_result.status = TESTER_TEST_ERROR;
                 return TESTER_CFG_WALK_FAULT;
         }
 
@@ -3891,8 +3890,7 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
             default:
                 assert(false);
-                ctx->current_result.status =
-                    TE_RC(TE_TESTER, TE_EFAULT);
+                ctx->current_result.status = TESTER_TEST_ERROR;
                 return TESTER_CFG_WALK_FAULT;
         }
     }
