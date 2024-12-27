@@ -195,6 +195,33 @@ vm_append_virtio_dev_cmd(te_string *cmd, const char *mac_addr,
 }
 
 static te_errno
+vm_append_dgram_interface_cmd(te_string *cmd, struct vm_net_entry *net,
+                              unsigned int interface_id)
+{
+    te_string netdev = TE_STRING_INIT;
+    te_string device = TE_STRING_INIT;
+    te_string opts = TE_STRING_INIT;
+    te_errno rc;
+
+    te_kvpair_to_str_gen(&net->netdev_opts, ",", &opts);
+    te_string_append(&netdev, "dgram,id=netdev%u%s%s", interface_id,
+                     te_str_is_null_or_empty(opts.ptr) ? "" : ",",
+                     te_str_is_null_or_empty(opts.ptr) ? "" : opts.ptr);
+
+    rc = vm_append_virtio_dev_cmd(&device, net->mac_addr, interface_id,
+                                  &net->device_opts);
+    if (rc == 0)
+        te_string_append_shell_args_as_is(cmd, "-netdev", netdev.ptr,
+                                          "-device", device.ptr, NULL);
+
+    te_string_free(&netdev);
+    te_string_free(&device);
+    te_string_free(&opts);
+
+    return rc;
+}
+
+static te_errno
 vm_append_tap_interface_cmd(te_string *cmd, struct vm_net_entry *net,
                             unsigned int interface_id)
 {
@@ -330,6 +357,11 @@ vm_append_net_interfaces_cmd(te_string *cmd, vm_net_list_t *nets,
             ERROR("Cannot append empty interface type to VM (line %u)",
                   __LINE__);
             rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+        else if (strcmp(net->type, "dgram") == 0)
+        {
+            rc = vm_append_dgram_interface_cmd(&interface_args, net,
+                                               interface_id);
         }
         else if (strcmp(net->type, "tap") == 0)
         {
