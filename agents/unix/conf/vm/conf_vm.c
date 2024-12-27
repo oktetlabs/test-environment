@@ -180,22 +180,16 @@ static te_errno
 vm_append_virtio_dev_cmd(te_string *cmd, const char *mac_addr,
                          unsigned int interface_id, te_kvpair_h *kvp)
 {
-    te_errno rc;
     te_string opts = TE_STRING_INIT;
 
     te_kvpair_to_str_gen(kvp, ",", &opts);
-    rc = te_string_append(cmd, "virtio-net-pci,netdev=netdev%u%s%s%s%s",
-                          interface_id,
-                          mac_addr == NULL ? "" : ",mac=",
-                          mac_addr == NULL ? "" : mac_addr,
-                          te_str_is_null_or_empty(opts.ptr) ? "" : ",",
-                          te_str_is_null_or_empty(opts.ptr) ? "" : opts.ptr);
+    te_string_append(cmd, "virtio-net-pci,netdev=netdev%u%s%s%s%s",
+                     interface_id,
+                     mac_addr == NULL ? "" : ",mac=",
+                     mac_addr == NULL ? "" : mac_addr,
+                     te_str_is_null_or_empty(opts.ptr) ? "" : ",",
+                     te_str_is_null_or_empty(opts.ptr) ? "" : opts.ptr);
     te_string_free(&opts);
-    if (rc != 0)
-    {
-        ERROR("Cannot compose VM device argument (line %u)", __LINE__);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
 
     return 0;
 }
@@ -210,37 +204,24 @@ vm_append_tap_interface_cmd(te_string *cmd, struct vm_net_entry *net,
     te_errno rc = 0;
 
     te_kvpair_to_str_gen(&net->netdev_opts, ",", &opts);
-    rc = te_string_append(&netdev,
+    te_string_append(&netdev,
             "tap,script=no,downscript=no,id=netdev%u%s%s%s%s", interface_id,
             net->type_spec == NULL ? "" : ",ifname=",
             net->type_spec == NULL ? "" : net->type_spec,
             te_str_is_null_or_empty(opts.ptr) ? "" : ",",
             te_str_is_null_or_empty(opts.ptr) ? "" : opts.ptr);
-    if (rc != 0)
-    {
-        ERROR("Cannot compose VM netdev argument (line %u)", __LINE__);
-        goto exit;
-    }
 
     rc = vm_append_virtio_dev_cmd(&device, net->mac_addr, interface_id,
                                   &net->device_opts);
-    if (rc != 0)
-        goto exit;
+    if (rc == 0)
+        te_string_append_shell_args_as_is(cmd, "-netdev", netdev.ptr,
+                                          "-device", device.ptr, NULL);
 
-    rc = te_string_append_shell_args_as_is(cmd, "-netdev", netdev.ptr,
-                                           "-device", device.ptr, NULL);
-    if (rc != 0)
-    {
-        ERROR("Cannot compose VM net interface command line (line %u)", __LINE__);
-        goto exit;
-    }
-
-exit:
     te_string_free(&netdev);
     te_string_free(&device);
     te_string_free(&opts);
 
-    return TE_RC(TE_TA_UNIX, rc);
+    return rc;
 }
 
 static te_errno
@@ -277,36 +258,23 @@ vm_append_vhost_user_interface_cmd(te_string *cmd, struct vm_net_entry *net,
     }
 
     te_kvpair_to_str_gen(&net->netdev_opts, ",", &opts);
-    rc = te_string_append(&netdev,
-                          "type=vhost-user,id=netdev%u,chardev=%s,vhostforce",
-                          interface_id, net->type_spec,
-                          te_str_is_null_or_empty(opts.ptr) ? "" : ",",
-                          te_str_is_null_or_empty(opts.ptr) ? "" : opts.ptr);
-    if (rc != 0)
-    {
-        ERROR("Cannot compose VM netdev argument: %r", rc);
-        goto exit;
-    }
+    te_string_append(&netdev,
+                     "type=vhost-user,id=netdev%u,chardev=%s,vhostforce",
+                     interface_id, net->type_spec,
+                     te_str_is_null_or_empty(opts.ptr) ? "" : ",",
+                     te_str_is_null_or_empty(opts.ptr) ? "" : opts.ptr);
 
     rc = vm_append_virtio_dev_cmd(&device, net->mac_addr, interface_id,
                                   &net->device_opts);
-    if (rc != 0)
-        goto exit;
+    if (rc == 0)
+        te_string_append_shell_args_as_is(cmd, "-netdev", netdev.ptr,
+                                          "-device", device.ptr, NULL);
 
-    rc = te_string_append_shell_args_as_is(cmd, "-netdev", netdev.ptr,
-                                           "-device", device.ptr, NULL);
-    if (rc != 0)
-    {
-        ERROR("Cannot compose VM net interface command line: %r", rc);
-        goto exit;
-    }
-
-exit:
     te_string_free(&netdev);
     te_string_free(&device);
     te_string_free(&opts);
 
-    return TE_RC(TE_TA_UNIX, rc);
+    return rc;
 }
 
 static te_errno
@@ -328,31 +296,17 @@ vm_append_chardevs_cmd(te_string *cmd, vm_chardev_list_t *chardevs)
             goto exit;
         }
 
-        rc = te_string_append(&chardev_arg, "socket,id=%s,path=%s%s",
-                              chardev->name, chardev->path,
-                              chardev->server ? ",server" : "");
-        if (rc != 0)
-        {
-            ERROR("Cannot compose VM chardev argument: %r", rc);
-            goto exit;
-        }
+        te_string_append(&chardev_arg, "socket,id=%s,path=%s%s",
+                         chardev->name, chardev->path,
+                         chardev->server ? ",server" : "");
 
-        rc = te_string_append_shell_args_as_is(&chardev_args, "-chardev",
-                                               chardev_arg.ptr, NULL);
+        te_string_append_shell_args_as_is(&chardev_args, "-chardev",
+                                          chardev_arg.ptr, NULL);
         te_string_free(&chardev_arg);
-        if (rc != 0)
-        {
-            ERROR("Cannot compose VM character device list: %r", rc);
-            goto exit;
-        }
     }
 
     if (chardev_args.ptr != NULL)
-    {
-        rc = te_string_append(cmd, " %s", chardev_args.ptr);
-        if (rc != 0)
-            ERROR("Cannot append character device list to VM cmdline: %r", rc);
-    }
+        te_string_append(cmd, " %s", chardev_args.ptr);
 
 exit:
     te_string_free(&chardev_args);
@@ -401,15 +355,7 @@ vm_append_net_interfaces_cmd(te_string *cmd, vm_net_list_t *nets,
     }
 
     if (interface_args.ptr != NULL)
-    {
-        rc = te_string_append(cmd, " %s", interface_args.ptr);
-        if (rc != 0)
-        {
-            ERROR("Cannot compose VM net interface list command line (line %u)",
-                  __LINE__);
-            goto exit;
-        }
-    }
+        te_string_append(cmd, " %s", interface_args.ptr);
 
 exit:
     te_string_free(&interface_args);
@@ -420,52 +366,26 @@ exit:
 static te_errno
 vm_append_kernel_cmd(te_string *cmd, struct vm_entry *vm)
 {
-    te_errno rc;
-
     if (vm->kernel != NULL)
     {
-        rc = te_string_append_shell_args_as_is(cmd, "-kernel", vm->kernel, NULL);
-        if (rc != 0)
-        {
-            ERROR("Cannot compose kernel command line (line %u): %r",
-                  __LINE__, rc);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append_shell_args_as_is(cmd, "-kernel", vm->kernel, NULL);
 
         if (vm->ker_cmd != NULL)
         {
-            rc = te_string_append_shell_args_as_is(cmd, "-append",
-                            vm->ker_cmd, NULL);
-            if (rc != 0)
-            {
-                ERROR("Cannot compose kernel command line (line %u): %r",
-                      __LINE__, rc);
-                return TE_RC(TE_TA_UNIX, rc);
-            }
+            te_string_append_shell_args_as_is(cmd, "-append",
+                                              vm->ker_cmd, NULL);
         }
 
         if (vm->ker_initrd != NULL)
         {
-            rc = te_string_append_shell_args_as_is(cmd, "-initrd",
-                            vm->ker_initrd, NULL);
-            if (rc != 0)
-            {
-                ERROR("Cannot compose kernel command line (line %u): %r",
-                      __LINE__, rc);
-                return TE_RC(TE_TA_UNIX, rc);
-            }
+            te_string_append_shell_args_as_is(cmd, "-initrd",
+                                              vm->ker_initrd, NULL);
         }
 
         if (vm->ker_dtb != NULL)
         {
-            rc = te_string_append_shell_args_as_is(cmd, "-dtb",
-                            vm->ker_dtb, NULL);
-            if (rc != 0)
-            {
-                ERROR("Cannot compose kernel command line (line %u): %r",
-                      __LINE__, rc);
-                return TE_RC(TE_TA_UNIX, rc);
-            }
+            te_string_append_shell_args_as_is(cmd, "-dtb",
+                                              vm->ker_dtb, NULL);
         }
     }
 
@@ -477,35 +397,22 @@ vm_append_drive_cmd(te_string *cmd, vm_drive_list_t *drives)
 {
     te_string drive_args = TE_STRING_INIT;
     struct vm_drive_entry *drive;
-    te_errno rc = 0;
 
     SLIST_FOREACH(drive, drives, links)
     {
-        rc = te_string_append(&drive_args, "file=%s,media=%s,snapshot=%s",
-                              drive->file.ptr,
-                              drive->cdrom ? "cdrom" : "disk",
-                              drive->snapshot ? "on" : "off");
-        if (rc != 0)
-        {
-            ERROR("Cannot compose VM drive command line (line %u)", __LINE__);
-            goto exit;
-        }
+        te_string_append(&drive_args, "file=%s,media=%s,snapshot=%s",
+                         drive->file.ptr,
+                         drive->cdrom ? "cdrom" : "disk",
+                         drive->snapshot ? "on" : "off");
 
-        rc = te_string_append_shell_args_as_is(cmd, "-drive",
-                                               drive_args.ptr, NULL);
-        if (rc != 0)
-        {
-            ERROR("Cannot compose VM drive command line (line %u)", __LINE__);
-            goto exit;
-        }
+        te_string_append_shell_args_as_is(cmd, "-drive", drive_args.ptr, NULL);
 
         te_string_reset(&drive_args);
     }
 
-exit:
     te_string_free(&drive_args);
 
-    return TE_RC(TE_TA_UNIX, rc);
+    return 0;
 }
 
 static te_errno
@@ -513,37 +420,25 @@ vm_append_virtfs_cmd(te_string *cmd, vm_virtfs_list_t *virtfses)
 {
     te_string virtfs_args = TE_STRING_INIT;
     struct vm_virtfs_entry *virtfs;
-    te_errno rc = 0;
 
     SLIST_FOREACH(virtfs, virtfses, links)
     {
-        rc = te_string_append(&virtfs_args,
-                              "%s,path=%s,security_model=%s,mount_tag=%s",
-                              virtfs->fsdriver,
-                              virtfs->path,
-                              virtfs->security_model,
-                              virtfs->mount_tag);
-        if (rc != 0)
-        {
-            ERROR("Cannot compose VM drive command line (line %u)", __LINE__);
-            goto exit;
-        }
+        te_string_append(&virtfs_args,
+                         "%s,path=%s,security_model=%s,mount_tag=%s",
+                         virtfs->fsdriver,
+                         virtfs->path,
+                         virtfs->security_model,
+                         virtfs->mount_tag);
 
-        rc = te_string_append_shell_args_as_is(cmd, "-virtfs",
-                                               virtfs_args.ptr, NULL);
-        if (rc != 0)
-        {
-            ERROR("Cannot compose VM drive command line (line %u)", __LINE__);
-            goto exit;
-        }
+        te_string_append_shell_args_as_is(cmd, "-virtfs",
+                                          virtfs_args.ptr, NULL);
 
         te_string_reset(&virtfs_args);
     }
 
-exit:
     te_string_free(&virtfs_args);
 
-    return TE_RC(TE_TA_UNIX, rc);
+    return 0;
 }
 
 static te_errno
@@ -551,98 +446,57 @@ vm_append_pci_pt_cmd(te_string *cmd, vm_pci_pt_list_t *pt_list)
 {
     te_string args = TE_STRING_INIT;
     struct vm_pci_pt_entry *pt = NULL;
-    te_errno rc = 0;
 
     SLIST_FOREACH(pt, pt_list, links)
     {
-        rc = te_string_append(&args, "vfio-pci,host=%s%s%s", pt->pci_addr.ptr,
-                              pt->vf_token == NULL ? "" : ",vf_token=",
-                              te_str_empty_if_null(pt->vf_token));
-        if (rc != 0)
-        {
-            ERROR("Cannot compose PCI function pass-through command line (line %u): %r", __LINE__, rc);
-            goto exit;
-        }
+        te_string_append(&args, "vfio-pci,host=%s%s%s", pt->pci_addr.ptr,
+                         pt->vf_token == NULL ? "" : ",vf_token=",
+                         te_str_empty_if_null(pt->vf_token));
 
-        rc = te_string_append_shell_args_as_is(cmd, "-device",
-                                               args.ptr, NULL);
-        if (rc != 0)
-        {
-            ERROR("Cannot compose PCI function pass-through command line (line %u): %r", __LINE__, rc);
-            goto exit;
-        }
+        te_string_append_shell_args_as_is(cmd, "-device", args.ptr, NULL);
 
         te_string_reset(&args);
     }
 
-exit:
     te_string_free(&args);
 
-    return TE_RC(TE_TA_UNIX, rc);
+    return 0;
 }
 
 static te_errno
 vm_append_devices_cmd(te_string *cmd, vm_device_list_t *dev_list)
 {
     struct vm_device_entry *dev;
-    te_errno rc = 0;
 
     SLIST_FOREACH(dev, dev_list, links)
     {
-        rc = te_string_append_shell_args_as_is(cmd, "-device",
-                                               dev->device.ptr, NULL);
-        if (rc != 0)
-        {
-            ERROR("Cannot compose -device command line (line %u): %r",
-                  __LINE__, rc);
-            break;
-        }
+        te_string_append_shell_args_as_is(cmd, "-device",
+                                          dev->device.ptr, NULL);
     }
 
-    return TE_RC(TE_TA_UNIX, rc);
+    return 0;
 }
 
 static te_errno
 vm_append_cpu_cmd(te_string *cmd, struct vm_entry *vm)
 {
     te_string num_arg = TE_STRING_INIT;
-    te_errno rc;
 
-    rc = te_string_append_shell_args_as_is(cmd, "-cpu", vm->cpu.model.ptr, NULL);
-    if (rc != 0)
-    {
-        ERROR("Cannot compose CPU command line (line %u): %r",
-              __LINE__, rc);
-        goto exit;
-    }
+    te_string_append_shell_args_as_is(cmd, "-cpu", vm->cpu.model.ptr, NULL);
 
-    rc = te_string_append(&num_arg, "%u", vm->cpu.num);
-    if (rc != 0)
-    {
-        ERROR("Cannot compose CPU command line (line %u): %r",
-              __LINE__, rc);
-        goto exit;
-    }
+    te_string_append(&num_arg, "%u", vm->cpu.num);
 
-    rc = te_string_append_shell_args_as_is(cmd, "-smp", num_arg.ptr, NULL);
-    if (rc != 0)
-    {
-        ERROR("Cannot compose CPU command line (line %u): %r",
-              __LINE__, rc);
-        goto exit;
-    }
+    te_string_append_shell_args_as_is(cmd, "-smp", num_arg.ptr, NULL);
 
-exit:
     te_string_free(&num_arg);
 
-    return TE_RC(TE_TA_UNIX, rc);
+    return 0;
 }
 
 static te_errno
 vm_append_mem_file_cmd(te_string *cmd, struct vm_entry *vm)
 {
     te_string mem_file = TE_STRING_INIT;
-    te_errno rc;
 
     if (vm->mem_size == 0)
     {
@@ -651,20 +505,15 @@ vm_append_mem_file_cmd(te_string *cmd, struct vm_entry *vm)
     }
 
     /* Attribute 'share' is non configurable yet */
-    rc = te_string_append(&mem_file,
-                          "memory-backend-file,id=mem,size=%uM,"
-                          "mem-path=%s,share=on",
-                          vm->mem_size, vm->mem_path);
-    if (rc != 0)
-        ERROR("Failed to append memory file argument: %r", rc);
+    te_string_append(&mem_file,
+                     "memory-backend-file,id=mem,size=%uM,"
+                     "mem-path=%s,share=on",
+                     vm->mem_size, vm->mem_path);
 
-    rc = te_string_append_shell_args_as_is(cmd, "-object", mem_file.ptr, NULL);
+    te_string_append_shell_args_as_is(cmd, "-object", mem_file.ptr, NULL);
     te_string_free(&mem_file);
 
-    if (rc != 0)
-        ERROR("Failed to append memory object argument: %r", rc);
-
-    return rc;
+    return 0;
 }
 
 static te_errno
@@ -685,71 +534,33 @@ vm_start(struct vm_entry *vm)
         goto exit;
     }
 
-    rc = te_string_append(&name_str, "guest=%s", vm->name);
-    if (rc != 0)
-    {
-        ERROR("Cannot compose VM name parameter");
-        goto exit;
-    }
+    te_string_append(&name_str, "guest=%s", vm->name);
 
-    rc = te_string_append(&net_mgmt_str,
-            "user,id=mgmt,restrict=on,hostfwd=tcp:%s:%hu-:%hu,"
-            "hostfwd=tcp:%s:%hu-:%hu",
-            local_ip_str, vm->host_ssh_port, vm->guest_ssh_port,
-            local_ip_str, vm->rcf_port, vm->rcf_port);
-    if (rc != 0)
-    {
-        ERROR("Cannot compose management network config");
-        goto exit;
-    }
+    te_string_append(&net_mgmt_str,
+                     "user,id=mgmt,restrict=on,hostfwd=tcp:%s:%hu-:%hu,"
+                     "hostfwd=tcp:%s:%hu-:%hu",
+                     local_ip_str, vm->host_ssh_port, vm->guest_ssh_port,
+                     local_ip_str, vm->rcf_port, vm->rcf_port);
 
-    rc = te_string_append(&net_mgmt_dev_str,
-             "%s,netdev=mgmt,romfile=,addr=0x3",
-             vm->mgmt_net_device);
-    if (rc != 0)
-    {
-        ERROR("Cannot compose management network device config");
-        goto exit;
-    }
+    te_string_append(&net_mgmt_dev_str,
+                     "%s,netdev=mgmt,romfile=,addr=0x3",
+                     vm->mgmt_net_device);
 
     te_string_free(&vm->cmd);
-    rc = te_string_append_shell_args_as_is(&vm->cmd, vm->qemu,
-             "-name", name_str.ptr,
-             "-no-user-config",
-             "-nodefaults",
-             "-nographic",
-             NULL);
-    if (rc != 0)
-    {
-        ERROR("Cannot compose VM start command line (line %u)", __LINE__);
-        goto exit;
-    }
+    te_string_append_shell_args_as_is(&vm->cmd, vm->qemu,
+                                      "-name", name_str.ptr,
+                                      "-no-user-config",
+                                      "-nodefaults",
+                                      "-nographic",
+                                      NULL);
 
     if (vm->kvm)
-    {
-        rc = te_string_append_shell_args_as_is(&vm->cmd, "-enable-kvm", NULL);
-        if (rc != 0)
-        {
-            ERROR("Failed to add -enable-kvm: %r", rc);
-            goto exit;
-        }
-    }
+        te_string_append_shell_args_as_is(&vm->cmd, "-enable-kvm", NULL);
 
-    rc = te_string_append(&machine_str, "%s%s",
-                          vm->machine, vm->kvm ? ",accel=kvm" : "");
-    if (rc != 0)
-    {
-        ERROR("Failed to make VM machine string: %r", rc);
-        goto exit;
-    }
-    rc = te_string_append_shell_args_as_is(&vm->cmd,
-                                           "-machine", machine_str.ptr,
-                                           NULL);
-    if (rc != 0)
-    {
-        ERROR("Failed to add -machine option: %r", rc);
-        goto exit;
-    }
+    te_string_append(&machine_str, "%s%s",
+                     vm->machine, vm->kvm ? ",accel=kvm" : "");
+    te_string_append_shell_args_as_is(&vm->cmd, "-machine", machine_str.ptr,
+                                      NULL);
 
     rc = vm_append_cpu_cmd(&vm->cmd, vm);
     if (rc != 0)
@@ -759,32 +570,17 @@ vm_start(struct vm_entry *vm)
     {
         te_string mem_size_str = TE_STRING_INIT;
 
-        rc = te_string_append(&mem_size_str, "%uM", vm->mem_size);
-        if (rc != 0)
-        {
-            ERROR("Cannot compose VM mem_size argument (line %u)", __LINE__);
-            goto exit;
-        }
+        te_string_append(&mem_size_str, "%uM", vm->mem_size);
 
-        rc = te_string_append_shell_args_as_is(&vm->cmd,
-                                               "-m", mem_size_str.ptr, NULL);
+        te_string_append_shell_args_as_is(&vm->cmd, "-m", mem_size_str.ptr,
+                                          NULL);
         te_string_free(&mem_size_str);
-        if (rc != 0)
-        {
-            ERROR("Cannot compose VM mem_size command line (line %u)", __LINE__);
-            goto exit;
-        }
     }
 
-    rc = te_string_append_shell_args_as_is(&vm->cmd,
-             "-netdev", net_mgmt_str.ptr,
-             "-device", net_mgmt_dev_str.ptr,
-             NULL);
-    if (rc != 0)
-    {
-        ERROR("Cannot compose VM start command line (line %u)", __LINE__);
-        goto exit;
-    }
+    te_string_append_shell_args_as_is(&vm->cmd,
+                                      "-netdev", net_mgmt_str.ptr,
+                                      "-device", net_mgmt_dev_str.ptr,
+                                      NULL);
 
     rc = vm_append_chardevs_cmd(&vm->cmd, &vm->chardevs);
     if (rc != 0)
@@ -816,14 +612,8 @@ vm_start(struct vm_entry *vm)
 
     if (vm->serial != NULL)
     {
-        rc = te_string_append_shell_args_as_is(&vm->cmd, "-serial",
-                                               vm->serial, NULL);
-
-        if (rc != 0)
-        {
-            ERROR("Cannot compose VM start command line (line %u)", __LINE__);
-            goto exit;
-        }
+        te_string_append_shell_args_as_is(&vm->cmd, "-serial", vm->serial,
+                                          NULL);
     }
 
     if (vm->mem_path != NULL)
@@ -832,18 +622,10 @@ vm_start(struct vm_entry *vm)
         if (rc != 0)
             goto exit;
 
-        rc = te_string_append_shell_args_as_is(&vm->cmd, "-numa",
-                                               "node,memdev=mem", NULL);
-        if (rc == 0 && vm->mem_prealloc)
-        {
-            rc = te_string_append_shell_args_as_is(&vm->cmd, "-mem-prealloc",
-                                                   NULL);
-        }
-        if (rc != 0)
-        {
-            ERROR("Failed to append additional arguments for memory object");
-            goto exit;
-        }
+        te_string_append_shell_args_as_is(&vm->cmd, "-numa",
+                                          "node,memdev=mem", NULL);
+        if (vm->mem_prealloc)
+            te_string_append_shell_args_as_is(&vm->cmd, "-mem-prealloc", NULL);
     }
 
     RING("VM %s command-line: %s", vm->name, vm->cmd.ptr);
@@ -1203,12 +985,7 @@ vm_add(unsigned int gid, const char *oid, const char *value,
     }
 
     vm->cpu.model = (te_string)TE_STRING_INIT;
-    rc = te_string_append(&vm->cpu.model, "host");
-    if (rc != 0)
-    {
-        vm_free(vm);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
+    te_string_append(&vm->cpu.model, "host");
 
     vm->mgmt_net_device = strdup(VM_MGMT_NET_DEVICE_DEFAULT);
     if (vm->mgmt_net_device == NULL)
@@ -1728,7 +1505,6 @@ vm_chardev_list(unsigned int gid, const char *oid, const char *sub_id, char **li
     struct vm_entry *vm;
     struct vm_chardev_entry *chardev;
     bool first = true;
-    te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1740,13 +1516,8 @@ vm_chardev_list(unsigned int gid, const char *oid, const char *sub_id, char **li
 
     SLIST_FOREACH(chardev, &vm->chardevs, links)
     {
-        rc = te_string_append(&result, "%s%s", first ? "" : " ", chardev->name);
+        te_string_append(&result, "%s%s", first ? "" : " ", chardev->name);
         first = false;
-        if (rc != 0)
-        {
-            te_string_free(&result);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
     }
 
     *list = result.ptr;
@@ -1873,7 +1644,6 @@ vm_net_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
     struct vm_entry *vm;
     struct vm_net_entry *net;
     bool first = true;
-    te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1885,13 +1655,8 @@ vm_net_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
 
     SLIST_FOREACH(net, &vm->nets, links)
     {
-        rc = te_string_append(&result, "%s%s", first ? "" : " ", net->name);
+        te_string_append(&result, "%s%s", first ? "" : " ", net->name);
         first = false;
-        if (rc != 0)
-        {
-            te_string_free(&result);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
     }
 
     *list = result.ptr;
@@ -2497,7 +2262,6 @@ vm_drive_list(unsigned int gid, const char *oid, const char *sub_id, char **list
     struct vm_entry *vm;
     struct vm_drive_entry *drive;
     bool first = true;
-    te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2509,13 +2273,8 @@ vm_drive_list(unsigned int gid, const char *oid, const char *sub_id, char **list
 
     SLIST_FOREACH(drive, &vm->drives, links)
     {
-        rc = te_string_append(&result, "%s%s", first ? "" : " ", drive->name);
+        te_string_append(&result, "%s%s", first ? "" : " ", drive->name);
         first = false;
-        if (rc != 0)
-        {
-            te_string_free(&result);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
     }
 
     *list = result.ptr;
@@ -2546,7 +2305,6 @@ vm_file_set(unsigned int gid, const char *oid, char *value,
 {
     struct vm_entry *vm;
     struct vm_drive_entry *drive;
-    int rc = 0;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2563,9 +2321,9 @@ vm_file_set(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     te_string_free(&drive->file);
-    rc = te_string_append(&drive->file, "%s",  value);
+    te_string_append(&drive->file, "%s",  value);
 
-    return TE_RC(TE_TA_UNIX, rc);
+    return 0;
 }
 
 static te_errno
@@ -2726,7 +2484,6 @@ vm_virtfs_list(unsigned int gid, const char *oid, const char *sub_id,
     struct vm_entry *vm;
     struct vm_virtfs_entry *vfs;
     bool first = true;
-    te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2738,13 +2495,8 @@ vm_virtfs_list(unsigned int gid, const char *oid, const char *sub_id,
 
     SLIST_FOREACH(vfs, &vm->virtfses, links)
     {
-        rc = te_string_append(&result, "%s%s", first ? "" : " ", vfs->name);
+        te_string_append(&result, "%s%s", first ? "" : " ", vfs->name);
         first = false;
-        if (rc != 0)
-        {
-            te_string_free(&result);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
     }
 
     *list = result.ptr;
@@ -2979,7 +2731,6 @@ vm_pci_pt_add(unsigned int gid, const char *oid, char *value,
 {
     struct vm_entry *vm;
     struct vm_pci_pt_entry *pt = NULL;
-    int rc = 0;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -3004,8 +2755,7 @@ vm_pci_pt_add(unsigned int gid, const char *oid, char *value,
     }
 
     pt->pci_addr = (te_string)TE_STRING_INIT;
-    if ((rc = te_string_append(&pt->pci_addr, "%s",  value)) != 0)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    te_string_append(&pt->pci_addr, "%s",  value);
 
     SLIST_INSERT_HEAD(&vm->pci_pts, pt, links);
 
@@ -3048,7 +2798,6 @@ vm_pci_pt_list(unsigned int gid, const char *oid, const char *sub_id,
     struct vm_entry *vm;
     struct vm_pci_pt_entry *pt;
     bool first = true;
-    te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -3060,13 +2809,8 @@ vm_pci_pt_list(unsigned int gid, const char *oid, const char *sub_id,
 
     SLIST_FOREACH(pt, &vm->pci_pts, links)
     {
-        rc = te_string_append(&result, "%s%s", first ? "" : " ", pt->name);
+        te_string_append(&result, "%s%s", first ? "" : " ", pt->name);
         first = false;
-        if (rc != 0)
-        {
-            te_string_free(&result);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
     }
 
     *list = result.ptr;
@@ -3134,7 +2878,6 @@ vm_device_add(unsigned int gid, const char *oid, const char *value,
 {
     struct vm_entry *vm;
     struct vm_device_entry *dev;
-    int rc = 0;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -3159,11 +2902,7 @@ vm_device_add(unsigned int gid, const char *oid, const char *value,
     }
 
     dev->device = (te_string)TE_STRING_INIT;
-    if ((rc = te_string_append(&dev->device, "%s",  value)) != 0)
-    {
-        vm_device_free(dev);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
+    te_string_append(&dev->device, "%s",  value);
 
     SLIST_INSERT_HEAD(&vm->devices, dev, links);
 
@@ -3206,7 +2945,6 @@ vm_device_list(unsigned int gid, const char *oid, const char *sub_id,
     struct vm_entry *vm;
     struct vm_device_entry *dev;
     bool first = true;
-    te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -3218,13 +2956,8 @@ vm_device_list(unsigned int gid, const char *oid, const char *sub_id,
 
     SLIST_FOREACH(dev, &vm->devices, links)
     {
-        rc = te_string_append(&result, "%s%s", first ? "" : " ", dev->name);
+        te_string_append(&result, "%s%s", first ? "" : " ", dev->name);
         first = false;
-        if (rc != 0)
-        {
-            te_string_free(&result);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
     }
 
     *list = result.ptr;
@@ -3254,8 +2987,6 @@ vm_cpu_model_set(unsigned int gid, const char *oid, const char *value,
                 const char *vm_name)
 {
     struct vm_entry *vm;
-    te_errno rc;
-    te_string save = TE_STRING_INIT;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -3267,18 +2998,10 @@ vm_cpu_model_set(unsigned int gid, const char *oid, const char *value,
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    rc = te_string_append(&save, "%s", vm->cpu.model.ptr);
-    if (rc != 0)
-        return TE_RC(TE_TA_UNIX, rc);
-
     te_string_free(&vm->cpu.model);
-    rc = te_string_append(&vm->cpu.model, "%s",  value);
-    if (rc == 0)
-        te_string_free(&save);
-    else
-        vm->cpu.model = save;
+    te_string_append(&vm->cpu.model, "%s",  value);
 
-    return TE_RC(TE_TA_UNIX, rc);
+    return 0;
 }
 
 static te_errno
