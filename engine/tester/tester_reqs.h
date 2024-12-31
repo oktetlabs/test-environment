@@ -60,11 +60,9 @@ extern te_errno tester_new_target_reqs(logic_expr **targets,
  *
  * @param reqs      List of requirements to be cloned
  * @param new_reqs  New list of requirements (must be initialized)
- *
- * @return Status code.
  */
-extern te_errno test_requirements_clone(const test_requirements *reqs,
-                                        test_requirements *new_reqs);
+extern void test_requirements_clone(const test_requirements *reqs,
+                                    test_requirements *new_reqs);
 
 /**
  * Free list of requirements.
@@ -101,7 +99,7 @@ extern bool tester_is_run_required(
  * @param sticky_reqs   List of requirements in the current context
  * @param reqs          List of requirements
  *
- * @return Status code.
+ * @return Status code (always returns @c 0).
  */
 extern te_errno tester_get_sticky_reqs(test_requirements *sticky_reqs,
                                        const test_requirements *reqs);

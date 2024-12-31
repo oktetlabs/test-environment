@@ -58,6 +58,7 @@
 
 #include <dlfcn.h>
 
+#include "te_alloc.h"
 #include "te_stdint.h"
 #include "te_printf.h"
 #include "te_str.h"
@@ -278,11 +279,7 @@ parse_config_ta(xmlNodePtr ta_node)
     if (attribute_contains_yes(ta_node, "disabled"))
         return 0;
 
-    if ((agent = (ta *)calloc(1, sizeof(ta))) == NULL)
-    {
-        ERROR("calloc failed: %d", errno);
-        return TE_RC(TE_RCF, TE_ENOMEM);
-    }
+    agent = TE_ALLOC(sizeof(ta));
 
     agent->next = agents;
     agents = agent;
@@ -543,12 +540,7 @@ parse_config_ta(xmlNodePtr ta_node)
             free(condition);
         }
 
-        ta_task = malloc(sizeof(*ta_task));
-        if (ta_task == NULL)
-        {
-            ERROR("malloc failed: %d", errno);
-            return TE_RC(TE_RCF, TE_EFAIL);
-        }
+        ta_task = TE_ALLOC(sizeof(*ta_task));
         ta_task->mode =
             (xmlStrcmp(task->name , (const xmlChar *)"thread") == 0 ?
              RCF_THREAD :
@@ -564,7 +556,7 @@ parse_config_ta(xmlNodePtr ta_node)
         ta_task->entry = attr;
 
         ta_task->argc = 0;
-        ta_task->argv = malloc(sizeof(*ta_task->argv) * RCF_MAX_PARAMS);
+        ta_task->argv = TE_ALLOC(sizeof(*ta_task->argv) * RCF_MAX_PARAMS);
         for (arg = task->xmlChildrenNode; arg != NULL; arg = arg->next)
         {
             if (xmlStrcmp(arg->name, (const xmlChar *)"arg") != 0)
@@ -1467,13 +1459,7 @@ process_reply(ta *agent)
 
                 if (balen < 4096)
                 {
-                    new_msg = (rcf_msg *)calloc(1, sizeof(rcf_msg) + balen);
-                    if (new_msg == NULL)
-                    {
-                        msg->error = TE_RC(TE_RCF, TE_ENOMEM);
-                        rcf_answer_user_request(req);
-                        return;
-                    }
+                    new_msg = TE_ALLOC(sizeof(rcf_msg) + balen);
                     memset(new_msg, 0, sizeof(rcf_msg) + balen);
                     *new_msg = *msg;
                     free(msg);
@@ -1560,14 +1546,8 @@ process_reply(ta *agent)
 
                 if (msg->intparm < (int)n && n > INSIDE_LEN)
                 {
-                    rcf_msg *new_msg =
-                        (rcf_msg *)malloc(n + sizeof(*msg) - INSIDE_LEN);
+                    rcf_msg *new_msg = TE_ALLOC(n + sizeof(*msg) - INSIDE_LEN);
 
-                    if (new_msg == NULL)
-                    {
-                        msg->error = TE_RC(TE_RCF, TE_EINVAL);
-                        break;
-                    }
                     *new_msg = *msg;
                     free(msg);
                     msg = req->message = new_msg;
@@ -2172,14 +2152,8 @@ rcf_alloc_usrreq(void)
 {
     usrreq *req;
 
-    if ((req = (usrreq *)calloc(1, sizeof(usrreq))) == NULL)
-        return NULL;
-
-    if ((req->message = (rcf_msg *)calloc(1, sizeof(rcf_msg))) == NULL)
-    {
-        free(req);
-        return NULL;
-    }
+    req = TE_ALLOC(sizeof(usrreq));
+    req->message = TE_ALLOC(sizeof(rcf_msg));
 
     return req;
 }
@@ -2272,7 +2246,6 @@ rcf_ta_check_start(void)
 {
     ta             *agent;
     usrreq         *req;
-    int             rc = 0;
     const char     *target = NULL;
 
     assert(ta_checker.req != NULL);
@@ -2292,15 +2265,6 @@ rcf_ta_check_start(void)
             continue;
 
         req = rcf_alloc_usrreq();
-        if (req == NULL)
-        {
-            rc = TE_RC(TE_RCF, TE_ENOMEM);
-            ERROR("Unable to allocate memory "
-                  "to check TA '%s' state, error=%r",
-                  agent->name, rc);
-            break;
-        }
-
         req->user = NULL;
         req->timeout = RCF_SHUTDOWN_TIMEOUT;
 
@@ -2406,13 +2370,7 @@ process_user_request(usrreq *req)
         {
             rcf_msg *new_msg;
 
-            new_msg = (rcf_msg *)calloc(1, sizeof(rcf_msg) + names_len);
-            if (new_msg == NULL)
-            {
-                msg->error = TE_RC(TE_RCF, TE_ENOMEM);
-                rcf_answer_user_request(req);
-                return;
-            }
+            new_msg = TE_ALLOC(sizeof(rcf_msg) + names_len);
             *new_msg = *msg;
             free(msg);
             msg = req->message = new_msg;
@@ -2444,13 +2402,7 @@ process_user_request(usrreq *req)
 
                 rcf_msg *new_msg;
 
-                if ((new_msg = (rcf_msg *)calloc(1, sizeof(rcf_msg) +
-                                                    names_len)) == NULL)
-                {
-                    msg->error = TE_RC(TE_RCF, TE_ENOMEM);
-                    break; /** Leave 'do/while' block */
-                }
-
+                new_msg = TE_ALLOC(sizeof(rcf_msg) + names_len);
                 *new_msg = *msg;
                 free(msg);
                 msg = req->message = new_msg;
@@ -2479,12 +2431,7 @@ process_user_request(usrreq *req)
                     break; /** Leave 'do/while' block */
                 }
 
-                if ((agent = (ta *)calloc(1, sizeof(ta))) == NULL)
-                {
-                    msg->error = TE_RC(TE_RCF, TE_ENOMEM);
-                    break; /** Leave 'do/while' block */
-                }
-
+                agent = TE_ALLOC(sizeof(ta));
                 agent->dynamic = true;
                 agent->next = agents;
                 agent->flags = msg->flags | TA_DEAD;
@@ -2553,15 +2500,7 @@ process_user_request(usrreq *req)
 
                 rcf_msg *new_msg;
 
-                new_msg = (rcf_msg *)calloc(1, sizeof(rcf_msg) + names_len);
-
-                if (new_msg == NULL)
-                {
-                    msg->error = TE_RC(TE_RCF, TE_ENOMEM);
-                    rcf_answer_user_request(req);
-                    return;
-                }
-
+                new_msg = TE_ALLOC(sizeof(rcf_msg) + names_len);
                 *new_msg = *msg;
                 free(msg);
                 msg = req->message = new_msg;
@@ -3064,8 +3003,7 @@ main(int argc, const char *argv[])
         {
             len = sizeof(rcf_msg);
 
-            if ((req = rcf_alloc_usrreq()) == NULL)
-                goto exit;
+            req = rcf_alloc_usrreq();
 
             rc = ipc_receive_message(server, req->message,
                                      &len, &(req->user));

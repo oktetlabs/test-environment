@@ -33,6 +33,7 @@
 
 #include <jansson.h>
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_str.h"
 #include "tq_string.h"
@@ -545,20 +546,10 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                     return TE_EINVAL;
                 }
 
-                if (((p = calloc(1, sizeof(*p))) == NULL) ||
-                    ((p->name = malloc(name_len + 1)) == NULL) ||
-                    ((p->src = strdup(s + 1)) == NULL))
-                {
-                    if (p != NULL)
-                    {
-                        free(p->name);
-                        free(p);
-                    }
+                p = TE_ALLOC(sizeof(*p));
+                p->name = TE_ALLOC(name_len + 1);
+                p->src = TE_STRDUP(s + 1);
 
-                    ERROR("Memory allocation failed");
-                    poptFreeContext(optCon);
-                    return TE_ENOMEM;
-                }
                 memcpy(p->name, opt, name_len);
                 p->name[name_len] = '\0';
                 TAILQ_INSERT_TAIL(&global->suites, p, links);
@@ -780,7 +771,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                     time_to_wait = s;
                 }
 
-                monitor = calloc(1, sizeof(*monitor));
+                monitor = TE_ALLOC(sizeof(*monitor));
                 monitor->enabled = false;
                 monitor->run_monitor = true;
                 if (ta != NULL)
@@ -858,7 +849,7 @@ tester_log_global(void)
 {
     int i;
     /* fixme: this is shit! */
-    char *glob = calloc(1, TESTER_ENV_SIZE);
+    char *glob = TE_ALLOC(TESTER_ENV_SIZE);
     int rc = 0;
     char *p;
 
@@ -912,7 +903,7 @@ tester_log_global(void)
 static void
 tester_log_reqs(void)
 {
-    char *reqs_string = calloc(1, TESTER_REQS_LEN);
+    char *reqs_string = TE_ALLOC(TESTER_REQS_LEN);
     int rc = 0;
     test_requirement *p;
 

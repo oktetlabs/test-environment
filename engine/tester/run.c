@@ -754,7 +754,7 @@ tester_run_free_ctx(tester_ctx *ctx)
  * @param flags         Initial flags
  * @param targets       Initial target requirements expression
  *
- * @return Allocated context.
+ * @return Allocated context (cannot return @c NULL).
  */
 static tester_ctx *
 tester_run_new_ctx(tester_flags flags, const logic_expr *targets)
@@ -806,16 +806,12 @@ tester_run_new_ctx(tester_flags flags, const logic_expr *targets)
  * @param ctx           Tester context to be cloned.
  * @param new_group     Clone context for a new group
  *
- * @return Pointer to new Tester context.
+ * @return Pointer to new Tester context (cannot return @c NULL).
  */
 static tester_ctx *
 tester_run_clone_ctx(const tester_ctx *ctx, bool new_group)
 {
-    te_errno    rc;
     tester_ctx *new_ctx = tester_run_new_ctx(ctx->flags, ctx->targets);
-
-    if (new_ctx == NULL)
-        return NULL;
 
     if (new_group)
     {
@@ -835,13 +831,7 @@ tester_run_clone_ctx(const tester_ctx *ctx, bool new_group)
 #endif
     }
 
-    rc = test_requirements_clone(&ctx->reqs, &new_ctx->reqs);
-    if (rc != 0)
-    {
-        ERROR("%s(): failed to clone requirements: %r", __FUNCTION__, rc);
-        tester_run_free_ctx(new_ctx);
-        return NULL;
-    }
+    test_requirements_clone(&ctx->reqs, &new_ctx->reqs);
 
 #if WITH_TRC
     new_ctx->trc_walker = ctx->trc_walker;
@@ -910,15 +900,12 @@ tester_run_destroy_ctx(tester_run_data *data)
  *
  * @param data          Global Tester context data
  *
- * @return Allocated context.
+ * @return Allocated context (cannot return @c NULL).
  */
 static tester_ctx *
 tester_run_first_ctx(tester_run_data *data)
 {
     tester_ctx *new_ctx = tester_run_new_ctx(data->flags, data->targets);
-
-    if (new_ctx == NULL)
-        return NULL;
 
     if (!(data->flags & (TESTER_PRERUN | TESTER_ASSEMBLE_PLAN)))
         new_ctx->group_result.id = tester_get_id();
@@ -953,7 +940,7 @@ tester_run_first_ctx(tester_run_data *data)
  * @param data          Global Tester context data
  * @param new_group     Clone context for a new group
  *
- * @return Allocated context.
+ * @return Allocated context (cannot return @c NULL).
  */
 static tester_ctx *
 tester_run_more_ctx(tester_run_data *data, bool new_group)
@@ -962,12 +949,6 @@ tester_run_more_ctx(tester_run_data *data, bool new_group)
 
     assert(!SLIST_EMPTY(&data->ctxs));
     new_ctx = tester_run_clone_ctx(SLIST_FIRST(&data->ctxs), new_group);
-    if (new_ctx == NULL)
-    {
-        SLIST_FIRST(&data->ctxs)->current_result.status =
-            TESTER_TEST_ERROR;
-        return NULL;
-    }
 
     SLIST_INSERT_HEAD(&data->ctxs, new_ctx, links);
 
@@ -1134,18 +1115,12 @@ static char *
 persons_info_to_string(const persons_info *persons)
 {
     size_t              total = TESTER_STR_BULK;
-    char               *res = malloc(total);
+    char               *res = TE_ALLOC(total);
     char               *s = res;
     size_t              rest = total;
     const person_info  *p;
     int                 printed;
     bool again;
-
-    if (res == NULL)
-    {
-        ERROR("%s(): Memory allocation failure", __FUNCTION__);
-        return NULL;
-    }
 
     s[0] = '\0';
     TAILQ_FOREACH(p, persons, links)
@@ -1453,7 +1428,7 @@ test_reqs_to_json(const test_requirements *sticky_reqs,
  *
  * @param param   Parameter value to normalize
  *
- * @return Allocated string or NULL.
+ * @return Allocated string (cannot return @c NULL).
  */
 char *
 test_params_normalise(const char *param)
@@ -1466,9 +1441,7 @@ test_params_normalise(const char *param)
     if (param == NULL)
         return NULL;
 
-    str = (char *)calloc(1, strlen(param) + 1);
-    if (str == NULL)
-        return NULL;
+    str = TE_ALLOC(strlen(param) + 1);
 
     for (p = param, q = str; *p != '\0'; p++)
     {
@@ -1502,7 +1475,7 @@ test_params_normalise(const char *param)
  * @param args   Array of test parameters
  * @param n_args Number of of test parameters
  *
- * @return Allocated string or NULL.
+ * @return Allocated string (cannot return @c NULL).
  */
 char *
 test_params_hash(test_iter_arg *args, unsigned int n_args)
@@ -1514,16 +1487,11 @@ test_params_hash(test_iter_arg *args, unsigned int n_args)
     unsigned int  j;
     unsigned int  k;
     unsigned char digest[EVP_MAX_MD_SIZE];
-    char *hash_str = calloc(1, sizeof(digest) * 2 + 1);
-    int  *sorted = calloc(n_args, sizeof(int));
+    char *hash_str = TE_ALLOC(sizeof(digest) * 2 + 1);
+    int  *sorted = TE_ALLOC(n_args * sizeof(int));
     char  buf[8192] = {0, };
     int   len = 0;
 
-    if (sorted == NULL)
-    {
-        free(hash_str);
-        return NULL;
-    }
     for (k = 0; k < n_args; k++)
         sorted[k] = k;
 
@@ -1551,14 +1519,6 @@ test_params_hash(test_iter_arg *args, unsigned int n_args)
     {
         const char *name = args[sorted[i]].name;
         char *value = test_params_normalise(args[sorted[i]].value);
-
-        if (value == NULL)
-        {
-            free(sorted);
-            free(hash_str);
-            EVP_MD_CTX_free(md5);
-            return NULL;
-        }
 
         VERB("%s %s", name, value);
         len += snprintf(buf + len, sizeof(buf) - len,
@@ -1721,19 +1681,16 @@ log_test_start(unsigned int flags,
             }
 
             hash_str = test_params_hash(ctx->args, ri->n_args);
-            if (hash_str != NULL)
+            tmp = json_string(hash_str);
+            free(hash_str);
+            if (tmp == NULL)
             {
-                tmp = json_string(hash_str);
-                free(hash_str);
-                if (tmp == NULL)
-                {
-                    ERROR("%s: json_string failed for hash_str",
-                          __FUNCTION__);
-                    json_decref(result);
-                    return;
-                }
-                SET_NEW_JSON(result, "hash", tmp);
+                ERROR("%s: json_string failed for hash_str",
+                      __FUNCTION__);
+                json_decref(result);
+                return;
             }
+            SET_NEW_JSON(result, "hash", tmp);
 
 
             if (flags & TESTER_CFG_WALK_OUTPUT_PARAMS)
@@ -2716,8 +2673,6 @@ run_cfg_start(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
 
     /* Clone Tester context */
     ctx = tester_run_more_ctx(gctx, false);
-    if (ctx == NULL)
-        return TESTER_CFG_WALK_FAULT;
 
     if (cfg->targets != NULL)
     {
@@ -2852,12 +2807,7 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     {
         unsigned int    i;
 
-        ctx->args = calloc(ri->n_args, sizeof(*ctx->args));
-        if (ctx->args == NULL)
-        {
-            ctx->current_result.status = TESTER_TEST_ERROR;
-            return TESTER_CFG_WALK_FAULT;
-        }
+        ctx->args = TE_ALLOC(ri->n_args * sizeof(*ctx->args));
         ctx->n_args = ri->n_args;
         for (i = 0; i < ctx->n_args; ++i)
             TAILQ_INIT(&ctx->args[i].reqs);
@@ -2920,7 +2870,6 @@ run_pkg_start(run_item *ri, test_package *pkg,
 {
     tester_run_data    *gctx = opaque;
     tester_ctx         *ctx;
-    te_errno            rc;
 
     UNUSED(ri);
 
@@ -2928,19 +2877,10 @@ run_pkg_start(run_item *ri, test_package *pkg,
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
     ctx = tester_run_more_ctx(gctx, true);
-    if (ctx == NULL)
-        return TESTER_CFG_WALK_FAULT;
 
     assert(~ctx->flags & TESTER_INLOGUE);
 
-    rc = tester_get_sticky_reqs(&ctx->reqs, &pkg->reqs);
-    if (rc != 0)
-    {
-        ERROR("%s(): tester_get_sticky_reqs() failed: %r",
-              __FUNCTION__, rc);
-        ctx->current_result.status = rc;
-        return TESTER_CFG_WALK_FAULT;
-    }
+    tester_get_sticky_reqs(&ctx->reqs, &pkg->reqs);
 
     EXIT("CONT");
     return TESTER_CFG_WALK_CONT;
@@ -2952,7 +2892,6 @@ run_session_start(run_item *ri, test_session *session,
 {
     tester_run_data    *gctx = opaque;
     tester_ctx         *ctx;
-    te_errno            rc;
 
     UNUSED(ri);
     UNUSED(session);
@@ -2968,20 +2907,9 @@ run_session_start(run_item *ri, test_session *session,
      * created in run_pkg_start() routine.
      */
     if (ri->type == RUN_ITEM_SESSION)
-    {
         ctx = tester_run_more_ctx(gctx, true);
-        if (ctx == NULL)
-            return TESTER_CFG_WALK_FAULT;
-    }
 
-    rc = tester_get_sticky_reqs(&ctx->reqs, &session->reqs);
-    if (rc != 0)
-    {
-        ERROR("%s(): tester_get_sticky_reqs() failed: %r",
-              __FUNCTION__, rc);
-        ctx->current_result.status = rc;
-        return TESTER_CFG_WALK_FAULT;
-    }
+    tester_get_sticky_reqs(&ctx->reqs, &session->reqs);
 
 #if WITH_TRC
     if (~ctx->flags & TESTER_NO_TRC)
@@ -3056,8 +2984,6 @@ run_prologue_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
     }
 
     ctx = tester_run_more_ctx(gctx, false);
-    if (ctx == NULL)
-        return TESTER_CFG_WALK_FAULT;
 
     VERB("Running test session prologue...");
     ctx->flags |= TESTER_INLOGUE;
@@ -3194,8 +3120,6 @@ run_epilogue_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
     }
 
     ctx = tester_run_more_ctx(gctx, false);
-    if (ctx == NULL)
-        return TESTER_CFG_WALK_FAULT;
 
     VERB("Running test session epilogue...");
     ctx->flags |= TESTER_INLOGUE;
@@ -3263,14 +3187,8 @@ run_keepalive_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
     }
 
     if (ctx->keepalive_ctx == NULL)
-    {
         ctx->keepalive_ctx = tester_run_clone_ctx(ctx, false);
-        if (ctx->keepalive_ctx == NULL)
-        {
-            ctx->current_result.status = TESTER_TEST_ERROR;
-            return TESTER_CFG_WALK_FAULT;
-        }
-    }
+
     ctx = ctx->keepalive_ctx;
 
     if ((~ctx->flags & TESTER_ASSEMBLE_PLAN) &&
@@ -3373,8 +3291,6 @@ run_exception_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
 
     /* Exception handler is always run in a new context */
     ctx = tester_run_more_ctx(gctx, false);
-    if (ctx == NULL)
-        return TESTER_CFG_WALK_FAULT;
 
     /* Create configuration backup in a new context */
     if (run_create_cfg_backup(ctx, test_get_attrs(ri)->track_conf) != 0)
@@ -3486,8 +3402,7 @@ run_get_value(const test_entity_value *value,
 
         if (i < n_args)
         {
-            if (test_requirements_clone(&args[i].reqs, reqs) != 0)
-                return NULL;
+            test_requirements_clone(&args[i].reqs, reqs);
 
             return args[i].value;
         }
@@ -3511,7 +3426,7 @@ run_get_value(const test_entity_value *value,
  * argument value.
  *
  * The function complies with test_entity_value_enum_error_cb()
- * prototype.
+ * prototype. Always returns @c 0.
  */
 static te_errno
 run_prepare_arg_value_collect_reqs(const test_entity_value *value,
@@ -3520,9 +3435,8 @@ run_prepare_arg_value_collect_reqs(const test_entity_value *value,
     test_requirements *reqs = opaque;
 
     if (TE_RC_GET_ERROR(status) == TE_EEXIST)
-    {
-        return test_requirements_clone(&value->reqs, reqs);
-    }
+        test_requirements_clone(&value->reqs, reqs);
+
     return 0;
 }
 
@@ -3601,9 +3515,7 @@ run_prepare_arg_cb(const test_var_arg *va, void *opaque)
 
         if (ri_list != NULL)
         {
-            iter_list = malloc(sizeof(*iter_list));
-            if (iter_list == NULL)
-                return TE_RC(TE_TESTER, TE_ENOMEM);
+            iter_list = TE_ALLOC(sizeof(*iter_list));
 
             iter_list->name = ri_list->name;
             iter_list->index = i_value;
@@ -3864,12 +3776,11 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     {
         hash_str = test_params_hash(ctx->args, ri->n_args);
 
-        if (hash_str == NULL || strcmp(hash_str, gctx->act->hash) != 0)
+        if (strcmp(hash_str, gctx->act->hash) != 0)
         {
             ctx->current_result.status = TESTER_TEST_INCOMPLETE;
             ctx->group_step = true;
-            if (hash_str != NULL)
-                free(hash_str);
+            free(hash_str);
             return TESTER_CFG_WALK_SKIP;
         }
         free(hash_str);

@@ -324,6 +324,8 @@ extern int rcf_send_cmd(ta *agent, usrreq *req);
 
 /**
  * Allocate memory for user request.
+ *
+ * @note Cannot return @c NULL.
  */
 extern usrreq *rcf_alloc_usrreq(void);
 

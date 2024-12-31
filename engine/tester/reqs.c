@@ -27,6 +27,8 @@
 
 #include "logger_api.h"
 
+#include "te_alloc.h"
+
 #include "tester_conf.h"
 #include "tester_reqs.h"
 #include "tester_run.h"
@@ -64,15 +66,7 @@ tester_new_target_reqs(logic_expr **targets, const char *req)
     }
     else
     {
-        parent = calloc(1, sizeof(*parent));
-        if (parent == NULL)
-        {
-            rc = TE_OS_RC(TE_TESTER, errno);;
-            logic_expr_free(parsed);
-            ERROR("%s(): calloc(1, %u) failed",
-                  __FUNCTION__, sizeof(*parent));
-            return rc;
-        }
+        parent = TE_ALLOC(sizeof(*parent));
 
         parent->type = LOGIC_EXPR_AND;
         parent->u.binary.lhv = *targets;
@@ -89,25 +83,17 @@ tester_new_target_reqs(logic_expr **targets, const char *req)
  *
  * @param req             Requirement to be cloned
  *
- * @return Pointer to allocated requirement clone or NULL.
+ * @return Pointer to allocated requirement clone (cannot return @c NULL).
  */
 static test_requirement *
 test_requirement_clone(const test_requirement *req)
 {
-    test_requirement *p = calloc(1, sizeof(*p));
+    test_requirement *p = TE_ALLOC(sizeof(*p));
 
     assert(req->ref == NULL);
-    if (p != NULL)
-    {
-        p->id = strdup(req->id);
-        if (p->id != NULL)
-        {
-            return p;
-        }
-        free(p);
-    }
-    ERROR("%s(): Memory allocation failed", __FUNCTION__);
-    return NULL;
+    p->id = TE_STRDUP(req->id);
+
+    return p;
 }
 
 /**
@@ -125,7 +111,7 @@ test_requirement_free(test_requirement *req)
 
 
 /* See description in tester_reqs.h */
-te_errno
+void
 test_requirements_clone(const test_requirements *reqs,
                         test_requirements *new_reqs)
 {
@@ -135,14 +121,8 @@ test_requirements_clone(const test_requirements *reqs,
     TAILQ_FOREACH(p, reqs, links)
     {
         q = test_requirement_clone(p);
-        if (q == NULL)
-        {
-            ERROR("%s(): test_requirement_clone() failed", __FUNCTION__);
-            return TE_RC(TE_TESTER, TE_ENOMEM);
-        }
         TAILQ_INSERT_TAIL(new_reqs, q, links);
     }
-    return 0;
 }
 
 /* See description in tester_reqs.h */
@@ -602,8 +582,6 @@ tester_get_sticky_reqs(test_requirements       *sticky_reqs,
         if (p->sticky)
         {
             q = test_requirement_clone(p);
-            if (q == NULL)
-                return TE_RC(TE_TESTER, TE_ENOMEM);
             TAILQ_INSERT_TAIL(sticky_reqs, q, links);
         }
     }

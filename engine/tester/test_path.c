@@ -147,9 +147,7 @@ bit_mask_alloc(unsigned int num, bool set)
 
     assert(num > 0);
     bytes = ((num - 1) >> 3) + 1;
-    mem = malloc(bytes);
-    if (mem == NULL)
-        return NULL;
+    mem = TE_ALLOC(bytes);
 
     if (set)
         memset(mem, 0xff, bytes);
@@ -506,12 +504,6 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
 
     /* Allocate bit mask for all iterations */
     bm = bit_mask_alloc(run->n_iters, true);
-    if (bm == NULL)
-    {
-        gctx->rc = TE_ENOMEM;
-        EXIT("FAULT");
-        return TESTER_CFG_WALK_FAULT;
-    }
 
     if (name != NULL)
     {
@@ -541,13 +533,6 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
             }
 
             arg_bm = bit_mask_alloc(n_values, false);
-            if (arg_bm == NULL)
-            {
-                free(bm);
-                gctx->rc = TE_ENOMEM;
-                EXIT("FAULT");
-                return TESTER_CFG_WALK_FAULT;
-            }
 
             value_data.ctx = ctx;
             value_data.path_arg = path_arg;

@@ -25,6 +25,7 @@
 #include <strings.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_queue.h"
 #include "te_errno.h"
@@ -207,23 +208,19 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
     elm1 = h1->tqh_first;
 
     /* a single obj to hold parameters of all list0 gaps */
-    if ((gap0 = calloc(1, sizeof(*gap0))) == NULL)
-        return TE_RC(TE_TESTER, TE_ENOMEM);
+    gap0 = TE_ALLOC(sizeof(*gap0));
 
     /* a single obj to hold parameters of all list1 gaps */
-    if ((gap1 = calloc(1, sizeof(*gap1))) == NULL)
-        return TE_RC(TE_TESTER, TE_ENOMEM);
+    gap1 = TE_ALLOC(sizeof(*gap1));
 
     /* a single obj to pass parameters of all overlaps */
-    if ((overlap = calloc(1, sizeof(*overlap))) == NULL)
-        return TE_RC(TE_TESTER, TE_ENOMEM);
+    overlap = TE_ALLOC(sizeof(*overlap));
 
     /*
      * will be allocated again each time the current one is finished
      * and inserted at the end of the resulting list
      */
-    if ((overlap_grow = calloc(1, sizeof(*overlap_grow))) == NULL)
-        return TE_RC(TE_TESTER, TE_ENOMEM);
+    overlap_grow = TE_ALLOC(sizeof(*overlap_grow));
 
     /*
      * Init, so it could only be either the first elm or the pregap.
@@ -259,9 +256,7 @@ testing_scenarios_op(testing_scenario *h0, testing_scenario *h1,
                     /* insert only non-blank intervals */
                     TAILQ_INSERT_TAIL(&h_rslt, overlap_grow, links);
                     /* need to alloc a new obj to accumulate overlaps: */
-                    if ((overlap_grow = malloc(sizeof(*overlap_grow)))
-                        == NULL)
-                        return TE_RC(TE_TESTER, TE_ENOMEM);
+                    overlap_grow = TE_ALLOC(sizeof(*overlap_grow));
                 }
                 /* start a new accumulation: */
                 memcpy(overlap_grow, overlap, sizeof(*overlap_grow));
@@ -345,15 +340,12 @@ testing_act *
 scenario_new_act(const unsigned int first, const unsigned int last,
                  const tester_flags flags)
 {
-    testing_act *act = malloc(sizeof(*act));
+    testing_act *act = TE_ALLOC(sizeof(*act));
 
-    if (act != NULL)
-    {
-        act->first = first;
-        act->last = last;
-        act->flags = flags;
-        act->hash = NULL;
-    }
+    act->first = first;
+    act->last = last;
+    act->flags = flags;
+    act->hash = NULL;
 
     return act;
 }

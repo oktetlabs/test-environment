@@ -29,6 +29,7 @@
 #include <assert.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_queue.h"
@@ -142,12 +143,7 @@ config_prepare_new_ctx(config_prepare_data *gctx)
     config_prepare_ctx *cur_ctx = SLIST_FIRST(&gctx->ctxs);
     config_prepare_ctx *new_ctx;
 
-    new_ctx = calloc(1, sizeof(*new_ctx));
-    if (new_ctx == NULL)
-    {
-        gctx->rc = TE_RC(TE_TESTER, TE_ENOMEM);
-        return NULL;
-    }
+    new_ctx = TE_ALLOC(sizeof(*new_ctx));
 
     if (cur_ctx != NULL)
     {
@@ -371,9 +367,7 @@ prepare_arg_cb(const test_var_arg *va, void *opaque)
         }
         else
         {
-            p = malloc(sizeof(*p));
-            if (p == NULL)
-                return TE_RC(TE_TESTER, TE_ENOMEM);
+            p = TE_ALLOC(sizeof(*p));
 
             p->name = va->list;
             p->len = n_values;

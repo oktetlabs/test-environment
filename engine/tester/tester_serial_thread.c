@@ -17,6 +17,7 @@
 #endif
 
 #include "logger_api.h"
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "conf_api.h"
 #include "te_queue.h"
@@ -55,10 +56,6 @@ typedef enum {
     SERIAL_EVENT_STOP_ALL, /**< Stop handlers execution, kill the test and
                                 stop tests sequence execution */
 } serial_event_result;
-
-#define TE_SERIAL_MALLOC(ptr, size)       \
-    if ((ptr = malloc(size)) == NULL)   \
-        assert(0);
 
 /** Process identifier with mutex */
 typedef struct tester_serial_pid_t {
@@ -156,7 +153,7 @@ if (_rc != 0) \
 
     for (i = 0; (unsigned)i < n_handles; i++)
     {
-        TE_SERIAL_MALLOC(h, sizeof(tester_serial_handler_t));
+        h = TE_ALLOC(sizeof(tester_serial_handler_t));
         h->name = NULL;
         h->path = NULL;
 

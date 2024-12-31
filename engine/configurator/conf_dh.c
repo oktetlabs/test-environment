@@ -389,12 +389,7 @@ cfg_dh_process_copy(xmlNodePtr node, te_kvpair_h *expand_vars)
         oid_len = strlen(oid);
 
         len = sizeof(cfg_copy_msg) + oid_len + 1;
-        if ((msg = calloc(1, len)) == NULL)
-        {
-            ERROR("Cannot allocate memory");
-            rc = TE_ENOMEM;
-            goto cleanup;
-        }
+        msg = TE_ALLOC(len);
 
         memcpy(msg->dst_oid, oid, oid_len + 1);
         msg->is_obj = (strchr(oid, ':') == NULL) ? true : false;
@@ -482,8 +477,8 @@ cfg_dh_process_add(xmlNodePtr node, const te_kvpair_h *expand_vars)
 
         len = sizeof(cfg_add_msg) + CFG_MAX_INST_VALUE +
               strlen((char *)oid) + 1;
-        if ((msg = (cfg_add_msg *)calloc(1, len)) == NULL)
-            RETERR(TE_ENOMEM, "Cannot allocate memory");
+
+        msg = TE_ALLOC(len);
 
         msg->type = CFG_ADD;
         msg->len = sizeof(cfg_add_msg);
@@ -594,10 +589,7 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                                            (const xmlChar *)"ta")) == NULL)
                 RETERR(TE_EINVAL, "Incorrect reboot command format");
 
-            if ((msg = (cfg_reboot_msg *)calloc(1, sizeof(*msg) +
-                                                strlen(attr) + 1))
-                    == NULL)
-                RETERR(TE_ENOMEM, "Cannot allocate memory");
+            msg = TE_ALLOC(sizeof(*msg) + strlen(attr) + 1);
 
             msg->type = CFG_REBOOT;
             msg->len = sizeof(*msg) + strlen(attr) + 1;
@@ -665,8 +657,7 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                 len = sizeof(cfg_register_msg) + strlen((char *)oid) + 1 +
                       (val_s == NULL ? 0 : strlen((char *)val_s) + 1);
 
-                if ((msg = (cfg_register_msg *)calloc(1, len)) == NULL)
-                    RETERR(TE_ENOMEM, "Cannot allocate memory");
+                msg = TE_ALLOC(len);
 
                 msg->type = CFG_REGISTER;
                 msg->len = len;
@@ -880,8 +871,7 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                     return rc;
 
                 len = sizeof(cfg_set_msg) + CFG_MAX_INST_VALUE;
-                if ((msg = (cfg_set_msg *)calloc(1, len)) == NULL)
-                    RETERR(TE_ENOMEM, "Cannot allocate memory");
+                msg = TE_ALLOC(len);
 
                 msg->handle = handle;
                 msg->type = CFG_SET;
@@ -941,8 +931,7 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                 if (!CFG_IS_INST(handle))
                     RETERR(TE_EINVAL, "OID %s is not instance", oid);
 
-                if ((msg = (cfg_del_msg *)calloc(1, sizeof(*msg))) == NULL)
-                    RETERR(TE_ENOMEM, "Cannot allocate memory");
+                msg = TE_ALLOC(sizeof(*msg));
 
                 msg->type = CFG_DEL;
                 msg->len = sizeof(*msg);
@@ -1124,8 +1113,7 @@ cfg_dh_attach_backup(char *filename)
 {
     cfg_backup *tmp;
 
-    if ((tmp = (cfg_backup *)malloc(sizeof(*tmp))) == NULL)
-        return TE_ENOMEM;
+    tmp = TE_ALLOC(sizeof(*tmp));
 
     if ((tmp->filename = strdup(filename)) == NULL)
     {
@@ -1322,15 +1310,8 @@ cfg_dh_restore_backup_ext(char *filename, bool hard_check, bool shutdown)
 
             case CFG_SET:
             {
-                cfg_set_msg *msg =
-                    (cfg_set_msg *)calloc(sizeof(cfg_set_msg) +
-                                          CFG_MAX_INST_VALUE, 1);
-
-                if (msg == NULL)
-                {
-                    ERROR("calloc() failed");
-                    return TE_ENOMEM;
-                }
+                cfg_set_msg *msg = TE_ALLOC(sizeof(cfg_set_msg) +
+                                            CFG_MAX_INST_VALUE);
 
                 if ((rc = cfg_db_find(tmp->old_oid, &msg->handle)) != 0)
                 {
@@ -1378,16 +1359,9 @@ cfg_dh_restore_backup_ext(char *filename, bool hard_check, bool shutdown)
 
             case CFG_DEL:
             {
-                cfg_add_msg *msg = (cfg_add_msg *)
-                                       calloc(sizeof(cfg_add_msg) +
-                                              CFG_MAX_INST_VALUE +
-                                              strlen(tmp->old_oid) + 1, 1);
-
-                if (msg == NULL)
-                {
-                    ERROR("calloc() failed");
-                    return TE_ENOMEM;
-                }
+                cfg_add_msg *msg = TE_ALLOC(sizeof(cfg_add_msg) +
+                                            CFG_MAX_INST_VALUE +
+                                            strlen(tmp->old_oid) + 1);
 
                 msg->type = CFG_ADD;
                 msg->len = sizeof(*msg);
@@ -1487,20 +1461,9 @@ cfg_dh_restore_backup_on_shutdown()
 int
 cfg_dh_push_command(cfg_msg *msg, bool local, const cfg_inst_val *old_val)
 {
-    cfg_dh_entry *entry = (cfg_dh_entry *)calloc(sizeof(cfg_dh_entry), 1);
+    cfg_dh_entry *entry = TE_ALLOC(sizeof(cfg_dh_entry));
 
-    if (entry == NULL)
-    {
-        ERROR("Memory allocation failure");
-        return TE_ENOMEM;
-    }
-
-    if ((entry->cmd = (cfg_msg *)calloc(msg->len, 1)) == NULL)
-    {
-        ERROR("Memory allocation failure");
-        free(entry);
-        return TE_ENOMEM;
-    }
+    entry->cmd = TE_ALLOC(msg->len);
 
     /* Local commands are not comitted yet, and vice versa */
     entry->committed = !local;
