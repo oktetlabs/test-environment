@@ -157,7 +157,7 @@ xmlNodeCond(xmlNodePtr node)
  *
  * @param node          XML node
  * @param handle        instance handle
- * @oaram oid           instance OID
+ * @param oid           instance OID
  * @param obj           object of instance
  * @param expand_vars   List of key-value pairs for expansion in file,
  *                      @c NULL if environment variables are used for

@@ -971,7 +971,7 @@ tester_run_more_ctx(tester_run_data *data, bool new_group)
 
     SLIST_INSERT_HEAD(&data->ctxs, new_ctx, links);
 
-    VERB("Tester context %p clonned %p: flags=0x%" TE_PRINTF_TESTER_FLAGS
+    VERB("Tester context %p cloned %p: flags=0x%" TE_PRINTF_TESTER_FLAGS
          "x group_id=%u current_id=%u", SLIST_NEXT(new_ctx, links), new_ctx,
          new_ctx->flags, new_ctx->group_result.id,
          new_ctx->current_result.id);
@@ -4130,7 +4130,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     {
         unsigned int    tin;
 
-        /* The last step in test executaion - verification of backup */
+        /* The last step in test execution - verification of backup */
         run_verify_cfg_backup(ctx, test_get_attrs(ri)->track_conf);
 
         /* Test execution has been finished */

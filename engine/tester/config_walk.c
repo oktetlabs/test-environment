@@ -244,8 +244,8 @@ walk_test_session(const tester_cfg_walk *walk, const void *opaque,
             walk->skip_end((void *)opaque);
 
         /*
-         * Global context flag TESTER_BREAK_SESION is 0 on default.
-         * This makes tester behave in usual maner: session's
+         * Global context flag TESTER_BREAK_SESSION is 0 on default.
+         * This makes tester behave in usual manner: session's
          * epilogue is always executed if exists.
          *
          * If TESTER_BREAK_SESSION is 1 tester executes session's
