@@ -593,7 +593,7 @@ tapi_cfg_net_get_nodes_values(const char *net_name,
     } while (0)
 
 /**
- * Deallocates memory specified in "ptr_" prameter by using "func_" function
+ * Deallocates memory specified in "ptr_" parameter by using "func_" function
  * and then sets the variable to NULL.
  */
 #define SAFE_FREE(ptr_, func_) \
@@ -806,7 +806,7 @@ tapi_cfg_net_get_switch_port(const char *ta_node, unsigned int *p_port)
     port = strtol(port_name, &end, 10);
     if (end == port_name || *end != '\0' || port < 0)
     {
-        ERROR("Invlaid port number '%s' format", port_name);
+        ERROR("Invalid port number '%s' format", port_name);
         cfg_free_oid(nut_oid);
         return TE_EFMT;
     }
@@ -2289,7 +2289,7 @@ tapi_cfg_net_assigned_get_subnet_ip(tapi_cfg_net_assigned *assigned,
     rc = cfg_get_inst_name_type(net_hndl, CVT_ADDRESS, CFG_IVP(&net_addr));
     if (rc != 0)
     {
-        ERROR("Failed to retrive subnet address: %r", rc);
+        ERROR("Failed to retrieve subnet address: %r", rc);
         free(net_oid);
         return rc;
     }

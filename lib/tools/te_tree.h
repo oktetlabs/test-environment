@@ -132,7 +132,7 @@ extern void te_tree_free(te_tree *tree);
  * @param tree      tree to modify
  * @param attr      attribute name
  * @param value_fmt attribute value format
- * @oaram va        variadic list
+ * @param va        variadic list
  *
  * @return status code
  * @retval TE_EEXIST @p attr already exists in @p tree
@@ -146,7 +146,7 @@ extern te_errno te_tree_add_attr_va(te_tree *tree, const char *attr,
  * @param tree      tree to modify
  * @param attr      attribute name
  * @param value_fmt attribute value format
- * @oaram ...       variadic arguments
+ * @param ...       variadic arguments
  *
  * @return status code
  * @retval TE_EEXIST  @p attr already exists in @p tree

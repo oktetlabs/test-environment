@@ -166,7 +166,7 @@ tad_confirm_pdus(csap_p csap, bool recv, asn_value *pdus,
  * @return zero on success (that means "data matches to the pattern"),
  *              otherwise error code.
  *
- * This function is depricated, and leaved here only for easy backward
+ * This function is deprecated, and leaved here only for easy backward
  * rollbacks. Use 'ndn_match_data_units' instead.
  * This function will be removed just when 'ndn_match_data_units' will
  * be completed and debugged.

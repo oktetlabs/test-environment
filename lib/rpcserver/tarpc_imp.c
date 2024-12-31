@@ -261,7 +261,7 @@ tarpc_call_close_with_hooks(api_func close_func, int fd)
  *
  * @return Status code.
  *
- * @note The dinamic library is opened with RTLD_NODELETE flag.
+ * @note The dynamic library is opened with RTLD_NODELETE flag.
  * This flag is necessary for all libraries using atfork since there is no
  * way to undo the atfork call.  This flag is also necessary if the library
  * does not have correct _fini.  See man dlopen of other details.
@@ -403,7 +403,7 @@ tarpc_find_func(tarpc_lib_flags lib_flags, const char *name, api_func *func)
         if ((*func = rcf_ch_symbol_addr(func_syscall_wrap_name, 1)) != NULL)
             return 0;
 
-        /* Wrapper was not found, continues to standart name resolving */
+        /* Wrapper was not found, continues to standard name resolving */
     }
 
     if ((lib_flags & TARPC_LIB_USE_LIBC) || !tarpc_dynamic_library_loaded())

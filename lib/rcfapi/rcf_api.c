@@ -426,7 +426,7 @@ wait_rcf_ipc_message(struct ipc_client *ipcc,
         message = (p_answer != NULL && *p_answer != NULL) ? *p_answer
                                                           : recv_msg;
 
-        VERB("Message cought: TA %s, SID %d flags %x;"
+        VERB("Message caught: TA %s, SID %d flags %x;"
              " waiting for SID %d",
              message->ta, message->sid, message->flags, message->sid);
 

@@ -176,7 +176,7 @@ extern void *te_realloc_internal(void *oldptr, size_t newsize,
  * @c size_t; it does not check for available memory and so on.
  *
  * The primary purpose of this function is to ensure that
- * `TE_ALLOC(x * y)` would not errneously return a small buffer
+ * `TE_ALLOC(x * y)` would not erroneously return a small buffer
  * due to overflow:
  * @code
  * if (!te_is_valid_alloc(nmemb, size))
@@ -222,7 +222,7 @@ extern void *te_memdup_internal(const void *src, bool zero_terminated,
 /**
  * Make a copy of @p size_ bytes of memory starting from @p src_.
  *
- * This macro is similiar to @c memdup function found in OpenBSD
+ * This macro is similar to @c memdup function found in OpenBSD
  * and some other OSes.
  *
  * @param src_  Source buffer (may be @c NULL).

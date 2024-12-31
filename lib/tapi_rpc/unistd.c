@@ -216,7 +216,7 @@ rpc_write_at_offset(rcf_rpc_server *rpcs, int fd, char* buf,
                  "%d, %p, %d, %lld", "%lld, %d",
                  fd, buf, buflen, offset, out.offset, out.written);
 
-    if (out.offset == (off_t)-1)  /* failed to repsition the file offset */
+    if (out.offset == (off_t)-1)  /* failed to reposition the file offset */
         RETVAL_INT(write_at_offset, -2);
     else
         RETVAL_INT(write_at_offset, out.written);

@@ -340,7 +340,7 @@ tapi_redis_benchmark_report_get_stat(tapi_redis_benchmark_report *report,
 
     if (report == NULL || test_name == NULL)
     {
-        ERROR("%s() arguments connot be NULL", __func__);
+        ERROR("%s() arguments cannot be NULL", __func__);
         return NULL;
     }
 
@@ -366,7 +366,7 @@ tapi_redis_benchmark_report_mi_log(te_mi_logger *logger,
 
     if (logger == NULL || report == NULL)
     {
-        ERROR("%s() arguments connot be NULL", __func__);
+        ERROR("%s() arguments cannot be NULL", __func__);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 

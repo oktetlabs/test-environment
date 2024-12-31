@@ -41,7 +41,7 @@
  *
  * @param csap          CSAP instance
  * @param ptrn_unit     Traffic pattern unit
- * @param data          Location for pattern unit auxiluary data to be
+ * @param data          Location for pattern unit auxiliary data to be
  *                      prepared during preprocessing and used during
  *                      binary data generation
  *
@@ -94,7 +94,7 @@ tad_recv_preprocess_pdus(csap_p csap, const asn_value *ptrn_unit,
  *
  * @param csap          CSAP instance
  * @param ptrn_unit     Traffic pattern unit
- * @param data          Location for pattern unit auxiluary data to be
+ * @param data          Location for pattern unit auxiliary data to be
  *                      prepared during preprocessing and used during
  *                      binary data generation
  *
@@ -108,7 +108,7 @@ tad_recv_preprocess_payload(csap_p csap, const asn_value *ptrn_unit,
     const asn_value    *nds_payload;
 
     /*
-     * Get payload specification and convert to convinient
+     * Get payload specification and convert to convenient
      * representation.
      */
     rc = asn_get_child_value(ptrn_unit, &nds_payload,
@@ -200,7 +200,7 @@ tad_recv_preprocess_action(const asn_value *nds_action,
             data->function.func = rcf_ch_symbol_addr(buffer, 1);
             if (data->function.func == NULL)
             {
-                ERROR("No funcion named '%s' found", buffer);
+                ERROR("No function named '%s' found", buffer);
                 rc = TE_ENOENT;
             }
             break;
@@ -253,7 +253,7 @@ tad_recv_preprocess_action(const asn_value *nds_action,
  *
  * @param csap          CSAP instance
  * @param ptrn_unit     Traffic pattern unit
- * @param data          Location for pattern unit auxiluary data to be
+ * @param data          Location for pattern unit auxiliary data to be
  *                      prepared during preprocessing and used during
  *                      binary data matching
  *
@@ -341,7 +341,7 @@ tad_recv_preprocess_actions(csap_p csap, const asn_value *ptrn_unit,
  *
  * @param csap          CSAP instance
  * @param ptrn_unit     Traffic pattern unit
- * @param data          Location for pattern unit auxiluary data to be
+ * @param data          Location for pattern unit auxiliary data to be
  *                      prepared during preprocessing and used during
  *                      binary data generation
  *
@@ -388,7 +388,7 @@ tad_recv_preprocess_pattern_unit(csap_p csap, asn_value *ptrn_unit,
  * @param csap          CSAP instance
  * @param pattern       Traffic pattern (owned by the routine in any
  *                      case)
- * @param data          Location for pattern auxiluary data to be
+ * @param data          Location for pattern auxiliary data to be
  *                      prepared during preprocessing and used during
  *                      binary data generation
  *
@@ -846,7 +846,7 @@ tad_recv_do_actions(csap_p csap, unsigned int n_actions,
 /**
  * Match received payload against specified in pattern.
  *
- * @param pattern       Preprocessed payload specificatin from pattern
+ * @param pattern       Preprocessed payload specification from pattern
  * @param payload       Received payload
  *
  * @return Status code.

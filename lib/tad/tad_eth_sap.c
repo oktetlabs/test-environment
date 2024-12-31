@@ -1494,8 +1494,8 @@ get_ip_total_len(const char *pkt, uint16_t **field)
 
 /**
  * Detects Windows TSO behaviour when the total length field of the
- * IP header is set to zero for the packets which are expcted to be
- * segmentated. Sets the field to a meaningful value.
+ * IP header is set to zero for the packets which are expected to be
+ * segmented. Sets the field to a meaningful value.
  *
  *  @param  pkt Location of the packet
  *  @param  len The actual packet length

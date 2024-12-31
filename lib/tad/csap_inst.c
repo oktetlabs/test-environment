@@ -35,7 +35,7 @@
 
 
 /**
- * Free memory allocatad for all common CSAP data.
+ * Free memory allocated for all common CSAP data.
  *
  * @param csap      Pointer to CSAP descriptor
  */
@@ -110,7 +110,7 @@ csap_create(const char *type, csap_p *csap)
  * Macro for failure processing in csap_create function.
  *
  * @param errno_        error status code
- * @param fmt_          format string with possible firther arguments
+ * @param fmt_          format string with possible further arguments
  *                      for error log message
  */
 #define CSAP_CREATE_ERROR(errno_, fmt_...) \
@@ -245,7 +245,7 @@ csap_command_under_lock(csap_p csap, tad_traffic_op_t command)
 
     assert(pthread_mutex_trylock(&csap->lock) == EBUSY);
 
-    /* At first, check current state agains this command */
+    /* At first, check current state against this command */
     switch (command)
     {
         case TAD_OP_IDLE:

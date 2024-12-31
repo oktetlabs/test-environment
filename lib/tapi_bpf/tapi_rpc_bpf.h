@@ -54,7 +54,7 @@ extern int rpc_xsk_umem__delete(rcf_rpc_server *rpcs, rpc_ptr umem);
  * @param queue_id      Rx queue id
  * @param umem          RPC pointer to UMEM
  * @param shared_umem   If @c true, UMEM is shared with other sockets
- * @oaram config        Configuration parameters
+ * @param config        Configuration parameters
  * @param sock          RPC pointer to created socket structure on TA
  *
  * @return Nonnegative socket FD on success, @c -1 on failure.

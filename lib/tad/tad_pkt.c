@@ -834,7 +834,7 @@ tad_pkt_fragment_cb(tad_pkt *pkt, void *opaque)
 
         tad_pkt_put_seg_data(pkt, dst_seg, data->src_data, dst_seg_len,
                              NULL);
-        F_VERB("%s(): destionation segment %p put ptr=%p len=%u",
+        F_VERB("%s(): destination segment %p put ptr=%p len=%u",
                __FUNCTION__, dst_seg, data->src_data, dst_seg_len);
 
         /* Data remaining in the source segment */

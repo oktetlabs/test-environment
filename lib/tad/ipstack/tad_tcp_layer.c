@@ -715,7 +715,7 @@ tad_tcp_match_bin_cb(csap_p           csap,
             if (options == NULL)
                 options = asn_init_value(ndn_tcp_options_seq);
 
-            VERB("%s(): foung option with kind %d, offset %d",
+            VERB("%s(): found option with kind %d, offset %d",
                  __FUNCTION__, (int)(*data), data  - data_ptr);
             switch (*data)
             {
