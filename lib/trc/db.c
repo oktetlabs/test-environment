@@ -386,9 +386,6 @@ trc_db_init(te_trc_db **db)
     TAILQ_INIT(&(*db)->tests.head);
     TAILQ_INIT(&(*db)->globals.head);
 
-    /* store current db pointer */
-    current_db = (*db);
-
     return 0;
 }
 

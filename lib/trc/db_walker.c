@@ -438,7 +438,8 @@ trc_db_strcmp_normspace(const char *s1, const char *s2)
 
 /* See the description in te_trc.h */
 int
-test_iter_args_match(const trc_test_iter_args  *db_args,
+test_iter_args_match(const te_trc_db *db,
+                     const trc_test_iter_args  *db_args,
                      unsigned int               n_args,
                      trc_report_argument       *args,
                      bool is_strict)
@@ -503,16 +504,20 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
         {
             trc_global *g;
 
-            TAILQ_FOREACH(g, &current_db->globals.head, links)
+            if (db != NULL)
             {
-                if (strcmp(g->name, args[i].value +
-                           strlen(TEST_ARG_VAR_PREFIX)) == 0)
+                TAILQ_FOREACH(g, &db->globals.head, links)
                 {
-                    VERB("Value is a var, var=(%s, %s)",
-                         g->name, g->value);
-                    break;
+                    if (strcmp(g->name, args[i].value +
+                               strlen(TEST_ARG_VAR_PREFIX)) == 0)
+                    {
+                        VERB("Value is a var, var=(%s, %s)",
+                             g->name, g->value);
+                        break;
+                    }
                 }
             }
+
             if (g == NULL)
             {
                 ERROR("In TRC DB there is no <global> corresponding to "
@@ -616,7 +621,8 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
         {
             if (func_args_match == NULL || walker->iter->log_found)
             {
-                match_result = test_iter_args_match(&walker->iter->args,
+                match_result = test_iter_args_match(walker->db,
+                                                    &walker->iter->args,
                                                     n_args, args, true);
             }
             else

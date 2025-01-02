@@ -46,18 +46,13 @@
 /** Maximum length of "pos" attribute */
 #define MAX_POS_LEN     10
 
-/* global database */
-/* fixme kostik: may be the code is written in assumption
- * that there can be several databases. Then I'm very very sorry. */
-te_trc_db *current_db;
-
 /** Widely used expected results */
 static trc_exp_results  exp_defaults;
 /** Are exp_defaults initialized? */
 static bool exp_defaults_inited = false;
 
 
-static te_errno get_tests(xmlNodePtr *node, trc_tests *tests,
+static te_errno get_tests(xmlNodePtr *node, te_trc_db *db, trc_tests *tests,
                           trc_test_iter *parent);
 
 /** Queue of included files */
@@ -675,12 +670,13 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
  * Allocate and get test iteration.
  *
  * @param node          XML node
+ * @param db            TRC database
  * @param test          Parent test
  *
  * @return Status code.
  */
 static te_errno
-alloc_and_get_test_iter(xmlNodePtr node, trc_test *test)
+alloc_and_get_test_iter(xmlNodePtr node, te_trc_db *db, trc_test *test)
 {
     te_errno        rc;
     trc_test_iter  *p;
@@ -760,7 +756,7 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test *test)
     }
 
     /* Get sub-tests */
-    rc = get_tests(&node, &p->tests, p);
+    rc = get_tests(&node, db, &p->tests, p);
     if (rc != 0)
         return rc;
 
@@ -778,7 +774,7 @@ alloc_and_get_test_iter(xmlNodePtr node, trc_test *test)
  * test package).
  */
 static te_errno
-get_globals(xmlNodePtr node, trc_test *parent)
+get_globals(xmlNodePtr node, te_trc_db *db, trc_test *parent)
 {
     te_errno rc = 0;
 
@@ -816,7 +812,7 @@ get_globals(xmlNodePtr node, trc_test *parent)
                 return TE_RC(TE_TRC, TE_EFMT);
             }
 
-            TAILQ_INSERT_HEAD(&current_db->globals.head, g, links);
+            TAILQ_INSERT_HEAD(&db->globals.head, g, links);
         }
         else
             /* unexpected entry */
@@ -830,12 +826,13 @@ get_globals(xmlNodePtr node, trc_test *parent)
  * Get test iterations.
  *
  * @param node          XML node
+ * @param db            TRC database
  * @param test          Parent test
  *
  * @return Status code
  */
 static te_errno
-get_test_iters(xmlNodePtr *node, trc_test *parent)
+get_test_iters(xmlNodePtr *node, te_trc_db *db, trc_test *parent)
 {
     te_errno rc = 0;
 
@@ -846,7 +843,7 @@ get_test_iters(xmlNodePtr *node, trc_test *parent)
     {
         if (xmlStrcmp((*node)->name, CONST_CHAR2XML("iter")) == 0)
         {
-            if ((rc = alloc_and_get_test_iter(*node, parent)) != 0)
+            if ((rc = alloc_and_get_test_iter(*node, db, parent)) != 0)
                 break;
         }
         else if (xmlStrcmp((*node)->name,
@@ -873,13 +870,14 @@ get_test_iters(xmlNodePtr *node, trc_test *parent)
  * Get expected result of the test.
  *
  * @param node          XML node
+ * @param db            TRC database
  * @param tests         List of tests to add the new test
  * @param parent        Parent iteration
  *
  * @return Status code.
  */
 static te_errno
-alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
+alloc_and_get_test(xmlNodePtr node, te_trc_db *db, trc_tests *tests,
                    trc_test_iter *parent)
 {
     te_errno    rc;
@@ -998,7 +996,7 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
     /* get test globals - they're added to globals set */
     if (xmlStrcmp(node->name, CONST_CHAR2XML("globals")) == 0)
     {
-        rc = get_globals(node, p);
+        rc = get_globals(node, db, p);
         if (rc != 0)
         {
             ERROR("%s: failed to update globals with test '%s': %r",
@@ -1008,7 +1006,7 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
         node = xmlNodeNext(node);
     }
 
-    rc = get_test_iters(&node, p);
+    rc = get_test_iters(&node, db, p);
     if (rc != 0)
     {
         ERROR("Failed to get iterations of the test '%s'", p->name);
@@ -1028,13 +1026,15 @@ alloc_and_get_test(xmlNodePtr node, trc_tests *tests,
  * Get tests.
  *
  * @param node          XML node
+ * @param db            TRC database
  * @param tests         List of tests to be filled in
  * @param parent        Parent iteration
  *
  * @return Status code
  */
 static te_errno
-get_tests(xmlNodePtr *node, trc_tests *tests, trc_test_iter *parent)
+get_tests(xmlNodePtr *node, te_trc_db *db, trc_tests *tests,
+          trc_test_iter *parent)
 {
     te_errno rc = 0;
 
@@ -1050,7 +1050,8 @@ get_tests(xmlNodePtr *node, trc_tests *tests, trc_test_iter *parent)
     while (*node != NULL &&
            (
                (xmlStrcmp((*node)->name, CONST_CHAR2XML("test")) == 0 &&
-                    (rc = alloc_and_get_test(*node, tests, parent)) == 0) ||
+                    (rc = alloc_and_get_test(*node, db,
+                                             tests, parent)) == 0) ||
                (xmlStrcmp((*node)->name, CONST_CHAR2XML("include")) == 0 ||
                 xmlStrcmp((*node)->name,
                           CONST_CHAR2XML("xinclude_start")) == 0 ||
@@ -1378,9 +1379,6 @@ trc_db_open_ext(const char *location, te_trc_db **db, int flags)
         }
     }
 
-    /* store current db pointer */
-    current_db = (*db);
-
     node = xmlDocGetRootElement((*db)->xml_doc);
 
     if (node == NULL)
@@ -1428,7 +1426,7 @@ trc_db_open_ext(const char *location, te_trc_db **db, int flags)
         }
 
         TAILQ_INSERT_TAIL(inc_files, file, links);
-        rc = get_tests(&node, &(*db)->tests, NULL);
+        rc = get_tests(&node, *db, &(*db)->tests, NULL);
         trc_files_free(inc_files);
 
         if (rc != 0)
@@ -1453,7 +1451,7 @@ trc_db_open(const char *location, te_trc_db **db)
     return trc_db_open_ext(location, db, 0);
 }
 
-static te_errno trc_update_tests(trc_tests *tests, int flags,
+static te_errno trc_update_tests(te_trc_db *db, trc_tests *tests, int flags,
                                  int uid,
                                  bool (*to_save)(void *, bool),
                                  char *(*set_user_attr)(void *, bool));
@@ -1586,7 +1584,7 @@ trc_exp_results_to_xml(trc_exp_results *exp_results, xmlNodePtr node,
 }
 
 static te_errno
-trc_update_iters(trc_test_iters *iters, int flags, int uid,
+trc_update_iters(te_trc_db *db, trc_test_iters *iters, int flags, int uid,
                  bool (*to_save)(void *, bool),
                  char *(*set_user_attr)(void *, bool))
 {
@@ -1816,7 +1814,7 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
 
             if (is_saved)
             {
-                rc = trc_update_tests(&p->tests, flags, uid, to_save,
+                rc = trc_update_tests(db, &p->tests, flags, uid, to_save,
                                       set_user_attr);
                 if (rc != 0)
                     return rc;
@@ -1842,7 +1840,7 @@ trc_test_type_to_str(trc_test_type type)
 }
 
 static te_errno
-trc_update_tests(trc_tests *tests, int flags, int uid,
+trc_update_tests(te_trc_db *db, trc_tests *tests, int flags, int uid,
                  bool (*to_save)(void *, bool),
                  char *(*set_user_attr)(void *, bool))
 {
@@ -1965,7 +1963,7 @@ trc_update_tests(trc_tests *tests, int flags, int uid,
                 prev_node = node;
 
                 if ((flags & TRC_SAVE_GLOBALS) &&
-                    !TAILQ_EMPTY(&current_db->globals.head))
+                    !TAILQ_EMPTY(&db->globals.head))
                 {
                     trc_global      *g;
                     xmlNodePtr       globals_node;
@@ -1983,7 +1981,7 @@ trc_update_tests(trc_tests *tests, int flags, int uid,
 
                     xmlAddNextSibling(prev_node, globals_node);
 
-                    TAILQ_FOREACH(g, &current_db->globals.head, links)
+                    TAILQ_FOREACH(g, &db->globals.head, links)
                     {
 
                         global_node = xmlNewChild(globals_node, NULL,
@@ -2013,7 +2011,7 @@ trc_update_tests(trc_tests *tests, int flags, int uid,
 
         if (is_saved)
         {
-            rc = trc_update_iters(&p->iters, flags, uid, to_save,
+            rc = trc_update_iters(db, &p->iters, flags, uid, to_save,
                                   set_user_attr);
             if (rc != 0)
                 return rc;
@@ -2236,7 +2234,7 @@ trc_db_save(te_trc_db *db, const char *filename, int flags,
     if (flags & TRC_SAVE_POS_ATTR)
         trc_tests_pos(test, true, true);
 
-    if ((rc = trc_update_tests(&db->tests, flags, uid, to_save,
+    if ((rc = trc_update_tests(db, &db->tests, flags, uid, to_save,
                                set_user_attr)) != 0)
     {
         ERROR("Failed to update DB XML document");

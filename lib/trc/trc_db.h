@@ -24,10 +24,6 @@
 extern "C" {
 #endif
 
-/** Pointer to DB we're currently working with - last DB
- * opened by trc_db_open */
-extern te_trc_db *current_db;
-
 /** User data associated with TRC database element */
 typedef struct trc_user_data {
     LIST_ENTRY(trc_user_data)   links;
@@ -650,6 +646,8 @@ extern te_errno trc_db_test_set_user_data(trc_test *test,
 /**
  * Match TRC database arguments vs arguments specified by caller.
  *
+ * @param db            TRC database (if NULL, references to globals
+ *                      will not be resolved)
  * @param db_args       List with TRC database arguments
  * @param n_args        Number of elements in the @p args array
  * @param args          Array of arguments
@@ -659,7 +657,8 @@ extern te_errno trc_db_test_set_user_data(trc_test *test,
  * @retval ITER_EXACT_MATCH     Exact matching of all arguments values
  * @retval ITER_WILD_MATCH      Matching to a wildcard record in TRC
  */
-extern int test_iter_args_match(const trc_test_iter_args  *db_args,
+extern int test_iter_args_match(const te_trc_db *db,
+                                const trc_test_iter_args  *db_args,
                                 unsigned int               n_args,
                                 trc_report_argument       *args,
                                 bool is_strict);

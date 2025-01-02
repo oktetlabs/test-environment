@@ -1867,7 +1867,8 @@ trc_update_merge_result(trc_update_ctx *ctx,
 }
 
 /* Predeclaration of function, see description below. */
-static te_errno trc_update_gen_test_wilds_fss(unsigned int db_uid,
+static te_errno trc_update_gen_test_wilds_fss(te_trc_db *db,
+                                              unsigned int db_uid,
                                               trc_update_test_entry
                                                             *test_entry,
                                               bool grouped,
@@ -1877,7 +1878,8 @@ static te_errno trc_update_gen_test_wilds_fss(unsigned int db_uid,
                                               uint64_t flags);
 
 /* Predeclaration of function, see description below. */
-static te_errno trc_update_generate_test_wilds(unsigned int db_uid,
+static te_errno trc_update_generate_test_wilds(te_trc_db *db,
+                                               unsigned int db_uid,
                                                trc_test *test,
                                                bool grouped,
                                                int groups_cnt,
@@ -2050,7 +2052,7 @@ simplify_log_exprs(trc_exp_results *results,
             {
                 iter_data = trc_db_iter_get_user_data(iter, 0);
 
-                if (test_iter_args_match(args_group->args,
+                if (test_iter_args_match(NULL, args_group->args,
                                          iter_data->args_n,
                                          iter_data->args,
                                          true) !=
@@ -2123,10 +2125,10 @@ simplify_log_exprs(trc_exp_results *results,
      * Generate wildcards for fake test.
      */
     if (trc_update_gen_test_wilds_fss(
-                                0, test_entry, false, 0, NULL,
+                                NULL, 0, test_entry, false, 0, NULL,
                                 flags | TRC_UPDATE_INTERSEC_WILDS) < 0)
         trc_update_generate_test_wilds(
-                                    0, test, false, 0, NULL,
+                                    NULL, 0, test, false, 0, NULL,
                                     flags | TRC_UPDATE_INTERSEC_WILDS);
 
     trc_exp_results_free(results);
@@ -2677,6 +2679,7 @@ trc_update_apply_rresults(trc_test_iter *iter,
 /**
  * Apply updating rules.
  *
+ * @param db            TRC database
  * @param db_uid        TRC DB User ID
  * @param updated_tests Tests to be updated
  * @param global_rules  Global updating rules
@@ -2685,7 +2688,7 @@ trc_update_apply_rresults(trc_test_iter *iter,
  * @return Status code
  */
 static te_errno
-trc_update_apply_rules(unsigned int db_uid,
+trc_update_apply_rules(te_trc_db *db, unsigned int db_uid,
                        trc_update_tests_groups *updated_tests,
                        trc_update_rules *global_rules,
                        uint64_t flags)
@@ -2755,7 +2758,7 @@ trc_update_apply_rules(unsigned int db_uid,
                         {
                             assert(wild->args != NULL);
                             if (test_iter_args_match(
-                                                wild->args,
+                                                db, wild->args,
                                                 iter_data->args_n,
                                                 iter_data->args,
                                                 wild->is_strict) !=
@@ -2908,6 +2911,7 @@ trc_update_rule_match_iter(trc_update_rule *rule,
  * can be applied to).
  *
  * @param test_entry  TRC Update test entry
+ * @param db          TRC database
  * @param db_uid      TRC DB UID
  * @param rule        TRC updating rule
  * @param flags       Flags
@@ -2916,6 +2920,7 @@ trc_update_rule_match_iter(trc_update_rule *rule,
  */
 static te_errno
 trc_update_rule_gen_args(trc_update_test_entry *test_entry,
+                         te_trc_db *db,
                          int db_uid,
                          trc_update_rule *rule,
                          uint64_t flags)
@@ -2947,11 +2952,12 @@ trc_update_rule_gen_args(trc_update_test_entry *test_entry,
         SLIST_INIT(&wildcards);
 
         if (rc == 0)
-            rc = trc_update_gen_test_wilds_fss(db_uid, test_entry,
+            rc = trc_update_gen_test_wilds_fss(db, db_uid, test_entry,
                                                true, 2, &wildcards, flags);
         else
         {
-            rc = trc_update_generate_test_wilds(db_uid, test_entry->test,
+            rc = trc_update_generate_test_wilds(db, db_uid,
+                                                test_entry->test,
                                                 true, 2, &wildcards, flags);
             if (rc < 0)
                 break;
@@ -3657,6 +3663,7 @@ err_cleanup:
 /**
  * Generate TRC updating rules.
  *
+ * @param db            TRC database
  * @param db_uid        TRC DB User ID
  * @param updated_tests Tests to be updated
  * @param flags         Flags
@@ -3664,7 +3671,8 @@ err_cleanup:
  * @return Status code
  */
 static te_errno
-trc_update_gen_rules(unsigned int db_uid,
+trc_update_gen_rules(te_trc_db *db,
+                     unsigned int db_uid,
                      trc_update_tests_groups *updated_tests,
                      uint64_t flags)
 {
@@ -3774,7 +3782,7 @@ trc_update_gen_rules(unsigned int db_uid,
                 TAILQ_FOREACH(rule, group->rules, links)
                 {
                     if (rule->wilds == NULL)
-                        trc_update_rule_gen_args(test1, db_uid,
+                        trc_update_rule_gen_args(test1, db, db_uid,
                                                  rule, flags);
                 }
             }
@@ -3840,6 +3848,7 @@ trc_update_group_test_iters(unsigned int db_uid,
  * Get all possible combinations of arguments (not values
  * of arguments) for iterations with a given kind of result.
  *
+ * @param db            TRC database
  * @param db_uid        TRC DB User ID
  * @param test          Test
  * @param results_id    Number of a specific kind of results
@@ -3848,7 +3857,8 @@ trc_update_group_test_iters(unsigned int db_uid,
  * @return Status code
  */
 static te_errno
-trc_update_get_iters_args_combs(unsigned int db_uid,
+trc_update_get_iters_args_combs(te_trc_db *db,
+                                unsigned int db_uid,
                                 trc_test *test,
                                 int results_id,
                                 trc_update_args_groups *args_groups)
@@ -3868,7 +3878,7 @@ trc_update_get_iters_args_combs(unsigned int db_uid,
         {
             SLIST_FOREACH(args_group, args_groups, links)
             {
-                if (test_iter_args_match(args_group->args,
+                if (test_iter_args_match(db, args_group->args,
                                          iter_data->args_n,
                                          iter_data->args,
                                          true) != ITER_NO_MATCH)
@@ -4002,6 +4012,7 @@ args_comb_to_wildcard(bool *args_comb,
  * having only one possible value in all the iterations
  * descibed by this wildcard.
  *
+ * @param db        TRC database
  * @param db_uid    TRC DB user id
  * @param test      Test
  * @param wildcard  Wildcard
@@ -4009,7 +4020,8 @@ args_comb_to_wildcard(bool *args_comb,
  * @return Status code
  */
 static te_errno
-trc_update_extend_wild(unsigned int db_uid,
+trc_update_extend_wild(te_trc_db *db,
+                       unsigned int db_uid,
                        trc_test *test,
                        trc_update_args_group *wildcard)
 {
@@ -4025,7 +4037,7 @@ trc_update_extend_wild(unsigned int db_uid,
         if (iter_data == NULL || iter_data->to_save == false)
             continue;
 
-        if (test_iter_args_match(wildcard->args, iter_data->args_n,
+        if (test_iter_args_match(db, wildcard->args, iter_data->args_n,
                                  iter_data->args, true) !=
                                                     ITER_NO_MATCH)
         {
@@ -4074,6 +4086,7 @@ trc_update_extend_wild(unsigned int db_uid,
  * of arguments because some tests have different set of arguments
  * defined for different runs.
  *
+ * @param db            TRC database
  * @param db_uid        TRC DB User ID
  * @param test          Test
  * @param results_id    Number of specific kind of results to
@@ -4085,7 +4098,8 @@ trc_update_extend_wild(unsigned int db_uid,
  * @return Status code
  */
 static te_errno
-trc_update_gen_args_group_wilds(unsigned int db_uid,
+trc_update_gen_args_group_wilds(te_trc_db *db,
+                                unsigned int db_uid,
                                 trc_test *test,
                                 int results_id,
                                 trc_update_args_group *args_group,
@@ -4136,7 +4150,8 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                 (!allow_intersect && iter_data1->in_wildcard))
                 continue;
 
-            if (test_iter_args_match(args_group->args, iter_data1->args_n,
+            if (test_iter_args_match(db, args_group->args,
+                                     iter_data1->args_n,
                                      iter_data1->args, true) !=
                                                         ITER_NO_MATCH)
             {
@@ -4156,7 +4171,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                     if (iter_data2 == NULL)
                         continue;
 
-                    if (test_iter_args_match(new_group->args,
+                    if (test_iter_args_match(db, new_group->args,
                                              iter_data2->args_n,
                                              iter_data2->args,
                                              true) != ITER_NO_MATCH)
@@ -4188,7 +4203,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                     if (iter_data2 == NULL)
                         continue;
 
-                    if (test_iter_args_match(new_group->args,
+                    if (test_iter_args_match(db, new_group->args,
                                              iter_data2->args_n,
                                              iter_data2->args,
                                              true) != ITER_NO_MATCH)
@@ -4242,7 +4257,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
                     SLIST_INSERT_AFTER(prev_group, p_group, links);
 
                 if (flags & TRC_UPDATE_EXT_WILDS)
-                    trc_update_extend_wild(db_uid, test, p_group);
+                    trc_update_extend_wild(db, db_uid, test, p_group);
             }
         }
 
@@ -4270,6 +4285,7 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
 /**
  * Generate wildcards for a given test.
  *
+ * @param db                TRC database
  * @param db_uid            TRC DB User ID
  * @param test              Test
  * @param grouped           Test iterations are grouped already
@@ -4282,7 +4298,8 @@ trc_update_gen_args_group_wilds(unsigned int db_uid,
  * @return Status code
  */
 static te_errno
-trc_update_generate_test_wilds(unsigned int db_uid,
+trc_update_generate_test_wilds(te_trc_db *db,
+                               unsigned int db_uid,
                                trc_test *test,
                                bool grouped,
                                int groups_cnt,
@@ -4315,10 +4332,10 @@ trc_update_generate_test_wilds(unsigned int db_uid,
         memset(&args_groups, 0, sizeof(args_groups));
         SLIST_INIT(&args_groups);
 
-        trc_update_get_iters_args_combs(db_uid, test, res_id,
+        trc_update_get_iters_args_combs(db, db_uid, test, res_id,
                                         &args_groups);
         SLIST_FOREACH(args_group, &args_groups, links)
-            trc_update_gen_args_group_wilds(db_uid, test, res_id,
+            trc_update_gen_args_group_wilds(db, db_uid, test, res_id,
                                             args_group, &wildcards,
                                             flags);
 
@@ -4392,6 +4409,7 @@ static struct timeval   tv_before_gen_fss;
  * "full subset structure" means determining subset of iterations
  * desribed by each of these wildcards.
  *
+ * @param db            TRC database
  * @param db_uid        TRC DB user ID
  * @param test_entry    Record describing test to be updated
  * @param results_id    ID of result wich should be in all the
@@ -4403,7 +4421,8 @@ static struct timeval   tv_before_gen_fss;
  * @return Status code
  */
 te_errno
-trc_update_gen_args_group_fss(unsigned int db_uid,
+trc_update_gen_args_group_fss(te_trc_db *db,
+                              unsigned int db_uid,
                               trc_update_test_entry *test_entry,
                               int results_id,
                               trc_update_args_group *args_group,
@@ -4470,12 +4489,13 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
             if (iter_data1 == NULL)
                 continue;
 
-            if (test_iter_args_match(args_group->args, iter_data1->args_n,
+            if (test_iter_args_match(db, args_group->args,
+                                     iter_data1->args_n,
                                      iter_data1->args, true) !=
                                                         ITER_NO_MATCH)
             {
                 SLIST_FOREACH(p_group, &cur_comb_wilds, links)
-                    if (test_iter_args_match(p_group->args,
+                    if (test_iter_args_match(db, p_group->args,
                                              iter_data1->args_n,
                                              iter_data1->args,
                                              true) != ITER_NO_MATCH)
@@ -4486,7 +4506,7 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
                 else if (iter_data1->results_id == results_id)
                 {
                     SLIST_FOREACH(p_group, &wrong_wilds, links)
-                        if (test_iter_args_match(p_group->args,
+                        if (test_iter_args_match(db, p_group->args,
                                                  iter_data1->args_n,
                                                  iter_data1->args,
                                                  true) != ITER_NO_MATCH)
@@ -4522,7 +4542,7 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
                         if (iter_data2 == NULL)
                             continue;
 
-                        if (test_iter_args_match(new_group->args,
+                        if (test_iter_args_match(db, new_group->args,
                                                  iter_data2->args_n,
                                                  iter_data2->args,
                                                  true) != ITER_NO_MATCH)
@@ -4578,7 +4598,7 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
 
                                     if (j < iter_data2->nums_cnt &&
                                         test_iter_args_match(
-                                                    new_group->args,
+                                                    db, new_group->args,
                                                     iter_data2->args_n,
                                                     iter_data2->args,
                                                     true) == ITER_NO_MATCH)
@@ -4651,7 +4671,7 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
                                 trc_db_iter_get_user_data(iter2, db_uid);
                             if (iter_data2 == NULL)
                                 continue;
-                            if (test_iter_args_match(new_group->args,
+                            if (test_iter_args_match(db, new_group->args,
                                                      iter_data2->args_n,
                                                      iter_data2->args,
                                                      true) != ITER_NO_MATCH)
@@ -4709,6 +4729,7 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
  * It can require too much time to build such a structure,
  * use trc_update_generate_test_wilds() in such cases.
  *
+ * @param db            TRC database
  * @param db_uid        TRC DB User ID
  * @param test_entry    TRC Update test entry
  * @param grouped       Whether test iterations are grouped
@@ -4722,7 +4743,8 @@ trc_update_gen_args_group_fss(unsigned int db_uid,
  * @return Status code
  */
 te_errno
-trc_update_gen_test_wilds_fss(unsigned int db_uid,
+trc_update_gen_test_wilds_fss(te_trc_db *db,
+                              unsigned int db_uid,
                               trc_update_test_entry *test_entry,
                               bool grouped,
                               int groups_cnt,
@@ -4767,12 +4789,12 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
         memset(&args_groups, 0, sizeof(args_groups));
         SLIST_INIT(&args_groups);
 
-        trc_update_get_iters_args_combs(db_uid, test_entry->test, res_id,
+        trc_update_get_iters_args_combs(db, db_uid, test_entry->test, res_id,
                                         &args_groups);
 
         SLIST_FOREACH(args_group, &args_groups, links)
         {
-            rc = trc_update_gen_args_group_fss(db_uid, test_entry,
+            rc = trc_update_gen_args_group_fss(db, db_uid, test_entry,
                                                res_id, args_group,
                                                flags);
             if (rc < 0)
@@ -4880,7 +4902,7 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
                 while (SLIST_NEXT(args_group, links) != NULL)
                     args_group = SLIST_NEXT(args_group, links);
 
-                trc_update_extend_wild(db_uid, test_entry->test,
+                trc_update_extend_wild(db, db_uid, test_entry->test,
                                        args_group);
             }
         }
@@ -4978,6 +5000,7 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
 /**
  * Generate wildcards.
  *
+ * @param db            TRC database
  * @param db_uid        TRC DB User ID
  * @param updated_tests Tests to be updated
  * @param flags         Flags
@@ -4985,7 +5008,7 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
  * @return Status code
  */
 te_errno
-trc_update_generate_wilds_gen(unsigned int db_uid,
+trc_update_generate_wilds_gen(te_trc_db *db, unsigned int db_uid,
                               trc_update_tests_groups *updated_tests,
                               uint64_t flags)
 {
@@ -4997,10 +5020,10 @@ trc_update_generate_wilds_gen(unsigned int db_uid,
     {
         TAILQ_FOREACH(test_entry, &group->tests, links)
         {
-            rc = trc_update_gen_test_wilds_fss(db_uid, test_entry,
+            rc = trc_update_gen_test_wilds_fss(db, db_uid, test_entry,
                                                false, 0, NULL, flags);
             if (rc < 0)
-                trc_update_generate_test_wilds(db_uid, test_entry->test,
+                trc_update_generate_test_wilds(db, db_uid, test_entry->test,
                                                false, 0, NULL, flags);
         }
     }
@@ -5816,7 +5839,8 @@ trc_update_process_logs(trc_update_ctx *gctx)
                                          gctx->flags));
 
         RING("Applying updating rules...");
-        CHECK_F_RC(trc_update_apply_rules(gctx->db_uid,
+        CHECK_F_RC(trc_update_apply_rules(gctx->db,
+                                          gctx->db_uid,
                                           &gctx->updated_tests,
                                           &gctx->global_rules,
                                           gctx->flags));
@@ -5829,7 +5853,7 @@ trc_update_process_logs(trc_update_ctx *gctx)
         trc_update_rules_free(&gctx->global_rules);
 
         RING("Generating updating rules...");
-        CHECK_F_RC(trc_update_gen_rules(ctx.db_uid,
+        CHECK_F_RC(trc_update_gen_rules(gctx->db, ctx.db_uid,
                                         &gctx->updated_tests,
                                         gctx->flags));
 
@@ -5837,6 +5861,7 @@ trc_update_process_logs(trc_update_ctx *gctx)
         {
             RING("Applying updating rules...");
             CHECK_F_RC(trc_update_apply_rules(
+                                    gctx->db,
                                     gctx->db_uid,
                                     &gctx->updated_tests,
                                     &gctx->global_rules,
@@ -5859,7 +5884,7 @@ trc_update_process_logs(trc_update_ctx *gctx)
         !(gctx->flags & TRC_UPDATE_NO_GEN_WILDS))
     {
         RING("Generating wildcards...");
-        CHECK_F_RC(trc_update_generate_wilds_gen(gctx->db_uid,
+        CHECK_F_RC(trc_update_generate_wilds_gen(gctx->db, gctx->db_uid,
                                                  &gctx->updated_tests,
                                                  gctx->flags));
     }
