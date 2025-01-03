@@ -314,7 +314,7 @@ initiator_dev_info_addr_read(rcf_rpc_server *rpcs,
     int size;
 
     size = tapi_nvme_internal_file_read(rpcs, buffer, TE_ARRAY_LEN(buffer),
-                                        filepath);
+                                        "%s", filepath);
     if (size < 0)
     {
         ERROR("Cannot read address info");
@@ -352,7 +352,7 @@ initiator_dev_info_transport_read(rcf_rpc_server *rpcs,
     };
 
     if (tapi_nvme_internal_file_read(rpcs, buffer, TE_ARRAY_LEN(buffer),
-                                     filepath) < 0)
+                                     "%s", filepath) < 0)
     {
         ERROR("Cannot read transport");
         return RPC_ERRNO(rpcs);
@@ -377,7 +377,7 @@ initiator_dev_info_subnqn_read(rcf_rpc_server *rpcs,
                              const char *filepath)
 {
     if (tapi_nvme_internal_file_read(rpcs,
-        info->subnqn, TE_ARRAY_LEN(info->subnqn), filepath) == -1)
+        info->subnqn, TE_ARRAY_LEN(info->subnqn), "%s", filepath) == -1)
     {
         ERROR("Cannot read subnqn");
         return RPC_ERRNO(rpcs);
