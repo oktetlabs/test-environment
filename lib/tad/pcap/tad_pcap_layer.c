@@ -99,6 +99,7 @@ tad_pcap_confirm_ptrn_cb(csap_p csap, unsigned int layer,
     tad_pcap_layer_data    *layer_data;
 
     size_t                  val_len;
+    pcap_t                 *pcap;
     char                   *pcap_str;
     int                     rc;
 
@@ -138,19 +139,18 @@ tad_pcap_confirm_ptrn_cb(csap_p csap, unsigned int layer,
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
 
-    rc = pcap_compile_nopcap(TAD_PCAP_SNAPLEN, layer_data->iftype,
-                             bpf_program, pcap_str, true, 0
-#ifdef __NetBSD__
-                             /*
-                              * FIXME
-                              * NetBSD 2.0 has a bit different prototype
-                              */
-                             , NULL
-#endif
-                             );
+    pcap = pcap_open_dead(layer_data->iftype, TAD_PCAP_SNAPLEN);
+    if (pcap == NULL)
+    {
+        ERROR("%s(): pcap_open_dead() failed", __FUNCTION__);
+        return TE_RC(TE_TAD_CSAP, TE_EFAIL);
+    }
+
+    rc = pcap_compile(pcap, bpf_program, pcap_str, true, 0);
+    pcap_close(pcap);
     if (rc != 0)
     {
-        ERROR("%s(): pcap_compile_nopcap() failed, rc=%d", __FUNCTION__, rc);
+        ERROR("%s(): pcap_compile() failed, rc=%d", __FUNCTION__, rc);
         return TE_RC(TE_TAD_CSAP, TE_EINVAL);
     }
     VERB("%s: pcap_compile_nopcap() returns %d", __FUNCTION__, rc);
