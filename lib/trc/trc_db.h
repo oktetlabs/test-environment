@@ -235,7 +235,7 @@ extern trc_exp_result_entry *trc_exp_result_entry_dup(
  * @return
  *      Duplicate of result
  */
-extern trc_exp_result *trc_exp_result_dup(trc_exp_result *result);
+extern trc_exp_result *trc_exp_result_dup(const trc_exp_result *result);
 
 /**
  * Get expected results from set of widely used singleton results

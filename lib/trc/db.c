@@ -171,7 +171,7 @@ trc_exp_result_entry_dup(trc_exp_result_entry *rentry)
 
 /* See description in trc_db.h */
 trc_exp_result *
-trc_exp_result_dup(trc_exp_result *result)
+trc_exp_result_dup(const trc_exp_result *result)
 {
     trc_exp_result         *dup;
     trc_exp_result_entry   *p;
