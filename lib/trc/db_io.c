@@ -867,6 +867,46 @@ get_test_iters(xmlNodePtr *node, te_trc_db *db, trc_test *parent)
 }
 
 /**
+ * Get value of a boolean property of XML node.
+ * If the property is missing, it is considered to be false value.
+ *
+ * @param node        XML node.
+ * @param property    Name of the property.
+ * @param value       Location for obtained and parsed boolean value.
+ *
+ * @return 0 on success or error code.
+ */
+static te_errno
+get_boolean_prop(xmlNodePtr node, const char *property, bool *value)
+{
+    char *tmp = NULL;
+    te_errno rc = 0;
+
+    tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML(property)));
+    if (tmp == NULL)
+    {
+        *value = false;
+    }
+    else if (strcmp(tmp, "true") == 0 || strcmp(tmp, "1") == 0)
+    {
+        *value = true;
+    }
+    else if (strcmp(tmp, "false") == 0 || strcmp(tmp, "0") == 0)
+    {
+        *value = false;
+    }
+    else
+    {
+        ERROR("Invalid value of boolean property '%s': '%s'",
+              property, tmp);
+        rc = TE_RC(TE_TRC, TE_EFMT);
+    }
+
+    free(tmp);
+    return rc;
+}
+
+/**
  * Get expected result of the test.
  *
  * @param node          XML node
@@ -936,24 +976,9 @@ alloc_and_get_test(xmlNodePtr node, te_trc_db *db, trc_tests *tests,
     }
     free(tmp);
 
-    tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("auxiliary")));
-    if (tmp == NULL ||
-        strcmp(tmp, "false") == 0)
-    {
-        p->aux = false;
-    }
-    else if (strcmp(tmp, "true") == 0)
-    {
-        p->aux = true;
-    }
-    else
-    {
-        ERROR("Invalid auxiliary property value '%s' of the test '%s'",
-              tmp, p->name);
-        free(tmp);
-        return TE_RC(TE_TRC, TE_EFMT);
-    }
-    free(tmp);
+    rc = get_boolean_prop(node, "auxiliary", &p->aux);
+    if (rc != 0)
+        return rc;
 
     tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("pos")));
     if (tmp != NULL)
@@ -1394,14 +1419,9 @@ trc_db_open_ext(const char *location, te_trc_db **db, int flags)
     }
     else
     {
-        const char *last_match;
-
-        last_match = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("last_match")));
-        if (last_match != NULL &&
-            (strcmp(last_match, "true") == 0 || strcmp(last_match, "1") == 0))
-        {
-            (*db)->last_match = true;
-        }
+        rc = get_boolean_prop(node, "last_match", &(*db)->last_match);
+        if (rc != 0)
+            return rc;
 
         (*db)->version = XML2CHAR(xmlGetProp(node,
                                           CONST_CHAR2XML("version")));
