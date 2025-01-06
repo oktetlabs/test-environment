@@ -450,6 +450,8 @@ extern te_errno trc_db_get_text_content(xmlNodePtr node, char **content);
  *                      should be assigned to "user_attr"
  *                      attribute of test or iteration
  * @param cmd           Command used to generate TRC DB
+ * @param quiet         If true, do not print message about updating
+ *                      TRC database.
  *
  * @return
  *      0 on success or error code
@@ -458,7 +460,7 @@ extern te_errno trc_db_save(te_trc_db *db, const char *filename,
                             int flags, int uid,
                             bool (*to_save)(void *, bool),
                             char *(*set_user_attr)(void *, bool),
-                            char *cmd);
+                            char *cmd, bool quiet);
 
 extern void trc_db_free(te_trc_db *db);
 

@@ -708,7 +708,7 @@ main(int argc, char *argv[])
 
     /* Update expected testing results database, if requested */
     if ((ctx.flags & TRC_REPORT_UPDATE_DB) &&
-        (trc_db_save(ctx.db, db_fn, 0, 0, NULL, NULL, NULL) != 0))
+        (trc_db_save(ctx.db, db_fn, 0, 0, NULL, NULL, NULL, false) != 0))
     {
         ERROR("Failed to save TRC database to '%s'", db_fn);
         goto exit;

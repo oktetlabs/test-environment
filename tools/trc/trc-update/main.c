@@ -1635,7 +1635,7 @@ main(int argc, char **argv, char **envp)
                         ctx.db_uid, &trc_update_is_to_save,
                         (ctx.flags & TRC_UPDATE_USE_RULE_IDS) ?
                                 &trc_update_set_user_attr : NULL,
-                        ctx.cmd) != 0)
+                        ctx.cmd, false) != 0)
         {
             ERROR("Failed to save TRC database '%s'", db_fn);
             goto exit;

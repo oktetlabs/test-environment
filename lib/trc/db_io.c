@@ -2167,7 +2167,7 @@ te_errno
 trc_db_save(te_trc_db *db, const char *filename, int flags,
             int uid, bool (*to_save)(void *, bool),
             char *(*set_user_attr)(void *, bool),
-            char *cmd)
+            char *cmd, bool quiet)
 {
     const char          *fn = (filename != NULL) ?
                                     filename : db->filename;
@@ -2273,7 +2273,7 @@ trc_db_save(te_trc_db *db, const char *filename, int flags,
         ERROR("xmlSaveFormatFileEnc(%s) failed", fn);
         return TE_RC(TE_TRC, TE_EFAULT);
     }
-    else
+    else if (!quiet)
     {
         RING("DB with expected testing results has been updated:\n%s\n\n",
              fn);
