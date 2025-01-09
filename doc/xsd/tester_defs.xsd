@@ -776,6 +776,15 @@
                 </xsd:documentation>
             </xsd:annotation>
         </xsd:attribute>
+        <xsd:choice minOccurs="0" maxOccurs="unbounded">
+            <xsd:element name="objective" type="xsd:string">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Objective of the test package.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+        </xsd:choice>
     </xsd:complexType>
 
 <!--

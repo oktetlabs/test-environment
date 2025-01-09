@@ -2418,6 +2418,7 @@ get_package(xmlNodePtr node, tester_cfg *cfg, const test_session *session,
 {
     te_errno        rc;
     test_package   *p;
+    xmlNodePtr child;
 
     p = TE_ALLOC(sizeof(*p));
     TAILQ_INIT(&p->authors);
@@ -2433,6 +2434,25 @@ get_package(xmlNodePtr node, tester_cfg *cfg, const test_session *session,
     {
         ERROR("Name of the Test Package to run is unspecified");
         return TE_RC(TE_TESTER, TE_EINVAL);
+    }
+
+    child = node->children;
+    if (child != NULL)
+    {
+        /* Get optional 'objective' */
+        if (xmlStrcmp(child->name, CONST_CHAR2XML("objective")) == 0)
+        {
+            rc = get_node_with_text_content(&child, "objective",
+                                            &p->objective);
+            if (rc != 0)
+                return rc;
+        }
+        else
+        {
+            ERROR("Unsupported node '%s' in the package item",
+                  XML2CHAR(child->name));
+            return TE_RC(TE_TESTER, TE_EINVAL);
+        }
     }
 
     /* Parse test package also getting optional 'src' attribute */
@@ -2713,14 +2733,25 @@ get_test_package(xmlNodePtr root, tester_cfg *cfg,
 
     node = root->children;
 
-    /* Get mandatory description */
-    if (node != NULL &&
-        (rc = get_node_with_text_content(&node, "description",
-                                         &pkg->objective)) != 0)
+    /*
+     * Get the 'desctiption' for the package. Use description value if there is
+     * no objective for the package.
+     */
+    if (node != NULL)
     {
-        ERROR("Failed to get mandatory description of the test "
-              "package '%s': %r", pkg->name, rc);
-        return rc;
+        char *obj;
+
+        rc = get_node_with_text_content(&node, "description", &obj);
+        if (rc != 0)
+        {
+            ERROR("Failed to get mandatory description of the test "
+                  "package '%s': %r", pkg->name, rc);
+            return rc;
+        }
+        if (pkg->objective == NULL)
+            pkg->objective = obj;
+        else
+            free(obj);
     }
 #ifndef XML_DOC_ASSUME_VALID
     if (pkg->objective == NULL)
