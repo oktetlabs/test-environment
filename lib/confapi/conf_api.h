@@ -187,7 +187,7 @@ extern te_errno cfg_get_object_descr(cfg_handle     handle,
  *
  * @param handle    handle of object or object instance
  * @param oid       OUT: location for the oid pointer (memory for the
- *                  string is allocated by the routine using malloc()
+ *                  string is allocated by the routine using TE_ALLOC()
  *
  * @return 0 or TE_EINVAL if invalid handle is provided
  */
@@ -198,7 +198,7 @@ extern te_errno cfg_get_oid_str(cfg_handle handle, char **oid);
  *
  * @param handle    handle of object or object instance
  * @param oid       OUT: location for the oid pointer (memory for the
- *                    array is allocated by the routine using malloc()
+ *                    array is allocated by the routine using TE_ALLOC()
  *
  * @return 0 or TE_EINVAL if invalid handle is provided
  */
@@ -318,7 +318,7 @@ extern te_errno cfg_find_object_by_instance(cfg_handle  instance,
  *                      (see Configurator documentation for details)
  * @param[out] p_num    number of found objects or object instances
  * @param[out] p_set    array of object/(object instance) handles;
- *                      memory for the array is allocated using malloc()
+ *                      memory for the array is allocated using TE_ALLOC()
  *
  * @return  0 or
  *          TE_EINVAL if a pattern format is incorrect or
@@ -625,7 +625,7 @@ extern te_errno cfg_commit_fmt(const char *oid_fmt, ...)
 
 /**
  * Obtain value of the object instance. Memory for strings and
- * addresses is allocated by the routine using malloc().
+ * addresses is allocated by the routine using TE_ALLOC().
  *
  * @param handle    object instance handle
  * @param type      location for value type, may be NULL
@@ -731,7 +731,7 @@ extern te_errno cfg_get_instance_str(cfg_val_type *p_type, void *val,
 /**
  * Obtain value of the object instance with synchronization with
  * the managed object. Memory for strings and
- * addresses is allocated by the routine using malloc().
+ * addresses is allocated by the routine using TE_ALLOC().
  *
  * @param handle    object instance handle
  * @param type      location for the value type

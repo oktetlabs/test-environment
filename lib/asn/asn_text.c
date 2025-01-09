@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "te_stdint.h"
 #include "te_defs.h"
@@ -1796,7 +1797,7 @@ asn_parse_dvalue_in_file(const char *filename, const asn_type *type,
     if ((rc = file_len(filename, &flen)) != 0)
         return rc;
 
-    buf = calloc(flen + 1, 1);
+    buf = TE_ALLOC(flen + 1);
     fd = open(filename, O_RDONLY);
     if (fd < 0)
         return errno;

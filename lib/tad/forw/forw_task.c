@@ -265,12 +265,7 @@ tadf_add_forw_task(const char *forw_asn_spec, int sendq_id)
             break;
         }
 
-        new_task_descr = calloc(1, sizeof(*new_task_descr));
-        if (new_task_descr == NULL)
-        {
-            rc = TE_ENOMEM;
-            break;
-        }
+        new_task_descr = TE_ALLOC(sizeof(*new_task_descr));
 
         new_task_descr->asn_forw_action = forward_action_spec;
 

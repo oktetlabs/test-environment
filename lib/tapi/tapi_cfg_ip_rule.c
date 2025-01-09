@@ -11,6 +11,7 @@
 #include "tapi_cfg_ip_rule.h"
 
 #include "logger_api.h"
+#include "te_alloc.h"
 #include "te_errno.h"
 
 /**
@@ -74,12 +75,7 @@ te_errno tapi_cfg_get_rule_table(const char *ta, int addr_family,
     if (size == 0)
         return 0;
 
-    local_tbl = (tapi_rt_ip_rule_entry *)calloc(size, sizeof(*local_tbl));
-    if (local_tbl == NULL)
-    {
-        free(handles);
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    }
+    local_tbl = TE_ALLOC(size * sizeof(*local_tbl));
 
     tbl_ptr = local_tbl;
     for (i = 0; i < size; i++)

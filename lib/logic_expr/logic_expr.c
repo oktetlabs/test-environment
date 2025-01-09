@@ -89,7 +89,7 @@ logic_expr_dup(logic_expr *expr)
     if (expr == NULL)
         return NULL;
 
-    dup = calloc(1, sizeof(logic_expr));
+    dup = TE_ALLOC(sizeof(logic_expr));
     dup->type = expr->type;
 
     switch (expr->type)
@@ -140,13 +140,7 @@ logic_expr_binary(logic_expr_type type, logic_expr *lhv, logic_expr *rhv)
     assert(lhv != NULL);
     assert(rhv != NULL);
 
-    p = calloc(1, sizeof(*p));
-    if (p == NULL)
-    {
-        ERROR("%s(): calloc(1, %"TE_PRINTF_SIZE_T"u) failed",
-              __FUNCTION__, sizeof(*p));
-        return NULL;
-    }
+    p = TE_ALLOC(sizeof(*p));
     p->type = type;
     p->u.binary.lhv = lhv;
     p->u.binary.rhv = rhv;
@@ -354,10 +348,8 @@ logic_expr_match(const logic_expr *re, const tqh_strings *set)
  * LOGIC_EXPR_AND. For example, !(x&y) -> !x|!y.
  *
  * @param expr      Logical expression to be transformed
- *
- * @return 0 on success or error code
  */
-static te_errno
+static void
 logic_expr_not_prop(logic_expr **expr)
 {
     logic_expr  *lhv;
@@ -379,12 +371,12 @@ logic_expr_not_prop(logic_expr **expr)
                 *expr = aux;
             }
             else
-                return 0;
+                return;
 
-            lhv = calloc(1, sizeof(*lhv));
+            lhv = TE_ALLOC(sizeof(*lhv));
             lhv->type = LOGIC_EXPR_NOT;
             lhv->u.unary = (*expr)->u.unary->u.binary.lhv;
-            rhv = calloc(1, sizeof(*rhv));
+            rhv = TE_ALLOC(sizeof(*rhv));
             rhv->type = LOGIC_EXPR_NOT;
             rhv->u.unary = (*expr)->u.unary->u.binary.rhv;
             logic_expr_free_nr((*expr)->u.unary);
@@ -415,8 +407,6 @@ logic_expr_not_prop(logic_expr **expr)
             ERROR("Invalid type of requirements expression");
             assert(false);
     }
-
-    return 0;
 }
 
 /**
@@ -1040,13 +1030,7 @@ logic_expr_dnf_split(logic_expr *dnf, logic_expr ***array,
 
     if (dnf->type != LOGIC_EXPR_OR)
     {
-        *array = calloc(1, sizeof(logic_expr *));
-        if (*array == NULL)
-        {
-            ERROR("%s(): failed to allocate memory",
-                  __FUNCTION__);
-            return TE_ENOMEM;
-        }
+        *array = TE_ALLOC(sizeof(logic_expr *));
         (*array)[0] = logic_expr_dup(dnf);
         *size = 1;
     }
@@ -1061,13 +1045,7 @@ logic_expr_dnf_split(logic_expr *dnf, logic_expr ***array,
             p = p->u.binary.rhv;
         }
 
-        *array = calloc(n, sizeof(logic_expr *));
-        if (*array == NULL)
-        {
-            ERROR("%s(): failed to allocate memory",
-                  __FUNCTION__);
-            return TE_ENOMEM;
-        }
+        *array = TE_ALLOC(n * sizeof(logic_expr *));
 
         i = 0;
         p = dnf;

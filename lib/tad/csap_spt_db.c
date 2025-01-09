@@ -69,9 +69,7 @@ csap_spt_add(csap_spt_type_p spt_descr)
     if (spt_descr == NULL)
         return TE_EINVAL;
 
-    new_spt_entry = malloc(sizeof(*new_spt_entry));
-    if (new_spt_entry == NULL)
-        return TE_ENOMEM;
+    new_spt_entry = TE_ALLOC(sizeof(*new_spt_entry));
 
     new_spt_entry->spt_data = spt_descr;
     STAILQ_INSERT_TAIL(&csap_spt_root, new_spt_entry, links);

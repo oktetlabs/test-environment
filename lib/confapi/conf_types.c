@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
@@ -776,9 +777,7 @@ str_to_addr(char *val_str, cfg_inst_val *val)
         char     c;
 
         /* Probably IPv6 address */
-        addr6 = (struct sockaddr_in6 *)calloc(1, sizeof(*addr6));
-        if (addr6 == NULL)
-            return TE_ENOMEM;
+        addr6 = TE_ALLOC(sizeof(*addr6));
 
         if (inet_pton(AF_INET6, val_str, &(addr6->sin6_addr)) > 0)
         {
@@ -807,8 +806,7 @@ str_to_addr(char *val_str, cfg_inst_val *val)
             mac_addr[i] = mac_addr_bytes[i];
         }
 
-        if ((addr = (struct sockaddr *)calloc(1, sizeof(*addr))) == NULL)
-            return TE_ENOMEM;
+        addr = TE_ALLOC(sizeof(*addr));
 
         memcpy((void *)(addr->sa_data), (void *)(mac_addr), MAC_ADDR_LEN);
 
@@ -820,9 +818,7 @@ str_to_addr(char *val_str, cfg_inst_val *val)
         /* Probably IPv4 address */
         struct sockaddr_in *addr;
 
-        addr = (struct sockaddr_in *)calloc(1, sizeof(*addr));
-        if (addr == NULL)
-            return TE_ENOMEM;
+        addr = TE_ALLOC(sizeof(*addr));
 
         if (inet_pton(AF_INET, val_str, &(addr->sin_addr)) <= 0)
         {
@@ -837,9 +833,7 @@ str_to_addr(char *val_str, cfg_inst_val *val)
         struct sockaddr    *addr;
 
         /* Unspecified address */
-        addr = (struct sockaddr *)calloc(1, sizeof(*addr));
-        if (addr == NULL)
-            return TE_ENOMEM;
+        addr = TE_ALLOC(sizeof(*addr));
 
         addr->sa_family = AF_UNSPEC;
         val->val_addr = addr;
@@ -914,11 +908,7 @@ addr_to_str(cfg_inst_val val, char **val_str)
         }
     }
     len = strlen(val_buf) + 1;
-    *val_str = (char *)calloc(len, 1);
-    if (*val_str == NULL)
-    {
-        return TE_ENOMEM;
-    }
+    *val_str = TE_ALLOC(len);
     memcpy((void *)(*val_str), val_buf, len);
     return 0;
 #undef CVT_ADDR
@@ -954,9 +944,7 @@ addr_copy(cfg_inst_val src, cfg_inst_val *dst)
     if (!addr_valid_family(src_addr->sa_family))
         return TE_EINVAL;
 
-    dst_addr = (struct sockaddr *)calloc(1, addr_value_size(src));
-    if (dst_addr == NULL)
-        return TE_ENOMEM;
+    dst_addr = TE_ALLOC(addr_value_size(src));
 
     memcpy(dst_addr, src_addr, addr_value_size(src));
     dst->val_addr = dst_addr;
@@ -981,9 +969,7 @@ addr_get(cfg_msg *msg, cfg_inst_val *val)
     if (!addr_valid_family(msg_addr->sa_family))
         return TE_EINVAL;
 
-    addr = (struct sockaddr *)calloc(1, addr_size(msg_addr->sa_family));
-    if (addr == NULL)
-        return TE_ENOMEM;
+    addr = TE_ALLOC(addr_size(msg_addr->sa_family));
 
     memcpy(addr, msg_addr, addr_size(msg_addr->sa_family));
     val->val_addr = addr;

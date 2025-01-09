@@ -10,6 +10,7 @@
 #define TE_LGR_USER "TAPI serial parse"
 
 #include "te_config.h"
+#include "te_alloc.h"
 #include "conf_api.h"
 #include "logger_api.h"
 #include "tapi_serial_parse.h"
@@ -31,9 +32,7 @@ tapi_serial_id_init(const char *agent, const char *c_name, const char *name)
 {
     tapi_parser_id *id;
 
-    id = malloc(sizeof(tapi_parser_id));
-    if (id == NULL)
-        return NULL;
+    id = TE_ALLOC(sizeof(tapi_parser_id));
 
     id->ta = strdup(agent);
     if (id->ta == NULL)

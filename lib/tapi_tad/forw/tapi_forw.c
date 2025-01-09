@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_stdint.h"
@@ -348,7 +349,7 @@ tapi_forw_set_ftask_name(asn_value *pat_unit, const char *task_name)
 {
     /* '+ 2' for colon and tailing zero */
     size_t buf_len = strlen(FORW_TASK_PKT) + strlen(task_name) + 2;
-    char *val_buffer = malloc(buf_len);
+    char *val_buffer = TE_ALLOC(buf_len);
     int syms;
     int rc = 0;
 
@@ -363,6 +364,3 @@ tapi_forw_set_ftask_name(asn_value *pat_unit, const char *task_name)
 
     return TE_RC(TE_TAPI, rc);
 }
-
-
-

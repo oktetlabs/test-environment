@@ -375,9 +375,7 @@ tad_dhcp_gen_bin_cb(csap_p csap, unsigned int layer,
 #endif
 
     /* Allocate memory for binary template of the header */
-    msg = malloc(bitlen >> 3);
-    if (msg == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    msg = TE_ALLOC(bitlen >> 3);
 
     /* Generate binary template of the DHCP message */
     bitoff = 0;
@@ -459,9 +457,7 @@ tad_dhcp6_gen_bin_cb(csap_p csap, unsigned int layer,
     }
 
     /* Allocate memory for binary template of the header */
-    msg = malloc(bitlen >> 3);
-    if (msg == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    msg = TE_ALLOC(bitlen >> 3);
 
     /* Generate binary template of the DHCP message */
     bitoff = 0;
@@ -532,9 +528,7 @@ tad_dhcp_match_pre_cb(csap_p              csap,
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
-    pkt_data = malloc(sizeof(*pkt_data));
-    if (pkt_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    pkt_data = TE_ALLOC(sizeof(*pkt_data));
     meta_pkt_layer->opaque = pkt_data;
 
     rc = tad_bps_pkt_frag_match_pre(&proto_data->hdr, &pkt_data->hdr);

@@ -50,14 +50,7 @@ search_media(tapi_upnp_cd_container_node *container, void *user_data)
         {
             if (resource->res.type == stm->type)
             {
-                media = calloc(1, sizeof(*media));
-                if (media == NULL)
-                {
-                    ERROR("%s:%d: cannot allocate memory",
-                          __FUNCTION__, __LINE__);
-                    stm->error = TE_ENOMEM;
-                    return;
-                }
+                media = TE_ALLOC(sizeof(*media));
                 media->uri = strdup(resource->res.uri);
                 if (media->uri == NULL)
                 {

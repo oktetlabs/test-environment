@@ -6,6 +6,7 @@
  */
 
 #include "te_config.h"
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "logger_api.h"
 #include "netconf.h"
@@ -140,9 +141,7 @@ route_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
                         nh_len = nh->rtnh_len -
                                       ((uint8_t *)nh_rta - (uint8_t *)nh);
 
-                        nc_nh = calloc(1, sizeof(*nc_nh));
-                        if (nc_nh == NULL)
-                            return -1;
+                        nc_nh = TE_ALLOC(sizeof(*nc_nh));
 
                         if (nc_nh_prev != NULL)
                             LIST_INSERT_AFTER(nc_nh_prev, nc_nh, links);
@@ -577,11 +576,7 @@ netconf_route_get_entry_for_addr(netconf_handle nh,
     netconf_append_rta(h, &(SIN(dst_addr)->sin_addr.s_addr),
                        sizeof(in_addr_t), RTA_DST);
 
-    list = malloc(sizeof(*list));
-    if (list == NULL)
-        return NULL;
-
-    memset(list, 0, sizeof(netconf_list));
+    list = TE_ALLOC(sizeof(*list));
 
     if (netconf_talk(nh, &req, h->nlmsg_len, route_list_cb, NULL, list) != 0)
     {

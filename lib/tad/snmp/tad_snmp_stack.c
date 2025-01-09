@@ -626,12 +626,7 @@ tad_snmp_rw_init_cb(csap_p csap)
         }
     }
 
-    snmp_spec_data = malloc(sizeof(snmp_csap_specific_data_t));
-    if (snmp_spec_data == NULL)
-    {
-        ERROR("%s: malloc failed", __FUNCTION__);
-        return TE_ENOMEM;
-    }
+    snmp_spec_data = TE_ALLOC(sizeof(snmp_csap_specific_data_t));
 
     VERB("try to open SNMP session: \n");
     VERB("  version:    %d\n", csap_session.version);

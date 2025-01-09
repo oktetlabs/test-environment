@@ -1690,7 +1690,7 @@ rpc_epoll_ctl(rcf_rpc_server *rpcs, int epfd, int oper, int fd,
     tarpc_epoll_ctl_in  in;
     tarpc_epoll_ctl_out out;
     tarpc_epoll_event *evt;
-    evt = malloc(sizeof(tarpc_epoll_event));
+    evt = TE_ALLOC(sizeof(tarpc_epoll_event));
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -1745,7 +1745,7 @@ rpc_epoll_wait_gen(rcf_rpc_server *rpcs, int epfd,
     int i;
     tarpc_epoll_event *evts;
 
-    evts = calloc(rmaxev, sizeof(tarpc_epoll_event));
+    evts = TE_ALLOC(rmaxev * sizeof(tarpc_epoll_event));
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -1811,7 +1811,7 @@ rpc_epoll_pwait_gen(rcf_rpc_server *rpcs, int epfd,
     int i;
     tarpc_epoll_event *evts;
 
-    evts = calloc(rmaxev, sizeof(tarpc_epoll_event));
+    evts = TE_ALLOC(rmaxev * sizeof(tarpc_epoll_event));
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -1879,7 +1879,7 @@ rpc_epoll_pwait2_gen(rcf_rpc_server *rpcs, int epfd,
     int i;
     tarpc_epoll_event *evts;
 
-    evts = calloc(rmaxev, sizeof(tarpc_epoll_event));
+    evts = TE_ALLOC(rmaxev * sizeof(tarpc_epoll_event));
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -3494,7 +3494,7 @@ unistd_arr_null_to_iov(char *const *arr, struct tarpc_iovec **o_iov)
 
     len = i + 1;
 
-    iov = calloc(len, sizeof(*iov));
+    iov = TE_ALLOC(len * sizeof(*iov));
 
     for (i = 0, ptr = arr; i < len; i++, ptr++)
     {

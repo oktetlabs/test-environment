@@ -240,16 +240,7 @@ tapi_cfg_net_get_net(cfg_handle net_handle, cfg_net_t *net)
     }
     else
     {
-        net->nodes = (cfg_net_node_t *)calloc(net->n_nodes,
-                                              sizeof(*(net->nodes)));
-        if (net->nodes == NULL)
-        {
-            ERROR("Memory allocation failure");
-            free(net->name);
-            te_kvpair_fini(&net->gateways);
-            net->name = NULL;
-            return rc;
-        }
+        net->nodes = TE_ALLOC(net->n_nodes * sizeof(*(net->nodes)));
     }
 
     for (i = 0; i < net->n_nodes; ++i)
@@ -308,13 +299,7 @@ tapi_cfg_net_get_nets(cfg_nets_t *nets)
     }
     else
     {
-        nets->nets = (cfg_net_t *)calloc(nets->n_nets,
-                                         sizeof(*(nets->nets)));
-        if (nets->nets == NULL)
-        {
-            ERROR("Memory allocation failure");
-            rc = TE_ENOMEM;
-        }
+        nets->nets = TE_ALLOC(nets->n_nets * sizeof(*(nets->nets)));
     }
 
     for (i = 0; rc == 0 && i < nets->n_nets; ++i)
@@ -444,12 +429,7 @@ tapi_cfg_net_get_pairs(enum net_node_type first,
         unsigned int    i, j;
 
         /* Allocate memory for maximum number of pairs */
-        pairs = malloc(nets.n_nets * sizeof(*pairs));
-        if (pairs == NULL)
-        {
-            tapi_cfg_net_free_nets(&nets);
-            return TE_ENOMEM;
-        }
+        pairs = TE_ALLOC(nets.n_nets * sizeof(*pairs));
         for (i = 0; i < nets.n_nets; ++i)
         {
             cfg_net_t  *net = nets.nets + i;
@@ -1745,12 +1725,7 @@ tapi_cfg_net_all_up(bool force)
     n_nodes = 0;
     for (i = 0; i < nets.n_nets; ++i)
         n_nodes += nets.nets[i].n_nodes;
-    nodes = calloc(sizeof(char *), n_nodes);
-    if (nodes == NULL)
-    {
-        ERROR("Out of memory");
-        return TE_OS_RC(TE_TAPI, errno);
-    }
+    nodes = TE_ALLOC(sizeof(char *) * n_nodes);
 
     /* Get the list of interfaces to be brought up */
     k = 0;
@@ -2068,15 +2043,8 @@ tapi_cfg_net_assign_ip(unsigned int af, cfg_net_t *net,
 
         if ((assigned != NULL) && (net->n_nodes > 0))
         {
-            assigned->entries = calloc(net->n_nodes,
-                                       sizeof(*(assigned->entries)));
-            if (assigned->entries == NULL)
-            {
-                ERROR("calloc(%u, %u) failed", net->n_nodes,
-                      sizeof(*(assigned->entries)));
-                rc = TE_ENOMEM;
-                break;
-            }
+            assigned->entries = TE_ALLOC(net->n_nodes *
+                                         sizeof(*(assigned->entries)));
         }
 
         /*
@@ -2507,15 +2475,8 @@ tapi_cfg_net_assign_ip_one_end(unsigned int af, cfg_net_t *net,
 
         if ((assigned != NULL) && (net->n_nodes > 0))
         {
-            assigned->entries = calloc(net->n_nodes,
-                                       sizeof(*(assigned->entries)));
-            if (assigned->entries == NULL)
-            {
-                ERROR("calloc(%u, %u) failed", net->n_nodes,
-                      sizeof(*(assigned->entries)));
-                rc = TE_ENOMEM;
-                break;
-            }
+            assigned->entries = TE_ALLOC(net->n_nodes *
+                                         sizeof(*(assigned->entries)));
         }
 
         /*

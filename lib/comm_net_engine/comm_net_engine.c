@@ -41,6 +41,7 @@
 #include <netdb.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "comm_net_engine.h"
 
@@ -229,12 +230,7 @@ rcf_net_engine_connect(const char *addr, const char *port,
     FD_SET(s, p_select_set);
 
     /* Connection established. Let's allocate memory for rnc and fill it*/
-    *p_rnc = (struct rcf_net_connection *)calloc(1, sizeof(**p_rnc));
-    if ((*p_rnc) == 0)
-    {
-        perror("rcf_net_engine_connect(): memory allocation");
-        return TE_OS_RC(TE_COMM, errno);
-    }
+    *p_rnc = TE_ALLOC(sizeof(**p_rnc));
 
     /* All field is set to zero. Just set the socket */
     (*p_rnc)->socket = s;
@@ -657,4 +653,3 @@ read_socket(int socket, char *buffer, size_t len)
 
     return 0;
 }
-

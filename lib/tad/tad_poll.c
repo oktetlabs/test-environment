@@ -23,6 +23,7 @@
 #include <assert.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "te_queue.h"
 #include "logger_api.h"
@@ -130,12 +131,7 @@ tad_poll_enqueue(csap_p csap, unsigned int timeout,
     te_errno            rc;
     int                 ret;
 
-    context = malloc(sizeof(*context));
-    if (context == NULL)
-    {
-        rc = TE_RC(TE_TAD_CH, TE_ENOMEM);
-        goto fail_context_alloc;
-    }
+    context = TE_ALLOC(sizeof(*context));
 
     rc = tad_reply_clone(&context->reply_ctx, reply_ctx);
     if (rc != 0)
@@ -196,6 +192,5 @@ fail_sem_init:
     tad_reply_cleanup(&context->reply_ctx);
 fail_reply_clone:
     free(context);
-fail_context_alloc:
     return rc;
 }

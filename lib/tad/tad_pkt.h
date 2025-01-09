@@ -204,7 +204,7 @@ extern void tad_pkt_free_seg(tad_pkt_seg *seg);
  * @param data_free     Function to be used to free @a data_ptr, if it
  *                      is not a NULL
  *
- * @return Packet segment pointer or NULL.
+ * @return Packet segment pointer (cannot return @c NULL).
  */
 extern tad_pkt_seg *tad_pkt_alloc_seg(void *data_ptr, size_t data_len,
                                       tad_pkt_seg_free data_free);
@@ -296,7 +296,7 @@ extern void tad_pkt_free(tad_pkt *pkt);
  * @param n_segs        Number of segments to allocate for each packet
  * @param first_seg_len Length of the first segment of each packet
  *
- * @return Allocated packet or NULL.
+ * @return Allocated packet (cannot return @c NULL).
  */
 extern tad_pkt *tad_pkt_alloc(unsigned int n_segs, size_t first_seg_len);
 
@@ -352,11 +352,11 @@ extern void tad_pkt_insert_after_seg(tad_pkt *pkt, tad_pkt_seg *seg,
 
 /**
  * Make flatten copy of a packet to specified memory array or to
- * allocated using malloc().
+ * allocated using TE_ALLOC().
  *
  * @param pkt       Packet
  * @param data      Location of the pointer to memory array
- *                  (if *data is NULL, allocate it using malloc())
+ *                  (if *data is NULL, allocate it using TE_ALLOC())
  * @param len       Location of the memory array length or NULL
  *                  (if *data is not NULL, *len is equal to size
  *                  of buffer provided by caller)
@@ -569,7 +569,7 @@ extern te_errno tad_pkts_add_new_seg(tad_pkts *pkts, bool header,
  * @param n_segs        Number of segments to allocate for each packet
  * @param first_seg_len Length of the first segment of each packet
  *
- * @return Status code.
+ * @return Status code (always returns @c 0).
  */
 extern te_errno tad_pkts_alloc(tad_pkts *pkts, unsigned int n_pkts,
                                unsigned int n_segs, size_t first_seg_len);

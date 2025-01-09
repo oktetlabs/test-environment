@@ -120,10 +120,7 @@ logfork_list_add(list **proc_list, char *name,
 {
     list *item = NULL;
 
-    if((item = malloc(sizeof(*item))) == NULL)
-    {
-        return -1;
-    }
+    item = TE_ALLOC(sizeof(*item));
 
     TE_STRLCPY(item->name, name, sizeof(item->name));
     item->pid = pid;

@@ -211,12 +211,7 @@ test_get_octet_string_param(const char *str_val, size_t len)
         return NULL;
     }
 
-    oct_string = (uint8_t *)calloc(len, sizeof(uint8_t));
-    if (oct_string == NULL)
-    {
-        ERROR("Error in memory allocation");
-        return NULL;
-    }
+    oct_string = TE_ALLOC(len * sizeof(uint8_t));
     ptr = oct_string;
     nptr = NULL;
     endptr = str_val;
@@ -502,19 +497,9 @@ tapi_asn_params_get(int argc, char **argv, const char *conf_prefix,
     /* should be all filled with zeroes */
     memset(pwd, 0, sizeof(pwd));
 
-    creation_param = malloc(argc * sizeof(tapi_asn_param_pair));
-    if (creation_param == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto cleanup;
-    }
+    creation_param = TE_ALLOC(argc * sizeof(tapi_asn_param_pair));
 
-    change_param = malloc(argc * sizeof(tapi_asn_param_pair));
-    if (change_param == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto cleanup;
-    }
+    change_param = TE_ALLOC(argc * sizeof(tapi_asn_param_pair));
 
     /*
      * Separate parameters to several sets:
@@ -527,7 +512,7 @@ tapi_asn_params_get(int argc, char **argv, const char *conf_prefix,
         if (0 != strncmp(argv[i], conf_prefix, strlen(conf_prefix)))
             continue;
 
-        name = malloc(strlen(argv[i]) + 1);
+        name = TE_ALLOC(strlen(argv[i]) + 1);
         strcpy(name, argv[i] + strlen(conf_prefix));
         value = strchr(name, '=');
         *value = '\0';

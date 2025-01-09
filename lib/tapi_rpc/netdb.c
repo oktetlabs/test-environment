@@ -41,6 +41,7 @@
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_netdb.h"
 
+#include "te_alloc.h"
 
 /**
  * Convert hostent received via RPC to the host struct hostent.
@@ -59,25 +60,15 @@ hostent_rpc2h(tarpc_hostent *rpc_he)
     if (rpc_he == NULL)
         return NULL;
 
-    if ((he = calloc(1, sizeof(*he))) == NULL)
-        return NULL;
+    he = TE_ALLOC(sizeof(*he));
 
-    if (rpc_he->h_aliases.h_aliases_val != NULL &&
-        (he->h_aliases = calloc(rpc_he->h_aliases.h_aliases_len,
-                                sizeof(char *))) == NULL)
-    {
-        free(he);
-        return NULL;
-    }
+    if (rpc_he->h_aliases.h_aliases_val != NULL)
+        he->h_aliases = TE_ALLOC(rpc_he->h_aliases.h_aliases_len *
+                                 sizeof(char *));
 
-    if (rpc_he->h_addr_list.h_addr_list_val != NULL &&
-        (he->h_addr_list = calloc(rpc_he->h_addr_list.h_addr_list_len,
-                                  sizeof(char *))) == NULL)
-    {
-        free(he->h_aliases);
-        free(he);
-        return NULL;
-    }
+    if (rpc_he->h_addr_list.h_addr_list_val != NULL)
+        he->h_addr_list = TE_ALLOC(rpc_he->h_addr_list.h_addr_list_len *
+                                  sizeof(char *));
 
     he->h_name = rpc_he->h_name.h_name_val;
     rpc_he->h_name.h_name_val = NULL;
@@ -278,12 +269,7 @@ rpc_getaddrinfo(rcf_rpc_server *rpcs,
     {
         int i;
 
-        if ((list = calloc(1, out.res.res_len * sizeof(*list) +
-                           sizeof(int))) == NULL)
-        {
-            rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
-            RETVAL_INT(getaddrinfo, -1);
-        }
+        list = TE_ALLOC(out.res.res_len * sizeof(*list) + sizeof(int));
         *(int *)list = out.mem_ptr;
         list = (struct addrinfo *)((int *)list + 1);
 

@@ -274,9 +274,7 @@ tad_ppp_match_pre_cb(csap_p              csap,
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
-    pkt_data = malloc(sizeof(*pkt_data));
-    if (pkt_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    pkt_data = TE_ALLOC(sizeof(*pkt_data));
     meta_pkt_layer->opaque = pkt_data;
 
     rc = tad_bps_pkt_frag_match_pre(&proto_data->hdr, &pkt_data->hdr);
@@ -373,4 +371,3 @@ tad_ppp_match_do_cb(csap_p           csap,
 
     return 0;
 }
-

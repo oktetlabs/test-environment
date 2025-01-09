@@ -106,12 +106,7 @@ tad_rte_mbuf_sap_read(tad_rte_mbuf_sap   *sap,
          bytes_remain -= tad_seg->data_len,
          tad_seg = CIRCLEQ_NEXT(tad_seg, links));
 
-    new_seg_data = malloc(tad_seg->data_len + TAD_VLAN_TAG_LEN);
-    if (new_seg_data == NULL)
-    {
-        err = errno;
-        goto out;
-    }
+    new_seg_data = TE_ALLOC(tad_seg->data_len + TAD_VLAN_TAG_LEN);
 
     memcpy(new_seg_data, tad_seg->data_ptr, bytes_remain);
 

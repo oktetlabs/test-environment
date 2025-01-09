@@ -135,9 +135,7 @@ csap_id_new(void *ptr)
         }
     }
 
-    new_entry = malloc(sizeof(*new_entry));
-    if (new_entry == NULL)
-        return CSAP_INVALID_HANDLE;
+    new_entry = TE_ALLOC(sizeof(*new_entry));
 
     new_entry->id = new_id;
     new_entry->ptr = ptr;

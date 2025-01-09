@@ -52,6 +52,7 @@
 #include <fcntl.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "comm_agent.h"
 
@@ -230,14 +231,7 @@ rcf_comm_agent_init(const char *config_str,
 #endif
 
     /* It's time to allocate memory for rcc and fill it */
-    *p_rcc = (struct rcf_comm_connection*)calloc(1, sizeof(**p_rcc));
-    if ((*p_rcc) == NULL)
-    {
-        rc = TE_OS_RC(TE_COMM, errno);
-        ERROR("memory allocation error: errno=%d\n", errno);
-        (void)close(s1);
-        return rc;
-    }
+    *p_rcc = TE_ALLOC(sizeof(**p_rcc));
 
     /* All field is set to zero. Just set the socket */
     (*p_rcc)->socket = s1;
@@ -633,4 +627,3 @@ read_socket(int socket, void *buffer, size_t len)
 
     return 0;
 }
-

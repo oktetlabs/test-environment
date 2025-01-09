@@ -36,6 +36,7 @@
 #include <assert.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
@@ -56,18 +57,11 @@ cfg_allocate_oid(int length, bool inst)
     }
 
     size = (inst) ? sizeof(cfg_inst_subid) : sizeof(cfg_object_subid);
-    oid = (cfg_oid *)calloc(1, sizeof(cfg_oid));
-    if (oid == NULL)
-        return NULL;
+    oid = TE_ALLOC(sizeof(cfg_oid));
 
     oid->len = length;
     oid->inst = inst;
-    oid->ids = (void *)calloc(length, size);
-    if (oid->ids == NULL)
-    {
-        free(oid);
-        return NULL;
-    }
+    oid->ids = TE_ALLOC(length * size);
     return oid;
 }
 
@@ -178,9 +172,7 @@ cfg_convert_oid(const cfg_oid *oid)
     if (oid == NULL)
         return NULL;
 
-    str = (char *)malloc(CFG_OID_MAX);
-    if (str == NULL)
-        return NULL;
+    str = TE_ALLOC(CFG_OID_MAX);
 
     if (oid->len == 1)
     {

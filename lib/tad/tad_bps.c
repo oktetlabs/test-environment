@@ -52,13 +52,8 @@ tad_bps_pkt_frag_init(const tad_bps_pkt_frag *descr,
     bps->fields = fields;
     bps->descr = descr;
 
-    bps->tx_def = calloc(fields, sizeof(bps->tx_def[0]));
-    bps->rx_def = calloc(fields, sizeof(bps->rx_def[0]));
-    if (bps->tx_def == NULL || bps->rx_def == NULL)
-    {
-        ERROR("%s(): calloc() failed", __FUNCTION__);
-        return TE_RC(TE_TAD_BPS, TE_ENOMEM);
-    }
+    bps->tx_def = TE_ALLOC(fields * sizeof(bps->tx_def[0]));
+    bps->rx_def = TE_ALLOC(fields * sizeof(bps->rx_def[0]));
 
     for (offset = 0, i = 0; i < fields;  offset += descr[i].len, ++i)
     {
@@ -167,12 +162,7 @@ tad_bps_nds_to_data_units(const tad_bps_pkt_frag_def *def,
     assert(def != NULL);
     assert(data != NULL);
 
-    dus = calloc(def->fields, sizeof(dus[0]));
-    if (dus == NULL)
-    {
-        ERROR("%s(): calloc() failed", __FUNCTION__);
-        return TE_RC(TE_TAD_BPS, TE_ENOMEM);
-    }
+    dus = TE_ALLOC(def->fields * sizeof(dus[0]));
 
     for (i = 0; i < def->fields; ++i)
     {
@@ -454,9 +444,7 @@ tad_bps_pkt_frag_match_pre(const tad_bps_pkt_frag_def *def,
         return TE_RC(TE_TAD_BPS, TE_EWRONGPTR);
     }
 
-    pkt_data->dus = calloc(def->fields, sizeof(*pkt_data->dus));
-    if (pkt_data->dus == NULL)
-        return TE_RC(TE_TAD_BPS, TE_ENOMEM);
+    pkt_data->dus = TE_ALLOC(def->fields * sizeof(*pkt_data->dus));
 
     for (i = 0; i < def->fields; ++i)
     {
@@ -466,10 +454,7 @@ tad_bps_pkt_frag_match_pre(const tad_bps_pkt_frag_def *def,
         {
             assert((def->descr[i].len & 7) == 0);
             pkt_data->dus[i].val_data.len = def->descr[i].len >> 3;
-            pkt_data->dus[i].val_data.oct_str =
-                calloc(1, def->descr[i].len);
-            if (pkt_data->dus[i].val_data.oct_str == NULL)
-                return TE_RC(TE_TAD_BPS, TE_ENOMEM);
+            pkt_data->dus[i].val_data.oct_str = TE_ALLOC(def->descr[i].len);
         }
     }
     return 0;

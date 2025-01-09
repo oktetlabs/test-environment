@@ -109,9 +109,7 @@ tad_atm_init_cb(csap_p csap, unsigned int layer)
     const tad_bps_pkt_frag *hdr_descr;
     unsigned int            hdr_descr_len;
 
-    proto_data = calloc(1, sizeof(*proto_data));
-    if (proto_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    proto_data = TE_ALLOC(sizeof(*proto_data));
 
     csap_set_proto_spec_data(csap, layer, proto_data);
 
@@ -199,9 +197,7 @@ tad_atm_confirm_tmpl_cb(csap_p csap, unsigned int  layer,
     proto_data = csap_get_proto_spec_data(csap, layer);
 
     /* FIXME: Use malloc() and initialize data units at first */
-    tmpl_data = calloc(1, sizeof(*tmpl_data));
-    if (tmpl_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    tmpl_data = TE_ALLOC(sizeof(*tmpl_data));
     *p_opaque = tmpl_data;
 
     /* Get template value for congestion state */
@@ -240,9 +236,7 @@ tad_atm_confirm_ptrn_cb(csap_p csap, unsigned int  layer,
     proto_data = csap_get_proto_spec_data(csap, layer);
 
     /* FIXME: Use malloc() and initialize data units at first */
-    tmpl_data = calloc(1, sizeof(*tmpl_data));
-    if (tmpl_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    tmpl_data = TE_ALLOC(sizeof(*tmpl_data));
     *p_opaque = tmpl_data;
 
     /* Get template value for congestion state */
@@ -406,9 +400,7 @@ tad_atm_match_pre_cb(csap_p              csap,
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
-    pkt_data = malloc(sizeof(*pkt_data));
-    if (pkt_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    pkt_data = TE_ALLOC(sizeof(*pkt_data));
     meta_pkt_layer->opaque = pkt_data;
 
     pkt_data->congestion.du_type = TAD_DU_UNDEF;
@@ -507,9 +499,7 @@ tad_atm_match_do_cb(csap_p           csap,
         tad_atm_cell_ctrl_data *cell_ctrl;
         unsigned int            gfc_shift;
 
-        cell_ctrl = malloc(sizeof(*cell_ctrl));
-        if (cell_ctrl == NULL)
-            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+        cell_ctrl = TE_ALLOC(sizeof(*cell_ctrl));
         tad_pkt_set_opaque(sdu, cell_ctrl, free);
 
         gfc_shift = (proto_data->type == NDN_ATM_UNI) ? 1 : 0;

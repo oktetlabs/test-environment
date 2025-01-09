@@ -699,12 +699,7 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
     }
 
     /* Allocate memory for binary template of the header */
-    cb_data.hdr = malloc(cb_data.hlen);
-    if (cb_data.hdr == NULL)
-    {
-        rc = TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-        goto cleanup;
-    }
+    cb_data.hdr = TE_ALLOC(cb_data.hlen);
 
     /* Generate binary template of the header */
     bitoff = 0;
@@ -901,9 +896,7 @@ tad_ip4_match_pre_cb(csap_p              csap,
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
-    pkt_data = malloc(sizeof(*pkt_data));
-    if (pkt_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    pkt_data = TE_ALLOC(sizeof(*pkt_data));
     meta_pkt_layer->opaque = pkt_data;
 
     rc = tad_bps_pkt_frag_match_pre(&proto_data->hdr, &pkt_data->hdr);

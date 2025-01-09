@@ -25,6 +25,7 @@
 #include "tapi_cfg_base.h"
 #include "tapi_sniffer.h"
 
+#include "te_alloc.h"
 #include "te_stdint.h"
 #include "te_raw_log.h"
 #include "te_str.h"
@@ -102,9 +103,7 @@ sniffer_check_name(const char *ta, const char *iface, const char *name,
 
     if (name == NULL)
     {
-        *newname = malloc(CFG_SUBID_MAX);
-        if (*newname == NULL)
-            return TE_RC(TE_RCF_API, TE_ENOMEM);
+        *newname = TE_ALLOC(CFG_SUBID_MAX);
         rc = snprintf(*newname, CFG_SUBID_MAX, "default_%u", rand()%1000);
         if (rc > CFG_SUBID_MAX)
             return TE_RC(TE_RCF_API, TE_EINVAL);
@@ -117,9 +116,7 @@ sniffer_check_name(const char *ta, const char *iface, const char *name,
                                   ta, iface, name);
         if (rc == 0 && n_handles > 0)
         {
-            *newname = malloc(CFG_SUBID_MAX);
-            if (*newname == NULL)
-                return TE_RC(TE_RCF_API, TE_ENOMEM);
+            *newname = TE_ALLOC(CFG_SUBID_MAX);
             rc = snprintf(*newname, CFG_SUBID_MAX, "%s_%u", name,
                           rand()%1000);
             if (rc > CFG_SUBID_MAX)
@@ -166,12 +163,7 @@ tapi_sniffer_add(const char *ta, const char *iface, const char *name,
         return NULL;
     }
 
-    if ((newsnid = malloc(sizeof(tapi_sniffer_id))) == NULL)
-    {
-        ERROR("Malloc error");
-        return NULL;
-    }
-    memset(newsnid, 0, sizeof(*newsnid));
+    newsnid = TE_ALLOC(sizeof(tapi_sniffer_id));
 
     rc = cfg_add_instance_fmt(NULL, CVT_NONE, NULL, TE_CFG_SNIF_FMT,
                               ta, iface, snifname);
@@ -257,7 +249,7 @@ tapi_sniffer_add_mult(const char *ta, const char *iface, const char *name,
                                            ofill);
                 if (newsnid != NULL)
                 {
-                    newsn_l = malloc(sizeof(tapi_sniff_list_s));
+                    newsn_l = TE_ALLOC(sizeof(tapi_sniff_list_s));
                     newsn_l->sniff = newsnid;
                     SLIST_INSERT_HEAD(snif_h, newsn_l, tapi_sniff_ent);
                 }
@@ -269,7 +261,7 @@ tapi_sniffer_add_mult(const char *ta, const char *iface, const char *name,
         newsnid = tapi_sniffer_add(ta, iface, name, filter, ofill);
         if (newsnid != NULL)
         {
-            newsn_l = malloc(sizeof(tapi_sniff_list_s));
+            newsn_l = TE_ALLOC(sizeof(tapi_sniff_list_s));
             newsn_l->sniff = newsnid;
             SLIST_INSERT_HEAD(snif_h, newsn_l, tapi_sniff_ent);
         }
@@ -347,12 +339,7 @@ tapi_sniffer_mark(const char *ta, tapi_sniffer_id *id,
 
     /* Prepare message */
     buf_len = SNIFFER_MIN_MARK_SIZE;
-    mess = malloc(buf_len);
-    if (mess == NULL)
-    {
-        ERROR("Malloc error");
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
+    mess = TE_ALLOC(buf_len);
     if (id != NULL)
         nfl = snprintf(mess + sizeof(te_log_nfl),
                        buf_len - sizeof(te_log_nfl),

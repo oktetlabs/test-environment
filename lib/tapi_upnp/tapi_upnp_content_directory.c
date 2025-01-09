@@ -531,13 +531,7 @@ extract_base_class_data(GUPnPDIDLLiteObject *upnp_object,
         GUPnPProtocolInfo          *protocol_info;
         tapi_upnp_cd_resource_node *res_node;
 
-        res_node = calloc(1, sizeof(*res_node));
-        if (res_node == NULL)
-        {
-            ERROR("%s:%d: cannot allocate memory", __FUNCTION__, __LINE__);
-            rc = TE_ENOMEM;
-            goto extract_base_class_data_cleanup;
-        }
+        res_node = TE_ALLOC(sizeof(*res_node));
         resource_string[0].value = &res_node->res.protection;
         resource_string[1].value = &res_node->res.uri;
         resource_string[2].value = &res_node->res.import_uri;
@@ -625,13 +619,7 @@ extract_base_class_data(GUPnPDIDLLiteObject *upnp_object,
         GUPnPDIDLLiteContributor      *artist;
         tapi_upnp_cd_contributor_node *artist_node;
 
-        artist_node = calloc(1, sizeof(*artist_node));
-        if (artist_node == NULL)
-        {
-            ERROR("%s:%d: cannot allocate memory", __FUNCTION__, __LINE__);
-            rc = TE_ENOMEM;
-            goto extract_base_class_data_cleanup;
-        }
+        artist_node = TE_ALLOC(sizeof(*artist_node));
         contributor_string[0].value = &artist_node->contributor.name;
         contributor_string[1].value = &artist_node->contributor.role;
 
@@ -662,13 +650,7 @@ extract_base_class_data(GUPnPDIDLLiteObject *upnp_object,
         GUPnPDIDLLiteContributor *author;
         tapi_upnp_cd_contributor_node *author_node;
 
-        author_node = calloc(1, sizeof(*author_node));
-        if (author_node == NULL)
-        {
-            ERROR("%s:%d: cannot allocate memory", __FUNCTION__, __LINE__);
-            rc = TE_ENOMEM;
-            goto extract_base_class_data_cleanup;
-        }
+        author_node = TE_ALLOC(sizeof(*author_node));
         contributor_string[0].value = &author_node->contributor.name;
         contributor_string[1].value = &author_node->contributor.role;
 
@@ -860,13 +842,7 @@ on_didl_child_item_available(GUPnPDIDLLiteParser *parser,
     if (on_didl_param->error != 0)  /* Previous parsing was failed. */
         return;
 
-    con = calloc(1, sizeof(*con));
-    if (con == NULL)
-    {
-        ERROR("%s:%d: cannot allocate memory", __FUNCTION__, __LINE__);
-        on_didl_param->error = TE_ENOMEM;
-        return;
-    }
+    con = TE_ALLOC(sizeof(*con));
     on_didl_param->error = extract_item_data(item, con);
     if (on_didl_param->error == 0)
     {
@@ -903,13 +879,7 @@ on_didl_child_container_available(GUPnPDIDLLiteParser    *parser,
     if (on_didl_param->error != 0)  /* Previous parsing was failed. */
         return;
 
-    con = calloc(1, sizeof(*con));
-    if (con == NULL)
-    {
-        ERROR("%s:%d: cannot allocate memory", __FUNCTION__, __LINE__);
-        on_didl_param->error = TE_ENOMEM;
-        return;
-    }
+    con = TE_ALLOC(sizeof(*con));
     on_didl_param->error = extract_container_data(container, con);
     if (on_didl_param->error == 0)
     {

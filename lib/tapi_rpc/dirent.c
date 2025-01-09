@@ -25,6 +25,7 @@
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_dirent.h"
 #include "tapi_rpc_misc.h"
+#include "te_alloc.h"
 #include "te_printf.h"
 
 void
@@ -114,12 +115,7 @@ rpc_closedir(rcf_rpc_server *rpcs, rpc_dir_p dirp)
 rpc_dirent *
 rpc_dirent_alloc(void)
 {
-    rpc_dirent *dent;
-
-    if ((dent = calloc(1, sizeof(*dent))) == NULL)
-        ERROR("Failed to allocate 'dirent' structure");
-
-    return dent;
+    return TE_ALLOC(sizeof(rpc_dirent));
 }
 
 rpc_dirent *
@@ -183,4 +179,3 @@ rpc_readdir(rcf_rpc_server *rpcs, rpc_dir_p dirp)
     else
         RETVAL_PTR(readdir, dent);
 }
-

@@ -470,8 +470,7 @@ tapi_igmp3_add_report_pdu(asn_value               **tmpl_or_ptrn,
                                  "number-of-groups.#plain"));
 
         data_len = tapi_igmp3_group_list_length(group_list);
-        if ((data = (uint8_t *)calloc(data_len, 1)) == NULL)
-            TE_FATAL_ERROR("Memory allocation failure");
+        data = TE_ALLOC(data_len);
         CHECK_RC(tapi_igmp3_group_list_gen_bin(group_list, data,
                                                data_len, &offset));
         CHECK_RC(asn_write_value_field(tmp_pdu, data, data_len,
@@ -674,8 +673,7 @@ tapi_igmp3_add_query_pdu(asn_value               **tmpl_or_ptrn,
                              "number-of-sources.#plain"));
 
         data_len = tapi_igmp3_src_list_length(src_list);
-        if ((data = (uint8_t *)calloc(data_len, 1)) == NULL)
-            return TE_RC(TE_TAPI, TE_ENOMEM);
+        data = TE_ALLOC(data_len);
         CHECK_RC(tapi_igmp3_src_list_gen_bin(src_list, data, data_len, &offset));
         CHECK_RC(asn_write_value_field(tmp_pdu, data, data_len,
                                        "source-address-list.#plain"));
@@ -787,10 +785,7 @@ tapi_igmp3_src_list_init(tapi_igmp3_src_list_t *src_list)
 
     src_list->src_no = 0;
     src_list->src_no_max = IGMP3_SRC_LIST_PREALLOCATED_SIZE;
-    src_list->src_addr = (in_addr_t *)calloc(sizeof(in_addr_t) *
-                                             src_list->src_no_max, 1);
-    if (src_list->src_addr == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
+    src_list->src_addr = TE_ALLOC(sizeof(in_addr_t) * src_list->src_no_max);
 
     return 0;
 
@@ -1033,11 +1028,8 @@ tapi_igmp3_group_list_init(tapi_igmp3_group_list_t *group_list)
 
     group_list->groups_no = 0;
     group_list->groups_no_max = IGMP3_GROUP_LIST_PREALLOCATED_SIZE;
-    group_list->groups =
-        calloc(sizeof(tapi_igmp3_group_record_t *) *
-               group_list->groups_no_max, 1);
-    if (group_list->groups == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
+    group_list->groups = TE_ALLOC(sizeof(tapi_igmp3_group_record_t *) *
+                                  group_list->groups_no_max);
 
     return 0;
 
@@ -1111,10 +1103,7 @@ tapi_igmp3_src_list_new(tapi_igmp3_src_list_t *src_list, ...)
 
     if (src_list == NULL)
     {
-        src_list = (tapi_igmp3_src_list_t *)
-            calloc(1, sizeof(tapi_igmp3_src_list_t));
-        if (src_list == NULL)
-            TEST_FAIL("Canot allocate group records list structure");
+        src_list = TE_ALLOC(sizeof(tapi_igmp3_src_list_t));
         if (tapi_igmp3_src_list_init(src_list) != 0)
             TEST_FAIL("Canot initialise group records list structure");
     }
@@ -1142,10 +1131,7 @@ tapi_igmp3_group_record_new(tapi_igmp3_group_record_t *group_record,
 
     if (group_record == NULL)
     {
-        group_record = (tapi_igmp3_group_record_t *)
-            calloc(1, sizeof(tapi_igmp3_group_record_t));
-        if (group_record == NULL)
-            TEST_FAIL("Canot allocate group record structure");
+        group_record = TE_ALLOC(sizeof(tapi_igmp3_group_record_t));
         if (tapi_igmp3_group_record_init(group_record, group_type, group_address,
                                          aux_data, aux_data_len) != 0)
             TEST_FAIL("Canot initialise group record structure");
@@ -1171,10 +1157,7 @@ tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...)
 
     if (group_list == NULL)
     {
-        group_list = (tapi_igmp3_group_list_t *)
-            calloc(1, sizeof(tapi_igmp3_group_list_t));
-        if (group_list == NULL)
-            TEST_FAIL("Canot allocate group records list structure");
+        group_list = TE_ALLOC(sizeof(tapi_igmp3_group_list_t));
         if (tapi_igmp3_group_list_init(group_list) != 0)
             TEST_FAIL("Canot initialise group records list structure");
     }
@@ -1189,4 +1172,3 @@ tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...)
 
     return group_list;
 }
-

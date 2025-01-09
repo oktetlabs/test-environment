@@ -22,6 +22,7 @@
 
 #include "tapi_rpc_internal.h"
 
+#include "te_alloc.h"
 
 unsigned int
 rpc_if_nametoindex(rcf_rpc_server *rpcs,
@@ -116,12 +117,7 @@ rpc_if_nameindex(rcf_rpc_server *rpcs)
     {
         int i;
 
-        if ((res = calloc(sizeof(*res) * out.ptr.ptr_len +
-                          sizeof(unsigned int), 1)) == NULL)
-        {
-            rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
-            RETVAL_PTR(if_nameindex, NULL);
-        }
+        res = TE_ALLOC(sizeof(*res) * out.ptr.ptr_len + sizeof(unsigned int));
 
         *(unsigned int *)res = out.mem_ptr;
         res = (struct if_nameindex *)((unsigned int *)res + 1);

@@ -9,3 +9,6 @@ sources += files(
     'asn_val.c',
     'asn_text.c',
 )
+te_libs += [
+    'tools',
+]

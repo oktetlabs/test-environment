@@ -140,7 +140,7 @@ tad_socket_match_bin_cb(csap_p           csap,
 
             if (spec_data->stored_buffer == NULL)
                 spec_data->stored_buffer =
-                    malloc(spec_data->wait_length);
+                    TE_ALLOC(spec_data->wait_length);
 
             if (defect > 0)
             {
@@ -188,7 +188,7 @@ tad_socket_match_bin_cb(csap_p           csap,
 
         if ((payload->len = pld_len) > 0)
         {
-            payload->data = malloc(pld_len);
+            payload->data = TE_ALLOC(pld_len);
             memcpy(payload->data, pld_data, payload->len);
         }
         if (spec_data->wait_length > 0)

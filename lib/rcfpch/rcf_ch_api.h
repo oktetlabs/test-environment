@@ -857,7 +857,7 @@ typedef te_errno (* rcf_ch_cfg_del)(unsigned int gid, const char *oid,
 /**
  * Prototype for a routine that returns the list of instance names
  * for an object.
- * The routine should allocate memory for instance list with malloc().
+ * The routine should allocate memory for instance list with TE_ALLOC().
  * Caller is responsible for releasing of this memory.
  *
  * @param gid       group identifier

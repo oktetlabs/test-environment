@@ -86,9 +86,7 @@ tad_ip4_rw_init_cb(csap_p csap)
     char ifname[TAD_IP4_IFNAME_SIZE];
 #endif
 
-    spec_data = calloc(1, sizeof(*spec_data));
-    if (spec_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    spec_data = TE_ALLOC(sizeof(*spec_data));
     csap_set_rw_data(csap, spec_data);
 
     /* opening incoming socket */

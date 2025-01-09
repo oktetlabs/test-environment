@@ -35,8 +35,7 @@
 
 #define LGR_PUT_MD_LIST(_mdl, _narg, _addr, _len, _add_zero) \
     do {                                                          \
-            md_list *tmp_list =                                   \
-                (struct md_list *)malloc(sizeof(struct md_list)); \
+            md_list *tmp_list = TE_ALLOC(sizeof(struct md_list)); \
             (_mdl).last->next = tmp_list;                         \
             (_mdl).last = tmp_list;                               \
             tmp_list->narg = (_narg);                             \
@@ -698,8 +697,7 @@ ta_log_init(const char *lgr_entity)
     if (ta_log_lock_init() != 0)
         return -1;
 
-    if (lgr_rb_init(&log_buffer) != 0)
-        return -1;
+    lgr_rb_init(&log_buffer);
 
     te_log_init(lgr_entity, ta_log_message);
 

@@ -368,11 +368,7 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
             {
                 olist *new_entry;
 
-                if ((new_entry = (olist *)malloc(sizeof(olist))) == NULL)
-                {
-                    free(tmp_list);
-                    RET(TE_ENOMEM);
-                }
+                new_entry = TE_ALLOC(sizeof(olist));
 
                 strcpy(new_entry->oid, tmp_parsed);
 
@@ -469,8 +465,7 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
         {
             olist *new_entry;
 
-            if ((new_entry = (olist *)malloc(sizeof(olist))) == NULL)
-                RET(TE_ENOMEM);
+            new_entry = TE_ALLOC(sizeof(olist));
 
             strcpy(new_entry->oid, tmp_parsed);
             new_entry->next = *list;
@@ -527,11 +522,7 @@ convert_to_answer(olist *list, char **answer)
         len += strlen(tmp->oid) + 1;
     }
 
-    if ((*answer = (char *)malloc(len)) == NULL)
-    {
-        free_list(list);
-        return TE_ENOMEM;
-    }
+    *answer = TE_ALLOC(len);
 
     ptr = *answer;
     while (list != NULL)
@@ -660,11 +651,7 @@ commit(const rcf_pch_cfg_object *commit_obj, cfg_oid **pp_oid)
             rcf_pch_commit_op_t *p;
 
 
-            p = (rcf_pch_commit_op_t *)calloc(1, sizeof(*p));
-            if (p == NULL)
-            {
-                return TE_ENOMEM;
-            }
+            p = TE_ALLOC(sizeof(*p));
 
             p->func = commit_obj->commit;
             p->oid  = *pp_oid;
@@ -1373,8 +1360,7 @@ rcf_pch_rsrc_info(const char *name,
     if (rsrc_lookup(name) != NULL)
         return TE_RC(TE_RCF_PCH, TE_EEXIST);
 
-    if ((tmp = malloc(sizeof(*tmp))) == NULL)
-        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
+    tmp = TE_ALLOC(sizeof(*tmp));
 
     if ((tmp->name = strdup(name)) == NULL)
     {
@@ -2070,7 +2056,7 @@ rsrc_list(unsigned int gid, const char *oid,
 {
 #define MEM_BULK        1024
     int   len = MEM_BULK;
-    char *buf = calloc(1, len);
+    char *buf = TE_ALLOC(len);
     int   offset = 0;
     rsrc *tmp;
 
@@ -2335,17 +2321,8 @@ rsrc_add(unsigned int gid, const char *oid, const char *value,
     if (rsrc_find_by_id(id, NULL) == 0)
         return TE_RC(TE_RCF_PCH, TE_EEXIST);
 
-    if ((tmp = calloc(sizeof(*tmp), 1)) == NULL ||
-        (tmp->id = strdup(id)) == NULL)
-    {
-        if (tmp != NULL)
-        {
-            free(tmp->id);
-            free(tmp);
-        }
-
-        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
-    }
+    tmp = TE_ALLOC(sizeof(*tmp));
+    tmp->id = TE_STRDUP(id);
 
     tmp->next = rsrc_lst;
     rsrc_lst = tmp;

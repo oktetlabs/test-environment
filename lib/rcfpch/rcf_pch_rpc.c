@@ -658,7 +658,7 @@ send_response(const rpcserver *rpcs, struct rcf_comm_connection *conn,
     if (strcmp_start("<?xml", buf) == 0)
     {
         /* Worst case is when all characters need quoting + header */
-        char *tmp = malloc(2 * len + RCF_MAX_VAL);
+        char *tmp = TE_ALLOC(2 * len + RCF_MAX_VAL);
         char *s = tmp;
 
         s += sprintf(s, "SID %d 0 ", rpcs->last_sid);
@@ -869,12 +869,7 @@ rcf_pch_rpc_init(const char *tmp_path)
     if (rpc_transport_init(rpc_dir_path) != 0)
         return;
 
-    if ((rpc_buf = malloc(RCF_RPC_HUGE_BUF_LEN)) == NULL)
-    {
-        rpc_transport_shutdown();
-        ERROR("Cannot allocate memory for RPC buffer on the TA");
-        return;
-    }
+    rpc_buf = TE_ALLOC(RCF_RPC_HUGE_BUF_LEN);
 
     if (pthread_create(&tid, NULL, dispatch, NULL) != 0)
     {
@@ -1545,15 +1540,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         }
     }
 
-    if ((rpcs = (rpcserver *)calloc(1, sizeof(*rpcs))) == NULL)
-    {
-        pthread_mutex_unlock(&lock);
-        ERROR("%s(): calloc(1, %u) failed", __FUNCTION__,
-              (unsigned)sizeof(*rpcs));
-        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
-    }
-
-    memset(rpcs, 0, sizeof(*rpcs));
+    rpcs = TE_ALLOC(sizeof(*rpcs));
     strcpy(rpcs->name, new_name);
     strcpy(rpcs->value, value);
     rpcs->father = father;
@@ -1761,12 +1748,7 @@ rpcserver_list(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(sub_id);
 
-    buf = calloc(buflen, 1);
-    if (buf == NULL)
-    {
-        ERROR("%s(): calloc failed", __FUNCTION__);
-        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
-    }
+    buf = TE_ALLOC(buflen);
 
     pthread_mutex_lock(&lock);
     *buf = 0;

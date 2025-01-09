@@ -347,7 +347,7 @@ tapi_eth_pkt_handler(asn_value *packet, void *user_param)
 
     p_len = asn_get_length(packet, "payload.#bytes");
 
-    payload = malloc(p_len + 1);
+    payload = TE_ALLOC(p_len + 1);
     rc = asn_read_value_field(packet, payload, &p_len, "payload.#bytes");
 
     if (rc)
@@ -373,12 +373,7 @@ tapi_eth_trrecv_cb_data(tapi_eth_frame_callback  callback,
     tapi_eth_pkt_handler_data  *cb_data;
     tapi_tad_trrecv_cb_data    *res;
 
-    cb_data = (tapi_eth_pkt_handler_data *)calloc(1, sizeof(*cb_data));
-    if (cb_data == NULL)
-    {
-        ERROR("%s(): failed to allocate memory", __FUNCTION__);
-        return NULL;
-    }
+    cb_data = TE_ALLOC(sizeof(*cb_data));
     cb_data->callback = callback;
     cb_data->user_data = user_data;
 

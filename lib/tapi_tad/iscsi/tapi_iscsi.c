@@ -1879,7 +1879,7 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
     }
 
 #define MAX_OFFER_LENGTH 15
-    offer = calloc(MAX_OFFER_LENGTH, 1);
+    offer = TE_ALLOC(MAX_OFFER_LENGTH);
 #undef MAX_OFFER_LENGTH
 
     sprintf(offer, "%d", par2adv);
@@ -3036,11 +3036,7 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
     struct sigaction action;
     sigset_t         mask;
 
-    *ioh = malloc(sizeof(**ioh));
-    if (*ioh == NULL)
-    {
-        return TE_OS_RC(TE_TAPI, errno);
-    }
+    *ioh = TE_ALLOC(sizeof(**ioh));
 
     te_strlcpy((*ioh)->agent, ta, sizeof((*ioh)->agent));
     sprintf((*ioh)->mountpoint,

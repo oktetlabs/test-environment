@@ -61,4 +61,7 @@ if cc.has_header('net-snmp/definitions.h') or cc.has_header('ucd-snmp/snmp_impl.
     c_args += [ '-DHAS_SNMP', '-DCMU_COMPATIBLE', '-DUCD_COMPATIBLE' ]
 endif
 
-te_libs += [ 'asn' ]
+te_libs += [
+    'asn',
+    'tools',
+]

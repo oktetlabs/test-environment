@@ -335,12 +335,7 @@ rte_mbuf_config_init_csap(asn_value          *rte_mbuf_layer,
 
     /* Prepare a textual representation of the CSAP spec */
     csap_spec_str_len = asn_count_txt_len(csap_spec, 0) + 1;
-    csap_spec_str = calloc(1, csap_spec_str_len);
-    if (csap_spec_str == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto out;
-    }
+    csap_spec_str = TE_ALLOC(csap_spec_str_len);
 
     if (asn_sprint_value(csap_spec, csap_spec_str, csap_spec_str_len, 0) <= 0)
     {
@@ -437,12 +432,7 @@ rte_mk_mbuf_from_template(tarpc_rte_mk_mbuf_from_template_in     *in,
      * CSAP instance for logging (id, state) we have to create a blank
      * dummy instance and pass it to the function
      */
-    dummy_csap_instance = calloc(1, sizeof(dummy_csap_instance));
-    if (dummy_csap_instance == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto out;
-    }
+    dummy_csap_instance = TE_ALLOC(sizeof(dummy_csap_instance));
 
     rc = tad_send_preprocess_args(dummy_csap_instance, template, &tu_data);
     if (rc != 0)
@@ -466,9 +456,7 @@ rte_mk_mbuf_from_template(tarpc_rte_mk_mbuf_from_template_in     *in,
     csap_created = true;
 
     /* Create a dummy reply context */
-    reply_ctx.spec = calloc(1, sizeof(tad_reply_spec));
-    if (reply_ctx.spec == NULL)
-        goto out;
+    reply_ctx.spec = TE_ALLOC(sizeof(tad_reply_spec));
 
     reply_spec = (tad_reply_spec *)reply_ctx.spec;
 
@@ -488,20 +476,11 @@ rte_mk_mbuf_from_template(tarpc_rte_mk_mbuf_from_template_in     *in,
 
     /* Allocate an array to deliver resulting mbufs back */
     out->mbufs.mbufs_len = rte_ring_count(ring);
-    out->mbufs.mbufs_val = calloc(out->mbufs.mbufs_len, sizeof(tarpc_rte_mempool));
-    if ((out->mbufs.mbufs_len > 0) && (out->mbufs.mbufs_val == NULL))
-    {
-        rc = TE_ENOMEM;
-        goto out;
-    }
+    out->mbufs.mbufs_val = TE_ALLOC(out->mbufs.mbufs_len *
+                                    sizeof(tarpc_rte_mempool));
 
     /* Allocate a temporary array of mbuf pointers */
-    mbufs = calloc(out->mbufs.mbufs_len, sizeof(*mbufs));
-    if (mbufs == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto out;
-    }
+    mbufs = TE_ALLOC(out->mbufs.mbufs_len * sizeof(*mbufs));
 
     /* Pull out the resulting RTE mbuf pointers to the temporary array */
 #ifdef HAVE_RTE_RING_DEQUEUE_BULK_ARG_AVAILABLE
@@ -578,13 +557,8 @@ rte_mbuf_store_matching_packets(void               *opaque,
 
     pkt_nds_str_len = asn_count_txt_len(pkt_nds, 0) + 1;
 
-    desc->pkt_nds_storage[desc->added].str = calloc(pkt_nds_str_len,
-                                                    sizeof(char));
-    if (desc->pkt_nds_storage[desc->added].str == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto fail;
-    }
+    desc->pkt_nds_storage[desc->added].str = TE_ALLOC(pkt_nds_str_len *
+                                                      sizeof(char));
 
     if (asn_sprint_value(pkt_nds, desc->pkt_nds_storage[desc->added].str,
                          pkt_nds_str_len, 0) <= 0)
@@ -674,9 +648,7 @@ rte_mbuf_match_pattern(tarpc_rte_mbuf_match_pattern_in  *in,
     csap_created = true;
 
     /* Create a dummy reply context */
-    reply_ctx.spec = calloc(1, sizeof(tad_reply_spec));
-    if (reply_ctx.spec == NULL)
-        goto out;
+    reply_ctx.spec = TE_ALLOC(sizeof(tad_reply_spec));
 
     reply_spec = (tad_reply_spec *)reply_ctx.spec;
 
@@ -684,12 +656,7 @@ rte_mbuf_match_pattern(tarpc_rte_mbuf_match_pattern_in  *in,
     reply_spec->opaque_size = 0;
 
     /* Allocate a temporary array of mbuf pointers */
-    mbufs = calloc(in->mbufs.mbufs_len, sizeof(*mbufs));
-    if (mbufs == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto out;
-    }
+    mbufs = TE_ALLOC(in->mbufs.mbufs_len * sizeof(*mbufs));
 
     /* Map PCH MEM indexes supplied by the caller to RTE mbuf pointers */
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
@@ -756,12 +723,7 @@ rte_mbuf_match_pattern(tarpc_rte_mbuf_match_pattern_in  *in,
      * set up our custom structure for the TAD reply opaque data and use
      * a special function as a callback for accessing the opaque data
      */
-    reply_ctx.opaque = calloc(1, sizeof(struct rte_mbuf_tad_reply_opaque));
-    if (reply_ctx.opaque == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto out;
-    }
+    reply_ctx.opaque = TE_ALLOC(sizeof(struct rte_mbuf_tad_reply_opaque));
 
     pkt_storage_desc = (struct rte_mbuf_tad_reply_opaque *)(reply_ctx.opaque);
 
@@ -770,12 +732,8 @@ rte_mbuf_match_pattern(tarpc_rte_mbuf_match_pattern_in  *in,
      * NDS in textual representation
      */
     out->packets.packets_len = out->matched;
-    out->packets.packets_val = calloc(out->matched, sizeof(*out->packets.packets_val));
-    if (out->packets.packets_val == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto out;
-    }
+    out->packets.packets_val = TE_ALLOC(out->matched *
+                                        sizeof(*out->packets.packets_val));
 
     pkt_storage_desc->pkt_nds_storage = out->packets.packets_val;
 

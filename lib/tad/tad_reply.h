@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "asn_usr.h"
 
@@ -57,9 +58,7 @@ tad_reply_clone(tad_reply_context *dst, const tad_reply_context *src)
 {
     memset(dst, 0, sizeof(*dst));
 
-    dst->opaque = malloc(src->spec->opaque_size);
-    if (dst->opaque == NULL)
-        return TE_OS_RC(TE_TAD_CH, errno);
+    dst->opaque = TE_ALLOC(src->spec->opaque_size);
 
     dst->spec = src->spec;
     memcpy(dst->opaque, src->opaque, src->spec->opaque_size);

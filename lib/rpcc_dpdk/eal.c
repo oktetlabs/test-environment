@@ -559,7 +559,7 @@ rpc_rte_eal_init(rcf_rpc_server *rpcs,
 
     in.argc = argc;
     in.argv.argv_len = argc;
-    in.argv.argv_val = calloc(argc, sizeof(*in.argv.argv_val));
+    in.argv.argv_val = TE_ALLOC(argc * sizeof(*in.argv.argv_val));
     for (i = 0; i < argc; ++i)
         in.argv.argv_val[i].str = argv[i];
 

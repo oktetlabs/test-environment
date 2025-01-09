@@ -47,6 +47,7 @@
 #include <net/ethernet.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "logger_api.h"
 #include "rcf_api.h"
@@ -121,11 +122,7 @@ ndn_dhcpv4_packet_to_plain(const asn_value *pkt,
     int         i;
     int         n_opts;
 
-    *dhcp_msg = (struct dhcp_message *)malloc(sizeof(**dhcp_msg));
-    if (*dhcp_msg == NULL)
-        return TE_ENOMEM;
-
-    memset(*dhcp_msg, 0, sizeof(**dhcp_msg));
+    *dhcp_msg = TE_ALLOC(sizeof(**dhcp_msg));
 
 /** Stores the value of 'field_' entry in user-specified buffer 'ptr_' */
 #define PKT_GET_VALUE(ptr_, field_) \
@@ -242,13 +239,8 @@ ndn_dhcpv4_option_to_plain(const asn_value *dhcp_opt,
     else
         return rc;
 
-    if ((*opt_p = (struct dhcp_option *)malloc(sizeof(**opt_p))) == NULL ||
-        (len != 0 && ((*opt_p)->val = (uint8_t *)malloc(len)) == NULL))
-    {
-        free(*opt_p);
-        *opt_p = NULL;
-        return TE_ENOMEM;
-    }
+    opt_p = TE_ALLOC(sizeof(**opt_p));
+    (*opt_p)->val = TE_ALLOC(len);
     (*opt_p)->val_len = len;
     (*opt_p)->next = NULL;
     (*opt_p)->subopts = NULL;
@@ -428,9 +420,7 @@ dhcpv4_bootp_message_create(uint8_t op)
 {
     struct dhcp_message *dhcp_msg;
 
-    dhcp_msg = (struct dhcp_message *)calloc(1, sizeof(*dhcp_msg));
-    if (dhcp_msg == NULL)
-        return NULL;
+    dhcp_msg = TE_ALLOC(sizeof(*dhcp_msg));
 
     dhcp_msg->op = op;
     dhcp_msg->is_op_set = true;
@@ -467,13 +457,8 @@ dhcpv4_message_create(dhcp_message_type msg_type)
     if (dhcp_msg == NULL)
         return NULL;
 
-    if ((opt = (struct dhcp_option *)malloc(sizeof(*opt))) == NULL ||
-        (opt->val = (uint8_t *)malloc(1)) == NULL)
-    {
-        free(opt);
-        free(dhcp_msg);
-        return NULL;
-    }
+    opt = TE_ALLOC(sizeof(*opt));
+    opt->val = TE_ALLOC(1);
     opt->next = NULL;
     opt->subopts = NULL;
     opt->type = DHCP_OPT_MESSAGE_TYPE;
@@ -551,12 +536,8 @@ dhcpv4_option_create(uint8_t type, uint8_t len,
 {
     struct dhcp_option *opt;
 
-    if ((opt = (struct dhcp_option *)malloc(sizeof(*opt))) == NULL ||
-        (opt->val = (uint8_t *)malloc(val_len)) == NULL)
-    {
-        free(opt);
-        return NULL;
-    }
+    opt = TE_ALLOC(sizeof(*opt));
+    opt->val = TE_ALLOC(val_len);
 
     opt->next = NULL;
     opt->subopts = NULL;
@@ -651,13 +632,8 @@ dhcpv4_message_add_option(struct dhcp_message *dhcp_msg, uint8_t type,
     {
         cur_opt_p = &((*cur_opt_p)->next);
     }
-    if ((*cur_opt_p = (struct dhcp_option *)
-                                  malloc(sizeof(**cur_opt_p))) == NULL ||
-        (len > 0 && ((*cur_opt_p)->val = (uint8_t *)malloc(len)) == NULL))
-    {
-        free(*cur_opt_p);
-        return TE_ENOMEM;
-    }
+    *cur_opt_p = TE_ALLOC(sizeof(**cur_opt_p));
+    (*cur_opt_p)->val = TE_ALLOC(len);
     (*cur_opt_p)->next = NULL;
     (*cur_opt_p)->subopts = NULL;
     (*cur_opt_p)->type = type;
@@ -909,7 +885,7 @@ dhcpv4_prepare_traffic_pattern(const dhcp_message *dhcp_msg,
         return TE_RC(TE_TAPI, rc);
 
     /* @todo Generate temporary file name */
-    *pattern_fname = calloc(1, 100);
+    *pattern_fname = TE_ALLOC(100);
 
     strcpy(*pattern_fname, "/tmp/te-dhcp-pattern.asn.XXXXXX");
 

@@ -156,13 +156,7 @@ rpcserver_plugin_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_RCF_PCH, TE_EEXIST);
     }
 
-    if ((plugin = (rpcserver_plugin *)calloc(1, sizeof(*plugin))) == NULL)
-    {
-        pthread_mutex_unlock(lock);
-        ERROR("%s(): calloc(1, %u) failed", __FUNCTION__,
-              (unsigned)sizeof(*plugin));
-        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
-    }
+    plugin = TE_ALLOC(sizeof(*plugin));
 
     strcpy(plugin->name, name);
     plugin->enable = false;

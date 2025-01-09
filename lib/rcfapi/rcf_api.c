@@ -42,6 +42,7 @@
 #include <fcntl.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -239,16 +240,10 @@ msg_buffer_insert(msg_buf_head_t *buf_head, rcf_msg *message)
     if (message == NULL)
         return 0; /* nothing to do */
 
-    buf_entry = calloc(1, sizeof(*buf_entry));
-    if (buf_entry == NULL)
-        return TE_ENOMEM;
+    buf_entry = TE_ALLOC(sizeof(*buf_entry));
 
     msg_len = sizeof(rcf_msg) + message->data_len;
-    if ((buf_entry->message = (rcf_msg *)calloc(1, msg_len)) == NULL)
-    {
-        free(buf_entry);
-        return TE_ENOMEM;
-    }
+    buf_entry->message = TE_ALLOC(msg_len);
 
     memcpy(buf_entry->message, message, msg_len);
 
@@ -342,9 +337,7 @@ rcf_ipc_receive_answer(struct ipc_client *ipcc, rcf_msg *recv_msg,
         return TE_RC(TE_RCF_API, TE_EIPC);
     }
 
-    *p_answer = malloc(*recv_size);
-    if (*p_answer == NULL)
-        return TE_RC(TE_RCF_API, TE_ENOMEM);
+    *p_answer = TE_ALLOC(*recv_size);
 
     memcpy(*p_answer, recv_msg, buflen);
     len = *recv_size - buflen;
@@ -593,13 +586,7 @@ get_ctx_handle(bool create)
         te_errno    rc;
         char        name[RCF_MAX_NAME];
 
-        handle = calloc(1, sizeof(*handle));
-        if (handle == NULL)
-        {
-            ERROR("%s(): calloc(1, %u) failed",
-                  __FUNCTION__, sizeof(*handle));
-            return NULL;
-        }
+        handle = TE_ALLOC(sizeof(*handle));
 
         sprintf(name, "rcf_client_%u_%u", (unsigned int)getpid(),
                 (unsigned int)pthread_self());
@@ -1034,8 +1021,7 @@ rcf_ta_reboot(const char *ta_name,
         }
     }
 
-    if ((msg = (rcf_msg *)(calloc(sizeof(rcf_msg) + len, 1))) == NULL)
-        return TE_RC(TE_RCF_API, TE_ENOMEM);
+    msg = TE_ALLOC(sizeof(rcf_msg) + len);
 
     if (boot_params != NULL)
     {
@@ -1060,8 +1046,7 @@ rcf_ta_reboot(const char *ta_name,
                 free(msg);
                 return TE_RC(TE_RCF_API, TE_ENOENT);
             }
-            tmp = (char *)malloc(strlen(install_dir) +
-                                 strlen("/nuts") + 1);
+            tmp = TE_ALLOC(strlen(install_dir) + strlen("/nuts") + 1);
             if (install_dir == NULL)
             {
                 free(msg);
@@ -1387,7 +1372,7 @@ rcf_ta_get_sniffers(const char *ta_name, const char *snif_id, char **buf,
     if (BAD_TA || (snif_id != NULL && strlen(snif_id) >= RCF_MAX_VAL))
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
-    rep_msg = malloc(anslen);
+    rep_msg = TE_ALLOC(anslen);
     memset(&msg, 0, sizeof(msg));
     rep_msg->data_len = 0;
     rep_msg->error    = 0;
@@ -1672,9 +1657,7 @@ handle_file(const char *ta_name, int session,
         close(fd);
     }
 
-    msg = (rcf_msg *)calloc(1, sizeof(rcf_msg) + RCF_MAX_PATH);
-    if (msg == NULL)
-        return TE_RC(TE_RCF_API, TE_ENOMEM);
+    msg = TE_ALLOC(sizeof(rcf_msg) + RCF_MAX_PATH);
 
     msg->opcode = opcode;
     te_strlcpy(msg->ta, ta_name, sizeof(msg->ta));
@@ -1790,8 +1773,7 @@ rcf_ta_csap_create(const char *ta_name, int session,
             flags = BINARY_ATTACHMENT;
         }
     }
-    if ((msg = (rcf_msg *)calloc(1, sizeof(rcf_msg) + len)) == NULL)
-        return TE_RC(TE_RCF_API, TE_ENOMEM);
+    msg = TE_ALLOC(sizeof(rcf_msg) + len);
 
     msg->opcode = RCFOP_CSAP_CREATE;
     msg->flags = flags;
@@ -2463,9 +2445,7 @@ rcf_trpoll(rcf_trpoll_csap *csaps, unsigned int n_csaps,
         return TE_RC(TE_RCF_API, TE_EFAULT);
     }
 
-    data = calloc(n_csaps, sizeof(*data));
-    if (data == NULL)
-        return TE_RC(TE_RCF_API, TE_ENOMEM);
+    data = TE_ALLOC(n_csaps * sizeof(*data));
 
     /* Start poll operation for all CSAPs */
     for (cancel = false, i = 0; i < n_csaps; ++i)
@@ -2724,8 +2704,7 @@ call_start(const char *ta_name, int session, int priority, const char *rtn,
     if (rtn == NULL || strlen(rtn) >= RCF_MAX_NAME || BAD_TA || res == NULL)
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
-    if ((msg = (rcf_msg *)calloc(RCF_MAX_LEN, 1)) == NULL)
-        return TE_RC(TE_RCF_API, TE_ENOMEM);
+    msg = TE_ALLOC(RCF_MAX_LEN);
 
     msg->opcode = RCFOP_EXECUTE;
     msg->sid = session;

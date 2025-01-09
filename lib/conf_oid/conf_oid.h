@@ -158,7 +158,7 @@ extern cfg_oid *cfg_convert_oid_str(const char *oid);
 /**
  * Convert object identifier or object instance identifier in
  * structure representation to string (memory is allocated by the
- * routine using malloc()).
+ * routine using TE_ALLOC()).
  *
  * @param oid         OID in structure representation
  *
@@ -315,4 +315,3 @@ cfg_oid_inst2obj(const char *inst_oid, char *obj_oid)
 }
 #endif
 #endif /* __TE_CONF_OID_H__ */
-

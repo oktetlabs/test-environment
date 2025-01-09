@@ -31,6 +31,7 @@
 #include "tad_utils.h"
 #include "tad_recv.h"
 
+#include "te_alloc.h"
 
 #define ANS_BUF 100
 #define RBUF 0x4000
@@ -54,9 +55,7 @@ tad_recv_preprocess_pdus(csap_p csap, const asn_value *ptrn_unit,
     te_errno            rc;
     const asn_value    *nds_pdus = NULL;
 
-    data->layer_opaque = calloc(csap->depth, sizeof(data->layer_opaque[0]));
-    if (data->layer_opaque == NULL)
-        return TE_RC(TE_TAD_CH, TE_ENOMEM);
+    data->layer_opaque = TE_ALLOC(csap->depth * sizeof(data->layer_opaque[0]));
 
     /*
      * Get sequence of PDUs and preprocess by protocol-specific
@@ -298,9 +297,7 @@ tad_recv_preprocess_actions(csap_p csap, const asn_value *ptrn_unit,
     }
     data->n_actions = tmp;
 
-    data->actions = calloc(data->n_actions, sizeof(data->actions[0]));
-    if (data->actions == NULL)
-        return TE_RC(TE_TAD_CH, TE_ENOMEM);
+    data->actions = TE_ALLOC(data->n_actions * sizeof(data->actions[0]));
 
     for (i = 0; i < data->n_actions; ++i)
     {
@@ -413,9 +410,7 @@ tad_recv_preprocess_pattern(csap_p csap, asn_value *pattern,
     }
     data->n_units = n_units;
 
-    data->units = calloc(data->n_units, sizeof(data->units[0]));
-    if (data->units == NULL)
-        return TE_RC(TE_TAD_CH, TE_ENOMEM);
+    data->units = TE_ALLOC(data->n_units * sizeof(data->units[0]));
 
     for (i = 0; i < data->n_units; ++i)
     {
@@ -1765,9 +1760,7 @@ tad_recv_op_enqueue(csap_p csap, tad_traffic_op_t op,
     te_errno                rc;
     bool start_thread;
 
-    context = malloc(sizeof(*context));
-    if (context == NULL)
-        return TE_RC(TE_TAD_CH, TE_ENOMEM);
+    context = TE_ALLOC(sizeof(*context));
 
     rc = tad_reply_clone(&context->reply_ctx, reply_ctx);
     if (rc != 0)

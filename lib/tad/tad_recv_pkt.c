@@ -88,9 +88,7 @@ tad_recv_pkt_alloc(csap_p csap)
     te_errno        rc = 0;
     tad_pkt        *pkt;
 
-    recv_pkt = calloc(1, sizeof(*recv_pkt));
-    if (recv_pkt == NULL)
-        return NULL;
+    recv_pkt = TE_ALLOC(sizeof(*recv_pkt));
 
     recv_pkt->match_unit = -1;
 
@@ -105,12 +103,7 @@ tad_recv_pkt_alloc(csap_p csap)
     }
     tad_pkts_add_one(&recv_pkt->raw, pkt);
 
-    recv_pkt->layers = calloc(csap->depth, sizeof(*recv_pkt->layers));
-    if (recv_pkt->layers == NULL)
-    {
-        tad_recv_pkt_free(csap, recv_pkt);
-        return NULL;
-    }
+    recv_pkt->layers = TE_ALLOC(csap->depth * sizeof(*recv_pkt->layers));
 
     for (layer = 0; layer < csap->depth; ++layer)
     {
@@ -212,4 +205,3 @@ tad_recv_pkt_cleanup(csap_p csap, tad_recv_pkt *pkt)
     asn_free_value(pkt->nds);
     pkt->nds = NULL;
 }
-

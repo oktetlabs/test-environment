@@ -60,11 +60,7 @@ tad_socket_rw_init_cb(csap_p csap)
     size_t              addr_len;
 
 
-    spec_data = calloc(1, sizeof(*spec_data));
-    if (spec_data == NULL)
-    {
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-    }
+    spec_data = TE_ALLOC(sizeof(*spec_data));
     csap_set_rw_data(csap, spec_data);
 
 
@@ -403,13 +399,8 @@ tad_socket_read_cb(csap_p csap, unsigned int timeout,
         }
         else if (seg->data_len < sizeof(int))
         {
-            void *ptr = malloc(sizeof(int));
+            void *ptr = TE_ALLOC(sizeof(int));
 
-            if (ptr == NULL)
-            {
-                close(ret);
-                return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-            }
             tad_pkt_put_seg_data(pkt, seg, ptr, sizeof(int),
                                  tad_pkt_seg_data_free);
         }

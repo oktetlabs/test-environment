@@ -182,6 +182,7 @@
 
 #include <dirent.h>
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -944,14 +945,9 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     snprintf(ta_type_dir, sizeof(ta_type_dir),
              "%s/agents/%s/", installdir, ta_type);
 
-    if ((ta = *(unix_ta **)(handle)) == NULL &&
-        (ta = (unix_ta *)calloc(1, sizeof(unix_ta))) == NULL)
-    {
-        ERROR("Memory allocation failure: %u bytes",
-                  sizeof(unix_ta));
-        te_string_free(&cfg_str);
-        return TE_ENOMEM;
-    }
+    ta = *(unix_ta **)(handle);
+    if (ta == NULL)
+        ta = TE_ALLOC(sizeof(unix_ta));
 
     ta->ssh_opts = (te_string)TE_STRING_INIT;
     ta->cmd_prefix = (te_string)TE_STRING_INIT;
@@ -1766,4 +1762,3 @@ rcfunix_receive(rcf_talib_handle handle, char *buf, size_t *len, char **pba)
 }
 
 RCF_TALIB_METHODS_DEFINE(rcfunix);
-

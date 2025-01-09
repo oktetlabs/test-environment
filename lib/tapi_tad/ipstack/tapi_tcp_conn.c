@@ -203,7 +203,7 @@ tapi_tcp_conns_db_init(void)
 {
     if (conns_root == NULL)
     {
-        conns_root = calloc(1, sizeof(*conns_root));
+        conns_root = TE_ALLOC(sizeof(*conns_root));
         CIRCLEQ_INIT(conns_root);
     }
 }
@@ -835,7 +835,7 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
     CHECK_ERROR("read TCP window error");
     conn_descr->last_win_got = pdu_field;
 
-    pkt = calloc(1, sizeof(*pkt));
+    pkt = TE_ALLOC(sizeof(*pkt));
 
     if (conn_descr->seq_got + conn_descr->last_len_got == seq_got ||
         (conn_descr->peer_isn == 0 && (flags & TCP_SYN_FLAG)) ||
@@ -919,8 +919,7 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
 
     if (conn_descr->messages == NULL)
     {
-        conn_descr->messages =
-            calloc(1, sizeof(*(conn_descr->messages)));
+        conn_descr->messages = TE_ALLOC(sizeof(*(conn_descr->messages)));
         CIRCLEQ_INIT(conn_descr->messages);
     }
 
@@ -944,7 +943,7 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
         else if (rc > 0)
         {
             pld_len = rc;
-            pkt->data = malloc(pld_len);
+            pkt->data = TE_ALLOC(pld_len);
             rc = asn_read_value_field(tcp_message, pkt->data, &pld_len,
                                       "payload.#bytes");
             CHECK_ERROR("read TCP payload error");
@@ -1252,7 +1251,7 @@ tapi_tcp_create_conn(const char *agt,
 
     }
 
-    conn_descr = calloc(1, sizeof(*conn_descr));
+    conn_descr = TE_ALLOC(sizeof(*conn_descr));
 
     conn_descr->rcv_csap = rcv_csap;
     conn_descr->rcv_sid = rcv_sid;

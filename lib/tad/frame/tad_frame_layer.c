@@ -105,9 +105,7 @@ tad_frame_confirm_ptrn_cb(csap_p csap, unsigned int  layer,
     UNUSED(layer);
     UNUSED(layer_pdu);
 
-    ptrn_data = malloc(sizeof(*ptrn_data));
-    if (ptrn_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    ptrn_data = TE_ALLOC(sizeof(*ptrn_data));
     *p_opaque = ptrn_data;
 
     ptrn_data->rest_len = 0;

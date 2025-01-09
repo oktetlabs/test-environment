@@ -249,12 +249,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
     else
         TE_SPRINTF(val, "fork_%s%s", str_register, father);
 
-    if ((rpcs = (rcf_rpc_server *)
-                    calloc(1, sizeof(rcf_rpc_server))) == NULL)
-    {
-        return TE_RC(TE_RCF_API, TE_ENOMEM);
-    }
-    memset(rpcs, 0, sizeof(*rpcs));
+    rpcs = TE_ALLOC(sizeof(rcf_rpc_server));
 
     if ((rc1 = rpc_server_sem_init(rpcs)) != 0)
     {
@@ -935,8 +930,7 @@ rcf_ta_call_rpc(const char *ta_name, int session,
         /* Try to allocate more memory */
         len = RCF_RPC_HUGE_BUF_LEN;
         anslen = PREFIX_LEN + RCF_RPC_HUGE_BUF_LEN;
-        if ((msg = (rcf_msg *)malloc(anslen)) == NULL)
-            return TE_RC(TE_RCF_API, TE_ENOMEM);
+        msg = TE_ALLOC(anslen);
 
         if ((rc = rpc_xdr_encode_call(rpc_name, msg->file, &len, in)) != 0)
         {

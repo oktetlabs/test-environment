@@ -364,15 +364,8 @@ rpc_read_all2(rcf_rpc_server *rpcs, int fd[2], char *buf[2],
         return  -1;
     }
 
-    buf[0] = calloc(1, buflen[0]);
-    buf[1] = calloc(1, buflen[1]);
-    if (buf[0] == NULL || buf[1] == NULL)
-    {
-        ERROR("Out of memory");
-        free(buf[0]);
-        free(buf[1]);
-        return -1;
-    }
+    buf[0] = TE_ALLOC(buflen[0]);
+    buf[1] = TE_ALLOC(buflen[1]);
 
     do {
         int used;

@@ -7,6 +7,7 @@
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "rcf_rpc.h"
 #include "tarpc.h"
@@ -74,9 +75,7 @@ rpc_serial_open(rcf_rpc_server *rpcs, tapi_serial_handle *p_handle,
 
     if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
     {
-        *p_handle = malloc(sizeof(tapi_serial));
-        if (*p_handle == NULL)
-            RETVAL_INT(serial_open, -1);
+        *p_handle = TE_ALLOC(sizeof(tapi_serial));
 
         (*p_handle)->sock = out.sock;
         (*p_handle)->rpcs = rpcs;

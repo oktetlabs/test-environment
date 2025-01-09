@@ -175,7 +175,7 @@ extern int logic_expr_int_lex_destroy(void);
  * @param expr      Logical expression
  * @param comp_func Function comparing logical expressions
  *
- * @return 0 on success or error code
+ * @return always returns 0
  */
 extern te_errno logic_expr_dnf(logic_expr **expr,
                                int (*comp_func)(logic_expr *,
@@ -188,7 +188,7 @@ extern te_errno logic_expr_dnf(logic_expr **expr,
  * @param array     Pointer to array of disjuncts to be set
  * @param size      Pointer to size of array to be set
  *
- * @return 0 on success or error code
+ * @return always returns 0
  */
 extern te_errno logic_expr_dnf_split(logic_expr *dnf, logic_expr ***array,
                                      int *size);

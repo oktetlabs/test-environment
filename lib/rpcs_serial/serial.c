@@ -18,6 +18,7 @@
 #include "logger_api.h"
 #include "rpc_server.h"
 #include "tarpc.h"
+#include "te_alloc.h"
 #include "te_dbuf.h"
 #include "te_errno.h"
 #include "te_kernel_log.h"
@@ -84,10 +85,7 @@ buffered_match_get(int sock)
 static buffered_match *
 buffered_match_add(int sock)
 {
-    buffered_match *bm = malloc(sizeof(buffered_match));
-
-    if (bm == NULL)
-        return NULL;
+    buffered_match *bm = TE_ALLOC(sizeof(buffered_match));
 
     bm->sock = sock;
     bm->dbuf = (te_dbuf)TE_DBUF_INIT(100);
@@ -259,13 +257,7 @@ serial_read(tarpc_serial_read_in *in, tarpc_serial_read_out *out)
     if (in->timeout >= 0)
         set_sock_blocking(in->sock, in->timeout);
 
-    buffer = malloc(in->buflen);
-    if (buffer == NULL)
-    {
-        ERROR("Failed to allocate output buffer: %s", strerror(errno));
-        ret = -1;
-        goto restore_opts;
-    }
+    buffer = TE_ALLOC(in->buflen);
 
     /* Check if there is a saved buffer */
     if (buffered_match != NULL && buffered_match->dbuf.len != 0)
@@ -321,15 +313,7 @@ serial_read(tarpc_serial_read_in *in, tarpc_serial_read_out *out)
          */
         if (new_len > 0)
         {
-            char *new_buffer = malloc(new_len);
-
-            if (new_buffer == NULL)
-            {
-                ERROR("Failed to reallocate buffered data: %s",
-                      strerror(errno));
-                ret = -1;
-                goto restore_opts;
-            }
+            char *new_buffer = TE_ALLOC(new_len);
 
             /* Replace buffers */
             memcpy(new_buffer, &buffered_match->dbuf.ptr[in->buflen], new_len);
@@ -488,12 +472,7 @@ serial_flush(tarpc_serial_flush_in *in)
                 size_t tmp_len;
 
                 tmp_len = buffered_match->dbuf.len - in->amount;
-                tmp_ptr = malloc(tmp_len);
-                if (tmp_ptr == NULL)
-                {
-                    ERROR("Failed to flush buffered data: %s", strerror(errno));
-                    return -1;
-                }
+                tmp_ptr = TE_ALLOC(tmp_len);
 
                 memcpy(tmp_ptr, &buffered_match->dbuf.ptr[in->amount], tmp_len);
                 buffered_match_add_update(in->sock, tmp_ptr, tmp_len);

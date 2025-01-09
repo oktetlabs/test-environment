@@ -156,7 +156,7 @@ tapi_allocate_port_range(struct rcf_rpc_server *pco,
     /** Try 3 times */
     for (i = 0; i < 3; i++)
     {
-        uint16_t   *tmp = calloc(num, sizeof(*tmp));
+        uint16_t   *tmp = TE_ALLOC(num * sizeof(*tmp));
         bool ok = true;
 
         for (j = 0; j < num; j++)

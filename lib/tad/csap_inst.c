@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "logger_api.h"
 #include "logger_ta_fast.h"
@@ -89,22 +90,15 @@ csap_create(const char *type, csap_p *csap)
     if (type == NULL || csap == NULL)
         return TE_RC(TE_TAD_CH, TE_EFAULT);
 
-    new_csap = calloc(1, sizeof(*new_csap));
-    if (new_csap != NULL)
-    {
-        TAILQ_INIT(&new_csap->recv_ops);
-        LIST_INIT(&new_csap->poll_ops);
-        tad_recv_init_context(&new_csap->receiver);
-        new_csap->csap_type = csap_type = strdup(type);
-        new_csap->stop_latency_timeout =
-            TE_MS2US(TAD_CSAP_STOP_LATENCY_TIMEOUT_DEF);
-        new_csap->recv_timeout =
-            TE_MS2US(TAD_CSAP_RECV_TIMEOUT_DEF);
-    }
-    else
-    {
-        csap_type = NULL;
-    }
+    new_csap = TE_ALLOC(sizeof(*new_csap));
+    TAILQ_INIT(&new_csap->recv_ops);
+    LIST_INIT(&new_csap->poll_ops);
+    tad_recv_init_context(&new_csap->receiver);
+    new_csap->csap_type = csap_type = strdup(type);
+    new_csap->stop_latency_timeout =
+        TE_MS2US(TAD_CSAP_STOP_LATENCY_TIMEOUT_DEF);
+    new_csap->recv_timeout =
+        TE_MS2US(TAD_CSAP_RECV_TIMEOUT_DEF);
 
 /**
  * Macro for failure processing in csap_create function.
@@ -156,11 +150,7 @@ csap_create(const char *type, csap_p *csap)
     new_csap->depth = depth;
 
     /* Allocate memory for stack arrays */
-    new_csap->layers = calloc(depth, sizeof(new_csap->layers[0]));
-
-    if (new_csap->layers == NULL)
-        CSAP_CREATE_ERROR(TE_ENOMEM, "%s(): no memory for layers",
-                          __FUNCTION__);
+    new_csap->layers = TE_ALLOC(depth * sizeof(new_csap->layers[0]));
 
     for (i = 0; i < depth; i++)
     {

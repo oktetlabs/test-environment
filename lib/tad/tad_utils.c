@@ -42,6 +42,7 @@
 #include "logger_api.h"
 #include "logger_ta_fast.h"
 
+#include "te_alloc.h"
 
 /** Name of the function to generate random number in TAD expression */
 #define TAD_EXPR_FUNC_RAND  "rand()"
@@ -348,8 +349,7 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
 
     VERB("%s <%s> called", __FUNCTION__, string);
 
-    if ((*expr = calloc(1, sizeof(**expr))) == NULL)
-        return TE_ENOMEM;
+    *expr = TE_ALLOC(sizeof(**expr));
 
     *syms = 0;
 
@@ -379,7 +379,7 @@ tad_int_expr_parse(const char *string, tad_int_expr_t **expr, int *syms)
             (*expr)->d_len = 2;
         }
 
-        (*expr)->exprs = calloc((*expr)->d_len, sizeof(tad_int_expr_t));
+        (*expr)->exprs = TE_ALLOC((*expr)->d_len * sizeof(tad_int_expr_t));
 
         rc = tad_int_expr_parse(p, &sub_expr, &sub_expr_parsed);
         VERB("first subexpr parsed, rc %r, syms %d", rc, sub_expr_parsed);
@@ -660,10 +660,7 @@ tad_int_expr_calculate(const tad_int_expr_t *expr,
 tad_int_expr_t *
 tad_int_expr_constant(int64_t n)
 {
-    tad_int_expr_t *ret = calloc(1, sizeof(*ret));
-
-    if (ret == NULL)
-        return NULL;
+    tad_int_expr_t *ret = TE_ALLOC(sizeof(*ret));
 
     ret->n_type = TAD_EXPR_CONSTANT;
     ret->d_len = 8;
@@ -694,10 +691,7 @@ tad_int_expr_constant_arr(uint8_t *arr, size_t len)
     if (len > sizeof(int64_t))
         return NULL;
 
-    ret = calloc(1, sizeof(*ret));
-
-    if (ret == NULL)
-        return NULL;
+    ret = TE_ALLOC(sizeof(*ret));
 
     memcpy(((uint8_t *)&val) + sizeof(uint64_t) - len, arr, len);
 
@@ -893,8 +887,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
                     return TE_EINVAL;
                 }
 
-                if ((d_ptr = calloc(len, 1)) == NULL)
-                    return TE_ENOMEM;
+                d_ptr = TE_ALLOC(len);
 
                 rc = asn_read_value_field(du_field, d_ptr, &len, "");
                 if (rc)
@@ -1008,8 +1001,7 @@ tad_data_unit_from_bin(const uint8_t *data, size_t d_len,
     if (data == NULL || location == NULL)
         return TE_EWRONGPTR;
 
-    if ((location->val_data.oct_str = malloc(d_len)) == NULL)
-        return TE_ENOMEM;
+    location->val_data.oct_str = TE_ALLOC(d_len);
 
     location->du_type = TAD_DU_OCTS;
     location->val_data.len = d_len;
@@ -1247,7 +1239,7 @@ tad_check_pdu_seq(csap_p csap, asn_value *pdus)
         return TE_ETADWRONGNDS;
     }
 
-    nds_protos = calloc(csap->depth, sizeof(nds_protos[0]));
+    nds_protos = TE_ALLOC(csap->depth * sizeof(nds_protos[0]));
 
     for (i = 0; i < nds_len; i++)
     {
@@ -1819,12 +1811,7 @@ tad_convert_payload(const asn_value *ndn_payload,
                 break;
             }
             rlen = len;
-            data = malloc(rlen);
-            if (data == NULL)
-            {
-                rc = TE_ENOMEM;
-                break;
-            }
+            data = TE_ALLOC(rlen);
             rc = asn_read_value_field(payload, data, &rlen, "");
             if (rc != 0)
             {
@@ -1885,12 +1872,7 @@ tad_convert_payload(const asn_value *ndn_payload,
             }
             pld_spec->mask.length = len;
 
-            data = malloc(v_len);
-            if (data == NULL)
-            {
-                rc = TE_ENOMEM;
-                break;
-            }
+            data = TE_ALLOC(v_len);
             rc = asn_read_value_field(payload, data, &v_len, "v");
             if (rc != 0)
             {
@@ -1901,12 +1883,7 @@ tad_convert_payload(const asn_value *ndn_payload,
             }
             pld_spec->mask.value = data;
 
-            data = malloc(m_len);
-            if (data == NULL)
-            {
-                rc = TE_ENOMEM;
-                break;
-            }
+            data = TE_ALLOC(m_len);
             rc = asn_read_value_field(payload, data, &m_len, "m");
             if (rc != 0)
             {

@@ -39,6 +39,7 @@
 #include <net/route.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_stdint.h"
@@ -487,11 +488,7 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
         return 0;
     }
 
-    if ((tbl = (tapi_rt_entry_t *)calloc(rt_num, sizeof(*tbl))) == NULL)
-    {
-        free(handles);
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    }
+    tbl = TE_ALLOC(rt_num * sizeof(*tbl));
 
     i = 0;
     for (j = 0; j < num; j++)
@@ -1267,14 +1264,7 @@ cfg_route_op(enum tapi_cfg_oper op, const char *ta,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    if ((dst_addr_copy = (uint8_t *)malloc(netaddr_size)) == NULL)
-    {
-        ERROR("%s() cannot allocate %d bytes for the copy of "
-              "the network address", __FUNCTION__,
-              te_netaddr_get_size(addr_family));
-
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    }
+    dst_addr_copy = TE_ALLOC(netaddr_size);
 
     if (inet_ntop(addr_family, dst_addr, dst_addr_str_orig,
                   sizeof(dst_addr_str_orig)) == NULL)
@@ -1803,10 +1793,7 @@ tapi_cfg_get_hwaddr(const char *ta,
      * Configuration model does not support alias interfaces,
      * so that we should truncate trailing :XX part from the interface name.
      */
-    if ((ifname_bkp = (char *)malloc(strlen(ifname) + 1)) == NULL)
-    {
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    }
+    ifname_bkp = TE_ALLOC(strlen(ifname) + 1);
     memcpy(ifname_bkp, ifname, strlen(ifname) + 1);
 
     if ((ptr = strchr(ifname_bkp, ':')) != NULL)
@@ -1849,10 +1836,7 @@ tapi_cfg_set_hwaddr(const char *ta,
      * Configuration model does not support alias interfaces,
      * so that we should truncate trailing :XX part from the interface name.
      */
-    if ((ifname_bkp = (char *)malloc(strlen(ifname) + 1)) == NULL)
-    {
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    }
+    ifname_bkp = TE_ALLOC(strlen(ifname) + 1);
     memcpy(ifname_bkp, ifname, strlen(ifname) + 1);
 
     if ((ptr = strchr(ifname_bkp, ':')) != NULL)
@@ -1891,10 +1875,7 @@ tapi_cfg_get_bcast_hwaddr(const char *ta,
      * Configuration model does not support alias interfaces,
      * so that we should truncate trailing :XX part from the interface name.
      */
-    if ((ifname_bkp = (char *)malloc(strlen(ifname) + 1)) == NULL)
-    {
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    }
+    ifname_bkp = TE_ALLOC(strlen(ifname) + 1);
     memcpy(ifname_bkp, ifname, strlen(ifname) + 1);
 
     if ((ptr = strchr(ifname_bkp, ':')) != NULL)
@@ -1936,10 +1917,7 @@ tapi_cfg_set_bcast_hwaddr(const char *ta, const char *ifname,
      * Configuration model does not support alias interfaces,
      * so that we should truncate trailing :XX part from the interface name.
      */
-    if ((ifname_bkp = (char *)malloc(strlen(ifname) + 1)) == NULL)
-    {
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    }
+    ifname_bkp = TE_ALLOC(strlen(ifname) + 1);
     memcpy(ifname_bkp, ifname, strlen(ifname) + 1);
 
     if ((ptr = strchr(ifname_bkp, ':')) != NULL)

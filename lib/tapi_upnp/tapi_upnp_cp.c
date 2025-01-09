@@ -151,12 +151,7 @@ rpc_upnp_cp_action(rcf_rpc_server *rpcs,
             }
             else
             {
-                *reply = malloc(out.buf.buf_len);
-                if (*reply == NULL)
-                {
-                    ERROR("cannot allocate %u bytes", out.buf.buf_len);
-                    RETVAL_INT(upnp_cp_action, -1);
-                }
+                *reply = TE_ALLOC(out.buf.buf_len);
             }
             memcpy(*reply, out.buf.buf_val, out.buf.buf_len);
             *reply_len = out.buf.buf_len;

@@ -27,6 +27,7 @@
 #include <assert.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_raw_log.h"
@@ -202,24 +203,16 @@ extern uint32_t      log_sequence;
  * Initialize ring buffer.
  *
  * @param ring_buffer Ring buffer location.
- *
- * @retval  0 Success.
- * @retval -1 Failure.
  */
-static inline int
+static inline void
 lgr_rb_init(struct lgr_rb *ring_buffer)
 {
     memset(ring_buffer, 0, sizeof(struct lgr_rb));
 
-    ring_buffer->rb =
-        (uint8_t *)calloc(1, LGR_TOTAL_RB_BYTES * sizeof(uint8_t));
-    if (ring_buffer->rb == NULL)
-        return -1;
+    ring_buffer->rb = TE_ALLOC(LGR_TOTAL_RB_BYTES * sizeof(uint8_t));
 
     ring_buffer->unused = LGR_TOTAL_RB_EL;
     ring_buffer->head = ring_buffer->tail = 0;
-
-    return 0;
 }
 
 /**

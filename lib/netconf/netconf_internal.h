@@ -247,11 +247,11 @@ extern void netconf_parse_rtattr_nested(struct rtattr *rta,
 extern uint32_t netconf_get_rta_u32(struct rtattr *rta);
 
 /**
- * Duplicate a data of rtattr. The memory is allocated using malloc().
+ * Duplicate a data of rtattr. The memory is allocated using TE_ALLOC().
  *
  * @param rta           Routing attribute
  *
- * @return Address of duplicated data, or NULL in case of error.
+ * @return Address of duplicated data (cannot return @c NULL).
  */
 void *netconf_dup_rta(const struct rtattr *rta);
 

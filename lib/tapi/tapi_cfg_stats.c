@@ -17,6 +17,7 @@
 #include <string.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "logger_api.h"
 #include "tapi_cfg_base.h"
@@ -238,7 +239,7 @@ tapi_cfg_stats_if_stats_print(const char          *ta,
                               const char          *ifname,
                               tapi_cfg_if_stats   *stats)
 {
-    char *buf = (char *)malloc(TAPI_CFG_IF_STATS_MAX_LINE_LEN);
+    char *buf = TE_ALLOC(TAPI_CFG_IF_STATS_MAX_LINE_LEN);
 
     if (stats == NULL)
     {
@@ -288,7 +289,7 @@ te_errno
 tapi_cfg_stats_net_stats_print(const char          *ta,
                                tapi_cfg_net_stats  *stats)
 {
-    char *buf = (char *)malloc(TAPI_CFG_NET_STATS_MAX_LINE_LEN);
+    char *buf = TE_ALLOC(TAPI_CFG_NET_STATS_MAX_LINE_LEN);
 
     if (stats == NULL)
     {

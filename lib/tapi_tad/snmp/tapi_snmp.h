@@ -341,7 +341,7 @@ extern void tapi_snmp_free_message(tapi_snmp_message_t *snmp_message);
  * @param data      buffer with data
  * @param data_len  size of data buffer
  *
- * @return Allocated octet sting data structure
+ * @return Allocated octet sting data structure (cannot return @c NULL)
  */
 extern tapi_snmp_oct_string_t *tapi_snmp_mk_oct_string(uint8_t *data,
                                                        size_t data_len);

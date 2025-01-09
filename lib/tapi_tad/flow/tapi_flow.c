@@ -182,11 +182,7 @@ tapi_flow_prepare_endpoints(tapi_flow_t *flow)
             return rc;
         }
 
-        if ((ep = (tapi_flow_ep *)calloc(1, sizeof(tapi_flow_ep))) == NULL)
-        {
-            ERROR("Failed to allocate memory for endpoint structure");
-            return rc;
-        }
+        ep = TE_ALLOC(sizeof(tapi_flow_ep));
 
         /* Get endpoint name */
         if ((rc = asn_read_string(ep_desc, &ep->name, "name")) != 0)
@@ -250,12 +246,7 @@ tapi_flow_ep_copy(tapi_flow_t *flow, char *ep_name, char *new_ep_name)
         return NULL;
     }
 
-    new_ep = (tapi_flow_ep *)calloc(1, sizeof(tapi_flow_ep));
-    if (new_ep == NULL)
-    {
-        ERROR("Failed to allocate memory to duplicate endpoint structure");
-        return NULL;
-    }
+    new_ep = TE_ALLOC(sizeof(tapi_flow_ep));
 
     new_ep->name = strdup(new_ep_name);
     new_ep->value = ep->value;
@@ -364,12 +355,7 @@ tapi_flow_prepare_traffic(tapi_flow_t *flow)
             return rc;
         }
 
-        if ((traffic = (tapi_flow_traffic *)
-                 calloc(1, sizeof(tapi_flow_traffic))) == NULL)
-        {
-            ERROR("Failed to allocate memory for traffic structure");
-            return TE_RC(TE_TAPI, TE_ENOMEM);
-        }
+        traffic = TE_ALLOC(sizeof(tapi_flow_traffic));
 
         /* Get traffic name */
         if ((rc = asn_read_string(traffic_desc, &traffic->name, "name")) != 0)
@@ -716,19 +702,13 @@ tapi_flow_preprocess_quotes(const char *param)
     char *close_q  = NULL;          /* Closing quote */
     char *src      = (char *)param;
     int   buf_size = (strlen(param) * 2) + 1;
-    char *buf      = malloc(buf_size);
+    char *buf      = TE_ALLOC(buf_size);
     char *dst      = buf;
     char *link     = NULL;
     char *value    = NULL;
     int   unused   = strlen(param);
 
     RING("%s() started", __FUNCTION__);
-
-    if (buf == NULL)
-    {
-        ERROR("Failed to allocate memory to process flow spec");
-        return NULL;
-    }
 
     while (src != NULL)
     {
@@ -817,19 +797,13 @@ tapi_flow_preprocess_links(const char *param)
 {
     char *src      = (char *)param;
     int   buf_size = strlen(param) + 1;
-    char *buf      = malloc(buf_size);
+    char *buf      = TE_ALLOC(buf_size);
     char *dst      = buf;
     char *link     = NULL;
     char *value    = NULL;
     int   unused   = 0;
 
     RING("%s() started", __FUNCTION__);
-
-    if (buf == NULL)
-    {
-        ERROR("Failed to allocate memory to process flow spec");
-        return NULL;
-    }
 
     while (param != NULL)
     {
@@ -890,7 +864,7 @@ tapi_flow_csap_spec_to_stack(asn_value *spec, char **stack)
     asn_value *layer = NULL;
     int        i;
     int        rc    = 0;
-    char      *buf   = calloc(1, TAPI_TAD_CSAP_DESC_LEN_MAX);
+    char      *buf   = TE_ALLOC(TAPI_TAD_CSAP_DESC_LEN_MAX);
     char       log_buf[4096];
     int        len   = 0;
 
@@ -899,9 +873,6 @@ tapi_flow_csap_spec_to_stack(asn_value *spec, char **stack)
     memset(log_buf, 0, 4096);
     asn_sprint_value(spec, log_buf, sizeof(buf), 4);
     RING("%s(): process csap:\n%s", __FUNCTION__, log_buf);
-
-    if (buf == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     for (i = 0; rc == 0; i++)
     {
@@ -1130,15 +1101,9 @@ char **
 tapi_flow_preprocess_args(int argc, char **argv)
 {
     int i;
-    char **new_argv = (char **)calloc(argc, sizeof(char *));
+    char **new_argv = TE_ALLOC(argc * sizeof(char *));
 
     RING("%s() started", __FUNCTION__);
-
-    if (new_argv == NULL)
-    {
-        ERROR("Failed to allocate memory for preprocessed args");
-        return NULL;
-    }
 
     for (i = 0; i < argc; i++)
     {
@@ -1230,11 +1195,7 @@ tapi_flow_start(tapi_flow_t *flow, char *name)
 
     if (traffic->plen > 0)
     {
-        if ((payload = malloc(traffic->plen)) == NULL)
-        {
-            ERROR("Failed to allocate memory for PDU payload");
-            return TE_RC(TE_TAPI, TE_ENOMEM);
-        }
+        payload = TE_ALLOC(traffic->plen);
 
         RING("Generate random %d bytes of payload", traffic->plen);
         tapi_flow_fill_random(payload, traffic->plen);
@@ -1485,4 +1446,3 @@ tapi_flow_check_all(tapi_flow_t *flow, const char *traffic_prefix)
     else
         return 0;
 }
-

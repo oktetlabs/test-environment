@@ -124,7 +124,7 @@ ip6_pkt_handler(asn_value *pkt, void *user_param)
     /* Extension headers if necessary */
 
     len = plain_pkt.pld_len = asn_get_length(pkt, "payload");
-    plain_pkt.payload = malloc(len);
+    plain_pkt.payload = TE_ALLOC(len);
 
     /* Payload */
     rc = asn_read_value_field(pkt, plain_pkt.payload, &len, "payload");
@@ -142,12 +142,7 @@ tapi_ip6_eth_trrecv_cb_data(ip6_callback  callback,
     tapi_ip6_eth_pkt_handler_data   *cb_data;
     tapi_tad_trrecv_cb_data         *res;
 
-    cb_data = (tapi_ip6_eth_pkt_handler_data *)calloc(1, sizeof(*cb_data));
-    if (cb_data == NULL)
-    {
-        ERROR("%s(): failed to allocate memory", __FUNCTION__);
-        return NULL;
-    }
+    cb_data = TE_ALLOC(sizeof(*cb_data));
     cb_data->callback = callback;
     cb_data->user_data = user_data;
 

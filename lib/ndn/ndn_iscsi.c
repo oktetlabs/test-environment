@@ -29,6 +29,7 @@
 #include "tad_common.h"
 #include "ndn_internal.h"
 #include "ndn_iscsi.h"
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "logger_api.h"
 
@@ -331,13 +332,7 @@ bin_data2asn(uint8_t *data, uint32_t data_len, asn_value **value)
 
     asn_value *key_pair;
 
-    packet = calloc(1, data_len);
-    if (packet == NULL)
-    {
-        ERROR("%s, %d: unsufficient memory",
-              __FUNCTION__, __LINE__);
-        return TE_ENOMEM;
-    }
+    packet = TE_ALLOC(data_len);
     memcpy(packet, (char *)data, data_len);
 
     if ((segment_data =

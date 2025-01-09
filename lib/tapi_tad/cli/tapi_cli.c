@@ -39,6 +39,7 @@
 
 #include "tapi_cli.h"
 
+#include "te_alloc.h"
 
 #define TAPI_CLI_CSAP_STR_MAXLEN            512
 #define TAPI_CLI_CSAP_INIT_FILENAME_MAXLEN  128
@@ -191,12 +192,9 @@ tapi_cli_csap_local_create(const char *ta_name, int sid,
 {
     int   rc = 0;
     int   len = 0;
-    char *buf = (char *)malloc(TAPI_CLI_CSAP_STR_MAXLEN);
+    char *buf = TE_ALLOC(TAPI_CLI_CSAP_STR_MAXLEN);
     int   buf_size = TAPI_CLI_CSAP_STR_MAXLEN;
     int   type = TAPI_CLI_CSAP_TYPE_SERIAL;
-
-    if (buf == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     len += snprintf(buf + len, buf_size - len,
                     "{ layers { cli : { conn-type %d,"
@@ -263,11 +261,8 @@ tapi_cli_csap_remote_create(const char *ta_name, int sid,
 {
     int   rc = 0;
     int   len = 0;
-    char *buf = (char *)malloc(TAPI_CLI_CSAP_STR_MAXLEN);
+    char *buf = TE_ALLOC(TAPI_CLI_CSAP_STR_MAXLEN);
     int   buf_size = TAPI_CLI_CSAP_STR_MAXLEN;
-
-    if (buf == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     len += snprintf(buf + len, buf_size - len,
                     "{ layers { cli : { conn-type %d,"
@@ -333,12 +328,9 @@ tapi_cli_csap_shell_create(const char *ta_name, int sid,
 {
     int   rc = 0;
     int   len = 0;
-    char *buf = (char *)malloc(TAPI_CLI_CSAP_STR_MAXLEN);
+    char *buf = TE_ALLOC(TAPI_CLI_CSAP_STR_MAXLEN);
     int   buf_size = TAPI_CLI_CSAP_STR_MAXLEN;
     int   type = TAPI_CLI_CSAP_TYPE_SHELL;
-
-    if (buf == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     len += snprintf(buf + len, buf_size - len,
                     "{ layers { cli : { conn-type %d,"
@@ -433,9 +425,7 @@ tapi_internal_write_cmd_to_file(char *tmp_name, const char *command,
     if ((rc = te_make_tmp_file(tmp_name)) != 0)
         return TE_RC(TE_TAPI, rc);
 
-    buf = (char *)malloc(buf_size);
-    if (buf == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
+    buf = TE_ALLOC(buf_size);
 
     VERB("%s() file: %s\n", __FUNCTION__, tmp_name);
 
@@ -559,12 +549,7 @@ tapi_cli_msg_handler(const char *msg_fname, void *user_param)
 
     VERB("Try to get CLI message of %d bytes", msg_len);
 
-    msg = (char *)malloc(msg_len + 1);
-    if (msg == NULL)
-    {
-        ERROR("Cannot allocate enough memory for CLI response");
-        return;
-    }
+    msg = TE_ALLOC(msg_len + 1);
 
     msg[msg_len] = '\0';
 
@@ -584,12 +569,7 @@ tapi_cli_msg_handler(const char *msg_fname, void *user_param)
         return;
     }
 
-    msg = (char *)malloc(msg_len + 1);
-    if (msg == NULL)
-    {
-        ERROR("Cannot allocate enough memory for CLI response");
-        return;
-    }
+    msg = TE_ALLOC(msg_len + 1);
 
     msg[msg_len] = '\0';
 
@@ -713,4 +693,3 @@ tapi_cli_send_recv_with_prompts(const char *ta_name, int sid,
                                        cmd_prompt_type, cmd_prompt,
                                        passwd_prompt_type, passwd_prompt);
 }
-

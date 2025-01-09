@@ -407,15 +407,9 @@ rpc_set_var(rcf_rpc_server *rpcs, const char *name,
 uint8_t *
 rpc_iovec_to_array(size_t len, const struct rpc_iovec *v, size_t cnt)
 {
-    uint8_t *array = malloc(len);
+    uint8_t *array = TE_ALLOC(len);
     uint8_t *p     = array;
     size_t   i;
-
-    if (array == NULL)
-    {
-        ERROR("Allocation of %u bytes failure", len);
-        return NULL;
-    }
 
     for (i = 0; i < cnt && len > 0; ++i)
     {
@@ -1577,13 +1571,7 @@ rpc_set_buf_gen(rcf_rpc_server *rpcs, const uint8_t *src_buf,
          * Duplicate input buffer, because it could be constant and may need
          * to be modified.
          */
-        src_buf_cpy = malloc(len);
-        if (src_buf_cpy == NULL)
-        {
-            ERROR("%s(): Failed to allocate %u bytes of memory",
-                  __FUNCTION__, len);
-            RETVAL_VOID(set_buf);
-        }
+        src_buf_cpy = TE_ALLOC(len);
         memcpy(src_buf_cpy, src_buf, len);
 
         in.src_buf.src_buf_val = src_buf_cpy;

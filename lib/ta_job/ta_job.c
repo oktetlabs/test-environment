@@ -12,6 +12,7 @@
 #include "te_config.h"
 
 #include "ta_job.h"
+#include "te_alloc.h"
 #include "te_exec_child.h"
 #include "te_queue.h"
 #include "te_str.h"
@@ -225,13 +226,7 @@ static const bool ta_job_pcre_partial_matching_supported = (PCRE_MAJOR > TA_JOB_
 te_errno
 ta_job_manager_init(ta_job_manager_t **manager)
 {
-    ta_job_manager_t *result = calloc(1, sizeof(ta_job_manager_t));
-
-    if (result == NULL)
-    {
-        ERROR("Failed to allocate memory for job manager structure");
-        return TE_ENOMEM;
-    }
+    ta_job_manager_t *result = TE_ALLOC(sizeof(ta_job_manager_t));
 
     *result = ta_job_manager_initializer;
     *manager = result;
@@ -311,12 +306,7 @@ regexp_data_create(char *pattern, unsigned int extract,
     int erroffset;
     bool utf8;
 
-    if ((result = calloc(1, sizeof(*result))) == NULL)
-    {
-        ERROR("Failed to allocate regexp data");
-        rc = TE_ENOMEM;
-        goto out;
-    }
+    result = TE_ALLOC(sizeof(*result));
 
     result->re = pcre_compile(pattern, PCRE_MULTILINE,
                               &error, &erroffset, NULL);
@@ -535,23 +525,11 @@ queue_put(const char *buf, size_t size, bool eos, unsigned int channel_id,
         queue->dropped++;
     }
 
-    msg = calloc(1, sizeof(*msg));
-
-    if (msg == NULL)
-    {
-        ERROR("Message allocation failed");
-        return TE_ENOMEM;
-    }
+    msg = TE_ALLOC(sizeof(*msg));
 
     if (size != 0)
     {
-        msg_str = calloc(1, size);
-        if (msg_str == NULL)
-        {
-            ERROR("Message databuf allocation failed");
-            free(msg);
-            return TE_ENOMEM;
-        }
+        msg_str = TE_ALLOC(size);
     }
     else
     {
@@ -669,13 +647,7 @@ channel_add_filter(channel_t *channel, filter_t *filter)
 static te_errno
 channel_alloc(ta_job_t *job, channel_t **channel, bool is_input_channel)
 {
-    channel_t *result = calloc(1, sizeof(*result));
-
-    if (result == NULL)
-    {
-        ERROR("Channel allocation failed");
-        return TE_ENOMEM;
-    }
+    channel_t *result = TE_ALLOC(sizeof(*result));
 
     result->n_filters = 0;
     result->job = job;
@@ -694,14 +666,8 @@ static te_errno
 filter_alloc(const char *filter_name, bool readable, te_log_level log_level,
              filter_t **filter)
 {
-    filter_t *result = calloc(1, sizeof(*result));
+    filter_t *result = TE_ALLOC(sizeof(*result));
     te_errno rc;
-
-    if (result == NULL)
-    {
-        ERROR("Filter allocation failed");
-        return TE_ENOMEM;
-    }
 
     if ((rc = init_message_queue(&result->queue)) != 0)
     {
@@ -818,13 +784,7 @@ static te_errno
 ta_job_alloc(const char *spawner, const char *tool, char **argv,
           char **env, ta_job_t **job)
 {
-    ta_job_t *result = calloc(1, sizeof(*result));
-
-    if (result == NULL)
-    {
-        ERROR("Job allocation failed");
-        return TE_ENOMEM;
-    }
+    ta_job_t *result = TE_ALLOC(sizeof(*result));
 
     if (spawner != NULL && spawner[0] != '\0')
     {
@@ -1764,13 +1724,7 @@ ta_job_allocate_channels(ta_job_manager_t *manager, unsigned int job_id,
         goto out;
     }
 
-    allocated_channels = calloc(n_channels, sizeof(*allocated_channels));
-    if (allocated_channels == NULL)
-    {
-        ERROR("Failed to allocate channels array for a job");
-        rc = TE_ENOMEM;
-        goto out;
-    }
+    allocated_channels = TE_ALLOC(n_channels * sizeof(*allocated_channels));
 
     for (i = 0; i < n_channels; i++)
     {
@@ -2067,11 +2021,7 @@ move_or_copy_message_to_buffer(const message_t *msg, ta_job_buffer_t *buffer,
     }
     else
     {
-        if ((buffer->data = malloc(msg->size)) == NULL)
-        {
-            ERROR("Failed to copy message to buffer");
-            return TE_ENOMEM;
-        }
+        buffer->data = TE_ALLOC(msg->size);
         memcpy(buffer->data, msg->data, msg->size);
     }
 
@@ -2649,13 +2599,7 @@ wrapper_alloc(const char *tool, char **argv,
         return TE_ENOENT;
     }
 
-    wrapper = calloc(1, sizeof(*wrapper));
-
-    if (wrapper == NULL)
-    {
-        ERROR("Wrapper allocation failed");
-        return TE_ENOMEM;
-    }
+    wrapper = TE_ALLOC(sizeof(*wrapper));
 
     wrapper->tool = strdup(tool);
     if (wrapper->tool == NULL)

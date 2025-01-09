@@ -15,6 +15,7 @@
 
 #define TE_LGR_USER "NDN/Forw"
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_errno.h"
 #include "asn_impl.h"
@@ -340,7 +341,7 @@ ndn_forw_drop_to_plain(const asn_value *val, ndn_forw_drop_t *forw_drop)
         forw_drop->mask_len = d_len =
                         asn_get_length(val, "drop.#pattern-mask");
 
-        forw_drop->pattern_mask = calloc ((d_len >> 3) + 1, 1);
+        forw_drop->pattern_mask = TE_ALLOC((d_len >> 3) + 1);
 
         rc = asn_read_value_field(val, forw_drop->pattern_mask, &d_len,
                                  "drop");
@@ -378,8 +379,7 @@ ndn_forw_action_asn_to_plain(const asn_value *val,
         return TE_EASNGENERAL;
 
     d_len = id_len + 1;
-    if ((forw_action->id = malloc(d_len)) == NULL )
-        return TE_ENOMEM;
+    forw_action->id = TE_ALLOC(d_len);
 
     rc = asn_read_value_field(val, forw_action->id, &d_len, "id");
     if (rc) return rc;

@@ -241,7 +241,7 @@ tsa_iut_set(tsa_session *ss, rcf_rpc_server *pco_iut,
 
     if (ss->state.tst_type != TSA_TST_SOCKET)
     {
-        ss->config.iut_link_addr = calloc(ETHER_ADDR_LEN, 1);
+        ss->config.iut_link_addr = TE_ALLOC(ETHER_ADDR_LEN);
 
         snprintf(oid, RCF_MAX_ID, "/agent:%s/interface:%s",
                  ss->config.pco_iut->ta,
@@ -434,7 +434,7 @@ tsa_gw_set(tsa_session *ss, rcf_rpc_server *pco_gw,
             ERROR("Gateway link address is already specified");
             return TE_RC(TE_TAPI, TE_EINVAL);
         }
-        ss->config.gw_tst_link_addr = calloc(ETHER_ADDR_LEN, 1);
+        ss->config.gw_tst_link_addr = TE_ALLOC(ETHER_ADDR_LEN);
 
         snprintf(oid, RCF_MAX_ID, "/agent:%s/interface:%s",
                  ss->config.pco_gw->ta,

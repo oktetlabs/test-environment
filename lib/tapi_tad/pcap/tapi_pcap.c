@@ -151,12 +151,7 @@ tapi_pcap_pkt_handler(asn_value *frame_val, void *user_param)
     VERB("%s(): Packet payload length %u bytes",
          __FUNCTION__, (unsigned)pkt_len);
 
-    pkt = malloc(pkt_len);
-    if (pkt == NULL)
-    {
-        ERROR("There is no enough memory to allocate for packet data");
-        return;
-    }
+    pkt = TE_ALLOC(pkt_len);
 
     rc = asn_read_value_field(frame_val, pkt, &pkt_len, "payload.#bytes");
     if (rc < 0)
@@ -181,12 +176,7 @@ tapi_pcap_trrecv_cb_data(tapi_pcap_recv_callback  callback,
     tapi_pcap_pkt_handler_data *cb_data;
     tapi_tad_trrecv_cb_data    *res;
 
-    cb_data = (tapi_pcap_pkt_handler_data *)calloc(1, sizeof(*cb_data));
-    if (cb_data == NULL)
-    {
-        ERROR("%s(): failed to allocate memory", __FUNCTION__);
-        return NULL;
-    }
+    cb_data = TE_ALLOC(sizeof(*cb_data));
     cb_data->callback = callback;
     cb_data->user_data = user_data;
 

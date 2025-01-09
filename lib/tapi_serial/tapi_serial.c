@@ -16,6 +16,7 @@
 
 #include "tapi_mem.h"
 #include "tapi_serial.h"
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "te_sockaddr.h"
 #include "rcf_rpc.h"
@@ -127,7 +128,7 @@ tapi_serial_send_cmd(tapi_serial_handle handle,
     int         retval;
     va_list     vlist;
     int         fmt_length = strlen(fmt);
-    char       *fmt_with_end = malloc(fmt_length + 2);
+    char       *fmt_with_end = TE_ALLOC(fmt_length + 2);
 
     snprintf(fmt_with_end, fmt_length, "%s\n", fmt);
 

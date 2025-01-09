@@ -165,10 +165,7 @@ tad_bridge_gen_bin_cb(csap_p csap, unsigned int layer,
     if (rc)
         return rc;
 
-    if ((data = malloc(frame_size)) == NULL)
-    {
-        return TE_ENOMEM; /* can't allocate memory for frame data */
-    }
+    data = TE_ALLOC(frame_size);
 
     /* filling with zeroes */
     memset(data, 0, frame_size);

@@ -111,12 +111,7 @@ rte_flow_attr_from_ndn(const asn_value *ndn_flow,
             goto out;                                               \
     } while (0)
 
-    attr = calloc(1, sizeof(*attr));
-    if (attr == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto out;
-    }
+    attr = TE_ALLOC(sizeof(*attr));
 
     ASN_READ_ATTR_FIELD(ndn_attr, group, attr->group, sizeof(attr->group));
     ASN_READ_ATTR_FIELD(ndn_attr, priority, attr->priority, sizeof(attr->priority));
@@ -285,30 +280,15 @@ rte_alloc_mem_for_flow_item(void **spec_out, void **mask_out,
     if (spec_out == NULL || mask_out == NULL || last_out == NULL)
         return TE_EINVAL;
 
-    spec = calloc(1, size);
-    if (spec == NULL)
-        goto out_spec;
-
-    mask = calloc(1, size);
-    if (mask == NULL)
-        goto out_mask;
-
-    last = calloc(1, size);
-    if (last == NULL)
-        goto out_last;
+    spec = TE_ALLOC(size);
+    mask = TE_ALLOC(size);
+    last = TE_ALLOC(size);
 
     *spec_out = spec;
     *mask_out = mask;
     *last_out = last;
 
     return 0;
-
-out_last:
-    free(mask);
-out_mask:
-    free(spec);
-out_spec:
-    return TE_ENOMEM;
 }
 
 static te_errno
@@ -1500,9 +1480,7 @@ rte_flow_pattern_from_ndn(const asn_value *ndn_flow,
      */
     *pattern_len = ndn_len + 1;
 
-    pattern = calloc(*pattern_len, sizeof(*pattern));
-    if (pattern == NULL)
-        return TE_ENOMEM;
+    pattern = TE_ALLOC(*pattern_len * sizeof(*pattern));
 
     for (i = 0, item_nb = 0; i < ndn_len; i++, item_nb++)
     {
@@ -1596,9 +1574,7 @@ rte_flow_action_queue_from_pdu(const asn_value *conf_pdu,
     else if (tag != NDN_FLOW_ACTION_QID)
         return TE_EINVAL;
 
-    conf = calloc(1, sizeof(*conf));
-    if (conf == NULL)
-        return TE_ENOMEM;
+    conf = TE_ALLOC(sizeof(*conf));
 
     len = sizeof(conf->index);
     rc = asn_read_value_field(conf_pdu, &val, &len, "#index");
@@ -1919,9 +1895,7 @@ rte_flow_action_mark_from_pdu(const asn_value *conf_pdu,
     else if (tag != NDN_FLOW_ACTION_MARK_ID)
         return TE_EINVAL;
 
-    conf = calloc(1, sizeof(*conf));
-    if (conf == NULL)
-        return TE_ENOMEM;
+    conf = TE_ALLOC(sizeof(*conf));
 
     len = sizeof(conf->id);
     rc = asn_read_value_field(conf_pdu, &val, &len, "#id");
@@ -1981,9 +1955,7 @@ rte_flow_action_count_from_pdu(const asn_value *conf_pdu,
             return rc;
     }
 
-    conf = calloc(1, sizeof(*conf));
-    if (conf == NULL)
-        return TE_ENOMEM;
+    conf = TE_ALLOC(sizeof(*conf));
 
     conf->id = id;
     action->conf = conf;
@@ -2180,9 +2152,7 @@ rte_flow_action_jump_from_pdu(const asn_value *conf_pdu,
     else if (tag != NDN_FLOW_ACTION_GROUP)
         return TE_EINVAL;
 
-    conf = calloc(1, sizeof(*conf));
-    if (conf == NULL)
-        return TE_ENOMEM;
+    conf = TE_ALLOC(sizeof(*conf));
 
     len = sizeof(conf->group);
     rc = asn_read_value_field(conf_pdu, &val, &len, "#group");
@@ -2283,9 +2253,7 @@ rte_flow_actions_from_ndn(const asn_value *ndn_flow,
      */
     actions_len = ndn_len + 1;
 
-    actions = calloc(actions_len, sizeof(*actions));
-    if (actions == NULL)
-        return TE_ENOMEM;
+    actions = TE_ALLOC(actions_len * sizeof(*actions));
 
     for (i = 0, action_nb = 0; i < ndn_len; i++, action_nb++)
     {

@@ -87,17 +87,8 @@ netconf_open(netconf_handle *nh, int netlink_family)
     NETCONF_ASSERT(len == sizeof(local_addr));
     NETCONF_ASSERT(local_addr.nl_family == AF_NETLINK);
 
-    *nh = malloc(sizeof(**nh));
-    if (*nh == NULL)
-    {
-        int err = errno;
+    *nh = TE_ALLOC(sizeof(**nh));
 
-        close(netlink_socket);
-        errno = err;
-        return -1;
-    }
-
-    memset(*nh, 0, sizeof(**nh));
     (*nh)->socket = netlink_socket;
     (*nh)->local_addr = local_addr;
 
@@ -181,11 +172,7 @@ netconf_dump_request(netconf_handle nh, uint16_t type,
     g->rtgen_family = family;
 
     /* Prepare list */
-    list = malloc(sizeof(*list));
-    if (list == NULL)
-        return NULL;
-
-    memset(list, 0, sizeof(netconf_list));
+    list = TE_ALLOC(sizeof(*list));
 
     if (netconf_talk(nh, &req, sizeof(req), recv_cb, cookie, list) != 0)
     {
@@ -205,11 +192,8 @@ netconf_list_extend(netconf_list *list, netconf_node_type type)
 
     node = (list->head == NULL) ? &(list->head) : &(list->tail->next);
 
-    *node = malloc(sizeof(**node));
-    if (*node == NULL)
-        return -1;
+    *node = TE_ALLOC(sizeof(**node));
 
-    memset(*node, 0, sizeof(netconf_node));
     (*node)->type = type;
     (*node)->prev = list->tail;
 
@@ -239,9 +223,7 @@ netconf_dup_rta(const struct rtattr *rta)
 {
     void *data;
 
-    data = malloc(RTA_PAYLOAD(rta));
-    if (data == NULL)
-        return NULL;
+    data = TE_ALLOC(RTA_PAYLOAD(rta));
 
     memcpy(data, RTA_DATA(rta), RTA_PAYLOAD(rta));
 

@@ -238,10 +238,7 @@ tadf_sendq_init(sendq_t **queue, csap_p csap, int bandwidth, int size_max)
     int      rc;
     static   pthread_mutex_t lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
-    sendq = calloc(1, sizeof(sendq_t));
-
-    if (sendq == NULL)
-        return TE_RC(TE_TA_EXT, TE_ENOMEM);
+    sendq = TE_ALLOC(sizeof(sendq_t));
 
     /* Basic parameters initialisation */
     sendq->csap = csap;
@@ -355,7 +352,7 @@ tadf_sendq_put_pkt(sendq_t *queue,
     int            rc = -1;
     uint8_t        msg_type = TADF_SYNC_MSG_TYPE_WAKE;
 
-    sendq_entry_t *entry = (sendq_entry_t *)malloc(sizeof(sendq_entry_t));
+    sendq_entry_t *entry = TE_ALLOC(sizeof(sendq_entry_t));
 
     if (pkt == NULL)
     {
@@ -364,9 +361,7 @@ tadf_sendq_put_pkt(sendq_t *queue,
         return TE_RC(TE_TA_EXT, TE_EWRONGPTR);
     }
 
-    entry->pkt = (uint8_t *)malloc(pkt_len);
-    if (entry->pkt == NULL)
-        return TE_RC(TE_TA_EXT, TE_ENOMEM);
+    entry->pkt = TE_ALLOC(pkt_len);
 
     memcpy(entry->pkt, pkt, pkt_len);
     entry->pkt_len = pkt_len;

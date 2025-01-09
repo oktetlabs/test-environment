@@ -136,9 +136,7 @@ trc_db_test_params_normalise(char *param)
     if (param == NULL)
         return NULL;
 
-    str = (char *)calloc(1, strlen(param) + 1);
-    if (str == NULL)
-        return NULL;
+    str = TE_ALLOC(strlen(param) + 1);
 
     for (p = param, q = str; *p != '\0'; p++)
     {
@@ -184,8 +182,8 @@ trc_db_test_params_hash(unsigned int n_args, trc_report_argument *args)
     int   j;
     int   k;
     unsigned char digest[EVP_MAX_MD_SIZE];
-    char *hash_str = calloc(1, sizeof(digest) * 2 + 1);
-    int  *sorted = calloc(n_args, sizeof(int));
+    char *hash_str = TE_ALLOC(sizeof(digest) * 2 + 1);
+    int  *sorted = TE_ALLOC(n_args * sizeof(int));
     char  buf[8192] = {0, };
     int   len = 0;
 

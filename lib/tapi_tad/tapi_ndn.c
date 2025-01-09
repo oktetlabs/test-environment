@@ -742,12 +742,7 @@ tapi_tad_set_cksum_script_correct(asn_value  *proto_pdu,
     du_cksum_label_choice_len = strlen(du_cksum_label) +
                                 strlen(choice_script_postfix);
 
-    du_cksum_label_choice = malloc(du_cksum_label_choice_len + 1);
-    if (du_cksum_label_choice == NULL)
-    {
-        err = TE_ENOMEM;
-        goto out;
-    }
+    du_cksum_label_choice = TE_ALLOC(du_cksum_label_choice_len + 1);
 
     if (snprintf(du_cksum_label_choice, du_cksum_label_choice_len + 1,
                  "%s%s", du_cksum_label, choice_script_postfix) !=
@@ -1075,12 +1070,7 @@ tapi_tad_packet_to_pattern_units(asn_value      *packet,
 
     payload_len = ret;
 
-    payload_data = malloc(payload_len);
-    if (payload_data == NULL)
-    {
-        err = TE_ENOMEM;
-        goto out;
-    }
+    payload_data = TE_ALLOC(payload_len);
 
     err = asn_read_value_field(packet, (void *)payload_data,
                                &payload_len, "payload.#bytes");

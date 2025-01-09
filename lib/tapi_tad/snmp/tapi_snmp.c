@@ -248,8 +248,7 @@ tapi_snmp_copy_varbind(tapi_snmp_varbind_t *dst,
         case TAPI_SNMP_OBJECT_ID:
             d_len = sizeof(tapi_snmp_oid_t); /* fall through */
         case TAPI_SNMP_OCTET_STR:
-            if ((dst->oct_string = malloc(d_len)) == NULL)
-                return TE_RC(TE_TAPI, TE_ENOMEM);
+            dst->oct_string = TE_ALLOC(d_len);
 
             memcpy(dst->oct_string, src->oct_string, d_len);
             break;
@@ -383,16 +382,7 @@ tapi_snmp_free_message(tapi_snmp_message_t *snmp_message)
 tapi_snmp_oct_string_t *
 tapi_snmp_mk_oct_string(uint8_t *data, size_t data_len)
 {
-    tapi_snmp_oct_string_t *oct_string;
-
-    oct_string = malloc(sizeof(*oct_string) + data_len);
-    if (oct_string != NULL)
-    {
-        oct_string->len = data_len;
-        memcpy(oct_string->data, data, data_len);
-    }
-
-    return oct_string;
+    return TE_ALLOC(sizeof(tapi_snmp_oct_string_t) + data_len);
 }
 
 /* See description in tapi_snmp.h */
@@ -467,10 +457,8 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
     }
 
     snmp_message->num_var_binds = asn_get_length(pkt, "variable-bindings");
-    snmp_message->vars = calloc(snmp_message->num_var_binds,
-                                sizeof(tapi_snmp_varbind_t));
-    if (snmp_message->vars == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
+    snmp_message->vars = TE_ALLOC(snmp_message->num_var_binds *
+                                  sizeof(tapi_snmp_varbind_t));
 
     for (i = 0; i < snmp_message->num_var_binds; i++)
     {
@@ -562,9 +550,7 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
                 len = asn_get_length(var_bind,
                           "value.#plain.#simple.#string-value");
 
-                snmp_message->vars[i].oct_string = malloc(len);
-                if (snmp_message->vars[i].oct_string == NULL)
-                    return TE_RC(TE_TAPI, TE_ENOMEM);
+                snmp_message->vars[i].oct_string = TE_ALLOC(len);
 
                 snmp_message->vars[i].type = TAPI_SNMP_OCTET_STR;
                 snmp_message->vars[i].v_len = len;
@@ -578,9 +564,7 @@ tapi_snmp_packet_to_plain(asn_value *pkt, tapi_snmp_message_t *snmp_message)
                           "value.#plain.#simple.#objectID-value");
 
                 snmp_message->vars[i].obj_id =
-                        malloc(sizeof(tapi_snmp_oid_t));
-                if (snmp_message->vars[i].obj_id == NULL)
-                    return TE_RC(TE_TAPI, TE_ENOMEM);
+                        TE_ALLOC(sizeof(tapi_snmp_oid_t));
 
                 snmp_message->vars[i].type = TAPI_SNMP_OBJECT_ID;
                 snmp_message->vars[i].v_len = len;
@@ -1205,7 +1189,7 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
         rc = tapi_snmp_msg_var_bind(f, &var_bind);
         if (rc) break;
 
-        get_par = calloc(1, sizeof(*get_par));
+        get_par = TE_ALLOC(sizeof(*get_par));
 
         switch (syntax) {
             case TAPI_SNMP_OTHER:
@@ -1295,7 +1279,7 @@ tapi_snmp_get_row(const char *ta, int sid, int csap_id,
                     *(get_par->int_place) = msg.vars[i].integer;
                     break;
                 case ROW_PAR_OS:
-                    buf = *(get_par->oct_str_place) = calloc(1, len+1);
+                    buf = *(get_par->oct_str_place) = TE_ALLOC(len + 1);
                     memcpy(buf, msg.vars[i].oct_string, len);
                     break;
                 case ROW_PAR_OBJID:
@@ -1491,7 +1475,7 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
         }
         te_log_buf_append(log_buf, "\t%s", oid_name);
 
-        vb = calloc(1, sizeof(tapi_snmp_varbind_t));
+        vb = TE_ALLOC(sizeof(tapi_snmp_varbind_t));
 
         if ((rc = tapi_snmp_make_oid(oid_name, &oid)) != 0)
         {
@@ -1609,7 +1593,7 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
         }
         te_log_buf_append(log_buf, "\n");
 
-        vbl = calloc(1, sizeof(struct tapi_vb_list));
+        vbl = TE_ALLOC(sizeof(struct tapi_vb_list));
         vbl->next = vbl_head;
         vbl->vb = vb;
         vbl_head = vbl;
@@ -1624,7 +1608,7 @@ tapi_snmp_set_gen(const char *ta, int sid, int csap_id,
         return 0;
     }
 
-    vb_array = calloc(num_vars, sizeof(tapi_snmp_varbind_t));
+    vb_array = TE_ALLOC(num_vars * sizeof(tapi_snmp_varbind_t));
 
     VERB("in %s: num_vars %d\n", __FUNCTION__, num_vars);
 
@@ -1956,8 +1940,7 @@ tapi_snmp_column_list_callback(const tapi_snmp_varbind_t *varbind,
     /* go to the end of list */
     for (l_p = ti_list; l_p->next; l_p = l_p->next);
 
-    l_p->next = (struct tapi_snmp_column_list_t *)
-                        calloc(1, sizeof(struct tapi_snmp_column_list_t));
+    l_p->next = TE_ALLOC(sizeof(struct tapi_snmp_column_list_t));
 
     tapi_snmp_copy_varbind(&(l_p->next->vb), varbind);
     VERB("%s, got reply with OID: %s",
@@ -2001,8 +1984,7 @@ tapi_snmp_vb_to_mem (const tapi_snmp_varbind_t *vb)
                 return NULL;
             {
                 tapi_snmp_oct_string_t *ret_val =
-                    calloc(1, sizeof(tapi_snmp_oct_string_t) +
-                              vb->v_len + 1);
+                    TE_ALLOC(sizeof(tapi_snmp_oct_string_t) + vb->v_len + 1);
                 ret_val->len = vb->v_len;
                 memcpy(ret_val->data, vb->oct_string, vb->v_len);
                 return (void *)ret_val;
@@ -2012,7 +1994,7 @@ tapi_snmp_vb_to_mem (const tapi_snmp_varbind_t *vb)
             if (var_mib_object && var_mib_object->type != TYPE_IPADDR)
                 return NULL;
             {
-                uint8_t *ret_val = calloc (1,  4);
+                uint8_t *ret_val = TE_ALLOC(4);
                 memcpy(ret_val, &vb->integer, 4);
                 return (void *)ret_val;
             }
@@ -2021,8 +2003,7 @@ tapi_snmp_vb_to_mem (const tapi_snmp_varbind_t *vb)
             if (var_mib_object && var_mib_object->type != TYPE_OBJID)
                 return NULL;
             {
-                tapi_snmp_oid_t *ret_val =
-                    calloc (1,  sizeof (tapi_snmp_oid_t));
+                tapi_snmp_oid_t *ret_val = TE_ALLOC(sizeof(tapi_snmp_oid_t));
                 memcpy (ret_val, vb->obj_id, sizeof (tapi_snmp_oid_t));
                 return (void *)ret_val;
             }
@@ -2031,7 +2012,7 @@ tapi_snmp_vb_to_mem (const tapi_snmp_varbind_t *vb)
         /* All other types, which are different kinds of integers */
         default:
         {
-            int *ret_val = malloc(sizeof(int));
+            int *ret_val = TE_ALLOC(sizeof(int));
 
             *ret_val = vb->integer;
             return (void *)ret_val;
@@ -2270,9 +2251,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
     if (table_height == 0)
         return 0;
 
-    *result = calloc(table_height, (table_width + 1) * sizeof(void *));
-    if (*result == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
+    *result = TE_ALLOC(table_height * (table_width + 1) * sizeof(void *));
 
     if (table_width == 1)
     {
@@ -2296,8 +2275,8 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
         int rest_varbinds = table_cardinality;
         int got_varbinds = 0;
         tapi_snmp_oid_t begin_of_portion;
-        tapi_snmp_varbind_t *vb = calloc(table_cardinality,
-                                         sizeof(tapi_snmp_varbind_t));
+        tapi_snmp_varbind_t *vb = TE_ALLOC(table_cardinality *
+                                           sizeof(tapi_snmp_varbind_t));
 
 
         VERB("res_table: %x", res_table);
@@ -2393,7 +2372,7 @@ tapi_snmp_get_table(const char *ta, int sid, int csap_id,
                 {
                     /* index field not empty */
                     tapi_snmp_oid_t *index_suffix =
-                        calloc(1, sizeof(tapi_snmp_oid_t));
+                        TE_ALLOC(sizeof(tapi_snmp_oid_t));
 
                     memcpy(index_suffix->id, &(vb[i].name.id[ti_start]),
                                 ti_len * sizeof(oid) );
@@ -2600,11 +2579,7 @@ tapi_snmp_get_table_columns(tapi_snmp_oid_t *table_oid,
          entry_node;
          entry_node = entry_node->next_peer)
     {
-        columns_p = (tapi_snmp_var_access *)calloc(1,
-                                              sizeof(tapi_snmp_var_access));
-       if (columns_p == NULL)
-           return TE_RC(TE_TAPI, TE_ENOMEM);
-
+        columns_p = TE_ALLOC(sizeof(tapi_snmp_var_access));
        strcpy(columns_p->label, entry_node->label);
        rc = tapi_snmp_make_oid(columns_p->label, &(columns_p->oid));
        if (rc)
@@ -2999,8 +2974,7 @@ tapi_snmp_load_mib_with_path(const char *dir_path, const char *mib_file)
     }
     dir_path_len = strlen(dir_path);
     mib_file_len = strlen(mib_file);
-    if ((full_path = malloc(dir_path_len + mib_file_len + 2 + 3)) == NULL)
-        return TE_ENOMEM;
+    full_path = TE_ALLOC(dir_path_len + mib_file_len + 2 + 3);
 
     memcpy(full_path, dir_path, dir_path_len);
     full_path[dir_path_len] = '/';
@@ -3343,12 +3317,7 @@ tapi_snmp_make_vb(tapi_snmp_varbind_t *vb, const char *oid_str,
 #ifdef OPAQUE_SPECIAL_TYPES
         case ASN_OPAQUE_U64:
 #endif
-            if ((vb->oct_string = (unsigned char *)malloc(vb->v_len))
-                                == NULL)
-            {
-                snmp_free_pdu(pdu);
-                return TE_RC(TE_TAPI, TE_ENOMEM);
-            }
+            vb->oct_string = TE_ALLOC(vb->v_len);
             memcpy(vb->oct_string, var->val.string, vb->v_len);
             break;
 
@@ -3367,12 +3336,7 @@ tapi_snmp_make_vb(tapi_snmp_varbind_t *vb, const char *oid_str,
                 return TE_EFAULT;
             }
 
-            if ((vb->obj_id =
-                    (tapi_snmp_oid_t *)malloc(sizeof(*vb->obj_id))) == NULL)
-            {
-                snmp_free_pdu(pdu);
-                return TE_RC(TE_TAPI, TE_ENOMEM);
-            }
+            vb->obj_id = TE_ALLOC(sizeof(*vb->obj_id));
 
             memcpy(vb->obj_id->id, var->val.objid, var->val_len);
             vb->obj_id->length = vb->v_len;
@@ -3717,5 +3681,3 @@ tapi_snmp_truth_value_h2str(enum tapi_snmp_truth_value val)
     }
     return "";
 }
-
-

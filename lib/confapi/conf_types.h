@@ -79,7 +79,7 @@ typedef struct cfg_primary_type {
      * Conversion functions return errno from te_errno.h
      * Memory for complex types (struct sockaddr and char *) as well
      * as for value in string representation is allocated by these
-     * functions using malloc().
+     * functions using TE_ALLOC().
      * Functions return void or status code (see te_errno.h).
      */
 

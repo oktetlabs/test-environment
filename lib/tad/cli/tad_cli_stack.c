@@ -538,9 +538,7 @@ cli_get_asn_string_value(const asn_value *csap_spec,
         char *val;
 
         /* allocate memory for the string */
-        val = (char *) malloc(tmp_len + 1);
-        if (val == NULL)
-            return TE_ENOMEM;
+        val = TE_ALLOC(tmp_len + 1);
 
         rc = asn_read_value_field(csap_spec, val,
                                   &tmp_len, asn_name);
@@ -746,10 +744,8 @@ tad_cli_read_cb(csap_p csap, unsigned int timeout,
     }
     else if (seg->data_ptr == NULL)
     {
-        void *mem = malloc(0x1000);
+        void *mem = TE_ALLOC(0x1000);
 
-        if (mem == NULL)
-            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
         tad_pkt_put_seg_data(pkt, seg, mem, 0x1000, tad_pkt_seg_data_free);
     }
 
@@ -1008,9 +1004,7 @@ tad_cli_rw_init_cb(csap_p csap)
 
     cli_csap_spec = csap->layers[csap_get_rw_layer(csap)].nds;
 
-    cli_spec_data = calloc(1, sizeof(*cli_spec_data));
-    if (cli_spec_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    cli_spec_data = TE_ALLOC(sizeof(*cli_spec_data));
 
     /* Initialize pipe descriptors to undefined value */
     cli_spec_data->data_sock = cli_spec_data->sync_pipe = -1;

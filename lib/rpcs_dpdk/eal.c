@@ -34,13 +34,7 @@ TARPC_FUNC(rte_eal_init, {},
 
     if (in->argc > 0)
     {
-        argv = calloc(in->argc, sizeof(*argv));
-        if (argv == NULL)
-        {
-            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-            out->retval = -out->common._errno;
-            goto done;
-        }
+        argv = TE_ALLOC(in->argc * sizeof(*argv));
         for (i = 0; i < in->argc; ++i)
             argv[i] = in->argv.argv_val[i].str;
     }
@@ -136,15 +130,7 @@ TARPC_FUNC(rte_epoll_wait,
     int i;
 
     if (out->events.events_len != 0)
-    {
-        events = calloc(in->maxevents, sizeof(*events));
-        if (events == NULL)
-        {
-            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-            out->retval = -out->common._errno;
-            goto done;
-        }
-    }
+        events = TE_ALLOC(in->maxevents * sizeof(*events));
 
     MAKE_CALL(out->retval = func(in->epfd,
                                  events,

@@ -381,12 +381,7 @@ parse_devices(const json_t *jarray, tapi_upnp_devices *devices)
     num_devices = json_array_size(jarray);
     for (i = 0; i < num_devices; i++)
     {
-        device = calloc(1, sizeof(*device));
-        if (device == NULL)
-        {
-            ERROR("Cannot allocate memory");
-            return TE_ENOMEM;
-        }
+        device = TE_ALLOC(sizeof(*device));
         rc = parse_device_properties(json_array_get(jarray, i), device);
         if (rc != 0)
         {

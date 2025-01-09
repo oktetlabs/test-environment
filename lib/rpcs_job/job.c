@@ -189,12 +189,7 @@ job_receive_many(unsigned int n_filters, unsigned int *filters, int timeout_ms,
                              count);
     if (rc == 0)
     {
-        *buffers = calloc(*count, sizeof(**buffers));
-        if (*buffers == NULL)
-        {
-            free(ta_bufs);
-            return TE_ENOMEM;
-        }
+        *buffers = TE_ALLOC((*count) * sizeof(**buffers));
 
         for (i = 0; i < *count; i++)
             ta_job_buffer2tarpc_job_buffer(&ta_bufs[i], &((*buffers)[i]));
@@ -405,9 +400,7 @@ TARPC_FUNC_STATIC(job_create, {},
 
     if (in->argv.argv_len != 0)
     {
-        argv = calloc(in->argv.argv_len, sizeof(*argv));
-        if (argv == NULL)
-            goto err;
+        argv = TE_ALLOC(in->argv.argv_len * sizeof(*argv));
 
         for (i = 0; i < in->argv.argv_len - 1; ++i)
         {
@@ -419,9 +412,7 @@ TARPC_FUNC_STATIC(job_create, {},
 
     if (in->env.env_len != 0)
     {
-        env = calloc(in->env.env_len, sizeof(*env));
-        if (env == NULL)
-            goto err;
+        env = TE_ALLOC(in->env.env_len * sizeof(*env));
 
         for (i = 0; i < in->env.env_len - 1; ++i)
         {
@@ -591,9 +582,7 @@ TARPC_FUNC_STATIC(job_wrapper_add, {},
 
     if (in->argv.argv_len != 0)
     {
-        argv = calloc(in->argv.argv_len, sizeof(*argv));
-        if (argv == NULL)
-            goto err;
+        argv = TE_ALLOC(in->argv.argv_len * sizeof(*argv));
 
         for (i = 0; i < in->argv.argv_len - 1; ++i)
         {

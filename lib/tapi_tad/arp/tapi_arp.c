@@ -156,12 +156,7 @@ tapi_arp_trrecv_cb_data(tapi_arp_frame_callback  callback,
     tapi_arp_pkt_handler_data  *cb_data;
     tapi_tad_trrecv_cb_data    *res;
 
-    cb_data = (tapi_arp_pkt_handler_data *)calloc(1, sizeof(*cb_data));
-    if (cb_data == NULL)
-    {
-        ERROR("%s(): failed to allocate memory", __FUNCTION__);
-        return NULL;
-    }
+    cb_data = TE_ALLOC(sizeof(*cb_data));
     cb_data->callback = callback;
     cb_data->user_data = user_data;
 
@@ -210,13 +205,7 @@ arp_frame_callback(const tapi_arp_frame_t *arp_frame, void *userdata)
     if (arp_frame->data != NULL)
     {
         /* Allocate memory under ARP payload - which is not usual */
-        info->frames[info->num - 1].data =
-            (uint8_t *)malloc(arp_frame->data_len);
-        if (info->frames[info->num - 1].data == NULL)
-        {
-            info->rc = TE_ENOMEM;
-            return;
-        }
+        info->frames[info->num - 1].data = TE_ALLOC(arp_frame->data_len);
         memcpy(info->frames[info->num - 1].data, arp_frame->data,
                arp_frame->data_len);
     }

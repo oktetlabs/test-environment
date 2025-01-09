@@ -55,9 +55,7 @@ tad_iscsi_init_cb(csap_p csap, unsigned int layer)
     tad_iscsi_layer_data   *spec_data;
 
 
-    spec_data = calloc(1, sizeof(*spec_data));
-    if (spec_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    spec_data = TE_ALLOC(sizeof(*spec_data));
 
     iscsi_nds = csap->layers[layer].nds;
 
@@ -213,7 +211,7 @@ tad_iscsi_match_bin_cb(csap_p           csap,
 
     if (spec_data->stored_buffer == NULL)
     {
-        spec_data->stored_buffer = malloc(spec_data->wait_length);
+        spec_data->stored_buffer = TE_ALLOC(spec_data->wait_length);
         spec_data->stored_length = 0;
     }
     defect = spec_data->wait_length -
@@ -431,4 +429,3 @@ tad_iscsi_dump_iscsi_pdu(const uint8_t *data, iscsi_dump_mode_t mode)
 
     return 0;
 }
-

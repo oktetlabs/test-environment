@@ -104,12 +104,7 @@ tapi_upnp_set_sv_property_boolean(tapi_upnp_state_variable *variable,
         ERROR("Invalid array index");
         return TE_EINVAL;
     }
-    variable->properties[property_idx] = malloc(sizeof(bool));
-    if (variable->properties[property_idx] == NULL)
-    {
-        ERROR("Cannot allocate memory");
-        return TE_ENOMEM;
-    }
+    variable->properties[property_idx] = TE_ALLOC(sizeof(bool));
     *(bool *)variable->properties[property_idx] =
                                             (bool)json_is_true(value);
     return 0;
@@ -243,19 +238,9 @@ tapi_upnp_set_state_variable_allowed(tapi_upnp_state_variable *variable,
         ERROR("Invalid input data. JSON array was expected");
         return TE_EINVAL;
     }
-    allowed = calloc(1, sizeof(*allowed));
-    if (allowed == NULL)
-    {
-        ERROR("Cannot allocate memory");
-        return TE_ENOMEM;
-    }
+    allowed = TE_ALLOC(sizeof(*allowed));
     allowed->len = json_array_size(value);
-    allowed->values = calloc(allowed->len, sizeof(char *));
-    if (allowed->values == NULL)
-    {
-        ERROR("Cannot allocate memory");
-        return TE_ENOMEM;
-    }
+    allowed->values = TE_ALLOC(allowed->len * sizeof(char *));
     for (i = 0; i < allowed->len; i++)
     {
         const char *str = json_string_value(json_array_get(value, i));
@@ -756,13 +741,7 @@ parse_service_state_variables(const json_t           *jarray,
             rc = TE_EINVAL;
             break;
         }
-        variable = calloc(1, sizeof(*variable));
-        if (variable == NULL)
-        {
-            ERROR("Cannot allocate memory");
-            rc = TE_ENOMEM;
-            break;
-        }
+        variable = TE_ALLOC(sizeof(*variable));
         for (j = 0; j < TE_ARRAY_LEN(variable_property); j++)
         {
             rc = variable_property[j].set_value(variable,
@@ -855,13 +834,7 @@ parse_service_actions(const json_t *jobject,
             rc = TE_EINVAL;
             break;
         }
-        action = calloc(1, sizeof(*action));
-        if (action == NULL)
-        {
-            ERROR("Cannot allocate memory");
-            rc = TE_ENOMEM;
-            break;
-        }
+        action = TE_ALLOC(sizeof(*action));
         for (i = 0; i < json_array_size(value); i++)
         {
             /* Argument. */
@@ -872,13 +845,7 @@ parse_service_actions(const json_t *jobject,
                 rc = TE_EINVAL;
                 break;
             }
-            argument = calloc(1, sizeof(*argument));
-            if (argument == NULL)
-            {
-                ERROR("Cannot allocate memory");
-                rc = TE_ENOMEM;
-                break;
-            }
+            argument = TE_ALLOC(sizeof(*argument));
             for (j = 0; j < TE_ARRAY_LEN(argument_property); j++)
             {
                 rc = argument_property[j].set_value(argument,
@@ -982,13 +949,7 @@ parse_services(const json_t *jarray, tapi_upnp_services *services)
             rc = TE_EINVAL;
             break;
         }
-        service = calloc(1, sizeof(*service));
-        if (service == NULL)
-        {
-            ERROR("Cannot allocate memory");
-            rc = TE_ENOMEM;
-            break;
-        }
+        service = TE_ALLOC(sizeof(*service));
         jitem = json_object_get(jobject, "Parameters");
         rc = parse_service_properties(jitem, service);
         if (rc != 0)

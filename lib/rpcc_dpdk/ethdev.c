@@ -21,6 +21,7 @@
 #include "tapi_rpc_rte_mbuf.h"
 #include "rpcc_dpdk.h"
 #include "rpc_dpdk_offloads.h"
+#include "te_alloc.h"
 #include "te_str.h"
 
 
@@ -2154,8 +2155,8 @@ rpc_rte_eth_dev_rss_reta_query(rcf_rpc_server *rpcs, uint16_t port_id,
     {
         in.reta_conf.reta_conf_len =
             TE_DIV_ROUND_UP(reta_size, RPC_RTE_RETA_GROUP_SIZE);
-        in.reta_conf.reta_conf_val = calloc(in.reta_conf.reta_conf_len,
-                                            sizeof(*reta_conf));
+        in.reta_conf.reta_conf_val = TE_ALLOC(in.reta_conf.reta_conf_len *
+                                              sizeof(*reta_conf));
         for (cur_group = 0; cur_group < in.reta_conf.reta_conf_len; cur_group++)
             in.reta_conf.reta_conf_val[cur_group].mask = reta_conf[cur_group].mask;
     }
@@ -2689,8 +2690,8 @@ rpc_rte_eth_dev_rss_reta_update(rcf_rpc_server *rpcs, uint16_t port_id,
     {
         in.reta_conf.reta_conf_len =
             TE_DIV_ROUND_UP(reta_size, RPC_RTE_RETA_GROUP_SIZE);
-        in.reta_conf.reta_conf_val = calloc(in.reta_conf.reta_conf_len,
-                                            sizeof(*reta_conf));
+        in.reta_conf.reta_conf_val = TE_ALLOC(in.reta_conf.reta_conf_len *
+                                              sizeof(*reta_conf));
         if (in.reta_conf.reta_conf_val == NULL)
         {
             rc = TE_RC(TE_RPC, TE_ENOMEM);

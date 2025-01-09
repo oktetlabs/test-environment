@@ -67,9 +67,7 @@ tad_reply_rfc_ctx_alloc(rcf_comm_connection *rcfc,
         return TE_RC(TE_TAD_CH, TE_ESMALLBUF);
     }
 
-    ctx = malloc(sizeof(*ctx));
-    if (ctx == NULL)
-        return TE_OS_RC(TE_TAD_CH, errno);
+    ctx = TE_ALLOC(sizeof(*ctx));
 
     ctx->rcfc = rcfc;
     ctx->prefix_len = pfx_len;
@@ -149,9 +147,7 @@ tad_reply_rcf_pkt(void *opaque, const asn_value *pkt)
     attach_len = asn_count_txt_len(pkt, 0) + 1;
     VERB("%s(): attach len %u", __FUNCTION__, (unsigned)attach_len);
 
-    buffer = calloc(1, ctx->prefix_len + EXTRA_BUF_SPACE + attach_len);
-    if (buffer == NULL)
-        return TE_ENOMEM;
+    buffer = TE_ALLOC(ctx->prefix_len + EXTRA_BUF_SPACE + attach_len);
 
     memcpy(buffer, ctx->answer_buf, ctx->prefix_len);
     ret = snprintf(buffer + ctx->prefix_len, EXTRA_BUF_SPACE, " attach %u",

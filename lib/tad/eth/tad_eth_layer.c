@@ -250,9 +250,7 @@ tad_eth_init_cb(csap_p csap, unsigned int layer)
     tad_eth_proto_data *proto_data;
     const asn_value    *layer_nds;
 
-    proto_data = calloc(1, sizeof(*proto_data));
-    if (proto_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    proto_data = TE_ALLOC(sizeof(*proto_data));
 
     csap_set_proto_spec_data(csap, layer, proto_data);
 
@@ -278,9 +276,7 @@ tad_eth_init_cb(csap_p csap, unsigned int layer)
         assert(rw_data != NULL);
 
         du->val_data.len = sizeof(rw_data->sap.addr);
-        du->val_data.oct_str = malloc(du->val_data.len);
-        if (du->val_data.oct_str == NULL)
-            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+        du->val_data.oct_str = TE_ALLOC(du->val_data.len);
 
         memcpy(du->val_data.oct_str, rw_data->sap.addr,
                sizeof(rw_data->sap.addr));
@@ -522,9 +518,7 @@ tad_eth_nds_to_pdu_data(csap_p csap, tad_eth_proto_data *proto_data,
     assert(layer_pdu != NULL);
     assert(p_pdu_data != NULL);
 
-    *p_pdu_data = pdu_data = calloc(1, sizeof(*pdu_data));
-    if (pdu_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    *p_pdu_data = pdu_data = TE_ALLOC(sizeof(*pdu_data));
 
     rc = tad_bps_nds_to_data_units(&proto_data->eth, layer_pdu,
                                    &pdu_data->eth);
@@ -1027,9 +1021,7 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
     assert((bitlen & 7) == 0);
 
     len = (bitlen >> 3);
-    data = malloc(len);
-    if (data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    data = TE_ALLOC(len);
 
     bitoff = 0;
 
@@ -1342,9 +1334,7 @@ tad_eth_match_pre_cb(csap_p              csap,
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
-    pkt_data = malloc(sizeof(*pkt_data));
-    if (pkt_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    pkt_data = TE_ALLOC(sizeof(*pkt_data));
     meta_pkt_layer->opaque = pkt_data;
 
     rc = tad_bps_pkt_frag_match_pre(&proto_data->eth, &pkt_data->eth);

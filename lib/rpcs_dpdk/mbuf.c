@@ -754,21 +754,9 @@ TARPC_FUNC_STANDALONE(rte_pktmbuf_alloc_bulk, {},
     unsigned int i;
     te_errno err;
 
-    mbufs = calloc(in->count, sizeof(*mbufs));
-    if (mbufs == NULL)
-    {
-        ERROR("Failed to allocate an array for mbuf pointers storage");
-        err = TE_RC(TE_RPCS, TE_ENOMEM);
-        goto finish;
-    }
+    mbufs = TE_ALLOC(in->count * sizeof(*mbufs));
 
-    bulk = calloc(in->count, sizeof(*bulk));
-    if (bulk == NULL)
-    {
-        ERROR("Failed to allocate an array of RPC mbuf pointers");
-        err = TE_RC(TE_RPCS, TE_ENOMEM);
-        goto finish;
-    }
+    bulk = TE_ALLOC(in->count * sizeof(*bulk));
 
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MEMPOOL, {
         mp = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->mp, ns);

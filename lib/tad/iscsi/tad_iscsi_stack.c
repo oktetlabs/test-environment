@@ -69,9 +69,7 @@ tad_iscsi_rw_init_cb(csap_p csap)
     tad_iscsi_rw_data  *rw_data;
 
 
-    rw_data = calloc(1, sizeof(*rw_data));
-    if (rw_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    rw_data = TE_ALLOC(sizeof(*rw_data));
     rw_data->socket = -1;
     csap_set_rw_data(csap, rw_data);
 
@@ -150,14 +148,8 @@ tad_iscsi_read_cb(csap_p csap, unsigned int timeout,
     }
     else if (seg->data_len < len)
     {
-        void *mem = malloc(len);
+        void *mem = TE_ALLOC(len);
 
-        if (mem == NULL)
-        {
-            rc = TE_OS_RC(TE_TAD_CSAP, errno);
-            assert(rc != 0);
-            return rc;
-        }
         VERB("%s(): reuse the first segment of packet", __FUNCTION__);
         tad_pkt_put_seg_data(pkt, seg,
                              mem, len, tad_pkt_seg_data_free);

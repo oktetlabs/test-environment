@@ -11,6 +11,7 @@
 #ifndef __TE_TRC_H__
 #define __TE_TRC_H__
 
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "te_queue.h"
 #include "tq_string.h"
@@ -508,27 +509,18 @@ extern int trc_db_strcmp_normspace(const char *s1, const char *s2);
  */
 static inline te_errno trc_add_tag(tqh_strings *tags, const char *name)
 {
-    tqe_string *p = calloc(1, sizeof(*p));
+    tqe_string *p = TE_ALLOC(sizeof(*p));
     tqe_string *tag;
     char       *col;
 
-    if (p == NULL)
-    {
-        ERROR("calloc(1, %u) failed", (unsigned)sizeof(*p));
-        return TE_ENOMEM;
-    }
     if (name == NULL)
     {
+        free(p);
         ERROR("Wrong tag name given: NULL");
         return TE_EINVAL;
     }
 
-    p->v = strdup(name);
-    if (p->v == NULL)
-    {
-        ERROR("strdup(%s) failed", name);
-        return TE_ENOMEM;
-    }
+    p->v = TE_STRDUP(name);
 
     if ((col = strchr(p->v, ':')) != NULL)
         *col = '\0';

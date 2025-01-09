@@ -22,6 +22,7 @@
 #include <assert.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_stdint.h"
@@ -77,14 +78,7 @@ tapi_cfg_arl_get_table(const char *ta, bool sync, arl_table_t *p_table)
             tapi_arl_free_table(p_table);
             return rc;
         }
-        p = (arl_entry_t *)calloc(1, sizeof(*p));
-        if (p == NULL)
-        {
-            ERROR("Memory allocation failure");
-            free(oid);
-            tapi_arl_free_table(p_table);
-            return TE_ENOMEM;
-        }
+        p = TE_ALLOC(sizeof(*p));
         rc = tapi_cfg_arl_get_entry(oid, p);
         if (rc != 0)
         {
@@ -286,4 +280,3 @@ tapi_arl_print_table(const arl_table_t *p_table)
             (p->type == ARL_ENTRY_STATIC) ? "static" : "dynamic");
     }
 }
-

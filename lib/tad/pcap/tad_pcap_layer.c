@@ -118,11 +118,7 @@ tad_pcap_confirm_ptrn_cb(csap_p csap, unsigned int layer,
 
     val_len = rc;
 
-    pcap_str = (char *)malloc(val_len + 1);
-    if (pcap_str == NULL)
-    {
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-    }
+    pcap_str = TE_ALLOC(val_len + 1);
 
     rc = asn_read_value_field(layer_pdu, pcap_str, &val_len, "filter");
     if (rc < 0)
@@ -133,11 +129,7 @@ tad_pcap_confirm_ptrn_cb(csap_p csap, unsigned int layer,
 
     VERB("%s: Try to compile filter string \"%s\"", __FUNCTION__, pcap_str);
 
-    bpf_program = (struct bpf_program *)malloc(sizeof(struct bpf_program));
-    if (bpf_program == NULL)
-    {
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-    }
+    bpf_program = TE_ALLOC(sizeof(struct bpf_program));
 
     pcap = pcap_open_dead(layer_data->iftype, TAD_PCAP_SNAPLEN);
     if (pcap == NULL)
@@ -293,12 +285,7 @@ tad_pcap_match_bin_cb(csap_p csap,
         }
         filter_len = ret;
 
-        filter = (char *) malloc(filter_len + 1);
-        if (filter == NULL)
-        {
-            ERROR("Cannot allocate memory for filter string");
-            break;
-        }
+        filter = TE_ALLOC(filter_len + 1);
 
         if (asn_read_value_field(ptrn_pdu, filter,
                                  &filter_len, "filter") < 0)

@@ -50,6 +50,7 @@ extern int inet_pton(int af, const char *src, void *dst);
 
 #endif
 
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "te_defs.h"
 #include "te_str.h"
@@ -103,9 +104,7 @@ ta_obj_attr_set(ta_cfg_obj_t *obj, const char *name, const char *value)
     if (attr == NULL)
     {
         /* Add a new attribute */
-        attr = (ta_cfg_obj_attr_t *)malloc(sizeof(ta_cfg_obj_attr_t));
-        if (attr == NULL)
-            return TE_ENOMEM;
+        attr = TE_ALLOC(sizeof(ta_cfg_obj_attr_t));
 
         snprintf(attr->name, sizeof(attr->name), "%s", name);
         attr->next = obj->attrs;

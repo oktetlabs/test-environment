@@ -25,6 +25,7 @@
 #include <netinet/in.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "logger_api.h"
@@ -178,10 +179,7 @@ tad_pkt_alloc_seg(void *data_ptr, size_t data_len,
     uint8_t        *mem;
     tad_pkt_seg    *seg;
 
-    mem = malloc(sizeof(tad_pkt_seg) +
-                 ((data_ptr == NULL) ?  data_len : 0));
-    if (mem == NULL)
-        return NULL;
+    mem = TE_ALLOC(sizeof(tad_pkt_seg) + ((data_ptr == NULL) ?  data_len : 0));
 
     seg = (tad_pkt_seg *)mem;
     seg->my_free = free;
@@ -469,11 +467,9 @@ tad_pkts_add_new_seg(tad_pkts *pkts, bool header,
     uint8_t        *data;
 
     assert(pkts != NULL);
-    mem = malloc(tad_pkts_get_num(pkts) * (sizeof(tad_pkt_seg) +
-                                           ((data_ptr == NULL) ?
+    mem = TE_ALLOC(tad_pkts_get_num(pkts) * (sizeof(tad_pkt_seg) +
+                                            ((data_ptr == NULL) ?
                                                 data_len : 0)));
-    if (mem == NULL)
-        return TE_OS_RC(TE_TAD_PKT, errno);
 
     seg = (tad_pkt_seg *)mem;
     data = (uint8_t *)(seg + tad_pkts_get_num(pkts));
@@ -521,10 +517,8 @@ tad_pkt_alloc(unsigned int n_segs, size_t first_seg_len)
     uint8_t        *data;
     unsigned int    i;
 
-    mem = malloc(sizeof(tad_pkt) + n_segs * (sizeof(tad_pkt_seg) +
-                 first_seg_len));
-    if (mem == NULL)
-        return NULL;
+    mem = TE_ALLOC(sizeof(tad_pkt) + n_segs * (sizeof(tad_pkt_seg) +
+                   first_seg_len));
 
     pkt = (tad_pkt *)mem;
     seg = (tad_pkt_seg *)(pkt + 1);
@@ -565,11 +559,9 @@ tad_pkts_alloc(tad_pkts *pkts, unsigned int n_pkts, unsigned int n_segs,
     unsigned int    i, j;
 
     assert(n_pkts > 0);
-    mem = malloc(n_pkts * (sizeof(tad_pkt) +
-                           n_segs * (sizeof(tad_pkt_seg) +
-                                     first_seg_len)));
-    if (mem == NULL)
-        return TE_OS_RC(TE_TAD_PKT, errno);
+    mem = TE_ALLOC(n_pkts * (sizeof(tad_pkt) +
+                            n_segs * (sizeof(tad_pkt_seg) +
+                                      first_seg_len)));
 
     pkt = (tad_pkt *)mem;
     seg = (tad_pkt_seg *)(pkt + n_pkts);
@@ -617,11 +609,7 @@ tad_pkt_flatten_copy(tad_pkt *pkt, uint8_t **data, size_t *len)
 
     total_len = (len == NULL || *len == 0) ? tad_pkt_len(pkt) : *len;
     if (*data == NULL)
-    {
-        *data = malloc(total_len);
-        if (*data == NULL)
-            return TE_RC(TE_TAD_PKT, TE_ENOMEM);
-    }
+        *data = TE_ALLOC(total_len);
 
     ptr = *data;
     rest_len = total_len;
@@ -851,10 +839,6 @@ tad_pkt_fragment_cb(tad_pkt *pkt, void *opaque)
         }
 
         new_seg = tad_pkt_alloc_seg(NULL, 0, NULL);
-        if (new_seg == NULL)
-        {
-            return TE_RC(TE_TAD_PKT, TE_ENOMEM);
-        }
         tad_pkt_insert_after_seg(pkt, dst_seg, new_seg);
         dst_seg = new_seg;
         F_VERB("%s(): New segment %p allocated", __FUNCTION__, new_seg);
@@ -891,10 +875,8 @@ tad_pkt_fragment(tad_pkt *pkt, size_t frag_data_len,
     tad_pkts_init(&frags);
 
     /* Allocate fragment packets */
-    rc = tad_pkts_alloc(&frags, n_frags, add_seg ? 2 : 1,
-                        add_seg ? add_seg_len : 0);
-    if (rc != 0)
-        return rc;
+    tad_pkts_alloc(&frags, n_frags, add_seg ? 2 : 1,
+                   add_seg ? add_seg_len : 0);
 
     /* Do fragmentation */
     cb_data.skip_first_seg = add_seg && header;
@@ -968,8 +950,6 @@ tad_pkt_get_frag_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
             len = seg->data_len;
 
         dst_seg = tad_pkt_alloc_seg(ptr + off, len, NULL);
-        if (dst_seg == NULL)
-            return TE_RC(TE_TAD_PKT, TE_ENOMEM);
 
         tad_pkt_append_seg(data->dst, dst_seg);
         F_VERB("%s(): Segment off=%u len=%u appended", __FUNCTION__,
@@ -1058,8 +1038,6 @@ tad_pkt_get_frag(tad_pkt *dst, tad_pkt *src,
         tad_pkt_seg    *seg;
 
         seg = tad_pkt_alloc_seg(NULL, add_seg_len, NULL);
-        if (seg == NULL)
-            return TE_RC(TE_TAD_PKT, TE_ENOMEM);
 
         if (mode == TAD_PKT_GET_FRAG_ZERO)
         {
@@ -1268,8 +1246,7 @@ tad_pkt_match_bytes(const tad_pkt *pkt, size_t len,
     uint8_t   *mask;
     te_errno   rv;
 
-    if ((mask = malloc(len)) == NULL)
-        return TE_ENOMEM;
+    mask = TE_ALLOC(len);
 
     memset(mask, 0xFF, len);
     rv = tad_pkt_match_mask(pkt, len, mask, payload, exact_len);
@@ -1291,11 +1268,6 @@ tad_pkt_realloc_segs(tad_pkt *pkt, size_t new_len)
      */
     tad_pkt_free_segs(pkt);
     seg = tad_pkt_alloc_seg(NULL, new_len, NULL);
-    if (seg == NULL)
-    {
-        ERROR("%s(): out of memory");
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-    }
     tad_pkt_append_seg(pkt, seg);
 
     return 0;

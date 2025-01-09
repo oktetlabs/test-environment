@@ -75,6 +75,7 @@
 #include <pthread.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_queue.h"
 #include "te_tools.h"
@@ -181,14 +182,7 @@ tarpc_close_fd_hook_register(tarpc_close_fd_hook *hook, void *cookie)
         return -1;
     }
 
-    entry = calloc(1, sizeof(*entry));
-    if (entry == NULL)
-    {
-        te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOMEM),
-                         "%s(): failed to allocate memory",
-                         __FUNCTION__);
-        return -1;
-    }
+    entry = TE_ALLOC(sizeof(*entry));
     entry->hook = hook;
     entry->cookie = cookie;
 
@@ -558,10 +552,12 @@ handler2name(void *handler)
         tmp = strdup("NULL");
     else if ((sym_name = rcf_ch_symbol_name(handler)) != NULL)
         tmp = strdup(sym_name);
-    else if ((tmp = calloc(1, 16)) != NULL)
+    else
     {
         rpc_ptr  id = 0;
         te_errno rc;
+
+        tmp = TE_ALLOC(16);
 
         rc = rcf_pch_mem_index_ptr_to_mem_gen(handler,
                                               rcf_pch_mem_ns_generic(),
@@ -577,13 +573,6 @@ handler2name(void *handler)
 
         /* FIXME */
         sprintf(tmp, "%u", id);
-    }
-
-    if (tmp == NULL)
-    {
-        ERROR("Out of memory");
-        /* FIXME */
-        return strdup("");
     }
 
     return tmp;
@@ -1518,14 +1507,7 @@ TARPC_FUNC_STANDALONE(recvfrom,
         if (addr_len > 0 &&
             out->from.raw.raw_val != NULL)
         {
-            addr_ptr = calloc(1, addr_len);
-            if (addr_ptr == NULL)
-            {
-                ERROR("%s(): Failed to allocate memory for an address",
-                      __FUNCTION__);
-                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                goto finish;
-            }
+            addr_ptr = TE_ALLOC(addr_len);
             free_name = true;
             memcpy(addr_ptr, out->from.raw.raw_val, addr_len);
         }
@@ -1556,7 +1538,6 @@ TARPC_FUNC_STANDALONE(recvfrom,
                               *(out->fromlen.fromlen_val),
                           &(out->from));
 
-finish:
     if (free_name)
         free(addr_ptr);
 }
@@ -1960,39 +1941,34 @@ TARPC_FUNC(readdir, {},
     {
         tarpc_dirent *rpc_dent;
 
-        rpc_dent = (tarpc_dirent *)calloc(1, sizeof(*rpc_dent));
-        if (rpc_dent == NULL)
-            out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        else
-        {
-            out->dent.dent_len = 1;
+        rpc_dent = TE_ALLOC(sizeof(*rpc_dent));
+        out->dent.dent_len = 1;
 
-            out->ret_null = false;
-            out->dent.dent_val = rpc_dent;
+        out->ret_null = false;
+        out->dent.dent_val = rpc_dent;
 
-            rpc_dent->d_name.d_name_val = strdup(dent->d_name);
-            rpc_dent->d_name.d_name_len = strlen(dent->d_name) + 1;
-            rpc_dent->d_ino = dent->d_ino;
+        rpc_dent->d_name.d_name_val = strdup(dent->d_name);
+        rpc_dent->d_name.d_name_len = strlen(dent->d_name) + 1;
+        rpc_dent->d_ino = dent->d_ino;
 #ifdef HAVE_STRUCT_DIRENT_D_OFF
-            rpc_dent->d_off = dent->d_off;
+        rpc_dent->d_off = dent->d_off;
 #elif defined HAVE_STRUCT_DIRENT_D_OFFSET
-            rpc_dent->d_off = dent->d_offset;
+        rpc_dent->d_off = dent->d_offset;
 #else
-            rpc_dent->d_off = 0;
+        rpc_dent->d_off = 0;
 #endif
 
 #ifdef HAVE_STRUCT_DIRENT_D_TYPE
-            rpc_dent->d_type = d_type_h2rpc(dent->d_type);
+        rpc_dent->d_type = d_type_h2rpc(dent->d_type);
 #else
-            rpc_dent->d_type = RPC_DT_UNKNOWN;
+        rpc_dent->d_type = RPC_DT_UNKNOWN;
 #endif
 #ifdef HAVE_STRUCT_DIRENT_D_NAMELEN
-            rpc_dent->d_namelen = dent->d_namelen;
+        rpc_dent->d_namelen = dent->d_namelen;
 #else
-            rpc_dent->d_namelen = 0;
+        rpc_dent->d_namelen = 0;
 #endif
-            rpc_dent->d_props = struct_dirent_props();
-        }
+        rpc_dent->d_props = struct_dirent_props();
     }
 }
 )
@@ -3000,7 +2976,7 @@ void
 fd_set_new(tarpc_fd_set_new_out *out)
 {
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_FD_SET, {
-        fd_set *ptr = calloc(1, sizeof(fd_set));
+        fd_set *ptr = TE_ALLOC(sizeof(fd_set));
         out->retval = RCF_PCH_MEM_INDEX_ALLOC(ptr, ns);
     });
 }
@@ -3213,31 +3189,25 @@ TARPC_FUNC(if_nameindex, {},
 
         out->mem_ptr = rcf_pch_mem_alloc(ret);
         while (ret[i++].if_index != 0);
-        arr = (tarpc_if_nameindex *)calloc(sizeof(*arr) * i, 1);
-        if (arr == NULL)
+        arr = TE_ALLOC(sizeof(*arr) * i);
+        for (j = 0; j < i - 1; j++)
         {
-            out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        }
-        else
-        {
-            for (j = 0; j < i - 1; j++)
+            arr[j].ifindex = ret[j].if_index;
+            arr[j].ifname.ifname_val = strdup(ret[j].if_name);
+            if (arr[j].ifname.ifname_val == NULL)
             {
-                arr[j].ifindex = ret[j].if_index;
-                arr[j].ifname.ifname_val = strdup(ret[j].if_name);
-                if (arr[j].ifname.ifname_val == NULL)
-                {
-                    for (j--; j >= 0; j--)
-                        free(arr[j].ifname.ifname_val);
-                    free(arr);
-                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                    arr = NULL;
-                    i = 0;
-                    break;
-                }
-                arr[j].ifname.ifname_len = strlen(ret[j].if_name) + 1;
+                for (j--; j >= 0; j--)
+                    free(arr[j].ifname.ifname_val);
+                free(arr);
+                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+                arr = NULL;
+                i = 0;
+                break;
             }
+            arr[j].ifname.ifname_len = strlen(ret[j].if_name) + 1;
         }
     }
+
     out->ptr.ptr_val = arr;
     out->ptr.ptr_len = i;
 }
@@ -3267,15 +3237,9 @@ _sigset_new_1_svc(tarpc_sigset_new_in *in, tarpc_sigset_new_out *out,
     memset(out, 0, sizeof(*out));
 
     errno = 0;
-    if ((set = (sigset_t *)calloc(1, sizeof(sigset_t))) == NULL)
-    {
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
-    else
-    {
-        out->common._errno = RPC_ERRNO;
-        out->set = rcf_pch_mem_alloc(set);
-    }
+    set = TE_ALLOC(sizeof(sigset_t));
+    out->common._errno = RPC_ERRNO;
+    out->set = rcf_pch_mem_alloc(set);
 
     return true;
 }
@@ -4217,8 +4181,7 @@ TARPC_FUNC(setsockopt,
             if (in->raw_optval.raw_optval_val != NULL)
             {
                 len = optlen + in->raw_optlen;
-                val = malloc(len);
-                assert(val != NULL);
+                val = TE_ALLOC(len);
                 memcpy(val, &opt, optlen);
                 memcpy(val + optlen, in->raw_optval.raw_optval_val,
                        in->raw_optval.raw_optval_len);
@@ -4577,9 +4540,7 @@ TARPC_FUNC(getsockopt,
         if (in->level == RPC_SOL_IP && in->optname == RPC_IP_PKTOPTIONS)
         {
             out->optval.optval_len = 1;
-            out->optval.optval_val = calloc(1,
-                                            sizeof(struct option_value));
-            assert(out->optval.optval_val != NULL);
+            out->optval.optval_val = TE_ALLOC(sizeof(struct option_value));
 
             out->optval.optval_val[0].opttype = OPT_IP_PKTOPTIONS;
             out->optval.optval_val[0].option_value_u.opt_ip_pktoptions.
@@ -4600,9 +4561,8 @@ TARPC_FUNC(getsockopt,
         socklen_t   len = optlen +
                           (out->raw_optlen.raw_optlen_val == NULL ? 0 :
                                *out->raw_optlen.raw_optlen_val);
-        void       *buf = calloc(1, rlen);
+        void       *buf = TE_ALLOC(rlen);
 
-        assert(buf != NULL);
         INIT_CHECKED_ARG(buf, rlen, len);
 
         MAKE_CALL(out->retval =
@@ -4907,12 +4867,13 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
 
             reqlen = sizeof(req->ifconf);
 
-            if (buflen > 0 && (buf = calloc(1, buflen + 64)) == NULL)
+            if (buflen > 0)
             {
                 te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOMEM),
                                  "Out of memory");
                 return TE_ENOMEM;
             }
+            buf = TE_ALLOC(buflen + 64);
             req->ifconf.ifc_buf = buf;
             req->ifconf.ifc_len = buflen;
 
@@ -4975,7 +4936,7 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                 req->sg.flags = out->req.req_val[0].ioctl_request_u.
                     req_sgio.flags;
 
-                req->sg.dxferp = calloc(req->sg.dxfer_len + psz, 1);
+                req->sg.dxferp = TE_ALLOC(req->sg.dxfer_len + psz);
                 if ((req->sg.flags & SG_FLAG_DIRECT_IO) ==
                     SG_FLAG_DIRECT_IO)
                 {
@@ -4988,12 +4949,12 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
                        req_sgio.dxferp.dxferp_val,
                        req->sg.dxfer_len);
 
-                req->sg.cmdp = calloc(req->sg.cmd_len, 1);
+                req->sg.cmdp = TE_ALLOC(req->sg.cmd_len);
                 memcpy(req->sg.cmdp, out->req.req_val[0].ioctl_request_u.
                        req_sgio.cmdp.cmdp_val,
                        req->sg.cmd_len);
 
-                req->sg.sbp = calloc(req->sg.mx_sb_len, 1);
+                req->sg.sbp = TE_ALLOC(req->sg.mx_sb_len);
                 memcpy(req->sg.sbp, out->req.req_val[0].ioctl_request_u.
                        req_sgio.sbp.sbp_val,
                        req->sg.mx_sb_len);
@@ -5259,14 +5220,7 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
             if (req->ifconf.ifc_req == NULL)
                 break;
 
-            if ((req_t = calloc(n, sizeof(*req_t))) == NULL)
-            {
-                free(req->ifconf.ifc_buf);
-                te_rpc_error_set(
-                         TE_RC(TE_TA_UNIX, TE_ENOMEM),
-                         "Out of memory");
-                return TE_ENOMEM;
-            }
+            req_t = TE_ALLOC(n * sizeof(*req_t));
             out->req.req_val[0].ioctl_request_u.req_ifconf.
                 rpc_ifc_req.rpc_ifc_req_val = req_t;
             out->req.req_val[0].ioctl_request_u.req_ifconf.
@@ -5276,15 +5230,7 @@ tarpc_ioctl_post(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
             for (i = 0; i < n; i++, req_t++, req_c++)
             {
                 req_t->rpc_ifr_name.rpc_ifr_name_val =
-                    calloc(1, sizeof(req_c->ifr_name));
-                if (req_t->rpc_ifr_name.rpc_ifr_name_val == NULL)
-                {
-                    free(req->ifconf.ifc_buf);
-                    te_rpc_error_set(
-                             TE_RC(TE_TA_UNIX, TE_ENOMEM),
-                             "Out of memory");
-                    return TE_ENOMEM;
-                }
+                    TE_ALLOC(sizeof(req_c->ifr_name));
                 memcpy(req_t->rpc_ifr_name.rpc_ifr_name_val,
                        req_c->ifr_name, sizeof(req_c->ifr_name));
                 req_t->rpc_ifr_name.rpc_ifr_name_len =
@@ -5912,7 +5858,7 @@ TARPC_FUNC(epoll_wait,
     unsigned int i;
 
     if (len)
-        events = calloc(len, sizeof(struct epoll_event));
+        events = TE_ALLOC(len * sizeof(struct epoll_event));
 
     VERB("epoll_wait(): call with epfd=%d, events=0x%lx, maxevents=%d,"
          " timeout=%d",
@@ -5954,7 +5900,7 @@ TARPC_FUNC(epoll_pwait,
     unsigned int i;
 
     if (len)
-        events = calloc(len, sizeof(struct epoll_event));
+        events = TE_ALLOC(len * sizeof(struct epoll_event));
 
     VERB("epoll_pwait(): call with epfd=%d, events=0x%lx, maxevents=%d,"
          " timeout=%d sigmask=%p",
@@ -6021,7 +5967,7 @@ TARPC_FUNC_STANDALONE(epoll_pwait2,
     }
 
     if (len)
-        events = calloc(len, sizeof(struct epoll_event));
+        events = TE_ALLOC(len * sizeof(struct epoll_event));
 
     if (out->timeout.timeout_len == 0)
     {
@@ -6076,18 +6022,15 @@ TARPC_FUNC_STANDALONE(epoll_pwait2,
  *
  * @param he   source structure
  *
- * @return RPC structure or NULL is memory allocation failed
+ * @return RPC structure (cannot return @c NULL)
  */
 static tarpc_hostent *
 hostent_h2rpc(struct hostent *he)
 {
-    tarpc_hostent *rpc_he = (tarpc_hostent *)calloc(1, sizeof(*rpc_he));
+    tarpc_hostent *rpc_he = TE_ALLOC(sizeof(*rpc_he));
 
     unsigned int i;
     unsigned int k;
-
-    if (rpc_he == NULL)
-        return NULL;
 
     if (he->h_name != NULL)
     {
@@ -6102,11 +6045,7 @@ hostent_h2rpc(struct hostent *he)
 
         for (i = 1, ptr = he->h_aliases; *ptr != NULL; ptr++, i++);
 
-        if ((rpc_he->h_aliases.h_aliases_val =
-             (tarpc_h_alias *)calloc(i, sizeof(tarpc_h_alias))) == NULL)
-        {
-            goto release;
-        }
+        rpc_he->h_aliases.h_aliases_val = TE_ALLOC(i * sizeof(tarpc_h_alias));
         rpc_he->h_aliases.h_aliases_len = i;
 
         for (k = 0; k < i - 1; k++)
@@ -6130,20 +6069,14 @@ hostent_h2rpc(struct hostent *he)
 
         for (i = 1, ptr = he->h_addr_list; *ptr != NULL; ptr++, i++);
 
-        if ((rpc_he->h_addr_list.h_addr_list_val =
-             (tarpc_h_addr *)calloc(i, sizeof(tarpc_h_addr))) == NULL)
-        {
-            goto release;
-        }
+        rpc_he->h_addr_list.h_addr_list_val =
+            TE_ALLOC(i * sizeof(tarpc_h_addr));
         rpc_he->h_addr_list.h_addr_list_len = i;
 
         for (k = 0; k < i - 1; k++)
         {
-            if ((rpc_he->h_addr_list.h_addr_list_val[i].val.val_val =
-                 calloc(1, rpc_he->h_length)) == NULL)
-            {
-                goto release;
-            }
+            rpc_he->h_addr_list.h_addr_list_val[i].val.val_val =
+                 TE_ALLOC(rpc_he->h_length);
             rpc_he->h_addr_list.h_addr_list_val[i].val.val_len =
                 rpc_he->h_length;
             memcpy(rpc_he->h_addr_list.h_addr_list_val[i].val.val_val,
@@ -6296,9 +6229,11 @@ TARPC_FUNC_STATIC(getaddrinfo, {},
 
         for (i = 0, info = res; info != NULL; i++, info = info->ai_next);
 
-        if ((arr = calloc(i, sizeof(*arr))) != NULL)
+        if (i != 0)
         {
             int k;
+
+            arr = TE_ALLOC(i * sizeof(*arr));
 
             for (k = 0, info = res; k < i; k++, info = info->ai_next)
             {
@@ -6846,15 +6781,9 @@ _vlan_get_parent_1_svc(tarpc_vlan_get_parent_in *in,
          (int)getpid(), (unsigned long long int)pthread_self(),
          "vlan_get_parent");
 
-    if ((str = (char *)calloc(IF_NAMESIZE, 1)) == NULL)
-    {
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
-    else
-    {
-        out->ifname.ifname_val = str;
-        out->ifname.ifname_len = IF_NAMESIZE;
-    }
+    str = TE_ALLOC(IF_NAMESIZE);
+    out->ifname.ifname_val = str;
+    out->ifname.ifname_len = IF_NAMESIZE;
 
     out->common._errno = ta_vlan_get_parent(in->ifname.ifname_val,
                                             out->ifname.ifname_val);
@@ -6889,13 +6818,7 @@ _bond_get_slaves_1_svc(tarpc_bond_get_slaves_in *in,
     if (out->common._errno != 0)
         goto cleanup;
 
-    if ((out->slaves.slaves_val =
-            (tarpc_ifname *)calloc(slaves_num,
-                                   sizeof(tarpc_ifname))) == NULL)
-    {
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        goto cleanup;
-    }
+    out->slaves.slaves_val = TE_ALLOC(slaves_num * sizeof(tarpc_ifname));
 
     out->slaves.slaves_len = slaves_num;
 
@@ -7145,11 +7068,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
     if (tarpc_find_func(in->common.lib_flags, "send", &send_func) != 0)
         return -1;
 
-    if ((buf = malloc(in->size_max)) == NULL)
-    {
-        ERROR("Out of memory");
-        return -1;
-    }
+    buf = TE_ALLOC(in->size_max);
 
     memset(buf, 'A', in->size_max);
 
@@ -7248,11 +7167,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
         return -1;
     }
 
-    if ((buf = malloc(MAX_PKT)) == NULL)
-    {
-        ERROR("Out of memory");
-        return -1;
-    }
+    buf = TE_ALLOC(MAX_PKT);
 
     /* Create iomux status and fill it with our fds. */
     if ((rc = iomux_create_state(iomux, &iomux_f, &iomux_st)) != 0)
@@ -7440,11 +7355,7 @@ recv_verify(tarpc_recv_verify_in *in, tarpc_recv_verify_out *out)
         return -1;
     }
 
-    if ((rcv_buf = malloc(RCV_VF_BUF)) == NULL)
-    {
-        ERROR("Out of memory");
-        return -1;
-    }
+    rcv_buf = TE_ALLOC(RCV_VF_BUF);
 
     while (1)
     {
@@ -8270,13 +8181,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
         return rc;
     }
 
-    if ((buf = malloc(TARPC_LCG_LEN(in->size_max))) == NULL)
-    {
-        te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOMEM),
-                         "out of memory");
-        iomux_close(iomux, &iomux_f, &iomux_st);
-        return -1;
-    }
+    buf = TE_ALLOC(TARPC_LCG_LEN(in->size_max));
 
 #define PTRN_SEND_ERROR \
     do {                                                        \
@@ -8594,15 +8499,8 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
                 rcf_ch_symbol_addr(in->fname.fname_val, true)) == NULL)
         return -1;
 
-    if ((buf = malloc(MAX_PKT)) == NULL ||
-        (check_buf = malloc(TARPC_LCG_LEN(MAX_PKT))) == NULL)
-    {
-        ERROR("Out of memory");
-        free(buf);
-        free(check_buf);
-        iomux_close(iomux, &iomux_f, &iomux_st);
-        return -1;
-    }
+    buf = TE_ALLOC(MAX_PKT);
+    check_buf = TE_ALLOC(TARPC_LCG_LEN(MAX_PKT));
 
 #define SET_RECV_TIMEOUT(timeout_us)                         \
     do {                                                     \
@@ -9266,14 +9164,7 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
 
     out->bytes = 0;
 
-    buf = calloc(1, max_len);
-    if (buf == NULL)
-    {
-        ERROR("%s(): Out of memory", __FUNCTION__);
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        ret = -1;
-        goto overfill_buffers_exit;
-    }
+    buf = TE_ALLOC(max_len);
 
     memset(buf, 0xAD, sizeof(max_len));
 
@@ -9586,14 +9477,7 @@ overfill_fd(tarpc_overfill_fd_in *in,
     uint8_t        *buf = NULL;
     int             fdflags = -1;
 
-    buf = calloc(1, max_len);
-    if (buf == NULL)
-    {
-        ERROR("%s(): Out of memory", __FUNCTION__);
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        ret = -1;
-        goto overfill_fd_exit;
-    }
+    buf = TE_ALLOC(max_len);
 
     memset(buf, 0xAD, sizeof(max_len));
 
@@ -9686,12 +9570,7 @@ TARPC_FUNC(iomux_create_state,{},
         goto finish;
     }
 
-    if ((iomux_st = (iomux_state *)malloc(sizeof(*iomux_st))) == NULL)
-    {
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        is_fail = true;
-        goto finish;
-    }
+    iomux_st = TE_ALLOC(sizeof(*iomux_st));
 
     MAKE_CALL(out->retval = func_ptr(iomux, &iomux_f, iomux_st));
 
@@ -9959,16 +9838,9 @@ _create_aiocb_1_svc(tarpc_create_aiocb_in *in, tarpc_create_aiocb_out *out,
     memset(out, 0, sizeof(*out));
 
     errno = 0;
-    if ((cb = (struct aiocb *)malloc(sizeof(struct aiocb))) == NULL)
-    {
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
-    else
-    {
-        memset((void *)cb, 0, sizeof(*cb));
-        out->cb = rcf_pch_mem_alloc(cb);
-        out->common._errno = RPC_ERRNO;
-    }
+    cb = TE_ALLOC(sizeof(struct aiocb));
+    out->cb = rcf_pch_mem_alloc(cb);
+    out->common._errno = RPC_ERRNO;
 
     return true;
 }
@@ -10091,14 +9963,8 @@ TARPC_FUNC(aio_suspend, {},
         INIT_CHECKED_ARG((char *)&tv, sizeof(tv), 0);
     }
 
-    if (in->cb.cb_len > 0 &&
-        (cb = (struct aiocb **)calloc(in->cb.cb_len,
-                                      sizeof(void *))) == NULL)
-    {
-        ERROR("Out of memory");
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        goto finish;
-    }
+    if (in->cb.cb_len > 0)
+        cb = (struct aiocb **)TE_ALLOC(in->cb.cb_len * sizeof(void *));
 
     for (i = 0; i < (int)(in->cb.cb_len); i++)
         cb[i] = (struct aiocb *)rcf_pch_mem_get(in->cb.cb_val[i]);
@@ -10110,9 +9976,6 @@ TARPC_FUNC(aio_suspend, {},
                                      in->timeout.timeout_len == 0 ?
                                      NULL : &tv));
     free(cb);
-
-    finish:
-    ;
 }
 )
 
@@ -10145,14 +10008,8 @@ TARPC_FUNC(lio_listio, {},
         INIT_CHECKED_ARG((char *)&sig, sizeof(sig), 0);
     }
 
-    if (in->cb.cb_len > 0 &&
-        (cb = (struct aiocb **)calloc(in->cb.cb_len,
-                                      sizeof(void *))) == NULL)
-    {
-        ERROR("Out of memory");
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        goto finish;
-    }
+    if (in->cb.cb_len > 0)
+        cb = TE_ALLOC(in->cb.cb_len * sizeof(void *));
 
     for (i = 0; i < (int)(in->cb.cb_len); i++)
         cb[i] = (struct aiocb *)rcf_pch_mem_get(in->cb.cb_val[i]);
@@ -10163,9 +10020,6 @@ TARPC_FUNC(lio_listio, {},
     MAKE_CALL(out->retval = func(lio_mode_rpc2h(in->mode), cb, in->nent,
                                  in->sig.sig_len == 0 ? NULL : &sig));
     free(cb);
-
-    finish:
-    ;
 }
 )
 
@@ -10352,14 +10206,7 @@ integer2raw(tarpc_integer2raw_in *in,
         return -1;
     }
 
-    out->data.data_val = calloc(1, in->len);
-    if (out->data.data_val == NULL)
-    {
-        ERROR("%s(): failed to allocate space for integer data",
-              __FUNCTION__);
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        return -1;
-    }
+    out->data.data_val = TE_ALLOC(in->len);
 
     memcpy(out->data.data_val, p, in->len);
     out->data.data_len = in->len;
@@ -10508,20 +10355,10 @@ get_buf(tarpc_ptr src_buf_base, size_t src_offset,
     *dst_buf = NULL;
     if (src_buf != NULL && *len != 0)
     {
-        char *buf = malloc(*len);
+        char *buf = TE_ALLOC(*len);
 
-        if (buf == NULL)
-        {
-            RING("%s(): failed to allocate %ld bytes",
-                 __FUNCTION__, (long int)*len);
-            *len = 0;
-            errno = ENOMEM;
-        }
-        else
-        {
-            memcpy(buf, src_buf + src_offset, *len);
-            *dst_buf = buf;
-        }
+        memcpy(buf, src_buf + src_offset, *len);
+        *dst_buf = buf;
     }
     else if (*len != 0)
     {
@@ -11538,9 +11375,7 @@ namespace_id2str(tarpc_namespace_id2str_in *in,
         return TE_RC(TE_RPC, TE_ENOENT);
 
     const int str_len = strlen(buf);
-    out->str.str_val = malloc(str_len);
-    if (out->str.str_val == NULL)
-        return TE_RC(TE_RPC, TE_ENOMEM);
+    out->str.str_val = TE_ALLOC(str_len);
 
     out->str.str_len = str_len;
     memcpy(out->str.str_val, buf, str_len);

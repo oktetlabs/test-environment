@@ -127,9 +127,7 @@ tad_aal5_init_cb(csap_p csap, unsigned int layer)
     tad_aal5_proto_data     *proto_data;
     const asn_value        *layer_nds;
 
-    proto_data = calloc(1, sizeof(*proto_data));
-    if (proto_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    proto_data = TE_ALLOC(sizeof(*proto_data));
 
     csap_set_proto_spec_data(csap, layer, proto_data);
 
@@ -181,10 +179,7 @@ tad_aal5_confirm_tmpl_cb(csap_p csap, unsigned int  layer,
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
-    /* FIXME: Use malloc() and initialize data units at first */
-    tmpl_data = calloc(1, sizeof(*tmpl_data));
-    if (tmpl_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    tmpl_data = TE_ALLOC(sizeof(*tmpl_data));
     *p_opaque = tmpl_data;
 
     /* Get template values for AAL5 cell header fields */
@@ -211,10 +206,7 @@ tad_aal5_confirm_ptrn_cb(csap_p csap, unsigned int  layer,
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
-    /* FIXME: Use malloc() and initialize data units at first */
-    tmpl_data = calloc(1, sizeof(*tmpl_data));
-    if (tmpl_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    tmpl_data = TE_ALLOC(sizeof(*tmpl_data));
     *p_opaque = tmpl_data;
 
     /* Get template values for AAL5 cell header fields */
@@ -344,9 +336,7 @@ tad_aal5_prepare_pdus(tad_pkt *pkt, void *opaque)
     else
     {
         /* Set ATM-User-to-ATM-User indication to 1 in the last cell */
-        cell_ctrl = malloc(sizeof(*cell_ctrl));
-        if (cell_ctrl == NULL)
-            return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+        cell_ctrl = TE_ALLOC(sizeof(*cell_ctrl));
         cell_ctrl->indication = true;
         tad_pkt_set_opaque(data->pdus->pkts.cqh_last, cell_ctrl, free);
     }

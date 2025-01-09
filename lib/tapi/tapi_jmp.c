@@ -28,6 +28,7 @@
 #error Required pthread.h not found
 #endif
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_errno.h"
 #include "logger_api.h"
@@ -136,22 +137,15 @@ tapi_jmp_get_ctx(bool create)
     ctx = pthread_getspecific(jmp_key);
     if (ctx == NULL && create)
     {
-        ctx = calloc(1, sizeof(*ctx));
-        if (ctx == NULL)
+        ctx = TE_ALLOC(sizeof(*ctx));
+
+        SLIST_INIT(&ctx->stack);
+        SLIST_INIT(&ctx->garbage);
+        if (pthread_setspecific(jmp_key, ctx) != 0)
         {
-            ERROR("%s(): calloc(1, %u) failed",
-                  __FUNCTION__, sizeof(*ctx));
-        }
-        else
-        {
-            SLIST_INIT(&ctx->stack);
-            SLIST_INIT(&ctx->garbage);
-            if (pthread_setspecific(jmp_key, ctx) != 0)
-            {
-                ERROR("%s(): pthread_setspecific() failed", __FUNCTION__);
-                free(ctx);
-                ctx = NULL;
-            }
+            ERROR("%s(): pthread_setspecific() failed", __FUNCTION__);
+            free(ctx);
+            ctx = NULL;
         }
     }
 
@@ -173,12 +167,7 @@ tapi_jmp_push(const char *file, unsigned int lineno)
     }
     tapi_jmp_ctx_free_garbage(ctx);
 
-    p = calloc(1, sizeof(*p));
-    if (p == NULL)
-    {
-        ERROR("%s(): calloc(1, %u) failed", __FUNCTION__, sizeof(*p));
-        return NULL;
-    }
+    p = TE_ALLOC(sizeof(*p));
     SLIST_INSERT_HEAD(&ctx->stack, p, links);
     p->file    = file;
     p->lineno  = lineno;

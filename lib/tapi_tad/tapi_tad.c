@@ -436,12 +436,7 @@ tapi_tad_trrecv_make_cb_data(tapi_tad_trrecv_cb  callback,
 {
     tapi_tad_trrecv_cb_data *res;
 
-    res = (tapi_tad_trrecv_cb_data *)calloc(1, sizeof(*res));
-    if (res == NULL)
-    {
-        ERROR("%s(): failed to allocate memory", __FUNCTION__);
-        return NULL;
-    }
+    res = TE_ALLOC(sizeof(*res));
     res->callback = callback;
     res->user_data = user_data;
 

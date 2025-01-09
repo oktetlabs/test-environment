@@ -357,16 +357,9 @@ cfg_get_oid_str(cfg_handle handle, char **oid)
     if ((ret_val == 0) && ((ret_val = msg->rc) == 0))
     {
         len = strlen(msg->oid) + 1;
-        str = (char *)calloc(1, len);
-        if (str == NULL)
-        {
-            ret_val = TE_ENOMEM;
-        }
-        else
-        {
-            memcpy((void *)str, (void *)(msg->oid), len);
-            *oid = str;
-        }
+        str = TE_ALLOC(len);
+        memcpy((void *)str, (void *)(msg->oid), len);
+        *oid = str;
     }
 
 #ifdef HAVE_PTHREAD_H
@@ -447,16 +440,9 @@ cfg_get_subid(cfg_handle handle, char **subid)
     if ((ret_val == 0) && ((ret_val = msg->rc) == 0))
     {
         len = strlen(msg->id) + 1;
-        str = (char *)calloc(1, len);
-        if (str == NULL)
-        {
-            ret_val = TE_ENOMEM;
-        }
-        else
-        {
-            memcpy(str, msg->id, len);
-            *subid = str;
-        }
+        str = TE_ALLOC(len);
+        memcpy(str, msg->id, len);
+        *subid = str;
     }
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&cfgl_lock);
@@ -508,16 +494,9 @@ cfg_get_inst_name(cfg_handle handle, char **name)
     if ((ret_val == 0) && ((ret_val = msg->rc) == 0))
     {
         len = strlen(msg->id) + 1;
-        str = (char *)calloc(1, len);
-        if (str == NULL)
-        {
-            ret_val = TE_ENOMEM;
-        }
-        else
-        {
-            memcpy(str, msg->id, len);
-            *name = str;
-        }
+        str = TE_ALLOC(len);
+        memcpy(str, msg->id, len);
+        *name = str;
     }
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&cfgl_lock);
@@ -768,9 +747,7 @@ cfg_find_pattern(const char *pattern, unsigned int *num, cfg_handle **set)
         size_t  rest_len = len - CFG_MSG_MAX;
 
         assert(len > CFG_MSG_MAX);
-        alloc_msg = malloc(len);
-        if (alloc_msg == NULL)
-            return TE_RC(TE_CONF_API, TE_ENOMEM);
+        alloc_msg = TE_ALLOC(len);
 
         ret_val = ipc_receive_rest_answer(cfgl_ipc_client,
                                           CONFIGURATOR_SERVER,
@@ -787,17 +764,9 @@ cfg_find_pattern(const char *pattern, unsigned int *num, cfg_handle **set)
         *num = (msg->len - sizeof(cfg_pattern_msg)) / sizeof(cfg_handle);
         if (*num > 0)
         {
-            *set = (cfg_handle *)calloc(*num, sizeof(cfg_handle));
-            if (set == NULL)
-            {
-                *num = 0;
-                ret_val = TE_ENOMEM;
-            }
-            else
-            {
-                memcpy((void *)(*set), (void *)(msg->handles),
-                       *num * sizeof(cfg_handle));
-            }
+            *set = TE_ALLOC(*num * sizeof(cfg_handle));
+            memcpy((void *)(*set), (void *)(msg->handles),
+                   *num * sizeof(cfg_handle));
         }
         else
         {
@@ -1223,19 +1192,8 @@ cfg_add_instance_child_fmt(cfg_handle *p_handle, cfg_val_type type,
         return rc;
     assert(parent_oid != NULL);
 
-    oid_fmt = malloc(CFG_OID_MAX);
-    if (oid_fmt == NULL)
-    {
-        free(parent_oid);
-        return TE_RC(TE_CONF_API, TE_ENOMEM);
-    }
-    oid = malloc(CFG_OID_MAX);
-    if (oid == NULL)
-    {
-        free(oid_fmt);
-        free(parent_oid);
-        return TE_RC(TE_CONF_API, TE_ENOMEM);
-    }
+    oid_fmt = TE_ALLOC(CFG_OID_MAX);
+    oid = TE_ALLOC(CFG_OID_MAX);
 
     snprintf(oid_fmt, CFG_OID_MAX, "%s%s", parent_oid, suboid_fmt);
     free(parent_oid);
@@ -2345,15 +2303,8 @@ cfg_create_backup(char **name)
     if ((ret_val == 0) && ((ret_val = msg->rc) == 0))
     {
         len = msg->len - msg->filename_offset;
-        *name = (char *)calloc(1, len);
-        if (*name == NULL)
-        {
-            ret_val = TE_ENOMEM;
-        }
-        else
-        {
-            memcpy(*name, (const char *)msg + msg->filename_offset, len);
-        }
+        *name = TE_ALLOC(len);
+        memcpy(*name, (const char *)msg + msg->filename_offset, len);
     }
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&cfgl_lock);

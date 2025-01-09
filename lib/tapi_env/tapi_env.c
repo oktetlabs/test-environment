@@ -96,8 +96,8 @@ static te_errno node_value_get_ith_inst_name(cfg_handle     node,
                                              unsigned int   i,
                                              char         **p_str);
 
-static te_errno node_mark_used(node_indexes *used_nodes,
-                               unsigned int net, unsigned int node);
+static void node_mark_used(node_indexes *used_nodes,
+                           unsigned int net, unsigned int node);
 static void node_unmark_used(node_indexes *used_nodes,
                              unsigned int net, unsigned int node);
 static bool node_is_used(node_indexes *used_nodes,
@@ -154,12 +154,7 @@ tapi_env_allocate_addr(tapi_env_net *net, int af,
         return TE_EINVAL;
     }
 
-    handle = calloc(1, sizeof(*handle));
-    if (handle == NULL)
-    {
-        ERROR("calloc(1, %u) failed", sizeof(handle));
-        return TE_ENOMEM;
-    }
+    handle = TE_ALLOC(sizeof(*handle));
 
     rc = tapi_cfg_alloc_net_addr(af == AF_INET ? net->ip4net : net->ip6net,
                                  &handle->handle, addr);
@@ -663,7 +658,7 @@ tapi_env_get_addr(tapi_env *env, const char *name, socklen_t *addrlen)
     }
 
     if (p != NULL) {
-      tapi_env_addr* addr = calloc(1, sizeof(*addr));
+      tapi_env_addr* addr = TE_ALLOC(sizeof(*addr));
 
       assert(addr != NULL);
       /* fixme: memory leak, but it's a test application - it will die in
@@ -675,7 +670,7 @@ tapi_env_get_addr(tapi_env *env, const char *name, socklen_t *addrlen)
       addr->handle = CFG_HANDLE_INVALID;
       addr->addrlen = p->addrlen;
       memcpy(&(addr->addr_st), &(p->addr_st), sizeof(p->addr_st));
-      addr->addr = calloc(1, addr->addrlen);
+      addr->addr = TE_ALLOC(addr->addrlen);
       memcpy(addr->addr, p->addr, addr->addrlen);
       CIRCLEQ_INSERT_TAIL(&env->addrs, addr, links);
 
@@ -1832,9 +1827,9 @@ prepare_interfaces_net(tapi_env_if *iface, const cfg_nets_t *cfg_nets)
     {
         char const  xen[]    = "xen:/";
         char const  bridge[] = "/bridge:";
-        char       *xen_oid  = malloc(strlen(oid) +
-                                      strlen(xen) +
-                                      strlen(bridge) + 1);
+        char       *xen_oid  = TE_ALLOC(strlen(oid) +
+                                        strlen(xen) +
+                                        strlen(bridge) + 1);
         char const *slash    = strrchr(oid, '/');
 
         if (slash == NULL)
@@ -1946,13 +1941,8 @@ prepare_interfaces_loopback(tapi_env_if *iface, const cfg_nets_t *cfg_nets)
         return te_rc_os2te(errno);
     }
 
-    oid = malloc(strlen(oid_fmt) - 2 + strlen(ta) -
-                 2 + strlen(iface->if_info.if_name) + 1);
-    if (oid == NULL)
-    {
-        ERROR("malloc() failed");
-        return TE_ENOMEM;
-    }
+    oid = TE_ALLOC(strlen(oid_fmt) - 2 + strlen(ta) -
+                   2 + strlen(iface->if_info.if_name) + 1);
     sprintf(oid, oid_fmt, ta, iface->if_info.if_name);
 
     rc = get_interface_index(oid, &(iface->if_info.if_index));
@@ -2369,8 +2359,7 @@ bind_host_if(tapi_env_if *iface, tapi_env_ifs *ifs,
                 /* No conflicts discovered */
                 iface->net->i_net = i;
                 iface->i_node = j;
-                if (node_mark_used(used_nodes, i, j) != 0)
-                    return false;
+                node_mark_used(used_nodes, i, j);
                 VERB("Mark (%u,%u) as used by '%s/%s'", i, j,
                      iface->host->name, iface->name);
                 /* Try to bind the next host/interface */
@@ -2523,24 +2512,16 @@ cmp_agent_names(cfg_handle node1, cfg_handle node2)
  * @param used_nodes    list of used indes pairs
  * @param net           net-index
  * @param node          node-index
- *
- * @retval 0            success
- * @retval TE_ENOMEM    memory allocation failure
  */
-static te_errno
+static void
 node_mark_used(node_indexes *used_nodes, unsigned int net, unsigned int node)
 {
-    node_index *p = calloc(1, sizeof(*p));
-
-    if (p == NULL)
-        return TE_ENOMEM;
+    node_index *p = TE_ALLOC(sizeof(*p));
 
     p->net = net;
     p->node = node;
 
     SLIST_INSERT_HEAD(used_nodes, p, links);
-
-    return 0;
 }
 
 /**

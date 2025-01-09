@@ -2751,7 +2751,7 @@ rpc_wsa_ioctl(rcf_rpc_server *rpcs, int s, rpc_ioctl_code control_code,
             in_req.type = WSA_IOCTL_SAA;
             in_req.wsa_ioctl_request_u.req_saa.req_saa_len = list_size;
             in_req.wsa_ioctl_request_u.req_saa.req_saa_val =
-                malloc(list_size * sizeof(struct tarpc_sa));
+                TE_ALLOC(list_size * sizeof(struct tarpc_sa));
 
             p = (struct sockaddr_storage *)(inbuf + sizeof(uint32_t));
             q = in_req.wsa_ioctl_request_u.req_saa.req_saa_val;

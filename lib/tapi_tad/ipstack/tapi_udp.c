@@ -244,11 +244,7 @@ ndn_udp4_dgram_to_plain(asn_value *pkt, udp4_datagram **udp_dgram)
     size_t      ip_pld_len;
     asn_value  *pdu;
 
-    *udp_dgram = (struct udp4_datagram *)malloc(sizeof(**udp_dgram));
-    if (*udp_dgram == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-
-    memset(*udp_dgram, 0, sizeof(**udp_dgram));
+    *udp_dgram = TE_ALLOC(sizeof(**udp_dgram));
 
     rc = ndn_get_timestamp(pkt, &((*udp_dgram)->ts));
     CHECK_ERROR_CLEANUP(rc, "ndn_get_timestamp() failed");
@@ -311,7 +307,7 @@ ndn_udp4_dgram_to_plain(asn_value *pkt, udp4_datagram **udp_dgram)
     if (len > 0)
     {
         (*udp_dgram)->payload_len = payload_len;
-        (*udp_dgram)->payload = malloc(len);
+        (*udp_dgram)->payload = TE_ALLOC(len);
 
         rc = asn_read_value_field(pkt, (*udp_dgram)->payload,
                                   &len, "payload");
@@ -488,12 +484,7 @@ tapi_udp_ip4_eth_trrecv_cb_data(udp4_callback callback, void *user_data)
     udp4_cb_data_t             *cb_data;
     tapi_tad_trrecv_cb_data    *res;
 
-    cb_data = (udp4_cb_data_t *)calloc(1, sizeof(*cb_data));
-    if (cb_data == NULL)
-    {
-        ERROR("%s(): failed to allocate memory", __FUNCTION__);
-        return NULL;
-    }
+    cb_data = TE_ALLOC(sizeof(*cb_data));
     cb_data->callback = callback;
     cb_data->user_data = user_data;
 

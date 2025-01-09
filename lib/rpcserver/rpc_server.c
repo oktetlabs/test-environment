@@ -58,18 +58,8 @@ tarpc_init_checked_arg(checked_arg_list *list, uint8_t *real_arg,
     if (real_arg == NULL || len <= len_visible)
         return;
 
-    if ((arg = calloc(1, sizeof(*arg))) == NULL)
-    {
-        ERROR("Out of memory");
-        return;
-    }
-
-    if ((arg->pristine = malloc(len - len_visible)) == NULL)
-    {
-        ERROR("Out of memory");
-        free(arg);
-        return;
-    }
+    arg = TE_ALLOC(sizeof(*arg));
+    arg->pristine = TE_ALLOC(len - len_visible);
     memcpy(arg->pristine, real_arg + len_visible, len - len_visible);
     arg->real_arg = real_arg;
     arg->len = len;
@@ -418,13 +408,9 @@ tarpc_generic_service(deferred_call_list *async_list, rpc_call_data *call)
 
             VERB("%s(): CALL", call->info->funcname);
 
-            if ((copy_call = calloc(1, sizeof(*copy_call) +
-                                    call->info->in_size +
-                                    call->info->out_size)) == NULL)
-            {
-                out_common->_errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                break;
-            }
+            copy_call = TE_ALLOC(sizeof(*copy_call) +
+                                 call->info->in_size +
+                                 call->info->out_size);
 
             *copy_call = *call;
             assert(STAILQ_EMPTY(&call->checked_args));
@@ -834,11 +820,7 @@ rcf_pch_rpc_server(const char *name)
         info = rpc_find_info(rpc_name);
         assert(info != NULL);
 
-        if ((out = calloc(1, info->out_len)) == NULL)
-        {
-            ERROR("Memory allocation failure");
-            goto result;
-        }
+        out = TE_ALLOC(info->out_len);
 
         result = (info->rpc)(in, out, &pseudo_req);
 

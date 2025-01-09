@@ -582,12 +582,7 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
 
 #ifdef __CYGWIN__
     /* Prepare block of data to send */
-    packet_data = malloc(pkt->segs_len);
-    if (NULL == packet_data)
-    {
-        ERROR("Failed to allocate buffer for all packet data");
-        return TE_RC(TE_TAD_CSAP, TE_ENOBUFS);
-    }
+    packet_data = TE_ALLOC(pkt->segs_len);
     cur_data = packet_data;
     for (seg = 0; seg < iovlen; seg++)
     {
@@ -993,11 +988,6 @@ tad_eth_sap_pkt_rx_ring_recv(tad_eth_sap        *sap,
      */
     tad_pkt_free_segs(pkt);
     seg = tad_pkt_alloc_seg(seg_data, seg_len, tad_pkt_seg_data_free);
-    if (seg == NULL)
-    {
-        free(seg_data);
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-    }
     tad_pkt_append_seg(pkt, seg);
     *pkt_len = seg_len;
 
@@ -1156,13 +1146,12 @@ error_exit:
 }
 
 #if defined(USE_PF_PACKET) && !defined(WITH_PACKET_MMAP_RX_RING)
-static int
+static void
 tad_eth_sap_parse_ancillary_data(int msg_flags, tad_pkt *pkt, size_t *pkt_len,
                                  void *cmsg_buf, size_t cmsg_buf_len)
 {
     struct msghdr           msg;
     struct cmsghdr         *cmsg;
-    te_errno                rc;
 
     /* We re-create msghdr structure partially */
     memset(&msg, 0, sizeof(msg));
@@ -1200,14 +1189,7 @@ tad_eth_sap_parse_ancillary_data(int msg_flags, tad_pkt *pkt, size_t *pkt_len,
              bytes_remain -= cur_seg->data_len,
              cur_seg = CIRCLEQ_NEXT(cur_seg, links));
 
-        new_seg_data = malloc(cur_seg->data_len + TAD_VLAN_TAG_LEN);
-
-        if (new_seg_data == NULL)
-        {
-            rc = TE_OS_RC(TE_TAD_CSAP, errno);
-            ERROR("%s(): malloc() failed: %r", __FUNCTION__, rc);
-            return rc;
-        }
+        new_seg_data = TE_ALLOC(cur_seg->data_len + TAD_VLAN_TAG_LEN);
 
         if (bytes_remain > 0)
             memcpy(new_seg_data, cur_seg->data_ptr, bytes_remain);
@@ -1232,8 +1214,6 @@ tad_eth_sap_parse_ancillary_data(int msg_flags, tad_pkt *pkt, size_t *pkt_len,
 
         *pkt_len += TAD_VLAN_TAG_LEN;
     }
-
-    return 0;
 }
 #endif /* USE_PF_PACKET && !WITH_PACKET_MMAP_RX_RING */
 
@@ -1287,10 +1267,8 @@ tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
     if (rc != 0)
         return rc;
 
-    rc = tad_eth_sap_parse_ancillary_data(msg_flags, pkt, pkt_len,
-                                          &cmsg_buf, cmsg_buf_len);
-    if (rc != 0)
-        return rc;
+    tad_eth_sap_parse_ancillary_data(msg_flags, pkt, pkt_len,
+                                     &cmsg_buf, cmsg_buf_len);
 #endif /* WITH_PACKET_MMAP_RX_RING */
 
     switch (from.sll_pkttype)

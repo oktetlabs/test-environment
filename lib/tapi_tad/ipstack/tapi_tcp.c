@@ -254,11 +254,7 @@ ndn_tcp4_message_to_plain(asn_value *pkt, tcp4_message **tcp_msg)
     size_t      payload_len;
     asn_value  *pdu;
 
-    *tcp_msg = (struct tcp4_message *)malloc(sizeof(**tcp_msg));
-    if (*tcp_msg == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-
-    memset(*tcp_msg, 0, sizeof(**tcp_msg));
+    *tcp_msg = TE_ALLOC(sizeof(**tcp_msg));
 
     pdu = asn_read_indexed(pkt, 0, "pdus"); /* this should be TCP PDU */
 
@@ -317,7 +313,7 @@ ndn_tcp4_message_to_plain(asn_value *pkt, tcp4_message **tcp_msg)
     if (len > 0)
     {
         (*tcp_msg)->payload_len = payload_len;
-        (*tcp_msg)->payload = malloc(len);
+        (*tcp_msg)->payload = TE_ALLOC(len);
 
         rc = asn_read_value_field(pkt, (*tcp_msg)->payload,
                                   &len, "payload");
@@ -542,12 +538,7 @@ tapi_tcp_ip4_eth_trrecv_cb_data(tcp4_callback callback, void *user_data)
     tcp4_cb_data_t             *cb_data;
     tapi_tad_trrecv_cb_data    *res;
 
-    cb_data = (tcp4_cb_data_t *)calloc(1, sizeof(*cb_data));
-    if (cb_data == NULL)
-    {
-        ERROR("%s(): failed to allocate memory", __FUNCTION__);
-        return NULL;
-    }
+    cb_data = TE_ALLOC(sizeof(*cb_data));
     cb_data->callback = callback;
     cb_data->user_data = user_data;
 

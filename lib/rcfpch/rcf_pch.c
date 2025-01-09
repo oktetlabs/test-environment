@@ -40,6 +40,7 @@
 #include "rcf_pch_internal.h"
 #undef SEND_ANSWER
 
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "te_defs.h"
 #include "te_stdint.h"
@@ -531,8 +532,7 @@ rcf_pch_run(const char *confstr, const char *info)
         /* Continue, but TAD operation will fail */
     }
 
-    if ((cmd = (char *)malloc(RCF_MAX_LEN)) == NULL)
-        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
+    cmd = TE_ALLOC(RCF_MAX_LEN);
 
     if ((rc = rcf_comm_agent_init(confstr, &conn)) != 0 ||
         (info != NULL &&
@@ -1350,4 +1350,3 @@ exit:
 #undef READ_INT
 #undef SEND_ANSWER
 }
-

@@ -1546,13 +1546,7 @@ iscsi_win32_detect_device_interface_name(int target_id, char *device_name)
         ISCSI_WIN32_REPORT_ERROR();
         return TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
     }
-    details = malloc(buf_size);
-    if (details == NULL)
-    {
-        ERROR("Unable to allocate details buffer of length %u",
-              (unsigned)buf_size);
-        return TE_RC(ISCSI_AGENT_TYPE, TE_ENOMEM);
-    }
+    details = TE_ALLOC(buf_size);
     details->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
     if (!SetupDiGetDeviceInterfaceDetail(disk_drives, &intf,
                                          details, buf_size, &buf_size, NULL))

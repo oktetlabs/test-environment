@@ -64,9 +64,7 @@ tad_send_preprocess_pdus(csap_p csap, const asn_value *tmpl_unit,
     te_errno            rc;
     const asn_value    *nds_pdus = NULL;
 
-    data->layer_opaque = calloc(csap->depth, sizeof(data->layer_opaque[0]));
-    if (data->layer_opaque == NULL)
-        return TE_RC(TE_TAD_CH, TE_ENOMEM);
+    data->layer_opaque = TE_ALLOC(csap->depth * sizeof(data->layer_opaque[0]));
 
     /*
      * Get sequence of PDUs and preprocess by protocol-specific
@@ -188,11 +186,9 @@ tad_send_preprocess_args(csap_p csap, const asn_value *tmpl_unit,
     }
     data->arg_num = len;
 
-    data->arg_specs = calloc(data->arg_num, sizeof(data->arg_specs[0]));
-    data->arg_iterated = calloc(data->arg_num,
-                                sizeof(data->arg_iterated[0]));
-    if (data->arg_specs == NULL || data->arg_iterated == NULL)
-        return TE_RC(TE_TAD_CH, TE_ENOMEM);
+    data->arg_specs = TE_ALLOC(data->arg_num * sizeof(data->arg_specs[0]));
+    data->arg_iterated = TE_ALLOC(data->arg_num *
+                                  sizeof(data->arg_iterated[0]));
 
     rc = tad_get_tmpl_arg_specs(arg_sets, data->arg_specs, data->arg_num);
     if (rc != 0)
@@ -326,9 +322,7 @@ tad_send_preprocess_template(csap_p csap, asn_value *template,
      */
     data->n_units = 1;
 
-    data->units = calloc(data->n_units, sizeof(data->units[0]));
-    if (data->units == NULL)
-        return TE_RC(TE_TAD_CH, TE_ENOMEM);
+    data->units = TE_ALLOC(data->n_units * sizeof(data->units[0]));
 
     rc = tad_send_preprocess_template_unit(csap, template,
                                              data->units);
@@ -723,9 +717,7 @@ tad_send_by_template_unit(csap_p csap, tad_send_tmpl_unit_data *tu_data)
 
     F_ENTRY();
 
-    pkts = malloc((csap->depth + 1) * sizeof(*pkts));
-    if (pkts == NULL)
-        return TE_RC(TE_TAD_CH, TE_ENOMEM);
+    pkts = TE_ALLOC((csap->depth + 1) * sizeof(*pkts));
 
     for (i = 0; i <= csap->depth; i++)
     {
@@ -1021,7 +1013,7 @@ tad_send_prepare_bin(csap_p csap, asn_value *nds,
         case TAD_PLD_FUNCTION:
         {
             size_t d_len = asn_get_length(nds, "payload.#bytes");
-            void  *data = malloc(d_len);
+            void  *data = TE_ALLOC(d_len);
 
             if (pld_data->func == NULL)
             {
@@ -1276,6 +1268,7 @@ tad_get_tmpl_arg_specs(const asn_value *arg_set,
     {
         const asn_value *arg_val;
         const asn_value *arg_spec_elem;
+        unsigned j;
 
         rc = asn_get_indexed(arg_set, (asn_value **)&arg_spec_elem,
                              i, NULL);
@@ -1307,25 +1300,15 @@ tad_get_tmpl_arg_specs(const asn_value *arg_set,
                 enum_len = arg_specs[i].int_seq.length =
                                                 asn_get_length(arg_val, "");
                 arg_specs[i].int_seq.last_index = -1;
-                arg_specs[i].int_seq.ints = calloc(enum_len,
-                                                   sizeof(int32_t));
-                if (arg_specs[i].int_seq.ints == NULL)
+                arg_specs[i].int_seq.ints = TE_ALLOC(enum_len *
+                                                     sizeof(int32_t));
+                for (j = 0; j < enum_len; j++)
                 {
-                    rc = TE_RC(TE_TAD_CH, TE_ENOMEM);
-                }
-                else
-                {
-                    unsigned j;
+                    const asn_value *int_val;
 
-                    for (j = 0; j < enum_len; j++)
-                    {
-                        const asn_value *int_val;
-
-                        asn_get_indexed(arg_val, (asn_value **)&int_val,
-                                        j, NULL);
-                        asn_read_int32(int_val, &arg_param, "");
-                        arg_specs[i].int_seq.ints[j] = arg_param;
-                    }
+                    asn_get_indexed(arg_val, (asn_value **)&int_val, j, NULL);
+                    asn_read_int32(int_val, &arg_param, "");
+                    arg_specs[i].int_seq.ints[j] = arg_param;
                 }
                 break;
 
@@ -1428,4 +1411,3 @@ tad_tmpl_args_clear(tad_tmpl_iter_spec_t *arg_specs, unsigned int arg_num)
         }
     }
 }
-

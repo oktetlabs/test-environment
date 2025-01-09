@@ -270,8 +270,7 @@ tapi_stp_bpdu_recv_start(const char *ta_name, int sid,
     if ((ta_name == NULL) || (pattern == NULL))
         return TE_RC(TE_TAPI, TE_EINVAL);
 
-    if ((i_data = malloc(sizeof(*i_data))) == NULL)
-        return TE_RC(TE_TAPI, TE_ENOMEM);
+    i_data = TE_ALLOC(sizeof(*i_data));
 
     i_data->user_callback = callback;
     i_data->user_data = callback_data;

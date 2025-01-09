@@ -2352,15 +2352,7 @@ TARPC_FUNC(rte_eth_fec_get_capability,
     int                      i;
 
     if (out->speed_fec_capa.speed_fec_capa_len != 0)
-    {
-        speed_fec_capa = calloc(in->num, sizeof(*speed_fec_capa));
-        if (speed_fec_capa == NULL)
-        {
-            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-            out->retval = -out->common._errno;
-            goto done;
-        }
-    }
+        speed_fec_capa = TE_ALLOC(in->num * sizeof(*speed_fec_capa));
 
     MAKE_CALL(out->retval = func(in->port_id, speed_fec_capa, in->num));
 
@@ -2438,13 +2430,7 @@ TARPC_FUNC(rte_eth_dev_get_reg_info,
 
     if (out->info.info_len != 0)
     {
-        info = calloc(out->info.info_len, sizeof(*info));
-        if (info == NULL)
-        {
-            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
-            out->retval = -out->common._errno;
-            goto done;
-        }
+        info = TE_ALLOC(out->info.info_len * sizeof(*info));
         info->data = out->info.info_val->data.data_val;
         info->offset = out->info.info_val->offset;
         info->length = out->info.info_val->length;

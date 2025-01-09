@@ -245,15 +245,8 @@ tapi_radius_attr_list_push_value(tapi_radius_attr_list_t *list,
             {
                 const uint8_t *p = va_arg(va, uint8_t *);
                 attr.len = va_arg(va, size_t);
-                attr.string = calloc(1, attr.len + 1);
-                if (attr.string == NULL)
-                {
-                    ERROR("%s: failed to allocate memory for attribute '%s'",
-                          __FUNCTION__, name);
-                    rc = TE_ENOMEM;
-                }
-                else
-                    memcpy(attr.string, p, attr.len);
+                attr.string = TE_ALLOC(attr.len + 1);
+                memcpy(attr.string, p, attr.len);
             }
             break;
 
@@ -496,12 +489,7 @@ tapi_radius_attr_list_copy(tapi_radius_attr_list_t *dst,
     size_t   i;
 
     memcpy(dst, src, sizeof(*dst));
-    dst->attr = (tapi_radius_attr_t *)malloc(src->len * sizeof(src->attr[0]));
-    if (dst->attr == NULL)
-    {
-        ERROR("%s: failed to allocate memory", __FUNCTION__);
-        return TE_ENOMEM;
-    }
+    dst->attr = TE_ALLOC(src->len * sizeof(src->attr[0]));
     for (i = 0; i < src->len; i++)
     {
         if ((rc = tapi_radius_attr_copy(&dst->attr[i], &src->attr[i])) != 0)

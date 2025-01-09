@@ -65,11 +65,9 @@ tad_dhcp_rw_init_cb(csap_p csap)
     if (rc != 0)
         return rc; /* If this field is not set, then CSAP cannot process */
 
-    dhcp_spec_data = malloc(sizeof(*dhcp_spec_data));
-    if (dhcp_spec_data == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    dhcp_spec_data = TE_ALLOC(sizeof(*dhcp_spec_data));
 
-    dhcp_spec_data->ipaddr = malloc(INET_ADDRSTRLEN + 1);
+    dhcp_spec_data->ipaddr = TE_ALLOC(INET_ADDRSTRLEN + 1);
     dhcp_spec_data->mode = mode;
 
     /* opening incoming socket */
@@ -114,11 +112,9 @@ tad_dhcp_rw_init_cb(csap_p csap)
         return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
-    interface = calloc(sizeof(struct ifreq) +
-                       sizeof(struct sockaddr_storage) -
-                       sizeof(struct sockaddr), 1);
-    if (interface == NULL)
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+    interface = TE_ALLOC(sizeof(struct ifreq) +
+                         sizeof(struct sockaddr_storage) -
+                         sizeof(struct sockaddr));
 
     len = IFNAMSIZ;
     rc = asn_read_value_field(csap->layers[csap_get_rw_layer(csap)].nds,
@@ -203,16 +199,10 @@ tad_dhcp6_rw_init_cb(csap_p csap)
         return rc;
     }
 
-    if ((dhcp_spec_data = malloc(sizeof(*dhcp_spec_data))) != NULL)
-    {
-        dhcp_spec_data->ipaddr = malloc(INET6_ADDRSTRLEN + 1);
+    dhcp_spec_data = TE_ALLOC(sizeof(*dhcp_spec_data));
+    dhcp_spec_data->ipaddr = TE_ALLOC(INET6_ADDRSTRLEN + 1);
 
-        dhcp_spec_data->mode = mode;
-    }
-    else
-    {
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-    }
+    dhcp_spec_data->mode = mode;
 
     if ((dhcp_spec_data->in =
             socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) < 0)
@@ -226,14 +216,9 @@ tad_dhcp6_rw_init_cb(csap_p csap)
         return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
-    if ((interface =
-            calloc(sizeof(struct ifreq) +
-                        sizeof(struct sockaddr_storage) -
-                            sizeof(struct sockaddr),
-                   1)) == NULL)
-    {
-        return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
-    }
+    interface = TE_ALLOC(sizeof(struct ifreq) +
+                         sizeof(struct sockaddr_storage) -
+                         sizeof(struct sockaddr));
 
     len = IFNAMSIZ;
     if ((rc =

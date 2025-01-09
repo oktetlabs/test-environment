@@ -3,3 +3,6 @@
 
 headers += files('comm_net_engine.h')
 sources += files('comm_net_engine.c')
+te_libs += [
+    'tools',
+]
