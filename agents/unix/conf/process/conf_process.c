@@ -189,6 +189,13 @@ ps_get_argv(struct ps_entry *ps, char ***argv)
         }
     }
 
+    if (ps->argc == 0)
+    {
+        tmp[len + 1] = NULL;
+        *argv = tmp;
+        return 0;
+    }
+
     args = TE_ALLOC(ps->argc * sizeof(*args));
 
     i = 0;
