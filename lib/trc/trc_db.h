@@ -315,6 +315,9 @@ typedef enum {
                                          in list of its siblings
                                          included from the same
                                          file */
+    TRC_SAVE_COMMENTS     = 0x80,   /**< Do not remove comments
+                                         when updating XML document
+                                         before saving */
 } trc_save_flags;
 
 /**

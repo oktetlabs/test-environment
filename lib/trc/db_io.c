@@ -2355,6 +2355,32 @@ trc_exp_results_to_xml(trc_exp_results *exp_results, xmlNodePtr node,
     return 0;
 }
 
+/**
+ * Add a child right after initial comments under a given parent.
+ * If there is no comments, it is added as the first child.
+ *
+ * @param parent      Pointer to parent node.
+ * @param child       Pointer to added child node.
+ *
+ * @return Pointer to added child or NULL in case of failure.
+ */
+static xmlNodePtr
+add_child_after_comments(xmlNodePtr parent, xmlNodePtr child)
+{
+    xmlNodePtr aux;
+
+    for (aux = parent->children; aux != NULL; aux = aux->next)
+    {
+        if (aux->type != XML_COMMENT_NODE)
+            break;
+    }
+
+    if (aux == NULL)
+        return xmlAddChild(parent, child);
+    else
+        return xmlAddPrevSibling(aux, child);
+}
+
 static te_errno
 put_subvalue(char *key, size_t idx, char *value, bool has_more, void *user)
 {
@@ -2496,6 +2522,12 @@ trc_update_iters(te_trc_db *db, trc_test_iters *iters, int flags, int uid,
                          node->type != XML_XINCLUDE_START &&
                          node->type != XML_XINCLUDE_END))
                     {
+                        if ((flags & TRC_SAVE_COMMENTS) &&
+                            node->type == XML_COMMENT_NODE)
+                        {
+                            continue;
+                        }
+
                         xmlUnlinkNode(node);
                         xmlFreeNode(node);
                     }
@@ -2576,13 +2608,7 @@ trc_update_iters(te_trc_db *db, trc_test_iters *iters, int flags, int uid,
                     xmlNewProp(node, BAD_CAST "name", BAD_CAST a->name);
 
                     if (prev_node == NULL)
-                    {
-                        if (p->tests.node->children != NULL)
-                            xmlAddPrevSibling(p->tests.node->children,
-                                              node);
-                        else
-                            xmlAddChild(p->tests.node, node);
-                    }
+                        add_child_after_comments(p->tests.node, node);
                     else
                         xmlAddNextSibling(prev_node, node);
 
@@ -2608,12 +2634,7 @@ trc_update_iters(te_trc_db *db, trc_test_iters *iters, int flags, int uid,
                 xmlNodeSetContent(node, BAD_CAST p->notes);
 
                 if (prev_node == NULL)
-                {
-                    if (p->tests.node->children != NULL)
-                        xmlAddPrevSibling(p->tests.node->children, node);
-                    else
-                        xmlAddChild(p->tests.node, node);
-                }
+                    add_child_after_comments(p->tests.node, node);
                 else
                     xmlAddNextSibling(prev_node, node);
 
@@ -2725,6 +2746,12 @@ trc_update_tests(te_trc_db *db, trc_tests *tests, int flags, int uid,
                          node->type != XML_XINCLUDE_START &&
                          node->type != XML_XINCLUDE_END))
                     {
+                        if ((flags & TRC_SAVE_COMMENTS) &&
+                            node->type == XML_COMMENT_NODE)
+                        {
+                            continue;
+                        }
+
                         xmlUnlinkNode(node);
                         xmlFreeNode(node);
                     }
@@ -2759,10 +2786,7 @@ trc_update_tests(te_trc_db *db, trc_tests *tests, int flags, int uid,
 
                 xmlNodeSetContent(node, BAD_CAST p->objective);
 
-                if (p->iters.node->children != NULL)
-                    xmlAddPrevSibling(p->iters.node->children, node);
-                else
-                    xmlAddChild(p->iters.node, node);
+                add_child_after_comments(p->iters.node, node);
 
                 prev_node = node;
 
