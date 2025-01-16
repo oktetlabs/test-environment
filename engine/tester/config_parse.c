@@ -184,6 +184,128 @@ xmlNodeNext(xmlNodePtr node)
     return xmlNodeSkipExtra(node->next);
 }
 
+/**
+ * Get the number of leading whitespaces in the line.
+ *
+ * @param line      Line for which leading whitespaces should be found.
+ * @param new_line  Set this pointer to next new line character.
+ *
+ * @return Number of leading whitespaces in the line, or @c -1 if there are
+           only whitespaces.
+ */
+static int
+get_leading_space_num(const char *line, const char **new_line)
+{
+    int         spaces_cnt = 0;
+    const char *end;
+
+    spaces_cnt = strspn(line, " ");
+    end = strchr(line, '\n');
+    if (new_line != NULL)
+        *new_line = end;
+    if (end == NULL)
+        end = line + strlen(line);
+
+    if (line + spaces_cnt == end)
+        spaces_cnt = -1;
+
+    return spaces_cnt;
+}
+
+/**
+ * Get maximum common indentation for lines in string.
+ *
+ * @param str    String for which max common indentation should be found.
+ *
+ * @return Maximum common indentation.
+ */
+static int
+get_max_common_indent(const char *str)
+{
+    int         max_indent = -1;
+    const char *start = str;
+    const char *next_line;
+    int         space_count = 0;
+
+    while (true)
+    {
+        space_count = get_leading_space_num(start, &next_line);
+
+        /* Ignore line with all whitespaces. */
+        if (space_count != -1 && (space_count < max_indent || max_indent == -1))
+            max_indent = space_count;
+
+        if (next_line == NULL)
+            break;
+
+        start = next_line + 1;
+    }
+    if (max_indent == -1)
+        max_indent = 0;
+
+    return max_indent;
+}
+
+/**
+ * Remove common leading indention of the string. This is required because
+ * parameters are provided in XML as text and leading indention is not
+ * stripped by the XML parser.
+ *
+ * @param str      String to be modified
+ */
+static void
+remove_common_leading_indent(char *str)
+{
+    int         min_indent;
+    const char *start = str;
+    const char *end;
+    int         space_count = 0;
+    const char *p;
+    char       *write_ptr = str;
+    char       *end_of_nonempty = str;
+    bool        leading_empty = true;
+
+    min_indent = get_max_common_indent(str);
+
+    if (min_indent <= 0)
+        return;
+
+    while (start != NULL)
+    {
+        space_count = get_leading_space_num(start, &end);
+        if (space_count != -1)
+        {
+            leading_empty = false;
+            p = start + min_indent;
+        }
+        else
+        {
+            p = start;
+        }
+        if (end == NULL)
+        {
+            end = start + strlen(start);
+            start = NULL;
+        }
+        else
+        {
+            start = end + 1;
+        }
+
+        /* Skip line with only whitespaces. */
+        if (space_count == -1 && leading_empty)
+            continue;
+
+        while (p < end)
+            *write_ptr++ = *p++;
+        if (space_count != -1)
+            end_of_nonempty = write_ptr;
+        if (*end == '\n')
+            *write_ptr++ = '\n';
+    }
+    /* Terminate the new string */
+    *end_of_nonempty = '\0';
+}
 
 /**
  * Get text content of the node.
@@ -225,6 +347,8 @@ get_text_content(xmlNodePtr node, const char *name, char **content)
         ERROR("String duplication failed");
         return TE_ENOMEM;
     }
+
+    remove_common_leading_indent(*content);
 
     return 0;
 }
@@ -1812,6 +1936,14 @@ alloc_and_get_var_arg(xmlNodePtr node, bool is_var,
         }
         v->name = strdup(p->name);
         /* ignore error */
+    }
+
+    /* Strip indention */
+    {
+        test_entity_value *v = TAILQ_FIRST(&p->values.head);
+
+        if (v != NULL && v->plain != NULL)
+            remove_common_leading_indent(v->plain);
     }
 
     if (is_var && global && strcmp(global, "true") == 0)
