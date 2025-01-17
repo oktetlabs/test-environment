@@ -241,6 +241,19 @@ extern te_errno te_snprintf(char *dst, size_t size, const char *fmt, ...)
  */
 extern char *te_str_strip_spaces(const char *str);
 
+
+/**
+ * Check that a string contains only space characters.
+ *
+ * It is useful to test for string values that are logically empty.
+ *
+ * @param str   String to check.
+ *
+ * @return @c true if the string is empty or
+ *         contains only space characters.
+ */
+extern bool te_str_isspace(const char *str);
+
 /**
  * Skips the @p prefix from the string @p str if it has one.
  *

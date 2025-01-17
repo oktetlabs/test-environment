@@ -247,6 +247,20 @@ te_str_strip_spaces(const char *str)
 }
 
 /* See description in te_str.h */
+bool
+te_str_isspace(const char *str)
+{
+    if (str == NULL)
+        return true;
+    for (; *str != '\0'; str++)
+    {
+        if (!isspace(*str))
+            return false;
+    }
+    return true;
+}
+
+/* See description in te_str.h */
 size_t
 te_str_common_prefix(const char *str1, const char *str2)
 {
