@@ -121,11 +121,9 @@ tester_cfg_new(const char *filename)
 static xmlNodePtr
 xmlNodeSkipComment(xmlNodePtr node)
 {
-    while ((node != NULL) &&
-           (xmlStrcmp(node->name, CONST_CHAR2XML("comment")) == 0))
-    {
+    while ((node != NULL) && (node->type == XML_COMMENT_NODE))
         node = node->next;
-    }
+
     return node;
 }
 
@@ -139,11 +137,9 @@ xmlNodeSkipComment(xmlNodePtr node)
 static xmlNodePtr
 xmlNodeSkipText(xmlNodePtr node)
 {
-    while ((node != NULL) &&
-           (xmlStrcmp(node->name, CONST_CHAR2XML("text")) == 0))
-    {
+    while ((node != NULL) && (node->type == XML_TEXT_NODE))
         node = node->next;
-    }
+
     return node;
 }
 
@@ -166,8 +162,7 @@ static xmlNodePtr
 xmlNodeSkipExtra(xmlNodePtr node)
 {
     while ((node != NULL) &&
-           ((xmlStrcmp(node->name, (const xmlChar *)("comment")) == 0) ||
-            (xmlStrcmp(node->name, (const xmlChar *)("text")) == 0)))
+           (node->type == XML_TEXT_NODE || node->type == XML_COMMENT_NODE))
     {
         node = node->next;
     }
@@ -211,7 +206,7 @@ get_text_content(xmlNodePtr node, const char *name, char **content)
               name);
         return TE_EINVAL;
     }
-    if (xmlStrcmp(node->children->name, CONST_CHAR2XML("text")) != 0)
+    if (node->children->type != XML_TEXT_NODE)
     {
         ERROR("Unexpected element '%s' in the node '%s' with text "
               "content", node->children->name, name);
@@ -1348,8 +1343,7 @@ alloc_and_get_value(xmlNodePtr node, const test_session *session,
     /* Simple text content is represented as 'text' elements */
     if (node->children != NULL)
     {
-        if ((xmlStrcmp(node->children->name,
-                       CONST_CHAR2XML("text")) != 0) ||
+        if ((node->children->type != XML_TEXT_NODE) ||
             (node->children->content == NULL))
         {
             ERROR("'value' content is empty or not 'text'");
@@ -2653,7 +2647,7 @@ alloc_and_get_test_info(xmlNodePtr node, tests_info *ti)
 
     if ((node == NULL) ||
         (node->children == NULL) ||
-        (xmlStrcmp(node->children->name, CONST_CHAR2XML("text")) != 0) ||
+        (node->children->type != XML_TEXT_NODE) ||
         (node->children->content == NULL))
     {
         ERROR("Missing objective of the test '%s'", p->name);
