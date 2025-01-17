@@ -27,6 +27,8 @@
 
 #include "te_queue.h"
 #include "te_errno.h"
+#include "te_str.h"
+#include "te_compound.h"
 #include "logger_api.h"
 
 #include "tester_conf.h"
@@ -116,6 +118,59 @@ typedef struct test_run_item_find_arg_cb_data {
     const test_var_arg *found;      /**< Found argument */
 } test_run_item_find_arg_cb_data;
 
+static te_errno
+has_compound_name(char *field, size_t idx, char *value,
+                  bool has_more, void *user)
+{
+    UNUSED(field);
+    UNUSED(idx);
+    UNUSED(has_more);
+    UNUSED(user);
+    return TE_EOK;
+}
+
+static bool has_value_with_field_name(const char *fullname, const char *stem,
+                                      const test_entity_values *values);
+
+static bool
+has_field_name(const char *fullname, const char *stem,
+               const test_entity_value *v)
+{
+    if (v->plain != NULL)
+    {
+        return te_compound_dereference_str(v->plain, stem, fullname,
+                                           has_compound_name, NULL) == 0;
+    }
+
+    if (v->ref != NULL)
+        return has_field_name(fullname, stem, v->ref);
+
+    if (v->type != NULL)
+        return has_value_with_field_name(fullname, stem, &v->type->values);
+
+    return false;
+}
+
+static bool
+has_value_with_field_name(const char *fullname, const char *stem,
+                          const test_entity_values *values)
+{
+    const test_entity_value *v;
+
+    if (te_str_strip_prefix(fullname, stem) == NULL)
+        return false;
+
+    TAILQ_FOREACH(v, &values->head, links)
+    {
+        if (has_field_name(fullname, stem, v))
+        {
+            RING("found");
+            return true;
+        }
+    }
+    return false;
+}
+
 /**
  * Callback function for test_run_item_enum_args() routine to find
  * argument by name.
@@ -130,6 +185,7 @@ test_run_item_find_arg_cb(const test_var_arg *va, void *opaque)
 {
     test_run_item_find_arg_cb_data *data = opaque;
     const test_var_arg_list        *list = NULL;
+    const test_entity_values *values = test_var_arg_values(va);
 
     if (va->list != NULL)
     {
@@ -142,10 +198,10 @@ test_run_item_find_arg_cb(const test_var_arg *va, void *opaque)
     }
     else
     {
-        data->n_values = test_var_arg_values(va)->num;
+        data->n_values = values->num;
     }
 
-    if (strcmp(data->name, va->name) != 0)
+    if (!has_value_with_field_name(data->name, va->name, values))
     {
         if ((list == NULL) || (list->n_iters == data->n_iters))
         {

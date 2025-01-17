@@ -78,51 +78,76 @@
         </xsd:attribute>
     </xsd:complexType>
 
-    <xsd:complexType name="Value">
+    <xsd:complexType name="Field">
         <xsd:annotation>
             <xsd:documentation>
-                Representation of value for session variable or run
-                argument.
+                Type for structured value field description.
             </xsd:documentation>
         </xsd:annotation>
         <xsd:simpleContent>
             <xsd:extension base="xsd:string">
-                <xsd:attribute name="name" type="xsd:Name">
+                <xsd:attribute name="name" type="xsd:string">
                     <xsd:annotation>
                         <xsd:documentation>
-                            Identifier to be referred from 'preferred'
-                            attribute of the parent or 'ref'
-                            attribute of another value of the parent.
-                        </xsd:documentation>
-                    </xsd:annotation>
-                </xsd:attribute>
-                <xsd:attribute name="ref" type="xsd:Name">
-                    <xsd:annotation>
-                        <xsd:documentation>
-                            Identifier of another value of the argument
-                            or reference to external value (name of the
-                            variable of the parent session or name of
-                            the argument passed to the sesiion).
-                        </xsd:documentation>
-                    </xsd:annotation>
-                </xsd:attribute>
-                <xsd:attribute name="reqs" type="xsd:string">
-                    <xsd:annotation>
-                        <xsd:documentation>
-                            Comman separated list of requirement IDs
-                            associated with this value.
+                            The name of a field.
                         </xsd:documentation>
                     </xsd:annotation>
                 </xsd:attribute>
                 <xsd:attribute name="type" type="xsd:Name">
                     <xsd:annotation>
                         <xsd:documentation>
-                            Defines the type of a certain value.
+                            The type of a field.
                         </xsd:documentation>
                     </xsd:annotation>
                 </xsd:attribute>
             </xsd:extension>
         </xsd:simpleContent>
+    </xsd:complexType>
+
+    <xsd:complexType name="Value" mixed="true">
+        <xsd:annotation>
+            <xsd:documentation>
+                Representation of value for session variable or run
+                argument.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence>
+            <xsd:element name="field"  type="Field" minOccurs="0" maxOccurs="unbounded" />
+        </xsd:sequence>
+        <xsd:attribute name="name" type="xsd:Name">
+            <xsd:annotation>
+                <xsd:documentation>
+                    Identifier to be referred from 'preferred'
+                    attribute of the parent or 'ref'
+                    attribute of another value of the parent.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="ref" type="xsd:Name">
+            <xsd:annotation>
+                <xsd:documentation>
+                    Identifier of another value of the argument
+                    or reference to external value (name of the
+                    variable of the parent session or name of
+                    the argument passed to the sesiion).
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="reqs" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation>
+                    Comman separated list of requirement IDs
+                    associated with this value.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="type" type="xsd:Name">
+            <xsd:annotation>
+                <xsd:documentation>
+                    Defines the type of a certail value.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
     </xsd:complexType>
 
     <xsd:complexType name="TestParameter">

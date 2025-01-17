@@ -41,6 +41,7 @@
 #include "te_alloc.h"
 #include "tq_string.h"
 #include "te_str.h"
+#include "te_compound.h"
 #include "conf_api.h"
 #include "log_bufs.h"
 #include "te_trc.h"
@@ -207,6 +208,18 @@ typedef struct tester_run_data {
     SLIST_HEAD(, tester_ctx)    ctxs;       /**< Stack of contexts */
 
 } tester_run_data;
+
+/**
+ * Callback data to process compound values.
+ */
+typedef struct compound_arg_data {
+    const test_iter_arg *arg;
+    union {
+        te_string *dest;
+        json_t *json_result;
+        te_vec *params;
+    };
+} compound_arg_data;
 
 static enum interactive_mode_opts tester_run_interactive(
                                       tester_run_data *gctx);
@@ -1215,6 +1228,24 @@ persons_info_to_json(const persons_info *persons)
     return result;
 }
 
+static te_errno
+param_to_string(char *key, size_t idx, char *value, bool has_more, void *user)
+{
+    compound_arg_data *data = user;
+
+
+    VERB("%s(): parameter %s %s[%zu]=%s", __func__, data->arg->name,
+         te_str_empty_if_null(key), idx, value);
+
+    te_string_append(data->dest, " ");
+    te_compound_build_name(data->dest, data->arg->name, key, idx);
+    te_string_append(data->dest, "=");
+    te_string_append_shell_arg_as_is(data->dest, value);
+
+    UNUSED(has_more);
+    return 0;
+}
+
 /**
  * Convert test parameters to string representation using te_string.
  * The first symbol is a space, if @p str is not NULL.
@@ -1241,13 +1272,41 @@ test_params_to_te_string(te_string *str, const unsigned int n_args,
         if (p->variable)
             continue;
 
-        VERB("%s(): parameter %s=%s", __FUNCTION__, p->name, p->value);
-        te_string_append(str, " %s=", p->name);
-        te_string_append_shell_arg_as_is(str, p->value);
+        te_compound_iterate_str(p->value, param_to_string,
+                                &(compound_arg_data){.arg = p, .dest = str});
     }
 
     VERB("%s(): %s", __FUNCTION__, str->ptr);
 }
+
+static te_errno
+param_to_json(char *key, size_t idx, char *value, bool has_more, void *user)
+{
+    te_string json_key = TE_STRING_INIT;
+    compound_arg_data *data = user;
+    json_t *item;
+
+    te_compound_build_name(&json_key, data->arg->name, key, idx);
+    item = json_pack("[ss]", json_key.ptr, value);
+    te_string_free(&json_key);
+
+    if (item == NULL)
+    {
+        ERROR("%s(): failed to pack into JSON array", __func__);
+        return TE_EFAIL;
+    }
+
+    if (json_array_append_new(data->json_result, item) != 0)
+    {
+        ERROR("%s: failed to add item to the array", __func__);
+        json_decref(item);
+        return TE_EFAIL;
+    }
+
+    UNUSED(has_more);
+    return 0;
+}
+
 
 /**
  * Convert test parameters to JSON representation.
@@ -1261,7 +1320,6 @@ static json_t *
 test_params_to_json(const unsigned int n_args, const test_iter_arg *args)
 {
     json_t       *result;
-    json_t       *item;
     unsigned int  i;
 
     if (n_args == 0)
@@ -1279,19 +1337,12 @@ test_params_to_json(const unsigned int n_args, const test_iter_arg *args)
         if (args[i].variable)
             continue;
 
-        item = json_pack("[ss]", args[i].name, args[i].value);
-        if (item != NULL)
+        if (te_compound_iterate_str(args[i].value, param_to_json,
+                                    &(compound_arg_data){
+                                        .arg = &args[i],
+                                        .json_result = result
+                                    }) == TE_EFAIL)
         {
-            if (json_array_append_new(result, item) != 0)
-            {
-                ERROR("%s: failed to add item to the array", __FUNCTION__);
-                json_decref(result);
-                return NULL;
-            }
-        }
-        else
-        {
-            ERROR("%s: failed to pack into JSON array", __FUNCTION__);
             json_decref(result);
             return NULL;
         }
@@ -1306,6 +1357,117 @@ test_params_to_json(const unsigned int n_args, const test_iter_arg *args)
 
     return result;
 }
+
+static te_errno
+param_stem_to_json(char *key, size_t idx, char *value, bool has_more, void *user)
+{
+    te_string json_key = TE_STRING_INIT;
+    compound_arg_data *data = user;
+    json_t *jstr;
+
+    if (key == NULL && idx == 0)
+    {
+        te_string_free(&json_key);
+        return 0;
+    }
+    te_compound_build_name(&json_key, data->arg->name, key, idx);
+    jstr = json_string(data->arg->name);
+    if (jstr == NULL)
+    {
+        ERROR("%s(): failed to create a JSON string", __func__);
+        te_string_free(&json_key);
+        return TE_EFAIL;
+    }
+    if (json_object_set_new(data->json_result, json_key.ptr, jstr) != 0)
+    {
+        ERROR("%s(): failed to add item to the array", __func__);
+        json_decref(jstr);
+        te_string_free(&json_key);
+        return TE_EFAIL;
+    }
+
+    UNUSED(has_more);
+    te_string_free(&json_key);
+    return 0;
+}
+
+static te_errno
+param_field_to_json(char *key, size_t idx, char *value, bool has_more, void *user)
+{
+    te_string json_key = TE_STRING_INIT;
+    compound_arg_data *data = user;
+    json_t *jstr;
+
+    if (key == NULL)
+    {
+        te_string_free(&json_key);
+        return 0;
+    }
+    te_compound_build_name(&json_key, data->arg->name, key, idx);
+    jstr = json_string(key);
+    if (jstr == NULL)
+    {
+        ERROR("%s(): failed to create a JSON string", __func__);
+        te_string_free(&json_key);
+        return TE_EFAIL;
+    }
+    if (json_object_set_new(data->json_result, json_key.ptr, jstr) != 0)
+    {
+        ERROR("%s(): failed to add item to the array", __func__);
+        json_decref(jstr);
+        te_string_free(&json_key);
+        return TE_EFAIL;
+    }
+
+    UNUSED(has_more);
+    UNUSED(idx);
+    te_string_free(&json_key);
+    return 0;
+}
+
+
+static json_t *
+test_param_names_to_json(const unsigned int n_args, const test_iter_arg *args,
+                         te_compound_iter_fn *callback)
+{
+    json_t       *result;
+    unsigned int  i;
+
+    if (n_args == 0)
+        return NULL;
+
+    result = json_object();
+    if (result == NULL)
+    {
+        ERROR("%s(): failed to allocate memory for mapping", __func__);
+        return NULL;
+    }
+
+    for (i = 0; i < n_args; i++)
+    {
+        if (args[i].variable)
+            continue;
+
+        if (te_compound_iterate_str(args[i].value, callback,
+                                    &(compound_arg_data){
+                                        .arg = &args[i],
+                                        .json_result = result
+                                    }) == TE_EFAIL)
+        {
+            json_decref(result);
+            return NULL;
+        }
+    }
+
+    if (json_object_size(result) == 0)
+    {
+        json_decref(result);
+        return NULL;
+    }
+
+    return result;
+}
+
 
 /**
  * Add requirements to a strings queue ensuring that every requirement
@@ -1585,6 +1747,8 @@ log_test_start(unsigned int flags,
     json_t                 *result;
     json_t                 *authors;
     json_t                 *tmp;
+    json_t                 *param_stems;
+    json_t                 *param_fields;
 
     te_string   params_str  = TE_STRING_INIT;
     char       *hash_str    = NULL;
@@ -1642,6 +1806,15 @@ log_test_start(unsigned int flags,
         ERROR("JSON object creation failed in %s", __FUNCTION__);
         return;
     }
+
+    param_stems = test_param_names_to_json(ri->n_args, ctx->args,
+                                           param_stem_to_json);
+    if (param_stems != NULL)
+        SET_NEW_JSON(result, "param_stems", param_stems);
+    param_fields = test_param_names_to_json(ri->n_args, ctx->args,
+                                             param_field_to_json);
+    if (param_fields != NULL)
+        SET_NEW_JSON(result, "param_fields", param_fields);
 
     if (name == NULL && ri->type == RUN_ITEM_SESSION)
         name = "session";
@@ -2062,6 +2235,24 @@ tester_test_status_to_te_test_result(tester_test_status status,
     }
 }
 
+static te_errno
+add_test_script_value(char *key, size_t idx, char *value,
+                      bool has_more, void *user)
+{
+    te_string param_name = TE_STRING_INIT;
+    compound_arg_data *data = user;
+
+    te_compound_build_name(&param_name, data->arg->name, key, idx);
+    VERB("%s(): parameter %s=%s", __func__, param_name.ptr, value);
+
+    te_vec_append_str_fmt(data->params, "%s=%s",
+                          param_name.ptr, value);
+    te_string_free(&param_name);
+
+    UNUSED(has_more);
+    return 0;
+}
+
 static void
 prepare_test_script_arguments(te_vec *params, tester_flags flags,
                               const test_script *script,
@@ -2111,10 +2302,12 @@ prepare_test_script_arguments(te_vec *params, tester_flags flags,
     {
         if (args[i].variable)
             continue;
-        VERB("%s(): parameter %s=%s", __FUNCTION__,
-             args[i].name, args[i].value);
-        te_vec_append_str_fmt(params, "%s=%s",
-                              args[i].name, args[i].value);
+        te_compound_iterate_str(args[i].value,
+                                add_test_script_value,
+                                &(compound_arg_data){
+                                    .arg = &args[i],
+                                    .params = params
+                                });
     }
     te_vec_append(params, NULL);
 

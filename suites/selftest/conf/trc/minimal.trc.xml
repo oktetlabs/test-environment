@@ -103,6 +103,7 @@
                 <notes/>
             </iter>
         </test>
+
         <test name="args_from_session_tmpl" type="script">
             <objective>Testing default arguments correctness</objective>
             <notes/>
@@ -165,6 +166,25 @@
             <iter result="PASSED">
                 <arg name="test_arg1">4</arg>
                 <arg name="test_arg2">200</arg>
+            </iter>
+        </test>
+
+        <test name="compound_params" type="script">
+            <objective>Test that compound parameters are properly handled.</objective>
+            <iter result="PASSED">
+                <arg name="fields">
+                    <field name="first">First</field>
+                    <field name="second">Second 1</field>
+                    <field name="second">Second 2</field>
+                </arg>
+                <arg name="multiple">
+                    <field>Multiple 1</field>
+                    <field>Multiple 2</field>
+                </arg>
+                <arg name="boolean" />
+                <arg name="enum" />
+                <arg name="check_enum" />
+                <arg name="simple" />
             </iter>
         </test>
     </iter>

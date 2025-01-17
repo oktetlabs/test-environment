@@ -6,6 +6,17 @@
     <author mailto="te-maint@oktetlabs.ru"/>
 
     <session>
+        <enum name="compound_enum">
+            <value>
+                <field name="first">First 1</field>
+                <field name="second">Second 1</field>
+            </value>
+            <value>
+                <field name="first">First 2</field>
+                <field name="second">Second 2</field>
+            </value>
+        </enum>
+
         <run>
             <script name="helloworld"/>
         </run>
@@ -173,5 +184,41 @@
             </session>
         </run>
 
+        <run>
+            <script name="compound_params" />
+            <arg name="fields">
+                <value>
+                    <field name="first">First</field>
+                    <field name="second">Second 1</field>
+                    <field name="second">Second 2</field>
+                </value>
+            </arg>
+
+            <arg name="multiple">
+                <value>
+                    <field>Multiple 1</field>
+                    <field>Multiple 2</field>
+                </value>
+            </arg>
+
+            <arg name="boolean">
+                <value>
+                    <field name="true" type="boolean">TRUE</field>
+                    <field name="false" type="boolean">FALSE</field>
+                </value>
+            </arg>
+
+            <arg name="enum" type="compound_enum" />
+
+            <arg name="check_enum">
+                <value type="compound_enum">
+                    <field name="second">Second 1</field>
+                    <field name="first">First 1</field>
+                </value>
+            </arg>
+            <arg name="simple">
+                <value>Simple</value>
+            </arg>
+        </run>
     </session>
 </package>

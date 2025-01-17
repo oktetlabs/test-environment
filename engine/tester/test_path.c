@@ -30,6 +30,8 @@
 
 #include "te_alloc.h"
 #include "te_param.h"
+#include "te_str.h"
+#include "te_compound.h"
 #include "logger_api.h"
 #include "tq_string.h"
 
@@ -346,7 +348,57 @@ typedef struct test_path_arg_value_cb_data {
 
     const test_entity_value *pref_value;    /**< Pointer to the
                                                  preferred value */
+
+    const char *stem; /**< Stem of a compound argument name. */
+    const char *cur_value; /**< Current value to test. */
 } test_path_arg_value_cb_data;
+
+static te_errno
+has_compound_value(char *field, size_t idx, char *value,
+                   bool has_more, void *user)
+{
+    const test_path_arg_value_cb_data *data = user;
+
+    switch (data->path_arg->match)
+    {
+        case TEST_PATH_EXACT:
+            if (te_str_strip_prefix(data->cur_value,
+                                    TEST_ARG_VAR_PREFIX) == NULL)
+            {
+                if (strcmp(data->cur_value, value) != 0)
+                    return TE_ENODATA;
+            }
+            else
+            {
+                char env_name[128];
+
+                /* match glob value with plain */
+                /* fixme kostik: to read the environment is
+                 * very very bad*/
+                te_var_name2env(data->cur_value,
+                                env_name, sizeof(env_name));
+                if (strcmp_null(getenv(env_name), value) != 0)
+                    return TE_ENODATA;
+            }
+            break;
+
+        case TEST_PATH_GLOB:
+#if HAVE_FNMATCH_H
+            if (fnmatch(data->cur_value, value,
+                        FNM_NOESCAPE) != 0)
+                return TE_ENODATA;
+            break;
+#else
+            WARN("Glob-style matching is not supported");
+            return TE_ENODATA;
+#endif
+    }
+
+    UNUSED(field);
+    UNUSED(idx);
+    return 0;
+}
+
 
 /**
  * Function to be called for each singleton value of the run item
@@ -361,7 +413,6 @@ test_path_arg_value_cb(const test_entity_value *value, void *opaque)
     test_path_arg_value_cb_data *data = opaque;
     const char                  *plain;
     tqe_string                  *path_arg_value;
-    bool match;
 
     ENTRY("value=%s|%s ref=%p index=%u found=%u",
           value->plain, value->ext, value->ref,
@@ -391,50 +442,9 @@ test_path_arg_value_cb(const test_entity_value *value, void *opaque)
 
     TAILQ_FOREACH(path_arg_value, &data->path_arg->values, links)
     {
-        switch (data->path_arg->match)
-        {
-            case TEST_PATH_EXACT:
-            {
-                char *m = path_arg_value->v;
-
-                if (strncmp(path_arg_value->v,
-                            TEST_ARG_VAR_PREFIX,
-                            strlen(TEST_ARG_VAR_PREFIX)) == 0)
-                {
-                    char env_name[128];
-
-                    /* match glob value with plain */
-                    /* fixme kostik: to read the environment is
-                     * very very bad*/
-                    te_var_name2env(path_arg_value->v,
-                                    env_name, sizeof(env_name));
-                    m = getenv(env_name);
-                    if (m == NULL)
-                    {
-                        match = false;
-                        break;
-                    }
-                }
-
-                match = (strcmp(m, plain) == 0);
-                break;
-            }
-
-            case TEST_PATH_GLOB:
-#if HAVE_FNMATCH_H
-                match = (fnmatch(path_arg_value->v, plain,
-                                 FNM_NOESCAPE) == 0);
-#else
-                WARN("Glob-style matching is not supported");
-                match = false;
-#endif
-                break;
-
-            default:
-                assert(false);
-                match = false;
-        }
-        if (match)
+        data->cur_value = path_arg_value->v;
+        if (te_compound_dereference_str(plain, data->stem, data->path_arg->name,
+                                        has_compound_value, data) == 0)
         {
             data->found = true;
             bit_mask_set(data->bm, data->index);
@@ -541,6 +551,7 @@ test_path_proc_test_start(run_item *run, unsigned int cfg_id_off,
             value_data.found = false;
             value_data.pref_i = 0;
             value_data.pref_value = va->preferred;
+            value_data.stem = va->name;
             rc = test_var_arg_enum_values(run, va,
                                           test_path_arg_value_cb,
                                           &value_data,

@@ -41,6 +41,7 @@
 #include "te_alloc.h"
 #include "te_param.h"
 #include "te_expand.h"
+#include "te_compound.h"
 #include "te_str.h"
 #include "tester_conf.h"
 #include "type_lib.h"
@@ -1329,9 +1330,111 @@ parse_value_reqs(test_entity_value *value, xmlNodePtr node)
 }
 
 static te_errno
-process_plain_value(test_entity_value *value, xmlNodePtr node)
+process_simple_plain_value(te_string *dest, const char *content)
 {
-    const char *content;
+    te_compound_kind kind = te_compound_classify(dest);
+
+    if (kind != TE_COMPOUND_NULL && kind != TE_COMPOUND_PLAIN)
+    {
+        if (te_str_isspace(content))
+            return 0;
+
+        ERROR("Simple text '%s' follows subvalue definitions", content);
+        return TE_RC(TE_TESTER, TE_EINVAL);
+    }
+    te_string_append(dest, "%s", content);
+    return 0;
+}
+
+static te_errno
+process_subvalue(te_string *dest, xmlNodePtr field_node, const test_session *session)
+{
+    te_string collect = TE_STRING_INIT;
+    const struct test_value_type *type = NULL;
+    char *typename;
+    char *name;
+    xmlNodePtr child;
+
+    if (xmlStrcmp(field_node->name, CONST_CHAR2XML("field")) != 0)
+    {
+        ERROR("Unexpected element <%s> inside <value>",
+              (const char *)field_node->name);
+        te_string_free(&collect);
+        return TE_RC(TE_TESTER, TE_EINVAL);
+    }
+
+    if (te_compound_classify(dest) == TE_COMPOUND_PLAIN)
+    {
+        if (!te_str_isspace(dest->ptr))
+        {
+            ERROR("<field> follows simple text");
+            te_string_free(&collect);
+            return TE_RC(TE_TESTER, TE_EINVAL);
+        }
+        te_string_reset(dest);
+    }
+
+    typename = XML2CHAR(xmlGetProp(field_node, CONST_CHAR2XML("type")));
+    if (typename != NULL)
+    {
+        type = tester_find_type(session, typename);
+        if (type == NULL)
+        {
+            ERROR("Type '%s' not found", typename);
+            xmlFree(typename);
+            te_string_free(&collect);
+
+            return TE_RC(TE_TESTER, TE_ESRCH);
+        }
+        xmlFree(typename);
+    }
+
+    for (child = field_node->children; child != NULL; child = child->next)
+    {
+        switch (child->type)
+        {
+            case XML_COMMENT_NODE:
+                /* Just skip comments */
+                break;
+            case XML_TEXT_NODE:
+                te_string_append(&collect, (const char *)child->content);
+                break;
+            case XML_ELEMENT_NODE:
+                ERROR("Unexpected element <%s> inside <field>",
+                      (const char *)child->name);
+                te_string_free(&collect);
+                return TE_RC(TE_TESTER, TE_EINVAL);
+            default:
+                ERROR("Something strange inside <field>, node type = %d",
+                      child->type);
+                te_string_free(&collect);
+                return TE_RC(TE_TESTER, TE_EINVAL);
+        }
+    }
+    if (type != NULL)
+    {
+        if (tester_type_check_plain_value(type, collect.ptr) == NULL)
+        {
+            ERROR("Subvalue '%s' does not conform to type '%s'",
+                  collect.ptr, type->name);
+            te_string_free(&collect);
+            return TE_RC(TE_TESTER, TE_EINVAL);
+        }
+    }
+
+    name = XML2CHAR(xmlGetProp(field_node, CONST_CHAR2XML("name")));
+    te_compound_set(dest, name, TE_COMPOUND_MOD_OP_APPEND, "%s", collect.ptr);
+    xmlFree(name);
+    te_string_free(&collect);
+    return 0;
+}
+
+static te_errno
+process_plain_value(test_entity_value *value, xmlNodePtr node, const test_session *session)
+{
+    te_errno rc = 0;
+    te_string compound = TE_STRING_INIT;
+    xmlNodePtr child;
 
     if (value->ref != NULL || value->ext != NULL)
     {
@@ -1340,45 +1443,57 @@ process_plain_value(test_entity_value *value, xmlNodePtr node)
             ERROR("Plain value used together with a reference '%s'",
                   value->ext != NULL ? value->ext :
                   te_str_empty_if_null(value->ref->name));
+            te_string_free(&compound);
             return TE_RC(TE_TESTER, TE_EINVAL);
         }
     }
 
-    if (node->children == NULL)
-        return 0;
-
-    if ((node->children->type != XML_TEXT_NODE) ||
-        (node->children->content == NULL))
+    for (child = node->children; child != NULL && rc == 0; child = child->next)
     {
-        ERROR("'value' content is empty or not text");
-        return TE_RC(TE_TESTER, TE_EINVAL);
-    }
-    if (node->children != node->last)
-    {
-        ERROR("Too many children in 'value' element");
-        return TE_RC(TE_TESTER, TE_EINVAL);
-    }
-
-    content = (const char *)node->children->content;
-    if (value->type == NULL)
-        value->plain = TE_STRDUP(content);
-    else
-    {
-        const test_entity_value *tv =
-            tester_type_check_plain_value(value->type, content);
-
-        VERB("%s(): Checked value '%s' by type '%s' -> %p",
-             __FUNCTION__, content, value->type->name, tv);
-        if (tv == NULL)
+        switch (child->type)
         {
-            ERROR("Plain value '%s' does not conform to type '%s'",
-                  content, value->type->name);
-            return TE_RC(TE_TESTER, TE_EINVAL);
+            case XML_COMMENT_NODE:
+                /* Just skip comments */
+                break;
+            case XML_TEXT_NODE:
+                rc = process_simple_plain_value(&compound,
+                                                (const char *)child->content);
+                break;
+            case XML_ELEMENT_NODE:
+                rc = process_subvalue(&compound, child, session);
+                break;
+            default:
+                ERROR("Something strange inside <value>, node type = %d",
+                      child->type);
+                rc = TE_RC(TE_TESTER, TE_EINVAL);
+                break;
         }
-        value->ref = tv;
     }
 
-    return 0;
+    if (rc == 0 && compound.len > 0)
+    {
+        if (value->type == NULL)
+            te_string_move(&value->plain, &compound);
+        else
+        {
+            const test_entity_value *tv =
+                tester_type_check_plain_value(value->type, compound.ptr);
+
+            VERB("%s(): Checked value '%s' by type '%s' -> %p",
+                 __FUNCTION__, compound.ptr, value->type->name, tv);
+            if (tv != NULL)
+                value->ref = tv;
+            else
+            {
+                ERROR("Plain value '%s' does not conform to type '%s'",
+                      compound.ptr, value->type->name);
+                rc = TE_RC(TE_TESTER, TE_EINVAL);
+            }
+        }
+    }
+
+    te_string_free(&compound);
+    return rc;
 }
 
 static void
@@ -1426,7 +1541,7 @@ alloc_and_get_value(xmlNodePtr node, const test_session *session,
     resolve_value_reference(value, node, values);
     parse_value_reqs(value, node);
 
-    rc = process_plain_value(value, node);
+    rc = process_plain_value(value, node, session);
     if (rc != 0)
     {
         free_test_entity_value(value);
