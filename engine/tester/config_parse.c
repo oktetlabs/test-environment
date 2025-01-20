@@ -1240,6 +1240,157 @@ find_value(const test_entity_values *values, const char *name)
     return NULL;
 }
 
+static te_errno
+resolve_value_type(test_entity_value *value, xmlNodePtr node,
+                   const test_session *session,
+                   const test_value_type *default_type)
+{
+    te_errno rc = 0;
+    char *typename = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("type")));
+
+    if (typename == NULL)
+    {
+        /*
+         * Type of the value is not specified, but may be it is specified
+         * for all values.
+         */
+        value->type = default_type;
+    }
+    else
+    {
+        value->type = tester_find_type(session, typename);
+        if (value->type == NULL)
+        {
+            ERROR("Type '%s' not found", typename);
+            rc = TE_RC(TE_TESTER, TE_ESRCH);
+        }
+        xmlFree(typename);
+    }
+
+    return rc;
+}
+
+static void
+resolve_value_reference(test_entity_value *value, xmlNodePtr node,
+                        const test_entity_values *values)
+{
+    char *refname = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("ref")));
+    const test_entity_value *ref;
+
+    if (refname == NULL)
+        return;
+
+    if (value->name != NULL && strcmp(refname, value->name) == 0)
+    {
+        WARN("Ignore self-reference of the value '%s'", refname);
+        xmlFree(refname);
+        return;
+    }
+
+    /*
+     * Reference to another value of this group is top priority
+     */
+    ref = find_value(values, refname);
+    if (ref == NULL)
+    {
+        if (value->type != NULL)
+            ref = find_value(&value->type->values, refname);
+        if (ref == NULL)
+        {
+            INFO("Reference '%s' is considered external", refname);
+            value->ext = refname;
+            return;
+        }
+    }
+    xmlFree(refname);
+    value->ref = ref;
+}
+
+static void
+parse_value_reqs(test_entity_value *value, xmlNodePtr node)
+{
+    char *saveptr = NULL;
+    char *reqs = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("reqs")));
+    char *reqid;
+
+    if (reqs == NULL)
+        return;
+
+    for (reqid = strtok_r(reqs, ",", &saveptr);
+         reqid != NULL;
+         reqid = strtok_r(NULL, ",", &saveptr))
+    {
+        test_requirement   *req = TE_ALLOC(sizeof(*req));
+
+        req->id = TE_STRDUP(reqid);
+        TAILQ_INSERT_TAIL(&value->reqs, req, links);
+    }
+    xmlFree(reqs);
+}
+
+static te_errno
+process_plain_value(test_entity_value *value, xmlNodePtr node)
+{
+    const char *content;
+
+    if (value->ref != NULL || value->ext != NULL)
+    {
+        if (node->children != NULL)
+        {
+            ERROR("Plain value used together with a reference '%s'",
+                  value->ext != NULL ? value->ext :
+                  te_str_empty_if_null(value->ref->name));
+            return TE_RC(TE_TESTER, TE_EINVAL);
+        }
+    }
+
+    if (node->children == NULL)
+        return 0;
+
+    if ((node->children->type != XML_TEXT_NODE) ||
+        (node->children->content == NULL))
+    {
+        ERROR("'value' content is empty or not text");
+        return TE_RC(TE_TESTER, TE_EINVAL);
+    }
+    if (node->children != node->last)
+    {
+        ERROR("Too many children in 'value' element");
+        return TE_RC(TE_TESTER, TE_EINVAL);
+    }
+
+    content = (const char *)node->children->content;
+    if (value->type == NULL)
+        value->plain = TE_STRDUP(content);
+    else
+    {
+        const test_entity_value *tv =
+            tester_type_check_plain_value(value->type, content);
+
+        VERB("%s(): Checked value '%s' by type '%s' -> %p",
+             __FUNCTION__, content, value->type->name, tv);
+        if (tv == NULL)
+        {
+            ERROR("Plain value '%s' does not conform to type '%s'",
+                  content, value->type->name);
+            return TE_RC(TE_TESTER, TE_EINVAL);
+        }
+        value->ref = tv;
+    }
+
+    return 0;
+}
+
+static void
+free_test_entity_value(test_entity_value *value)
+{
+    xmlFree(value->name);
+    xmlFree(value->ext);
+    free(value->plain);
+    test_requirements_free(&value->reqs);
+    free(value);
+}
+
 /**
  * Allocate and get argument or variable value.
  *
@@ -1250,164 +1401,64 @@ find_value(const test_entity_values *values, const char *name)
  */
 static te_errno
 alloc_and_get_value(xmlNodePtr node, const test_session *session,
-                    const test_value_type *type,
+                    const test_value_type *default_type,
                     test_entity_values *values)
 {
-    test_entity_value  *p;
-    char               *tmp;
+    te_errno rc = 0;
+    test_entity_value  *value;
 
-    p = TE_ALLOC(sizeof(*p));
+    value = TE_ALLOC(sizeof(*value));
 
-    TAILQ_INIT(&p->reqs);
-    TAILQ_INSERT_TAIL(&values->head, p, links);
+    TAILQ_INIT(&value->reqs);
 
     /* 'name' is optional */
-    p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
-    /* 'type' is optional */
-    tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("type")));
-    if (tmp != NULL)
+    value->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
+    rc = resolve_value_type(value, node, session, default_type);
+    if (rc != 0)
     {
-        /* Allow to override type specified for all values */
-        p->type = tester_find_type(session, tmp);
-        if (p->type == NULL)
-        {
-            ERROR("Type '%s' not found", tmp);
-            free(tmp);
-            return TE_RC(TE_TESTER, TE_ESRCH);
-        }
-        free(tmp);
+        free_test_entity_value(value);
+        return rc;
     }
-    else
-    {
-        /*
-         * Type of the value is not specified, may be it is specified
-         * for all values.
-         */
-        p->type = type;
-    }
+
     VERB("%s(): New value '%s' of type '%s'", __FUNCTION__,
-         p->name, p->type == NULL ? "" : p->type->name);
-    /* 'ref' is optional */
-    tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("ref")));
-    if (tmp != NULL)
+         value->name, value->type == NULL ? "" : value->type->name);
+
+    resolve_value_reference(value, node, values);
+    parse_value_reqs(value, node);
+
+    rc = process_plain_value(value, node);
+    if (rc != 0)
     {
-        /*
-         * Reference to another value of this group is top priority
-         */
-        p->ref = find_value(values, tmp);
-        if (p->ref == p)
-        {
-            INFO("Ignore self-reference of the value '%s'", p->name);
-            p->ref = NULL;
-        }
-        /*
-         * If type is specified, references to type values are the next
-         * priority.
-         */
-        if (p->ref == NULL && p->type != NULL)
-        {
-            p->ref = find_value(&p->type->values, tmp);
-        }
-        if (p->ref == NULL)
-        {
-            INFO("Reference '%s' is considered as external", tmp);
-            p->ext = tmp;
-        }
-    }
-    /* 'reqs' is optional */
-    tmp = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("reqs")));
-    if (tmp != NULL)
-    {
-        char       *s = tmp;
-        bool end;
-
-        do {
-            size_t              len = strcspn(s, ",");
-            test_requirement   *req = TE_ALLOC(sizeof(*req));
-
-            req->id = strndup(s, len);
-            if (req->id == NULL)
-            {
-                ERROR("strndup() failed");
-                free(tmp);
-                return TE_RC(TE_TESTER, TE_ENOMEM);
-            }
-            TAILQ_INSERT_TAIL(&p->reqs, req, links);
-
-            end = (s[len] == '\0');
-            s += len + (end ? 0 : 1);
-        } while (!end);
-        free(tmp);
+        free_test_entity_value(value);
+        return rc;
     }
 
-    /* Simple text content is represented as 'text' elements */
-    if (node->children != NULL)
-    {
-        if ((node->children->type != XML_TEXT_NODE) ||
-            (node->children->content == NULL))
-        {
-            ERROR("'value' content is empty or not 'text'");
-            return TE_RC(TE_TESTER, TE_EINVAL);
-        }
-        if (node->children != node->last)
-        {
-            ERROR("Too many children in 'value' element");
-            return TE_RC(TE_TESTER, TE_EINVAL);
-        }
-        p->plain = XML2CHAR_DUP(node->children->content);
-        if (p->type != NULL)
-        {
-            const test_entity_value *tv =
-                tester_type_check_plain_value(p->type, p->plain);
-
-            VERB("%s(): Checked value '%s' by type '%s' -> %p",
-                 __FUNCTION__, p->plain, p->type->name, tv);
-            if (tv == NULL)
-            {
-                ERROR("Plain value '%s' does not conform to type '%s'",
-                      p->plain, p->type->name);
-                return TE_RC(TE_TESTER, TE_EINVAL);
-            }
-            if (p->ref == NULL)
-            {
-                p->ref = tv;
-                free(p->plain);
-                p->plain = NULL;
-            }
-        }
-    }
-
-    if ((p->ref != NULL) + (p->ext != NULL) + (p->plain != NULL) > 1)
-    {
-        ERROR("Too many sources of value: ref=%p ext=%s plain=%s",
-              p->ref, (p->ext != NULL) ? p->ext : "(empty)",
-              (p->plain != NULL) ? p->plain : "(empty)");
-        return TE_RC(TE_TESTER, TE_EINVAL);
-    }
-    else if ((p->plain == NULL) && (p->ref == NULL) &&
-             (p->type == NULL) && (p->ext == NULL))
+    if ((value->plain == NULL) && (value->ref == NULL) &&
+        (value->type == NULL) && (value->ext == NULL))
     {
         ERROR("There is no source of value");
+        free_test_entity_value(value);
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
-    if ((p->plain != NULL) || (p->ref != NULL) || (p->ext != NULL))
+    TAILQ_INSERT_TAIL(&values->head, value, links);
+    if ((value->plain != NULL) || (value->ref != NULL) || (value->ext != NULL))
     {
         values->num++;
     }
     else
     {
-        assert(p->type != NULL);
-        values->num += p->type->values.num;
+        assert(value->type != NULL);
+        values->num += value->type->values.num;
     }
 
     VERB("%s(): Got value plain=%s ref=%p ext=%s type=%s reqs=%p",
-         __FUNCTION__, p->plain, p->ref, p->ext,
-         (p->type == NULL) ? "" : p->type->name, TAILQ_FIRST(&p->reqs));
+         __FUNCTION__, value->plain, value->ref, value->ext,
+         (value->type == NULL ? "" : value->type->name),
+         TAILQ_FIRST(&value->reqs));
 
     return 0;
 }
-
 
 /**
  * Allocate and get enum definition.
