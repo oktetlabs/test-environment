@@ -1,131 +1,139 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2004-2025 OKTET Labs Ltd. All rights reserved. -->
 <!--
     See test_environment/engine/tester/tester_defs.xsd for definitions
     common for specifications of Test Package description file and
     Tester configuration file.
   -->
-<schema targetNamespace="http://www.oktetlabs.ru/proteos"
-        xmlns:proteos="http://www.oktetlabs.ru/proteos"
-        xml:lang="en"
-        xmlns="http://www.w3.org/2001/XMLSchema">
+<xsd:schema xml:lang="en"
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 
-    <annotation>
-        <documentation>
+    <xsd:annotation>
+        <xsd:documentation>
             Test Environment
             XML schema for Test Subsystem (Tester) configuration file
+        </xsd:documentation>
+    </xsd:annotation>
 
-            Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
-
-        </documentation>
-    </annotation>
-
-    <include schemaLocation="tester_defs.xsd">
-        <annotation>
-            <documentation>
+    <xsd:include schemaLocation="tester_defs.xsd">
+        <xsd:annotation>
+            <xsd:documentation>
                 Bring in the definitions and declarations contained in
                 file with common definition for Test Subsystem (Tester).
-            </documentation>
-        </annotation>
-    </include>
+            </xsd:documentation>
+        </xsd:annotation>
+    </xsd:include>
 
-    <element name="tester_cfg">
+    <xsd:element name="tester_cfg">
 
-        <annotation>
-            <documentation>
+        <xsd:annotation>
+            <xsd:documentation>
                 Root element of the Test Subsystem (Tester)
                 configuration file.
-            </documentation>
-        </annotation>
+            </xsd:documentation>
+        </xsd:annotation>
 
-        <complexType>
+        <xsd:complexType>
 
-            <sequence>
+            <xsd:sequence>
 
-                <element name="maintainer" type="PersonInfo">
-                    <annotation>
-                        <documentation>
+                <xsd:element name="maintainer" type="PersonInfo">
+                    <xsd:annotation>
+                        <xsd:documentation>
                             Mandatory information about maintainer
                             of the configuration.
-                        </documentation>
-                    </annotation>
-                </element>
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:element>
 
-                <element name="description" type="string"
+                <xsd:element name="description" type="xsd:string"
                                             minOccurs="0">
-                    <annotation>
-                        <documentation>
+                    <xsd:annotation>
+                        <xsd:documentation>
                             Optional description of the configutation
                             for human.
-                        </documentation>
-                    </annotation>
-                </element>
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:element>
 
-                <element name="suite" type="SuiteInfo"
+                <xsd:element name="suite" type="SuiteInfo"
                                       minOccurs="0" maxOccurs="unbounded">
-                    <annotation>
-                        <documentation>
+                    <xsd:annotation>
+                        <xsd:documentation>
                             Information about each Test Package used
                             in this configuration. By default sources
                             of Test Packages are searched in
                             '&lt;te_base&gt;/suites/&lt;suite_name&gt;'
                             directory.
-                        </documentation>
-                    </annotation>
-                </element>
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:element>
 
-                <element name="requirment" type="Requirement"
+                <xsd:element name="requirment" type="Requirement"
                                            minOccurs="0"
                                            maxOccurs="unbounded">
-                    <annotation>
-                        <documentation>
+                    <xsd:annotation>
+                        <xsd:documentation>
                             Optional set of requirements verified by
                             the configuration. It's guideline for Test
                             Subsystem (Tester) to choose tests to run.
-                        </documentation>
-                    </annotation>
-                </element>
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:element>
 
-                <element name="option" type="OptionSpecifier"
+                <xsd:element name="option" type="OptionSpecifier"
                                        minOccurs="0"
                                        maxOccurs="unbounded">
-                    <annotation>
-                        <documentation>
+                    <xsd:annotation>
+                        <xsd:documentation>
                             Set of options to be used by Tester.
-                        </documentation>
-                    </annotation>
-                </element>
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:element>
 
-                <element name="run" type="Run" maxOccurs="unbounded">
-                    <annotation>
-                        <documentation>
+                <xsd:element name="run" type="Run" maxOccurs="unbounded">
+                    <xsd:annotation>
+                        <xsd:documentation>
                             Set of tests to run.
-                        </documentation>
-                    </annotation>
-                </element>
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:element>
 
-            </sequence>
+            </xsd:sequence>
 
-        </complexType>
+            <xsd:attribute name="version">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Version of the schema.
+                    </xsd:documentation>
+                </xsd:annotation>
+                <xsd:simpleType>
+                    <xsd:restriction base="xsd:string">
+                        <xsd:enumeration value="1.0" />
+                    </xsd:restriction>
+                </xsd:simpleType>
+            </xsd:attribute>
+        </xsd:complexType>
 
-    </element>
+    </xsd:element>
 
-    <complexType name="SuiteInfo">
-        <annotation>
-            <documentation>
+    <xsd:complexType name="SuiteInfo">
+        <xsd:annotation>
+            <xsd:documentation>
                 Type of the element to specify information about Test Suite.
-            </documentation>
-        </annotation>
-        <attribute name="name" type="token" use="required">
-            <annotation>
-                <documentation>
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:attribute name="name" type="xsd:token" use="required">
+            <xsd:annotation>
+                <xsd:documentation>
                     Test Suite name.
-                </documentation>
-            </annotation>
-        </attribute>
-        <attribute name="src" type="string">
-            <annotation>
-                <documentation>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="src" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation>
                     Absolute or relative path to the Test Suite sources.
                     Absolute path starts from '/'.  Relative path is
                     calculated from Test Environment base.
@@ -134,56 +142,56 @@
                     If this attribute is not specified (nor 'bin'),
                     it means that sources of a Test Suite are under
                     '&lt;te_base&gt;/suites/&lt;suite_name&gt;'
-                </documentation>
-            </annotation>
-        </attribute>
-        <attribute name="bin" type="string">
-            <annotation>
-                <documentation>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="bin" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation>
                     Absolute or relative path to the Test Suite binaries.
                     Absolute path starts from '/'.  Relative path is
                     calculated from Test Environment base.
                     This attribute is mutually exclusive with
                     'src' attribute.
-                </documentation>
-            </annotation>
-        </attribute>
-    </complexType>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
 
-    <complexType name="OptionSpecifier">
-        <annotation>
-            <documentation>
+    <xsd:complexType name="OptionSpecifier">
+        <xsd:annotation>
+            <xsd:documentation>
                 Type of the element to specify option with or without
                 value in global or restricted context.
-            </documentation>
-        </annotation>
-        <sequence>
-            <element name="context" minOccurs="0"
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence>
+            <xsd:element name="context" minOccurs="0"
                                     maxOccurs="unbounded">
-                <annotation>
-                    <documentation>
+                <xsd:annotation>
+                    <xsd:documentation>
                         Context in which option must be applied.
                         If context is not specified, option has
                         global context.
-                    </documentation>
-                </annotation>
-            </element>
-        </sequence>
-        <attribute name="name" type="Name" use="required">
-            <annotation>
-                <documentation>
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+        </xsd:sequence>
+        <xsd:attribute name="name" type="xsd:Name" use="required">
+            <xsd:annotation>
+                <xsd:documentation>
                     Option name (for example, human_debug,
                     debug_level, etc).
-                </documentation>
-            </annotation>
-        </attribute>
-        <attribute name="value" type="string">
-            <annotation>
-                <documentation>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="value" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation>
                     Option value (optional).
-                </documentation>
-            </annotation>
-        </attribute>
-    </complexType>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
 
-</schema>
+</xsd:schema>

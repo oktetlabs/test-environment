@@ -1,174 +1,176 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2004-2025 OKTET Labs Ltd. All rights reserved. -->
+<xsd:schema xml:lang="en"
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 
-<schema targetNamespace="http://www.oktetlabs.ru/proteos"
-        xmlns:proteos="http://www.oktetlabs.ru/proteos"
-        xml:lang="en"
-        xmlns="http://www.w3.org/2001/XMLSchema">
-
-    <annotation>
-        <documentation>
+    <xsd:annotation>
+        <xsd:documentation>
             Test Environment
             Definition of common types for Test Subsystem configuration
             file and Test Package description file specifications
+        </xsd:documentation>
+    </xsd:annotation>
 
-            Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
-
-        </documentation>
-    </annotation>
-
-    <complexType name="PersonInfo">
-        <annotation>
-            <documentation>
+    <xsd:complexType name="PersonInfo">
+        <xsd:annotation>
+            <xsd:documentation>
                 Information about person.
-            </documentation>
-        </annotation>
-        <sequence>
-            <element name="name" type="string">
-                <annotation>
-                    <documentation>
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence>
+            <xsd:element name="name" type="xsd:string" minOccurs="0">
+                <xsd:annotation>
+                    <xsd:documentation>
                         Name.
-                    </documentation>
-                </annotation>
-            </element>
-            <element name="email" type="string" maxOccurs="unbounded">
-                <annotation>
-                    <documentation>
-                        E-mail addresses.
-                    </documentation>
-                </annotation>
-            </element>
-        </sequence>
-    </complexType>
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+        </xsd:sequence>
+        <xsd:attribute name="mailto" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation>
+                    E-mail addresses.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
 
-    <complexType name="Requirement">
-        <annotation>
-            <documentation>
+    <xsd:complexType name="Requirement">
+        <xsd:annotation>
+            <xsd:documentation>
                 Type for requirements declaration.
-            </documentation>
-        </annotation>
-        <attribute name="id" type="token">
-            <annotation>
-                <documentation>
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:attribute name="id" type="xsd:token">
+            <xsd:annotation>
+                <xsd:documentation>
                     Requirement ID.
-                </documentation>
-            </annotation>
-        </attribute>
-        <attribute name="ref" type="token">
-            <annotation>
-                <documentation>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="ref" type="xsd:token">
+            <xsd:annotation>
+                <xsd:documentation>
                     Reference to argument value, i.e. requirement ID
                     depends on argument value and is equal to it.
-                </documentation>
-            </annotation>
-        </attribute>
-        <attribute name="exclude" type="boolean" default="false">
-            <annotation>
-                <documentation>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="exclude" type="xsd:boolean" default="false">
+            <xsd:annotation>
+                <xsd:documentation>
                     The attribute may be specified in set of requirements
                     in configuration file (to be tested). If it is true,
                     tests marked with the requirement should be excluded
                     from testing.
-                </documentation>
-            </annotation>
-        </attribute>
-        <attribute name="sticky" type="boolean" default="false">
-            <annotation>
-                <documentation>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="sticky" type="xsd:boolean" default="false">
+            <xsd:annotation>
+                <xsd:documentation>
                     This attribute may be useful in a test package set
                     of requirements. If it is true, it means that ALL
                     descendants test the requirement.
-                </documentation>
-            </annotation>
-        </attribute>
-    </complexType>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
 
-    <complexType name="Value">
-        <annotation>
-            <documentation>
+    <xsd:complexType name="Value">
+        <xsd:annotation>
+            <xsd:documentation>
                 Representation of value for session variable or run
                 argument.
-            </documentation>
-        </annotation>
-        <simpleContent>
-            <extension base="string">
-                <attribute name="name" type="Name">
-                    <annotation>
-                        <documentation>
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:simpleContent>
+            <xsd:extension base="xsd:string">
+                <xsd:attribute name="name" type="xsd:Name">
+                    <xsd:annotation>
+                        <xsd:documentation>
                             Identifier to be referred from 'preferred'
                             attribute of the parent or 'ref'
                             attribute of another value of the parent.
-                        </documentation>
-                    </annotation>
-                </attribute>
-                <attribute name="ref" type="Name">
-                    <annotation>
-                        <documentation>
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="ref" type="xsd:Name">
+                    <xsd:annotation>
+                        <xsd:documentation>
                             Identifier of another value of the argument
                             or reference to external value (name of the
                             variable of the parent session or name of
                             the argument passed to the sesiion).
-                        </documentation>
-                    </annotation>
-                </attribute>
-                <attribute name="reqs" type="string">
-                    <annotation>
-                        <documentation>
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="reqs" type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation>
                             Comman separated list of requirement IDs
                             associated with this value.
-                        </documentation>
-                    </annotation>
-                </attribute>
-            </extension>
-        </simpleContent>
-    </complexType>
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="type" type="xsd:Name">
+                    <xsd:annotation>
+                        <xsd:documentation>
+                            Defines the type of a certain value.
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+            </xsd:extension>
+        </xsd:simpleContent>
+    </xsd:complexType>
 
-    <complexType name="TestParameter">
-        <annotation>
-            <documentation>
+    <xsd:complexType name="TestParameter">
+        <xsd:annotation>
+            <xsd:documentation>
                 Representation of test parameter: session variable or
                 an argument passed to the item to run.
-            </documentation>
-        </annotation>
-        <sequence>
-            <element name="value" type="Value"
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence>
+            <xsd:element name="value" type="Value"
                                   minOccurs="0" maxOccurs="unbounded">
-                <annotation>
-                    <documentation>
+                <xsd:annotation>
+                    <xsd:documentation>
                          Set of variable values.
-                    </documentation>
-                </annotation>
-            </element>
-        </sequence>
-        <attribute name="name" type="Name" use="required">
-            <annotation>
-                <documentation>
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+        </xsd:sequence>
+        <xsd:attribute name="name" type="xsd:Name" use="required">
+            <xsd:annotation>
+                <xsd:documentation>
                     Specifies variable/argument name.
-                </documentation>
-            </annotation>
-        </attribute>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
 <!--
-        <attribute name="random" type="boolean">
-            <annotation>
-                <documentation>
+        <xsd:attribute name="random" type="boolean">
+            <xsd:annotation>
+                <xsd:documentation>
                     Forces Tester to choose values in random or strict
                     (default) order. Default value may be overridden by
                     'forcerandom' attribute of ancessor 'run' element.
-                </documentation>
-            </annotation>
-        </attribute>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
 -->
-        <attribute name="type" type="Name">
-            <annotation>
-                <documentation>
+        <xsd:attribute name="type" type="xsd:Name">
+            <xsd:annotation>
+                <xsd:documentation>
                     Defines type of the variable/argument. It's required
                     to automatically generate random values.
-                </documentation>
-            </annotation>
-        </attribute>
-        <attribute name="list" type="Name">
-            <annotation>
-                <documentation>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="list">
+            <xsd:annotation>
+                <xsd:documentation>
                     Controls enumeration policy for values.
                     This attribute is useful to organize parallel
                     enumeration of two or more lists. For example,
@@ -176,296 +178,337 @@
                     attribute is false for both variables/arguments,
                     then following pairs are used {a1, b1}, {a2, b2},
                     {a3, b3}.
-                </documentation>
-            </annotation>
-        </attribute>
-        <attribute name="preferred" type="Name">
-            <annotation>
-                <documentation>
+                </xsd:documentation>
+            </xsd:annotation>
+            <xsd:simpleType>
+                <xsd:union memberTypes="xsd:token EmptyString" />
+            </xsd:simpleType>
+        </xsd:attribute>
+        <xsd:attribute name="preferred" type="xsd:Name">
+            <xsd:annotation>
+                <xsd:documentation>
                     Refers to the preferred value. It has sence if
                     'foreach' attribute is false. Default preferred
                     value is the last. For example, if A = {a1, a2, a3},
                     B = {b1, b2} and 'foreach' attribute is false for
                     both variables/arguments, then following pairs are
                     used {a1, b1}, {a2, b2}, {a3, b2} by default.
-                </documentation>
-            </annotation>
-        </attribute>
-        <attribute name="ref" type="Name">
-            <annotation>
-                <documentation>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="ref" type="xsd:Name">
+            <xsd:annotation>
+                <xsd:documentation>
                     Name of the argument passed to the session or name
                     of session variable to get the value. If this
                     attribute and any other sources of value are not
                     specified it's assumed that it equals to the 'name'
                     attribute.
-                </documentation>
-            </annotation>
-        </attribute>
-        <attribute name="value" type="String">
-            <annotation>
-                <documentation>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="value" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation>
                     Value of the parameter, if only one value is
                     specified.
-                </documentation>
-            </annotation>
-        </attribute>
-    </complexType>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
 
-    <group name="Arguments">
-        <annotation>
-            <documentation>
+        <xsd:attribute name="global" type="xsd:boolean" default="false">
+            <xsd:annotation>
+                <xsd:documentation>
+                    If true, the variable definition is accessible from
+                    other packages.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
+
+    <xsd:complexType name="Enumeration">
+        <xsd:annotation>
+            <xsd:documentation>
+                A set of reusable enumeration values.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence>
+            <xsd:element name="value" type="Value"
+                                  minOccurs="0" maxOccurs="unbounded">
+                <xsd:annotation>
+                    <xsd:documentation>
+                         Set of enumeration values.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+        </xsd:sequence>
+        <xsd:attribute name="name" type="xsd:Name" use="required">
+            <xsd:annotation>
+                <xsd:documentation>
+                    Specifies variable/argument name.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+
+        <xsd:attribute name="type" type="xsd:Name">
+            <xsd:annotation>
+                <xsd:documentation>
+                    Defines type of the variable/argument. It's required
+                    to automatically generate random values.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+
+        <xsd:attribute name="global" type="xsd:boolean" default="false">
+            <xsd:annotation>
+                <xsd:documentation>
+                    If true, the enumeration definition is accessible from
+                    other packages.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+
+        <xsd:attribute name="description" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation>
+                    Description of the enumeration.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
+
+    <xsd:group name="Arguments">
+        <xsd:annotation>
+            <xsd:documentation>
                 Possible types of argument elements.
-            </documentation>
-        </annotation>
-        <element name="arg" type="TestParameter" minOccurs="0"
-                                                 maxOccurs="unbounded">
-            <annotation>
-                <documentation>
-                    Arguments to be passed to executable.
-                </documentation>
-            </annotation>
-            <key name="arg_values">
-                <annotation>
-                    <documentation>
-                        Define key to refer to values of the
-                        argument.
-                    </documentation>
-                </annotation>
-                <selector xpath="value[@name]">
-                    <annotation>
-                        <documentation>
-                            Select all 'value' elements with 'name'
-                            attribute of the argument.
-                        </documentation>
-                    </annotation>
-                </selector>
-                <field xpath="@name">
-                    <annotation>
-                        <documentation>
-                            Use 'name' attribute as key.
-                        </documentation>
-                    </annotation>
-                </field>
-            </key>
-            <keyref name="arg_preferred" refer="arg_values">
-                <annotation>
-                    <documentation>
-                        Define that 'preferred' attribute of the
-                        current element must be a reference to
-                        one of its values.
-                    </documentation>
-                </annotation>
-                <selector xpath="."/>
-                <field    xpath="@preferred"/>
-            </keyref>
-            <keyref name="arg_value_refer" refer="vars">
-                <annotation>
-                    <documentation>
-                        If 'ref' attribute is defined for 'value'
-                        child element, it must refer to one of
-                        variables.
-                    </documentation>
-                </annotation>
-                <selector xpath="value[@ref]"/>
-                <field    xpath="@ref"/>
-            </keyref>
-        </element>
-    </group>
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence>
+            <xsd:element name="arg" type="TestParameter" minOccurs="0"
+                     maxOccurs="unbounded">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Arguments to be passed to executable.
+                    </xsd:documentation>
+                </xsd:annotation>
+                <xsd:unique name="arg_values">
+                    <xsd:annotation>
+                        <xsd:documentation>
+                            A value name should be unique
+                        </xsd:documentation>
+                    </xsd:annotation>
+                    <xsd:selector xpath="value" />
+                    <xsd:field xpath="@name" />
+                </xsd:unique>
+                <xsd:keyref name="arg_preferred" refer="arg_values">
+                    <xsd:annotation>
+                        <xsd:documentation>
+                            Define that 'preferred' attribute of the
+                            current element must be a reference to
+                            one of its values.
+                        </xsd:documentation>
+                    </xsd:annotation>
+                    <xsd:selector xpath="."/>
+                    <xsd:field    xpath="@preferred"/>
+                </xsd:keyref>
+            </xsd:element>
+        </xsd:sequence>
+    </xsd:group>
 
-    <simpleType name="TrackConfType">
-        <annotation>
-            <documentation>
+    <xsd:simpleType name="TrackConfType">
+        <xsd:annotation>
+            <xsd:documentation>
                 Types of configuration changes tracking.
-            </documentation>
-        </annotation>
-        <restriction base="token">
-            <enumeration value="silent"/>
-            <enumeration value="yes"/>
-            <enumeration value="no"/>
-            <enumeration value="nohistory"/>
-        </restriction>
-    </simpleType>
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:token">
+            <xsd:pattern value="(yes|no|barf|yes_nohistory|barf_nohistory|silent|silent_nohistory|nohistory|sync)(\|(yes|no|barf|yes_nohistory|barf_nohistory|silent|silent_nohistory|nohistory|sync))*" />
+        </xsd:restriction>
+    </xsd:simpleType>
 
-    <simpleType name="PropertyHanddownType">
-        <annotation>
-            <documentation>
+    <xsd:simpleType name="PropertyHanddownType">
+        <xsd:annotation>
+            <xsd:documentation>
                 Types of inheritance.
-            </documentation>
-        </annotation>
-        <restriction base="token">
-            <enumeration value="none"/>
-            <enumeration value="children"/>
-            <enumeration value="descendants"/>
-        </restriction>
-    </simpleType>
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:token">
+            <xsd:enumeration value="none"/>
+            <xsd:enumeration value="children"/>
+            <xsd:enumeration value="descendants"/>
+        </xsd:restriction>
+    </xsd:simpleType>
 
-    <attributeGroup name="RunItemAttributes">
-        <annotation>
-            <documentation>
+    <xsd:attributeGroup name="RunItemAttributes">
+        <xsd:annotation>
+            <xsd:documentation>
                 Group of attributes applied for any run item.
-            </documentation>
-        </annotation>
-        <attribute name="timeout" type="duration">
-            <annotation>
-                <documentation>
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:attribute name="timeout" type="xsd:duration">
+            <xsd:annotation>
+                <xsd:documentation>
                     Timeout to break running. If it's not specified,
                     current default value is used.
-                </documentation>
-            </annotation>
-        </attribute>
-        <attribute name="track_conf" type="TrackConfType" default="yes">
-            <annotation>
-                <documentation>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="track_conf" type="TrackConfType" default="yes">
+            <xsd:annotation>
+                <xsd:documentation>
                     Tracks changes of the configuration. Enabled by
                     default. May be disabled by corresponging option.
                     Automatically disabled for all descendants of the
                     simultaneous session.
-                </documentation>
-            </annotation>
-        </attribute>
-        <attribute name="track_conf_handdown" type="PropertyHanddownType"
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="track_conf_handdown" type="PropertyHanddownType"
                                               default="children">
-            <annotation>
-                <documentation>
+            <xsd:annotation>
+                <xsd:documentation>
                     Type of inheritance.
-                </documentation>
-            </annotation>
-        </attribute>
-    </attributeGroup>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:attributeGroup>
 
-    <complexType name="Script">
-        <annotation>
-            <documentation>
+    <xsd:complexType name="Script">
+        <xsd:annotation>
+            <xsd:documentation>
                 External script (executable).
-            </documentation>
-        </annotation>
-        <sequence>
-            <choice minOccurs="0" maxOccurs="unbounded">
-                <element name="description" type="string" minOccurs="0">
-                    <annotation>
-                        <documentation>
-                            Description of the test provided by the script.
-                        </documentation>
-                    </annotation>
-                </element>
-                <element name="req" type="Requirement" minOccurs="0"
-                                                       maxOccurs="unbounded">
-                    <annotation>
-                        <documentation>
-                            Complete set of requiremetns verified by the
-                            script.
-                        </documentation>
-                    </annotation>
-                </element>
-                <element name="execute" type="string" minOccurs="0">
-                    <annotation>
-                        <documentation>
-                            Name of the file to execute in current package
-                            directory. If the element is skipped, it's
-                            equal to the 'name' attribute.
-                        </documentation>
-                    </annotation>
-                </element>
-            </choice>
-        </sequence>
-        <attribute name="name" type="Name" minOccurs="0">
-            <annotation>
-                <documentation>
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:choice minOccurs="0" maxOccurs="unbounded">
+            <xsd:element name="description" type="xsd:string">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Description of the test provided by the script.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+            <xsd:element name="objective" type="xsd:string">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Objective of the test provided by the script.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+            <xsd:element name="req" type="Requirement">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Complete set of requirements verified by the
+                        script.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+            <xsd:element name="execute" type="xsd:string">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Name of the file to execute in current package
+                        directory. If the element is skipped, it's
+                        equal to the 'name' attribute.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+        </xsd:choice>
+        <xsd:attribute name="name" type="xsd:token">
+            <xsd:annotation>
+                <xsd:documentation>
                     Test name.
-                </documentation>
-            </annotation>
-        </attribute>
-        <attributeGroup ref="RunItemAttributes"/>
-    </complexType>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attributeGroup ref="RunItemAttributes"/>
+    </xsd:complexType>
 
-    <complexType name="Run-Template">
-        <annotation>
-            <documentation>
+    <xsd:complexType name="Run-Template">
+        <xsd:annotation>
+            <xsd:documentation>
                 Default argument Template.
-            </documentation>
-        </annotation>
-        <sequence>
-            <element name="script" type="Script" minOccurs="0">
-                <annotation>
-                    <documentation>
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence>
+            <xsd:element name="script" type="Script" minOccurs="0">
+                <xsd:annotation>
+                    <xsd:documentation>
                         Default script for template.
-                    </documentation>
-                </annotation>
-            </element>
-            <group ref="Arguments"/>
-        </sequence>
-        <attribute name="name" type="Name">
-            <annotation>
-                <documentation>
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+            <xsd:group ref="Arguments"/>
+        </xsd:sequence>
+        <xsd:attribute name="name" type="xsd:Name">
+            <xsd:annotation>
+                <xsd:documentation>
                     Name of default argument template.
-                </documentation>
-            </annotation>
-        </attribute>
-    </complexType>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
 
-    <group name="Executable">
-        <annotation>
-            <documentation>
+    <xsd:group name="Executable">
+        <xsd:annotation>
+            <xsd:documentation>
                 Group of elements applied for all executables.
-            </documentation>
-        </annotation>
-        <sequence>
-            <choice>
-                <element name="script" type="Script">
-                    <annotation>
-                        <documentation>
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence>
+            <xsd:choice>
+                <xsd:element name="script" type="Script">
+                    <xsd:annotation>
+                        <xsd:documentation>
                             External script to be executed.
-                        </documentation>
-                    </annotation>
-                </element>
-                <element name="session" type="Session">
-                    <annotation>
-                        <documentation>
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:element>
+                <xsd:element name="session" type="Session">
+                    <xsd:annotation>
+                        <xsd:documentation>
                             Session to be executed.
-                        </documentation>
-                    </annotation>
-                </element>
-            </choice>
-            <group ref="Arguments"/>
-        </sequence>
-    </group>
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:element>
+            </xsd:choice>
+            <xsd:group ref="Arguments"/>
+        </xsd:sequence>
+    </xsd:group>
 
-    <complexType name="PrologueEpilogue">
-        <annotation>
-            <documentation>
+    <xsd:complexType name="PrologueEpilogue">
+        <xsd:annotation>
+            <xsd:documentation>
                 Type of prologue and epilogue elements.
-            </documentation>
-        </annotation>
-        <group ref="Executable"/>
-    </complexType>
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:group ref="Executable"/>
+    </xsd:complexType>
 
-    <complexType name="InheritableExecutable">
-        <annotation>
-            <documentation>
+    <xsd:complexType name="InheritableExecutable">
+        <xsd:annotation>
+            <xsd:documentation>
                 Type of elements which may be inherited by descendants.
-            </documentation>
-        </annotation>
-        <group ref="Executable">
-            <annotation>
-                <documentation>
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:group ref="Executable">
+            <xsd:annotation>
+                <xsd:documentation>
                     Group of elements for executables.
-                </documentation>
-            </annotation>
-        </group>
-        <attribute name="handdown" type="PropertyHanddownType"
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:group>
+        <xsd:attribute name="handdown" type="PropertyHanddownType"
                                    default="descendants">
-            <annotation>
-                <documentation>
+            <xsd:annotation>
+                <xsd:documentation>
                     Type of inheritance.
-                </documentation>
-            </annotation>
-        </attribute>
-    </complexType>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
 
-    <complexType name="Session">
-        <annotation>
-            <documentation>
+    <xsd:complexType name="Session">
+        <xsd:annotation>
+            <xsd:documentation>
                 Set of run items with optional prologue, epilogue,
                 keep-alive validation and exception handler which may
                 be called with some arguments directly from parent run
@@ -473,158 +516,225 @@
                 another package or Tester configuration file. In the
                 last case session is a primary (root) session of the
                 package.
-            </documentation>
-        </annotation>
-        <sequence>
-            <choice minOccurs="0" maxOccurs="unbounded">
-                <element name="var" type="TestParameter">
-                    <key name="vars">
-                        <annotation>
-                            <documentation>
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence>
+            <xsd:element name="objective" type="xsd:string" minOccurs="0">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Objective of the session.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+            <xsd:choice minOccurs="0" maxOccurs="unbounded">
+                <xsd:element name="var" type="TestParameter">
+                    <xsd:key name="vars">
+                        <xsd:annotation>
+                            <xsd:documentation>
                                 Define key to refer to session variables.
-                            </documentation>
-                        </annotation>
-                        <selector xpath="../*[self::var]">
-                            <annotation>
-                                <documentation>
+                            </xsd:documentation>
+                        </xsd:annotation>
+                        <xsd:selector xpath=".">
+                            <xsd:annotation>
+                                <xsd:documentation>
                                     Select all 'var' children of the
                                     session.
-                                </documentation>
-                            </annotation>
-                        </selector>
-                        <field xpath="@name">
-                            <annotation>
-                                <documentation>
+                                </xsd:documentation>
+                            </xsd:annotation>
+                        </xsd:selector>
+                        <xsd:field xpath="@name">
+                            <xsd:annotation>
+                                <xsd:documentation>
                                     Use 'name' attribute as key.
-                                </documentation>
-                            </annotation>
-                        </field>
-                    </key>
-                    <key name="var_values">
-                        <annotation>
-                            <documentation>
+                                </xsd:documentation>
+                            </xsd:annotation>
+                        </xsd:field>
+                    </xsd:key>
+                    <xsd:unique name="var_values">
+                        <xsd:annotation>
+                            <xsd:documentation>
                                 Define key to refer to values of the
                                 variable.
-                            </documentation>
-                        </annotation>
-                        <selector xpath="value[@name]">
-                            <annotation>
-                                <documentation>
+                            </xsd:documentation>
+                        </xsd:annotation>
+                        <xsd:selector xpath="value">
+                            <xsd:annotation>
+                                <xsd:documentation>
                                     Select all 'value' elements with
                                     'name' attribute of the variable.
-                                </documentation>
-                            </annotation>
-                        </selector>
-                        <field xpath="@name">
-                            <annotation>
-                                <documentation>
+                                </xsd:documentation>
+                            </xsd:annotation>
+                        </xsd:selector>
+                        <xsd:field xpath="@name">
+                            <xsd:annotation>
+                                <xsd:documentation>
                                     Use 'name' attribute as key.
-                                </documentation>
-                            </annotation>
-                        </field>
-                    </key>
-                    <keyref name="var_preferred_value" refer="var_values">
-                        <annotation>
-                            <documentation>
+                                </xsd:documentation>
+                            </xsd:annotation>
+                        </xsd:field>
+                    </xsd:unique>
+                    <xsd:keyref name="var_preferred_value" refer="var_values">
+                        <xsd:annotation>
+                            <xsd:documentation>
                                 Define that 'preferred' attribute of the
                                 current element must be a reference to
                                 one of its values.
-                            </documentation>
-                        </annotation>
-                        <selector xpath="."/>
-                        <field    xpath="@preferred"/>
-                    </keyref>
-                </element>
-                <element name="arg" type="TestParameter">
-                    <annotation>
-                        <documentation>
+                            </xsd:documentation>
+                        </xsd:annotation>
+                        <xsd:selector xpath="."/>
+                        <xsd:field    xpath="@preferred"/>
+                    </xsd:keyref>
+                </xsd:element>
+                <xsd:element name="arg" type="TestParameter">
+                    <xsd:annotation>
+                        <xsd:documentation>
                             Argument common for all run items of
                             the session. It is passed to each run
                             item of the session automatically.
-                        </documentation>
-                    </annotation>
-                </element>
-            </choice>
-            <element name="run-template" type="Run-Template" minOccurs="0"
-                                         maxOccurs="unbounded">
-                <annotation>
-                    <documentation>
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:element>
+                <xsd:element name="enum" type="Enumeration">
+                    <xsd:annotation>
+                        <xsd:documentation>
+                            A defined list of values to enumerate.
+                        </xsd:documentation>
+                    </xsd:annotation>
+                    <xsd:key name="enums">
+                        <xsd:annotation>
+                            <xsd:documentation>
+                                Define key to refer to enumerations.
+                            </xsd:documentation>
+                        </xsd:annotation>
+                        <xsd:selector xpath=".">
+                            <xsd:annotation>
+                                <xsd:documentation>
+                                    Select all 'var' children of the
+                                    session.
+                                </xsd:documentation>
+                            </xsd:annotation>
+                        </xsd:selector>
+                        <xsd:field xpath="@name">
+                            <xsd:annotation>
+                                <xsd:documentation>
+                                    Use 'name' attribute as key.
+                                </xsd:documentation>
+                            </xsd:annotation>
+                        </xsd:field>
+                    </xsd:key>
+                    <xsd:unique name="enum_values">
+                        <xsd:annotation>
+                            <xsd:documentation>
+                                Define key to refer to values of the
+                                variable.
+                            </xsd:documentation>
+                        </xsd:annotation>
+                        <xsd:selector xpath="value">
+                            <xsd:annotation>
+                                <xsd:documentation>
+                                    Select all 'value' elements with
+                                    'name' attribute of the variable.
+                                </xsd:documentation>
+                            </xsd:annotation>
+                        </xsd:selector>
+                        <xsd:field xpath="@name">
+                            <xsd:annotation>
+                                <xsd:documentation>
+                                    Use 'name' attribute as key.
+                                </xsd:documentation>
+                            </xsd:annotation>
+                        </xsd:field>
+                    </xsd:unique>
+                </xsd:element>
+                <xsd:element name="req" type="Requirement" minOccurs="0"
+                                                   maxOccurs="unbounded">
+                    <xsd:annotation>
+                        <xsd:documentation>
+                            A set of requirements verified by the session.
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:element>
+            </xsd:choice>
+            <xsd:element name="run-template" type="Run-Template" minOccurs="0"
+                         maxOccurs="unbounded">
+                <xsd:annotation>
+                    <xsd:documentation>
                         Template with default values and script name.
-                    </documentation>
-                </annotation>
-            </element>
-            <element name="exception" type="InheritableExecutable"
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+            <xsd:element name="exception" type="InheritableExecutable"
                                       minOccurs="0">
-                <annotation>
-                    <documentation>
+                <xsd:annotation>
+                    <xsd:documentation>
                         Exception handler to be called for exceptions
                         arised in the session. If exception handler
                         is not specified, is not inherited or failed,
                         then session is finished and exception is
                         passed to the parent.
-                    </documentation>
-                </annotation>
-            </element>
-            <element name="keepalive" type="InheritableExecutable"
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+            <xsd:element name="keepalive" type="InheritableExecutable"
                                       minOccurs="0">
-                <annotation>
-                    <documentation>
+                <xsd:annotation>
+                    <xsd:documentation>
                         Keep-alive validation. It is performed before
                         and after each run item execution. It may be
                         directly called and globally disabled.
-                    </documentation>
-                </annotation>
-            </element>
-            <element name="prologue" type="PrologueEpilogue" minOccurs="0">
-                <annotation>
-                    <documentation>
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+            <xsd:element name="prologue" type="PrologueEpilogue" minOccurs="0">
+                <xsd:annotation>
+                    <xsd:documentation>
                         Session prologue. It's recommended to configure
                         agents here. It may be directly called and
                         globally disabled.
-                    </documentation>
-                </annotation>
-            </element>
-            <element name="epilogue" type="PrologueEpilogue" minOccurs="0">
-                <annotation>
-                    <documentation>
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+            <xsd:element name="epilogue" type="PrologueEpilogue" minOccurs="0">
+                <xsd:annotation>
+                    <xsd:documentation>
                         Session epilogue. It's recommended to configure
                         agents here. It may be directly called and
                         globally disabled.
-                    </documentation>
-                </annotation>
-            </element>
-            <element name="run" type="Run" maxOccurs="unbounded">
-                <annotation>
-                    <documentation>
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+            <xsd:element name="run" type="Run" maxOccurs="unbounded">
+                <xsd:annotation>
+                    <xsd:documentation>
                         Set of items to run.
-                    </documentation>
-                </annotation>
-            </element>
-        </sequence>
-        <attribute name="simultaneous" type="boolean" default="false">
-            <annotation>
-                <documentation>
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+        </xsd:sequence>
+        <xsd:attribute name="simultaneous" type="xsd:boolean" default="false">
+            <xsd:annotation>
+                <xsd:documentation>
                     Run all items simultaneously or in series (default).
-                </documentation>
-            </annotation>
-        </attribute>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
 <!--
-        <attribute name="random" type="boolean">
-            <annotation>
-                <documentation>
+        <xsd:attribute name="random" type="boolean">
+            <xsd:annotation>
+                <xsd:documentation>
                     Run subsessions in random or strict (default)
                     order. Default value may be overrided by
                     corresponding option.
-                </documentation>
-            </annotation>
-        </attribute>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
 -->
-        <attributeGroup ref="RunItemAttributes"/>
-    </complexType>
+        <xsd:attributeGroup ref="RunItemAttributes"/>
+    </xsd:complexType>
 
-    <complexType name="PackageRun">
-        <annotation>
-            <documentation>
+    <xsd:complexType name="PackageRun">
+        <xsd:annotation>
+            <xsd:documentation>
                 Forces Tester to run external package. Usually it's
                 just name of the subpackage (name of its directory).
                 Also it may be relative path to any subpackage of the
@@ -632,131 +742,152 @@
                 of the packages declared in Tester configuration file.
                 Absolute path starts from '/' symbol and name of the
                 root package declared in Tester configuration file.
-            </documentation>
-        </annotation>
-        <attribute name="name" type="token">
-            <annotation>
-                <documentation>
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:attribute name="name" type="xsd:token">
+            <xsd:annotation>
+                <xsd:documentation>
                     Name of the (sub)package to run.
-                </documentation>
-            </annotation>
-        </attribute>
-    </complexType>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
 
 <!--
-    <simpleType name="DebuggingLevels">
-        <annotation>
-            <documentation>
+    <xsd:simpleType name="DebuggingLevels">
+        <xsd:annotation>
+            <xsd:documentation>
                 Enumeration of debugging levels.
-            </documentation>
-        </annotation>
-        <restriction base="Name">
-            <enumeration value="none"/>
-            <enumeration value="debug"/>
-            <enumeration value="trace"/>
-            <enumeration value="mem"/>
-            <enumeration value="entryexit"/>
-        </restriction>
-    </simpleType>
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:Name">
+            <xsd:enumeration value="none"/>
+            <xsd:enumeration value="debug"/>
+            <xsd:enumeration value="trace"/>
+            <xsd:enumeration value="mem"/>
+            <xsd:enumeration value="entryexit"/>
+        </xsd:restriction>
+    </xsd:simpleType>
 
-    <simpleType name="Debugging">
-        <annotation>
-            <documentation>
+    <xsd:simpleType name="Debugging">
+        <xsd:annotation>
+            <xsd:documentation>
                 Type for list of debugging values.
-            </documentation>
-        </annotation>
-        <list itemType="DebuggingLevels"/>
-    </simpleType>
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:list itemType="DebuggingLevels"/>
+    </xsd:simpleType>
 -->
 
-    <complexType name="Run">
-        <annotation>
-            <documentation>
+    <xsd:complexType name="Run">
+        <xsd:annotation>
+            <xsd:documentation>
                 Forces Tester to run script, session or package with
                 specified arguments. The element may be used in the
                 context of session or Tester configuration file.
-            </documentation>
-        </annotation>
-        <sequence>
-            <choice>
-                <element name="script" type="Script"
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:sequence minOccurs="0">
+            <xsd:choice>
+                <xsd:element name="script" type="Script"
                                        maxOccurs="unbounded">
-                    <annotation>
-                        <documentation>
+                    <xsd:annotation>
+                        <xsd:documentation>
                             External script to be executed.
-                        </documentation>
-                    </annotation>
-                </element>
-                <element name="session" type="Session">
-                    <annotation>
-                        <documentation>
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:element>
+                <xsd:element name="session" type="Session">
+                    <xsd:annotation>
+                        <xsd:documentation>
                             Session to be executed.
-                        </documentation>
-                    </annotation>
-                </element>
-                <element name="package" type="PackageRun">
-                    <annotation>
-                        <documentation>
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:element>
+                <xsd:element name="package" type="PackageRun">
+                    <xsd:annotation>
+                        <xsd:documentation>
                             External package to be processed.
-                        </documentation>
-                    </annotation>
-                </element>
-            </choice>
-            <group ref="Arguments"/>
-        </sequence>
-        <attribute name="name" type="Name">
-            <annotation>
-                <documentation>
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:element>
+            </xsd:choice>
+            <xsd:group ref="Arguments"/>
+        </xsd:sequence>
+        <xsd:attribute name="name" type="xsd:Name">
+            <xsd:annotation>
+                <xsd:documentation>
                     Name of this run item. It may be used to call
                     specific item of the package.
-                </documentation>
-            </annotation>
-        </attribute>
-        <attribute name="template" type="Name" minOccurs="0">
-            <annotation>
-                <documentation>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="template" type="xsd:Name">
+            <xsd:annotation>
+                <xsd:documentation>
                     Template name to be used in this run item.
-                </documentation>
-            </annotation>
-        </attribute>
-        <attribute name="iterate" type="Number" default="1">
-            <annotation>
-                <documentation>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="iterate" type="xsd:unsignedInt" default="1">
+            <xsd:annotation>
+                <xsd:documentation>
                     Iterate this run item specified number of times.
-                </documentation>
-            </annotation>
-        </attribute>
-        <attribute name="dial_coef" type="Number" default="-1">
-            <annotation>
-                <documentation>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="dial_coef" type="xsd:double" default="-1">
+            <xsd:annotation>
+                <xsd:documentation>
                     Coefficient applied to selection weight used
                     by --dial Tester option when randomly choosing
                     iterations.
                     Ignored if negative.
-                </documentation>
-            </annotation>
-        </attribute>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
 
+        <xsd:attribute name="track_conf" type="TrackConfType">
+            <xsd:annotation>
+                <xsd:documentation>
+                    Tracks changes of the configuration. Enabled by
+                    default. May be disabled by corresponging option.
+                    Automatically disabled for all descendants of the
+                    simultaneous session.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
 <!--
-        <attribute name="debugging" type="Debugging" default="none">
-            <annotation>
-                <documentation>
+        <xsd:attribute name="debugging" type="Debugging" default="none">
+            <xsd:annotation>
+                <xsd:documentation>
                     List of enabled debugging levels.
-                </documentation>
-            </annotation>
-        </attribute>
-        <attribute name="forcerandom" type="boolean">
-            <annotation>
-                <documentation>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="forcerandom" type="boolean">
+            <xsd:annotation>
+                <xsd:documentation>
                     Modify 'random' attribute policy.  False value
                     forces to run all items in strict order.  True
                     value modifies default attribute value to 'true'
                     and, therefore, tries to use randomness where it
                     is allowed.
-                </documentation>
-            </annotation>
-        </attribute>
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
 -->
-    </complexType>
+    </xsd:complexType>
 
-</schema>
+    <xsd:simpleType name="EmptyString">
+        <xsd:annotation>
+                <xsd:documentation>
+                    Type of empty strings
+                    (mostly to use in xsd:union with other types)
+                </xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:string">
+            <xsd:length value="0"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+</xsd:schema>
