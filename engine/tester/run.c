@@ -40,6 +40,7 @@
 
 #include "te_alloc.h"
 #include "tq_string.h"
+#include "te_str.h"
 #include "conf_api.h"
 #include "log_bufs.h"
 #include "te_trc.h"
@@ -1989,6 +1990,19 @@ tester_test_status_to_te_test_result(tester_test_status status,
                                      const char **error,
                                      test_id id)
 {
+    static const char *test_status_descr[] = {
+        [TESTER_TEST_FAILED] = NULL,
+        [TESTER_TEST_DIRTY] = "Unexpected configuration changes",
+        [TESTER_TEST_SEARCH] = "Executable not found",
+        [TESTER_TEST_KILLED] = "Test application died",
+        [TESTER_TEST_CORED] = "Test application core dumped",
+        [TESTER_TEST_PROLOG] = "Session prologue failed",
+        [TESTER_TEST_EPILOG] = "Session epilogue failed",
+        [TESTER_TEST_KEEPALIVE] = "Keep-alive validation failed",
+        [TESTER_TEST_EXCEPTION] = "Exception handler failed",
+        [TESTER_TEST_INCOMPLETE] = "Internal error",
+        [TESTER_TEST_ERROR] = "Internal error"
+    };
     test_id saved_id;
 
     *error = NULL;
@@ -2018,51 +2032,7 @@ tester_test_status_to_te_test_result(tester_test_status status,
         default:
         {
             result->status = TE_TEST_FAILED;
-            switch (status)
-            {
-                case TESTER_TEST_FAILED:
-                    break;
-
-                case TESTER_TEST_DIRTY:
-                    *error = "Unexpected configuration changes";
-                    break;
-
-                case TESTER_TEST_SEARCH:
-                    *error = "Executable not found";
-                    break;
-
-                case TESTER_TEST_KILLED:
-                    *error = "Test application died";
-                    break;
-
-                case TESTER_TEST_CORED:
-                    *error = "Test application core dumped";
-                    break;
-
-                case TESTER_TEST_PROLOG:
-                    *error = "Session prologue failed";
-                    break;
-
-                case TESTER_TEST_EPILOG:
-                    *error = "Session epilogue failed";
-                    break;
-
-                case TESTER_TEST_KEEPALIVE:
-                    *error = "Keep-alive validation failed";
-                    break;
-
-                case TESTER_TEST_EXCEPTION:
-                    *error = "Exception handler failed";
-                    break;
-
-                case TESTER_TEST_INCOMPLETE:
-                case TESTER_TEST_ERROR:
-                    *error = "Internal error";
-                    break;
-
-                default:
-                    assert(false);
-            }
+            *error = test_status_descr[status];
             break;
         }
     }
@@ -2086,23 +2056,219 @@ tester_test_status_to_te_test_result(tester_test_status status,
         }
 
         v = TE_ALLOC(sizeof(*v));
-
-        v->str = strdup(*error);
-        if (v->str == NULL)
-        {
-            ERROR("%s(): strdup(%s) failed", __FUNCTION__, *error);
-            free(v);
-
-            /*
-             * Make sure that test will report failed because of
-             * internal error.
-             */
-            result->status = TE_TEST_FAILED;
-            *error = "Internal error";
-            return;
-        }
+        v->str = TE_STRDUP(*error);
 
         TAILQ_INSERT_TAIL(&result->verdicts, v, links);
+    }
+}
+
+static void
+prepare_test_script_arguments(te_vec *params, tester_flags flags,
+                              const test_script *script,
+                              test_id exec_id,
+                              const char *test_name,
+                              int rand_seed,
+                              unsigned int n_args,
+                              const test_iter_arg args[n_args])
+{
+    unsigned int i;
+
+    if (flags & TESTER_GDB)
+    {
+        static const char *gdb_args[] = {
+            "gdb",
+            "--args",
+            NULL,
+        };
+
+        te_vec_append_strarray(params, gdb_args);
+    }
+    else if (flags & TESTER_VALGRIND)
+    {
+        static const char *valgrind_args[] = {
+            "valgrind",
+            "--tool=memcheck",
+            "--show-reachable=yes",
+            "--leak-check=yes",
+            "--num-callers=16",
+            NULL,
+        };
+
+        te_vec_append_strarray(params, valgrind_args);
+        if (flags & TESTER_FAIL_ON_LEAK)
+        {
+            te_vec_append_str_fmt(params, "--error-exitcode=%d",
+                                  EXIT_FAILURE);
+        }
+    }
+
+    te_vec_append_str_fmt(params, "%s", script->execute);
+    te_vec_append_str_fmt(params, "te_test_id=%u", (unsigned int )exec_id);
+    te_vec_append_str_fmt(params, "te_test_name=%s", test_name);
+    te_vec_append_str_fmt(params, "te_rand_seed=%d", rand_seed);
+
+    for (i = 0; i < n_args; i++)
+    {
+        if (args[i].variable)
+            continue;
+        VERB("%s(): parameter %s=%s", __FUNCTION__,
+             args[i].name, args[i].value);
+        te_vec_append_str_fmt(params, "%s=%s",
+                              args[i].name, args[i].value);
+    }
+    te_vec_append(params, NULL);
+
+}
+
+static te_errno
+execute_test_script(tester_flags flags, test_id exec_id, char **args, int *code)
+{
+    char vg_filename[PATH_MAX];
+    int fderr = -1;
+    pid_t pid;
+    te_errno rc = 0;
+
+    if (flags & TESTER_VALGRIND)
+    {
+        TE_SPRINTF(vg_filename, TESTER_VG_FILENAME_FMT, exec_id);
+        fderr = open(vg_filename, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
+        if (fderr < 0)
+        {
+            rc = TE_OS_RC(TE_TESTER, errno);
+            ERROR("Failed to open valgrind output file %s: %r",
+                  vg_filename, rc);
+
+            return rc;
+        }
+    }
+
+    VERB("ID=%d execvp(%s, ...)", exec_id, args[0]);
+    pid = fork();
+    if (pid < 0)
+    {
+        rc = TE_OS_RC(TE_TESTER, errno);
+        ERROR("Cannot fork: %r", rc);
+        if (fderr >= 0)
+            close(fderr);
+        return rc;
+    }
+
+    if (pid == 0)
+    {
+        /* TODO: is it really safe to call TE logging in a child process? */
+        if (fderr >= 0)
+        {
+            if (dup2(fderr, STDERR_FILENO) < 0)
+            {
+                ERROR("valgrind: failed to duplicate %s fd to stderr: %r",
+                      vg_filename, TE_OS_RC(TE_TESTER, errno));
+                _Exit(EXIT_FAILURE);
+            }
+            close(fderr);
+        }
+        if (execvp(args[0], args) < 0)
+        {
+            ERROR("ID=%d execvp(%s, ...) failed: %r", exec_id, args[0],
+                  TE_OS_RC(TE_TESTER, errno));
+            _Exit(EXIT_FAILURE);
+        }
+        /* unreachable */
+        TE_FATAL_ERROR("Cannot happen");
+    }
+    if (fderr >= 0)
+        close(fderr);
+
+    tester_set_serial_pid(pid);
+    pid = waitpid(pid, code, 0);
+    if (pid < 0)
+    {
+        rc = TE_OS_RC(TE_TESTER, errno);
+        ERROR("waitpid failed: %r", rc);
+    }
+    tester_release_serial_pid();
+
+    if (flags & TESTER_VALGRIND)
+    {
+        TE_LOG(TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
+               "Standard error output of the script with ID=%u:\n"
+               "%Tf", (unsigned int)exec_id, vg_filename);
+    }
+
+    return rc;
+}
+
+static tester_test_status
+translate_script_exit_code(const char *script_name, test_id exec_id,
+                           int code)
+{
+    if (tester_check_serial_stop())
+        return TESTER_TEST_STOPPED;
+
+#ifdef WCOREDUMP
+    if (WCOREDUMP(code))
+    {
+        ERROR("ID=%u: executable '%s' dumped core", (unsigned int)exec_id,
+              script_name);
+        return TESTER_TEST_CORED;
+    }
+#endif
+    if (WIFSIGNALED(code))
+    {
+        if (WTERMSIG(code) == SIGINT)
+        {
+            ERROR("ID=%u was interrupted by SIGINT, shut down",
+                  (unsigned int)exec_id);
+            return TESTER_TEST_STOPPED;
+        }
+        else
+        {
+            ERROR("ID=%u was killed by the signal %d : %s",
+                  (unsigned int)exec_id,
+                  WTERMSIG(code), strsignal(WTERMSIG(code)));
+            return TESTER_TEST_KILLED;
+        }
+    }
+    else if (!WIFEXITED(code))
+    {
+        ERROR("ID=%u was abnormally terminated", (unsigned int)exec_id);
+        return TESTER_TEST_FAILED;
+    }
+    else
+    {
+        switch (WEXITSTATUS(code))
+        {
+            case EXIT_FAILURE:
+                return TESTER_TEST_FAILED;
+
+            case EXIT_SUCCESS:
+                return TESTER_TEST_PASSED;
+
+            case TE_EXIT_SIGUSR2:
+            case TE_EXIT_SIGINT:
+                ERROR("ID=%u was interrupted by %s, shut down",
+                      exec_id,
+                      WEXITSTATUS(code) == TE_EXIT_SIGINT ?
+                      "SIGINT" : "SIGUSR2");
+                return TESTER_TEST_STOPPED;
+
+            case TE_EXIT_NOT_FOUND:
+                ERROR("ID=%u was not run, executable not found",
+                      (unsigned int)exec_id);
+                return TESTER_TEST_SEARCH;
+
+            case TE_EXIT_ERROR:
+                ERROR("Serious error occurred during execution of "
+                      "the test, shut down");
+                return TESTER_TEST_STOPPED;
+
+            case TE_EXIT_SKIP:
+                return TESTER_TEST_SKIPPED;
+
+            default:
+                WARN("ID=%u: unknown test exit code %d, treating as failure",
+                     (unsigned int)exec_id, code);
+                return TESTER_TEST_FAILED;
+        }
     }
 }
 
@@ -2124,22 +2290,11 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
                 const unsigned int n_args, const test_iter_arg *args,
                 const tester_flags flags, tester_test_status *status)
 {
-#define TEST_MAX_PARAMS 128
-#define TEST_MAX_PRE_WORDS 32
-    int ret;
-    char vg_filename[PATH_MAX] = "";
-    char *cmd;
-    te_string params[TEST_MAX_PRE_WORDS + TEST_MAX_PARAMS];
-    char *argv[TEST_MAX_PRE_WORDS + TEST_MAX_PARAMS];
-    int i;
-    int start_id = TEST_MAX_PRE_WORDS;
-    int next_id = start_id;
-
-    pid_t       pid;
-
-    int fderr = -1;
+    int code;
+    te_vec params = TE_VEC_INIT_AUTOPTR(char *);
     const char *test_name = run_name != NULL ? run_name : script->name;
     int rand_seed = rand();
+    te_errno rc = 0;
 
     assert(status != NULL);
 
@@ -2151,208 +2306,29 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
     {
         *status = TESTER_TEST_FAKED;
         RING("Faked with te_test_id=%u te_test_name=\"%s\" te_rand_seed=%d",
-             exec_id, test_name, rand_seed);
+             (unsigned int)exec_id, test_name, rand_seed);
         EXIT("%u", *status);
+
+        te_vec_free(&params);
         return 0;
     }
 
-    for (i = 0; i < TE_ARRAY_LEN(params); i++)
-        params[i] = (te_string)TE_STRING_INIT;
+    prepare_test_script_arguments(&params, flags, script, exec_id, test_name,
+                                  rand_seed, n_args, args);
 
-    cmd = script->execute;
-    te_string_append(&params[next_id++], "%s", script->execute);
-    te_string_append(&params[next_id++], "te_test_id=%u", exec_id);
-    te_string_append(&params[next_id++], "te_test_name=%s", test_name);
-    te_string_append(&params[next_id++], "te_rand_seed=%d", rand_seed);
-
-    for (i = 0; i < n_args; i++)
+    *status = TESTER_TEST_INCOMPLETE;
+    rc = execute_test_script(flags, exec_id, te_vec_get(&params, 0), &code);
+    if (rc != 0)
     {
-        if (args[i].variable)
-            continue;
-        VERB("%s(): parameter %s=%s", __FUNCTION__,
-             args[i].name, args[i].value);
-        te_string_append(&params[next_id++], "%s=%s",
-                         args[i].name, args[i].value);
-        assert(next_id < TEST_MAX_PARAMS);
+        te_vec_free(&params);
+        return rc;
     }
 
-    /*
-     * Add wrapper arguments in reverse order, using TEST_MAX_PRE_WORDS
-     * space.
-     */
-    if (flags & TESTER_GDB)
-    {
-        te_string_append(&params[--start_id], "--args");
-        te_string_append(&params[--start_id], "gdb");
-        cmd = "gdb";
-    }
-    else if (flags & TESTER_VALGRIND)
-    {
-        if (flags & TESTER_FAIL_ON_LEAK)
-        {
-            te_string_append(&params[--start_id], "--error-exitcode=%d",
-                             EXIT_FAILURE);
-        }
-
-        te_string_append(&params[--start_id], "--tool=memcheck");
-        te_string_append(&params[--start_id], "--show-reachable=yes");
-        te_string_append(&params[--start_id], "--leak-check=yes");
-        te_string_append(&params[--start_id], "--num-callers=16");
-        te_string_append(&params[--start_id], "valgrind");
-        cmd = "valgrind";
-
-        /* Assert that TEST_MAX_PRE_WORDS is big enough. */
-        assert(start_id >= 0);
-
-        snprintf(vg_filename, sizeof(vg_filename),
-                 TESTER_VG_FILENAME_FMT, exec_id);
-        fderr = open(vg_filename, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
-        if (fderr < 0)
-        {
-            ERROR("Failed to open valgrind output file %s", vg_filename);
-
-            for (i = start_id; i < next_id; i++)
-                te_string_free(&params[i]);
-
-            return TE_OS_RC(TE_TESTER, errno);
-        }
-    }
-
-    {
-        for ( i = 0; i < next_id - start_id; i++)
-            argv[i] = params[i + start_id].ptr;
-        argv[i] = NULL;
-
-        /* Initialize as INCOMPLETE before processing */
-        *status = TESTER_TEST_INCOMPLETE;
-
-        VERB("ID=%d execvp(%s, ...)", exec_id, cmd);
-        pid = fork();
-
-        if (pid == 0)
-        {
-            if (fderr >= 0)
-            {
-                ret = dup2(fderr, STDERR_FILENO);
-                if (ret != STDERR_FILENO)
-                {
-                    ERROR("valgrind: failed to duplicate %s fd to stderr",
-                          vg_filename);
-                    exit(1);
-                }
-            }
-            ret = execvp(cmd, argv);
-            if (ret < 0)
-            {
-                ERROR("ID=%d execvp(%s, ...) failed: %s", exec_id, cmd,
-                      strerror(errno));
-                exit(1);
-            }
-            /* unreachable */
-        }
-
-        for (i = start_id; i < next_id; i++)
-            te_string_free(&params[i]);
-
-        if (pid < 0)
-            return TE_OS_RC(TE_TESTER, errno);
-    }
-
-    tester_set_serial_pid(pid);
-    pid = waitpid(pid, &ret, 0);
-    tester_release_serial_pid();
-    if (pid < 0)
-    {
-        ERROR("waitpid failed: %s", strerror(errno));
-        return TE_OS_RC(TE_TESTER, errno);
-    }
-
-#ifdef WCOREDUMP
-    if (WCOREDUMP(ret))
-    {
-        ERROR("Test '%s' executed in shell dumped core", script->execute);
-        *status = TESTER_TEST_CORED;
-    }
-#endif
-    if (WIFSIGNALED(ret))
-    {
-        if (WTERMSIG(ret) == SIGINT)
-        {
-            *status = TESTER_TEST_STOPPED;
-            ERROR("ID=%d was interrupted by SIGINT, shut down",
-                  exec_id);
-        }
-        else
-        {
-            ERROR("ID=%d was killed by the signal %d : %s", exec_id,
-                  WTERMSIG(ret), strsignal(WTERMSIG(ret)));
-            /* TESTER_TEST_CORED may already be set */
-            if (*status == TESTER_TEST_INCOMPLETE)
-                *status = TESTER_TEST_KILLED;
-        }
-    }
-    else if (!WIFEXITED(ret))
-    {
-        ERROR("ID=%d was abnormally terminated", exec_id);
-        /* TESTER_TEST_CORED may already be set */
-        if (*status == TESTER_TEST_INCOMPLETE)
-            *status = TESTER_TEST_FAILED;
-    }
-    else
-    {
-        if (*status != TESTER_TEST_INCOMPLETE)
-            ERROR("Unexpected return value of system() call");
-
-        switch (WEXITSTATUS(ret))
-        {
-            case EXIT_FAILURE:
-                *status = TESTER_TEST_FAILED;
-                break;
-
-            case EXIT_SUCCESS:
-                *status = TESTER_TEST_PASSED;
-                break;
-
-            case TE_EXIT_SIGUSR2:
-            case TE_EXIT_SIGINT:
-                *status = TESTER_TEST_STOPPED;
-                ERROR("ID=%d was interrupted by %s, shut down",
-                      exec_id,
-                      WEXITSTATUS(ret) == TE_EXIT_SIGINT ? "SIGINT" :
-                                                           "SIGUSR2");
-                break;
-
-            case TE_EXIT_NOT_FOUND:
-                *status = TESTER_TEST_SEARCH;
-                ERROR("ID=%d was not run, executable not found",
-                      exec_id);
-                break;
-            case TE_EXIT_ERROR:
-                *status = TESTER_TEST_STOPPED;
-                ERROR("Serious error occurred during execution of "
-                      "the test, shut down");
-                break;
-
-            case TE_EXIT_SKIP:
-                *status = TESTER_TEST_SKIPPED;
-                break;
-
-            default:
-                *status = TESTER_TEST_FAILED;
-        }
-    }
-    if (flags & TESTER_VALGRIND)
-    {
-        TE_LOG(TE_LL_INFO, TE_LGR_ENTITY, TE_LGR_USER,
-               "Standard error output of the script with ID=%d:\n"
-               "%Tf", exec_id, vg_filename);
-    }
-
-    if (tester_check_serial_stop() == true)
-        *status = TESTER_TEST_STOPPED;
+    *status = translate_script_exit_code(script->execute, exec_id, code);
 
     EXIT("%u", *status);
 
+    te_vec_free(&params);
     return 0;
 }
 
