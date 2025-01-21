@@ -22,8 +22,15 @@
 #include "rcf_ch_api.h"
 #include "logger_api.h"
 
-/** Size of the log data sent in one request */
-#define RCF_PCH_LOG_BULK        8192
+/**
+ * Size of the log data sent in one request.
+ * This value should not be less than LOGFORK_MAXLEN, because LOGFORK_MAXLEN
+ * is a maximum length of message which is passed to log messages ring buffer
+ * and RCF_PCH_LOG_BULK is a size of buffer to get message from ring buffer.
+ * And if size of this buffer is less then message in ring buffer, than TE
+ * never can get this message from ring buffer.
+ */
+#define RCF_PCH_LOG_BULK        16384
 
 /**
  * Skip spaces in the command.
