@@ -1299,14 +1299,16 @@ trc_xinclude_process_do(xmlDocPtr parent_doc, xmlNodePtr parent,
 {
     xmlNodePtr  node;
     xmlNodePtr  node_next;
+    xmlNodePtr  prev_node;
+    xmlNodePtr  child_node;
 
     xmlDocPtr   doc = NULL;
-    xmlNodePtr  include_root = NULL;
     xmlNodePtr  included_node = NULL;
     xmlNodePtr  include_start = NULL;
     xmlNodePtr  include_end = NULL;
 
     te_errno rc = 0;
+    char *p;
 
     for (node = parent->children; node != NULL; node = node_next)
     {
@@ -1357,40 +1359,44 @@ trc_xinclude_process_do(xmlDocPtr parent_doc, xmlNodePtr parent,
 
             include_start->type = XML_XINCLUDE_START;
             include_end->type = XML_XINCLUDE_END;
+            include_start = NULL;
+            include_end = NULL;
 
-            include_root = xmlDocGetRootElement(doc);
-            if (include_root == NULL)
-            {
-                ERROR("Empty XML document is found in the included file "
-                      "with expected testing results '%s'",
-                      full_path);
-                rc = TE_RC(TE_TRC, TE_EINVAL);
-                goto cleanup;
-            }
+            p = strrchr(full_path, '/');
+            if (p != NULL)
+                *p = '\0';
 
-            included_node = xmlDocCopyNode(include_root, parent_doc, 1);
-            if (included_node == NULL)
+            for (child_node = doc->children, prev_node = node;
+                 child_node != NULL; child_node = child_node->next)
             {
-                ERROR("Failed to copy root for '%s'", full_path);
-                rc = TE_RC(TE_TRC, TE_EFAULT);
-                goto cleanup;
-            }
+                included_node = xmlDocCopyNode(child_node, parent_doc, 1);
+                if (included_node == NULL)
+                {
+                    ERROR("Failed to copy node from included document");
+                    rc = TE_RC(TE_TRC, TE_ENOMEM);
+                    goto cleanup;
+                }
 
-            if (xmlAddNextSibling(node, included_node) == NULL)
-            {
-                ERROR("Failed to include '%s'", full_path);
-                rc = TE_RC(TE_TRC, TE_EFAULT);
-                goto cleanup;
+                if (xmlAddNextSibling(prev_node, included_node) == NULL)
+                {
+                    ERROR("Failed to add copied node from included document");
+                    rc = TE_RC(TE_TRC, TE_ENOMEM);
+                    goto cleanup;
+                }
+
+                rc = trc_xinclude_process_do(parent_doc, included_node,
+                                             full_path);
+                if (rc != 0)
+                    goto cleanup;
+
+                prev_node = included_node;
+                included_node = NULL;
             }
 
             xmlFreeDoc(doc);
             xmlUnlinkNode(node);
             xmlFreeNode(node);
-            node_next = included_node;
             doc = NULL;
-            include_start = NULL;
-            include_end = NULL;
-            included_node = NULL;
         }
         else
         {
@@ -1430,6 +1436,7 @@ cleanup:
  * Replace xi:include nodes with XML they reference. This function
  * circumvents a bug in @b xmlXIncludeProcess() which do not save
  * href property for lower level xi:include nodes found in included XML.
+ * Also it includes XML comments from referenced files.
  *
  * @param doc       XML document pointer.
  * @param location  Path to XML document.
