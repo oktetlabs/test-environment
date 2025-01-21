@@ -1,0 +1,221 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2025 OKTET Labs Ltd. All rights reserved.
+"""Load TRC database, remove tag expressions mentioning or not mentioning
+specified tags, then save filtered TRC database to a specified location
+keeping its original file structure.
+
+Usage:
+te-trc-filter --db=conf/trc.xml --tag=tag1 --tag=tag2 \
+        --output=./filtered/
+"""
+
+import sys
+import os
+import shutil
+from os.path import dirname, basename
+from tempfile import NamedTemporaryFile, TemporaryDirectory
+import re
+import argparse
+import subprocess
+
+def include_node(path, offs):
+    """Produce xi:include node with proper indentation."""
+    indent = ' ' * offs
+    return f"""\
+{indent}<xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+{indent}            href="{path}" parse="xml"/>
+"""
+
+def run_filter(args, output):
+    """Run te-trc-filter-main to produce a filtered TRC DB as a
+    single XML file.
+    """
+    cmd = ['te-trc-filter-main']
+    cmd.append('--db=' + args.db)
+
+    for tag in args.tag:
+        cmd.append('--tag=' + tag)
+
+    if args.del_no_res:
+        cmd.append('--del-no-res')
+
+    if args.reverse:
+        cmd.append('--reverse')
+
+    cmd.append('--output=' + output)
+
+    result = subprocess.run(cmd)
+    if result.returncode != 0:
+        sys.exit("Failed to filter database")
+
+def split_trc_db(main_fpath, main_dir):
+    """Split the single resulting TRC DB XML into the original
+    TRC database structure.
+    """
+    tmp_main_f = NamedTemporaryFile(mode='w', delete=False,
+                                    dir=main_dir, prefix=f'tmp_trc_db.')
+    files = [{'f': tmp_main_f, 'offs': 0, 'dir': main_dir}]
+    cur_f = tmp_main_f
+    cur_dir = main_dir
+    cur_offs = 0
+
+    xincl_start = re.compile(r'(\s*)<xinclude_start\b.*\bhref="([^"]*)"')
+    xincl_end = re.compile(r'\s*<xinclude_end\b')
+    xml_start = re.compile(r'\s*<\?xml\b.*')
+    preamble = ""
+
+    try:
+        with open(main_fpath, 'r') as f:
+            for line in f:
+                if len(files) == 1 and not preamble:
+                    m = xml_start.match(line)
+                    if m:
+                        # Save source file preamble to use it in
+                        # included files.
+                        preamble = line
+                        continue
+
+                m = xincl_start.match(line)
+                if m:
+                    # New included XML file starts.
+                    offs = len(m.group(1))
+
+                    fpath = m.group(2)
+                    if not fpath:
+                        raise RuntimeError(
+                            "No file is specified in xi:include")
+                    elif fpath[0] == '/':
+                        raise RuntimeError(
+                            "Absolute path is specified in xi:include")
+
+                    full_fpath = cur_dir + '/' + fpath
+                    fdir = dirname(full_fpath)
+
+                    os.makedirs(fdir, exist_ok=True)
+
+                    new_file = {}
+                    new_file['f'] = open(full_fpath, 'w')
+                    new_file['dir'] = fdir
+                    new_file['offs'] = offs
+                    files.append(new_file)
+
+                    # Add xi:include into the current XML file
+                    # with proper offset.
+                    inc_offs = offs - cur_offs
+                    if inc_offs < 0:
+                        inc_offs = 0
+                    inc_node = include_node(fpath, inc_offs)
+                    print(inc_node, file=cur_f, end="")
+
+                    # Make the included XML file the current one.
+                    cur_dir = fdir
+                    cur_f = new_file['f']
+                    cur_offs = offs
+                    if preamble:
+                        print(preamble, file=cur_f, end="")
+
+                    continue
+
+                m = xincl_end.match(line)
+                if m:
+                    # The current included XML file ends, go
+                    # back to the file from where it is included.
+                    cur_f.close()
+                    files.pop()
+                    cur_f = files[-1]['f']
+                    cur_dir = files[-1]['dir']
+                    cur_offs = files[-1]['offs']
+                    continue
+
+                # This is a normal line, insert it into
+                # the current XML file with a proper offset.
+
+                cut_len = 0
+                for i in range(len(line)):
+                    if line[i] != ' ' or i >= cur_offs:
+                        break
+
+                    cut_len += 1
+
+                line = line[cut_len:]
+                print(line, file=cur_f, end="")
+
+    except Exception as e:
+        # Some error happened, do cleanup.
+        while len(files) > 1:
+            file = files.pop()
+            file['f'].close()
+
+        tmp_main_f.close()
+        os.unlink(tmp_main_f.name)
+        raise e
+
+    tmp_main_f.close()
+    shutil.move(tmp_main_f.name, main_fpath)
+
+def main():
+    """Main function of this script."""
+    parser = argparse.ArgumentParser(
+                        prog='te-trc-filter',
+                        description='Filter TRC DB by tags')
+    parser.add_argument('--db', help='TRC database to be filtered',
+                        required=True)
+    parser.add_argument('--tag', help='TRC tag', nargs='*')
+    parser.add_argument('--del-no-res',
+                        help=('Remove tests and iterations having no '
+                              'expected results'),
+                        action='store_true')
+    parser.add_argument('--reverse',
+                        help=('Reverse mode (remove expressions '
+                              'mentioning tags)'),
+                        action='store_true')
+    parser.add_argument('-o', '--output', help='Where to save result',
+                        required=True)
+
+    args = parser.parse_args()
+
+    src_main_fname = basename(args.db)
+    dst_main_fpath = args.output
+
+    if not src_main_fname:
+        raise RuntimeError('No source XML file specified')
+
+    if not dst_main_fpath:
+        raise RuntimeError('Destination path is empty')
+
+    if dst_main_fpath[-1] == '/':
+        dst_main_fpath += src_main_fname
+    elif dst_main_fpath[-4:] != '.xml':
+        dst_main_fpath += '/' + src_main_fname
+
+    dst_main_fdir = dirname(dst_main_fpath)
+    if not dst_main_fdir:
+        dst_main_fdir = '.'
+
+    dst_main_fname = basename(dst_main_fpath)
+
+    tmp_dir = os.environ.get('TE_TMP')
+    if not tmp_dir:
+        tmp_dir = os.environ.get('TMPDIR')
+    if not tmp_dir:
+        tmp_dir = '/tmp'
+
+    with TemporaryDirectory(prefix='tmp_trc_', dir=tmp_dir) as tmp_main_fdir:
+        tmp_main_fpath = f'{tmp_main_fdir}/{dst_main_fname}'
+
+        run_filter(args, tmp_main_fpath)
+        split_trc_db(tmp_main_fpath, tmp_main_fdir)
+
+        os.makedirs(dst_main_fdir, exist_ok=True)
+
+        for entry in os.scandir(tmp_main_fdir):
+            src = tmp_main_fdir + '/' + entry.name
+            dst = dst_main_fdir + '/' + entry.name
+
+            if entry.is_dir():
+                shutil.copytree(src, dst, dirs_exist_ok=True)
+            else:
+                shutil.copy(src, dst)
+
+main()

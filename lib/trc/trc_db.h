@@ -441,6 +441,35 @@ extern te_errno get_test_args(xmlNodePtr *node, trc_test_iter_args *args);
  */
 extern te_errno trc_db_get_text_content(xmlNodePtr node, char **content);
 
+/** Flags for trc_db_filter_by_tags() function */
+typedef enum {
+    /**
+     * Remove expressions mentioning given tags instead of removing
+     * those not mentioning them.
+     */
+    TRC_FILTER_REVERSE = 0x1,
+    /**
+     * Remove tests and iterations having no expected results in DB after
+     * filtering.
+     */
+    TRC_FILTER_DEL_NO_RES = 0x2,
+} trc_filter_flags;
+
+/**
+ * Remove all tag expressions mentioning (not negated) or not mentioning
+ * given tags from TRC DB. If necessary, tag expressions are converted to
+ * DNF and if only some conjuncts in DNF satisfy tags condition, original
+ * tag expression is replaced with matching conjuncts from DNF. If there is
+ * no such conjuncts, then the expected result with such tag expression is
+ * removed.
+ *
+ * @param db        TRC database.
+ * @param tags      TRC tags.
+ * @param flags     See trc_filter_flags.
+ */
+extern void trc_db_filter_by_tags(te_trc_db *db, const tqh_strings *tags,
+                                  unsigned int flags);
+
 /**
  * Save TRC database to file
  *

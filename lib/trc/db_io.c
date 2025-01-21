@@ -3003,6 +3003,328 @@ trc_tests_pos(trc_test *test, bool is_first, bool is_top)
     return 0;
 }
 
+/**
+ * Check whether queue of tags contain a given name.
+ *
+ * @param tags      Queue of tags.
+ * @param name      Tag name to check for.
+ *
+ * @return true if tags contain the name, false otherwise.
+ */
+static bool
+tags_contain(const tqh_strings *tags, const char *name)
+{
+    const tqe_string *s;
+    int name_len = strlen(name);
+
+    TAILQ_FOREACH(s, tags, links)
+    {
+        char *c;
+
+        c = strchr(s->v, ':');
+        if (c == NULL)
+        {
+            if (strcmp(s->v, name) == 0)
+                return true;
+        }
+        else
+        {
+            int len = c - s->v;
+
+            /*
+             * Any tag value specified after ':' is currently
+             * ignored.
+             */
+            if (len == name_len && strncmp(name, s->v, c - s->v) == 0)
+                return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Check whether a given logical expression mentions one of
+ * the given tags not negated with NOT.
+ *
+ * @param expr_dnf      Logical expression in DNF.
+ * @param tags          Tags to check for.
+ *
+ * @return true if one of the tags is mentioned, false otherwise.
+ */
+static te_bool
+check_tags_mention(const logic_expr *expr_dnf, const tqh_strings *tags)
+{
+    if (expr_dnf->type == LOGIC_EXPR_VALUE)
+    {
+        return tags_contain(tags, expr_dnf->u.value);
+    }
+    else if (expr_dnf->type == LOGIC_EXPR_NOT)
+    {
+        if (expr_dnf->u.unary->type == LOGIC_EXPR_VALUE)
+            return false;
+        else
+            return check_tags_mention(expr_dnf->u.unary, tags);
+    }
+
+    return check_tags_mention(expr_dnf->u.binary.lhv, tags) ||
+           check_tags_mention(expr_dnf->u.binary.rhv, tags);
+}
+
+/**
+ * Split DNF logical expression into two subexpressions:
+ * one mentioning one of the given tags (not negated), another
+ * one not mentioning any of them.
+ *
+ * @param expr_dnf      Logical expression to split.
+ * @param tags          Tags to look for.
+ * @param match         Will be set to the subexpression mentioning
+ *                      the tags.
+ * @param nomatch       Will be set to the subexpression not mentioning
+ *                      the tags.
+ */
+static void
+split_expr_dnf(logic_expr *expr_dnf, const tqh_strings *tags,
+               logic_expr **match, logic_expr **nomatch)
+{
+    if (expr_dnf->type == LOGIC_EXPR_OR)
+    {
+        split_expr_dnf(expr_dnf->u.binary.lhv, tags, match, nomatch);
+        split_expr_dnf(expr_dnf->u.binary.rhv, tags, match, nomatch);
+    }
+    else
+    {
+        bool mentions = check_tags_mention(expr_dnf, tags);
+        logic_expr **target;
+        logic_expr *new_child;
+        logic_expr *new_parent;
+
+        new_child = logic_expr_dup(expr_dnf);
+        assert(new_child != NULL);
+
+        if (mentions)
+            target = match;
+        else
+            target = nomatch;
+
+        if (*target == NULL)
+        {
+            *target = new_child;
+        }
+        else
+        {
+            new_parent = TE_ALLOC(sizeof(logic_expr));
+            new_parent->type = LOGIC_EXPR_OR;
+            new_parent->u.binary.lhv = new_child;
+            new_parent->u.binary.rhv = *target;
+
+            *target = new_parent;
+        }
+    }
+}
+
+static bool tests_filter_by_tags(trc_tests *tests, const tqh_strings *tags,
+                                 unsigned int flags);
+
+/**
+ * Remove XML node together with any comments directly preceding
+ * it.
+ *
+ * @param node    XML node pointer.
+ */
+static void
+del_node_with_comments(xmlNodePtr node)
+{
+    xmlNodePtr node_prev;
+
+    if (node == NULL)
+        return;
+
+    node_prev = node->prev;
+    xmlUnlinkNode(node);
+    xmlFreeNode(node);
+
+    /* Remove any comments preceding removed XML node. */
+    for (node = node_prev; node != NULL; node = node_prev)
+    {
+        node_prev = node_prev->prev;
+
+        if (node->type == XML_COMMENT_NODE)
+        {
+            xmlUnlinkNode(node);
+            xmlFreeNode(node);
+        }
+        else
+        {
+            break;
+        }
+    }
+}
+
+/**
+ * Perform the job of trc_db_filter_by_tags() for all iterations from
+ * a queue.
+ *
+ * @param iters     Queue of iterations.
+ * @param tags      TRC tags.
+ * @param flags     See trc_filter_flags.
+ *
+ * @return true if some expected results remain after filtering,
+ *         false otherwise.
+ */
+static bool
+iters_filter_by_tags(trc_test_iters *iters, const tqh_strings *tags,
+                     unsigned int flags)
+{
+    trc_test_iter *iter;
+    trc_test_iter *iter_aux;
+    trc_exp_result *result;
+    trc_exp_result *result_aux;
+    bool iters_exp_result = false;
+    bool iter_exp_result = false;
+    bool reverse = !!(flags & TRC_FILTER_REVERSE);
+
+    TAILQ_FOREACH_SAFE(iter, &iters->head, links, iter_aux)
+    {
+        iter_exp_result = false;
+
+        STAILQ_FOREACH_SAFE(result, &iter->exp_results, links, result_aux)
+        {
+            logic_expr *dup;
+            logic_expr *match = NULL;
+            logic_expr *nomatch = NULL;
+            bool remove = false;
+            bool update_expr = true;
+
+            if (result->tags_expr == NULL)
+            {
+                if (!reverse)
+                    remove = true;
+                else
+                    update_expr = false;
+            }
+            else
+            {
+                dup = logic_expr_dup(result->tags_expr);
+                assert(dup != NULL);
+
+                logic_expr_dnf(&dup, NULL);
+                split_expr_dnf(dup, tags, &match, &nomatch);
+                logic_expr_free(dup);
+
+                if (match == NULL)
+                {
+                    if (reverse)
+                        update_expr = false;
+                    else
+                        remove = true;
+                }
+                else if (nomatch == NULL)
+                {
+                    if (reverse)
+                        remove = true;
+                    else
+                        update_expr = false;
+                }
+            }
+
+            if (remove)
+            {
+                STAILQ_REMOVE(&iter->exp_results, result,
+                              trc_exp_result, links);
+                trc_exp_result_free(result);
+                free(result);
+                logic_expr_free(match);
+                logic_expr_free(nomatch);
+            }
+            else
+            {
+                iter_exp_result = true;
+
+                if (update_expr)
+                {
+                    result->tags_expr = (reverse ? nomatch : match);
+                    logic_expr_free(reverse ? match : nomatch);
+                    free(result->tags_str);
+                    result->tags_str = logic_expr_to_str(result->tags_expr);
+                }
+            }
+        }
+
+        if (tests_filter_by_tags(&iter->tests, tags, flags))
+            iter_exp_result = true;
+
+        if (iter_exp_result)
+        {
+            iters_exp_result = true;
+        }
+        else if (flags & TRC_FILTER_DEL_NO_RES)
+        {
+            TAILQ_REMOVE(&iters->head, iter, links);
+
+            if (iter->node != NULL)
+            {
+                del_node_with_comments(iter->node);
+                iter->node = NULL;
+            }
+
+            trc_free_test_iter(iter);
+        }
+    }
+
+    return iters_exp_result;
+}
+
+/**
+ * Perform the job of trc_db_filter_by_tags() for all tests from
+ * a queue.
+ *
+ * @param tests     Queue of tests.
+ * @param tags      TRC tags.
+ * @param flags     See trc_filter_flags.
+ *
+ * @return true if some expected results remain after filtering,
+ *         false otherwise.
+ */
+static bool
+tests_filter_by_tags(trc_tests *tests, const tqh_strings *tags,
+                     unsigned int flags)
+{
+    trc_test *test;
+    trc_test *test_aux;
+    bool result = false;
+
+    TAILQ_FOREACH_SAFE(test, &tests->head, links, test_aux)
+    {
+        if (iters_filter_by_tags(&test->iters, tags, flags))
+        {
+            result = true;
+        }
+        else if (flags & TRC_FILTER_DEL_NO_RES)
+        {
+            TAILQ_REMOVE(&tests->head, test, links);
+
+            if (test->node != NULL)
+            {
+                del_node_with_comments(test->node);
+                test->node = NULL;
+            }
+
+            trc_free_trc_test(test);
+        }
+    }
+
+    return result;
+}
+
+/* See description in trc_db.h */
+void
+trc_db_filter_by_tags(te_trc_db *db, const tqh_strings *tags,
+                      unsigned int flags)
+{
+    tests_filter_by_tags(&db->tests, tags, flags);
+}
+
 /* See description in trc_db.h */
 te_errno
 trc_db_save(te_trc_db *db, const char *filename, int flags,

@@ -146,6 +146,7 @@ if not trc_has_missed_deps
     subdir('trc-key')
     subdir('trc-update')
     subdir('trc-merge')
+    subdir('trc-filter')
 endif
 
 # Install scripts
