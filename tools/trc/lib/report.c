@@ -73,12 +73,14 @@ trc_report_free_test_iter_data(trc_report_test_iter_data *data)
 
     while ((p = TAILQ_FIRST(&data->runs)) != NULL)
     {
+        unsigned int i;
+
         TAILQ_REMOVE(&data->runs, p, links);
         te_test_result_clean(&p->result);
-        for (p->args_n = 0; p->args_n < p->args_max; p->args_n++)
+        for (i = 0; i < p->args_n; i++)
         {
-            free(p->args[p->args_n].name);
-            free(p->args[p->args_n].value);
+            free(p->args[i].name);
+            free(p->args[i].value);
         }
         free(p->args);
         free(p);

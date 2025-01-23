@@ -5589,11 +5589,9 @@ trc_update_process_iter(trc_update_ctx *ctx,
          */
         upd_iter_data->args = entry->args;
         upd_iter_data->args_n = entry->args_n;
-        upd_iter_data->args_max = entry->args_max;
 
         entry->args = NULL;
         entry->args_n = 0;
-        entry->args_max = 0;
     }
     else if (ctx->flags & TRC_UPDATE_FILT_LOG)
         upd_iter_data->filtered = true;

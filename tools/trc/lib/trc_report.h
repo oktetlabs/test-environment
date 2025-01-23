@@ -16,6 +16,7 @@
 #include "te_errno.h"
 #include "tq_string.h"
 #include "te_trc.h"
+#include "te_kvpair.h"
 #include "trc_db.h"
 
 #ifdef __cplusplus
@@ -142,8 +143,13 @@ typedef struct trc_report_test_iter_entry {
     te_test_result  result;     /**< Obtained result */
     bool is_exp;     /**< Does obtained result match one of
                                      expected? */
-    unsigned int    args_max;   /**< Maximum number of arguments
-                                     the space is allocated for */
+    /**
+     * Used during log parsing.
+     *
+     * @todo Probably it should used instead of @a args
+     *       throughout the code.
+     */
+    te_kvpair_h collect_args;
     trc_report_argument *args;  /**< Actual arguments */
 
     unsigned int       args_n;  /**< Number of arguments */

@@ -27,6 +27,7 @@
 
 #include "te_errno.h"
 #include "te_alloc.h"
+#include "te_compound.h"
 #include "logger_api.h"
 #include "te_test_result.h"
 #include "te_trc.h"
@@ -377,8 +378,8 @@ trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
         entry->tin = tin;
         entry->test_id = test_id;
         entry->hash = hash;
+        te_kvpair_init(&entry->collect_args);
         entry->args = NULL;
-        entry->args_max = 0;
         entry->args_n = 0;
 
         assert(ctx->iter_data == NULL);
@@ -444,84 +445,84 @@ static void
 trc_log_parse_test_param(trc_log_parse_ctx *ctx, const xmlChar **attrs)
 {
     trc_report_test_iter_entry    *entry;
-    unsigned int                   i = 0;
-    void                          *p = NULL;
+    const char *name = NULL;
+    const char *value = NULL;
+    const char *stem = NULL;
+    const char *field = NULL;
 
     entry = TAILQ_FIRST(&ctx->iter_data->runs);
     assert(entry != NULL);
     assert(TAILQ_NEXT(entry, links) == NULL);
 
-    assert(entry->args_n <= entry->args_max);
-
-    if (entry->args_max == 0)
-    {
-        entry->args_max = 20;
-        entry->args = calloc(entry->args_max,
-                             sizeof(*(entry->args)));
-        if (entry->args == NULL)
-        {
-            ctx->rc = TE_ENOMEM;
-            return;
-        }
-    }
-
-    if (entry->args_n == entry->args_max)
-    {
-        entry->args_max += 5;
-        p = realloc(entry->args,
-                    sizeof(*(entry->args)) * entry->args_max);
-        if (p == NULL)
-        {
-            ctx->rc = TE_ENOMEM;
-            return;
-        }
-        entry->args = p;
-
-        for (i = entry->args_n; i < entry->args_max; i++)
-        {
-            entry->args[i].name = NULL;
-            entry->args[i].value = NULL;
-            entry->args[i].variable = false;
-        }
-    }
-
     while (attrs[0] != NULL && attrs[1] != NULL)
     {
         if (xmlStrcmp(attrs[0], CONST_CHAR2XML("name")) == 0)
-        {
-            free(entry->args[entry->args_n].name);
-            entry->args[entry->args_n].name = strdup(XML2CHAR(attrs[1]));
-            if (entry->args[entry->args_n].name == NULL)
-            {
-                ERROR("strdup(%s) failed", attrs[1]);
-                ctx->rc = TE_ENOMEM;
-                return;
-            }
-        }
+            name = XML2CHAR(attrs[1]);
         else if (xmlStrcmp(attrs[0], CONST_CHAR2XML("value")) == 0)
-        {
-            free(entry->args[entry->args_n].value);
-            entry->args[entry->args_n].value = strdup(XML2CHAR(attrs[1]));
-            if (entry->args[entry->args_n].value == NULL)
-            {
-                ERROR("strdup(%s) failed", XML2CHAR(attrs[1]));
-                ctx->rc = TE_ENOMEM;
-                return;
-            }
-        }
+            value = XML2CHAR(attrs[1]);
+        else if (xmlStrcmp(attrs[0], CONST_CHAR2XML("stem")) == 0)
+            stem = XML2CHAR(attrs[1]);
+        else if (xmlStrcmp(attrs[0], CONST_CHAR2XML("field")) == 0)
+            field = XML2CHAR(attrs[1]);
         attrs += 2;
     }
 
-    if (entry->args[entry->args_n].name == NULL ||
-        entry->args[entry->args_n].value == NULL)
+    if (name == NULL || value == NULL)
     {
         ERROR("Invalid format of the test parameter specification");
         ctx->rc = TE_EFMT;
     }
     else
     {
-        entry->args_n++;
+        if (stem == NULL)
+        {
+            te_kvpair_set_compound(&entry->collect_args, name, NULL,
+                                   TE_COMPOUND_MOD_OP_PREPEND, "%s", value);
+        }
+        else
+        {
+            /*
+             * TODO: this assumes that the order of <param> records in the
+             * log matches the order of subvalues for each compound
+             * parameter. But this only matters when there are multiple
+             * subvalues with the same field name, which should be quite
+             * a marginal case.
+             */
+            te_kvpair_set_compound(&entry->collect_args, stem, field,
+                                   TE_COMPOUND_MOD_OP_APPEND, "%s", value);
+        }
     }
+}
+
+static te_errno
+copy_collected_arg(const char *key, const char *value, void *user)
+{
+    trc_report_argument **current_arg = user;
+
+    (*current_arg)->name = TE_STRDUP(key);
+    (*current_arg)->value = TE_STRDUP(value);
+    (*current_arg)->variable = false;
+    (*current_arg)++;
+
+    return 0;
+}
+
+static void
+trc_log_fill_params(trc_log_parse_ctx *ctx)
+{
+    trc_report_test_iter_entry    *entry;
+    trc_report_argument *current_arg;
+
+    entry = TAILQ_FIRST(&ctx->iter_data->runs);
+    assert(entry != NULL);
+    assert(TAILQ_NEXT(entry, links) == NULL);
+
+    entry->args_n = te_kvpairs_count(&entry->collect_args, NULL);
+    entry->args = TE_ALLOC(sizeof(*entry->args) * entry->args_n);
+    current_arg = entry->args;
+    te_kvpairs_foreach(&entry->collect_args, copy_collected_arg, NULL,
+                       &current_arg);
+    te_kvpair_fini(&entry->collect_args);
 }
 
 /**
@@ -1181,6 +1182,7 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
 
         case TRC_LOG_PARSE_PARAMS:
             assert(strcmp(tag, "params") == 0);
+            trc_log_fill_params(ctx);
             ctx->state = TRC_LOG_PARSE_META;
             break;
 

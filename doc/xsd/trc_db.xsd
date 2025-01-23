@@ -53,12 +53,36 @@
                         Unique set of arguments: name-value pairs.
                     </xsd:documentation>
                 </xsd:annotation>
-                <xsd:complexType>
-                    <xsd:simpleContent>
-                        <xsd:extension base="xsd:string">
-                            <xsd:attribute name="name" type="xsd:token"/>
-                        </xsd:extension>
-                    </xsd:simpleContent>
+                <xsd:complexType mixed="true">
+                    <xsd:sequence>
+                        <xsd:element name="field"  minOccurs="0" maxOccurs="unbounded">
+                            <xsd:annotation>
+                                <xsd:documentation>
+                                    A field of a structured value
+                                </xsd:documentation>
+                            </xsd:annotation>
+                            <xsd:complexType>
+                                <xsd:simpleContent>
+                                    <xsd:extension base="xsd:string">
+                                        <xsd:attribute name="name" type="xsd:string">
+                                            <xsd:annotation>
+                                                <xsd:documentation>
+                                                    Field name of a structured value.
+                                                </xsd:documentation>
+                                            </xsd:annotation>
+                                        </xsd:attribute>
+                                    </xsd:extension>
+                                </xsd:simpleContent>
+                            </xsd:complexType>
+                        </xsd:element>
+                    </xsd:sequence>
+                    <xsd:attribute name="name" type="xsd:token">
+                        <xsd:annotation>
+                            <xsd:documentation>
+                                Name of an argument.
+                            </xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
                 </xsd:complexType>
             </xsd:element>
             <xsd:element name="notes" type="xsd:string" minOccurs="0">
@@ -209,12 +233,36 @@
                             </xsd:annotation>
                             <xsd:complexType mixed="true">
                                 <xsd:sequence>
-                                    <xsd:element name="value" type="xsd:string" >
+                                    <xsd:element name="value">
                                         <xsd:annotation>
                                             <xsd:documentation>
                                                 The value of a global variable.
                                             </xsd:documentation>
                                         </xsd:annotation>
+                                        <xsd:complexType mixed="true">
+                                            <xsd:sequence>
+                                                <xsd:element name="field"  minOccurs="0" maxOccurs="unbounded">
+                                                    <xsd:annotation>
+                                                        <xsd:documentation>
+                                                            A field of a structured value
+                                                        </xsd:documentation>
+                                                    </xsd:annotation>
+                                                    <xsd:complexType>
+                                                        <xsd:simpleContent>
+                                                            <xsd:extension base="xsd:string">
+                                                                <xsd:attribute name="name" type="xsd:string">
+                                                                    <xsd:annotation>
+                                                                        <xsd:documentation>
+                                                                            Field name of a structured value.
+                                                                        </xsd:documentation>
+                                                                    </xsd:annotation>
+                                                                </xsd:attribute>
+                                                            </xsd:extension>
+                                                        </xsd:simpleContent>
+                                                    </xsd:complexType>
+                                                </xsd:element>
+                                            </xsd:sequence>
+                                        </xsd:complexType>
                                     </xsd:element>
                                 </xsd:sequence>
                                 <xsd:attribute name="name" type="xsd:token" use="required">

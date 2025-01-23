@@ -27,6 +27,7 @@
 #include "logger_api.h"
 #include "te_alloc.h"
 #include "te_str.h"
+#include "te_compound.h"
 #include "te_test_result.h"
 #include "logic_expr.h"
 
@@ -364,6 +365,119 @@ trc_db_get_text_content(xmlNodePtr node, char **content)
                             content);
 }
 
+static te_errno
+process_simple_value(te_string *dest, const char *content)
+{
+    te_compound_kind kind = te_compound_classify(dest);
+
+    if (kind != TE_COMPOUND_NULL && kind != TE_COMPOUND_PLAIN)
+    {
+        if (te_str_isspace(content))
+            return 0;
+
+        ERROR("Simple text '%s' follows subvalue definitions", content);
+        return TE_RC(TE_TRC, TE_EFMT);
+    }
+    te_string_append(dest, "%s", content);
+
+    return 0;
+}
+
+static te_errno
+process_subvalue(te_string *dest, xmlNodePtr field_node, const char *elt_name)
+{
+    te_string collect = TE_STRING_INIT;
+    char *name;
+    xmlNodePtr child;
+
+    if (xmlStrcmp(field_node->name, CONST_CHAR2XML("field")) != 0)
+    {
+        ERROR("Unexpected element <%s> inside <%s>",
+              (const char *)field_node->name, elt_name);
+        te_string_free(&collect);
+        return TE_RC(TE_TRC, TE_EFMT);
+    }
+
+    if (te_compound_classify(dest) == TE_COMPOUND_PLAIN)
+    {
+        if (!te_str_isspace(dest->ptr))
+        {
+            ERROR("<field> follows simple text");
+            te_string_free(&collect);
+            return TE_RC(TE_TRC, TE_EFMT);
+        }
+        te_string_reset(dest);
+    }
+
+    for (child = field_node->children; child != NULL; child = child->next)
+    {
+        switch (child->type)
+        {
+            case XML_COMMENT_NODE:
+                /* Just skip comments */
+                break;
+            case XML_TEXT_NODE:
+                te_string_append(&collect, (const char *)child->content);
+                break;
+            case XML_ELEMENT_NODE:
+                ERROR("Unexpected element <%s> inside <field>",
+                      (const char *)child->name);
+                te_string_free(&collect);
+                return TE_RC(TE_TRC, TE_EFMT);
+            default:
+                ERROR("Something strange inside <field>, node type = %d",
+                      child->type);
+                te_string_free(&collect);
+                return TE_RC(TE_TRC, TE_EFMT);
+        }
+    }
+
+    name = XML2CHAR(xmlGetProp(field_node, CONST_CHAR2XML("name")));
+    te_compound_set(dest, name, TE_COMPOUND_MOD_OP_APPEND, "%s", collect.ptr);
+    xmlFree(name);
+    te_string_free(&collect);
+    return 0;
+}
+
+static te_errno
+get_structured_text_content(xmlNodePtr node, const char *name, char **content)
+{
+    te_string compound = TE_STRING_INIT;
+    xmlNodePtr child;
+    te_errno rc = 0;
+
+    for (child = node->children; child != NULL && rc == 0; child = child->next)
+    {
+        switch (child->type)
+        {
+            case XML_COMMENT_NODE:
+                /* Just skip comments */
+                break;
+            case XML_TEXT_NODE:
+                rc = process_simple_value(&compound,
+                                          (const char *)child->content);
+                break;
+            case XML_ELEMENT_NODE:
+                rc = process_subvalue(&compound, child, name);
+                break;
+            default:
+                ERROR("Something strange inside <%s>, node type = %d",
+                      name, child->type);
+                rc = TE_RC(TE_TRC, TE_EINVAL);
+                break;
+        }
+    }
+
+    if (rc == 0)
+        te_string_move(content, &compound);
+    else
+        *content = NULL;
+    te_string_free(&compound);
+
+    return 0;
+}
+
+
 /**
  * Get node with text content.
  *
@@ -460,7 +574,7 @@ alloc_and_get_test_arg(xmlNodePtr node, trc_test_iter_args *args)
 
     tq_strings_add_uniq_dup(&args->save_order, p->name);
 
-    rc = get_text_content(node, "arg", &p->value);
+    rc = get_structured_text_content(node, "arg", &p->value);
     if (rc != 0)
     {
         ERROR("Failed to get value of the argument '%s'", p->name);
@@ -803,7 +917,7 @@ get_globals(xmlNodePtr node, te_trc_db *db, trc_test *parent)
                 xmlNodePtr val_node = xmlNodeChildren(node);
 
                 if (xmlStrcmp(val_node->name, CONST_CHAR2XML("value")) == 0)
-                    get_text_content(val_node, "value", &g->value);
+                    get_structured_text_content(val_node, "value", &g->value);
             }
             if (rc || g->value == NULL)
             {
@@ -2235,6 +2349,49 @@ trc_exp_results_to_xml(trc_exp_results *exp_results, xmlNodePtr node,
 }
 
 static te_errno
+put_subvalue(char *key, size_t idx, char *value, bool has_more, void *user)
+{
+    xmlNodePtr target = user;
+    xmlNodePtr field = xmlNewChild(target, NULL, BAD_CAST "field", NULL);
+
+    if (field == NULL)
+    {
+        ERROR("%s(): xmlNewChild failed", __func__);
+        return TE_RC(TE_TRC, TE_ENOMEM);
+    }
+
+    if (key != NULL)
+        xmlSetProp(field, BAD_CAST "name", BAD_CAST key);
+
+    xmlNodeSetContent(field, BAD_CAST value);
+
+    return 0;
+}
+
+static te_errno
+make_compound_value(xmlNodePtr target, const char *value)
+{
+    te_string compound;
+
+    if (te_str_is_null_or_empty(value))
+        return 0;
+
+    compound = (te_string)TE_STRING_INIT_RO_PTR(value);
+    switch (te_compound_classify(&compound))
+    {
+        case TE_COMPOUND_NULL:
+        case TE_COMPOUND_PLAIN:
+            xmlNodeSetContent(target, BAD_CAST value);
+            return 0;
+        case TE_COMPOUND_ARRAY:
+        case TE_COMPOUND_OBJECT:
+            return te_compound_iterate(&compound, put_subvalue, target);
+    }
+
+    return 0;
+}
+
+static te_errno
 trc_update_iters(te_trc_db *db, trc_test_iters *iters, int flags, int uid,
                  bool (*to_save)(void *, bool),
                  char *(*set_user_attr)(void *, bool))
@@ -2407,11 +2564,8 @@ trc_update_iters(te_trc_db *db, trc_test_iters *iters, int flags, int uid,
                         return TE_ENOMEM;
                     }
 
-                    xmlNodeSetContent(node, a->value == NULL ?
-                                                BAD_CAST a->value :
-                                                strlen(a->value) == 0 ?
-                                                        NULL :
-                                                        BAD_CAST a->value);
+                    make_compound_value(node, a->value);
+
                     xmlNewProp(node, BAD_CAST "name", BAD_CAST a->name);
 
                     if (prev_node == NULL)
@@ -2648,12 +2802,13 @@ trc_update_tests(te_trc_db *db, trc_tests *tests, int flags, int uid,
 
                         value_node = xmlNewChild(global_node, NULL,
                                                  BAD_CAST "value",
-                                                 BAD_CAST g->value);
+                                                 NULL);
                         if (value_node == NULL)
                         {
                             ERROR("xmlNewChild() failed for 'value'");
                             return TE_ENOMEM;
                         }
+                        make_compound_value(value_node, g->value);
 
                         xmlNewProp(global_node, BAD_CAST "name",
                                    BAD_CAST g->name);
