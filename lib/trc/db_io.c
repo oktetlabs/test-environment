@@ -275,8 +275,7 @@ static xmlNodePtr
 xmlNodeSkipExtra(xmlNodePtr node)
 {
     while ((node != NULL) &&
-           ((xmlStrcmp(node->name, (const xmlChar *)("comment")) == 0) ||
-            (xmlStrcmp(node->name, (const xmlChar *)("text")) == 0)))
+           (node->type == XML_COMMENT_NODE || node->type == XML_TEXT_NODE))
     {
         node = node->next;
     }
@@ -335,7 +334,7 @@ get_text_content(xmlNodePtr node, const char *name, char **content)
               name);
         return TE_RC(TE_TRC, TE_EFMT);
     }
-    if (xmlStrcmp(node->children->name, CONST_CHAR2XML("text")) != 0)
+    if (node->children->type != XML_TEXT_NODE)
     {
         ERROR("Unexpected element '%s' in the node '%s' with text "
               "content", node->children->name, name);
