@@ -1,17 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2004-2025 OKTET Labs Ltd. All rights reserved. -->
 
-<xsd:schema xml:lang="en" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-            targetNamespace="http://www.oktetlabs.ru/te/trc"
-            xmlns:te-trc="http://www.oktetlabs.ru/te/trc">
+<xsd:schema xml:lang="en" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace"
+                schemaLocation="http://www.w3.org/2001/03/xml.xsd" />
 
     <xsd:annotation>
         <xsd:documentation>
             Test Environment
             XML schema for expected testing results data base
-
-            Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
-
         </xsd:documentation>
     </xsd:annotation>
 
@@ -22,9 +20,11 @@
             </xsd:documentation>
         </xsd:annotation>
         <xsd:restriction base="xsd:token">
+            <xsd:enumeration value="UNSPEC"/>
             <xsd:enumeration value="PASSED"/>
             <xsd:enumeration value="FAILED"/>
             <xsd:enumeration value="SKIPPED"/>
+            <xsd:enumeration value="FAKED"/>
         </xsd:restriction>
     </xsd:simpleType>
 
@@ -61,43 +61,69 @@
                     </xsd:simpleContent>
                 </xsd:complexType>
             </xsd:element>
-            <xsd:element name="notes" type="xsd:string">
+            <xsd:element name="notes" type="xsd:string" minOccurs="0">
                 <xsd:annotation>
                     <xsd:documentation>
                         Notes specific for this iteration of the test.
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:element>
-            <xsd:element name="result" minOccurs="0" maxOccurs="unbounded">
+            <xsd:element name="results" minOccurs="0" maxOccurs="unbounded">
                 <xsd:annotation>
                     <xsd:documentation>
-                        Set of tagged expected results of the iteration.
+                        List of expected results for an iteration under various conditions.
                     </xsd:documentation>
                 </xsd:annotation>
                 <xsd:complexType>
                     <xsd:sequence>
-                        <xsd:element name="verdict" type="xsd:string"
-                                     minOccurs="0" maxOccurs="unbounded">
+                        <xsd:element name="result" minOccurs="0" maxOccurs="unbounded">
                             <xsd:annotation>
                                 <xsd:documentation>
-                                    Set of expected verdicts.
+                                    Set of tagged expected results of the iteration.
                                 </xsd:documentation>
                             </xsd:annotation>
+                            <xsd:complexType>
+                                <xsd:sequence>
+                                    <xsd:element name="verdict" type="xsd:string"
+                                                 minOccurs="0" maxOccurs="unbounded">
+                                        <xsd:annotation>
+                                            <xsd:documentation>
+                                                Set of expected verdicts.
+                                            </xsd:documentation>
+                                        </xsd:annotation>
+                                    </xsd:element>
+                                </xsd:sequence>
+                                <xsd:attribute name="value" type="result"
+                                               use="required">
+                                    <xsd:annotation>
+                                        <xsd:documentation>
+                                            Expected result for these tags.
+                                        </xsd:documentation>
+                                    </xsd:annotation>
+                                </xsd:attribute>
+                                <xsd:attribute name="key" type="xsd:string" default="">
+                                    <xsd:annotation>
+                                        <xsd:documentation>
+                                            Key to the status of this iteration for
+                                            this tag. E.g. BugZilla reference.
+                                        </xsd:documentation>
+                                    </xsd:annotation>
+                                </xsd:attribute>
+                                <xsd:attribute name="notes" type="xsd:string"
+                                               default="">
+                                    <xsd:annotation>
+                                        <xsd:documentation>
+                                            Notes specific for this tag.
+                                        </xsd:documentation>
+                                    </xsd:annotation>
+                                </xsd:attribute>
+                            </xsd:complexType>
                         </xsd:element>
                     </xsd:sequence>
-                    <xsd:attribute name="tag" type="xsd:token"
-                                   use="required">
+                    <xsd:attribute name="tags" type="xsd:string">
                         <xsd:annotation>
                             <xsd:documentation>
-                                Name of the tag.
-                            </xsd:documentation>
-                        </xsd:annotation>
-                    </xsd:attribute>
-                    <xsd:attribute name="value" type="te-trc:result"
-                                   use="required">
-                        <xsd:annotation>
-                            <xsd:documentation>
-                                Expected result for this tag.
+                                Logical expression for tags marking the result.
                             </xsd:documentation>
                         </xsd:annotation>
                     </xsd:attribute>
@@ -119,7 +145,7 @@
                     </xsd:attribute>
                 </xsd:complexType>
             </xsd:element>
-            <xsd:element name="test" type="te-trc:test"
+            <xsd:element name="test" type="test"
                          minOccurs="0" maxOccurs="unbounded">
                 <xsd:annotation>
                     <xsd:documentation>
@@ -129,10 +155,18 @@
                 </xsd:annotation>
             </xsd:element>
         </xsd:sequence>
-        <xsd:attribute name="result" type="te-trc:result" use="required">
+        <xsd:attribute name="result" type="result" use="required">
             <xsd:annotation>
                 <xsd:documentation>
                     Default expected result of the test iteration.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="pos" type="xsd:unsignedInt">
+            <xsd:annotation>
+                <xsd:documentation>
+                    Number of the iteration in the list of all its siblings
+                    belonging to the same file.
                 </xsd:documentation>
             </xsd:annotation>
         </xsd:attribute>
@@ -152,14 +186,50 @@
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:element>
-            <xsd:element name="notes" type="xsd:string">
+            <xsd:element name="notes" type="xsd:string" minOccurs="0">
                 <xsd:annotation>
                     <xsd:documentation>
                         Notes common for all iterations of the test.
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:element>
-            <xsd:element name="iter" type="te-trc:iter"
+            <xsd:element name="globals" minOccurs="0">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        List of global variables of a test.
+                    </xsd:documentation>
+                </xsd:annotation>
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="global" minOccurs="0" maxOccurs="unbounded">
+                            <xsd:annotation>
+                                <xsd:documentation>
+                                    A record for a global variable.
+                                </xsd:documentation>
+                            </xsd:annotation>
+                            <xsd:complexType mixed="true">
+                                <xsd:sequence>
+                                    <xsd:element name="value" type="xsd:string" >
+                                        <xsd:annotation>
+                                            <xsd:documentation>
+                                                The value of a global variable.
+                                            </xsd:documentation>
+                                        </xsd:annotation>
+                                    </xsd:element>
+                                </xsd:sequence>
+                                <xsd:attribute name="name" type="xsd:token" use="required">
+                                    <xsd:annotation>
+                                        <xsd:documentation>
+                                            The name of a global variable.
+                                        </xsd:documentation>
+                                    </xsd:annotation>
+                                </xsd:attribute>
+                            </xsd:complexType>
+                        </xsd:element>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="iter" type="iter"
                          minOccurs="1" maxOccurs="unbounded">
                 <xsd:annotation>
                     <xsd:documentation>
@@ -168,6 +238,14 @@
                 </xsd:annotation>
             </xsd:element>
         </xsd:sequence>
+        <xsd:attribute ref="xml:base">
+            <xsd:annotation>
+                <xsd:documentation>
+                    Standard XML xml:base attribute, needed to
+                    validate XMLs after XInclude processing.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
         <xsd:attribute name="name" type="xsd:token" use="required">
             <xsd:annotation>
                 <xsd:documentation>
@@ -175,7 +253,7 @@
                 </xsd:documentation>
             </xsd:annotation>
         </xsd:attribute>
-        <xsd:attribute name="type" type="te-trc:testType" default="script">
+        <xsd:attribute name="type" type="testType" default="script">
             <xsd:annotation>
                 <xsd:documentation>
                     Type of the test: package or script.
@@ -190,7 +268,21 @@
                 </xsd:documentation>
             </xsd:annotation>
         </xsd:attribute>
-
+        <xsd:attribute name="auxiliary" type="xsd:boolean" default="false">
+            <xsd:annotation>
+                <xsd:documentation>
+                    Marks the test as auxiliary, e.g. a prologue or epilogue.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="pos" type="xsd:unsignedInt">
+            <xsd:annotation>
+                <xsd:documentation>
+                    Number of the test in the list of all its siblings
+                    belonging to the same file.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
     </xsd:complexType>
 
     <xsd:element name="trc_db">
@@ -201,7 +293,7 @@
         </xsd:annotation>
         <xsd:complexType>
             <xsd:sequence>
-                <xsd:element name="test" type="te-trc:test"
+                <xsd:element name="test" type="test"
                              minOccurs="1" maxOccurs="unbounded">
                     <xsd:annotation>
                         <xsd:documentation>
@@ -211,7 +303,7 @@
                     </xsd:annotation>
                 </xsd:element>
             </xsd:sequence>
-            <xsd:attribute name="version" type="xsd:string" use="required">
+            <xsd:attribute name="version" type="xsd:string">
                 <xsd:annotation>
                     <xsd:documentation>
                         Version of the database.
