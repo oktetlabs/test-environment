@@ -143,6 +143,37 @@ extern te_errno te_kvpairs_del(te_kvpair_h *head, const char *key);
  */
 extern te_errno te_kvpairs_del_all(te_kvpair_h *head, const char *key);
 
+/**
+ * Update callback function type for te_kvpair_update().
+ *
+ * @param head   Key-value list
+ *               (should not be modified by the callback).
+ * @param key    Key being updated.
+ * @param value  Old value associated with the key or @c NULL.
+ * @param user   User data.
+ *
+ * @return heap-allocated new value or @c NULL.
+ */
+typedef char *te_kvpair_update_fn(const te_kvpair_h *head, const char *key,
+                                  const char *value, void *user);
+
+/**
+ * Updates a value associated with the @p key in the key-value list.
+ *
+ * If there were no value associated with the key, the callback
+ * is called with @c NULL for its @c value argument. Otherwise,
+ * only the latest binding is updated.
+ *
+ * If the callback returns @c NULL, the binding is deleted.
+ *
+ * @param head          Head of the list.
+ * @param key           Key to update (may not be @c NULL).
+ * @param callback      Updating callback.
+ * @param user          Callback data.
+ */
+extern void te_kvpair_update(te_kvpair_h *head, const char *key,
+                             te_kvpair_update_fn *callback,
+                             void *user);
 
 /**
  * Copy all key-values pairs from @p src to @p dest.

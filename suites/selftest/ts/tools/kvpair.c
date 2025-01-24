@@ -28,6 +28,22 @@
 #include "te_str.h"
 #include "te_string.h"
 
+static char *
+update_kv(const te_kvpair_h *kvpairs, const char *key, const char *oldval,
+          void *user)
+{
+    const char *newval = user;
+
+    if (newval == NULL)
+        return NULL;
+
+    if (oldval == NULL)
+        return TE_STRDUP(newval);
+
+    UNUSED(kvpairs);
+    UNUSED(key);
+    return te_str_concat(oldval, newval);
+}
 
 int
 main(int argc, char **argv)
@@ -431,6 +447,37 @@ main(int argc, char **argv)
         TEST_VERDICT("Unexpected kvpairs serialization");
     }
 
+    TEST_STEP("Testing key update");
+    for (i = 0; i < n_keys; i++)
+    {
+        const char *key = TE_VEC_GET(const char *, &keys, i);
+        char *value = TE_VEC_GET(char *, &values, i);
+        const char *chk_value;
+
+        te_kvpair_push(&kvpairs, key, "%s", value);
+        te_kvpair_update(&kvpairs, key, update_kv, value);
+        CHECK_NOT_NULL(chk_value = te_kvpairs_get(&kvpairs, key));
+        if (!te_compare_bufs(value, strlen(value), 2,
+                             chk_value, strlen(chk_value), TE_LL_ERROR))
+            TEST_VERDICT("The value not properly modified");
+        CHECK_NOT_NULL(chk_value = te_kvpairs_get_nth(&kvpairs, key, 1));
+        if (strcmp(chk_value, value) != 0)
+            TEST_VERDICT("Non-last binding affected");
+
+        te_kvpair_update(&kvpairs, key, update_kv, NULL);
+        CHECK_NOT_NULL(chk_value = te_kvpairs_get(&kvpairs, key));
+        if (strcmp(chk_value, value) != 0)
+            TEST_VERDICT("Wrong value deleted");
+
+        CHECK_RC(te_kvpairs_del(&kvpairs, key));
+        te_kvpair_update(&kvpairs, key, update_kv, NULL);
+        if (te_kvpairs_has_kv(&kvpairs, key, NULL))
+            TEST_VERDICT("A value was added when it should not");
+
+        te_kvpair_update(&kvpairs, key, update_kv, value);
+        if (!te_kvpairs_has_kv(&kvpairs, key, value))
+            TEST_VERDICT("A value was not added when it should");
+    }
 
     TEST_STEP("Clean up kvpairs");
     te_kvpair_fini(&kvpairs);

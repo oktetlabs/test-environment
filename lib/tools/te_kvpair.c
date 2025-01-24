@@ -320,6 +320,46 @@ te_kvpair_add(te_kvpair_h *head, const char *key,
 }
 
 /* See the description in te_kvpair.h */
+void
+te_kvpair_update(te_kvpair_h *head, const char *key,
+                 te_kvpair_update_fn *callback, void *user)
+{
+    te_kvpair *p;
+    char *new_val;
+
+    assert(head != NULL);
+    assert(key != NULL);
+
+    TAILQ_FOREACH(p, head, links)
+    {
+        if (strcmp(key, p->key) == 0)
+        {
+            new_val = callback(head, key, p->value, user);
+            if (new_val == NULL)
+            {
+                te_kvpair_remove(head, p);
+            }
+            else
+            {
+                free(p->value);
+                p->value = new_val;
+            }
+            return;
+        }
+    }
+
+    new_val = callback(head, key, NULL, user);
+    if (new_val != NULL)
+    {
+        p = TE_ALLOC(sizeof(*p));
+        p->key = TE_STRDUP(key);
+        p->value = new_val;
+
+        TAILQ_INSERT_HEAD(head, p, links);
+    }
+}
+
+/* See the description in te_kvpair.h */
 te_errno
 te_kvpair_to_str_gen(const te_kvpair_h *head, const char *delim, te_string *str)
 {
