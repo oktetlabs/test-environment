@@ -2712,6 +2712,7 @@ trc_update_tests(te_trc_db *db, trc_tests *tests, int flags, int uid,
 
         if (is_saved)
         {
+            xmlNodePtr globals_node = NULL;
             renew_content = true;
 
             if (p->node == NULL)
@@ -2737,9 +2738,14 @@ trc_update_tests(te_trc_db *db, trc_tests *tests, int flags, int uid,
                     aux_ptr = node->next;
 
                     if (xmlStrcmp(node->name,
+                                  CONST_CHAR2XML("globals")) == 0)
+                    {
+                        globals_node = node;
+                        continue;
+                    }
+
+                    if (xmlStrcmp(node->name,
                                   CONST_CHAR2XML("notes")) == 0 ||
-                        xmlStrcmp(node->name,
-                                  CONST_CHAR2XML("globals")) == 0 ||
                         xmlStrcmp(node->name,
                                   CONST_CHAR2XML("objective")) == 0 ||
                         (node->type != XML_ELEMENT_NODE &&
@@ -2804,20 +2810,31 @@ trc_update_tests(te_trc_db *db, trc_tests *tests, int flags, int uid,
                     !TAILQ_EMPTY(&db->globals.head))
                 {
                     trc_global      *g;
-                    xmlNodePtr       globals_node;
                     xmlNodePtr       global_node;
                     xmlNodePtr       value_node;
 
                     flags &= ~TRC_SAVE_GLOBALS;
 
-                    if ((globals_node = xmlNewNode(NULL,
-                                            BAD_CAST "globals")) == NULL)
+                    if (globals_node == NULL)
                     {
-                        ERROR("xmlNewNode() failed for 'globals'");
-                        return TE_ENOMEM;
-                    }
+                        if ((globals_node = xmlNewNode(NULL,
+                                                BAD_CAST "globals")) == NULL)
+                        {
+                            ERROR("xmlNewNode() failed for 'globals'");
+                            return TE_ENOMEM;
+                        }
 
-                    xmlAddNextSibling(prev_node, globals_node);
+                        xmlAddNextSibling(prev_node, globals_node);
+                    }
+                    else
+                    {
+                        while ((global_node = globals_node->children) !=
+                                                                      NULL)
+                        {
+                            xmlUnlinkNode(global_node);
+                            xmlFreeNode(global_node);
+                        }
+                    }
 
                     TAILQ_FOREACH(g, &db->globals.head, links)
                     {
@@ -2844,6 +2861,11 @@ trc_update_tests(te_trc_db *db, trc_tests *tests, int flags, int uid,
                         xmlNewProp(global_node, BAD_CAST "name",
                                    BAD_CAST g->name);
                     }
+                }
+                else if (globals_node != NULL)
+                {
+                    xmlUnlinkNode(globals_node);
+                    xmlFreeNode(globals_node);
                 }
             }
         }
