@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2004-2025 OKTET Labs Ltd. All rights reserved. -->
 <!--
     XML Schema for RGT log report XML format.
   -->
@@ -12,9 +13,6 @@
         <xs:documentation>
             Test Environment
             XML schema for RGT log report XML format
-
-            Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
-
         </xs:documentation>
     </xs:annotation>
 
@@ -110,6 +108,8 @@
                   <xs:simpleContent>
                     <xs:extension base="xs:string">
                       <xs:attribute name="name" type="xs:string"/>
+                      <xs:attribute name="stem" type="xs:string"/>
+                      <xs:attribute name="field" type="xs:string"/>
                       <xs:attribute name="value" type="xs:string"/>
                     </xs:extension>
                   </xs:simpleContent>

@@ -190,6 +190,10 @@ print_params(node_info_t *node)
         {
             fprintf(rgt_ctx.out_fd, "<param");
             append_attr("name", prm->name);
+            if (prm->stem != NULL)
+                append_attr("stem", prm->stem);
+            if (prm->field != NULL)
+                append_attr("field", prm->field);
             append_attr("value", prm->val);
             fprintf(rgt_ctx.out_fd, "/>\n");
             prm = prm->next;

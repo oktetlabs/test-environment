@@ -836,6 +836,8 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
 
     json_t     *authors = NULL;
     json_t     *params = NULL;
+    json_t     *param_stems = NULL;
+    json_t     *param_fields = NULL;
     json_t     *reqs = NULL;
     json_t     *name_opt = NULL;
     json_t     *objective_opt = NULL;
@@ -868,7 +870,8 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
      * values and type-checked manually.
      */
     ret = json_unpack_ex(msg, &err, JSON_STRICT,
-                         "{s:i, s:i, s:s, s?o, s?o, s?o, s?o, s?o, s?o, s?o, s?o, s?i}",
+                         "{s:i, s:i, s:s, s?o, s?o, s?o, s?o, s?o, "
+                         "s?o, s?o, s?o, s?o, s?o, s?i}",
                          "id", &node->node_id,
                          "parent", &node->parent_id,
                          "node_type", &type,
@@ -879,6 +882,8 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
                          "tin", &tin_opt,
                          "authors", &authors,
                          "params", &params,
+                         "param_stems", &param_stems,
+                         "param_fields", &param_fields,
                          "reqs", &reqs,
                          "plan_id", &node->plan_id);
     if (ret != 0)
@@ -1023,8 +1028,40 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
                     *p_prm = (param *)node_info_obstack_alloc(sizeof(param));
                     (*p_prm)->name =
                         node_info_obstack_copy0(name, strlen(name));
+                    (*p_prm)->stem = NULL;
+                    (*p_prm)->field = NULL;
                     (*p_prm)->val =
                         node_info_obstack_copy0(value, strlen(value));
+                    if (param_stems != NULL)
+                    {
+                        json_t *stem = json_object_get(param_stems, name);
+
+                        if (stem != NULL)
+                        {
+                            const char *stem_str = json_string_value(stem);
+                            if (stem_str != NULL)
+                            {
+                                (*p_prm)->stem =
+                                    node_info_obstack_copy0(stem_str,
+                                                            strlen(stem_str));
+                            }
+                        }
+                    }
+                    if (param_fields != NULL)
+                    {
+                        json_t *field = json_object_get(param_fields, name);
+
+                        if (field != NULL)
+                        {
+                            const char *field_str = json_string_value(field);
+                            if (field_str != NULL)
+                            {
+                                (*p_prm)->field =
+                                    node_info_obstack_copy0(field_str,
+                                                            strlen(field_str));
+                            }
+                        }
+                    }
                     p_prm = &((*p_prm)->next);
                 }
             }

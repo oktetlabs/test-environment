@@ -48,6 +48,8 @@ typedef struct param {
     struct param *next; /**< Pointer to the next parameter */
 
     char *name; /**< Parameter name */
+    char *stem; /**< Base name for compound parameters */
+    char *field; /**< Field name for compound parameters */
     char *val;  /**< Parameter value in string representation */
 } param;
 

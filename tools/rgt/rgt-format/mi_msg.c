@@ -781,6 +781,9 @@ te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
     json_t *root;
     json_t *name = NULL;
     json_t *params = NULL;
+    /* The following two are  not actually used so far */
+    json_t *param_stems = NULL;
+    json_t *param_fields = NULL;
     json_t *reqs = NULL;
     json_t *authors = NULL;
     json_t *objective = NULL;
@@ -808,14 +811,16 @@ te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
 
     data->plan_id = -1;
     ret = json_unpack_ex(root, &err, JSON_STRICT,
-                         "{s:i, s:i, s?i, s:s, s?o, s?o, s?o, s?o, s?o, "
-                         "s?o, s?o, s?o}",
+                         "{s:i, s:i, s?i, s:s, s?o, s?o, s?o, s?o, s?o, s?o, "
+                         "s?o, s?o, s?o, s?o}",
                          "id", &data->node_id,
                          "parent", &data->parent_id,
                          "plan_id", &data->plan_id,
                          "node_type", &data->node_type,
                          "name", &name,
                          "params", &params,
+                         "param_stems", &param_stems,
+                         "param_fields", &param_fields,
                          "reqs", &reqs,
                          "authors", &authors,
                          "objective", &objective,
@@ -833,6 +838,8 @@ te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
 
     if (!check_json_type(mi, &name, JSON_STRING, "name") ||
         !check_json_type(mi, &params, JSON_ARRAY, "params") ||
+        !check_json_type(mi, &param_stems, JSON_OBJECT, "param_stems") ||
+        !check_json_type(mi, &param_fields, JSON_OBJECT, "param_fields") ||
         !check_json_type(mi, &authors, JSON_ARRAY, "authors") ||
         !check_json_type(mi, &objective, JSON_STRING, "objective") ||
         !check_json_type(mi, &page, JSON_STRING, "page") ||
