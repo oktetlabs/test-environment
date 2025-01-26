@@ -1878,6 +1878,7 @@ tad_ip6_match_do_cb(csap_p           csap,
         return rc;
     }
 
+    meta_pkt->ip_pld_sz = pkt_data->hdr.dus[3].val_i32;
     EXIT(CSAP_LOG_FMT "OK", CSAP_LOG_ARGS(csap));
 
     return rc;
