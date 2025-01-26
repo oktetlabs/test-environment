@@ -963,6 +963,7 @@ tad_ip4_match_do_cb(csap_p           csap,
     unsigned int            bitoff = 0;
     tad_data_unit_t        *ip4_hdr_h_cksum_du;
     tad_cksum_str_code      cksum_str_code;
+    size_t                  hdr_sz;
 
     UNUSED(ptrn_pdu);
 
@@ -1024,18 +1025,19 @@ tad_ip4_match_do_cb(csap_p           csap,
         }
     }
 
+    hdr_sz = WORD_4BYTE * pkt_data->hdr.dus[1].val_i32;
+
     if (cksum_str_code != TAD_CKSUM_STR_CODE_NONE)
     {
         uint8_t    *ip4_header_bin;
         uint16_t    h_cksum;
 
-        ip4_header_bin = TE_ALLOC(WORD_4BYTE * pkt_data->hdr.dus[1].val_i32);
+        ip4_header_bin = TE_ALLOC(hdr_sz);
 
         tad_pkt_read_bits(pdu, 0, WORD_32BIT * pkt_data->hdr.dus[1].val_i32,
                           ip4_header_bin);
 
-        h_cksum = calculate_checksum((void *)ip4_header_bin,
-                                     WORD_4BYTE * pkt_data->hdr.dus[1].val_i32);
+        h_cksum = calculate_checksum((void *)ip4_header_bin, hdr_sz);
         h_cksum = ~h_cksum;
 
         free(ip4_header_bin);
@@ -1056,6 +1058,7 @@ tad_ip4_match_do_cb(csap_p           csap,
         return rc;
     }
 
+    meta_pkt->ip_pld_sz = pkt_data->hdr.dus[3].val_i32 /* total */ - hdr_sz;
     EXIT(CSAP_LOG_FMT "OK", CSAP_LOG_ARGS(csap));
 
     return 0;

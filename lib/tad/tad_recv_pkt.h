@@ -53,6 +53,8 @@ typedef struct tad_recv_pkt {
 
     int                 match_unit;    /**< Index of matched pattern unit,
                                             -1 if packet mismatched */
+    size_t              ip_pld_sz;  /**< IPv4/IPv6 packet payload size,
+                                         as per the IP header */
 } tad_recv_pkt;
 
 
