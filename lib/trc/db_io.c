@@ -2346,7 +2346,9 @@ trc_update_iters(te_trc_db *db, trc_test_iters *iters, int flags, int uid,
                 tqe_string *tq_str;
 
                 xmlSetProp(p->tests.node, BAD_CAST "result",
-                           BAD_CAST "PASSED");
+                           BAD_CAST te_test_status_to_str(
+                               TAILQ_FIRST(&p->exp_default->results)->
+                               result.status));
 
                 if (set_user_attr != NULL)
                 {
