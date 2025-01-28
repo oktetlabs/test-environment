@@ -182,6 +182,7 @@
                     <field>Multiple 2</field>
                 </arg>
                 <arg name="boolean" />
+                <arg name="states" />
                 <arg name="enum" />
                 <arg name="check_enum" />
                 <arg name="simple" />

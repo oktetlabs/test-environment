@@ -201,6 +201,13 @@
                 </value>
             </arg>
 
+            <arg name="states">
+                <value>
+                    <field>STARTED</field>
+                    <field>STOPPED</field>
+                </value>
+            </arg>
+
             <arg name="boolean">
                 <value>
                     <field name="true" type="boolean">TRUE</field>

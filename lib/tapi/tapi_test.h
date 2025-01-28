@@ -40,6 +40,8 @@
 #include "te_tools.h"
 #include "te_param.h"
 #include "te_kvpair.h"
+#include "te_vector.h"
+#include "te_compound.h"
 #include "log_bufs.h"
 
 #ifdef __cplusplus
@@ -1152,6 +1154,62 @@ typedef enum {
  */
 #define TEST_GET_EXPECTED_RESULT_PARAM(var_name_) \
     (var_name_) = TEST_EXPECTED_RESULT_PARAM(var_name_)
+
+/**
+ * The macro populates a vector from multi-valued parameter.
+ *
+ * This is expected to be used with structured values in
+ * the package description, e.g. provided there is the following
+ * argument definition:
+ *
+ * @code{.xml}
+ * <arg name="multival">
+ *   <value>
+ *      <field>Value 1</field>
+ *      <field>Value 2</field>
+ *      <field>Value 3</field>
+ *    </value>
+ * </arg>
+ * @endcode
+ *
+ * the following code in the test may be used to retrieve all
+ * values of @c multival:
+ *
+ * @code{.c}
+ * te_vec multiple = TE_VEC_INIT(const char *);
+ * ...
+ * TEST_GET_PARAMS_VECTOR(multival, test_get_string_param);
+ * @endcode
+ *
+ * The type of vector elements should be assignment-compatible
+ * with the return type of @p accessor_.
+ *
+ * @param var_name_    target #te_vec
+ * @param acceesor_    accessor function
+ * @param ...          additional arguments to accessor
+ */
+#define TEST_GET_PARAMS_VECTOR(var_name_, accessor_, ...) \
+    do {                                                                \
+        te_string tmp_name_ = TE_STRING_INIT;                           \
+        size_t idx_ = 0;                                                \
+                                                                        \
+        for (;;)                                                        \
+        {                                                               \
+            te_string_reset(&tmp_name_);                                \
+            te_compound_build_name(&tmp_name_, #var_name_, NULL, idx_); \
+            if (test_find_param(argc, argv, tmp_name_.ptr) == NULL)     \
+                break;                                                  \
+            TE_VEC_APPEND_RVALUE(&var_name_,                            \
+                                 TE_TYPEOF(accessor_(argc, argv,        \
+                                                     tmp_name_.ptr,     \
+                                                     ##__VA_ARGS__)),   \
+                                 accessor_(argc, argv,                  \
+                                           tmp_name_.ptr,               \
+                                           ##__VA_ARGS__));             \
+            idx_++;                                                     \
+        }                                                               \
+        te_string_free(&tmp_name_);                                     \
+    } while (0)
 
 /** ID assigned by the Tester to the test instance */
 extern unsigned int te_test_id;
