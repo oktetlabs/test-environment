@@ -1386,19 +1386,21 @@ alloc_and_get_enum(xmlNodePtr node, const test_session *session,
 /**
  * Allocate and get session variable or run item argument.
  *
- * @param node      Node with simple variable
- * @param is_var    Is it variable?
- * @param list      List of session variables or run item arguments
+ * @param node          Node with simple variable
+ * @param is_var        Is it variable?
+ * @param check_unique  Whiether to check that name of variable is unique
+ * @param list          List of session variables or run item arguments
  *
  * @return Status code.
  */
 static te_errno
-alloc_and_get_var_arg(xmlNodePtr node, bool is_var,
+alloc_and_get_var_arg(xmlNodePtr node, bool is_var, bool check_unique,
                       const test_session *session, test_vars_args *list)
 {
     xmlNodePtr          root = node;
     te_errno            rc;
     test_var_arg       *p;
+    test_var_arg       *arg;
     char               *ref;
     char               *value;
     char               *global = NULL;
@@ -1417,6 +1419,19 @@ alloc_and_get_var_arg(xmlNodePtr node, bool is_var,
     {
         ERROR("Name is required for simple variable");
         return TE_RC(TE_TESTER, TE_EINVAL);
+    }
+
+    /* Check that there is no such name in parent session arguments */
+    if (session != NULL && check_unique)
+    {
+        TAILQ_FOREACH(arg, &session->vars, links)
+        {
+            if ((strcmp(arg->name, p->name) == 0) && !is_var && !arg->variable)
+            {
+                ERROR("Ambiguous %s argument specification", p->name);
+                return TE_RC(TE_TESTER, TE_EINVAL);
+            }
+        }
     }
 
     /* 'type' is optional */
@@ -1575,10 +1590,10 @@ vars_process(xmlNodePtr *node, test_session *session,
     {
         VERB("%s: node->name=%s", __FUNCTION__, (*node)->name);
         if (xmlStrcmp((*node)->name, CONST_CHAR2XML("arg")) == 0)
-            rc = alloc_and_get_var_arg(*node, false, session,
+            rc = alloc_and_get_var_arg(*node, false, false, session,
                                        &session->vars);
         else if (xmlStrcmp((*node)->name, CONST_CHAR2XML("var")) == 0)
-            rc = alloc_and_get_var_arg(*node, true, session,
+            rc = alloc_and_get_var_arg(*node, true, false, session,
                                        &session->vars);
         else if (xmlStrcmp((*node)->name, CONST_CHAR2XML("enum")) == 0)
             rc = alloc_and_get_enum(*node, session, &session->types);
@@ -2114,7 +2129,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
     while (node != NULL &&
            xmlStrcmp(node->name, CONST_CHAR2XML("arg")) == 0)
     {
-        rc = alloc_and_get_var_arg(node, false, session, &p->args);
+        rc = alloc_and_get_var_arg(node, false, true, session, &p->args);
         if (rc != 0)
         {
             ERROR("Processing of the run item '%s' arguments "
