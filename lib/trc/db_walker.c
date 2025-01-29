@@ -500,7 +500,7 @@ test_iter_args_match(const te_trc_db *db,
         }
         else
         {
-            trc_global *g;
+            trc_global *g = NULL;
 
             if (db != NULL)
             {
