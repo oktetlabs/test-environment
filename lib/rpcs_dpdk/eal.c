@@ -49,9 +49,6 @@ TARPC_FUNC(rte_eal_init, {},
     neg_errno_h2rpc(&out->retval);
 
     free(argv);
-
-done:
-    ;
 })
 
 TARPC_FUNC(rte_eal_process_type, {},
@@ -143,7 +140,4 @@ TARPC_FUNC(rte_epoll_wait,
 
     free(events);
     neg_errno_h2rpc(&out->retval);
-
-done:
-    ;
 })

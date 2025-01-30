@@ -2368,9 +2368,6 @@ TARPC_FUNC(rte_eth_fec_get_capability,
 
     free(speed_fec_capa);
     neg_errno_h2rpc(&out->retval);
-
-done:
-    ;
 })
 
 TARPC_FUNC(rte_eth_fec_get,
@@ -2450,6 +2447,5 @@ TARPC_FUNC(rte_eth_dev_get_reg_info,
 
     neg_errno_h2rpc(&out->retval);
 
-done:
     free(info);
 })
