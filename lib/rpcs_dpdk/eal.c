@@ -26,6 +26,7 @@
 #include "rpc_server.h"
 #include "rpcs_dpdk.h"
 
+#include "te_alloc.h"
 
 TARPC_FUNC(rte_eal_init, {},
 {
