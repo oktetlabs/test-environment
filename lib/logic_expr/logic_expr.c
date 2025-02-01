@@ -369,6 +369,7 @@ logic_expr_not_prop(logic_expr **expr)
                 logic_expr_free_nr(*expr);
                 logic_expr_not_prop(&aux);
                 *expr = aux;
+                return;
             }
             else
                 return;
@@ -974,7 +975,9 @@ logic_expr_dnf_gen(logic_expr **expr,
             while ((or_expr = find_or((*expr)->u.binary.lhv, &parent))
                    != NULL)
             {
-                and_or_replace(&(*expr)->u.binary.lhv, or_expr, parent);
+                if ((*expr)->u.binary.lhv->type == LOGIC_EXPR_AND)
+                    and_or_replace(&(*expr)->u.binary.lhv, or_expr, parent);
+
                 lhv = (*expr)->u.binary.lhv;
                 (*expr)->u.binary.lhv = lhv->u.binary.lhv;
                 (*expr)->u.binary.rhv = logic_expr_binary(LOGIC_EXPR_OR,
