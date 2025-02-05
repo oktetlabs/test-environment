@@ -1204,9 +1204,8 @@ get_script(xmlNodePtr node, tester_cfg *cfg, run_item *ritem)
             script->attrs.track_conf = tmpl_script->attrs.track_conf;
         if (script->attrs.track_conf_hd == TESTER_HANDDOWN_CHILDREN)
             script->attrs.track_conf_hd = tmpl_script->attrs.track_conf_hd;
-        rc = test_requirements_clone(&tmpl_script->reqs, &script->reqs);
-        if (rc != 0)
-            return rc;
+
+        test_requirements_clone(&tmpl_script->reqs, &script->reqs);
     }
 
     if (script->execute == NULL)
