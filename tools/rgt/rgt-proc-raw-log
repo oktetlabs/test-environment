@@ -79,6 +79,7 @@ Usage: te_proc_raw_log.sh [<options>]
   --txt-mi-only                 Print only MI messages in text log.
   --bundle=<filepath>           Where to save RAW log bundle (if needed).
   --html=<dirpath>              Where to save HTML logs (if needed).
+  --json=<dirpath>              Where to save JSON logs (if needed).
   --plain-html=<filepath>       Where to save plain HTML log (if needed).
   --txt=<filepath>              Where to save text log (if needed).
   --junit=<filepath>            Where to save JUnit log (if needed).
