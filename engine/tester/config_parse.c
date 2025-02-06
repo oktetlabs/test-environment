@@ -2990,7 +2990,7 @@ parse_test_package(tester_cfg *cfg, const test_session *session,
                                XML_PARSE_NONET)) == NULL)
     {
 #if HAVE_XMLERROR
-        xmlError   *err = xmlCtxtGetLastError(parser);
+        const xmlError *err = xmlCtxtGetLastError(parser);
 
         ERROR("Error occurred during parsing Test Package file:\n"
               "    %s:%d\n    %s", pkg->path, err->line, err->message);
@@ -3012,7 +3012,7 @@ parse_test_package(tester_cfg *cfg, const test_session *session,
                                       XML_PARSE_NONET)) == NULL)
         {
 #if HAVE_XMLERROR
-            xmlError   *err = xmlCtxtGetLastError(parser);
+            const xmlError *err = xmlCtxtGetLastError(parser);
 
             ERROR("Error occurred during parsing Tests Info file:\n"
                   "    %s:%d\n    %s", pkg->path, err->line, err->message);
@@ -3093,7 +3093,7 @@ tester_parse_config(tester_cfg *cfg, bool build, bool verbose)
                                XML_PARSE_NONET)) == NULL)
     {
 #if HAVE_XMLERROR
-        xmlError   *err = xmlCtxtGetLastError(parser);
+        const xmlError *err = xmlCtxtGetLastError(parser);
 
         ERROR("Error occurred during parsing configuration file:\n"
               "    %s:%d\n    %s", cfg->filename, err->line, err->message);

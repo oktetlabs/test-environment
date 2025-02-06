@@ -1247,7 +1247,7 @@ static te_errno
 trc_read_doc(const char *location, xmlDocPtr *doc)
 {
 #if HAVE_XMLERROR
-    xmlError           *err;
+    const xmlError     *err;
 #endif
     xmlParserCtxtPtr    parser;
 
@@ -1517,7 +1517,7 @@ trc_db_open_ext(const char *location, te_trc_db **db, int flags)
         if (subst < 0)
         {
 #if HAVE_XMLERROR
-            xmlError *err = xmlGetLastError();
+            const xmlError *err = xmlGetLastError();
 
             ERROR("XInclude processing failed: %s", err->message);
 #else

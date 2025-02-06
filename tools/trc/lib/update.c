@@ -3270,7 +3270,7 @@ trc_update_load_rules(char *filename,
     trc_update_rule        *rule = NULL;
 
 #if HAVE_XMLERROR
-    xmlError           *err;
+    const xmlError     *err;
 #endif
     te_errno            rc = 0;
 

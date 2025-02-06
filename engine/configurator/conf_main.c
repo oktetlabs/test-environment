@@ -435,7 +435,7 @@ parse_config_xml(const char *file, te_kvpair_h *expand_vars, bool history,
     if ((doc = xmlParseFile(file)) == NULL)
     {
 #if HAVE_XMLERROR
-        xmlError *err = xmlGetLastError();
+        const xmlError *err = xmlGetLastError();
 
         ERROR("Error occurred during parsing configuration file:\n"
               "    %s:%d\n    %s", file, err->line, err->message);
@@ -452,7 +452,7 @@ parse_config_xml(const char *file, te_kvpair_h *expand_vars, bool history,
     if (subst < 0)
     {
 #if HAVE_XMLERROR
-        xmlError *err = xmlGetLastError();
+        const xmlError *err = xmlGetLastError();
 
         ERROR("XInclude processing failed: %s", err->message);
 #else

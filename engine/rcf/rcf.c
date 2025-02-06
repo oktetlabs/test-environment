@@ -642,7 +642,7 @@ parse_config(const char *filename)
     if (subst < 0)
     {
 #if HAVE_XMLERROR
-        xmlError *err = xmlGetLastError();
+        const xmlError *err = xmlGetLastError();
 
         ERROR("XInclude processing failed: %s", err->message);
 #else
