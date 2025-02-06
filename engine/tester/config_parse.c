@@ -2094,18 +2094,6 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
 
     node = xmlNodeChildren(node);
 
-    /* Get optional run templates variables */
-    while (node != NULL &&
-           xmlStrcmp(node->name, CONST_CHAR2XML("run-template")) == 0)
-    {
-        rc = alloc_and_get_run_item(node, cfg, TESTER_RUN_ITEM_TEMPLATE,
-                                    RI_ROLE_TEMPLATE, session,
-                                    &session->templates, NULL);
-        if (rc != 0)
-            return rc;
-        node = xmlNodeNext(node);
-    }
-
     /* Get optional 'objective' */
     if (node != NULL &&
         (rc = get_node_with_text_content(&node, "objective",
@@ -2138,6 +2126,18 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
     {
         ERROR("Failed to get information about session requirements");
         return rc;
+    }
+
+    /* Get optional run templates variables */
+    while (node != NULL &&
+           xmlStrcmp(node->name, CONST_CHAR2XML("run-template")) == 0)
+    {
+        rc = alloc_and_get_run_item(node, cfg, TESTER_RUN_ITEM_TEMPLATE,
+                                    RI_ROLE_TEMPLATE, session,
+                                    &session->templates, NULL);
+        if (rc != 0)
+            return rc;
+        node = xmlNodeNext(node);
     }
 
     /* Get 'exception' handler */
