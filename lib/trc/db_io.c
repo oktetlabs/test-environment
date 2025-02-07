@@ -1020,6 +1020,42 @@ get_boolean_prop(xmlNodePtr node, const char *property, bool *value)
 }
 
 /**
+ * Update boolean property.
+ *
+ * @param node      XML node pointer.
+ * @param property  Property name.
+ * @param value     Desired value.
+ *
+ * @return Status code.
+ */
+static te_errno
+update_boolean_prop(xmlNodePtr node, const char *property, bool value)
+{
+    te_errno rc;
+    bool cur_val;
+
+    if (value)
+    {
+        if (xmlSetProp(node, BAD_CAST property, BAD_CAST "true") == NULL)
+        {
+            ERROR("Failed to set property '%s'", property);
+            return TE_ENOMEM;
+        }
+    }
+    else
+    {
+        /*
+         * Remove property if it has incorrect value or is set to true.
+         */
+        rc = get_boolean_prop(node, property, &cur_val);
+        if (rc != 0 || cur_val)
+            xmlUnsetProp(node, BAD_CAST property);
+    }
+
+    return 0;
+}
+
+/**
  * Get expected result of the test.
  *
  * @param node          XML node
@@ -3414,10 +3450,14 @@ trc_db_save(te_trc_db *db, const char *filename, int flags,
     }
 
     node = xmlDocGetRootElement(db->xml_doc);
-    xmlSetProp(node, BAD_CAST "last_match",
-               BAD_CAST (db->last_match ? "true": "false"));
-    xmlSetProp(node, BAD_CAST "merged",
-               BAD_CAST (db->merged ? "true" : "false"));
+
+    rc = update_boolean_prop(node, "last_match", db->last_match);
+    if (rc != 0)
+        return rc;
+
+    rc = update_boolean_prop(node, "merged", db->merged);
+    if (rc != 0)
+        return rc;
 
     test = TAILQ_FIRST(&db->tests.head);
     if (flags & TRC_SAVE_POS_ATTR)
