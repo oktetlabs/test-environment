@@ -925,7 +925,7 @@ get_globals(xmlNodePtr node, te_trc_db *db, trc_test *parent)
                 return TE_RC(TE_TRC, TE_EFMT);
             }
 
-            TAILQ_INSERT_HEAD(&db->globals.head, g, links);
+            TAILQ_INSERT_TAIL(&db->globals.head, g, links);
         }
         else
             /* unexpected entry */
