@@ -74,6 +74,7 @@ def split_trc_db(main_fpath, main_dir):
                         # Save source file preamble to use it in
                         # included files.
                         preamble = line
+                        print(preamble, file=cur_f, end="")
                         continue
 
                 m = xincl_start.match(line)
