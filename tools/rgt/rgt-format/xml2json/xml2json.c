@@ -43,6 +43,8 @@ size_t xml2fmt_tmpls_num = 0;
 typedef struct depth_ctx_user {
     /** File where to save JSON for the current log node. */
     FILE *f;
+    /** Index in array of JSON files information */
+    int file_idx;
     /** Line number of the current message */
     int linum;
 
@@ -80,6 +82,25 @@ typedef struct depth_ctx_user {
     /** TE JSON context */
     te_json_ctx_t json_ctx;
 } depth_ctx_user;
+
+/** JSON file information (used for building tree of JSON files) */
+typedef struct file_descr {
+    /** File name */
+    char *fname;
+    /** Indexes of children in array of files information */
+    te_vec children;
+    /** Node type (package, session, test) */
+    rgt_node_t type;
+    /** Package/session/test name */
+    char *name;
+    /** Test result */
+    char *result;
+    /** True if error occurred during test execution */
+    bool has_err;
+} file_descr;
+
+/** Array of JSON files information */
+static te_vec files = TE_VEC_INIT(file_descr);
 
 /* Storage of depth-specific user data */
 static rgt_depth_data_storage depth_data =
@@ -124,6 +145,7 @@ alloc_depth_user_data(uint32_t depth)
         depth_user->nl_stack = (te_vec)TE_VEC_INIT(int);
 
     depth_user->linum = 1;
+    depth_user->file_idx = -1;
     return depth_user;
 }
 
@@ -284,6 +306,106 @@ free_depth_user_data(void *data)
     te_vec_free(&depth_user->nl_stack);
 }
 
+/**
+ * Save tree of JSON files to tree.json file.
+ */
+static void
+save_json_tree(void)
+{
+    static FILE *f_tree = NULL;
+    static te_json_ctx_t tree_json_ctx;
+    file_descr *file;
+    int *file_idx;
+
+    if (te_vec_size(&files) == 0)
+        return;
+
+    f_tree = fopen("tree.json", "w");
+    if (f_tree == NULL)
+    {
+        fprintf(stderr, "Cannot create tree.json: %s\n",
+                strerror(errno));
+        return;
+    }
+
+    tree_json_ctx = (te_json_ctx_t)TE_JSON_INIT_FILE(f_tree);
+    te_json_start_object(&tree_json_ctx);
+
+    file = te_vec_get(&files, 0);
+    te_json_add_key_str(&tree_json_ctx, "main_package", file->fname);
+
+    te_json_add_key(&tree_json_ctx, "tree");
+    te_json_start_object(&tree_json_ctx);
+
+    TE_VEC_FOREACH(&files, file)
+    {
+        te_json_add_key(&tree_json_ctx, file->fname);
+        te_json_start_object(&tree_json_ctx);
+
+        te_json_add_key_str(&tree_json_ctx, "id", file->fname);
+        te_json_add_key_str(&tree_json_ctx, "name", file->name);
+        te_json_add_key(&tree_json_ctx, "has_error");
+        te_json_add_bool(&tree_json_ctx, file->has_err);
+
+        te_json_add_key(&tree_json_ctx, "skipped");
+        if (file->result != NULL && strcmp(file->result, "SKIPPED") == 0)
+            te_json_add_bool(&tree_json_ctx, true);
+        else
+            te_json_add_bool(&tree_json_ctx, false);
+
+        te_json_add_key(&tree_json_ctx, "entity");
+        if (file->type == NT_PACKAGE)
+            te_json_add_string(&tree_json_ctx, "pkg");
+        else if (file->type == NT_SESSION)
+            te_json_add_string(&tree_json_ctx, "session");
+        else if (file->type == NT_TEST)
+            te_json_add_string(&tree_json_ctx, "test");
+        else
+            te_json_add_string(&tree_json_ctx, "unknown");
+
+        if (te_vec_size(&file->children) > 0)
+        {
+            te_json_add_key(&tree_json_ctx, "children");
+            te_json_start_array(&tree_json_ctx);
+
+            TE_VEC_FOREACH(&file->children, file_idx)
+            {
+                file_descr *child;
+
+                child = te_vec_get(&files, *file_idx);
+                te_json_add_string(&tree_json_ctx, "%s", child->fname);
+            }
+
+            te_json_end(&tree_json_ctx);
+        }
+
+        te_json_end(&tree_json_ctx);
+    }
+
+    te_json_end(&tree_json_ctx);
+    te_json_end(&tree_json_ctx);
+    fclose(f_tree);
+}
+
+/**
+ * Clear array of JSON files information.
+ */
+static void
+free_files_list(void)
+{
+    file_descr *file;
+
+    TE_VEC_FOREACH(&files, file)
+    {
+        te_vec_free(&file->children);
+        free(file->fname);
+        free(file->name);
+        free(file->result);
+    }
+
+    te_vec_free(&files);
+}
+
 RGT_DEF_FUNC(proc_document_end)
 {
     depth_ctx_user *depth_user = (depth_ctx_user *)depth_ctx->user_data;
@@ -297,6 +419,12 @@ RGT_DEF_FUNC(proc_document_end)
 
         fclose(depth_user->f);
         depth_user->f = NULL;
+    }
+
+    if (!multi_opts.single_node_match)
+    {
+        save_json_tree();
+        free_files_list();
     }
 
     rgt_xml2fmt_free_depth_data(&depth_data, &free_depth_user_data);
@@ -329,6 +457,9 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
 
     depth_user = depth_ctx->user_data = alloc_depth_user_data(ctx->depth);
 
+    rgt_xml2multi_fname(fname, sizeof(fname), &multi_opts,
+                        ctx, depth_ctx, tin, node_id, "json");
+
     matched = rgt_xml2multi_match_node(
                               &multi_opts,
                               tin, node_id,
@@ -337,9 +468,6 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     if (matched)
     {
         te_json_ctx_t *json_ctx = &depth_user->json_ctx;
-
-        rgt_xml2multi_fname(fname, sizeof(fname), &multi_opts,
-                            ctx, depth_ctx, tin, node_id, "json");
 
         if ((depth_user->f = fopen(fname, "w")) == NULL)
         {
@@ -362,6 +490,7 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     else
     {
         depth_user->f = NULL;
+        depth_user->file_idx = -1;
     }
 
     prev_depth_ctx = &g_array_index(ctx->depth_info,
@@ -376,6 +505,31 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
 
         add_entity(json_ctx, node_id, name, node_type_str, result, err,
                    tin, hash);
+    }
+
+    if (!multi_opts.single_node_match)
+    {
+        file_descr file;
+
+        memset(&file, 0, sizeof(file));
+        file.fname = strdup(fname);
+        file.type = depth_ctx->type;
+        file.name = strdup(name);
+        file.result = strdup(result);
+        file.children = (te_vec)TE_VEC_INIT(int);
+        file.has_err = (te_str_is_null_or_empty(err) ? false : true);
+
+        te_vec_append(&files, &file);
+        depth_user->file_idx = te_vec_size(&files) - 1;
+
+        if (prev_depth_user->file_idx >= 0)
+        {
+            file_descr *parent_file;
+
+            parent_file = te_vec_get(&files, prev_depth_user->file_idx);
+            te_vec_append(&parent_file->children,
+                          &depth_user->file_idx);
+        }
     }
 }
 
