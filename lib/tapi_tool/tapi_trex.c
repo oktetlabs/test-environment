@@ -211,13 +211,15 @@ static const tapi_trex_opt_flt_descr opt_filters[] = {
             "server can't match L7 template (deferred by l7_map)"),
 };
 
-typedef struct tapi_trex_port_stat_type {
+typedef struct tapi_trex_stat_type {
     const char *name;
+    const char *re;
+    bool with_units;
     tapi_trex_val_type type;
     size_t offset;
-} tapi_trex_port_stat_type;
+} tapi_trex_stat_type;
 
-static const tapi_trex_port_stat_type port_stat_types[] = {
+static const tapi_trex_stat_type port_stat_types[] = {
     [TAPI_TREX_PORT_STAT_OPKTS] = {
         .name = "opackets",
         .type = TAPI_TREX_VAL_TYPE_UINT64,
@@ -250,6 +252,63 @@ static const tapi_trex_port_stat_type port_stat_types[] = {
         .name = "test duration",
         .type = TAPI_TREX_VAL_TYPE_DOUBLE,
         .offset = offsetof(struct tapi_trex_port_stat, test_duration) },
+};
+
+static const tapi_trex_stat_type global_stat_types[] = {
+    [TAPI_TREX_GLOBAL_STAT_CURRENT_TIME] = {
+        .name = "current time",
+        .re = "\\s+:\\s+([0-9]+\\.[0-9]+)\\s+sec",
+        .with_units = false,
+        .type = TAPI_TREX_VAL_TYPE_DOUBLE,
+        .offset = offsetof(struct tapi_trex_global_stat, curr_time) },
+    [TAPI_TREX_GLOBAL_STAT_TEST_DURATION] = {
+        .name = "test duration",
+        .re = "\\s+:\\s+([0-9]+\\.[0-9]+)\\s+sec",
+        .with_units = false,
+        .type = TAPI_TREX_VAL_TYPE_DOUBLE,
+        .offset = offsetof(struct tapi_trex_global_stat, test_duration) },
+    [TAPI_TREX_GLOBAL_STAT_TOTAL_TX] = {
+        .name = "Total-Tx",
+        .re = "\\s+:\\s+([0-9]+\\.[0-9]+\\s.)bps",
+        .with_units = true,
+        .type = TAPI_TREX_VAL_TYPE_DOUBLE,
+        .offset = offsetof(struct tapi_trex_global_stat, total_tx) },
+    [TAPI_TREX_GLOBAL_STAT_TOTAL_RX] = {
+        .name = "Total-Rx",
+        .re = "\\s+:\\s+([0-9]+\\.[0-9]+\\s.)bps",
+        .with_units = true,
+        .type = TAPI_TREX_VAL_TYPE_DOUBLE,
+        .offset = offsetof(struct tapi_trex_global_stat, total_rx) },
+    [TAPI_TREX_GLOBAL_STAT_TOTAL_PPS] = {
+        .name = "Total-PPS",
+        .re = "\\s+:\\s+([0-9]+\\.[0-9]+\\s.)pps",
+        .with_units = true,
+        .type = TAPI_TREX_VAL_TYPE_DOUBLE,
+        .offset = offsetof(struct tapi_trex_global_stat, total_pps) },
+    [TAPI_TREX_GLOBAL_STAT_TOTAL_CPS] = {
+        .name = "Total-CPS",
+        .re = "\\s+:\\s+([0-9]+\\.[0-9]+\\s.)cps",
+        .with_units = true,
+        .type = TAPI_TREX_VAL_TYPE_DOUBLE,
+        .offset = offsetof(struct tapi_trex_global_stat, total_cps) },
+    [TAPI_TREX_GLOBAL_STAT_EXPECTED_PPS] = {
+        .name = "Expected-PPS",
+        .re = "\\s+:\\s+([0-9]+\\.[0-9]+\\s.)pps",
+        .with_units = true,
+        .type = TAPI_TREX_VAL_TYPE_DOUBLE,
+        .offset = offsetof(struct tapi_trex_global_stat, expected_pps) },
+    [TAPI_TREX_GLOBAL_STAT_EXPECTED_CPS] = {
+        .name = "Expected-CPS",
+        .re = "\\s+:\\s+([0-9]+\\.[0-9]+\\s.)cps",
+        .with_units = true,
+        .type = TAPI_TREX_VAL_TYPE_DOUBLE,
+        .offset = offsetof(struct tapi_trex_global_stat, expected_cps) },
+    [TAPI_TREX_GLOBAL_STAT_EXPECTED_L7_BPS] = {
+        .name = "Expected-L7-BPS",
+        .re = "\\s+:\\s+([0-9]+\\.[0-9]+\\s.)bps",
+        .with_units = true,
+        .type = TAPI_TREX_VAL_TYPE_DOUBLE,
+        .offset = offsetof(struct tapi_trex_global_stat, expected_l7_bps) },
 };
 
 /** TRex interface description. */
@@ -1347,6 +1406,57 @@ cleanup:
     return rc;
 }
 
+/**
+ * Attach (dynamically) filters to capture global statistics.
+ * It makes sense to do this when the '--iom 1' option is enabled.
+ */
+static te_errno
+tapi_trex_global_stat_flts_attach(tapi_trex_app *app, const tapi_trex_opt *opt)
+{
+    te_errno rc;
+    unsigned int i;
+    unsigned int n_flts;
+    tapi_trex_global_stat_flt *flts = NULL;
+    te_string buf = TE_STRING_INIT;
+
+    n_flts = TE_ARRAY_LEN(global_stat_types);
+    flts = TE_ALLOC(sizeof(*flts) * (n_flts + 1 /* NULL terminated */));
+
+    for (i = 0; i < n_flts; i++)
+    {
+        const char *name = global_stat_types[i].name;
+        const char *re = global_stat_types[i].re;
+        tapi_trex_global_stat_flt *flt = &flts[i];
+        flt->param = i;
+
+        rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(app->out_chs[0]),
+                                                name, true, 0, &flt->filter);
+        if (rc != 0)
+        {
+            ERROR("%s() failed to attach '%s' filter: %r", __func__, name, rc);
+            goto cleanup;
+        }
+
+        te_string_reset(&buf);
+        te_string_append(&buf, "%s%s", name, re);
+        rc = tapi_job_filter_add_regexp(flt->filter, buf.ptr, 1);
+        if (rc != 0)
+        {
+            ERROR("%s() failed to add regexp '%s': %r", __func__,
+                  buf.ptr, rc);
+            goto cleanup;
+        }
+    }
+    app->global_stat_flts = flts;
+
+cleanup:
+    te_string_free(&buf);
+    if (rc != 0 && flts != NULL)
+        free(flts);
+
+    return rc;
+}
+
 /* See description in tapi_trex.h */
 te_errno
 tapi_trex_create(tapi_job_factory_t *factory,
@@ -1516,6 +1626,10 @@ tapi_trex_create(tapi_job_factory_t *factory,
     if (opt->iom == TAPI_TREX_IOM_NORMAL)
     {
         rc = tapi_trex_port_stat_flts_attach(new_app, opt);
+
+        if (rc == 0)
+            rc = tapi_trex_global_stat_flts_attach(new_app, opt);
+
         if (rc != 0)
         {
             te_vec_deep_free(&args);
@@ -1660,6 +1774,7 @@ te_errno
 tapi_trex_destroy(const char *ta, tapi_trex_app *app, tapi_trex_opt *opt)
 {
     te_errno rc;
+    unsigned int i;
 
     if (app == NULL)
         return 0;
@@ -1670,6 +1785,13 @@ tapi_trex_destroy(const char *ta, tapi_trex_app *app, tapi_trex_opt *opt)
 
     te_vec_deep_free(&app->cmd);
     free(app->opt_flts);
+    if (app->per_port_stat_flts.flts != NULL)
+    {
+        for (i = 0; app->per_port_stat_flts.flts[i] != NULL; i++)
+            free(app->per_port_stat_flts.flts[i]);
+        free(app->per_port_stat_flts.flts);
+    }
+    free(app->global_stat_flts);
     free(app);
 
     tapi_trex_destroy_clients(opt->clients);
@@ -1975,6 +2097,94 @@ cleanup:
     return rc;
 }
 
+/** Fill in the report with global statistics data. */
+static te_errno
+tapi_trex_get_report_global_stat(tapi_trex_app *app, tapi_trex_report *report)
+{
+    te_errno rc = 0;
+    unsigned int i;
+    unsigned int res_len;
+    unsigned int n_bufs;
+    tapi_trex_global_stat_flt *flt;
+    tapi_job_buffer_t *bufs = NULL;
+    tapi_trex_global_stat *res = NULL;
+
+    for (flt = app->global_stat_flts; flt->filter != NULL; flt++)
+    {
+        const char *name = global_stat_types[flt->param].name;
+
+        n_bufs = 0;
+        rc = tapi_job_receive_many(TAPI_JOB_CHANNEL_SET(flt->filter),
+                                   TAPI_TREX_TIMEOUT_MS, &bufs, &n_bufs);
+        if (rc != 0)
+        {
+            ERROR("%() failed to read data from filter %s: %r", __func__,
+                  name, rc);
+            goto cleanup;
+        }
+
+        if (res == NULL)
+        {
+            /* the set of messages ends with eos. */
+            if (n_bufs < 2)
+            {
+                ERROR("%s() there are no global statistics (n_bufs = %u for filter %s)",
+                      __func__, n_bufs, name);
+                goto cleanup;
+            }
+
+            res_len = n_bufs;
+            res = TE_ALLOC(sizeof(*res) * res_len);
+        }
+        else if (n_bufs < res_len)
+        {
+            ERROR("%s() unexpected len of buffers %u for filter %s: expected at least %u",
+                  __func__, n_bufs, name, res_len);
+            rc = TE_RC(TE_TAPI, TE_ERANGE);
+            goto cleanup;
+        }
+
+        for (i = 0; i < res_len - 1; i++)
+        {
+            const char *str = bufs[i].data.ptr;
+            tapi_trex_val_type type = global_stat_types[flt->param].type;
+            void *ptr = (void *)&res[i] + global_stat_types[flt->param].offset;
+
+            if (bufs[i].eos)
+            {
+                ERROR("%s() the unexpected eos was not found for filter %s (%s)",
+                      __func__, name);
+                rc = TE_RC(TE_TAPI, TE_EINVAL);
+                goto cleanup;
+            }
+
+            if (global_stat_types[flt->param].with_units)
+            {
+                rc = te_unit_list_value_from_string(str, &bin_units, ptr);
+            }
+            else
+            {
+                rc = tapi_trex_str_to_val(str, type, ptr);
+            }
+            if (rc != 0)
+            {
+                ERROR("Failed to convert value '%s' for filter %s: %r",
+                      bufs[i].data.ptr, name, rc);
+                goto cleanup;
+            }
+            res[i].valid = true;
+        }
+
+        tapi_job_buffers_free(bufs, n_bufs);
+        bufs = NULL;
+    }
+    report->global_stat = res;
+
+cleanup:
+    tapi_job_buffers_free(bufs, n_bufs);
+    return rc;
+}
+
 static te_errno
 tapi_trex_optional_flts_process(tapi_trex_app *app, tapi_trex_report *report)
 {
@@ -2063,7 +2273,10 @@ tapi_trex_get_report(tapi_trex_app *app, tapi_trex_report *report)
     if (rc != 0)
         return rc;
 
-    if (app->per_port_stat_flts.flts != NULL)
+    if (rc == 0 && app->global_stat_flts != NULL)
+        rc = tapi_trex_get_report_global_stat(app, report);
+
+    if (rc == 0 && app->per_port_stat_flts.flts != NULL)
         rc = tapi_trex_get_report_port_stat(app, report);
 
     return rc;
@@ -2123,6 +2336,7 @@ tapi_trex_destroy_report(tapi_trex_report *report)
         free(report->per_port_stat.ports);
     }
 
+    free(report->global_stat);
     free(report->opt_flts_vals);
 
     return 0;

@@ -163,6 +163,19 @@ typedef enum tapi_trex_port_stat_enum {
     TAPI_TREX_PORT_STAT_TEST_DURATION,
 } tapi_trex_port_stat_enum;
 
+/** List of parameters in global statistics. */
+typedef enum tapi_trex_global_stat_enum {
+    TAPI_TREX_GLOBAL_STAT_CURRENT_TIME = 0,
+    TAPI_TREX_GLOBAL_STAT_TEST_DURATION,
+    TAPI_TREX_GLOBAL_STAT_TOTAL_TX,
+    TAPI_TREX_GLOBAL_STAT_TOTAL_RX,
+    TAPI_TREX_GLOBAL_STAT_TOTAL_PPS,
+    TAPI_TREX_GLOBAL_STAT_TOTAL_CPS,
+    TAPI_TREX_GLOBAL_STAT_EXPECTED_PPS,
+    TAPI_TREX_GLOBAL_STAT_EXPECTED_CPS,
+    TAPI_TREX_GLOBAL_STAT_EXPECTED_L7_BPS,
+} tapi_trex_global_stat_enum;
+
 /** TRex port stat filter. */
 typedef struct tapi_trex_port_stat_flt {
     /* Single port stat filter */
@@ -181,6 +194,14 @@ typedef struct tapi_trex_per_port_stat_flts {
     unsigned int n_ports;
 } tapi_trex_per_port_stat_flts;
 
+/** Global stat filter. */
+typedef struct tapi_trex_global_stat_flt {
+    /* Single global stat filter */
+    tapi_job_channel_t *filter;
+    /** Global stat param. */
+    tapi_trex_global_stat_enum param;
+} tapi_trex_global_stat_flt;
+
 /** TRex statistics for a single port. */
 typedef struct tapi_trex_port_stat {
     uint64_t opackets;
@@ -192,6 +213,20 @@ typedef struct tapi_trex_port_stat {
     double curr_time;
     double test_duration;
 } tapi_trex_port_stat;
+
+/** TRex global statistics. */
+typedef struct tapi_trex_global_stat {
+    double total_tx;
+    double total_rx;
+    double total_pps;
+    double total_cps;
+    double expected_pps;
+    double expected_cps;
+    double expected_l7_bps;
+    double curr_time;
+    double test_duration;
+    bool valid;
+} tapi_trex_global_stat;
 
 /** TRex per-port statistics. */
 typedef struct tapi_trex_per_port_stat {
@@ -245,6 +280,9 @@ typedef struct tapi_trex_app {
 
     /** Per port stat filters */
     tapi_trex_per_port_stat_flts per_port_stat_flts;
+
+    /** List of global stat filters (@c NULL terminated). */
+    tapi_trex_global_stat_flt *global_stat_flts;
 } tapi_trex_app;
 
 /** Representation of possible values for tapi_trex_opt::verbose option. */
@@ -672,6 +710,8 @@ typedef struct tapi_trex_report {
     tapi_trex_opt_flt_vals *opt_flts_vals;
     /** Per port statistics. */
     tapi_trex_per_port_stat per_port_stat;
+    /** Global statistics */
+    tapi_trex_global_stat *global_stat;
 } tapi_trex_report;
 
 
