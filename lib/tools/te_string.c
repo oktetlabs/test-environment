@@ -764,8 +764,9 @@ te_substring_compare(const te_substring_t *substr1,
         return 1;
 
     minlen = MIN(substr1->len, substr2->len);
-    res = memcmp(substr1->base->ptr + substr1->start,
-                 substr2->base->ptr + substr2->start, minlen);
+    res = memcmp(te_string_value(substr1->base) + substr1->start,
+                 te_string_value(substr2->base) + substr2->start,
+                 minlen);
     if (res != 0)
         return res;
 
@@ -783,7 +784,8 @@ te_substring_compare_str(const te_substring_t *substr, const char *str)
     if (str == NULL)
         return 1;
 
-    res = strncmp(substr->base->ptr + substr->start, str, substr->len);
+    res = strncmp(te_string_value(substr->base) + substr->start, str,
+                  substr->len);
     if (res != 0)
         return res;
 
@@ -799,7 +801,7 @@ te_substring_find(te_substring_t *substr, const char *str)
     if (!te_substring_is_valid(substr))
         return false;
 
-    ch = strstr(substr->base->ptr + substr->start, str);
+    ch = strstr(te_string_value(substr->base) + substr->start, str);
     if (ch == NULL)
     {
         te_substring_invalidate(substr);
@@ -807,9 +809,9 @@ te_substring_find(te_substring_t *substr, const char *str)
     }
     else
     {
-       substr->start = ch - substr->base->ptr;
-       substr->len = strlen(str);
-       result = true;
+        substr->start = ch - te_string_value(substr->base);
+        substr->len = strlen(str);
+        result = true;
     }
 
     return result;
@@ -822,9 +824,9 @@ te_substring_span(te_substring_t *substr, const char *cset, bool inverted)
     if (!te_substring_is_valid(substr))
         return '\0';
 
-    start = substr->base->ptr + substr->start + substr->len;
+    start = te_string_value(substr->base) + substr->start + substr->len;
     substr->len += inverted ? strcspn(start, cset) : strspn(start, cset);
-    return substr->base->ptr[substr->start + substr->len];
+    return te_string_value(substr->base)[substr->start + substr->len];
 }
 
 size_t
@@ -838,7 +840,7 @@ te_substring_skip(te_substring_t *substr, char skip,
 
     while (count < at_most &&
            substr->start + substr->len <= substr->base->len &&
-           substr->base->ptr[substr->start] == skip)
+           te_string_value(substr->base)[substr->start] == skip)
     {
         substr->start++;
         count++;
@@ -862,7 +864,8 @@ te_substring_strip_prefix(te_substring_t *substr, const char *prefix)
     prefix_len = strlen(prefix);
     if (substr->len < prefix_len)
         return false;
-    if (memcmp(substr->base->ptr + substr->start, prefix, prefix_len) == 0)
+    if (memcmp(te_string_value(substr->base) + substr->start,
+               prefix, prefix_len) == 0)
     {
         substr->start += prefix_len;
         substr->len -= prefix_len;
@@ -885,7 +888,7 @@ te_substring_strip_suffix(te_substring_t *substr, const char *suffix)
     suffix_len = strlen(suffix);
     if (substr->len < suffix_len)
         return false;
-    if (memcmp(substr->base->ptr + substr->start +
+    if (memcmp(te_string_value(substr->base) + substr->start +
                substr->len - suffix_len, suffix, suffix_len) == 0)
     {
         substr->len -= suffix_len;
@@ -908,15 +911,15 @@ te_substring_strip_uint_suffix(te_substring_t *substr, uintmax_t *suffix_val)
     }
 
     for (pos = substr->len; pos != 0 &&
-             isdigit(substr->base->ptr[substr->start + pos - 1]);
+             isdigit(te_string_value(substr->base)[substr->start + pos - 1]);
          pos--)
         ;
 
-    if (isdigit(substr->base->ptr[substr->start + pos]))
+    if (isdigit(te_string_value(substr->base)[substr->start + pos]))
     {
         char suffix[substr->len - pos + 1];
 
-        memcpy(suffix, substr->base->ptr + substr->start + pos,
+        memcpy(suffix, te_string_value(substr->base) + substr->start + pos,
                sizeof(suffix) - 1);
         suffix[sizeof(suffix) - 1] = '\0';
         if (te_strtoumax(suffix, 10, suffix_val) == 0)

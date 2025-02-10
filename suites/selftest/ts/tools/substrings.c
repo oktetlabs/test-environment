@@ -509,6 +509,53 @@ check_strip_numeric_suffix(void)
     }
 }
 
+static void
+check_empty_string(void)
+{
+    te_string empty = TE_STRING_INIT;
+    te_substring_t substr = TE_SUBSTRING_INIT(&empty);
+    te_substring_t substr1 = TE_SUBSTRING_INIT(&empty);
+
+    if (!te_substring_is_valid(&substr))
+        TEST_VERDICT("Substring of an empty string is invalid");
+
+    if (!te_substring_past_end(&substr))
+        TEST_VERDICT("Substring of an empty string is not past its end");
+
+    if (te_substring_compare(&substr, &substr1) != 0)
+        TEST_VERDICT("Empty substring is not equal to itself");
+
+    if (te_substring_compare_str(&substr, "") != 0)
+        TEST_VERDICT("Empty substring is not equal to empty string");
+
+    if (te_substring_find(&substr, " "))
+        TEST_VERDICT("Something is found in an empty string");
+    if (te_substring_is_valid(&substr))
+        TEST_VERDICT("A substring is expected to be invalid");
+
+    substr = substr1;
+    if (te_substring_span(&substr, " ", false) != '\0')
+        TEST_VERDICT("A non-empty span in an empty string");
+    if (substr.start != 0 || substr.len != 0)
+        TEST_VERDICT("Empty substring changed unexpectedly");
+
+    if (te_substring_span(&substr, " ", true) != '\0')
+        TEST_VERDICT("A non-empty span in an empty string");
+    if (substr.start != 0 || substr.len != 0)
+        TEST_VERDICT("Empty substring changed unexpectedly");
+
+    if (te_substring_skip(&substr, ' ', SIZE_MAX) != 0)
+        TEST_VERDICT("Characters were skipped in an empty substring");
+
+    if (te_substring_strip_prefix(&substr, " "))
+        TEST_VERDICT("Non-empty prefix stripped from an empty substring");
+
+    if (te_substring_strip_suffix(&substr, " "))
+        TEST_VERDICT("Non-empty suffix stripped from an empty substring");
+
+    te_string_free(&empty);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -582,6 +629,9 @@ main(int argc, char **argv)
     check_strip_suffix();
     TEST_SUBSTEP("Stripping numeric suffix");
     check_strip_numeric_suffix();
+
+    TEST_STEP("Check empty string handling");
+    check_empty_string();
 
     TEST_SUCCESS;
 
