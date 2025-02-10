@@ -780,10 +780,7 @@ hugepages_mountpoint_list(unsigned int gid, const char *oid, const char *sub_id,
 
     if (rc == 0)
     {
-        rc = te_string_replace_all_substrings(&result, PATH_DELIMITER, "/");
-        if (rc != 0)
-            return rc;
-
+        te_string_replace_all_substrings(&result, PATH_DELIMITER, "/");
         *list = result.ptr;
     }
     else
