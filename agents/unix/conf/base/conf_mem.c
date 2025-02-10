@@ -322,29 +322,6 @@ alloc_hugepages(struct hugepage_info *hp_info, unsigned int number)
     return rc;
 }
 
-/* TODO: this function should be improved and moved to te_vector.h */
-static te_errno
-split_proc_mounts_line(char *str, te_vec *vec)
-{
-    char *token;
-    char *saveptr;
-    te_errno rc;
-
-    te_vec_reset(vec);
-
-    token = strtok_r(str, " ", &saveptr);
-    while (token != NULL)
-    {
-        rc = te_vec_append_str_fmt(vec, "%s", token);
-        if (rc != 0)
-            break;
-
-        token = strtok_r(NULL, " ", &saveptr);
-    }
-
-    return rc;
-}
-
 static void
 convert_mountpoint_name(const char *mountpoint, te_string *name, bool decode)
 {
@@ -423,12 +400,7 @@ add_mountpoint_info(struct hugepage_info *hp_info, const char *name,
 
     mp_info = TE_ALLOC(sizeof(*mp_info));
 
-    mp_info->name = strdup(name);
-    if (mp_info->name == NULL)
-    {
-        free(mp_info);
-        return TE_ENOMEM;
-    }
+    mp_info->name = TE_STRDUP(name);
 
     mp_info->is_mounted = do_mount;
     mp_info->is_created = false;
@@ -459,7 +431,7 @@ update_mountpoint_info(struct hugepage_info *hp_info, te_vec *mount_args)
     char *option;
     char *name;
     struct mountpoint_info *mp_info;
-    te_errno rc;
+    te_errno rc = 0;
 
     name = TE_VEC_GET(char *, mount_args, 1);
 
@@ -476,9 +448,7 @@ update_mountpoint_info(struct hugepage_info *hp_info, te_vec *mount_args)
     }
 
     option = TE_VEC_GET(char *, mount_args, 3);
-    rc = te_string_append(&target_option, "pagesize=%uM", hp_info->size / 1024);
-    if (rc != 0)
-        goto out;
+    te_string_append(&target_option, "pagesize=%uM", hp_info->size / 1024);
 
     if (strstr(option, target_option.ptr) == NULL)
         goto out;
@@ -504,8 +474,8 @@ scan_mounts_file(struct hugepage_info *hp_info)
     const char *proc_mounts = "/proc/mounts";
     char *line = NULL;
     size_t len = 0;
-    te_errno rc;
-    te_vec mount_args = TE_VEC_INIT(char *);
+    te_errno rc = 0;
+    te_vec mount_args = TE_VEC_INIT_AUTOPTR(char *);
 
     file = fopen(proc_mounts, "r");
     if (file == NULL)
@@ -517,9 +487,8 @@ scan_mounts_file(struct hugepage_info *hp_info)
 
     while (getline(&line, &len, file) != -1)
     {
-        rc = split_proc_mounts_line(line, &mount_args);
-        if (rc != 0)
-            break;
+        te_vec_reset(&mount_args);
+        te_vec_split_string(line, &mount_args, ' ', true);
 
         if (strcmp(TE_VEC_GET(char *, &mount_args, 2), "hugetlbfs") != 0)
             continue;
@@ -531,7 +500,7 @@ scan_mounts_file(struct hugepage_info *hp_info)
 
     fclose(file);
     free(line);
-    te_vec_deep_free(&mount_args);
+    te_vec_free(&mount_args);
 
     return rc;
 }
