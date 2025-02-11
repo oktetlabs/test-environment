@@ -1613,11 +1613,11 @@ tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
     /* Add memory channels information */
     rc = cfg_get_instance_int_fmt(&mem_channels, "/local:%s/mem_channels:",
                                   rpcs->ta);
-    if (rc != 0)
-        goto cleanup;
-
-    append_arg(&my_argc, &my_argv, "-n");
-    append_arg(&my_argc, &my_argv, "%d", mem_channels);
+    if (rc == 0 && mem_channels > 0)
+    {
+        append_arg(&my_argc, &my_argv, "-n");
+        append_arg(&my_argc, &my_argv, "%d", mem_channels);
+    }
 
     /* Set the amount of memory (in Megabytes) to be booked within hugetables */
     rc = cfg_get_instance_int_fmt(&mem_amount, "/local:%s/dpdk:/mem_amount:",
