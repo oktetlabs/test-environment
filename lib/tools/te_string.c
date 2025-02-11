@@ -799,6 +799,9 @@ te_substring_find(te_substring_t *substr, const char *str)
     if (!te_substring_is_valid(substr))
         return false;
 
+    if (substr->base->ptr == NULL)
+        return false;
+
     ch = strstr(substr->base->ptr + substr->start, str);
     if (ch == NULL)
     {
