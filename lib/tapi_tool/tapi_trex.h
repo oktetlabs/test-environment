@@ -703,9 +703,10 @@ typedef struct tapi_trex_report {
  *          - @c '/agent/hardware/pci/device'
  *          - @c '/agent/interface'
  */
-extern tapi_trex_interface *tapi_trex_interface_init_oid(bool use_kernel_interface,
-                                                         const char *oid_fmt,
-                                                         ...);
+extern tapi_trex_interface *tapi_trex_interface_init_oid(
+                                                bool use_kernel_interface,
+                                                const char *oid_fmt,
+                                                ...);
 
 /**
  * Free allocated @p tapi_trex_interface.

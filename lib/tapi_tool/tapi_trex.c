@@ -1068,8 +1068,10 @@ tapi_trex_gen_yaml_config(const char *ta, const tapi_trex_opt *opt,
 
     for (nics_n = te_vec_size(&clients); nics_n != 0; nics_n -= 1)
     {
-        client = TE_VEC_GET(const tapi_trex_client_config *, &clients, nics_n - 1);
-        server = TE_VEC_GET(const tapi_trex_server_config *, &servers, nics_n - 1);
+        client = TE_VEC_GET(const tapi_trex_client_config *, &clients,
+                            nics_n - 1);
+        server = TE_VEC_GET(const tapi_trex_server_config *, &servers,
+                            nics_n - 1);
 
         client = (client != NULL ? client : &tapi_trex_client_config_default);
         server = (server != NULL ? server : &tapi_trex_server_config_default);
@@ -1094,7 +1096,8 @@ tapi_trex_gen_yaml_config(const char *ta, const tapi_trex_opt *opt,
     te_vec_free(&clients);
     te_vec_free(&servers);
 
-    cfg_templ = opt->cfg_template != NULL ? opt->cfg_template : default_trex_cfg;
+    cfg_templ = opt->cfg_template != NULL ? opt->cfg_template :
+                                            default_trex_cfg;
     rc = tapi_file_expand_kvpairs(ta, cfg_templ, NULL,
                                   &kvpairs, yaml_config_path);
 
@@ -1433,14 +1436,16 @@ tapi_trex_create(tapi_job_factory_t *factory,
                                 {
                                     .use_stdout = true,
                                     .readable = true,
-                                    .re = "Total-tx-pkt\\s+:\\s+([0-9]+)\\s+pkts",
+                                    .re = "Total-tx-pkt\\s+:\\s+([0-9]+)"
+                                          "\\s+pkts",
                                     .extract = 1,
                                     .filter_var = &new_app->total_tx_pkt_filter,
                                 },
                                 {
                                     .use_stdout = true,
                                     .readable = true,
-                                    .re = "Total-rx-pkt\\s+:\\s+([0-9]+)\\s+pkts",
+                                    .re = "Total-rx-pkt\\s+:\\s+([0-9]+)"
+                                          "\\s+pkts",
                                     .extract = 1,
                                     .filter_var = &new_app->total_rx_pkt_filter,
                                 },
@@ -1461,14 +1466,16 @@ tapi_trex_create(tapi_job_factory_t *factory,
                                 {
                                     .use_stdout = true,
                                     .readable = true,
-                                    .re = "Total-tx-bytes\\s+:\\s+([0-9]+)\\s+byte",
+                                    .re = "Total-tx-bytes\\s+:\\s+([0-9]+)"
+                                          "\\s+byte",
                                     .extract = 1,
                                     .filter_var = &new_app->total_tx_bytes_flt,
                                 },
                                 {
                                     .use_stdout = true,
                                     .readable = true,
-                                    .re = "Total-rx-bytes\\s+:\\s+([0-9]+)\\s+byte",
+                                    .re = "Total-rx-bytes\\s+:\\s+([0-9]+)"
+                                          "\\s+byte",
                                     .extract = 1,
                                     .filter_var = &new_app->total_rx_bytes_flt,
                                 },
@@ -1945,8 +1952,10 @@ tapi_trex_get_report_port_stat(tapi_trex_app *app, tapi_trex_report *report)
                 rc = TE_RC(TE_TAPI, TE_EINVAL);
                 goto cleanup;
             }
-            rc = tapi_trex_str_to_val(bufs[i].data.ptr, port_stat_types[(*flt)->param].type,
-                                      (void *)&res[i][(*flt)->index] + port_stat_types[(*flt)->param].offset);
+            rc = tapi_trex_str_to_val(bufs[i].data.ptr,
+                                      port_stat_types[(*flt)->param].type,
+                                      (void *)&res[i][(*flt)->index] +
+                                      port_stat_types[(*flt)->param].offset);
             if (rc != 0)
                 goto cleanup;
         }
