@@ -1680,7 +1680,11 @@ tapi_trex_destroy(const char *ta, tapi_trex_app *app, tapi_trex_opt *opt)
 
 /** Data units starting from bits. */
 static const te_unit_list bin_units = {
-    .scale = 1024,
+    /*
+     * TRex uses a multiplier of 1000 as a basis for conversion and
+     * printing data on global statistics counters.
+     */
+    .scale = 1000,
     .start_pow = 0,
     .units = (const char * const[]){ "  ", " K", " M", " G", " T", NULL },
 };
