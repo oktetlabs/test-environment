@@ -24,9 +24,7 @@ CONF_LOGGER="${CONFDIR}"/logger.conf
 SNIFF_LOG_DIR=
 SNIFF_LOGS_INCLUDED=false
 OUTPUT_LOCATION=
-OUTPUT_TXT=true
-OUTPUT_HTML=false
-OUTPUT_STDOUT=false
+OUTPUT=
 TMP_LOG_FILE=
 INPUT_FILE=
 
@@ -60,6 +58,7 @@ cat <<EOF
                                  next time you use it.
   -P, --detailed-packets        Print more detailed packet dumps.
   --html                        Generate log in html format (instead of text).
+  --json                        Generate log in JSON format (instead of text).
   --mi                          Generate a stream of MIs
   -t <timeout_ms>               Same as:
   --txt-timeout=<timeout_ms>        When creating a test log, group similar
@@ -76,6 +75,14 @@ cat <<EOF
   -h, --help                    Show this help message.
 
 EOF
+}
+
+check_output_set()
+{
+    if [[ -n "${OUTPUT}" ]] ; then
+        echo "ERROR: only one of options --mi, --html, --json can be used" >&2
+        exit 1
+    fi
 }
 
 process_opts()
@@ -114,15 +121,20 @@ process_opts()
                 ;;
             --mi)
                 PROC_OPTS+=("--txt-mi-only" "--txt-mi-raw" "--txt-no-prefix")
-                OUTPUT_TXT=false
-                OUTPUT_STDOUT=true
+                check_output_set
+                OUTPUT="STDOUT"
                 ;;
 
             --output-to=*) OUTPUT_LOCATION="${1#--output-to=}" ;;
 
             --html)
-                OUTPUT_HTML=true
-                OUTPUT_TXT=false
+                check_output_set
+                OUTPUT="HTML"
+                ;;
+
+            --json)
+                check_output_set
+                OUTPUT="JSON"
                 ;;
 
             -*) ;&
@@ -146,6 +158,8 @@ process_opts()
 
 process_opts "$@"
 
+OUTPUT="${OUTPUT:-TEXT}"
+
 if [[ -z "${INPUT_FILE}" ]] ; then
     PROC_OPTS+=("--raw-log=${TE_LOG_RAW}")
 else
@@ -166,17 +180,22 @@ fi
 
 # Check the output location for consistency and create path, if necessary.
 if test -z "${OUTPUT_LOCATION}" ; then
-    $OUTPUT_TXT && OUTPUT_LOCATION='log.txt'
-    $OUTPUT_HTML && OUTPUT_LOCATION='html'
-    $OUTPUT_STDOUT && OUTPUT_LOCATION='/dev/stdout'
+    [[ "${OUTPUT}" == "TEXT" ]] && OUTPUT_LOCATION='log.txt'
+    [[ "${OUTPUT}" == "HTML" ]] && OUTPUT_LOCATION='html'
+    [[ "${OUTPUT}" == "JSON" ]] && OUTPUT_LOCATION='json'
+    [[ "${OUTPUT}" == "STDOUT" ]] && OUTPUT_LOCATION='/dev/stdout'
 elif test -e "${OUTPUT_LOCATION}" ; then
-    if [ -f "${OUTPUT_LOCATION}" ] && $OUTPUT_HTML ; then
-        echo "ERROR: html log requested, while output location" \
-             "${OUTPUT_LOCATION} is a file"
+    if [[ "${OUTPUT}" == "HTML" || "${OUTPUT}" == "JSON" ]] ; then
+        EXPECT_DIR=true
+    else
+        EXPECT_DIR=false
+    fi
+
+    if [ -f "${OUTPUT_LOCATION}" ] && $EXPECT_DIR ; then
+        echo "ERROR: output location must be a directory" >&2
         exit 1
-    elif [ -d "${OUTPUT_LOCATION}" ] && ! $OUTPUT_HTML ; then
-        echo "ERROR: text log requested, while output location" \
-             "${OUTPUT_LOCATION} is a directory"
+    elif [ -d "${OUTPUT_LOCATION}" ] && ! $EXPECT_DIR ; then
+        echo "ERROR: output location must be a file" >&2
         exit 1
     fi
 else
@@ -192,11 +211,18 @@ else
     fi
 fi
 
-if $SNIFF_LOGS_INCLUDED && $OUTPUT_HTML ; then
-    echo "WARNING: html log includes detailed packet dumps by default" >&2
+
+if [[ "${OUTPUT}" == "HTML" || "${OUTPUT}" == "JSON" ]] ; then
+    DEF_INC_SNIFF_LOGS=true
+else
+    DEF_INC_SNIFF_LOGS=false
 fi
 
-if ! $SNIFF_LOGS_INCLUDED && $OUTPUT_HTML ; then
+if $SNIFF_LOGS_INCLUDED && $DEF_INC_SNIFF_LOGS ; then
+    echo "WARNING: ${OUTPUT} log includes detailed packet dumps by default" >&2
+fi
+
+if ! $SNIFF_LOGS_INCLUDED && $DEF_INC_SNIFF_LOGS ; then
     PROC_OPTS+=("--sniff-log")
     SNIFF_LOGS_INCLUDED=true
 fi
@@ -211,15 +237,17 @@ if $SNIFF_LOGS_INCLUDED && test -z "${SNIFF_LOG_DIR}" ; then
     fi
 fi
 
-if $OUTPUT_HTML ; then
+if [[ "${OUTPUT}" == "HTML" ]] ; then
     PROC_OPTS+=("--html=${OUTPUT_LOCATION}")
-elif $OUTPUT_TXT || $OUTPUT_STDOUT ; then
+elif [[ "${OUTPUT}" == "JSON" ]] ; then
+    PROC_OPTS+=("--json=${OUTPUT_LOCATION}")
+elif [[ "${OUTPUT}" == "TEXT" || "${OUTPUT}" == "STDOUT" ]] ; then
     PROC_OPTS+=("--txt=${OUTPUT_LOCATION}")
 fi
 
 rgt-proc-raw-log "${PROC_OPTS[@]}" "${UNKNOWN_OPTS[@]}"
 
-if $OUTPUT_TXT ;  then
+if [[ "${OUTPUT}" == "TEXT" ]] ;  then
     # If text log was generated, show it to the user
     if [[ -e "${OUTPUT_LOCATION}" ]] ; then
         ${PAGER:-less} "${OUTPUT_LOCATION}"

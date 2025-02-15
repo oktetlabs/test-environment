@@ -187,6 +187,8 @@ Generic options:
                                 to be generated (do not generate by default)
   --log-plain-html=<filename>   Name of the file with plain HTML logs
                                 to be generated (do not generate by default)
+  --log-json=<dirname>          Name of the directory for JSON logs
+                                to be generated (do not generate by default)
   --log-txt=<filename>          Name of the file with logs in text format
                                 to be generated (log.txt by default)
   --log-txt-detailed-packets    Include detailed packet dumps in text log.
@@ -550,6 +552,8 @@ RGT_LOG_TXT=log.txt
 RGT_LOG_HTML_PLAIN=
 # Name of the directory for structured HTML logs to be genetated
 RGT_LOG_HTML=
+# Name of the directory for JSON logs to be generated
+RGT_LOG_JSON=
 # Name of the file with log in JUnit format to be generated
 RGT_LOG_JUNIT=
 # Path to logs publishing script
@@ -664,6 +668,7 @@ process_opts()
             --log-txt=*)        RGT_LOG_TXT="${1#--log-txt=}" ;;
             --log-html=*)       RGT_LOG_HTML="${1#--log-html=}" ;;
             --log-plain-html=*) RGT_LOG_HTML_PLAIN="${1#--log-plain-html=}" ;;
+            --log-json=*)       RGT_LOG_JSON="${1#--log-json=}" ;;
             --log-txt-detailed-packets) RGT_LOG_TXT_DETAILED_PACKETS=true ;;
             --log-txt-line-prefix) RGT_LOG_TXT_LINE_PREFIX=true ;;
             --log-junit=*)      RGT_LOG_JUNIT="${1#--log-junit=}" ;;
@@ -1493,6 +1498,9 @@ if test -n "${RGT_LOG_HTML_PLAIN}" ; then
 fi
 if test -n "${RGT_LOG_HTML}" ; then
     RAW_PROC_OPTS+=("--html=${RGT_LOG_HTML}")
+fi
+if test -n "${RGT_LOG_JSON}" ; then
+    RAW_PROC_OPTS+=("--json=${RGT_LOG_JSON}")
 fi
 if test -n "${RGT_LOG_TXT_LINE_PREFIX}" ; then
     RAW_PROC_OPTS+=("--txt-line-prefix")
