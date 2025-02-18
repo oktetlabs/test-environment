@@ -48,8 +48,8 @@
 
 /** TRex m_traffic_duration filter for client (1) and server (2). */
 #define TAPI_TREX_M_TRAFF_DUR_FLT \
-    "\\s+m_traffic_duration\\s+\\|\\s+([0-9]+\\.[0-9]{2})\\s+sec\\s+\\|" \
-    "\\s+([0-9]+\\.[0-9]{2})\\s+sec\\s+\\|\\s+measured traffic duration"
+    "\\s+m_traffic_duration\\s+\\|\\s+([0-9]+\\.[0-9]{2}\\s[ KMGT])sec\\s+\\|" \
+    "\\s+([0-9]+\\.[0-9]{2}\\s[ KMGT])sec\\s+\\|\\s+measured traffic duration"
 
 /** TRex optional filter template: client (1) and server (2). */
 #define TAPI_TREX_OPT_FLT_TEMPL \
@@ -1978,7 +1978,8 @@ get_single_uint64_opt(tapi_job_channel_t *filter, uint64_t *value)
  * @return Status code.
  */
 static te_errno
-get_single_double(tapi_job_channel_t *filter, double *value)
+get_single_double(tapi_job_channel_t *filter, double *value,
+                  const te_unit_list *units)
 {
     te_errno rc;
     te_string str = TE_STRING_INIT;
@@ -1986,7 +1987,12 @@ get_single_double(tapi_job_channel_t *filter, double *value)
     rc = get_single_str(filter, &str);
 
     if (rc == 0)
-        rc = te_strtod(str.ptr, value);
+    {
+        if (units == NULL)
+            rc = te_strtod(str.ptr, value);
+        else
+            rc = te_unit_list_value_from_string(str.ptr, units, value);
+    }
 
     te_string_free(&str);
     return rc;
@@ -2261,11 +2267,13 @@ tapi_trex_get_report(tapi_trex_app *app, tapi_trex_report *report)
     if (rc != 0)
         return rc;
 
-    rc = get_single_double(app->m_traff_dur_cl_flt, &report->m_traff_dur_cl);
+    rc = get_single_double(app->m_traff_dur_cl_flt, &report->m_traff_dur_cl,
+                           &bin_units);
     if (rc != 0)
         return rc;
 
-    rc = get_single_double(app->m_traff_dur_srv_flt, &report->m_traff_dur_srv);
+    rc = get_single_double(app->m_traff_dur_srv_flt, &report->m_traff_dur_srv,
+                           &bin_units);
     if (rc != 0)
         return rc;
 
