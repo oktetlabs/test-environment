@@ -185,8 +185,11 @@ elif [[ "${req_path}" =~ log[.]txt$ ]] ; then
         err_cleanup "Failed to obtain TXT log"
     fi
 
-elif [[ "${req_path}" =~ /html[/]?$ ||
-        "${req_path}" =~ ^html[/]?$ ]] ; then
+elif [[ "${req_path}" =~ /html[/]*$ ||
+        "${req_path}" =~ ^html[/]*$ ||
+        "${req_path}" =~ /json[/]*$ ||
+        "${req_path}" =~ ^json[/]*$ ||
+        "${req_path}" =~ tree[.]json$ ]] ; then
 
     pixz -x log_gist.raw <"${bundle_path}" | tar x -C \
         "${bundle_tmpdir}/fragments/"
@@ -201,11 +204,25 @@ elif [[ "${req_path}" =~ /html[/]?$ ||
         err_cleanup "Failed to obtain log_gist.xml"
     fi
 
-    "${bindir}"/rgt-xml2html-multi --index-only --shared-url="${shared_url}" \
-        --docs-url="${docs_url}" \
-        "${bundle_tmpdir}/log_gist.xml" "${req_path}"
-    if test $? -ne 0 ; then
-        err_cleanup "Failed to obtain html log tree"
+    if [[ "${req_path}" =~ json[/]*$ ]] ; then
+        if [[ "${req_path}" =~ tree[.]json$ ]] ; then
+            out_dir="$(dirname "${req_path}")"
+        else
+            out_dir="${req_path}"
+        fi
+
+        "${bindir}"/rgt-xml2json --index-only \
+            "${bundle_tmpdir}"/log_gist.xml "${out_dir}"
+        if test $? -ne 0 ; then
+            err_cleanup "Failed to obtain JSON files tree"
+        fi
+    else
+        "${bindir}"/rgt-xml2html-multi --index-only --shared-url="${shared_url}" \
+            --docs-url="${docs_url}" \
+            "${bundle_tmpdir}/log_gist.xml" "${req_path}"
+        if test $? -ne 0 ; then
+            err_cleanup "Failed to obtain html log tree"
+        fi
     fi
 
 elif [[ "${req_path}" =~ node_[^/]*[.]html$ \

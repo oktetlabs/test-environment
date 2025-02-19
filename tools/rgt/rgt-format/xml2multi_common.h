@@ -31,14 +31,14 @@ extern "C" {
     { "single-node", 'n', POPT_ARG_STRING, NULL, 'n',       \
       "Output only specified log node.", NULL },            \
     { "page-selector", 'p', POPT_ARG_STRING, NULL, 'p',     \
-      "Show page selector.", NULL },
+      "Show page selector.", NULL },                        \
+    { "index-only", 'x', POPT_ARG_NONE, NULL, 'x',          \
+      "Output only index pages.", NULL },
 
 /** Options specific to rgt-xml2html-multi */
 #define XML2MULTI_HTML_SPECIFIC_OPTS \
     { "shared-url", 'i', POPT_ARG_STRING, NULL, 'i',              \
-      "URL of directory with shared files (images etc.)", NULL }, \
-    { "index-only", 'x', POPT_ARG_NONE, NULL, 'x',                \
-      "Output only index pages.", NULL },
+      "URL of directory with shared files (images etc.)", NULL },
 
 /** Prefix used for node ID in log file name */
 #define RGT_NODE_ID_PREFIX "id"
