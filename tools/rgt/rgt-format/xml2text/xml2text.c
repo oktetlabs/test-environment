@@ -48,6 +48,11 @@ long timeout_ms = 0;
 static int line_prefix = 0;
 
 /**
+ * If this is turned on, timestamp is printed before each message.
+ */
+static int ts_before_msg = 0;
+
+/**
  * If this is turned on, no prefixes or headers is printed before
  * messages, and no empty lines between them.
  */
@@ -184,6 +189,8 @@ struct poptOption rgt_options_table[] = {
       "Print more detailed packet dumps", NULL },
     { "line-prefix", 'L', POPT_ARG_NONE, &line_prefix, 0,
       "Print prefix before every message line", NULL },
+    { "ts-before-msg", 'T', POPT_ARG_NONE, &ts_before_msg, 0,
+      "Print timestamp before each message", NULL },
     { "no-prefix", 'N', POPT_ARG_NONE, &no_prefix, 0,
       "Do not print any prefix or header before messages", NULL },
     { "mi-raw", 'M', POPT_ARG_NONE, &mi_raw, 0,
@@ -548,6 +555,14 @@ RGT_DEF_FUNC(proc_log_msg_start)
 
     if (level != NULL && strcmp(level, "MI") == 0 && !mi_raw)
         user_ctx->mi_artifact = true;
+
+    if (ts_before_msg)
+    {
+        const char *ts_val = rgt_tmpls_xml_attrs_get(xml_attrs,
+                                                     "ts_val");
+
+        fprintf(fd, "%s\n", ts_val);
+    }
 
     if (!no_prefix)
     {

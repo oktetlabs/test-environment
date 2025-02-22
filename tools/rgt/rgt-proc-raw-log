@@ -21,15 +21,12 @@ plain_html_path=
 txt_path=
 junit_path=
 xml_path=
-line_prefix=
-no_prefix=
-txt_timeout=
-mi_raw=
 mi_only=false
 
 declare -a rgt_conv_opts
 declare -a rgt_x2html_opts
 declare -a rgt_x2json_opts
+declare -a rgt_x2txt_opts
 
 caps_tmp_dir=
 declare -a tmp_files
@@ -75,6 +72,7 @@ Usage: te_proc_raw_log.sh [<options>]
   --txt-line-prefix             Add a prefix before every message line in text log.
   --txt-no-prefix               Print only message bodies without any prefixes
                                 or headers in text log.
+  --txt-ts-before-msg           Print timestamp before every message in text log.
   --txt-mi-raw                  Print MI messages in raw form in text log.
   --txt-mi-only                 Print only MI messages in text log.
   --bundle=<filepath>           Where to save RAW log bundle (if needed).
@@ -87,6 +85,7 @@ Usage: te_proc_raw_log.sh [<options>]
   --rgt-conv-*                  Pass an option to rgt-conv.
   --rgt-x2html-*                Pass an option to rgt-xml2html-multi.
   --rgt-x2json-*                Pass an option to rgt-xml2json.
+  --rgt-x2txt-*                 Pass an option to rgt-xml2txt.
 EOF
 }
 
@@ -125,15 +124,12 @@ function print_warn() {
 #   txt_path
 #   junit_path
 #   xml_path
-#   line_prefix
-#   no_prefix
-#   txt_timeout
-#   mi_raw
 #   mi_only
 #   sniff_detailed_packets
 #   rgt_conv_opts
 #   rgt_x2html_opts
 #   rgt_x2json_opts
+#   rgt_x2txt_opts
 # Arguments:
 #   All arguments passed to this script.
 # Outputs:
@@ -159,17 +155,25 @@ function process_opts() {
             --junit=*) junit_path=${1#--junit=} ;;
             --xml=*) xml_path=${1#--xml=} ;;
 
-            --txt-line-prefix) line_prefix="-L" ;;
-            --txt-no-prefix) no_prefix="-N" ;;
-            --txt-timeout=*) txt_timeout="-t ${1#--txt-timeout=}" ;;
-
+            --txt-line-prefix)
+                rgt_x2txt_opts+=("-L")
+                ;;
+            --txt-ts-before-msg)
+                rgt_x2txt_opts+=("-T")
+                ;;
+            --txt-no-prefix)
+                rgt_x2txt_opts+=("-N")
+                ;;
+            --txt-timeout=*)
+                rgt_x2txt_opts+=("-t ${1#--txt-timeout=}")
+                ;;
             --txt-detailed-packets)
-                sniff_detailed_packets="--detailed-packets"
+                sniff_detailed_packets=true
+                rgt_x2txt_opts+=("--detailed-packets")
                 ;;
             --txt-mi-raw)
-                mi_raw='--mi-raw'
+                rgt_x2txt_opts+=("--mi-raw")
                 ;;
-
             --txt-mi-only)
                 mi_only=true
                 ;;
@@ -190,6 +194,10 @@ function process_opts() {
 
             --rgt-x2json-*)
                 rgt_x2json_opts+=("--${1#--rgt-x2json-}")
+                ;;
+
+            --rgt-x2txt-*)
+                rgt_x2txt_opts+=("--${1#--rgt-x2txt-}")
                 ;;
 
             *) print_warn "Unknown option $1 will be passed to rgt-conv";
@@ -368,9 +376,7 @@ function main() {
 
             if [[ -n "${txt_path}" ]] ; then
                 "${BINDIR}"/rgt-xml2text -f "${log_xml_merged}" \
-                    -o "${txt_path}" \
-                    ${line_prefix} ${no_prefix} ${txt_timeout} \
-                    ${mi_raw} ${sniff_detailed_packets}
+                    -o "${txt_path}" "${rgt_x2txt_opts[@]}"
             fi
 
             if [[ -n "${plain_html_path}" ]] ; then
