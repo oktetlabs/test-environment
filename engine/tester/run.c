@@ -2062,12 +2062,16 @@ log_test_result(test_id parent, tester_test_result *result, int plan_id)
 #if WITH_TRC
     const trc_exp_result       *exp_result = NULL;
     const trc_exp_result_entry *exp_entry = NULL;
+    const char *exp_key = NULL;
+    const char *exp_notes = NULL;
 
     if (result->exp_result != NULL)
     {
         exp_result = result->exp_result;
         exp_entry = trc_is_result_expected(exp_result, &result->result);
         tags = exp_result->tags_str;
+        exp_key = exp_result->key;
+        exp_notes = exp_result->notes;
     }
 
     /* If the result was unexpected, pack the expected results */
@@ -2128,13 +2132,15 @@ log_test_result(test_id parent, tester_test_result *result, int plan_id)
      * jansson-2.10, which is currently the newest version available on
      * CentOS/RHEL-7.x
      */
-    json = json_pack("{s:i, s:i, s:i, s:s?, s:o?, s:s?, s:o?}",
+    json = json_pack("{s:i, s:i, s:i, s:s?, s:o?, s:s?, s:s?, s:s?, s:o?}",
                      "id", result->id,
                      "parent", parent,
                      "plan_id", plan_id,
                      "error", result->error,
                      "obtained", obtained,
                      "tags_expr", tags,
+                     "exp_key", exp_key,
+                     "exp_notes", exp_notes,
                      "expected", expected);
 
     if (json == NULL)

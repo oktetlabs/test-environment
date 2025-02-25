@@ -1023,6 +1023,8 @@ te_rgt_parse_mi_test_end_message(te_rgt_mi *mi)
 
     json_t *root;
     json_t *obtained = NULL;
+    json_t *exp_key = NULL;
+    json_t *exp_notes = NULL;
     json_t *expected = NULL;
     json_t *result = NULL;
     json_t *tags_expr = NULL;
@@ -1047,12 +1049,14 @@ te_rgt_parse_mi_test_end_message(te_rgt_mi *mi)
 
     data->plan_id = -1;
     ret = json_unpack_ex(root, &err, JSON_STRICT,
-                         "{s:i, s:i, s?i, s?s, s?o, s?o, s?o, s?o}",
+                         "{s:i, s:i, s?i, s?s, s?o, s?o, s?o, s?o, s?o, s?o}",
                          "id", &data->node_id,
                          "parent", &data->parent_id,
                          "plan_id", &data->plan_id,
                          "status", &data->obtained.status,
                          "obtained", &obtained,
+                         "exp_key", &exp_key,
+                         "exp_notes", &exp_notes,
                          "expected", &expected,
                          "tags_expr", &tags_expr,
                          "error", &error);
@@ -1068,6 +1072,8 @@ te_rgt_parse_mi_test_end_message(te_rgt_mi *mi)
     if (!check_json_type(mi, &obtained, JSON_OBJECT, "obtained") ||
         !check_json_type(mi, &expected, JSON_ARRAY, "expected") ||
         !check_json_type(mi, &tags_expr, JSON_STRING, "tags_expr") ||
+        !check_json_type(mi, &exp_key, JSON_STRING, "exp_key") ||
+        !check_json_type(mi, &exp_notes, JSON_STRING, "exp_notes") ||
         !check_json_type(mi, &error, JSON_STRING, "error"))
         goto cleanup;
 
@@ -1094,6 +1100,10 @@ te_rgt_parse_mi_test_end_message(te_rgt_mi *mi)
 
     if (tags_expr != NULL)
         data->tags_expr = json_string_value(tags_expr);
+    if (exp_key != NULL)
+        data->exp_key = json_string_value(exp_key);
+    if (exp_notes != NULL)
+        data->exp_notes = json_string_value(exp_notes);
     if (error != NULL)
         data->error = json_string_value(error);
 

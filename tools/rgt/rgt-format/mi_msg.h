@@ -161,6 +161,9 @@ typedef struct te_rgt_mi_test_end {
     const char            *error;        /**< TRC error message */
     const char            *tags_expr;    /**< Matched tag expression */
     te_rgt_mi_test_result  obtained;     /**< Obtained result */
+    const char            *exp_key;      /**< Expected results key
+                                              (e.g. bug reference) */
+    const char            *exp_notes;    /**< Expected results notes */
     te_rgt_mi_test_result *expected;     /**< Array of expected results */
     size_t                 expected_num; /**< Number of expected results */
 } te_rgt_mi_test_end;

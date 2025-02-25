@@ -755,6 +755,21 @@ log_mi_test_start(gen_ctx_user_t *ctx, te_rgt_mi *mi)
 }
 
 /**
+ * Log key and notes from <results> tag in TRC.
+ *
+ * @param ctx       Logging context.
+ * @param test_end  Data from MI test end message.
+ */
+static void
+log_key_notes(gen_ctx_user_t *ctx, te_rgt_mi_test_end *test_end)
+{
+    if (test_end->exp_notes != NULL)
+        fprintf_log(ctx, "\nNotes: %s", test_end->exp_notes);
+    if (test_end->exp_key != NULL)
+        fprintf_log(ctx, "\nKey: %s", test_end->exp_key);
+}
+
+/**
  * Log MI test end message.
  *
  * @param ctx     Logging context.
@@ -791,15 +806,19 @@ log_mi_test_end(gen_ctx_user_t *ctx, te_rgt_mi *mi)
                     data->tags_expr);
     }
 
-    fprintf_log(ctx, "\n\nObtained result:\n");
-    log_mi_result(ctx, &data->obtained);
-
     if (data->error != NULL)
         fprintf_log(ctx, "\n\nERROR: %s", data->error);
+
+    fprintf_log(ctx, "\n\nObtained result:\n");
+    if (data->expected == NULL)
+        log_key_notes(ctx, data);
+
+    log_mi_result(ctx, &data->obtained);
 
     if (data->expected != NULL)
     {
         fprintf_log(ctx, "\n\nExpected results:");
+        log_key_notes(ctx, data);
         for (i = 0; i < data->expected_num; i++)
         {
             fprintf_log(ctx, "\n\n");
