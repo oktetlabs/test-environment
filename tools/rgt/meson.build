@@ -95,6 +95,7 @@ install_data(
     [
         'rgt-proc-raw-log',
         'rgt-log-get-item',
+        'rgt-bublik-json',
     ],
     install_dir: get_option('bindir'),
 )

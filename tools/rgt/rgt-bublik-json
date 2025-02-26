@@ -1,0 +1,142 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2025 OKTET Labs Ltd. All rights reserved.
+#
+# Script for generating JSON to be imported by Bublik.
+
+import argparse
+import json
+from datetime import datetime
+from copy import copy
+
+def format_ts(ts):
+    """Construct date and time string for a given timestamp."""
+    d = datetime.fromtimestamp(float(ts))
+    return d.strftime('%Y.%m.%d %H:%M:%S.') + f'{d.microsecond // 1000:03}'
+
+def parse_test_start(obj, msg):
+    """Parse 'test_start' MI message."""
+    obj['name'] = msg['name']
+
+    obj['type'] = msg.get('node_type')
+    obj['hash'] = msg.get('hash') or ""
+    obj['test_id'] = msg.get('id')
+    obj['plan_id'] = msg.get('plan_id')
+    obj['tin'] = msg.get('tin') or -1
+
+    obj['reqs'] = msg.get('reqs') or []
+    obj['objective'] = msg.get('objective') or ''
+
+    params = {}
+    for param in (msg.get('params') or []):
+        params[param[0]] = param[1]
+
+    obj['params'] = params
+
+def parse_test_end(obj, msg):
+    """Parse 'test_end' MI message."""
+    obj['err'] = msg.get('error') or ''
+
+    obtained = msg.get('obtained')
+    expected = msg.get('expected')
+    exp_notes = msg.get('exp_notes')
+    exp_key = msg.get('exp_key')
+
+    obtained = {'result': obtained}
+    if not expected:
+        # Tester does not store expected results if the obtained
+        # result is expected.
+        obtained['key'] = exp_key
+        obtained['notes'] = exp_notes
+    else:
+        expected = {'results': expected}
+        expected['key'] = exp_key
+        expected['notes'] = exp_notes
+
+    obj['obtained'] = obtained
+    obj['expected'] = expected
+
+def main():
+    """Main function of this script."""
+    parser = argparse.ArgumentParser(
+                        prog='rgt-bublik-json',
+                        description='Generate JSON for Bublik')
+    parser.add_argument('-m', '--mi-log', help='Log with MI messages',
+                        required=True)
+    parser.add_argument('-o', '--output', help='Output file location',
+                        default='/dev/stdout')
+
+    args = parser.parse_args()
+
+    top = {'iters': []}
+    path = []
+    objs = [top]
+
+    with open(args.mi_log, 'r') as f:
+        while True:
+            ts = f.readline().strip()
+            if not ts:
+                break
+
+            ts = float(ts)
+            formatted_ts = format_ts(ts)
+            mi = json.loads(f.readline())
+
+            if 'start_ts' not in top:
+                top['start_ts'] = formatted_ts
+
+            top['end_ts'] = formatted_ts
+
+            mi_type = mi['type']
+
+            if mi_type == 'trc_tags':
+                tags = {}
+                for tag in mi['tags']:
+                    name = tag['name']
+                    value = tag.get('value')
+
+                    tags[name] = value
+
+                if 'tags' in top:
+                    top['tags'].update(tags)
+                else:
+                    top['tags'] = tags
+
+            elif mi_type == 'test_plan':
+                top['plan'] = mi['plan']
+
+            elif mi_type == 'test_start':
+                msg = mi['msg']
+                path.append(msg['name'])
+
+                obj = {}
+                obj['iters'] = []
+                obj['start_ts'] = formatted_ts
+                obj['path'] = copy(path)
+                obj['path_str'] = '/'.join(path)
+
+                parse_test_start(obj, msg)
+
+                objs[-1]['iters'].append(obj)
+                objs.append(obj)
+
+            elif mi_type == 'test_end':
+                path.pop()
+                obj = objs.pop()
+                obj['end_ts'] = formatted_ts
+
+                msg = mi['msg']
+                parse_test_end(obj, msg)
+
+            elif mi_type == 'measurement':
+                obj = objs[-1]
+
+                if 'measurements' not in obj:
+                    obj['measurements'] = []
+
+                obj['measurements'].append(mi)
+
+    with open(args.output, 'w') as f:
+        json.dump(top, f)
+
+main()
