@@ -1927,6 +1927,55 @@ log_test_start(unsigned int flags,
 static json_t *pack_test_result(const te_test_result *result);
 
 /**
+ * Add key and notes attributes to JSON object storing test result.
+ *
+ * @param json    JSON object.
+ * @param key     Key (bug reference).
+ * @param notes   Notes.
+ *
+ * @return Status code.
+ */
+static te_errno
+add_key_notes(json_t *json, const char *key, const char *notes)
+{
+    json_t *tmp;
+
+    if (key != NULL)
+    {
+        tmp = json_string(key);
+        if (tmp == NULL)
+        {
+            ERROR("Failed to convert key to JSON");
+            return TE_EFAIL;
+        }
+        if (json_object_set_new(json, "key", tmp) != 0)
+        {
+            ERROR("Failed to set the \"key\" field");
+            json_decref(tmp);
+            return TE_EFAIL;
+        }
+    }
+
+    if (notes != NULL)
+    {
+        tmp = json_string(notes);
+        if (tmp == NULL)
+        {
+            ERROR("Failed to convert notes to JSON");
+            return TE_EFAIL;
+        }
+        if (json_object_set_new(json, "notes", tmp) != 0)
+        {
+            ERROR("Failed to set the \"notes\" field");
+            json_decref(tmp);
+            return TE_EFAIL;
+        }
+    }
+
+    return 0;
+}
+
+/**
  * Pack an expected test result into a JSON object.
  *
  * @param result        test result
@@ -1937,51 +1986,64 @@ static json_t *
 pack_test_exp_result(const trc_exp_result_entry *result)
 {
     json_t *json;
-    json_t *tmp;
+    te_errno rc;
 
     json = pack_test_result(&result->result);
     if (json == NULL)
         return NULL;
 
-    if (result->key != NULL)
+    rc = add_key_notes(json, result->key, result->notes);
+    if (rc != 0)
     {
-        tmp = json_string(result->key);
-        if (tmp == NULL)
-        {
-            ERROR("Failed to convert key to JSON");
-            json_decref(json);
-            return NULL;
-        }
-        if (json_object_set_new(json, "key", tmp) != 0)
-        {
-            ERROR("Failed to set the \"key\" field");
-            json_decref(json);
-            json_decref(tmp);
-            return NULL;
-        }
-    }
-
-    if (result->notes != NULL)
-    {
-        tmp = json_string(result->notes);
-        if (tmp == NULL)
-        {
-            ERROR("Failed to convert notes to JSON");
-            json_decref(json);
-            return NULL;
-        }
-        if (json_object_set_new(json, "notes", tmp) != 0)
-        {
-            ERROR("Failed to set the \"notes\" field");
-            json_decref(json);
-            json_decref(tmp);
-            return NULL;
-        }
+        json_decref(json);
+        return NULL;
     }
 
     return json;
 }
 #endif
+
+/**
+ * Pack verdicts or artifacts into JSON object.
+ *
+ * @param packed    Verdicts or artifacts.
+ *
+ * @returns Pointer to JSON object or NULL.
+ */
+static json_t *
+pack_verdicts_or_artifacts(const te_test_verdicts *packed)
+{
+    json_t *tmp;
+    json_t *array;
+    te_test_verdict *item;
+
+    array = json_array();
+    if (array == NULL)
+    {
+        ERROR("Failed to create JSON array");
+        return NULL;
+    }
+
+    TAILQ_FOREACH(item, packed, links)
+    {
+        tmp = json_string(item->str);
+        if (tmp == NULL)
+        {
+            ERROR("Failed to create JSON string for \"%s\"", item->str);
+            json_decref(array);
+            return NULL;
+        }
+        if (json_array_append_new(array, tmp) != 0)
+        {
+            ERROR("Failed to append JSON string to array");
+            json_decref(tmp);
+            json_decref(array);
+            return NULL;
+        }
+    }
+
+    return array;
+}
 
 /**
  * Pack a test result into a JSON object.
@@ -1995,50 +2057,44 @@ pack_test_result(const te_test_result *result)
 {
     json_t *json;
     json_t *verdicts = NULL;
+    json_t *artifacts = NULL;
 
     /* Verdicts */
     if (!TAILQ_EMPTY(&result->verdicts))
     {
-        json_t          *tmp;
-        te_test_verdict *verdict;
-
-        verdicts = json_array();
+        verdicts = pack_verdicts_or_artifacts(&result->verdicts);
         if (verdicts == NULL)
-        {
-            ERROR("Failed to create \"verdicts\" array");
             return NULL;
-        }
+    }
 
-        TAILQ_FOREACH(verdict, &result->verdicts, links)
+    /* Artifacts */
+    if (!TAILQ_EMPTY(&result->artifacts))
+    {
+        artifacts = pack_verdicts_or_artifacts(&result->artifacts);
+        if (artifacts == NULL)
         {
-            tmp = json_string(verdict->str);
-            if (tmp == NULL)
-            {
-                ERROR("Failed to create JSON string for verdict \"%s\"", verdict->str);
+            if (verdicts != NULL)
                 json_decref(verdicts);
-                return NULL;
-            }
-            if (json_array_append_new(verdicts, tmp) != 0)
-            {
-                ERROR("Failed to append verdict to array");
-                json_decref(tmp);
-                json_decref(verdicts);
-                return NULL;
-            }
+
+            return NULL;
         }
     }
 
     /*
-     * "*" instead of "?" would be better here, but it's not supported in
-     * jansson-2.10, which is currently the newest version available on
-     * CentOS/RHEL-7.x
+     * "*" instead of "?" would be better here for verdicts, but
+     * it must be ensured that Bublik can handle absence of verdicts
+     * field.
      */
-    json = json_pack("{s:s, s:o?}",
+    json = json_pack("{s:s, s:o?, s:o*}",
                      "status", te_test_status_to_str(result->status),
-                     "verdicts", verdicts);
+                     "verdicts", verdicts, "artifacts", artifacts);
 
     if (json == NULL)
+    {
         ERROR("Failed to pack the result object");
+        json_decref(verdicts);
+        json_decref(artifacts);
+    }
 
     return json;
 }
@@ -2108,15 +2164,13 @@ log_test_result(test_id parent, tester_test_result *result, int plan_id)
         }
     }
 
+    obtained = pack_test_result(&result->result);
     /*
      * If the obtained result matches one of the expected results,
-     * just use this expected result with it's notes and key.
-     * Otherwise, pack all available information.
+     * add key and notes from the expected result.
      */
-    if (exp_result != NULL && exp_entry != NULL)
-        obtained = pack_test_exp_result(exp_entry);
-    else
-        obtained = pack_test_result(&result->result);
+    if (obtained != NULL && exp_entry != NULL)
+        add_key_notes(obtained, exp_entry->key, exp_entry->notes);
 #else
     obtained = pack_test_result(&result->result);
 #endif

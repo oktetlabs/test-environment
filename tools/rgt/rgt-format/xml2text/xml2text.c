@@ -654,6 +654,13 @@ log_mi_result(gen_ctx_user_t *ctx, te_rgt_mi_test_result *result)
             fprintf_log(ctx, "\n *  %s", result->verdicts[i]);
     }
 
+    if (result->artifacts != NULL)
+    {
+        fprintf_log(ctx, "\nArtifacts:");
+        for (i = 0; i < result->artifacts_num; i++)
+            fprintf_log(ctx, "\n *  %s", result->artifacts[i]);
+    }
+
     if (result->notes != NULL)
         fprintf_log(ctx, "\nNotes: %s", result->notes);
     if (result->key != NULL)

@@ -149,6 +149,8 @@ typedef struct te_rgt_mi_test_result {
     const char  *status;       /**< Status code */
     const char **verdicts;     /**< Array of verdicts */
     size_t       verdicts_num; /**< Number of verdicts */
+    const char **artifacts;     /**< Array of artifacts */
+    size_t       artifacts_num; /**< Number of artifacts */
     const char  *notes;        /**< Additional notes */
     const char  *key;          /**< Result key, e.g. bug reference */
 } te_rgt_mi_test_result;

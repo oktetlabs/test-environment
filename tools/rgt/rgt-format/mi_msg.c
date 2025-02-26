@@ -940,6 +940,48 @@ cleanup:
 }
 
 /**
+ * Parse JSON array of strings.
+ *
+ * @param mi            MI object.
+ * @param array         JSON array of strings.
+ * @param field         Name of the field holding the array.
+ * @param num           Where to put number of elements in array.
+ * @param strs          Where to put pointer to array of extracted
+ *                      strings.
+ *
+ * @return Status code.
+ */
+static te_errno
+te_rgt_parse_mi_str_array(te_rgt_mi *mi, json_t *array, const char *field,
+                          size_t *num, const char ***strs)
+{
+    json_t *json_str = NULL;
+    size_t i;
+    const char **p = NULL;
+
+    p = TE_ALLOC(sizeof(const char *) * json_array_size(array));
+
+    json_array_foreach(array, i, json_str)
+    {
+        if (!check_json_type(mi, &json_str, JSON_STRING, field) ||
+            json_str == NULL)
+            return TE_EINVAL;
+
+        p[i] = json_string_value(json_str);
+        if (p[i] == NULL)
+        {
+            te_rgt_mi_parse_error(mi, TE_EINVAL,
+                                  "Failed to extract %s string", field);
+            return TE_EINVAL;
+        }
+    }
+
+    *num = json_array_size(array);
+    *strs = p;
+    return 0;
+}
+
+/**
  * Parse test result object.
  *
  * @param mi            MI object.
@@ -952,10 +994,11 @@ te_rgt_parse_mi_test_result(te_rgt_mi *mi, json_t *json,
 {
     int           ret;
     json_t       *verdicts = NULL;
-    json_t       *verdict = NULL;
+    json_t       *artifacts = NULL;
     json_t       *notes = NULL;
     json_t       *key = NULL;
     json_error_t  err;
+    te_errno      rc;
 
     if (!check_json_type(mi, &json, JSON_OBJECT, "result") ||
         result == NULL)
@@ -963,9 +1006,10 @@ te_rgt_parse_mi_test_result(te_rgt_mi *mi, json_t *json,
 
 
     ret = json_unpack_ex(json, &err, JSON_STRICT,
-                         "{s:s, s?o, s?o, s?o}",
+                         "{s:s, s?o, s?o, s?o, s?o}",
                          "status", &result->status,
                          "verdicts", &verdicts,
+                         "artifacts", &artifacts,
                          "notes", &notes,
                          "key", &key);
     if (ret != 0)
@@ -978,6 +1022,7 @@ te_rgt_parse_mi_test_result(te_rgt_mi *mi, json_t *json,
     }
 
     if (!check_json_type(mi, &verdicts, JSON_ARRAY, "result.verdicts") ||
+        !check_json_type(mi, &artifacts, JSON_ARRAY, "result.artifacts") ||
         !check_json_type(mi, &notes, JSON_STRING, "result.notes") ||
         !check_json_type(mi, &key, JSON_STRING, "result.key"))
         return TE_EINVAL;
@@ -989,25 +1034,20 @@ te_rgt_parse_mi_test_result(te_rgt_mi *mi, json_t *json,
 
     if (verdicts != NULL)
     {
-        size_t i;
+        rc = te_rgt_parse_mi_str_array(mi, verdicts, "verdicts",
+                                       &result->verdicts_num,
+                                       &result->verdicts);
+        if (rc != 0)
+            return rc;
+    }
 
-        result->verdicts_num = json_array_size(verdicts);
-        result->verdicts = TE_ALLOC(sizeof(const char *) * result->verdicts_num);
-
-        json_array_foreach(verdicts, i, verdict)
-        {
-            if (!check_json_type(mi, &verdict, JSON_STRING, "verdict") ||
-                verdict == NULL)
-                return TE_EINVAL;
-
-            result->verdicts[i] = json_string_value(verdict);
-            if (result->verdicts[i] == NULL)
-            {
-                te_rgt_mi_parse_error(mi, TE_EINVAL,
-                                      "Failed to extract verdict string");
-                return TE_EINVAL;
-            }
-        }
+    if (artifacts != NULL)
+    {
+        rc = te_rgt_parse_mi_str_array(mi, artifacts, "artifacts",
+                                       &result->artifacts_num,
+                                       &result->artifacts);
+        if (rc != 0)
+            return rc;
     }
 
     return 0;

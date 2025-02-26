@@ -7,7 +7,8 @@ conf.set_quoted('PACKAGE_STRING',
 
 c_args = []
 
-dep_jansson = dependency('jansson', required: false)
+# Usage of "*" in json_pack() format string is supported since version 2.11.
+dep_jansson = dependency('jansson', required: false, version: '>=2.11')
 required_deps += 'jansson'
 if not dep_jansson.found()
     missed_deps += 'jansson'
