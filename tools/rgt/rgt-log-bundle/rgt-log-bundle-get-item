@@ -117,18 +117,35 @@ elif [[ "${req_path}" =~ log[.]raw$ ]] ; then
         err_cleanup "Failed to recover original raw log"
     fi
 
-elif [[ "${req_path}" =~ bublik[.]xml$ ]] ; then
+elif [[ "${req_path}" =~ bublik[.]xml$ ||
+        "${req_path}" =~ bublik[.]json$ ]] ; then
+
+    raw_log="${bundle_tmpdir}/recovered_log.raw"
+    mi_log="${bundle_tmpdir}/log.mi"
 
     "${bindir}"/rgt-log-bundle-get-original --bundle="${bundle_path}" \
-        --raw-log="${bundle_tmpdir}/recovered_log.raw"
+        --raw-log="${raw_log}"
     if test $? -ne 0 ; then
         err_cleanup "Failed to recover original raw log"
     fi
 
-    "${bindir}"/te-trc-log --mi-meta "${bundle_tmpdir}/recovered_log.raw" \
-        "${req_path}"
-    if test $? -ne 0 ; then
-        err_cleanup "Failed to create XML log for Bublik"
+    if [[ "${req_path}" =~ bublik[.]xml$ ]] ; then
+        "${bindir}"/te-trc-log --mi-meta "${raw_log}" "${req_path}"
+        if test $? -ne 0 ; then
+            err_cleanup "Failed to create XML log for Bublik"
+        fi
+    else
+        "${bindir}"/rgt-proc-raw-log --txt-mi-only --txt-mi-raw \
+            --txt-ts-before-msg --txt-no-prefix \
+            --raw-log="${raw_log}" --txt="${mi_log}"
+        if test $? -ne 0 ; then
+            err_cleanup "Failed to create MI messages log"
+        fi
+
+        "${bindir}"/rgt-bublik-json -m "${mi_log}" -o "${req_path}"
+        if test $? -ne 0 ; then
+            err_cleanup "Failed to create JSON log for Bublik"
+        fi
     fi
 
 elif [[ "${req_path}" =~ /caps[/]?$ ||
