@@ -180,7 +180,7 @@ job_receive_many(unsigned int n_filters, unsigned int *filters, int timeout_ms,
                  tarpc_job_buffer **buffers, unsigned int *count)
 {
     te_errno rc;
-    ta_job_buffer_t *ta_bufs;
+    ta_job_buffer_t *ta_bufs = NULL;
     unsigned int i;
 
     INIT_MANAGER_IF_NEEDED(manager);
