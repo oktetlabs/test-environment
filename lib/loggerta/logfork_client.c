@@ -134,6 +134,14 @@ open_sock(void)
 }
 
 /* See description in logfork.h */
+void
+logfork_close_user_socket(void)
+{
+    close(logfork_clnt_sockd);
+    logfork_clnt_sockd = -1;
+}
+
+/* See description in logfork.h */
 int
 logfork_register_user(const char *name)
 {

@@ -16,6 +16,11 @@ extern "C" {
 #endif
 
 /**
+ * Close socket which clients use to register.
+ */
+extern void logfork_close_user_socket(void);
+
+/**
  * Register process name and pid, so it would be
  * possible to know from which process or thread message
  * has been sent.
