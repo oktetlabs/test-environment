@@ -153,7 +153,7 @@ te_meta_set_git() {
     git_url="$(git config --get remote.origin.url)"
     git_rev="$(git rev-parse HEAD)"
 
-    git_branch="$(git branch --show-current)"
+    git_branch="$(git rev-parse --abbrev-ref HEAD)"
     if [[ -z "${git_branch}" ]] ; then
         # Jenkins checks out specific revision, so that repository is
         # in "detached HEAD" state and current branch name is not known.
