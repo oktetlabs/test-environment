@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2025 OKTET Labs Ltd. All rights reserved. -->
+<test name="rand" type="script">
+    <objective>Testing the sanity of PRNG routines.</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="n_numbers" />
+    </iter>
+</test>

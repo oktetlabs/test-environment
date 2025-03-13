@@ -158,6 +158,21 @@ extern te_errno te_scalar_type_fit_size(bool is_signed, size_t size,
  */
 extern te_errno te_scalar_dynamic_cast(te_scalar_type src_type, const void *src,
                                        te_scalar_type dst_type, void *dst);
+
+
+/**
+ * Generate a random value that fits the type @p type.
+ *
+ * The function use te_rand_signed() or te_rand_unsigned()
+ * depending on the signedness of the type and appropriate
+ * limits for that type.
+ *
+ * @param[in]   type    Type of a generated value.
+ * @param[out]  dst     Location for a generated value.
+ *
+ */
+extern void te_scalar_random(te_scalar_type type, void *dst);
+
 /**@}*/
 
 /**

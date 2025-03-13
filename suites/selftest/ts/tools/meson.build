@@ -20,6 +20,7 @@ tests = [
     'lines',
     'make_bufs',
     'readlink',
+    'rand',
     'rings',
     'resolvepath',
     'scalar_types',

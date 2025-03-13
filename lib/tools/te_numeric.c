@@ -12,6 +12,7 @@
 #include <math.h>
 
 #include "te_numeric.h"
+#include "te_rand.h"
 #include "logger_api.h"
 
 const te_enum_map te_scalar_type_names[] = {
@@ -198,4 +199,23 @@ te_scalar_dynamic_cast(te_scalar_type src_type, const void *src,
 #undef CASE
 
     return rc;
+}
+
+void
+te_scalar_random(te_scalar_type type, void *dst)
+{
+    if (te_scalar_type_is_signed(type))
+    {
+        intmax_t val = te_rand_signed(te_scalar_type_min(type),
+                                      (intmax_t)te_scalar_type_max(type));
+
+        te_scalar_dynamic_cast(TE_SCALAR_TYPE_INTMAX_T, &val, type, dst);
+    }
+    else
+    {
+        uintmax_t val = te_rand_signed((uintmax_t)te_scalar_type_min(type),
+                                       te_scalar_type_max(type));
+
+        te_scalar_dynamic_cast(TE_SCALAR_TYPE_UINTMAX_T, &val, type, dst);
+    }
 }

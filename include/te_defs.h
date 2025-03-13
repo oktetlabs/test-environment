@@ -371,6 +371,8 @@ extern "C" {
  * @param max     range upper limit
  *
  * @return Random number from the range [min, max]
+ *
+ * @deprecated Use te_rand_unsigned() or te_rand_signed() instead.
  */
 static inline int
 rand_range(int min, int max)

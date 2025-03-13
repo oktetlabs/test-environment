@@ -304,6 +304,11 @@
         </run>
 
         <run>
+            <script name="rand" />
+            <arg name="n_numbers"><value>1000</value></arg>
+        </run>
+
+        <run>
             <script name="rings"/>
             <arg name="n_iterations">
                 <value>10000</value>
