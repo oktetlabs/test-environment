@@ -4,7 +4,7 @@
 # Common variable for rgt
 package = 'rgt'
 version = '0.4'
-te_copyright = '# Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.'
+te_copyright = '# Copyright (C) 2004-2025 OKTET Labs Ltd. All rights reserved.'
 
 # Common includes
 
