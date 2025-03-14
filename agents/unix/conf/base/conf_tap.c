@@ -187,7 +187,7 @@ tap_list(unsigned int gid, const char *oid, const char *sub_id, char **list)
 {
     struct tap_entry *tap;
     te_string te_str = TE_STRING_INIT;
-    te_bool first = true;
+    bool first = true;
 
     UNUSED(gid);
     UNUSED(oid);

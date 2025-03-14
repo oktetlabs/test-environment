@@ -1731,8 +1731,8 @@ iters_match(te_trc_db *db, trc_test_iter *iter1, trc_test_iter *iter2)
             }
             else
             {
-                te_bool first_empty = (*(arg1->value) == '\0');
-                te_bool second_empty = (*(arg2->value) == '\0');
+                bool first_empty = (*(arg1->value) == '\0');
+                bool second_empty = (*(arg2->value) == '\0');
 
                 if (first_empty && second_empty)
                 {
@@ -3088,7 +3088,7 @@ tags_contain(const tqh_strings *tags, const char *name)
  *
  * @return true if one of the tags is mentioned, false otherwise.
  */
-static te_bool
+static bool
 check_tags_mention(const logic_expr *expr_dnf, const tqh_strings *tags)
 {
     if (expr_dnf->type == LOGIC_EXPR_VALUE)
