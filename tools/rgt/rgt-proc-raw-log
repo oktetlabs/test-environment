@@ -268,18 +268,6 @@ function main() {
     # Construct all the required logs from RAW log.
     #
 
-    if [[ -n "${bundle_path}" ]] ; then
-        "${BINDIR}"/rgt-log-bundle-create --raw-log="${raw_path}" \
-            --bundle="${bundle_path}"
-    fi
-
-    if [[ "${sniff_logs_included}" == "true" ]] \
-       && ! type tshark >/dev/null 2> /dev/null ; then
-        print_warn \
-          "tshark is missed, so sniffer logs won't be merged into the log"
-        sniff_logs_included=false
-    fi
-
     if [[ "${sniff_logs_included}" == "true" ]] ; then
         if [[ -z "${sniff_log_dir}" ]] ; then
             # Try to guess capture logs path
@@ -293,10 +281,29 @@ function main() {
           || sniff_log_dir="${RUN_DIR}/${sniff_log_dir}"
     fi
 
+    if [[ ! -d "${sniff_log_dir}" ]] ; then
+        sniff_logs_included=false
+    fi
+
+    if [[ -n "${bundle_path}" ]] ; then
+        local -a sniff_opts
+
+        if [[ "${sniff_logs_included}" == "true" ]] ; then
+            sniff_opts=("--sniff-log" "--sniff-log-dir=${sniff_log_dir}")
+        fi
+
+        "${BINDIR}"/rgt-log-bundle-create --raw-log="${raw_path}" \
+            --bundle="${bundle_path}" "${sniff_opts[@]}"
+    fi
+
     # Search for pcap files in potential sniffer logs directory,
     # convert them to XML and store names of converted files in sniff_logs
     local -a sniff_logs
-    if [[ ! -d "${sniff_log_dir}" ]] ; then
+
+    if [[ "${sniff_logs_included}" == "true" ]] \
+       && ! type tshark >/dev/null 2> /dev/null ; then
+        print_warn \
+          "tshark is missed, so sniffer logs won't be merged into the log"
         sniff_logs_included=false
     fi
 
