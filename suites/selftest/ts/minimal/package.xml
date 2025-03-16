@@ -227,5 +227,22 @@
                 <value>Simple</value>
             </arg>
         </run>
+        <run>
+            <script name="multi_line_indent">
+                <objective>
+                    Check that indentation
+                        of multiline context is stripped,
+                    in case when strip_indent is switched on.
+                </objective>
+            </script>
+            <arg name="test_line">
+                <value>
+                first
+
+                    sub-line
+                second
+                </value>
+            </arg>
+        </run>
     </session>
 </package>
