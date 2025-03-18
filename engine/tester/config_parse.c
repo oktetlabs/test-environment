@@ -263,9 +263,6 @@ remove_common_leading_indent(char *str)
     const char *p;
     char       *write_ptr = str;
 
-    if (!(tester_global_context.flags & TESTER_STRIP_INDENT))
-        return;
-
     min_indent = get_max_common_indent(str);
 
     if (min_indent <= 0)
@@ -338,7 +335,8 @@ get_text_content(xmlNodePtr node, const char *name, char **content)
         return TE_ENOMEM;
     }
 
-    remove_common_leading_indent(*content);
+    if (tester_global_context.flags & TESTER_STRIP_INDENT)
+        remove_common_leading_indent(*content);
 
     return 0;
 }
@@ -1993,7 +1991,8 @@ alloc_and_get_var_arg(xmlNodePtr node, bool is_var,
     {
         test_entity_value *v = TAILQ_FIRST(&p->values.head);
 
-        if (v != NULL && v->plain != NULL)
+        if (v != NULL && v->plain != NULL &&
+            tester_global_context.flags & TESTER_STRIP_INDENT)
             remove_common_leading_indent(v->plain);
     }
 
