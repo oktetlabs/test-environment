@@ -4868,12 +4868,7 @@ tarpc_ioctl_pre(tarpc_ioctl_in *in, tarpc_ioctl_out *out,
             reqlen = sizeof(req->ifconf);
 
             if (buflen > 0)
-            {
-                te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOMEM),
-                                 "Out of memory");
-                return TE_ENOMEM;
-            }
-            buf = TE_ALLOC(buflen + 64);
+                buf = TE_ALLOC(buflen + 64);
             req->ifconf.ifc_buf = buf;
             req->ifconf.ifc_len = buflen;
 

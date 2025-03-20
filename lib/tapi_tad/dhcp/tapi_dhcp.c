@@ -240,7 +240,6 @@ ndn_dhcpv4_option_to_plain(const asn_value *dhcp_opt,
         return rc;
 
     opt_p = TE_ALLOC(sizeof(**opt_p));
-    (*opt_p)->val = TE_ALLOC(len);
     (*opt_p)->val_len = len;
     (*opt_p)->next = NULL;
     (*opt_p)->subopts = NULL;
@@ -255,6 +254,8 @@ ndn_dhcpv4_option_to_plain(const asn_value *dhcp_opt,
                                   &len, "type.#plain");
         return rc;
     }
+
+    (*opt_p)->val = TE_ALLOC(len);
 
     if ((rc = asn_read_value_field(dhcp_opt, (*opt_p)->val,
                                    &len, "value.#plain")) != 0 ||
@@ -633,7 +634,9 @@ dhcpv4_message_add_option(struct dhcp_message *dhcp_msg, uint8_t type,
         cur_opt_p = &((*cur_opt_p)->next);
     }
     *cur_opt_p = TE_ALLOC(sizeof(**cur_opt_p));
-    (*cur_opt_p)->val = TE_ALLOC(len);
+    if (len > 0)
+        (*cur_opt_p)->val = TE_ALLOC(len);
+
     (*cur_opt_p)->next = NULL;
     (*cur_opt_p)->subopts = NULL;
     (*cur_opt_p)->type = type;
