@@ -1422,3 +1422,14 @@ test_get_opt_value_bin_unit_param(int argc, char **argv, const char *name)
     return TE_OPTIONAL_UINTMAX_VAL(
         test_get_value_bin_unit_param(argc, argv, name));
 }
+
+te_optional_bool_t
+test_get_opt_bool_param(int argc, char **argv, const char *name)
+{
+    struct param_map_entry maps[] = {BOOL_MAPPING_LIST, {NULL, 0}};
+
+    if (is_opt_param_none(argc, argv, name))
+        return TE_OPTIONAL_BOOL_UNDEF;
+
+    return TE_OPTIONAL_BOOL_VAL(test_get_enum_param(argc, argv, name, maps));
+}
