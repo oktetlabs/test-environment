@@ -10,7 +10,7 @@ export TMPDIR="${TMPDIR:-${TE_TMP:-/tmp/}}"
 readonly RUN_DIR="${PWD}"
 readonly BINDIR="$(cd `dirname $0` && pwd)"
 
-sniff_logs_included=false
+sniff_logs_included=true
 sniff_log_dir=
 sniff_detailed_packets=
 raw_path=
@@ -60,13 +60,14 @@ Usage: te_proc_raw_log.sh [<options>]
                                 may be path to log compressed with
                                 bzip2 or xz, with corresponding file
                                 extension).
-  --sniff-log                   Include sniffer dumps.
-                                WARNING: if you changed sniffer log directory
+  --no-sniff-log                Do not include sniffer dumps.
+  --sniff-log-dir=<dirpath>     Path to the *TEN* side capture files.
+                                WARNING: this option may be not needed.
+                                However if you changed sniffer log directory
                                 in the way it could not be guessed easily
                                 (e.g. via one of run.sh options --logger-conf,
                                 --conf-dir, --cfg, --opts), you'd better
                                 pass --sniff-log-dir to this script.
-  --sniff-log-dir=<dirpath>     Path to the *TEN* side capture files.
   --txt-timeout=<timeout_ms>    Timeout to group text entries together
   --txt-detailed-packets        Print more detailed packet dumps in text log.
   --txt-line-prefix             Add a prefix before every message line in text log.
@@ -144,7 +145,8 @@ function process_opts() {
 
             --raw-log=*) raw_path=${1#--raw-log=} ;;
 
-            --sniff-log) sniff_logs_included=true ;;
+            --no-sniff-log) sniff_logs_included=false ;;
+            --sniff-log) print_warn "--sniff-log is not needed" ;;
             --sniff-log-dir=*) sniff_log_dir="${1#--sniff-log-dir=}" ;;
 
             --bundle=*) bundle_path=${1#--bundle=} ;;
@@ -265,11 +267,11 @@ function main() {
     # Check sniffer-related arguments for consistency
     if [[ -n "${sniff_log_dir}" \
           && "${sniff_logs_included}" == "false" ]] ; then
-        print_warn "--sniff-log-dir is supplied, whereas --sniff-log is not"
+        print_warn "--sniff-log-dir is useless with --no-sniff-log"
     fi
     if [[ -n "${sniff_detailed_packets}" \
           && "${sniff_logs_included}" == "false" ]] ; then
-        print_warn "--detailed-packets is supplied, whereas --sniff-log is not"
+        print_warn "--detailed-packets is useless with --no-sniff-log"
     fi
 
     #
@@ -297,7 +299,9 @@ function main() {
         local -a sniff_opts
 
         if [[ "${sniff_logs_included}" == "true" ]] ; then
-            sniff_opts=("--sniff-log" "--sniff-log-dir=${sniff_log_dir}")
+            sniff_opts=("--sniff-log-dir=${sniff_log_dir}")
+        else
+            sniff_opts=("--no-sniff-log")
         fi
 
         "${BINDIR}"/rgt-log-bundle-create --raw-log="${raw_path}" \

@@ -12,6 +12,8 @@ set -e
 
 readonly BINDIR="$(cd `dirname $0` && pwd)"
 
+declare -a add_opts
+
 raw_path=
 bundle_path=
 req_path=
@@ -58,6 +60,7 @@ Usage: rgt-log-get-item [<options>]
                                 making them accessible to the owner
                                 of the directory where raw log is
                                 located.
+  --no-sniff-log                Do not include sniffer logs.
 EOF
 }
 
@@ -93,6 +96,7 @@ function print_warn() {
 #   docs_url
 #   detect_docs_dir
 #   fix_perms
+#   add_opts
 # Arguments:
 #   All arguments passed to this script.
 # Outputs:
@@ -118,6 +122,8 @@ function process_opts() {
             --detect-docs-dir) detect_docs_dir=yes ;;
 
             --fix-permissions) fix_perms=yes ;;
+
+            --no-sniff-log) add_opts+=("$1") ;;
 
         esac
         shift 1
@@ -265,11 +271,10 @@ function main() {
     if [[ -n "${bundle_path}" ]] ; then
         "${BINDIR}"/rgt-log-bundle-get-item --bundle="${bundle_path}" \
             --shared-url="${shared_url}" --docs-url="${docs_url}" \
-            --req-path="${req_path}"
+            --req-path="${req_path}" "${add_opts[@]}"
     else
         local target
         local target_opt
-        declare -a add_opts
 
         if [[ "${req_path}" =~ [.]txt$ ]] ; then
             target_opt="txt"

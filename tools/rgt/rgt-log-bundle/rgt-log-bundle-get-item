@@ -10,7 +10,7 @@ bundle_path=
 req_path=
 shared_url=
 docs_url=
-sniff_log=false
+sniff_log=true
 sniff_log_dir=
 
 usage()
@@ -21,13 +21,13 @@ Usage: rgt-log-bundle-get-item [<options>]
   --req-path=PATH       Path to the log to be obtained
   --shared-url=URL      URL of directory for shared files (images etc.)
   --docs-url=URL        URL of directory for test descriptions
-  --sniff-log           Include sniffer capture logs
   --sniff-log-dir=PATH  Where to find sniffer capture files. No need
                         to specify this if log bundle includes capture
                         files. Otherwise this path is used only when
                         generating log.txt and by default is set to
                         "caps" subdirectory in the same directory where
                         log bundle is stored
+  --no-sniff-log        Do not include sniffer capture logs
 
 EOF
 }
@@ -42,7 +42,10 @@ while [[ "$#" -gt 0 ]] ; do
         --shared-url=* )   shared_url="${opt#--shared-url=}" ;;
         --docs-url=*   )   docs_url="${opt#--docs-url=}" ;;
 
-        --sniff-log         )   sniff_log=true ;;
+        --sniff-log)
+            echo "--sniff-log no longer needed" >&2
+            ;;
+        --no-sniff-log      )   sniff_log=false ;;
         --sniff-log-dir=*   )   sniff_log_dir=${opt#--sniff-log-dir=} ;;
 
                       *)   echo "Unknown option: ${opt}" >&2;
@@ -189,8 +192,9 @@ elif [[ "${req_path}" =~ log[.]txt$ ]] ; then
             fi
         fi
         if [[ -d "${sniff_log_dir}" ]] ; then
-            sniff_opts+=("--sniff-log")
             sniff_opts+=("--sniff-log-dir=${sniff_log_dir}")
+        else
+            sniff_opts+=("--no-sniff-log")
         fi
     fi
 
@@ -310,7 +314,9 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ \
     fi
 
     if [[ "${sniff_log}" == "true" ]] ; then
-        sniff_opts=("--sniff-log" "--sniff-log-dir=${sniff_log_dir}")
+        sniff_opts=("--sniff-log-dir=${sniff_log_dir}")
+    else
+        sniff_opts=("--no-sniff-log")
     fi
 
     dir_path=$(dirname "${req_path}")

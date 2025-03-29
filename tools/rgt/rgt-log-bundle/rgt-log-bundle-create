@@ -12,7 +12,7 @@ export LD_LIBRARY_PATH="$(dirname "${bindir}")/lib:${LD_LIBRARY_PATH}"
 raw_log_path="${PWD}/log.raw"
 bundle_path="${PWD}/raw_log_bundle.tpxz"
 
-sniff_logs=false
+sniff_logs=true
 sniff_log_dir=
 
 usage()
@@ -22,10 +22,10 @@ Usage: rgt-log-bundle-create [<options>]
   --raw-log=PATH        Path to raw log
   --bundle=PATH         Path to raw log bundle to be created
   -v, --verbose         Print logs about what is done
-  --sniff-log           Include sniffer capture files
   --sniff-log-dir=PATH  Where to find sniffer capture files (by default
                         it looks for "caps" subfolder in the same folder
                         in which RAW log bundle is stored)
+  --no-sniff-log        Do not include sniffer capture files
 EOF
 }
 
@@ -46,7 +46,10 @@ while [[ "$#" -gt 0 ]] ; do
         -v) ;&
         --verbose)      verbose=true ;;
 
-        --sniff-log) sniff_logs=true ;;
+        --sniff-log)
+            echo "--sniff-log no longer needed" >&2
+            ;;
+        --no-sniff-log) sniff_logs=false ;;
         --sniff-log-dir=*) sniff_log_dir="${1#--sniff-log-dir=}" ;;
 
                    *)   echo "Unknown option: ${opt}" >&2;

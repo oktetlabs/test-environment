@@ -22,7 +22,7 @@ declare -a UNKNOWN_OPTS
 
 CONF_LOGGER="${CONFDIR}"/logger.conf
 SNIFF_LOG_DIR=
-SNIFF_LOGS_INCLUDED=false
+SNIFF_LOGS_INCLUDED=true
 OUTPUT_LOCATION=
 OUTPUT=
 TMP_LOG_FILE=
@@ -41,14 +41,8 @@ usage()
 {
 cat <<EOF
 Usage: `basename "${EXEC_NAME}"` [<options>] [raw log or bundle file]
+  --no-sniff-log                Do not include sniffer dumps.
   --sniff-log-dir=<path>        Path to the *TEN* side capture files.
-  --output-to=<path>            Location where you want the log to be stored.
-EOF
-if $HTML_OPTION ; then
-cat <<EOF
-                                It should either not exist, or be a file, if
-                                you want a text log, or a directory for html.
-  -p, --sniff-log               Include sniffer dumps.
                                 WARNING: if you changed sniffer log directory
                                  in the way it could not be guessed easily
                                  (e.g. via one of run.sh options --logger-conf,
@@ -56,6 +50,12 @@ cat <<EOF
                                  you'd better pass --sniff-log-dir to this
                                  script or --log-html to run.sh (dispatcher.sh)
                                  next time you use it.
+  --output-to=<path>            Location where you want the log to be stored.
+EOF
+if $HTML_OPTION ; then
+cat <<EOF
+                                It should either not exist, or be a file, if
+                                you want a text log, or a directory for html.
   -P, --detailed-packets        Print more detailed packet dumps.
   --html                        Generate log in html format (instead of text).
   --json                        Generate log in JSON format (instead of text).
@@ -92,10 +92,11 @@ process_opts()
             -h) ;&
             --help) usage ; exit 0 ;;
 
-            -p) ;&
             --sniff-log)
-                SNIFF_LOGS_INCLUDED=true
-                PROC_OPTS+=("--sniff-log")
+                echo "--sniff-log no longer needed" >&2
+                ;;
+            --no-sniff-log)
+                SNIFF_LOGS_INCLUDED=false
                 ;;
 
             -P) ;&
@@ -211,20 +212,8 @@ else
     fi
 fi
 
-
-if [[ "${OUTPUT}" == "HTML" || "${OUTPUT}" == "JSON" ]] ; then
-    DEF_INC_SNIFF_LOGS=true
-else
-    DEF_INC_SNIFF_LOGS=false
-fi
-
-if $SNIFF_LOGS_INCLUDED && $DEF_INC_SNIFF_LOGS ; then
-    echo "WARNING: ${OUTPUT} log includes detailed packet dumps by default" >&2
-fi
-
-if ! $SNIFF_LOGS_INCLUDED && $DEF_INC_SNIFF_LOGS ; then
-    PROC_OPTS+=("--sniff-log")
-    SNIFF_LOGS_INCLUDED=true
+if [[ "${SNIFF_LOGS_INCLUDED}" == "false" ]] ; then
+    PROC_OPTS+=("--no-sniff-log")
 fi
 
 if $SNIFF_LOGS_INCLUDED && test -z "${SNIFF_LOG_DIR}" ; then
