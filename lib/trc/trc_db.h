@@ -167,6 +167,8 @@ struct te_trc_db {
     trc_globals     globals;
     bool last_match; /**< Choose the last match expectation */
     bool merged; /**< True if other databases were merged into this one */
+    /** How to treat unknown test/iteration */
+    trc_unknown_exp_status unknown_exp_status;
 };
 
 /** Kinds of matching of iteration TRC with iteration from XML log */

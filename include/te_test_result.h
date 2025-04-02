@@ -139,6 +139,35 @@ trc_verdict2str(trc_verdict v)
     return "<UNEXPECTED_VALUE>";
 }
 
+/** How to treat unknown test/iteration */
+typedef enum trc_unknown_exp_status {
+    /** Unknown passing test is unknown */
+    TRC_UNKNOWN_EXP_STATUS_PASSED_UNKNOWN,
+    /** Unknown passing test is ok */
+    TRC_UNKNOWN_EXP_STATUS_PASSED_OK,
+} trc_unknown_exp_status;
+
+/**
+ * Convert trc_unknown_exp_status to string representation.
+ *
+ * @param status        Status to be converted to string
+ *
+ * @return Pointer to string representation.
+ */
+static inline const char *
+trc_unknown_exp_status_to_str(trc_unknown_exp_status status)
+{
+    switch (status)
+    {
+        case TRC_UNKNOWN_EXP_STATUS_PASSED_UNKNOWN:
+            return "passed_unknown";
+        case TRC_UNKNOWN_EXP_STATUS_PASSED_OK:
+            return "passed_ok";
+        default:
+             return "<UNKNOWN>";
+    }
+}
+
 /** Initialize test result by defaults. */
 static inline void
 te_test_result_init(te_test_result *result)
