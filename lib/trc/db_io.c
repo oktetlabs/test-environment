@@ -1579,6 +1579,8 @@ trc_db_open_ext(const char *location, te_trc_db **db, int flags)
     }
     else
     {
+        const char *unknown_exp_status;
+
         rc = get_boolean_prop(node, "last_match", &(*db)->last_match);
         if (rc != 0)
             return rc;
@@ -1593,6 +1595,24 @@ trc_db_open_ext(const char *location, te_trc_db **db, int flags)
         {
             INFO("Version of the TRC DB is missing");
         }
+
+        unknown_exp_status = XML2CHAR(xmlGetProp(node,
+                                    CONST_CHAR2XML("unknown_exp_status")));
+        if (unknown_exp_status != NULL)
+        {
+            if (strcmp(unknown_exp_status, "passed_ok") == 0)
+                (*db)->unknown_exp_status =
+                    TRC_UNKNOWN_EXP_STATUS_PASSED_OK;
+            else if (strcmp(unknown_exp_status, "passed_unknown") == 0)
+                (*db)->unknown_exp_status =
+                    TRC_UNKNOWN_EXP_STATUS_PASSED_UNKNOWN;
+        }
+        else
+        {
+            (*db)->unknown_exp_status =
+                TRC_UNKNOWN_EXP_STATUS_PASSED_UNKNOWN;
+        }
+
 
         node = xmlNodeChildren(node);
         (*db)->tests.node = node;

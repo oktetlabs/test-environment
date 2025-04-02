@@ -40,6 +40,20 @@
         </xsd:restriction>
     </xsd:simpleType>
 
+    <xsd:simpleType name="unknownExpStatus">
+        <xsd:annotation>
+            <xsd:documentation>
+                Enumeration of ways to handle unknown test/iteration.
+                Are they treated as ok (only PASSED iterations without any
+                verdict), or unknown.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:token">
+            <xsd:enumeration value="passed_ok"/>
+            <xsd:enumeration value="passed_unknown"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
     <xsd:complexType name="iter">
         <xsd:annotation>
             <xsd:documentation>
@@ -372,6 +386,13 @@
                         If true, this TRC database was created by merging other
                         TRC databases. So it may contain more than one iteration
                         entry matching a given test iteration.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:attribute>
+            <xsd:attribute name="unknown_exp_status" type="te-trc:unknownExpStatus" default="passed_unknown">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        How to treat unknown test/iteration.
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:attribute>
