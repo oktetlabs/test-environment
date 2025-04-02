@@ -1844,9 +1844,9 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
     rpcs = rcf_pch_find_rpcserver(server);
     if (rpcs == NULL)
     {
-        ERROR("Failed to find RPC server %s", server);
+        RING("RPC server '%s' not found", server);
         pthread_mutex_unlock(&lock);
-        RETERR(TE_ENOENT);
+        RETERR(TE_ESRCH);
     }
 
     if (rpcs->dead)
