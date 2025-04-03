@@ -1045,6 +1045,29 @@ get_tcp_move(rpc_tcp_state state_from, rpc_tcp_state state_to,
     return act;
 }
 
+/**
+ * There is no direct SYN_RECV state for a socket, but a listening socket with
+ * an embryonic connection in the SYN_RECV state is considered as such.
+ * TIME_WAIT sockets are reported by Linux as CLOSED.
+ */
+te_bool
+if_special_tcp_move(rpc_tcp_state state_from, rpc_tcp_state state_to,
+                    rpc_tcp_state state_cur)
+{
+    return ((state_from == RPC_TCP_LISTEN &&
+             state_to == RPC_TCP_SYN_RECV &&
+             state_cur == RPC_TCP_LISTEN) ||
+            (state_from == RPC_TCP_FIN_WAIT1 &&
+             state_to == RPC_TCP_TIME_WAIT &&
+             state_cur == RPC_TCP_CLOSE) ||
+            (state_from == RPC_TCP_FIN_WAIT2 &&
+             state_to == RPC_TCP_TIME_WAIT &&
+             state_cur == RPC_TCP_CLOSE) ||
+            (state_from == RPC_TCP_CLOSING &&
+             state_to == RPC_TCP_TIME_WAIT &&
+             state_cur == RPC_TCP_CLOSE));
+}
+
 /* See the tapi_tcp_states.h file for the description. */
 te_errno
 tsa_do_tcp_move(tsa_session *ss, rpc_tcp_state state_from,
@@ -1132,8 +1155,11 @@ tsa_do_tcp_move(tsa_session *ss, rpc_tcp_state state_from,
     }
 
     if (tsa_state_cur(ss) != state_to &&
-        !(flags & TSA_MOVE_IGNORE_ERR))
+        !(flags & TSA_MOVE_IGNORE_ERR) &&
+        !if_special_tcp_move(state_from, state_to, tsa_state_cur(ss)))
+    {
         return TE_RC(TE_TAPI, TE_EFAIL);
+    }
 
     return 0;
 }
@@ -1277,7 +1303,9 @@ tsa_do_moves_str(tsa_session *ss,
 
                     if (rc > 0 ||
                         (tsa_state_cur(ss) != next_state &&
-                         !(flags & TSA_MOVE_IGNORE_ERR)))
+                         !(flags & TSA_MOVE_IGNORE_ERR) &&
+                         !if_special_tcp_move(prev_state, next_state,
+                                             tsa_state_cur(ss))))
                     {
                         if (rc == 0)
                             rc = TE_RC(TE_TAPI, TE_EFAIL);
