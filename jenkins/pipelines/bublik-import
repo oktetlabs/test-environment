@@ -40,7 +40,7 @@ pipeline {
         stage("Initiate logs import to Bublik") {
             steps {
                 sh 'curl --negotiate -u : ' + params.bublik_url +
-                   'importruns/source/?url=' + params.logs_url
+                   'api/v2/importruns/source/?url=' + params.logs_url
             }
         }
     }
