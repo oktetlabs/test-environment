@@ -2057,6 +2057,48 @@ maybe_create_device(const pci_device *dev, const char *drvname)
 }
 
 static te_errno
+try_override(const pci_device *dev, const char *drv)
+{
+    te_string sys = TE_STRING_INIT;
+    te_string id = TE_STRING_INIT;
+    te_errno rc;
+    ssize_t ret;
+    int fd;
+
+    rc = format_device_address(&id, &dev->address);
+    if (rc != 0)
+    {
+        te_string_free(&id);
+        return rc;
+    }
+
+    te_string_append(&sys, "/sys/bus/pci/devices/%s/driver_override", id.ptr);
+    te_string_free(&id);
+
+    if (access(sys.ptr, F_OK) != 0)
+    {
+        rc = (errno == ENOENT) ? TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP) :
+                                 TE_OS_RC(TE_TA_UNIX, errno);
+        te_string_free(&sys);
+        return rc;
+    }
+
+    fd = open(sys.ptr, O_WRONLY);
+
+    rc = TE_OS_RC(TE_TA_UNIX, errno);
+    te_string_free(&sys);
+
+    if (fd < 0)
+        return rc;
+
+    ret = write(fd, drv, strlen(drv));
+    rc = (ret < 0) ? TE_OS_RC(TE_TA_UNIX, errno) : 0;
+
+    close(fd);
+    return rc;
+}
+
+static te_errno
 pci_driver_set(unsigned int gid, const char *oid, const char *value,
                const char *unused1, const char *unused2,
                const char *addr_str)
@@ -2102,15 +2144,31 @@ pci_driver_set(unsigned int gid, const char *oid, const char *value,
         rc = maybe_load_driver(value);
         if (rc != 0)
             return rc;
-        for (i = 0; i < TE_ARRAY_LEN(generic_drivers) && !is_gen_driver; i++)
-            is_gen_driver = (strcmp(generic_drivers[i], value) == 0);
 
-        if (is_gen_driver)
+        /* Available on kernels >= 3.15. */
+        rc = try_override(dev, value);
+
+        if (TE_RC_GET_ERROR(rc) == TE_EOPNOTSUPP)
         {
-            rc = let_generic_driver_know_pci_device(dev, value);
-            if (rc != 0)
-                return rc;
+            for (i = 0;
+                 i < TE_ARRAY_LEN(generic_drivers) && !is_gen_driver;
+                 i++)
+            {
+                is_gen_driver = (strcmp(generic_drivers[i], value) == 0);
+            }
+
+            if (is_gen_driver)
+            {
+                rc = let_generic_driver_know_pci_device(dev, value);
+                if (rc != 0)
+                    return rc;
+            }
         }
+        else if (rc != 0)
+        {
+            return rc;
+        }
+
         rc = bind_pci_device(dev, value);
         if (rc != 0)
             return rc;
