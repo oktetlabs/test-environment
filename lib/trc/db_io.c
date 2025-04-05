@@ -1162,17 +1162,19 @@ alloc_and_get_test(xmlNodePtr node, te_trc_db *db, trc_tests *tests,
     }
 
     /* possible include with globals */
-    if (xmlStrcmp(node->name, CONST_CHAR2XML("include")) == 0 ||
-        xmlStrcmp(node->name,
-                  CONST_CHAR2XML("xinclude_start")) == 0 ||
-        xmlStrcmp(node->name,
-                  CONST_CHAR2XML("xinclude_end")) == 0)
+    if (node != NULL &&
+        (xmlStrcmp(node->name, CONST_CHAR2XML("include")) == 0 ||
+         xmlStrcmp(node->name,
+                   CONST_CHAR2XML("xinclude_start")) == 0 ||
+         xmlStrcmp(node->name,
+                   CONST_CHAR2XML("xinclude_end")) == 0))
     {
         update_files(node);
         node = xmlNodeNext(node);
     }
     /* get test globals - they're added to globals set */
-    if (xmlStrcmp(node->name, CONST_CHAR2XML("globals")) == 0)
+    if (node != NULL &&
+        xmlStrcmp(node->name, CONST_CHAR2XML("globals")) == 0)
     {
         rc = get_globals(node, db, p);
         if (rc != 0)
