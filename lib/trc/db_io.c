@@ -2504,6 +2504,9 @@ trc_update_iters(te_trc_db *db, trc_test_iters *iters, int flags, int uid,
 
         if (!is_saved && p->node != NULL)
         {
+            if (first_iter_node == p->node)
+                first_iter_node = xmlNodeNext(p->node);
+
             xmlUnlinkNode(p->node);
             xmlFreeNode(p->node);
             p->node = NULL;
@@ -2694,7 +2697,8 @@ trc_update_iters(te_trc_db *db, trc_test_iters *iters, int flags, int uid,
             }
         }
 
-        prev_iter_node = p->node;
+        if (p->node != NULL)
+            prev_iter_node = p->node;
     }
 
     return 0;
