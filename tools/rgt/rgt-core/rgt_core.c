@@ -29,6 +29,7 @@
 #include "postponed_mode.h"
 #include "index_mode.h"
 #include "junit_mode.h"
+#include "mi_mode.h"
 
 /*
  * Define PACKAGE, VERSION and TE_COPYRIGHT just for the case it's build
@@ -130,6 +131,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
         RGT_OPT_MODE,
         RGT_OPT_NO_CNTRL_MSG,
         RGT_OPT_MI_META,
+        RGT_OPT_MI_TS,
         RGT_OPT_INCOMPLETE_LOG,
         RGT_OPT_TMPDIR,
         RGT_OPT_STOP_AT_ENTITY,
@@ -145,7 +147,8 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
         { "mode", 'm', POPT_ARG_STRING, NULL, RGT_OPT_MODE,
           "Mode of operation, can be "
           RGT_OP_MODE_LIVE_STR ", " RGT_OP_MODE_POSTPONED_STR
-          ", " RGT_OP_MODE_INDEX_STR " or " RGT_OP_MODE_JUNIT_STR ". "
+          ", " RGT_OP_MODE_INDEX_STR ", " RGT_OP_MODE_JUNIT_STR
+          " or " RGT_OP_MODE_MI_STR ". "
           "By default " RGT_OP_MODE_DEFAULT_STR " mode is used.", "MODE" },
 
         { "no-cntrl-msg", '\0', POPT_ARG_NONE, NULL, RGT_OPT_NO_CNTRL_MSG,
@@ -154,6 +157,10 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
 
         { "mi-meta", '\0', POPT_ARG_NONE, NULL, RGT_OPT_MI_META,
           "Include MI artifacts in <meta> section of XML log",
+          NULL },
+
+        { "mi-ts", '\0', POPT_ARG_NONE, NULL, RGT_OPT_MI_TS,
+          "In mi mode, print timestamp before each MI message",
           NULL },
 
         { "incomplete-log", '\0', POPT_ARG_NONE, NULL,
@@ -214,13 +221,16 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
                      strcmp(ctx->op_mode_str,
                             RGT_OP_MODE_INDEX_STR) != 0 &&
                      strcmp(ctx->op_mode_str,
-                            RGT_OP_MODE_JUNIT_STR) != 0))
+                            RGT_OP_MODE_JUNIT_STR) != 0 &&
+                     strcmp(ctx->op_mode_str,
+                            RGT_OP_MODE_MI_STR) != 0))
                 {
                     usage(optCon, 1, "Specify mode of operation",
                           RGT_OP_MODE_LIVE_STR ", "
                           RGT_OP_MODE_POSTPONED_STR ", "
                           RGT_OP_MODE_INDEX_STR ", "
-                          RGT_OP_MODE_JUNIT_STR);
+                          RGT_OP_MODE_JUNIT_STR " or "
+                          RGT_OP_MODE_MI_STR);
                 }
 
                 if (strcmp(ctx->op_mode_str, RGT_OP_MODE_LIVE_STR) == 0)
@@ -231,8 +241,11 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
                 else if (strcmp(ctx->op_mode_str,
                                 RGT_OP_MODE_INDEX_STR) == 0)
                     ctx->op_mode = RGT_OP_MODE_INDEX;
-                else
+                else if (strcmp(ctx->op_mode_str,
+                                RGT_OP_MODE_JUNIT_STR) == 0)
                     ctx->op_mode = RGT_OP_MODE_JUNIT;
+                else
+                    ctx->op_mode = RGT_OP_MODE_MI;
 
                 break;
 
@@ -250,6 +263,10 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
 
             case RGT_OPT_MI_META:
                 ctx->mi_meta = true;
+                break;
+
+            case RGT_OPT_MI_TS:
+                ctx->mi_ts = true;
                 break;
 
             case RGT_OPT_INCOMPLETE_LOG:
@@ -359,6 +376,12 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
             ctx->io_mode = RGT_IO_MODE_NBLK;
             junit_mode_init(ctrl_msg_proc, &reg_msg_proc,
                             log_root_proc);
+            break;
+
+        case RGT_OP_MODE_MI:
+            ctx->io_mode = RGT_IO_MODE_NBLK;
+            mi_mode_init(ctrl_msg_proc, &reg_msg_proc,
+                         log_root_proc);
             break;
 
         default:

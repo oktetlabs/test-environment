@@ -12,6 +12,7 @@ rgt_core_sources = files(
     'log_format_v1.c',
     'log_msg.c',
     'memory.c',
+    'mi_mode.c',
     'postponed_mode.c',
     'rgt_core.c',
 )

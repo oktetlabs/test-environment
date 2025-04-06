@@ -22,6 +22,8 @@ prog_name=`basename $0`
 #   -m MODE, --mode=MODE        Choose mode of RGT opertation.
 #   --no-cntrl-msg              Process Tester control messages as ordinary
 #   --mi-meta                   Include MI artifacts in <meta>
+#   --mi-ts                     In mi mode, print timestamp before each MI
+#                               message.
 #   --stop-at-entity=ENTITY     Stop log processing at the first message
 #                               with a given entity.
 #   -c FILE, --cfg-filter=FILE  Specify XMl filter file name.
@@ -42,11 +44,13 @@ Usage: $prog_name [OPTION...] [<Raw Log file> [<Output file>]]
 
   OPTIONS:
   -m MODE, --mode=MODE     Specify mode of RGT operation.
-                           It can be live, postponed, index or junit
+                           It can be live, postponed, index, junit or mi
                            (postponed by default).
 
   --no-cntrl-msg           Process Tester control messages as ordinary.
   --mi-meta                Include MI artifacts in <meta>
+  --mi-ts                  In mi mode, print timestamp before each MI
+                           message.
 
   --stop-at-entity=ENTITY  Stop log processing at the first message
                            with a given entity.
@@ -76,16 +80,16 @@ EOF
 
 #
 # Checks if operation mode is valid (should be one of "live", "postponed",
-# "index" or "junit")
+# "index", "junit" or "mi")
 #
 check_op_mode () {
-    case "$1" in live|postponed|index|junit)
+    case "$1" in live|postponed|index|junit|mi)
         # Mode is ok.
         ;;
 
     *)
         usage
-        echo "Specify mode of operation: live, postponed, index or junit"
+        echo "Specify mode of operation: live, postponed, index, junit or mi"
         { (exit 1); exit 1; }
         ;;
     esac
@@ -184,6 +188,10 @@ do
         ;;
 
     --stop-at-entity*)
+        extra_flags="$extra_flags $1"
+        ;;
+
+    --mi-ts)
         extra_flags="$extra_flags $1"
         ;;
 

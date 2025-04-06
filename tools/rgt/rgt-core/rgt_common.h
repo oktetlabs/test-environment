@@ -134,6 +134,7 @@ typedef enum rgt_op_mode {
     RGT_OP_MODE_POSTPONED = 1, /**< Postponed operation mode */
     RGT_OP_MODE_INDEX     = 2, /**< Index operation mode */
     RGT_OP_MODE_JUNIT     = 3, /**< JUnit operation mode */
+    RGT_OP_MODE_MI        = 4, /**< MI operation mode */
     RGT_OP_MODE_DEFAULT   = RGT_OP_MODE_POSTPONED /**< Default operation
                                                        mode */
 } rgt_op_mode_t;
@@ -143,6 +144,7 @@ typedef enum rgt_op_mode {
 #define RGT_OP_MODE_POSTPONED_STR "postponed"
 #define RGT_OP_MODE_INDEX_STR     "index"
 #define RGT_OP_MODE_JUNIT_STR     "junit"
+#define RGT_OP_MODE_MI_STR        "mi"
 
 /* Define default mode of operation */
 #define RGT_OP_MODE_DEFAULT_STR RGT_OP_MODE_POSTPONED_STR
@@ -208,6 +210,9 @@ typedef struct rgt_gen_ctx {
 
     /** Include MI artifacts in <meta> section */
     bool mi_meta;
+
+    /** Print timestamps before MI messages */
+    bool mi_ts;
 
     bool proc_incomplete; /**< Whether Rgt should process
                                           incomplete log reports as normal

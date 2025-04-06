@@ -28,9 +28,9 @@
 #include "te_string.h"
 #include "te_vector.h"
 
-f_process_ctrl_log_msg ctrl_msg_proc[CTRL_EVT_LAST][NT_LAST];
-f_process_reg_log_msg  reg_msg_proc;
-f_process_log_root     log_root_proc[CTRL_EVT_LAST];
+f_process_ctrl_log_msg ctrl_msg_proc[CTRL_EVT_LAST][NT_LAST] = { NULL };
+f_process_reg_log_msg  reg_msg_proc = NULL;
+f_process_log_root     log_root_proc[CTRL_EVT_LAST] = { NULL };
 
 /* External declaration */
 static node_info_t *create_node_by_msg_json(json_t *json, uint32_t *ts);
@@ -501,7 +501,8 @@ void
 rgt_process_regular_message(log_msg *msg)
 {
     if (rgt_ctx.op_mode == RGT_OP_MODE_LIVE ||
-        rgt_ctx.op_mode == RGT_OP_MODE_INDEX)
+        rgt_ctx.op_mode == RGT_OP_MODE_INDEX ||
+        rgt_ctx.op_mode == RGT_OP_MODE_MI)
     {
         /*
          * We should only check if there is at least one node
