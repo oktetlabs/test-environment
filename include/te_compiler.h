@@ -66,7 +66,7 @@
 #else
 
 #define TE_LIKE_PRINTF(fmtarg_, va_)
-#define TE_LIKE_VPRINTF(fmtarg_, va_)
+#define TE_LIKE_VPRINTF(fmtarg_)
 
 #endif
 
