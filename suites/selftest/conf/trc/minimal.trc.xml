@@ -188,5 +188,12 @@
                 <arg name="simple" />
             </iter>
         </test>
+        <test name="multi_line_indent" type="script">
+            <objective>Check that indentation of multi-line is stripped correctly by TE.</objective>
+            <iter result="PASSED">
+                <arg name="test_line"/>
+                <notes/>
+            </iter>
+        </test>
     </iter>
 </test>

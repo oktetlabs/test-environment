@@ -184,6 +184,115 @@ xmlNodeNext(xmlNodePtr node)
     return xmlNodeSkipExtra(node->next);
 }
 
+/**
+ * Get the number of leading whitespaces in the line.
+ *
+ * @param line      Line for which leading whitespaces should be found.
+ * @param new_line  Set this pointer to next new line character.
+ *
+ * @return Number of leading whitespaces in the line, or @c -1 if there are
+           only whitespaces.
+ */
+static int
+get_leading_space_num(const char *line, const char **new_line)
+{
+    int         spaces_cnt = 0;
+    const char *end;
+
+    spaces_cnt = strspn(line, " ");
+    end = strchr(line, '\n');
+    if (new_line != NULL)
+        *new_line = end;
+    if (end == NULL)
+        end = line + strlen(line);
+
+    if (line + spaces_cnt == end)
+        spaces_cnt = -1;
+
+    return spaces_cnt;
+}
+
+/**
+ * Get maximum common indentation for lines in string.
+ *
+ * @param str    String for which max common indentation should be found.
+ *
+ * @return Maximum common indentation.
+ */
+static int
+get_max_common_indent(const char *str)
+{
+    int         max_indent = -1;
+    const char *start = str;
+    const char *next_line;
+    int         space_count = 0;
+
+    while (true)
+    {
+        space_count = get_leading_space_num(start, &next_line);
+
+        /* Ignore line with all whitespaces. */
+        if (space_count != -1 && (space_count < max_indent || max_indent == -1))
+            max_indent = space_count;
+
+        if (next_line == NULL)
+            break;
+
+        start = next_line + 1;
+    }
+    if (max_indent == -1)
+        max_indent = 0;
+
+    return max_indent;
+}
+
+/**
+ * Remove common leading indention of the string. This is required because
+ * parameters are provided in XML as text and leading indention is not
+ * stripped by the XML parser.
+ *
+ * @param str      String to be modified
+ */
+static void
+remove_common_leading_indent(char *str)
+{
+    int         min_indent;
+    const char *start = str;
+    const char *end;
+    int         space_count = 0;
+    const char *p;
+    char       *write_ptr = str;
+
+    min_indent = get_max_common_indent(str);
+
+    if (min_indent <= 0)
+        return;
+
+    while (start != NULL)
+    {
+        space_count = get_leading_space_num(start, &end);
+        if (space_count == -1)
+            p = start;
+        else
+            p = start + min_indent;
+        if (end == NULL)
+        {
+            end = start + strlen(start);
+            start = NULL;
+        }
+        else
+        {
+            start = end + 1;
+        }
+
+        while (p < end)
+            *write_ptr++ = *p++;
+        if (*end == '\n')
+            *write_ptr++ = '\n';
+    }
+    /* Terminate the new string */
+    *write_ptr = '\0';
+}
 
 /**
  * Get text content of the node.
@@ -225,6 +334,9 @@ get_text_content(xmlNodePtr node, const char *name, char **content)
         ERROR("String duplication failed");
         return TE_ENOMEM;
     }
+
+    if (tester_global_context.flags & TESTER_STRIP_INDENT)
+        remove_common_leading_indent(*content);
 
     return 0;
 }
@@ -536,6 +648,67 @@ get_persons_info(xmlNodePtr *node, const char *node_name,
     return 0;
 }
 
+/**
+ * Get syntax flags.
+ *
+ * @param node      Location of the XML node pointer.
+ * @param flags     Syntax flags.
+ *
+ * @return Status code.
+ */
+static te_errno
+get_syntax_flags(xmlNodePtr *node, tester_flags *flags)
+{
+    char       *val;
+    te_errno    rc;
+    xmlNodePtr  child_node;
+
+    assert(*node != NULL);
+    assert(flags != NULL);
+
+    /* 'syntax' block is optional. */
+    if (xmlStrcmp((*node)->name, CONST_CHAR2XML("syntax")) != 0)
+        return 0;
+
+    child_node = xmlNodeChildren(*node);
+    *node = xmlNodeNext(*node);
+    if (child_node == NULL)
+    {
+        ERROR("Empty syntax section");
+        return TE_RC(TE_TESTER, TE_EINVAL);
+    }
+
+    if (xmlStrcmp(child_node->name, CONST_CHAR2XML("markdown")) == 0)
+    {
+        if ((rc = get_node_with_text_content(&child_node, "markdown",
+                                             &val)) != 0)
+            return rc;
+
+        if (strcmp(val, "on") == 0)
+        {
+            *flags |= TESTER_STRIP_INDENT;
+        }
+        else if (strcmp(val, "off") == 0)
+        {
+            *flags &= ~TESTER_STRIP_INDENT;
+        }
+        else
+        {
+            ERROR("Something strange inside <markdown>: %s", val);
+            free(val);
+            return TE_RC(TE_TESTER, TE_EINVAL);
+        }
+        free(val);
+    }
+
+    if (child_node != NULL)
+    {
+        ERROR("Unexpected element '%s' in syntax", XML2CHAR(child_node->name));
+        return TE_RC(TE_TESTER, TE_EINVAL);
+    }
+
+    return 0;
+}
 
 /**
  * Get option.
@@ -1814,6 +1987,15 @@ alloc_and_get_var_arg(xmlNodePtr node, bool is_var,
         /* ignore error */
     }
 
+    /* Strip indention */
+    {
+        test_entity_value *v = TAILQ_FIRST(&p->values.head);
+
+        if (v != NULL && v->plain != NULL &&
+            tester_global_context.flags & TESTER_STRIP_INDENT)
+            remove_common_leading_indent(v->plain);
+    }
+
     if (is_var && global && strcmp(global, "true") == 0)
     {
         char env_name[128];
@@ -2721,6 +2903,14 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg,
     {
         if (rc != TE_ENOENT)
             return rc;
+    }
+
+    /* Get optional syntax flags */
+    rc = get_syntax_flags(&node, &tester_global_context.flags);
+    if (rc != 0)
+    {
+        ERROR("Failed to get syntax flags");
+        return rc;
     }
 
     /* Get optional information about suites */

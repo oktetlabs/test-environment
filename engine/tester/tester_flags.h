@@ -65,6 +65,8 @@ typedef uint64_t tester_flags;
 #define TESTER_RUN                    (1LLU << 18)
 /** Run tests regardless requested path */
 #define TESTER_FORCE_RUN              (1LLU << 19)
+/** Strip common indentations in string values */
+#define TESTER_STRIP_INDENT           (1LLU << 20)
 
 /*
  * These seems to be not used currently.

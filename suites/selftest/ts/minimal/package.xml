@@ -227,5 +227,16 @@
                 <value>Simple</value>
             </arg>
         </run>
+        <run>
+            <script name="multi_line_indent"/>
+            <arg name="test_line">
+                <value>
+                first
+
+                    sub-line
+                second
+                </value>
+            </arg>
+        </run>
     </session>
 </package>

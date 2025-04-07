@@ -11,7 +11,8 @@ tests = [
     'mi_meas_multipliers',
     'compound_params',
     'parameters',
-    'verdict'
+    'verdict',
+    'multi_line_indent'
 ]
 
 foreach test : tests
