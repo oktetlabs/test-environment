@@ -909,6 +909,8 @@ const trc_exp_result *
 trc_db_walker_get_exp_result(const te_trc_db_walker *walker,
                              const tqh_strings      *tags)
 {
+    const trc_exp_result *exp_result;
+
     assert(walker->is_iter);
 
     if (walker->unknown > 0)
@@ -919,8 +921,24 @@ trc_db_walker_get_exp_result(const te_trc_db_walker *walker,
          */
         VERB("Iteration is not known");
         /* Test iteration is unknown. No expected result. */
-        return NULL;
+        switch (walker->db->unknown_exp_status)
+        {
+            case TRC_UNKNOWN_EXP_STATUS_PASSED_OK:
+                exp_result = exp_defaults_get(TE_TEST_PASSED);
+                break;
+            case TRC_UNKNOWN_EXP_STATUS_PASSED_UNKNOWN:
+                exp_result = exp_defaults_get(TE_TEST_UNSPEC);
+                break;
+            default:
+                assert(0);
+                break;
+        }
+    }
+    else
+    {
+        exp_result = trc_db_iter_get_exp_result(walker->iter, tags,
+                                                walker->db->last_match);
     }
 
-    return trc_db_iter_get_exp_result(walker->iter, tags, walker->db->last_match);
+    return exp_result;
 }
