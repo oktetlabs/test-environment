@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include "te_errno.h"
 #include "te_string.h"
+#include "te_str.h"
 
 #include "rgt_tmpls_lib.h"
 #include "rgt_which.h"
@@ -46,12 +47,9 @@ static unsigned int global_attr_num = 0;
 /** Wheter the attribute array is currently used or not */
 static bool attr_locked = false;
 
-#define N_BUFS ATTR_NUM
 #define BUF_LEN 512
 /** The array of buffers for keeping string value attributes */
-static char bufs[N_BUFS][BUF_LEN];
-/** Currently used buffer */
-static unsigned int cur_buf = 0;
+static char bufs[ATTR_NUM][BUF_LEN];
 
 /** Type of an output function (like fprintf()) */
 typedef int (*write_func)(void *arg, ...);
@@ -101,7 +99,6 @@ rgt_tmpls_attrs_free(rgt_attrs_t *attrs)
 {
     assert(attr_locked == true);
     assert(attrs == global_attrs);
-    cur_buf = 0;
     attr_locked = false;
 }
 
@@ -141,31 +138,48 @@ rgt_tmpls_attrs_saved_free(rgt_attrs_t *attrs)
 }
 
 /**
- * Adds a new string attribute in the list of attributes.
+ * Get string buffer to fill when updating or adding a string attribute.
  *
- * @param attrs    Rgt attributes list
- * @param name     A new attribute name
- * @param fmt_str  Format string for the attribute value
- * @param ap       List of values connected with @p fmt_str
+ * @param attrs            RGT attributes.
+ * @param name             Attribute name.
+ * @param find_existing    If true, try to find existing attribute
+ *                         with a given name.
+ *
+ * @return Pointer to string buffer of BUF_LEN bytes.
  */
-static void
-attrs_add_fstr(rgt_attrs_t *attrs, const char *name,
-               const char *fmt_str, va_list ap)
+static char *
+attrs_prepare_str_buf(rgt_attrs_t *attrs, const char *name,
+                      bool find_existing)
 {
+    uint32_t i;
+
     assert(attr_locked == true);
-    assert(global_attr_num + 2 <= ATTR_NUM);
-    assert(cur_buf + 1 <= N_BUFS);
     assert(attrs == global_attrs);
+
+    if (find_existing)
+    {
+        for (i = 0; i < global_attr_num; i++)
+        {
+            if (strcmp(global_attrs[i].name, name) == 0)
+            {
+                global_attrs[i].type = RGT_ATTR_TYPE_STR;
+                global_attrs[i].str_val = bufs[i];
+                return bufs[i];
+            }
+        }
+    }
+
+    assert(global_attr_num + 2 <= ATTR_NUM);
 
     global_attrs[global_attr_num].type = RGT_ATTR_TYPE_STR;
     global_attrs[global_attr_num].name = name;
-    vsnprintf(bufs[cur_buf], BUF_LEN, fmt_str, ap);
-    global_attrs[global_attr_num].str_val = bufs[cur_buf];
+    global_attrs[global_attr_num].str_val = bufs[global_attr_num];
+    i = global_attr_num;
 
-    cur_buf++;
     global_attr_num++;
-
     global_attrs[global_attr_num].type = RGT_ATTR_TYPE_UNKNOWN;
+
+    return bufs[i];
 }
 
 /* The description see in rgt_tmpls_lib.h */
@@ -173,10 +187,12 @@ void
 rgt_tmpls_attrs_add_fstr(rgt_attrs_t *attrs, const char *name,
                          const char *fmt_str, ...)
 {
+    char *s;
     va_list ap;
 
+    s = attrs_prepare_str_buf(attrs, name, false);
     va_start(ap, fmt_str);
-    attrs_add_fstr(attrs, name, fmt_str, ap);
+    vsnprintf(s, BUF_LEN, fmt_str, ap);
     va_end(ap);
 }
 
@@ -185,30 +201,51 @@ void
 rgt_tmpls_attrs_set_fstr(rgt_attrs_t *attrs, const char *name,
                          const char *fmt_str, ...)
 {
-    va_list  ap;
-    uint32_t i;
+    char *s;
+    va_list ap;
 
-    assert(attr_locked == true);
-    assert(global_attr_num + 2 <= ATTR_NUM);
-    assert(attrs == global_attrs);
-
+    s = attrs_prepare_str_buf(attrs, name, true);
     va_start(ap, fmt_str);
-
-    for (i = 0; i < global_attr_num; i++)
-    {
-        if (strcmp(global_attrs[i].name, name) == 0)
-        {
-            global_attrs[i].type = RGT_ATTR_TYPE_STR;
-            vsnprintf((char *)global_attrs[i].str_val,
-                      BUF_LEN, fmt_str, ap);
-            va_end(ap);
-            return;
-        }
-    }
-
-    /* we haven't found the attribute, use add instead */
-    attrs_add_fstr(attrs, name, fmt_str, ap);
+    vsnprintf(s, BUF_LEN, fmt_str, ap);
     va_end(ap);
+}
+
+/**
+ * Add or update a string attribute.
+ *
+ * @param attrs         RGT attribute.
+ * @param name          Attribute name.
+ * @param value         Attribute value.
+ * @param set_existing  If true, update existing attribute
+ *                      instead of adding a new one if possible.
+ */
+static void
+attrs_add_set_str(rgt_attrs_t *attrs, const char *name,
+                  const char *value, bool set_existing)
+{
+    char *s;
+
+    s = attrs_prepare_str_buf(attrs, name, set_existing);
+    if (value == NULL)
+        *s = '\0';
+    else
+        te_strlcpy(s, value, BUF_LEN);
+}
+
+/* The description see in rgt_tmpls_lib.h */
+void
+rgt_tmpls_attrs_add_str(rgt_attrs_t *attrs, const char *name,
+                        const char *value)
+{
+    attrs_add_set_str(attrs, name, value, false);
+}
+
+/* The description see in rgt_tmpls_lib.h */
+void
+rgt_tmpls_attrs_set_str(rgt_attrs_t *attrs, const char *name,
+                        const char *value)
+{
+    attrs_add_set_str(attrs, name, value, true);
 }
 
 /* The description see in rgt_tmpls_lib.h */

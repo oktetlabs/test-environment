@@ -177,6 +177,27 @@ extern void rgt_tmpls_attrs_set_fstr(rgt_attrs_t *attrs, const char *name,
                                      TE_LIKE_PRINTF(3, 4);
 
 /**
+ * Add a new string attribute into the list of RGT attributes.
+ *
+ * @param attrs    RGT attributes list.
+ * @param name     A new attribute name.
+ * @param value    Attribute value (if NULL, empty string will be set).
+ */
+extern void rgt_tmpls_attrs_add_str(rgt_attrs_t *attrs, const char *name,
+                                    const char *value);
+
+/**
+ * Update the value of string attribute in the list of RGT attributes.
+ * If the attribute does not exist, it will be added.
+ *
+ * @param attrs    RGT attributes list.
+ * @param name     Attribute name.
+ * @param value    Attribute value (if NULL, empty string will be set).
+ */
+extern void rgt_tmpls_attrs_set_str(rgt_attrs_t *attrs, const char *name,
+                                    const char *value);
+
+/**
  * Add a new uint32_t attribute into the list of rgt attributes.
  *
  * @param attrs  Rgt attributes list

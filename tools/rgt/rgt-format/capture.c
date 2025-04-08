@@ -99,7 +99,7 @@ RGT_DEF_FUNC(proc_log_packet_proto_start)
     if (rgt_tmpls_xml_attrs_get(xml_attrs, "showname") == NULL &&
        (show = rgt_tmpls_xml_attrs_get(xml_attrs, "name")) != NULL)
     {
-        rgt_tmpls_attrs_add_fstr(attrs, "showname", "%s", show);
+        rgt_tmpls_attrs_add_str(attrs, "showname", show);
     }
     rgt_tmpls_attrs_add_fstr(attrs, "packet_num", "%d", packet_num);
     OUTPUT_CAPTURE_TMPL(ctx, depth_ctx, fd,
@@ -141,7 +141,7 @@ RGT_DEF_FUNC(proc_log_packet_field_start)
     if ((show = rgt_tmpls_xml_attrs_get(xml_attrs, "showname")) == NULL &&
         (show = rgt_tmpls_xml_attrs_get(xml_attrs, "show")) != NULL)
     {
-        rgt_tmpls_attrs_add_fstr(attrs, "showname", "%s", show);
+        rgt_tmpls_attrs_add_str(attrs, "showname", show);
     }
 
     if (show != NULL)

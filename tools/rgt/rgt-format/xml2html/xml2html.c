@@ -73,7 +73,7 @@ RGT_DEF_FUNC(proc_document_start)
     }
 
     attrs = rgt_tmpls_attrs_new(xml_attrs);
-    rgt_tmpls_attrs_add_fstr(attrs, "DATADIR", "%s", prefix);
+    rgt_tmpls_attrs_add_str(attrs, "DATADIR", prefix);
     rgt_tmpls_output(gen_user->fd, &xml2fmt_tmpls[DOCUMENT_START], attrs);
     rgt_tmpls_attrs_free(attrs);
 }
@@ -103,7 +103,7 @@ RGT_DEF_FUNC(proc_log_msg_start)
     RGT_FUNC_UNUSED_PRMS();
 
     attrs = rgt_tmpls_attrs_new(xml_attrs);
-    rgt_tmpls_attrs_add_fstr(attrs, "row_class",
+    rgt_tmpls_attrs_add_str(attrs, "row_class",
         (gen_user->col == RGT_ROW_COL_LIGHT) ? "tdlight" : "tddark");
     rgt_tmpls_output(gen_user->fd, &xml2fmt_tmpls[LOG_MSG_START], attrs);
     rgt_tmpls_attrs_free(attrs);
@@ -117,7 +117,7 @@ RGT_DEF_FUNC(proc_log_msg_end)
     RGT_FUNC_UNUSED_PRMS();
 
     attrs = rgt_tmpls_attrs_new(xml_attrs);
-    rgt_tmpls_attrs_add_fstr(attrs, "row_class",
+    rgt_tmpls_attrs_add_str(attrs, "row_class",
         (gen_user->col == RGT_ROW_COL_LIGHT) ? "tdlight" : "tddark");
     rgt_tmpls_output(gen_user->fd, &xml2fmt_tmpls[LOG_MSG_END], attrs);
     rgt_tmpls_attrs_free(attrs);
