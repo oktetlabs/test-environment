@@ -121,9 +121,9 @@ process_opts()
                 PROC_OPTS+=("$1")
                 ;;
             --mi)
-                PROC_OPTS+=("--txt-mi-only" "--txt-mi-raw" "--txt-no-prefix")
                 check_output_set
-                OUTPUT="STDOUT"
+                OUTPUT="MI"
+                OUTPUT_LOCATION="/dev/stdout"
                 ;;
 
             --output-to=*) OUTPUT_LOCATION="${1#--output-to=}" ;;
@@ -182,6 +182,7 @@ fi
 # Check the output location for consistency and create path, if necessary.
 if test -z "${OUTPUT_LOCATION}" ; then
     [[ "${OUTPUT}" == "TEXT" ]] && OUTPUT_LOCATION='log.txt'
+    [[ "${OUTPUT}" == "MI" ]] && OUTPUT_LOCATION='mi.txt'
     [[ "${OUTPUT}" == "HTML" ]] && OUTPUT_LOCATION='html'
     [[ "${OUTPUT}" == "JSON" ]] && OUTPUT_LOCATION='json'
     [[ "${OUTPUT}" == "STDOUT" ]] && OUTPUT_LOCATION='/dev/stdout'
@@ -230,6 +231,8 @@ if [[ "${OUTPUT}" == "HTML" ]] ; then
     PROC_OPTS+=("--html=${OUTPUT_LOCATION}")
 elif [[ "${OUTPUT}" == "JSON" ]] ; then
     PROC_OPTS+=("--json=${OUTPUT_LOCATION}")
+elif [[ "${OUTPUT}" == "MI" ]] ; then
+    PROC_OPTS+=("--mi=${OUTPUT_LOCATION}")
 elif [[ "${OUTPUT}" == "TEXT" || "${OUTPUT}" == "STDOUT" ]] ; then
     PROC_OPTS+=("--txt=${OUTPUT_LOCATION}")
 fi

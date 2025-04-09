@@ -138,9 +138,8 @@ elif [[ "${req_path}" =~ bublik[.]xml$ ||
             err_cleanup "Failed to create XML log for Bublik"
         fi
     else
-        "${bindir}"/rgt-proc-raw-log --txt-mi-only --txt-mi-raw \
-            --txt-ts-before-msg --txt-no-prefix \
-            --raw-log="${raw_log}" --txt="${mi_log}"
+        "${bindir}"/rgt-proc-raw-log --mi-ts \
+            --raw-log="${raw_log}" --mi="${mi_log}"
         if test $? -ne 0 ; then
             err_cleanup "Failed to create MI messages log"
         fi

@@ -21,6 +21,8 @@ plain_html_path=
 txt_path=
 junit_path=
 xml_path=
+mi_path=
+mi_ts=false
 mi_only=false
 
 declare -a rgt_conv_opts
@@ -73,9 +75,7 @@ Usage: te_proc_raw_log.sh [<options>]
   --txt-line-prefix             Add a prefix before every message line in text log.
   --txt-no-prefix               Print only message bodies without any prefixes
                                 or headers in text log.
-  --txt-ts-before-msg           Print timestamp before every message in text log.
-  --txt-mi-raw                  Print MI messages in raw form in text log.
-  --txt-mi-only                 Print only MI messages in text log.
+  --mi-ts                       Print timestamps before MI messages in MI log.
   --bundle=<filepath>           Where to save RAW log bundle (if needed).
   --html=<dirpath>              Where to save HTML logs (if needed).
   --json=<dirpath>              Where to save JSON logs (if needed).
@@ -83,6 +83,7 @@ Usage: te_proc_raw_log.sh [<options>]
   --txt=<filepath>              Where to save text log (if needed).
   --junit=<filepath>            Where to save JUnit log (if needed).
   --xml=<filepath>              Where to save full XML log (if needed).
+  --mi=<filepath>               Where to save MI log (if needed).
   --rgt-conv-*                  Pass an option to rgt-conv.
   --rgt-x2html-*                Pass an option to rgt-xml2html-multi.
   --rgt-x2json-*                Pass an option to rgt-xml2json.
@@ -125,6 +126,8 @@ function print_warn() {
 #   txt_path
 #   junit_path
 #   xml_path
+#   mi_path
+#   mi_ts
 #   mi_only
 #   sniff_detailed_packets
 #   rgt_conv_opts
@@ -156,12 +159,10 @@ function process_opts() {
             --txt=*) txt_path=${1#--txt=} ;;
             --junit=*) junit_path=${1#--junit=} ;;
             --xml=*) xml_path=${1#--xml=} ;;
+            --mi=*) mi_path=${1#--mi=} ;;
 
             --txt-line-prefix)
                 rgt_x2txt_opts+=("-L")
-                ;;
-            --txt-ts-before-msg)
-                rgt_x2txt_opts+=("-T")
                 ;;
             --txt-no-prefix)
                 rgt_x2txt_opts+=("-N")
@@ -173,11 +174,9 @@ function process_opts() {
                 sniff_detailed_packets=true
                 rgt_x2txt_opts+=("--detailed-packets")
                 ;;
-            --txt-mi-raw)
-                rgt_x2txt_opts+=("--mi-raw")
-                ;;
-            --txt-mi-only)
-                mi_only=true
+
+            --mi-ts)
+                mi_ts=true
                 ;;
 
             --rgt-conv-*)
@@ -431,6 +430,17 @@ function main() {
 
     if [[ -n "${junit_path}" ]] ; then
         "${BINDIR}"/rgt-conv -m junit -f "${raw_path}" -o "${junit_path}"
+    fi
+
+    if [[ -n "${mi_path}" ]] ; then
+        declare -a add_opts
+
+        if [[ "${mi_ts}" == "true" ]] ; then
+            add_opts+=("--mi-ts")
+        fi
+
+        "${BINDIR}"/rgt-conv -m mi -f "${raw_path}" -o "${mi_path}" \
+            --no-cntrl-msg "${add_opts[@]}"
     fi
 
     cleanup
