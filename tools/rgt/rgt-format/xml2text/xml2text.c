@@ -35,8 +35,6 @@ int rgt_max_attribute_length = 76;
 const char *rgt_line_separator = "\n";
 /* Flag turning on detailed packet dumps in log. */
 int detailed_packets = 0;
-/* Print raw MI artifacts, not post-processed */
-int mi_raw = 0;
 /* Reasonable timeout for grouping log entires would be 300ms by default,
  * but let's keep it 0 for backward compatibility. */
 long timeout_ms = 0;
@@ -46,11 +44,6 @@ long timeout_ms = 0;
  * in log.
  */
 static int line_prefix = 0;
-
-/**
- * If this is turned on, timestamp is printed before each message.
- */
-static int ts_before_msg = 0;
 
 /**
  * If this is turned on, no prefixes or headers is printed before
@@ -189,12 +182,8 @@ struct poptOption rgt_options_table[] = {
       "Print more detailed packet dumps", NULL },
     { "line-prefix", 'L', POPT_ARG_NONE, &line_prefix, 0,
       "Print prefix before every message line", NULL },
-    { "ts-before-msg", 'T', POPT_ARG_NONE, &ts_before_msg, 0,
-      "Print timestamp before each message", NULL },
     { "no-prefix", 'N', POPT_ARG_NONE, &no_prefix, 0,
       "Do not print any prefix or header before messages", NULL },
-    { "mi-raw", 'M', POPT_ARG_NONE, &mi_raw, 0,
-      "Include raw MI artifacts instead of post-processed", NULL },
     { "timeout", 't', POPT_ARG_INT, &timeout_ms, 0,
       "Timeout to use for groupping similar log entries together", "<ms>"},
     POPT_TABLEEND
@@ -553,16 +542,8 @@ RGT_DEF_FUNC(proc_log_msg_start)
 
     RGT_FUNC_UNUSED_PRMS();
 
-    if (level != NULL && strcmp(level, "MI") == 0 && !mi_raw)
+    if (level != NULL && strcmp(level, "MI") == 0)
         user_ctx->mi_artifact = true;
-
-    if (ts_before_msg)
-    {
-        const char *ts_val = rgt_tmpls_xml_attrs_get(xml_attrs,
-                                                     "ts_val");
-
-        fprintf(fd, "%s\n", ts_val);
-    }
 
     if (!no_prefix)
     {
