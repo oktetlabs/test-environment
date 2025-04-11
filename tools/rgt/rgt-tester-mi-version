@@ -1,0 +1,48 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2025 OKTET Labs Ltd. All rights reserved.
+"""Get version of Tester MI messages from raw log.
+
+This script obtains version of a given MI message type from the first
+Tester log message which should contain 'tester_mi_versions' MI message.
+If this MI message is absent or is not the first one from Tester,
+0 is returned.
+
+Usage:
+rgt-tester-mi-version log.raw test_end
+"""
+
+import argparse
+import json
+import subprocess
+import sys
+
+parser = argparse.ArgumentParser(
+                    prog='rgt-tester-mi-version',
+                    description='Get version of Tester MI messages')
+parser.add_argument('raw_log')
+parser.add_argument('mi_type')
+
+args = parser.parse_args()
+
+proc = subprocess.Popen(['rgt-conv', '--no-cntrl-msg', '--mode=mi',
+                         '--stop-at-entity=Tester', args.raw_log,
+                         '/dev/stdout'], stdout=subprocess.PIPE)
+rc = proc.wait()
+if rc != 0:
+    print('rgt-conv failed', file=sys.stderr)
+    sys.exit(rc)
+
+data = proc.stdout.read().decode('utf-8')
+
+for line in data.split('\n'):
+    if not line:
+        continue
+
+    mi = json.loads(line)
+    if mi['type'] == 'tester_mi_versions':
+        print(mi.get(args.mi_type, 0))
+        sys.exit(0)
+
+# Print 0 if no version was found.
+print(0)
