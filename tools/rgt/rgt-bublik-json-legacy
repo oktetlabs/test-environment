@@ -1,0 +1,485 @@
+#!/usr/bin/perl
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2016-2025 OKTET Labs Ltd. All rights reserved.
+#
+# This is legacy code moved from Bublik and used only to process
+# older raw logs where Tester MI messages are absent or do not
+# contain full information about test results.
+
+use strict;
+use warnings;
+use XML::Parser;
+use JSON;
+use English;
+use POSIX;
+
+my $parser = XML::Parser->new(Handlers =>
+                                { Start => \&handle_start,
+                                  End => \&handle_end,
+                                  Char => \&handle_char });
+
+my $parsed_data = { iters => [],
+                    tags => {},
+                    plan => {},
+                    start_ts => "",
+                    end_ts => "" };
+
+my @cur_path = ();
+my @iters_stack = ();
+my $cur_iter;
+
+my $tester_msg_parsed = 0;
+my $tester_msg = [];
+my $cur_tester_msg = '';
+my $first_ts = "";
+my $last_ts = "";
+my $prev_tv = -1;
+my $base_tv = -1;
+my $base_date = "";
+
+my @cur_nodes = ();
+
+sub handle_start
+{
+    my ($p, $e, %attrs) = @_;
+
+    # cache strings in the event itself to guarantee deterministic data integrity
+    # http://perl-xml.sourceforge.net/faq/#char_events
+    $p->{start_ts} = '';
+    $p->{end_ts} = '';
+    $p->{duration} = '';
+    $p->{verdict} = '';
+    $p->{artifact} = '';
+    $p->{tags_parsed} = 0;
+    $p->{tags} = '';
+    $p->{plan_parsed} = 0;
+    $p->{plan} = '';
+
+    if ($e eq "pkg" || $e eq "session" ||
+        $e eq "test")
+    {
+        push(@cur_nodes, $e);
+
+        if ($e ne "session")
+        {
+            push(@cur_path, $attrs{name});
+        }
+        push(@iters_stack, $cur_iter);
+
+        $cur_iter = {};
+        $cur_iter->{name} = $attrs{name};
+        $cur_iter->{path} = [];
+        push(@{$cur_iter->{path}}, @cur_path);
+        $cur_iter->{path_str} = join("/", @cur_path);
+
+        $cur_iter->{hash} = "";
+        $cur_iter->{tin} = -1;
+        $cur_iter->{test_id} = -1;
+        $cur_iter->{plan_id} = -1;
+        $cur_iter->{result} = "";
+        $cur_iter->{err} = "";
+        $cur_iter->{result_expected} = "";
+        $cur_iter->{objective} = "";
+        $cur_iter->{verdicts} = [];
+        $cur_iter->{verdicts_expected} = [];
+        $cur_iter->{artifacts} = [];
+        $cur_iter->{iters} = [];
+        $cur_iter->{type} = $e;
+
+        if (defined($attrs{hash}))
+        {
+            $cur_iter->{hash} = $attrs{hash};
+        }
+        if (defined($attrs{tin}))
+        {
+            $cur_iter->{tin} = $attrs{tin};
+        }
+        if (defined($attrs{test_id}))
+        {
+            $cur_iter->{test_id} = $attrs{test_id};
+        }
+        if (defined($attrs{plan_id}))
+        {
+            $cur_iter->{plan_id} = $attrs{plan_id};
+        }
+        if (defined($attrs{result}))
+        {
+            $cur_iter->{result} = $attrs{result};
+        }
+        if (defined($attrs{err}))
+        {
+            $cur_iter->{err} = $attrs{err};
+        }
+
+        $cur_iter->{params} = {};
+        $cur_iter->{reqs} = [];
+    }
+    elsif ($e eq "param")
+    {
+        $cur_iter->{params}->{$attrs{name}} = $attrs{value};
+    }
+    elsif ($e eq "req")
+    {
+        push(@{$cur_iter->{reqs}}, $attrs{id});
+    }
+    elsif ($e eq "msg")
+    {
+        $tester_msg_parsed = 0;
+
+        if ($attrs{entity} eq "Tester" &&
+            $attrs{user} eq "Run")
+        {
+            $tester_msg = [];
+            $cur_tester_msg = '';
+            $tester_msg_parsed = 1;
+        }
+
+        if (($attrs{entity} eq "Dispatcher" ||
+             $attrs{entity} eq "Tester") &&
+            $attrs{user} eq "TRC tags")
+        {
+            $p->{tags_parsed} = 1;
+        }
+
+        if ($attrs{entity} eq "Tester" &&
+            $attrs{user} eq "Execution Plan")
+        {
+            $p->{plan_parsed} = 1;
+        }
+
+        if (defined($attrs{ts_val}))
+        {
+            $base_tv = int($attrs{ts_val});
+            $base_date = strftime("%Y.%m.%d", localtime($base_tv));
+        }
+    }
+    elsif ($e eq "br")
+    {
+        if ($tester_msg_parsed)
+        {
+            push(@{$tester_msg}, $cur_tester_msg);
+            $cur_tester_msg = '';
+        }
+    }
+}
+
+sub handle_char
+{
+    my ($p, $str) = @_;
+
+    if ($p->current_element() eq "start-ts")
+    {
+        $p->{start_ts} .= $str;
+    }
+    elsif ($p->current_element() eq "end-ts")
+    {
+        $p->{end_ts} .= $str;
+    }
+    elsif ($p->current_element() eq "duration")
+    {
+        $p->{duration} .= $str;
+    }
+    elsif ($p->current_element() eq "objective")
+    {
+        if ($p->{objective} eq '')
+        {
+            $p->{objective} .= $str;
+        }
+        else
+        {
+            $p->{objective} .= "\n";
+            $p->{objective} .= $str;
+        }
+    }
+    elsif ($p->current_element() eq "verdict")
+    {
+        # save the verdict passed directly as tags,
+        # because there might not be a recap in the last tag of the test
+        $p->{verdict} .= $str;
+    }
+    elsif ($p->current_element() eq "artifact")
+    {
+        $p->{artifact} .= $str;
+    }
+    elsif ($p->current_element() eq "msg")
+    {
+        if ($tester_msg_parsed)
+        {
+            # we cannot cache the expectation/verdicts as done above because it contains raw <br> tags
+            # this messes with the parser, which generates a new event every time, preventing us
+            # from accessing the data in the "end" handler
+            $cur_tester_msg .= $str;
+        }
+    }
+
+    if ($p->{tags_parsed})
+    {
+        $p->{tags} .= $str;
+    }
+
+    if ($p->{plan_parsed})
+    {
+        $p->{plan} .= $str;
+    }
+}
+
+sub get_unix_date
+{
+    my $time = $_[0];
+    my $unix_date = $base_tv;
+
+    if ($time =~ /([0-9]+):([0-9]+):([0-9]+)/)
+    {
+        my $time_in_sec = $1 * 60 * 60 + $2 * 60 + $3;
+        my $day_in_sec = 24 * 60 * 60;
+
+        # update the UNIX date according to the time
+        my $day_start = $base_tv - ($base_tv % $day_in_sec);
+        $unix_date = $day_start + $time_in_sec;
+
+        # add 1 day to the UNIX date if the time is less than the base time
+        if ($base_tv % $day_in_sec > $time_in_sec)
+        {
+            $unix_date += $day_in_sec;
+        }
+    }
+
+    return $unix_date;
+}
+
+sub fix_start
+{
+    my $start_time = $_[0];
+    my $unix_start_date = get_unix_date($start_time);
+    my $start_date = strftime("%Y.%m.%d",
+                                 localtime($unix_start_date));
+
+    return $start_date." ".$start_time;
+}
+
+sub fix_end
+{
+    my $start_time = $_[0];
+    my $end_time = $_[1];
+    my $duration = $_[2];
+
+    my $unix_start_date = get_unix_date($start_time);
+    my $unix_end_date = $unix_start_date;
+    if ($duration =~ /([0-9]+):([0-9]+):([0-9]+)/)
+    {
+        my $duration_in_sec = $1 * 60 * 60 + $2 * 60 + $3;
+        $unix_end_date = $unix_start_date + $duration_in_sec;
+    }
+
+    my $end_date = strftime("%Y.%m.%d",
+                                 localtime($unix_end_date));
+
+    return $end_date." ".$end_time;
+}
+
+sub parse_tags
+{
+    my $tags = $_[0];
+
+    if ($tags =~ /^\s*{/)
+    {
+        # TRC tags in JSON format
+        my $parsed_tags = from_json($tags);
+
+        foreach my $tag (@{$parsed_tags->{tags}})
+        {
+            $parsed_data->{tags}->{$tag->{name}} = $tag->{value};
+        }
+    }
+    else
+    {
+        # TRC tags in plain text
+        foreach my $tag (split(/\s+/, $tags))
+        {
+            if ($tag ne '')
+            {
+                my $name = "";
+                my $value = "";
+
+                ($name, $value) = split(/:/, $tag);
+                $parsed_data->{tags}->{$name} = $value;
+            }
+        }
+    }
+}
+
+sub parse_plan
+{
+    my $plan = $_[0];
+    my $plan_info = from_json($plan);
+    if ($plan_info->{version} == 1)
+    {
+        $parsed_data->{plan} = $plan_info->{plan};
+    }
+}
+
+sub handle_end
+{
+    my ($p, $e) = @_;
+
+    if ($e eq "start-ts")
+    {
+        $cur_iter->{start_ts} = $p->{start_ts};
+    }
+    elsif ($e eq "end-ts")
+    {
+        $cur_iter->{end_ts} = $p->{end_ts};
+    }
+    elsif ($e eq "duration")
+    {
+        $cur_iter->{end_ts} = fix_end($cur_iter->{start_ts}, $cur_iter->{end_ts}, $p->{duration});
+        $last_ts = $cur_iter->{end_ts};
+        $cur_iter->{start_ts} = fix_start($cur_iter->{start_ts});
+        if ($first_ts eq '')
+        {
+            $first_ts = $cur_iter->{start_ts};
+        }
+    }
+    elsif ($e eq "objective")
+    {
+        $cur_iter->{objective} = $p->{objective};
+        $p->{objective} = '';
+    }
+    elsif ($e eq "verdict")
+    {
+        push(@{$cur_iter->{verdicts}}, $p->{verdict});
+    }
+    elsif ($e eq "artifact")
+    {
+        push(@{$cur_iter->{artifacts}}, $p->{artifact});
+    }
+    elsif ($e eq "msg")
+    {
+        if ($tester_msg_parsed)
+        {
+            my $current_data_rope = 0;
+            my $expected_paragraph = 0;
+
+            push(@{$tester_msg}, $cur_tester_msg);
+
+            foreach my $s (@{$tester_msg})
+            {
+                if ($s ne '')
+                {
+                    if ($s =~ /^\s*Expected results are:\s*(.*)/)
+                    {
+                        if ($1 ne '' and $1 ne "default")
+                        {
+                            $cur_iter->{tag_expression} = $1;
+                        }
+                        $current_data_rope = 1;
+                        $expected_paragraph = 1;
+                    }
+                    elsif ($s =~ /^\s*([A-Z]+) with verdicts:/)
+                    {
+                        if (!$expected_paragraph)
+                        {
+                            # NOTE: the actual result and the verdicts are already parsed from the tag's attribute,
+                            # but we parse the verdicts again because they can be incomplete.
+                            $cur_iter->{verdicts} = [];
+                            $current_data_rope = 2;
+                        }
+                        else
+                        {
+                            $cur_iter->{result_expected} = $1;
+                            $current_data_rope = 3;
+                        }
+                    }
+                    elsif ($s =~ /^\s*Key: (.*)/)
+                    {
+                        $cur_iter->{keys} = $1;
+                        $current_data_rope = 0;
+                    }
+                    elsif ($s =~ /^\s*Artifacts:/)
+                    {
+                        $current_data_rope = 0;
+                    }
+                    elsif ($s =~ /^\s*Notes: (.*)/)
+                    {
+                        $cur_iter->{notes} = $1;
+                        $current_data_rope = 0;
+                    }
+                    elsif ($s =~ /^\s*Obtained result is:/)
+                    {
+                        $current_data_rope = 0;
+                    }
+                    elsif ($current_data_rope > 0)
+                    {
+                        if ($current_data_rope == 1)
+                        {
+                            if ($s =~ /^\s*(default|[A-Z]+)/)
+                            {
+                                $cur_iter->{result_expected} = $1;
+                            }
+                            else
+                            {
+                                $cur_iter->{tag_expression} .= $s;
+                            }
+                        }
+                        else
+                        {
+                            $s =~ s/;\s*$//;
+                            if ($current_data_rope == 2)
+                            {
+                                push(@{$cur_iter->{verdicts}}, $s);
+                            }
+                            elsif ($current_data_rope == 3)
+                            {
+                                push(@{$cur_iter->{verdicts_expected}}, $s);
+                            }
+                        }
+                    }
+                }
+            }
+            $tester_msg = [];
+            $cur_tester_msg = '';
+        }
+    }
+
+    if ($e eq "pkg" || $e eq "session" ||
+        $e eq "test")
+    {
+        my $parent_iter;
+
+        pop(@cur_nodes);
+
+        $parent_iter = pop(@iters_stack);
+        push(@{$parent_iter->{iters}}, $cur_iter);
+        $cur_iter = $parent_iter;
+
+        if ($e ne "session")
+        {
+            pop(@cur_path);
+        }
+    }
+
+    if ($p->{tags_parsed})
+    {
+        parse_tags($p->{tags});
+    }
+
+    if ($p->{plan_parsed})
+    {
+        parse_plan($p->{plan});
+    }
+}
+
+sub parse_xml_log
+{
+    my $fname = $_[0];
+
+    $cur_iter = $parsed_data;
+    $parser->parsefile($fname);
+    $parsed_data->{start_ts} = $first_ts;
+    $parsed_data->{end_ts} = $last_ts;
+}
+
+my $fname = $ARGV[0];
+
+parse_xml_log($fname);
+print to_json($parsed_data, { ascii => 1, pretty => 1 });
