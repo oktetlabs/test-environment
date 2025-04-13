@@ -9,6 +9,7 @@
 use strict;
 use warnings;
 use XML::Parser;
+use Date::Parse;
 use JSON;
 use English;
 use POSIX;
@@ -39,6 +40,280 @@ my $base_date = "";
 
 my @cur_nodes = ();
 
+sub parse_result
+{
+    my ($line_idx, $lines) = @_;
+    my $lines_num = scalar(@{$lines});
+    my $line;
+    my $parsed = {};
+
+    $line = $lines->[$line_idx];
+    if ($line =~ /^\s*([A-Z]+)(\s+with verdicts:)?\s*$/)
+    {
+        $parsed->{status} = $1;
+
+        if ($2)
+        {
+            $parsed->{verdicts} = [];
+
+            for ($line_idx++; $line_idx < $lines_num; $line_idx++)
+            {
+                $line = $lines->[$line_idx];
+
+                if ($line =~ /^(.*);$/)
+                {
+                    push(@{$parsed->{verdicts}}, $1)
+                }
+                else
+                {
+                    last;
+                }
+            }
+        }
+    }
+    else
+    {
+        return ($line_idx, $parsed);
+    }
+
+    for ( ; $line_idx < $lines_num; $line_idx++)
+    {
+        $line = $lines->[$line_idx];
+
+        if ($line =~ /^Key:\s*(.*)$/)
+        {
+            $parsed->{key} = $1;
+        }
+        elsif ($line =~ /^Notes:\s*(.*)$/)
+        {
+            $parsed->{notes} = $1;
+        }
+
+        last if (length($line) == 0);
+    }
+
+    if ($line_idx < $lines_num - 1)
+    {
+        $line = $lines->[$line_idx + 1];
+        if ($line =~ /^Artifacts:/)
+        {
+            $parsed->{artifacts} = [];
+            for ($line_idx += 2; $line_idx < $lines_num; $line_idx++)
+            {
+                $line = $lines->[$line_idx];
+
+                if ($line =~ /^(.*);$/)
+                {
+                    push(@{$parsed->{artifacts}}, $1)
+                }
+                else
+                {
+                    last;
+                }
+            }
+        }
+    }
+
+    return ($line_idx, $parsed);
+}
+
+sub parse_tester_end_msg
+{
+    my $lines = $_[0];
+    my $lines_num = scalar(@{$lines});
+    my $obtained = {};
+    my $expected = {};
+    my $exp_parsed = 0;
+    my $start_parsing = 0;
+
+    for (my $line_idx = 0; $line_idx < $lines_num; $line_idx++)
+    {
+        my $result;
+        my $line;
+
+        $line = $lines->[$line_idx];
+        next if length($line) == 0;
+
+        if ($line =~ /^Obtained result is:/)
+        {
+            $exp_parsed = 0;
+            $start_parsing = 1;
+            next;
+        }
+        elsif ($line =~ /^Expected results are:\s*(.*)$/)
+        {
+            $exp_parsed = 1;
+
+            if ($1 ne 'default')
+            {
+                $expected->{tag_expression} = $1;
+            }
+
+            $start_parsing = 1;
+            next;
+        }
+
+        next if (not $start_parsing);
+
+        if ($exp_parsed and $line =~ /^Key:\s*(.*)$/)
+        {
+            $expected->{key} = $1;
+        }
+        elsif ($exp_parsed and $line =~ /^Notes:\s*(.*)$/)
+        {
+            $expected->{notes} = $1;
+        }
+        else
+        {
+            ($line_idx, $result) = parse_result($line_idx, $lines);
+            if (%$result)
+            {
+                if ($exp_parsed)
+                {
+                    if (not exists($expected->{results}))
+                    {
+                        $expected->{results} = [];
+                    }
+
+                    push(@{$expected->{results}}, $result);
+                }
+                else
+                {
+                    $obtained = $result;
+                }
+            }
+        }
+    }
+
+    return ($obtained, $expected);
+}
+
+sub results_cmp
+{
+    my ($res1, $res2) = @_;
+    my $st1 = "";
+    my $st2 = "";
+    my $v1 = [];
+    my $v2 = [];
+    my $v1_len = 0;
+    my $v2_len = 0;
+
+    if (defined($res1->{status}))
+    {
+        $st1 = $res1->{status};
+    }
+    if (defined($res2->{status}))
+    {
+        $st2 = $res2->{status};
+    }
+    if (defined($res1->{verdicts}))
+    {
+        $v1 = $res1->{verdicts};
+        $v1_len = scalar(@{$v1});
+    }
+    if (defined($res2->{verdicts}))
+    {
+        $v2 = $res2->{verdicts};
+        $v2_len = scalar(@{$v2});
+    }
+
+    if ($st1 ne $st2)
+    {
+        return 0;
+    }
+
+    if ($v1_len != $v2_len)
+    {
+        return 0;
+    }
+
+    for (my $i = 0; $i < $v1_len; $i++)
+    {
+        if ($v1->[$i] ne $v2->[$i])
+        {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+sub fix_results
+{
+    # Make results fields similar to what rgt-bublik-json generates.
+    # If obtained result is expected, then key and notes should be
+    # copied from the matching expected result and 'expected' field
+    # should be removed.
+    my $iter = $_[0];
+    my $exp;
+    my $r_obt;
+    my $r_exp;
+
+    if (defined($iter->{obtained}))
+    {
+        # This is done to make possible saving key/notes from
+        # <results> in TRC along with key/notes from <result>.
+        $iter->{obtained} = {"result" => $iter->{obtained}};
+    }
+
+    if ($iter->{err} eq "Unexpected test result(s)")
+    {
+        return;
+    }
+
+    if (not defined($iter->{obtained}) or not defined($iter->{expected}))
+    {
+        return;
+    }
+
+    $r_obt = $iter->{obtained}->{result};
+    $exp = $iter->{expected};
+
+    if (defined($exp->{results}))
+    {
+        my $results = $exp->{results};
+
+        for (my $i = 0; $i < scalar(@{$results}); $i++)
+        {
+            if (results_cmp($r_obt, $results->[$i]))
+            {
+                $r_exp = $results->[$i];
+                last;
+            }
+        }
+    }
+
+    if (defined($r_exp))
+    {
+        if (defined($exp->{notes}))
+        {
+            $iter->{obtained}->{notes} = $exp->{notes};
+        }
+
+        if (defined($exp->{key}))
+        {
+            $iter->{obtained}->{key} = $exp->{key};
+        }
+
+        if (defined($exp->{tag_expression}))
+        {
+            $iter->{obtained}->{tag_expression} = $exp->{tag_expression};
+        }
+
+        if (defined($r_exp->{notes}))
+        {
+            $r_obt->{notes} = $r_exp->{notes};
+        }
+
+        if (defined($r_exp->{key}))
+        {
+            $r_obt->{key} = $r_exp->{key};
+        }
+
+        delete($iter->{expected});
+    }
+}
+
 sub handle_start
 {
     my ($p, $e, %attrs) = @_;
@@ -54,6 +329,13 @@ sub handle_start
     $p->{tags} = '';
     $p->{plan_parsed} = 0;
     $p->{plan} = '';
+    $p->{objective} = '';
+    $p->{level} = '';
+
+    if (defined($attrs{level}))
+    {
+        $p->{level} = $attrs{level};
+    }
 
     if ($e eq "pkg" || $e eq "session" ||
         $e eq "test")
@@ -76,15 +358,11 @@ sub handle_start
         $cur_iter->{tin} = -1;
         $cur_iter->{test_id} = -1;
         $cur_iter->{plan_id} = -1;
-        $cur_iter->{result} = "";
         $cur_iter->{err} = "";
-        $cur_iter->{result_expected} = "";
         $cur_iter->{objective} = "";
-        $cur_iter->{verdicts} = [];
-        $cur_iter->{verdicts_expected} = [];
-        $cur_iter->{artifacts} = [];
         $cur_iter->{iters} = [];
         $cur_iter->{type} = $e;
+        $cur_iter->{obtained} = {};
 
         if (defined($attrs{hash}))
         {
@@ -92,19 +370,19 @@ sub handle_start
         }
         if (defined($attrs{tin}))
         {
-            $cur_iter->{tin} = $attrs{tin};
+            $cur_iter->{tin} = int($attrs{tin});
         }
         if (defined($attrs{test_id}))
         {
-            $cur_iter->{test_id} = $attrs{test_id};
+            $cur_iter->{test_id} = int($attrs{test_id});
         }
         if (defined($attrs{plan_id}))
         {
-            $cur_iter->{plan_id} = $attrs{plan_id};
+            $cur_iter->{plan_id} = int($attrs{plan_id});
         }
         if (defined($attrs{result}))
         {
-            $cur_iter->{result} = $attrs{result};
+            $cur_iter->{obtained}->{status} = $attrs{result};
         }
         if (defined($attrs{err}))
         {
@@ -166,49 +444,56 @@ sub handle_start
 sub handle_char
 {
     my ($p, $str) = @_;
+    my $cur_elm = $p->current_element();
 
-    if ($p->current_element() eq "start-ts")
+    if (defined($cur_elm))
     {
-        $p->{start_ts} .= $str;
-    }
-    elsif ($p->current_element() eq "end-ts")
-    {
-        $p->{end_ts} .= $str;
-    }
-    elsif ($p->current_element() eq "duration")
-    {
-        $p->{duration} .= $str;
-    }
-    elsif ($p->current_element() eq "objective")
-    {
-        if ($p->{objective} eq '')
+        if ($cur_elm eq "start-ts")
         {
-            $p->{objective} .= $str;
+            $p->{start_ts} .= $str;
         }
-        else
+        elsif ($cur_elm eq "end-ts")
         {
-            $p->{objective} .= "\n";
-            $p->{objective} .= $str;
+            $p->{end_ts} .= $str;
         }
-    }
-    elsif ($p->current_element() eq "verdict")
-    {
-        # save the verdict passed directly as tags,
-        # because there might not be a recap in the last tag of the test
-        $p->{verdict} .= $str;
-    }
-    elsif ($p->current_element() eq "artifact")
-    {
-        $p->{artifact} .= $str;
-    }
-    elsif ($p->current_element() eq "msg")
-    {
-        if ($tester_msg_parsed)
+        elsif ($cur_elm eq "duration")
         {
-            # we cannot cache the expectation/verdicts as done above because it contains raw <br> tags
-            # this messes with the parser, which generates a new event every time, preventing us
-            # from accessing the data in the "end" handler
-            $cur_tester_msg .= $str;
+            $p->{duration} .= $str;
+        }
+        elsif ($cur_elm eq "objective")
+        {
+            if ($p->{objective} eq '')
+            {
+                $p->{objective} .= $str;
+            }
+            else
+            {
+                $p->{objective} .= "\n";
+                $p->{objective} .= $str;
+            }
+        }
+        elsif ($cur_elm eq "verdict")
+        {
+            # save the verdict passed directly as tags,
+            # because there might not be a recap in the last tag of the test
+            $p->{verdict} .= $str;
+        }
+        elsif ($cur_elm eq "artifact")
+        {
+            $p->{artifact} .= $str;
+        }
+        elsif ($cur_elm eq "msg")
+        {
+            if ($tester_msg_parsed)
+            {
+                # We cannot cache the expectation/verdicts as done above
+                # because it contains raw <br> tags.
+                #
+                # It messes with the parser, which generates a new event
+                # every time, preventing us from accessing the data in the
+                # "end" handler.
+                $cur_tester_msg .= $str;
+            }
         }
     }
 
@@ -245,6 +530,38 @@ sub get_unix_date
     }
 
     return $unix_date;
+}
+
+sub parse_datetime
+{
+    my $str = $_[0];
+    my $time = str2time($str);
+
+    if ($str =~ /[0-9]\.([0-9]*)$/)
+    {
+        $time = $time + "0.$1";
+    }
+
+    return $time;
+}
+
+sub update_last_time
+{
+    my ($last_time, $new_time) = @_;
+
+    return $new_time if (not $last_time);
+
+    my $last_parsed = parse_datetime($last_time);
+    my $new_parsed = parse_datetime($new_time);
+
+    if ($last_parsed > $new_parsed)
+    {
+        return $last_time;
+    }
+    else
+    {
+        return $new_time;
+    }
 }
 
 sub fix_start
@@ -312,7 +629,7 @@ sub parse_plan
 {
     my $plan = $_[0];
     my $plan_info = from_json($plan);
-    if ($plan_info->{version} == 1)
+    if ($plan_info->{version} >= 1)
     {
         $parsed_data->{plan} = $plan_info->{plan};
     }
@@ -333,7 +650,7 @@ sub handle_end
     elsif ($e eq "duration")
     {
         $cur_iter->{end_ts} = fix_end($cur_iter->{start_ts}, $cur_iter->{end_ts}, $p->{duration});
-        $last_ts = $cur_iter->{end_ts};
+        $last_ts = update_last_time($last_ts, $cur_iter->{end_ts});
         $cur_iter->{start_ts} = fix_start($cur_iter->{start_ts});
         if ($first_ts eq '')
         {
@@ -347,95 +664,55 @@ sub handle_end
     }
     elsif ($e eq "verdict")
     {
-        push(@{$cur_iter->{verdicts}}, $p->{verdict});
+        my $result = $cur_iter->{obtained};
+
+        if (not exists($result->{verdicts}))
+        {
+            $result->{verdicts} = [];
+        }
+
+        push(@{$result->{verdicts}}, $p->{verdict});
     }
     elsif ($e eq "artifact")
     {
-        push(@{$cur_iter->{artifacts}}, $p->{artifact});
+        if ($p->{level} eq "MI")
+        {
+            # MI artifact.
+            if (not exists($cur_iter->{measurements}))
+            {
+                $cur_iter->{measurements} = [];
+            }
+            push(@{$cur_iter->{measurements}}, from_json($p->{artifact}));
+        }
+        else
+        {
+            my $result = $cur_iter->{obtained};
+
+            if (not exists($result->{artifacts}))
+            {
+                $result->{artifacts} = [];
+            }
+
+            push(@{$result->{artifacts}}, $p->{artifact});
+        }
     }
     elsif ($e eq "msg")
     {
         if ($tester_msg_parsed)
         {
-            my $current_data_rope = 0;
-            my $expected_paragraph = 0;
-
             push(@{$tester_msg}, $cur_tester_msg);
 
-            foreach my $s (@{$tester_msg})
+            my ($obtained, $expected) = parse_tester_end_msg($tester_msg);
+
+            if (%$obtained)
             {
-                if ($s ne '')
-                {
-                    if ($s =~ /^\s*Expected results are:\s*(.*)/)
-                    {
-                        if ($1 ne '' and $1 ne "default")
-                        {
-                            $cur_iter->{tag_expression} = $1;
-                        }
-                        $current_data_rope = 1;
-                        $expected_paragraph = 1;
-                    }
-                    elsif ($s =~ /^\s*([A-Z]+) with verdicts:/)
-                    {
-                        if (!$expected_paragraph)
-                        {
-                            # NOTE: the actual result and the verdicts are already parsed from the tag's attribute,
-                            # but we parse the verdicts again because they can be incomplete.
-                            $cur_iter->{verdicts} = [];
-                            $current_data_rope = 2;
-                        }
-                        else
-                        {
-                            $cur_iter->{result_expected} = $1;
-                            $current_data_rope = 3;
-                        }
-                    }
-                    elsif ($s =~ /^\s*Key: (.*)/)
-                    {
-                        $cur_iter->{keys} = $1;
-                        $current_data_rope = 0;
-                    }
-                    elsif ($s =~ /^\s*Artifacts:/)
-                    {
-                        $current_data_rope = 0;
-                    }
-                    elsif ($s =~ /^\s*Notes: (.*)/)
-                    {
-                        $cur_iter->{notes} = $1;
-                        $current_data_rope = 0;
-                    }
-                    elsif ($s =~ /^\s*Obtained result is:/)
-                    {
-                        $current_data_rope = 0;
-                    }
-                    elsif ($current_data_rope > 0)
-                    {
-                        if ($current_data_rope == 1)
-                        {
-                            if ($s =~ /^\s*(default|[A-Z]+)/)
-                            {
-                                $cur_iter->{result_expected} = $1;
-                            }
-                            else
-                            {
-                                $cur_iter->{tag_expression} .= $s;
-                            }
-                        }
-                        else
-                        {
-                            $s =~ s/;\s*$//;
-                            if ($current_data_rope == 2)
-                            {
-                                push(@{$cur_iter->{verdicts}}, $s);
-                            }
-                            elsif ($current_data_rope == 3)
-                            {
-                                push(@{$cur_iter->{verdicts_expected}}, $s);
-                            }
-                        }
-                    }
-                }
+                $cur_iter->{obtained} = $obtained;
             }
+            if (%$expected)
+            {
+                $cur_iter->{expected} = $expected;
+            }
+
             $tester_msg = [];
             $cur_tester_msg = '';
         }
@@ -448,6 +725,7 @@ sub handle_end
 
         pop(@cur_nodes);
 
+        fix_results($cur_iter);
         $parent_iter = pop(@iters_stack);
         push(@{$parent_iter->{iters}}, $cur_iter);
         $cur_iter = $parent_iter;
