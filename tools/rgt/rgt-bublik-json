@@ -14,6 +14,26 @@ def format_ts(ts):
     d = datetime.fromtimestamp(float(ts))
     return d.strftime('%Y.%m.%d %H:%M:%S.') + f'{d.microsecond // 1000:03}'
 
+def del_none_fields(d):
+    """Delete fields with None values."""
+    if d is None:
+        return
+
+    if type(d) == list:
+        for el in d:
+            del_none_fields(el)
+
+        return
+
+    if type(d) != dict:
+        return
+
+    for key in list(d):
+        if d[key] is None:
+            del d[key]
+        else:
+            del_none_fields(d[key])
+
 def parse_test_start(obj, msg):
     """Parse 'test_start' MI message."""
     obj['name'] = msg['name']
@@ -22,7 +42,11 @@ def parse_test_start(obj, msg):
     obj['hash'] = msg.get('hash') or ""
     obj['test_id'] = msg.get('id')
     obj['plan_id'] = msg.get('plan_id')
-    obj['tin'] = msg.get('tin') or -1
+
+    if 'tin' in msg:
+        obj['tin'] = msg['tin']
+    else:
+        obj['tin'] = -1
 
     obj['reqs'] = msg.get('reqs') or []
     obj['objective'] = msg.get('objective') or ''
@@ -37,24 +61,36 @@ def parse_test_end(obj, msg):
     """Parse 'test_end' MI message."""
     obj['err'] = msg.get('error') or ''
 
-    obtained = msg.get('obtained')
+    obtained = {}
+    if 'obtained' in msg:
+        obtained['result'] = msg['obtained']
+
     expected = msg.get('expected')
     exp_notes = msg.get('exp_notes')
     exp_key = msg.get('exp_key')
+    tags_expr = msg.get('tags_expr')
 
-    obtained = {'result': obtained}
     if not expected:
         # Tester does not store expected results if the obtained
         # result is expected.
-        obtained['key'] = exp_key
-        obtained['notes'] = exp_notes
+        target = obtained
     else:
         expected = {'results': expected}
-        expected['key'] = exp_key
-        expected['notes'] = exp_notes
+        target = expected
 
-    obj['obtained'] = obtained
-    obj['expected'] = expected
+    if exp_key:
+        target['key'] = exp_key
+    if exp_notes:
+        target['notes'] = exp_notes
+    if tags_expr:
+        target['tag_expression'] = tags_expr
+
+    del_none_fields(obtained)
+    del_none_fields(expected)
+    if obtained:
+        obj['obtained'] = obtained
+    if expected:
+        obj['expected'] = expected
 
 def main():
     """Main function of this script."""
@@ -107,26 +143,32 @@ def main():
 
             elif mi_type == 'test_start':
                 msg = mi['msg']
-                path.append(msg['name'])
 
                 obj = {}
                 obj['iters'] = []
                 obj['start_ts'] = formatted_ts
-                obj['path'] = copy(path)
-                obj['path_str'] = '/'.join(path)
 
                 parse_test_start(obj, msg)
+
+                if obj['type'] != 'session':
+                    path.append(msg['name'])
+
+                obj['path'] = copy(path)
+                obj['path_str'] = '/'.join(path)
 
                 objs[-1]['iters'].append(obj)
                 objs.append(obj)
 
             elif mi_type == 'test_end':
-                path.pop()
                 obj = objs.pop()
+
                 obj['end_ts'] = formatted_ts
 
                 msg = mi['msg']
                 parse_test_end(obj, msg)
+
+                if obj['type'] != 'session':
+                    path.pop()
 
             elif mi_type == 'measurement':
                 obj = objs[-1]
@@ -135,6 +177,18 @@ def main():
                     obj['measurements'] = []
 
                 obj['measurements'].append(mi)
+
+    # If testing was terminated abnormally, 'test_end' messages
+    # may be unavailable for final test/session/package. Add
+    # INCOMPLETE results for them.
+    while len(objs) > 1:
+        obj = objs.pop()
+        obj['end_ts'] = top['end_ts']
+        obj['obtained'] = {
+            'result': {
+                'status': 'INCOMPLETE'
+            }
+        }
 
     with open(args.output, 'w') as f:
         json.dump(top, f)
