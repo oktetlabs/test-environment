@@ -241,10 +241,13 @@ run_item_has_keepalive(run_item *ri)
  * Output Tester control log message (i.e. message about
  * package/session/test start/end).
  *
- * @param json       JSON object that describes the message
+ * @param json        JSON object that describes the message.
+ * @param mi_type     MI message type.
+ * @param mi_version  MI message version.
  */
 static void
-tester_control_log(json_t *json, const char *mi_type)
+tester_control_log(json_t *json, const char *mi_type,
+                   unsigned int mi_version)
 {
     char   *text;
     json_t *mi;
@@ -257,7 +260,7 @@ tester_control_log(json_t *json, const char *mi_type)
 
     mi = json_pack("{s:s, s:i, s:O}",
                    "type", mi_type,
-                   "version", 1,
+                   "version", mi_version,
                    "msg", json);
     if (mi == NULL)
     {
@@ -1914,7 +1917,7 @@ log_test_start(unsigned int flags,
     }
 
     te_string_free(&params_str);
-    tester_control_log(result, "test_start");
+    tester_control_log(result, "test_start", 1);
     json_decref(result);
 
 #undef SET_JSON_STRING
@@ -2208,7 +2211,7 @@ log_test_result(test_id parent, tester_test_result *result, int plan_id)
         return;
     }
 
-    tester_control_log(json, "test_end");
+    tester_control_log(json, "test_end", TESTER_TEST_END_VERSION);
     json_decref(json);
 }
 

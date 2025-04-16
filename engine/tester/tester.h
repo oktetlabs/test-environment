@@ -26,6 +26,9 @@
 extern "C" {
 #endif
 
+/** Version of "test_end" MI message */
+#define TESTER_TEST_END_VERSION 2
+
 /** Tester global context */
 typedef struct tester_global {
     unsigned int        rand_seed;  /**< Random seed */
