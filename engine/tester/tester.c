@@ -994,13 +994,64 @@ tester_log_trc_tags(const tqh_strings *trc_tags)
 }
 #endif
 
+/**
+ * Log JSON message.
+ *
+ * @param msg     JSON message (json_decref() is called by this function).
+ * @param user    Log user name.
+ *
+ * @return Status code.
+ */
+static te_errno
+log_mi_msg(json_t *msg, const char *user)
+{
+    char *txt;
+
+    txt = json_dumps(msg, JSON_COMPACT);
+    json_decref(msg);
+    if (txt == NULL)
+    {
+        ERROR("Failed to dump JSON message");
+        return TE_ENOMEM;
+    }
+
+    LGR_MESSAGE(TE_LL_MI | TE_LL_CONTROL, user,
+                "%s", txt);
+    free(txt);
+    return 0;
+}
+
+/**
+ * Log Tester MI messages versions. This message must be the first
+ * Tester message in the log, it will help to choose the right
+ * tool to process the log.
+ *
+ * @return Status code.
+ */
+static te_errno
+tester_log_mi_versions(void)
+{
+    json_t *msg;
+
+    msg = json_pack("{s:s, s:i, s:i, s:i}",
+                    "type", "tester_mi_versions",
+                    "test_plan", 1,
+                    "test_start", 1,
+                    "test_end", TESTER_TEST_END_VERSION);
+    if (msg == NULL)
+    {
+        ERROR("Failed to prepare MI versions message");
+        return TE_ENOMEM;
+    }
+
+    return log_mi_msg(msg, "Tester MI versions");
+}
 
 /** Log process information */
 static te_errno
 tester_log_proc_info(void)
 {
     json_t *msg;
-    char   *txt;
 
     msg = json_pack("{s:s, s:i, s:i}",
                     "type", "tester_pid",
@@ -1012,18 +1063,7 @@ tester_log_proc_info(void)
         return TE_ENOMEM;
     }
 
-    txt = json_dumps(msg, JSON_COMPACT);
-    json_decref(msg);
-    if (txt == NULL)
-    {
-        ERROR("Failed to dump a process info message");
-        return TE_ENOMEM;
-    }
-
-    LGR_MESSAGE(TE_LL_MI | TE_LL_CONTROL, TE_LOG_PROC_INFO_USER,
-                "%s", txt);
-    free(txt);
-    return 0;
+    return log_mi_msg(msg, TE_LOG_PROC_INFO_USER);
 }
 
 /**
@@ -1064,6 +1104,11 @@ main(int argc, char *argv[])
         ERROR("Command line options processing failure");
         goto exit;
     }
+
+    /* This must be the first Tester message in log */
+    rc = tester_log_mi_versions();
+    if (rc != 0)
+        goto exit;
 
     rc = tester_log_proc_info();
     if (rc != 0)
