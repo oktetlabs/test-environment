@@ -125,36 +125,48 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
     const char *rawlog_fname = NULL;
     const char *out_fname = NULL;
 
+    enum {
+        RGT_OPT_FILTER = 1,
+        RGT_OPT_MODE,
+        RGT_OPT_NO_CNTRL_MSG,
+        RGT_OPT_MI_META,
+        RGT_OPT_INCOMPLETE_LOG,
+        RGT_OPT_TMPDIR,
+        RGT_OPT_VERBOSE,
+        RGT_OPT_VERSION,
+    };
+
     /* Option Table */
     struct poptOption optionsTable[] = {
-        { "filter", 'f', POPT_ARG_STRING, NULL, 'f',
+        { "filter", 'f', POPT_ARG_STRING, NULL, RGT_OPT_FILTER,
           "XML filter file.", "FILE" },
 
-        { "mode", 'm', POPT_ARG_STRING, NULL, 'm',
+        { "mode", 'm', POPT_ARG_STRING, NULL, RGT_OPT_MODE,
           "Mode of operation, can be "
           RGT_OP_MODE_LIVE_STR ", " RGT_OP_MODE_POSTPONED_STR
           ", " RGT_OP_MODE_INDEX_STR " or " RGT_OP_MODE_JUNIT_STR ". "
           "By default " RGT_OP_MODE_DEFAULT_STR " mode is used.", "MODE" },
 
-        { "no-cntrl-msg", '\0', POPT_ARG_NONE, NULL, 'n',
+        { "no-cntrl-msg", '\0', POPT_ARG_NONE, NULL, RGT_OPT_NO_CNTRL_MSG,
           "Process TESTER control messages as ordinary: do not process "
           "test flow structure.", NULL },
 
-        { "mi-meta", '\0', POPT_ARG_NONE, NULL, 'e',
+        { "mi-meta", '\0', POPT_ARG_NONE, NULL, RGT_OPT_MI_META,
           "Include MI artifacts in <meta> section of XML log",
           NULL },
 
-        { "incomplete-log", '\0', POPT_ARG_NONE, NULL, 'i',
+        { "incomplete-log", '\0', POPT_ARG_NONE, NULL,
+          RGT_OPT_INCOMPLETE_LOG,
           "Do not shout on truncated log report, but complete it "
           "automatically.", NULL },
 
-        { "tmpdir", 't', POPT_ARG_STRING, NULL, 't',
+        { "tmpdir", 't', POPT_ARG_STRING, NULL, RGT_OPT_TMPDIR,
           "Temporary directory for message queues offloading.", "PATH" },
 
-        { NULL, 'V', POPT_ARG_NONE, NULL, 'V',
+        { NULL, 'V', POPT_ARG_NONE, NULL, RGT_OPT_VERBOSE,
           "Verbose trace.", NULL },
 
-        { "version", 'v', POPT_ARG_NONE, NULL, 'v',
+        { "version", 'v', POPT_ARG_NONE, NULL, RGT_OPT_VERSION,
           "Display version information.", 0 },
 
         POPT_AUTOHELP
@@ -172,14 +184,14 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
     {
         switch (rc)
         {
-            case 'f':
+            case RGT_OPT_FILTER:
                 if ((ctx->fltr_fname = poptGetOptArg(optCon)) == NULL)
                 {
                     usage(optCon, 1, "Specify XML filter file", NULL);
                 }
                 break;
 
-            case 't':
+            case RGT_OPT_TMPDIR:
                 if ((ctx->tmp_dir = poptGetOptArg(optCon)) == NULL)
                 {
                     usage(optCon, 1, "Specify temporary directory path",
@@ -187,7 +199,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
                 }
                 break;
 
-            case 'm':
+            case RGT_OPT_MODE:
                 if ((ctx->op_mode_str = poptGetOptArg(optCon)) == NULL ||
                     (strcmp(ctx->op_mode_str,
                             RGT_OP_MODE_LIVE_STR) != 0 &&
@@ -201,7 +213,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
                     usage(optCon, 1, "Specify mode of operation",
                           RGT_OP_MODE_LIVE_STR ", "
                           RGT_OP_MODE_POSTPONED_STR ", "
-                          RGT_OP_MODE_INDEX_STR " or "
+                          RGT_OP_MODE_INDEX_STR ", "
                           RGT_OP_MODE_JUNIT_STR);
                 }
 
@@ -218,28 +230,28 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
 
                 break;
 
-            case 'v':
+            case RGT_OPT_VERSION:
                 printf("Package %s: rgt-core version %s\n%s\n",
                        PACKAGE, VERSION, TE_COPYRIGHT);
                 poptFreeContext(optCon);
                 exit(0);
                 break;
 
-            case 'n':
+            case RGT_OPT_NO_CNTRL_MSG:
                 /* User do not want us to process control messages */
                 ctx->proc_cntrl_msg = false;
                 break;
 
-            case 'e':
+            case RGT_OPT_MI_META:
                 ctx->mi_meta = true;
                 break;
 
-            case 'i':
+            case RGT_OPT_INCOMPLETE_LOG:
                 /* User ask us to complete log report automatically */
                 ctx->proc_incomplete = true;
                 break;
 
-            case 'V':
+            case RGT_OPT_VERBOSE:
                 ctx->verb = true;
                 break;
 
