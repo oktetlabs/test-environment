@@ -183,6 +183,12 @@ typedef struct rgt_gen_ctx {
                                      representation */
 
     /**
+     * Stop log processing at the first message with a given
+     * entity.
+     */
+    const char    *stop_at_entity;
+
+    /**
      * Operation mode (live or postponed) influences on desirable
      * read behaviour that can be blocking or nonblocking.
      * This field keeps current rgt reading mode.

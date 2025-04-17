@@ -22,6 +22,8 @@ prog_name=`basename $0`
 #   -m MODE, --mode=MODE        Choose mode of RGT opertation.
 #   --no-cntrl-msg              Process Tester control messages as ordinary
 #   --mi-meta                   Include MI artifacts in <meta>
+#   --stop-at-entity=ENTITY     Stop log processing at the first message
+#                               with a given entity.
 #   -c FILE, --cfg-filter=FILE  Specify XMl filter file name.
 #   -f FILE, --raw-log=FILE     Specify Raw Log file name.
 #   -o FILE, --output=FILE      Output file name.
@@ -46,6 +48,8 @@ Usage: $prog_name [OPTION...] [<Raw Log file> [<Output file>]]
   --no-cntrl-msg           Process Tester control messages as ordinary.
   --mi-meta                Include MI artifacts in <meta>
 
+  --stop-at-entity=ENTITY  Stop log processing at the first message
+                           with a given entity.
   --incomplete-log         Do not shout on truncated log report, but complete
                            it automatically.
 
@@ -176,6 +180,10 @@ do
         ;;
 
     --mi-meta)
+        extra_flags="$extra_flags $1"
+        ;;
+
+    --stop-at-entity*)
         extra_flags="$extra_flags $1"
         ;;
 
