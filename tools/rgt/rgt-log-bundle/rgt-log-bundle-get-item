@@ -138,15 +138,32 @@ elif [[ "${req_path}" =~ bublik[.]xml$ ||
             err_cleanup "Failed to create XML log for Bublik"
         fi
     else
-        "${bindir}"/rgt-proc-raw-log --mi-ts \
-            --raw-log="${raw_log}" --mi="${mi_log}"
-        if test $? -ne 0 ; then
-            err_cleanup "Failed to create MI messages log"
-        fi
+        test_end_ver=$(rgt-tester-mi-version "${raw_log}" test_end)
 
-        "${bindir}"/rgt-bublik-json -m "${mi_log}" -o "${req_path}"
-        if test $? -ne 0 ; then
-            err_cleanup "Failed to create JSON log for Bublik"
+        if [[ "${test_end_ver}" -ge 2 ]] ; then
+            "${bindir}"/rgt-proc-raw-log --mi-ts \
+                --raw-log="${raw_log}" --mi="${mi_log}"
+            if test $? -ne 0 ; then
+                err_cleanup "Failed to create MI messages log"
+            fi
+
+            "${bindir}"/rgt-bublik-json -m "${mi_log}" -o "${req_path}"
+            if test $? -ne 0 ; then
+                err_cleanup "Failed to create JSON log for Bublik"
+            fi
+        else
+            echo "Legacy script is used for bublik.json generation"
+
+            bublik_xml="${bundle_tmpdir}/bublik.xml"
+            "${bindir}"/te-trc-log --mi-meta "${raw_log}" "${bublik_xml}"
+            if [[ $? -ne 0 ]] ; then
+                err_cleanup "Failed to create XML log for Bublik"
+            fi
+
+            "${bindir}"/rgt-bublik-json-legacy "${bublik_xml}" >"${req_path}"
+            if [[ $? -ne 0 ]] ; then
+                err_cleanup "Failed to create JSON log for Bublik"
+            fi
         fi
     fi
 
