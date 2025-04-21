@@ -2000,3 +2000,9 @@ rcf_pch_rpcserver_get_name(const rpcserver *rpcs)
 {
     return rpcs->name;
 }
+
+pid_t
+rcf_pch_rpcserver_get_pid(const rpcserver *rpcs)
+{
+    return rpcs->pid;
+}

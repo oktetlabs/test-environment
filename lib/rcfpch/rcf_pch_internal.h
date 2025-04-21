@@ -151,6 +151,15 @@ extern struct rpcserver *rcf_pch_rpcserver_next(struct rpcserver *rpcs);
 extern const char *rcf_pch_rpcserver_get_name(const struct rpcserver *rpcs);
 
 /**
+ * Get the pid of RPC server.
+ *
+ * @param rpcs  RPC server
+ *
+ * @return      the pid of RPC server
+ */
+extern pid_t rcf_pch_rpcserver_get_pid(const struct rpcserver *rpcs);
+
+/**
  * Add the node rpcserver_plugin in configuration tree,
  * initialize the mutex and the RPC call.
  *
