@@ -168,6 +168,12 @@ typedef struct te_rgt_mi_test_end {
     const char            *exp_notes;    /**< Expected results notes */
     te_rgt_mi_test_result *expected;     /**< Array of expected results */
     size_t                 expected_num; /**< Number of expected results */
+
+    /**
+     * TRC expectations status of obtained result
+     * (UNKNOWN/UNEXPECTED/EXPECTED)
+     */
+    const char            *exp_status;
 } te_rgt_mi_test_end;
 
 /** Description of a TRC tag */

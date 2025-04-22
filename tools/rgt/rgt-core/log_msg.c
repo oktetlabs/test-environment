@@ -215,7 +215,7 @@ rgt_process_tester_control_message_json(log_msg *msg)
          */
         err_code = json_unpack_ex(msg_json, &json_error, JSON_STRICT,
                                   "{s:i, s:i, s?s, s?o, s?o, s?o, "
-                                  "s?o, s?o, s?o, s?o}",
+                                  "s?o, s?o, s?o, s?o, s?o}",
                                   "id",        &node_id,
                                   "parent",    &parent_id,
                                   "status",    &status,
@@ -229,6 +229,7 @@ rgt_process_tester_control_message_json(log_msg *msg)
                                   "plan_id",   &ignored,
                                   "exp_key",   &ignored,
                                   "exp_notes", &ignored,
+                                  "exp_status", &ignored,
                                   "expected",  &ignored,
                                   "tags_expr", &ignored);
         if (err_code != 0)

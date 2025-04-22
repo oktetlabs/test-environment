@@ -114,6 +114,30 @@ typedef enum trc_verdict {
                                  expected results */
 } trc_verdict;
 
+/**
+ * Get string representation of trc_verdict.
+ *
+ * @param v   trc_verdict value.
+ *
+ * @return String representation.
+ */
+static inline const char *
+trc_verdict2str(trc_verdict v)
+{
+    switch (v)
+    {
+        case TRC_VERDICT_UNKNOWN:
+            return "UNKNOWN";
+
+        case TRC_VERDICT_UNEXPECTED:
+            return "UNEXPECTED";
+
+        case TRC_VERDICT_EXPECTED:
+            return "EXPECTED";
+    }
+
+    return "<UNEXPECTED_VALUE>";
+}
 
 /** Initialize test result by defaults. */
 static inline void
