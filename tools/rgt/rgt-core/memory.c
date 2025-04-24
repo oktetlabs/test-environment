@@ -135,8 +135,12 @@ void destroy_node_info_pool(void)
 node_info_t *
 alloc_node_info(void)
 {
-    return (node_info_t *)obstack_alloc(node_info_obstk,
-                                        sizeof(node_info_t));
+    node_info_t *p;
+
+    p = (node_info_t *)obstack_alloc(node_info_obstk,
+                                     sizeof(node_info_t));
+    memset(p, 0, sizeof(node_info_t));
+    return p;
 }
 
 /* See the description in memory.h */
@@ -151,7 +155,11 @@ free_node_info(node_info_t *node)
 void *
 node_info_obstack_alloc(int size)
 {
-    return obstack_alloc(node_info_obstk, size);
+    void *p;
+
+    p = obstack_alloc(node_info_obstk, size);
+    memset(p, 0, size);
+    return p;
 }
 
 /* See the description in memory.h */
