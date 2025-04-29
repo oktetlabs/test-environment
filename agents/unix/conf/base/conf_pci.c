@@ -2091,6 +2091,10 @@ try_override(const pci_device *dev, const char *drv)
     if (fd < 0)
         return rc;
 
+    /* Driver override is cleared only when a newline symbol is written. */
+    if (*drv == '\0')
+        drv = "\n";
+
     ret = write(fd, drv, strlen(drv));
     rc = (ret < 0) ? TE_OS_RC(TE_TA_UNIX, errno) : 0;
 
@@ -2182,6 +2186,13 @@ pci_driver_set(unsigned int gid, const char *oid, const char *value,
 
         rc = maybe_create_device(dev, value);
         if (rc != 0)
+            return rc;
+    }
+    else
+    {
+        /* Clear the driver override we might have set previously. */
+        rc = try_override(dev, value);
+        if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_EOPNOTSUPP)
             return rc;
     }
 
