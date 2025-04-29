@@ -11,7 +11,7 @@
  * @objective Testing the sanity of PRNG routines.
  *
  * The test is not a replacement for real PRNG burnout tests:
- * basically it uses Kolmogorov-Smirnov test to verify that
+ * basically it uses Pearson's chi square test to verify that
  * generated random values are uniformly distributed.
  *
  * @par Test sequence:
@@ -27,11 +27,25 @@
 #include "te_rand.h"
 #include "te_numeric.h"
 
+/*
+ * The following critical values for chi square test with
+ * significance level of 0.9999 were precalculated using
+ * SciPy's stats module. The part of the name after the
+ * `chi` prefix denotes the degrees of freedom.
+ */
+static long double chi1 = 15.136705226623606L;
+static long double chi2 = 18.420680743952584L;
+static long double chi255 = 347.6542127045896L;
+static long double chi2_63 = 9.22337205282783E+18;
+static long double chi2_64 = 1.844674409629886E+19;
+
+
 typedef struct prng_params {
     intmax_t min;
     intmax_t max;
     size_t bitstart;
     size_t bitlen;
+    long double chi;
 } prng_params;
 
 static int
@@ -46,20 +60,55 @@ compare_intmax(const void *v1, const void *v2)
     return i1 > i2 ? 1 : -1;
 }
 
+/*
+ * The following is doing Pearson's chi-square goodness-of-fit test
+ * for the uniform distribution.
+ *
+ * See https://en.wikipedia.org/wiki/Pearson%27s_chi-squared_test
+ * for an introduction to the topic.
+ */
+static void
+validate_random(const prng_params *params, unsigned int n, intmax_t seq[n])
+{
+    long double n_bins;
+    long double sum = 0.0L;
+    unsigned int span = 1;
+    unsigned int i;
+
+    if (params->bitlen == 0 || params->bitlen == TE_BITSIZE(intmax_t))
+        n_bins = (long double)params->max - (long double)params->min + 1.0L;
+    else
+        n_bins = (long double)(1ull << params->bitlen);
+
+    qsort(seq, n, sizeof(*seq), compare_intmax);
+
+    for (i = 0; i < n; i += span)
+    {
+        long double expected;
+        for (span = 1; i + span < n && seq[i + span] == seq[i]; span++)
+            ;
+        expected = (long double)n / n_bins;
+        sum += (((long double)span - expected) *
+                ((long double)span - expected)) / expected;
+    }
+
+    if (sum > params->chi)
+    {
+        TEST_VERDICT("The sampling of %zu..%zu bits of %jd..%jd "
+                     "appears non-uniform: %Lf > %Lf",
+                     params->bitstart,
+                     params->bitstart +
+                     (params->bitlen > 0 ? params->bitlen - 1 :
+                      TE_BITSIZE(intmax_t) - 1),
+                     params->min, params->max,
+                     sum, params->chi);
+    }
+}
+
 static void
 generate_random(const prng_params *params, unsigned int n, intmax_t seq[n])
 {
-    /*
-     * This is a critical value for Kolmogorov distribution
-     * assuming n > 40 for a significance level 99.5%,
-     * see
-     * e.g. https://www.york.ac.uk/depts/maths/tables/kolmogorovsmirnov.pdf
-     */
-    static const long double k995 = 1.63;
-
     unsigned int i;
-    unsigned int span;
-    long double maxd = 0.0L;
 
     /*
      * Believe it or not, but it may actually happen if a test
@@ -88,106 +137,70 @@ generate_random(const prng_params *params, unsigned int n, intmax_t seq[n])
         seq[i] = r;
     }
 
-    /*
-     * The following is doing one-sample Kolmogorov-Smirnov test
-     * to ensure the drawn samples agree with the uniform distribution.
-     *
-     * See https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test
-     * for an introduction to the topic.
-     */
-    qsort(seq, n, sizeof(*seq), compare_intmax);
-
-    for (i = 0; i < n; i += span)
-    {
-        /*
-         * All calculations must be with long doubles, because
-         * plain double cannot represent the full range of int64_t
-         * precisely enough.
-         */
-        long double ecdf;
-        long double ucdf;
-        long double d;
-
-        for (span = 1; i + span < n; span++)
-        {
-            if (seq[i + span] != seq[i])
-                break;
-        }
-
-        ecdf = (long double)(i + span) / (long double)n;
-
-        if (params->bitlen == 0 || params->bitlen == TE_BITSIZE(intmax_t))
-        {
-            ucdf = ((long double)seq[i] - (long double)params->min + 1.0L) /
-                ((long double)params->max - (long double)params->min + 1.0L);
-        }
-        else
-        {
-            ucdf = ((long double)seq[i] + 1.0L) /
-                (long double)(1ull << params->bitlen);
-        }
-
-        d = fabsl(ecdf - ucdf);
-        if (d > maxd)
-            maxd = d;
-    }
-
-    if (sqrtl((long double)n) * maxd > k995)
-    {
-        TEST_VERDICT("The sample is not uniform: %Lf > %Lf",
-                     sqrtl((long double)n) * maxd, k995);
-    }
-    RING("Max difference between ECDF and uniform CDF = %Lf (< %Lf)",
-         maxd, k995 / sqrtl((long double)n));
+    validate_random(params, n, seq);
 }
 
 static void
 test_random(unsigned int n)
 {
-    static const prng_params variants[] = {
+    const prng_params variants[] = {
         {
-            .min = INTMAX_MIN, .max = INTMAX_MAX
+            .min = INTMAX_MIN, .max = INTMAX_MAX,
+            .chi = chi2_64,
         },
         {
             .min = INTMAX_MIN, .max = INTMAX_MAX,
-            .bitstart = 0, .bitlen = 1
+            .bitstart = 0, .bitlen = 1,
+            .chi = chi1,
         },
         {
             .min = INTMAX_MIN, .max = INTMAX_MAX,
-            .bitstart = 0, .bitlen = 8
+            .bitstart = 0, .bitlen = 8,
+            .chi = chi255,
         },
         {
             .min = INTMAX_MIN, .max = INTMAX_MAX,
-            .bitstart = TE_BITSIZE(intmax_t) - 8, .bitlen = 8
+            .bitstart = TE_BITSIZE(intmax_t) - 8, .bitlen = 8,
+            .chi = chi255,
+
         },
         {
             .min = INTMAX_MIN, .max = INTMAX_MAX,
-            .bitstart = TE_BITSIZE(intmax_t) - 1, .bitlen = 1
+            .bitstart = TE_BITSIZE(intmax_t) - 1, .bitlen = 1,
+            .chi = chi1,
         },
         {
-            .min = 0, .max = INTMAX_MAX
+            .min = 0, .max = INTMAX_MAX,
+            .chi = chi2_63,
         },
         {
-            .min = 0, .max = 1
+            .min = 0, .max = 1,
+            .chi = chi1,
         },
         {
-            .min = -1, .max = 1
-        },
-        {
-            .min = 0, .max = UINT8_MAX
+            .min = -1, .max = 1,
+            .chi = chi2,
         },
         {
             .min = 0, .max = UINT8_MAX,
-            .bitstart = 0, .bitlen = 1
+            .chi = chi255,
         },
         {
-            .min = -1, .max = INTMAX_MAX
+            .min = 0, .max = UINT8_MAX,
+            .bitstart = 0, .bitlen = 1,
+            .chi = chi1,
         },
         {
-            .min = INTMAX_MIN, .max = 0
+            .min = -1, .max = INTMAX_MAX,
+            .chi = chi2_63,
         },
         {
-            .min = INTMAX_MIN, .max = INTMAX_MIN + 1
+            .min = INTMAX_MIN, .max = 0,
+            .chi = chi2_63,
+        },
+        {
+            .min = INTMAX_MIN, .max = INTMAX_MIN + 1,
+            .chi = chi1,
         },
     };
     unsigned int i;
@@ -211,9 +224,9 @@ static void
 test_scalar_random(unsigned int n_numbers)
 {
     unsigned int i;
-    intmax_t i8_sum = 0;
-    uintmax_t u8_sum = 0;
-    uintmax_t b_sum = 0;
+    intmax_t signed_bytes[n_numbers];
+    intmax_t unsigned_bytes[n_numbers];
+    intmax_t bools[n_numbers];
 
     for (i = 0; i < n_numbers; i++)
     {
@@ -225,23 +238,20 @@ test_scalar_random(unsigned int n_numbers)
         te_scalar_random(TE_SCALAR_TYPE_UINT8_T, &u8);
         te_scalar_random(TE_SCALAR_TYPE_BOOL, &b);
 
-        i8_sum += i8;
-        u8_sum += u8;
-        b_sum += b;
+        signed_bytes[i] = i8;
+        unsigned_bytes[i] = u8;
+        bools[i] = b;
     }
 
-    /* The thresholds below are somewhat arbitrary. */
-    if (fabs((double)i8_sum / (double)n_numbers) > 1.0)
-        TEST_VERDICT("Generator of signed bytes is skewed");
-
-    if (fabs((double)u8_sum / (double)n_numbers -
-             (double)UINT8_MAX / 2.0) > 1.0)
-    {
-        TEST_VERDICT("Generator of signed bytes is skewed");
-    }
-
-    if (fabs((double)b_sum / (double)n_numbers - 0.5) > 0.01)
-        TEST_VERDICT("Generator of booleans is skewed");
+    validate_random(&(const prng_params){.min = INT8_MIN, .max = INT8_MAX,
+                                         .chi = chi255},
+                    n_numbers, signed_bytes);
+    validate_random(&(const prng_params){.min = 0, .max = UINT8_MAX,
+                                         .chi = chi255},
+                    n_numbers, unsigned_bytes);
+    validate_random(&(const prng_params){.min = 0, .max = 1,
+                                         .chi = chi1},
+                    n_numbers, bools);
 }
 
 static void
