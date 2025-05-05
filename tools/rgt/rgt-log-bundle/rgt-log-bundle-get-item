@@ -56,7 +56,7 @@ while [[ "$#" -gt 0 ]] ; do
     shift 1
 done
 
-if test -z "${bundle_path}" -o -z "${req_path}" ; then
+if [[ -z "${bundle_path}" || -z "${req_path}" ]] ; then
     echo "Not all the required arguments were specified" >&2
     exit 1
 fi
@@ -64,14 +64,14 @@ fi
 bundle_dir="$(dirname "${req_path}")"
 
 bundle_tmpdir=$(mktemp -d "${TMPDIR}/raw_log_bundle_XXXXXX")
-if test $? -ne 0 ; then
+if [[ $? -ne 0 ]] ; then
     echo "Failed to create temporary directory" >&2
     exit 1
 fi
 
 cleanup()
 {
-    if test -n "${bundle_tmpdir}" ; then
+    if [[ -n "${bundle_tmpdir}" ]] ; then
         rm -r "${bundle_tmpdir}"
     fi
 }
@@ -84,13 +84,13 @@ err_cleanup()
 }
 
 mkdir -p "${bundle_tmpdir}/fragments"
-if test $? -ne 0 ; then
+if [[ $? -ne 0 ]] ; then
     err_cleanup "Failed to create fragments subdir in ${bundle_tmpdir}"
 fi
 
 tmp_caps_dir="${bundle_tmpdir}/caps"
 mkdir -p "${tmp_caps_dir}"
-if test $? -ne 0 ; then
+if [[ $? -ne 0 ]] ; then
     err_cleanup "Failed to create caps subdir in ${bundle_tmpdir}"
 fi
 
@@ -102,12 +102,12 @@ if [[ "${req_path}" =~ log.raw.bz2$ ]] ; then
 
     "${bindir}"/rgt-log-bundle-get-original --bundle="${bundle_path}" \
         --raw-log="${bundle_tmpdir}/log.raw"
-    if test $? -ne 0 ; then
+    if [[ $? -ne 0 ]] ; then
         err_cleanup "Failed to recover original raw log"
     fi
 
     bzip2 -k --stdout "${bundle_tmpdir}/log.raw" >"${req_path}"
-    if test $? -ne 0 ; then
+    if [[ $? -ne 0 ]] ; then
         rm "${req_path}"
         err_cleanup "Failed to compress original raw log"
     fi
@@ -116,7 +116,7 @@ elif [[ "${req_path}" =~ log[.]raw$ ]] ; then
 
     "${bindir}"/rgt-log-bundle-get-original --bundle="${bundle_path}" \
         --raw-log="${req_path}"
-    if test $? -ne 0 ; then
+    if [[ $? -ne 0 ]] ; then
         err_cleanup "Failed to recover original raw log"
     fi
 
@@ -128,13 +128,13 @@ elif [[ "${req_path}" =~ bublik[.]xml$ ||
 
     "${bindir}"/rgt-log-bundle-get-original --bundle="${bundle_path}" \
         --raw-log="${raw_log}"
-    if test $? -ne 0 ; then
+    if [[ $? -ne 0 ]] ; then
         err_cleanup "Failed to recover original raw log"
     fi
 
     if [[ "${req_path}" =~ bublik[.]xml$ ]] ; then
         "${bindir}"/te-trc-log --mi-meta "${raw_log}" "${req_path}"
-        if test $? -ne 0 ; then
+        if [[ $? -ne 0 ]] ; then
             err_cleanup "Failed to create XML log for Bublik"
         fi
     else
@@ -143,12 +143,12 @@ elif [[ "${req_path}" =~ bublik[.]xml$ ||
         if [[ "${test_end_ver}" -ge 2 ]] ; then
             "${bindir}"/rgt-proc-raw-log --mi-ts \
                 --raw-log="${raw_log}" --mi="${mi_log}"
-            if test $? -ne 0 ; then
+            if [[ $? -ne 0 ]] ; then
                 err_cleanup "Failed to create MI messages log"
             fi
 
             "${bindir}"/rgt-bublik-json -m "${mi_log}" -o "${req_path}"
-            if test $? -ne 0 ; then
+            if [[ $? -ne 0 ]] ; then
                 err_cleanup "Failed to create JSON log for Bublik"
             fi
         else
@@ -172,13 +172,13 @@ elif [[ "${req_path}" =~ /caps[/]?$ ||
 
     "${bindir}"/rgt-log-bundle-get-original --bundle="${bundle_path}" \
         --caps="${req_path}"
-    if test $? -ne 0 ; then
+    if [[ $? -ne 0 ]] ; then
         err_cleanup "Failed to recover sniffer capture files"
     fi
 
 elif [[ "${req_path}" =~ log_gist[.]raw$ ]] ; then
     pixz -x log_gist.raw <"${bundle_path}" | tar -x -O >"${req_path}"
-    if test $? -ne 0 ; then
+    if [[ $? -ne 0 ]] ; then
         err_cleanup "Failed to extract log_gist.raw"
     fi
 
@@ -193,7 +193,7 @@ elif [[ "${req_path}" =~ log[.]txt$ ]] ; then
 
     "${bindir}"/rgt-log-bundle-get-original --bundle="${bundle_path}" \
         --raw-log="${bundle_tmpdir}/recovered_log.raw" "${sniff_opts[@]}"
-    if test $? -ne 0 ; then
+    if [[ $? -ne 0 ]] ; then
         err_cleanup "Failed to recover original raw log"
     fi
 
@@ -218,7 +218,7 @@ elif [[ "${req_path}" =~ log[.]txt$ ]] ; then
         --raw-log="${bundle_tmpdir}/recovered_log.raw" \
         --txt="${req_path}" --rgt-conv-incomplete-log
 
-    if test $? -ne 0 ; then
+    if [[ $? -ne 0 ]] ; then
         err_cleanup "Failed to obtain TXT log"
     fi
 
@@ -230,14 +230,14 @@ elif [[ "${req_path}" =~ /html[/]*$ ||
 
     pixz -x log_gist.raw <"${bundle_path}" | tar x -C \
         "${bundle_tmpdir}/fragments/"
-    if test $? -ne 0 ; then
+    if [[ $? -ne 0 ]] ; then
         err_cleanup "Failed to extract log_gist.raw"
     fi
 
     "${bindir}"/rgt-conv --incomplete-log \
         "${bundle_tmpdir}/fragments/log_gist.raw" \
         "${bundle_tmpdir}/log_gist.xml"
-    if test $? -ne 0 ; then
+    if [[ $? -ne 0 ]] ; then
         err_cleanup "Failed to obtain log_gist.xml"
     fi
 
@@ -250,14 +250,14 @@ elif [[ "${req_path}" =~ /html[/]*$ ||
 
         "${bindir}"/rgt-xml2json --index-only \
             "${bundle_tmpdir}"/log_gist.xml "${out_dir}"
-        if test $? -ne 0 ; then
+        if [[ $? -ne 0 ]] ; then
             err_cleanup "Failed to obtain JSON files tree"
         fi
     else
         "${bindir}"/rgt-xml2html-multi --index-only --shared-url="${shared_url}" \
             --docs-url="${docs_url}" \
             "${bundle_tmpdir}/log_gist.xml" "${req_path}"
-        if test $? -ne 0 ; then
+        if [[ $? -ne 0 ]] ; then
             err_cleanup "Failed to obtain html log tree"
         fi
     fi
@@ -269,7 +269,7 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ \
     if [[ "${sniff_log}" == "true" ]] ; then
         sniff_log_dir="${bundle_tmpdir}/fragments/caps"
         mkdir -p "${sniff_log_dir}"
-        if test $? -ne 0 ; then
+        if [[ $? -ne 0 ]] ; then
             err_cleanup "Failed to create ${sniff_log_dir}"
         fi
 
@@ -308,7 +308,7 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ \
         node="${node%_all}"
     fi
 
-    if test ${all_pages} -gt 0 ; then
+    if [[ ${all_pages} -gt 0 ]] ; then
         merge_frag_num=all
     else
         merge_frag_num=$((cur_page - 1))
@@ -319,13 +319,13 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ \
         --frags-count="${bundle_tmpdir}/fragments/frags_count" \
         --filter="${node}" --page="${merge_frag_num}" \
         --output="${bundle_tmpdir}/log_merge.raw" "${sniff_opts[@]}"
-    if test $? -ne 0 ; then
+    if [[ $? -ne 0 ]] ; then
         err_cleanup "Failed to merge log fragments"
     fi
 
     pages_count=$(cat "${bundle_tmpdir}/fragments/frags_count")
 
-    if test -z "$pages_count" ; then
+    if [[ -z "$pages_count" ]] ; then
         pages_count=0
     fi
 
@@ -348,9 +348,9 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ \
         out_opt="json"
     fi
 
-    if test ${all_pages} -gt 0 ; then
+    if [[ ${all_pages} -gt 0 ]] ; then
         multi_opts+=("${multi_pref}page-selector=all")
-    elif test ${pages_count} -gt 1 ; then
+    elif [[ ${pages_count} -gt 1 ]] ; then
         multi_opts+=("${multi_pref}page-selector=${cur_page}/${pages_count}")
     fi
 
