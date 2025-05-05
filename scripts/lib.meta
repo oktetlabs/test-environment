@@ -209,7 +209,7 @@ te_meta_set_ts() {
 te_meta_test_suite() {
     local ts_name="$1"
     local ts_prefix="$2"
-    local ts_dir="$(cd "$(dirname "$(which "$0")")"/.. ; pwd -P)"
+    local ts_dir="$(cd "$(dirname $(realpath "$(which "$0")"))"/.. ; pwd -P)"
 
     if [[ -z "${ts_prefix}" ]] ; then
         ts_prefix="${ts_name^^}"
