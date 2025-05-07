@@ -1,6 +1,6 @@
 #! /bin/bash
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2007-2023 OKTET Labs Ltd. All rights reserved.
+# Copyright (C) 2007-2025 OKTET Labs Ltd. All rights reserved.
 #
 # CGI script to index log storage directories and provide fake entries
 # for log files which may be generated from available raw logs.
@@ -96,6 +96,9 @@ if [[ -r log.raw.bz2 || -r log.raw.xz || -r raw_log_bundle.tpxz ]] ; then
         fi
         if test ! -e bublik.xml ; then
             print_file_entry "bublik.xml"
+        fi
+        if test ! -e bublik.json ; then
+            print_file_entry "bublik.json"
         fi
     fi
 fi
