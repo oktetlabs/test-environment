@@ -69,6 +69,8 @@ enum {
 };
 
 
+static te_errno get_bool_prop(xmlNodePtr node, const char *name, bool *value);
+
 static const test_info * find_test_info(const tests_info *ti,
                                         const char *name);
 
@@ -348,7 +350,8 @@ get_text_content(xmlNodePtr node, const char *name, char **content)
         return TE_ENOMEM;
     }
 
-    remove_common_leading_indent(*content);
+    if (tester_global_context.flags & TESTER_STRIP_INDENT)
+        remove_common_leading_indent(*content);
 
     return 0;
 }
@@ -660,6 +663,42 @@ get_persons_info(xmlNodePtr *node, const char *node_name,
     return 0;
 }
 
+/**
+ * Get syntax flags.
+ *
+ * @param node      Location of the XML node pointer.
+ * @param flags     Syntax flags.
+ *
+ * @return Status code.
+ */
+static te_errno
+get_syntax_flags(xmlNodePtr *node, tester_flags *flags)
+{
+    te_errno    rc;
+    bool        prop_value = false;
+
+    assert(*node != NULL);
+    assert(flags != NULL);
+
+    /* 'syntax' block is optional. */
+    if (xmlStrcmp((*node)->name, CONST_CHAR2XML("syntax")) != 0)
+        return 0;
+
+    rc = get_bool_prop(*node, "strip_indent", &prop_value);
+    if (rc != 0 && rc != TE_RC(TE_TESTER, TE_ENOENT))
+    {
+        ERROR("Bad value of 'strip_indent' property");
+        return rc;
+    }
+    if (prop_value)
+        *flags |= TESTER_STRIP_INDENT;
+    else
+        *flags &= ~TESTER_STRIP_INDENT;
+
+    *node = xmlNodeNext(*node);
+
+    return 0;
+}
 
 /**
  * Get option.
@@ -1942,7 +1981,8 @@ alloc_and_get_var_arg(xmlNodePtr node, bool is_var,
     {
         test_entity_value *v = TAILQ_FIRST(&p->values.head);
 
-        if (v != NULL && v->plain != NULL)
+        if (v != NULL && v->plain != NULL &&
+            tester_global_context.flags & TESTER_STRIP_INDENT)
             remove_common_leading_indent(v->plain);
     }
 
@@ -2853,6 +2893,14 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg,
     {
         if (rc != TE_ENOENT)
             return rc;
+    }
+
+    /* Get optional syntax flags */
+    rc = get_syntax_flags(&node, &tester_global_context.flags);
+    if (rc != 0)
+    {
+        ERROR("Failed to get syntax flags");
+        return rc;
     }
 
     /* Get optional information about suites */
