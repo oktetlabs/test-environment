@@ -57,6 +57,15 @@
                     </xsd:annotation>
                 </xsd:element>
 
+                <xsd:element name="syntax" type="SyntaxOptions"
+                                            minOccurs="0">
+                    <xsd:annotation>
+                        <xsd:documentation>
+                            Syntax options which describe how to handle XML.
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:element>
+
                 <xsd:element name="suite" type="SuiteInfo"
                                       minOccurs="0" maxOccurs="unbounded">
                     <xsd:annotation>
@@ -192,6 +201,28 @@
                 </xsd:documentation>
             </xsd:annotation>
         </xsd:attribute>
+    </xsd:complexType>
+
+    <xsd:complexType name="SyntaxOptions">
+        <xsd:annotation>
+            <xsd:documentation>
+                Type of element to specify options on how to handle XML syntax.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:choice minOccurs="0" maxOccurs="unbounded">
+            <xsd:attribute name="strip_indent" type="xsd:boolean" default="false">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Enable indentation stripping for values of variables
+                        and arguments, content of objective, description and
+                        values of properties of command monitor.
+                        Also, leading and trailing lines which contains only
+                        whitespaces will be removed.
+                        Disabled by default.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+        </xsd:choice>
     </xsd:complexType>
 
 </xsd:schema>
