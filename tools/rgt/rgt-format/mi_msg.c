@@ -1099,6 +1099,7 @@ te_rgt_parse_mi_test_end_message(te_rgt_mi *mi)
                          "obtained", &obtained,
                          "exp_key", &exp_key,
                          "exp_notes", &exp_notes,
+                         "exp_status", &exp_status,
                          "expected", &expected,
                          "tags_expr", &tags_expr,
                          "error", &error);
