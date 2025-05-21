@@ -24,8 +24,9 @@
 #include "te_rpc_signal.h"
 #include "logfork.h"
 
-#if HAVE_PCRE_H
-#include <pcre.h>
+#if HAVE_PCRE2_H
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
 #endif
 #if HAVE_PTHREAD_H
 #include <pthread.h>
@@ -64,13 +65,6 @@
 #define CTRL_PIPE_INITIALIZER {-1, -1}
 #define CTRL_MESSAGE ("c\n")
 
-/**
- * Major and minor versions of PCRE required for partial matching
- * <https://www.pcre.org/original/doc/html/pcrepartial.html#SEC9>
- */
-#define TA_JOB_PCRE_PARTIAL_MATCHING_MAJOR 8
-#define TA_JOB_PCRE_PARTIAL_MATCHING_MINOR 33
-
 typedef struct message_t {
     TAILQ_ENTRY(message_t) entry;
 
@@ -98,8 +92,8 @@ typedef enum queue_action_t {
 #define OVECCOUNT 30 /* should be a multiple of 3 */
 
 typedef struct regexp_data_t {
-    pcre *re;
-    pcre_extra *sd;
+    pcre2_code *re;
+    pcre2_match_data *match_data;
     unsigned int extract;
     bool utf8;
     bool crlf_is_newline;
@@ -219,9 +213,6 @@ static const ta_job_manager_t ta_job_manager_initializer = {
     .thread_is_running = false,
 };
 
-/** Whether currently used PCRE version supports parial matching */
-static const bool ta_job_pcre_partial_matching_supported = (PCRE_MAJOR > TA_JOB_PCRE_PARTIAL_MATCHING_MAJOR) || (PCRE_MAJOR == TA_JOB_PCRE_PARTIAL_MATCHING_MAJOR && PCRE_MINOR >= TA_JOB_PCRE_PARTIAL_MATCHING_MINOR);
-
 /* See description in ta_job.h */
 te_errno
 ta_job_manager_init(ta_job_manager_t **manager)
@@ -287,8 +278,8 @@ regexp_data_destroy(regexp_data_t *regexp_data)
 {
     if (regexp_data != NULL)
     {
-        pcre_free_study(regexp_data->sd);
-        pcre_free(regexp_data->re);
+        pcre2_match_data_free(regexp_data->match_data);
+        pcre2_code_free(regexp_data->re);
     }
 
     free(regexp_data);
@@ -301,76 +292,65 @@ regexp_data_create(char *pattern, unsigned int extract,
     regexp_data_t *result = NULL;
     unsigned long int option_bits;
     int max_lookbehind;
-    const char *error;
+    int error;
     te_errno rc = 0;
-    int erroffset;
+    unsigned long int erroffset;
     bool utf8;
+    uint32_t newline;
 
     result = TE_ALLOC(sizeof(*result));
 
-    result->re = pcre_compile(pattern, PCRE_MULTILINE,
-                              &error, &erroffset, NULL);
+    result->re = pcre2_compile((unsigned char*)pattern, PCRE2_ZERO_TERMINATED,
+                               PCRE2_MULTILINE, &error, &erroffset, NULL);
     if (result->re == NULL)
     {
-        ERROR("PCRE compilation of pattern %s, failed at offset %d: %s",
-              pattern, erroffset, error);
+        unsigned char buf[256];
+
+        pcre2_get_error_message(error, buf, sizeof(buf));
+        ERROR("PCRE2 compilation of pattern %s, failed at offset %lu: %s",
+              pattern, erroffset, (const char *)buf);
         rc = TE_EINVAL;
         goto out;
     }
 
-    result->sd = pcre_study(result->re, 0, &error);
-    if (error != NULL)
+    error = pcre2_jit_compile(result->re, 0);
+    if (error != 0)
     {
-        ERROR("PCRE study failed, %s", error);
+        ERROR("PCRE2 jit compile failed, %d", error);
         rc = TE_EPERM;
         goto out;
     }
 
-    if (pcre_fullinfo(result->re, result->sd, PCRE_INFO_MAXLOOKBEHIND,
-                      &max_lookbehind) != 0)
+    result->match_data = pcre2_match_data_create_from_pattern(result->re,
+                                                              NULL);
+
+    if (pcre2_pattern_info(result->re, PCRE2_INFO_MAXLOOKBEHIND,
+                           &max_lookbehind) != 0)
     {
-        ERROR("PCRE fullinfo for max lookbehind failed");
+        ERROR("PCRE2 pattern info for max lookbehind failed");
         rc = TE_EPERM;
         goto out;
     }
 
-    if (pcre_fullinfo(result->re, result->sd, PCRE_INFO_OPTIONS,
-                      &option_bits) != 0)
+    if (pcre2_pattern_info(result->re, PCRE2_INFO_ARGOPTIONS, &option_bits) != 0)
     {
-        ERROR("PCRE fullinfo failed");
+        ERROR("PCRE2 pattern info failed");
         rc = TE_EPERM;
         goto out;
     }
 
-    utf8 = (option_bits & PCRE_UTF8) != 0;
+    utf8 = (option_bits & PCRE2_UTF) != 0;
 
-    option_bits &= PCRE_NEWLINE_CR | PCRE_NEWLINE_LF | PCRE_NEWLINE_CRLF |
-                   PCRE_NEWLINE_ANY | PCRE_NEWLINE_ANYCRLF;
-
-    if (option_bits == 0)
+    if (pcre2_config(PCRE2_CONFIG_NEWLINE, &newline) != 0)
     {
-        int d;
-
-        if (pcre_config(PCRE_CONFIG_NEWLINE, &d) != 0)
-        {
-            ERROR("PCRE config failed");
-            rc = TE_EINVAL;
-            goto out;
-        }
-        /*
-         * Values from specification. Note that these values are always
-         * the ASCII ones, even in EBCDIC environments. CR = 13, NL = 10.
-         */
-        option_bits = (d == 13) ? PCRE_NEWLINE_CR :
-                      (d == 10) ? PCRE_NEWLINE_LF :
-                      (d == 3338) ? PCRE_NEWLINE_CRLF :
-                      (d == -2) ? PCRE_NEWLINE_ANYCRLF :
-                      (d == -1) ? PCRE_NEWLINE_ANY : 0;
+        ERROR("PCRE2 config failed");
+        rc = TE_EINVAL;
+        goto out;
     }
 
-    result->crlf_is_newline = option_bits == PCRE_NEWLINE_ANY ||
-                              option_bits == PCRE_NEWLINE_CRLF ||
-                              option_bits == PCRE_NEWLINE_ANYCRLF;
+    result->crlf_is_newline = newline == PCRE2_NEWLINE_ANY ||
+                              newline == PCRE2_NEWLINE_CRLF ||
+                              newline == PCRE2_NEWLINE_ANYCRLF;
     result->utf8 = utf8;
     result->extract = extract;
     result->max_lookbehind = max_lookbehind;
@@ -1026,29 +1006,6 @@ match_callback(ta_job_manager_t *manager, filter_t *filter,
     return 0;
 }
 
-/**
- * Produce a warning if PCRE partial matching is not supported.
- * The warning will be produced only once.
- */
-static void
-warn_on_unsupported_pcre_partial_matching(void)
-{
-    static bool checked = false;
-
-    if (!checked)
-    {
-        checked = true;
-
-        if (!ta_job_pcre_partial_matching_supported)
-        {
-            WARN("PCRE partial matching is not supported by currently used "
-                 "version %u.%u, the least required version is %u.%u",
-                 PCRE_MAJOR, PCRE_MINOR, TA_JOB_PCRE_PARTIAL_MATCHING_MAJOR,
-                 TA_JOB_PCRE_PARTIAL_MATCHING_MINOR);
-        }
-    }
-}
-
 static te_errno
 filter_regexp_exec(ta_job_manager_t *manager, filter_t *filter,
                    unsigned int channel_id, pid_t pid, int segment_length,
@@ -1059,7 +1016,7 @@ filter_regexp_exec(ta_job_manager_t *manager, filter_t *filter,
 {
     int start_offset;
     bool first_exec;
-    int ovector[OVECCOUNT];
+    unsigned long int *ovector;
     int rc;
     te_errno te_rc;
     regexp_data_t *regexp = filter->regexp_data;
@@ -1071,8 +1028,6 @@ filter_regexp_exec(ta_job_manager_t *manager, filter_t *filter,
      * in the next iteration
      */
     int future_start_offset;
-
-    warn_on_unsupported_pcre_partial_matching();
 
     te_rc = te_string_append(&filter->saved_string, "%.*s",
                              segment_length, segment);
@@ -1090,27 +1045,27 @@ filter_regexp_exec(ta_job_manager_t *manager, filter_t *filter,
     {
         char *substring_start;
         size_t substring_length;
-        int options = (!eos && ta_job_pcre_partial_matching_supported) ?
-                       PCRE_PARTIAL_HARD : 0; /* Enable partial matching */
+        int options = (!eos) ? PCRE2_PARTIAL_HARD : 0;
+                       /* Enable partial matching */
 
         if (!filter->line_begin)
-            options |= PCRE_NOTBOL;
+            options |= PCRE2_NOTBOL;
 
         if (!first_exec && ovector[0] == ovector[1])
         {
             if (ovector[0] == subject_length)
                 break;
-            options |= PCRE_NOTEMPTY_ATSTART | PCRE_ANCHORED;
+            options |= PCRE2_NOTEMPTY_ATSTART | PCRE2_ANCHORED;
         }
 
-        rc = pcre_exec(regexp->re, regexp->sd, subject, subject_length,
-                       start_offset, options, ovector, TE_ARRAY_LEN(ovector));
+        rc = pcre2_match(regexp->re, (unsigned char *)subject, subject_length,
+                         start_offset, options, regexp->match_data, NULL);
+        ovector = pcre2_get_ovector_pointer(regexp->match_data);
         if (rc < 0)
         {
             switch (rc)
             {
-            case PCRE_ERROR_NOMATCH:
-
+            case PCRE2_ERROR_NOMATCH:
                 if (first_exec)
                 {
                     /* No match at all */
@@ -1123,7 +1078,7 @@ filter_regexp_exec(ta_job_manager_t *manager, filter_t *filter,
                      * All matches found. Options are checked to prevent
                      * infinite zero-length matches
                      */
-                    if ((options & PCRE_NOTEMPTY_ATSTART) == 0)
+                    if ((options & PCRE2_NOTEMPTY_ATSTART) == 0)
                     {
                         te_rc = 0;
                         goto out;
@@ -1159,7 +1114,7 @@ filter_regexp_exec(ta_job_manager_t *manager, filter_t *filter,
                     continue;
                 }
 
-            case PCRE_ERROR_PARTIAL:
+            case PCRE2_ERROR_PARTIAL:
                 future_start_offset = ovector[2];
                 te_rc = 0;
                 goto out;
@@ -1174,7 +1129,7 @@ filter_regexp_exec(ta_job_manager_t *manager, filter_t *filter,
         /* The match succeeded, but the output vector wasn't big enough. */
         if (rc == 0)
         {
-            rc = TE_ARRAY_LEN(ovector) / 3;
+            rc = pcre2_get_ovector_count(regexp->match_data) / 3;
             WARN("ovector only has room for %d matches", rc);
         }
 

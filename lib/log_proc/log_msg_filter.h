@@ -11,7 +11,8 @@
 #ifndef __TE_LOG_MSG_FILTER_H__
 #define __TE_LOG_MSG_FILTER_H__
 
-#include <pcre.h>
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
 
 #include "te_defs.h"
 #include "te_errno.h"
@@ -38,7 +39,7 @@ typedef struct log_user_filter {
 
     te_log_level  level; /**< Bitmask for allowed log levels */
     char         *name;  /**< User name or PCRE pattern */
-    pcre         *regex; /**< Compiled PCRE or NULL */
+    pcre2_code   *regex; /**< Compiled PCRE or NULL */
 } log_user_filter;
 
 /** Entity filter */
@@ -48,7 +49,7 @@ typedef struct log_entity_filter {
 
     te_log_level           level; /**< Bitmask for allowed log levels */
     char                  *name;  /**< Entity name or PCRE pattern */
-    pcre                  *regex; /**< Compiled PCRE or NULL */
+    pcre2_code            *regex; /**< Compiled PCRE or NULL */
 } log_entity_filter;
 
 /** Message filter */

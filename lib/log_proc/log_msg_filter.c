@@ -19,18 +19,21 @@
 
 /* Compile a PCRE */
 static te_errno
-prepare_pcre(const char *pattern, pcre **regex)
+prepare_pcre(const char *pattern, pcre2_code **regex)
 {
-    const char *errstr;
-    int         erroff;
+    unsigned long int erroff;
     int         errcode;
 
-    *regex = pcre_compile2(pattern, 0, &errcode, &errstr, &erroff, NULL);
+    *regex = pcre2_compile((const unsigned char *)pattern, PCRE2_ZERO_TERMINATED,
+                           0, &errcode, &erroff, NULL);
     if (*regex == NULL)
     {
-        ERROR("Failed to compile regex '%s' at offset %d: %s",
-              pattern, erroff, errstr);
-        if (errcode == 21)
+        unsigned char buf[256];
+
+        pcre2_get_error_message(errcode, buf, sizeof(buf));
+        ERROR("Failed to compile regex '%s' at offset %lu: %s",
+              pattern, erroff, (const char *)buf);
+        if (errcode == PCRE2_ERROR_NOMEMORY)
             return TE_ENOMEM;
         return TE_EINVAL;
     }
@@ -47,12 +50,13 @@ prepare_pcre(const char *pattern, pcre **regex)
  * @param regex         pcre stored in a filter
  */
 static bool
-check_name(const char *name, size_t name_len, const char *fname, pcre *regex)
+check_name(const char *name, size_t name_len, const char *fname, const pcre2_code *regex)
 {
     if (regex == NULL)
         return strncmp(name, fname, name_len) == 0;
     else
-        return pcre_exec(regex, NULL, name, name_len, 0, 0, NULL, 0) >= 0;
+        return pcre2_match(regex, (const unsigned char *)name, name_len,
+                           0, 0, NULL, NULL) >= 0;
 }
 
 /**
@@ -105,7 +109,7 @@ static void
 log_user_filter_free(log_user_filter *filter)
 {
     free(filter->name);
-    pcre_free(filter->regex);
+    pcre2_code_free(filter->regex);
 }
 
 /**
@@ -163,7 +167,7 @@ log_entity_filter_free(log_entity_filter *filter)
     log_user_filter *tmp;
 
     free(filter->name);
-    pcre_free(filter->regex);
+    pcre2_code_free(filter->regex);
 
     SLIST_FOREACH_SAFE(user, &filter->users, links, tmp)
     {

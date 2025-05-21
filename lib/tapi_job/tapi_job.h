@@ -455,11 +455,11 @@ extern te_errno tapi_job_attach_simple_filter(const tapi_job_simple_desc_t *desc
  * Add a regular expression for filter
  *
  * @param filter   Filter handle
- * @param re       PCRE-style regular expression to match
+ * @param re       PCRE2-style regular expression to match
  * @param extract  A substring to extract as an output of the filter
  *                 (0 meaning the whole match)
  *
- * @note           Multi-segment matching is performed. Thus, PCRE_MULTILINE
+ * @note           Multi-segment matching is performed. Thus, PCRE2_MULTILINE
  *                 option is set.
  *
  * @return         Status code

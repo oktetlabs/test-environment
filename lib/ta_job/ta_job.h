@@ -201,12 +201,12 @@ extern te_errno ta_job_attach_filter(ta_job_manager_t *manager,
  *
  * @param      manager         Job manager handle
  * @param      filter_id       ID of the filter to attach the regex to
- * @param      re              PCRE-style regular expression
+ * @param      re              PCRE2-style regular expression
  * @param      extract         Index of a capturing group to extract from
  *                             the matched output. @c 0 means to extract
  *                             the whole match.
  *
- * @note       Multi-segment matching is performed. Thus, PCRE_MULTILINE
+ * @note       Multi-segment matching is performed. Thus, PCRE2_MULTILINE
  *             option is set.
  *
  * @return     Status code
