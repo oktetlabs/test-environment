@@ -1753,24 +1753,32 @@ TARPC_FUNC(rte_eth_link_get_nowait, {},
 {
     struct rte_eth_link eth_link;
 
-    MAKE_CALL(func(in->port_id, &eth_link));
+    MAKE_CALL(out->retval = func(in->port_id, &eth_link));
+    neg_errno_h2rpc(&out->retval);
 
-    out->eth_link.link_speed = eth_link.link_speed;
-    out->eth_link.link_duplex = eth_link.link_duplex;
-    out->eth_link.link_autoneg = eth_link.link_autoneg;
-    out->eth_link.link_status = eth_link.link_status;
+    if (out->retval == 0)
+    {
+        out->eth_link.link_speed = eth_link.link_speed;
+        out->eth_link.link_duplex = eth_link.link_duplex;
+        out->eth_link.link_autoneg = eth_link.link_autoneg;
+        out->eth_link.link_status = eth_link.link_status;
+    }
 })
 
 TARPC_FUNC(rte_eth_link_get, {},
 {
     struct rte_eth_link eth_link;
 
-    MAKE_CALL(func(in->port_id, &eth_link));
+    MAKE_CALL(out->retval = func(in->port_id, &eth_link));
+    neg_errno_h2rpc(&out->retval);
 
-    out->eth_link.link_speed = eth_link.link_speed;
-    out->eth_link.link_duplex = eth_link.link_duplex;
-    out->eth_link.link_autoneg = eth_link.link_autoneg;
-    out->eth_link.link_status = eth_link.link_status;
+    if (out->retval == 0)
+    {
+        out->eth_link.link_speed = eth_link.link_speed;
+        out->eth_link.link_duplex = eth_link.link_duplex;
+        out->eth_link.link_autoneg = eth_link.link_autoneg;
+        out->eth_link.link_status = eth_link.link_status;
+    }
 })
 
 TARPC_FUNC_STANDALONE(dpdk_eth_await_link_up, {},
@@ -1785,7 +1793,11 @@ TARPC_FUNC_STANDALONE(dpdk_eth_await_link_up, {},
 
         memset(&eth_link, 0, sizeof(eth_link));
 
-        MAKE_CALL(rte_eth_link_get_nowait(in->port_id, &eth_link));
+        MAKE_CALL(out->retval = rte_eth_link_get_nowait(in->port_id,
+                                                        &eth_link));
+        if (out->retval != 0)
+            break;
+
         if (eth_link.link_status)
         {
             out->retval = 0;
@@ -1796,7 +1808,8 @@ TARPC_FUNC_STANDALONE(dpdk_eth_await_link_up, {},
         }
     }
 
-    out->retval = -ETIMEDOUT;
+    if (out->retval == 0)
+        out->retval = -ETIMEDOUT;
     neg_errno_h2rpc(&out->retval);
 
 done:

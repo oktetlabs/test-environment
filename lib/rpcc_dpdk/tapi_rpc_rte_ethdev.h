@@ -551,14 +551,14 @@ extern int rpc_rte_eth_dev_rss_hash_update(
 /**
  * @b rte_eth_link_get_nowait() RPC.
  */
-extern void rpc_rte_eth_link_get_nowait(rcf_rpc_server *rpcs, uint16_t port_id,
-                                        struct tarpc_rte_eth_link *eth_link);
+extern int rpc_rte_eth_link_get_nowait(rcf_rpc_server *rpcs, uint16_t port_id,
+                                       struct tarpc_rte_eth_link *eth_link);
 
 /**
  * @b rte_eth_link_get() RPC.
  */
-extern void rpc_rte_eth_link_get(rcf_rpc_server *rpcs, uint16_t port_id,
-                                 struct tarpc_rte_eth_link *eth_link);
+extern int rpc_rte_eth_link_get(rcf_rpc_server *rpcs, uint16_t port_id,
+                                struct tarpc_rte_eth_link *eth_link);
 
 /**
  * Await link UP after port start/restart

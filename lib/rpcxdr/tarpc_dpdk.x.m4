@@ -1645,6 +1645,7 @@ typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_link_get_nowait_in;
 
 struct tarpc_rte_eth_link_get_nowait_out {
     struct tarpc_out_arg                  common;
+    tarpc_int                             retval;
     struct tarpc_rte_eth_link             eth_link;
 };
 
@@ -1653,6 +1654,7 @@ typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_link_get_in;
 
 struct tarpc_rte_eth_link_get_out {
     struct tarpc_out_arg                  common;
+    tarpc_int                             retval;
     struct tarpc_rte_eth_link             eth_link;
 };
 

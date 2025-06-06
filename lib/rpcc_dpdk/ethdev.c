@@ -2741,7 +2741,7 @@ tarpc_rte_eth_link2str(te_log_buf                 *tlbp,
     return te_log_buf_get(tlbp);
 }
 
-void
+int
 rpc_rte_eth_link_get_nowait(rcf_rpc_server *rpcs, uint16_t port_id,
                             struct tarpc_rte_eth_link *eth_link)
 {
@@ -2758,19 +2758,21 @@ rpc_rte_eth_link_get_nowait(rcf_rpc_server *rpcs, uint16_t port_id,
     in.port_id = port_id;
 
     rcf_rpc_call(rpcs, "rte_eth_link_get_nowait", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_link_get_nowait, out.retval);
 
     *eth_link = out.eth_link;
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_eth_link_get_nowait, "%hu",
-                 "eth_link = %s", in.port_id,
-                 tarpc_rte_eth_link2str(tlbp, eth_link));
+                 "eth_link = %s" NEG_ERRNO_FMT, in.port_id,
+                 tarpc_rte_eth_link2str(tlbp, eth_link),
+                 NEG_ERRNO_ARGS(out.retval));
     te_log_buf_free(tlbp);
 
-    RETVAL_VOID(rte_eth_link_get_nowait);
+    RETVAL_ZERO_INT(rte_eth_link_get_nowait, out.retval);
 }
 
-void
+int
 rpc_rte_eth_link_get(rcf_rpc_server *rpcs,
                      uint16_t port_id,
                      struct tarpc_rte_eth_link *eth_link)
@@ -2788,16 +2790,18 @@ rpc_rte_eth_link_get(rcf_rpc_server *rpcs,
     in.port_id = port_id;
 
     rcf_rpc_call(rpcs, "rte_eth_link_get", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_link_get, out.retval);
 
     *eth_link = out.eth_link;
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_eth_link_get, "%hu",
-                 "eth_link = %s", in.port_id,
-                 tarpc_rte_eth_link2str(tlbp, eth_link));
+                 "eth_link = %s" NEG_ERRNO_FMT, in.port_id,
+                 tarpc_rte_eth_link2str(tlbp, eth_link),
+                 NEG_ERRNO_ARGS(out.retval));
     te_log_buf_free(tlbp);
 
-    RETVAL_VOID(rte_eth_link_get);
+    RETVAL_ZERO_INT(rte_eth_link_get, out.retval);
 }
 
 int
