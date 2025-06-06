@@ -373,7 +373,17 @@ TARPC_FUNC(rte_eth_dev_info_get, {},
 {
     struct rte_eth_dev_info dev_info;
 
+    out->retval = 0;
+#if HAVE_RTE_DEV_INFO_GET_RETURN_VOID
     MAKE_CALL(func(in->port_id, &dev_info));
+#else
+    MAKE_CALL(out->retval = func(in->port_id, &dev_info));
+#endif
+
+    neg_errno_h2rpc(&out->retval);
+
+    if (out->retval != 0)
+        return;
 
     /* pci_dev is not mapped/returned */
     out->dev_info.driver_name =

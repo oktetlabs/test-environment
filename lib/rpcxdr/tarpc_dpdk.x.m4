@@ -1071,6 +1071,7 @@ typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_info_get_in;
 struct tarpc_rte_eth_dev_info_get_out {
     struct tarpc_out_arg            common;
     struct tarpc_rte_eth_dev_info   dev_info;
+    tarpc_int                       retval;
 };
 
 

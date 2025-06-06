@@ -42,9 +42,9 @@ extern uint32_t tapi_rpc_rte_eth_link_speeds_str2val(const char *str);
  *
  * Caller must free memory allocated for driver_name using free().
  */
-extern void rpc_rte_eth_dev_info_get(rcf_rpc_server *rpcs,
-                                     uint16_t port_id,
-                                     struct tarpc_rte_eth_dev_info *dev_info);
+extern int rpc_rte_eth_dev_info_get(rcf_rpc_server *rpcs,
+                                    uint16_t port_id,
+                                    struct tarpc_rte_eth_dev_info *dev_info);
 
 /**
  * rte_eth_dev_configure() RPC.

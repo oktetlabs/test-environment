@@ -443,7 +443,7 @@ tarpc_rte_eth_dev_info2str(te_log_buf *tlbp,
     return te_log_buf_get(tlbp);
 }
 
-void
+int
 rpc_rte_eth_dev_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
                          struct tarpc_rte_eth_dev_info *dev_info)
 {
@@ -460,6 +460,7 @@ rpc_rte_eth_dev_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
     in.port_id = port_id;
 
     rcf_rpc_call(rpcs, "rte_eth_dev_info_get", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_info_get, out.retval);
 
     if (RPC_IS_CALL_OK(rpcs))
     {
@@ -469,14 +470,15 @@ rpc_rte_eth_dev_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
         tlbp = te_log_buf_alloc();
     }
 
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_info_get, "%u", "dev_info=%s",
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_info_get, "%u", "dev_info=%s" NEG_ERRNO_FMT,
                  in.port_id,
                  RPC_IS_CALL_OK(rpcs) ?
-                    tarpc_rte_eth_dev_info2str(tlbp, dev_info) : "N/A");
+                    tarpc_rte_eth_dev_info2str(tlbp, dev_info) : "N/A",
+                 NEG_ERRNO_ARGS(out.retval));
 
     te_log_buf_free(tlbp);
 
-    RETVAL_VOID(rte_eth_dev_info_get);
+    RETVAL_ZERO_INT(rte_eth_dev_info_get, out.retval);
 }
 
 
