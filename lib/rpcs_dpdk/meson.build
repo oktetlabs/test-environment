@@ -177,6 +177,12 @@ if cc.has_function(f, args: te_cflags + te_ldflags + link_libs,
     c_args += [ '-DHAVE_' + f.to_upper() ]
 endif
 
+f = 'rte_net_crc_free'
+if cc.has_function(f, args: te_cflags + te_ldflags + link_libs,
+                   prefix: '#include "rte_net_crc.h"')
+    c_args += [ '-DHAVE_' + f.to_upper()]
+endif
+
 sources += files(
     'dpdk.c',
     'eal.c',

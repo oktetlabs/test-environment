@@ -1357,7 +1357,24 @@ TARPC_FUNC_STANDALONE(rte_pktmbuf_calc_packet_crc, {},
         goto done;
     }
 
+#ifdef HAVE_RTE_NET_CRC_FREE
+    {
+        struct rte_net_crc *crc_ctx;
+
+        crc_ctx = rte_net_crc_set_alg(RTE_NET_CRC_SCALAR, RTE_NET_CRC32_ETH);
+        if (crc_ctx == NULL)
+        {
+            ERROR("Not enough memory for CRC contex allocation");
+            out->retval = TE_ENOMEM;
+            goto done;
+        }
+
+        out->crc = rte_net_crc_calc(crc_ctx, pkt_data, data_len);
+        rte_net_crc_free(crc_ctx);
+    }
+#else
     out->crc = rte_net_crc_calc(pkt_data, data_len, RTE_NET_CRC32_ETH);
+#endif
 
 done:
     free(bounce_buf);
