@@ -854,7 +854,7 @@ cleanup_specific:                                                   \
         (var_len_) = test_split_param_list(str_val_,                    \
                 TEST_LIST_PARAM_SEPARATOR, &str_array);                 \
         if ((var_len_) == 0 ||                                          \
-            ((var_name_) = calloc(sizeof(int), (var_len_))) == NULL)    \
+            ((var_name_) = calloc((var_len_), sizeof(int))) == NULL)    \
         {                                                               \
             TEST_STOP;                                                  \
         }                                                               \
