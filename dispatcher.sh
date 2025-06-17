@@ -178,6 +178,8 @@ Generic options:
 
   --script=<filename>           Name of the file with shell script to be
                                 included as source
+  --tester-script=<filename>    Name of the file with shell script to be
+                                included as source before starting Tester
 
   --live-log                    Run RGT in live mode
 
