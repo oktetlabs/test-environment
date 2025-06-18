@@ -809,7 +809,7 @@ print_mi_meas_param_vals_array(FILE *fd, te_rgt_mi_meas_param *param)
                 }
             }
 
-            fprintf(fd, "%f * %f", value->value, multiplier_value);
+            fprintf(fd, "%f * %.9f", value->value, multiplier_value);
             first_val = false;
         }
     }
