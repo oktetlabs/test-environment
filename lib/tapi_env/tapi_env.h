@@ -373,9 +373,9 @@ typedef struct tapi_env_net {
     struct sockaddr_in  ip4bcast;   /**< IPv4 broadcast address
                                          of the net */
 
-    cfg_handle          ip6net;     /**< Handle of IPv4 addresses pool */
-    struct sockaddr    *ip6addr;    /**< IPv4 address of the net */
-    unsigned int        ip6pfx;     /**< IPV4 address prefix length */
+    cfg_handle          ip6net;     /**< Handle of IPv6 addresses pool */
+    struct sockaddr    *ip6addr;    /**< IPv6 address of the net */
+    unsigned int        ip6pfx;     /**< IPv6 address prefix length */
 
     cfg_handle_tqh      net_addrs;  /**< List of additional addresses */
 
