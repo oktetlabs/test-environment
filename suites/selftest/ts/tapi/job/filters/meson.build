@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2022-2025 OKTET Labs Ltd. All rights reserved.
+# Copyright (C) 2025 OKTET Labs Ltd. All rights reserved.
 
 tests = [
-    'cfg_basic_operations',
-    'epilogue',
-    'prologue',
+  'binary',
+  'single_filter',
+  'stress',
+  'utf8',
 ]
 
 foreach test : tests
@@ -23,14 +24,3 @@ tests_info_xml = custom_target(package_dir.underscorify() + 'tests-info-xml',
                                           meson.current_source_dir() ])
 
 install_data([ 'package.xml' ], install_dir: package_dir)
-
-packages = [
-    'filters',
-]
-
-tools_mydir = package_dir
-foreach package : packages
-    package_dir = join_paths(tools_mydir, package)
-    package_tests_c = []
-    subdir(package)
-endforeach

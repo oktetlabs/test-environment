@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved. -->
+<!-- Copyright (C) 2022-2025 OKTET Labs Ltd. All rights reserved. -->
 <package version="1.0">
 
     <description>Test Suite to test TAPI Job implementation</description>
@@ -18,6 +18,10 @@
 
         <run>
             <script name="cfg_basic_operations"/>
+        </run>
+
+        <run>
+            <package name="filters"/>
         </run>
     </session>
 </package>

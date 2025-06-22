@@ -1161,6 +1161,7 @@ out:
         return te_rc;
     }
 
+    assert(future_start_offset <= subject_length);
     cut = MAX(future_start_offset - regexp->max_lookbehind, 0);
     filter->start_offset = future_start_offset - cut;
     if (cut != 0)

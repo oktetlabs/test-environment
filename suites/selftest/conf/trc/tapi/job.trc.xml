@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved. -->
+<!-- Copyright (C) 2022-2025 OKTET Labs Ltd. All rights reserved. -->
 <test name="job" type="package">
     <objective>Test TAPI Job implemetation</objective>
     <iter result="PASSED">
@@ -20,6 +20,73 @@
             <objective>Check support of TAPI Job operations for jobs created by CFG factory</objective>
 
             <iter result="PASSED"/>
+        </test>
+
+        <test name="filters" type="package">
+            <objective>Test TAPI Job filters</objective>
+            <iter result="PASSED">
+                <test name="single_filter" type="script">
+                    <objective>Validate tapi_job_receive() in various circumstances.</objective>
+                    <notes/>
+                    <iter result="PASSED">
+                        <arg name="env" />
+                        <arg name="filter" />
+                        <arg name="use_stdout" />
+                        <arg name="delay" />
+                        <arg name="wait_before_receive" />
+                    </iter>
+                </test>
+
+                <test name="stress" type="script">
+                    <objective>Verify that TAPI Job does not break on large random data.</objective>
+                    <notes/>
+                    <iter result="PASSED">
+                        <arg name="env" />
+                        <arg name="minlen" />
+                        <arg name="maxlen" />
+                        <arg name="n_false_starts" />
+                        <arg name="num_matches" />
+                        <arg name="extract" />
+                        <arg name="lookbehind" />
+                        <arg name="wait_before_receive" />
+                        <arg name="ascii" />
+                    </iter>
+                </test>
+
+                <test name="binary" type="script">
+                    <objective>Verify that TAPI Job does not break on large random data.</objective>
+                    <notes/>
+                    <iter result="PASSED">
+                        <arg name="env" />
+                        <arg name="minlen" />
+                        <arg name="maxlen" />
+                        <arg name="block_size" />
+                        <arg name="binary_needle" />
+                        <results>
+                            <result key="OL 14466" notes="ta_job cannot handle binary data" value="FAILED">
+                            </result>
+                        </results>
+                    </iter>
+                </test>
+
+                <test name="utf8" type="script">
+                    <objective>Verify that TAPI Job can handle UTF-8 data properly.</objective>
+                    <notes/>
+                    <iter result="PASSED">
+                        <arg name="env" />
+                        <arg name="minlen" />
+                        <arg name="maxlen" />
+                        <arg name="block_size" />
+                        <arg name="utf8_len" />
+                        <results>
+                            <result key="OL 14467" notes="invalid handling of UTF-8" value="FAILED">
+                            </result>
+                            <result key="OL 14467" notes="but sometimes it works" value="PASSED">
+                            </result>
+                        </results>
+                    </iter>
+                </test>
+            </iter>
         </test>
     </iter>
 </test>

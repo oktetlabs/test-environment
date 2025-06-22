@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2025 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+    <description>TAPI Job Filters self-tests</description>
+    <author mailto="te-maint@oktetlabs.ru"/>
+    <session>
+        <var name="env">
+            <value>{{{'pco_iut':IUT}}}</value>
+        </var>
+        <run>
+            <script name="single_filter"/>
+            <arg name="env" ref="env" />
+            <arg name="delay">
+                <value>0</value>
+                <value>1</value>
+            </arg>
+            <arg name="use_stdout" type="boolean" />
+            <arg name="wait_before_receive"  type="boolean" />
+            <arg name="filter">
+                <value>
+                    <field name="chunks">simple</field>
+                    <field name="regexp">simple</field>
+                    <field name="extract">0</field>
+                    <field name="expected">simple</field>
+                    <field name="newline">TRUE</field>
+                </value>
+                <value>
+                    <field name="chunks">prefix sim,sim,ple</field>
+                    <field name="regexp">simple</field>
+                    <field name="extract">0</field>
+                    <field name="expected">simple</field>
+                    <field name="newline">FALSE</field>
+                </value>
+                <value>
+                    <field name="chunks">start,start,start</field>
+                    <field name="regexp">^start</field>
+                    <field name="extract">0</field>
+                    <field name="expected">start,start,start</field>
+                    <field name="newline">TRUE</field>
+                </value>
+                <value>
+                    <field name="chunks">value(1),va,lue(2),value,(3),value(,4)</field>
+                    <field name="regexp">value\((\d+)\)</field>
+                    <field name="extract">1</field>
+                    <field name="expected">1,2,3,4</field>
+                    <field name="newline">FALSE</field>
+                </value>
+                <value>
+                    <field name="chunks">value 1 2 3 4 5 6 7 8 9,va,lue 11 12 13 14 15 16 17 18 19</field>
+                    <field name="regexp">value (\d+) (\d+) (\d+) (\d+) (\d+) (\d+) (\d+) (\d+) (\d+)</field>
+                    <field name="extract">9</field>
+                    <field name="expected">9,19</field>
+                    <field name="newline">FALSE</field>
+                </value>
+                <value>
+                    <field name="chunks">prefix 123,other 123,prefix 4,56,pre,fix 789</field>
+                    <field name="regexp">(?&lt;=prefix )\d+</field>
+                    <field name="extract">0</field>
+                    <field name="expected">123,456,789</field>
+                    <field name="newline">FALSE</field>
+                </value>
+            </arg>
+        </run>
+        <run>
+            <script name="stress"/>
+            <arg name="env" ref="env" />
+            <arg name="minlen"><value>1</value></arg>
+            <arg name="maxlen"><value>65536</value></arg>
+            <arg name="n_false_starts"><value>2</value></arg>
+            <arg name="num_matches"><value>1000</value></arg>
+            <arg name="extract">
+                <value>0</value>
+                <value>1</value>
+                <value>2</value>
+            </arg>
+            <arg name="lookbehind"  type="boolean" />
+            <arg name="wait_before_receive"  type="boolean" />
+            <arg name="ascii"  type="boolean" />
+        </run>
+
+        <run>
+            <script name="binary" />
+            <arg name="env" ref="env" />
+            <arg name="minlen"><value>1024</value></arg>
+            <arg name="maxlen"><value>8192</value></arg>
+            <arg name="block_size"><value>512</value></arg>
+            <arg name="binary_needle" type="boolean" />
+        </run>
+
+        <run>
+            <script name="utf8" />
+            <arg name="env" ref="env" />
+            <arg name="minlen"><value>1024</value></arg>
+            <arg name="maxlen"><value>8192</value></arg>
+            <arg name="utf8_len">
+                <value>2</value>
+                <value>3</value>
+                <value>4</value>
+            </arg>
+            <arg name="block_size">
+                <value>521</value>
+                <value>600</value>
+            </arg>
+        </run>
+    </session>
+</package>
