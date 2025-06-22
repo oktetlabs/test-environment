@@ -16,6 +16,8 @@
 #include "te_string.h"
 #include "te_dbuf.h"
 #include "te_alloc.h"
+#include "te_rand.h"
+#include "te_bufs.h"
 #include "logger_api.h"
 
 #ifdef STDC_HEADERS
@@ -534,20 +536,17 @@ out:
 }
 
 te_errno
-te_file_write_string(const te_string *src, size_t fitlen,
-                     int flags, mode_t mode,
-                     const char *path_fmt, ...)
+te_file_write_string_va(const te_string *src, size_t fitlen,
+                        int flags, mode_t mode,
+                        const char *path_fmt, va_list args)
 {
     te_string pathname = TE_STRING_INIT;
-    va_list args;
     te_errno rc = 0;
     int fd = -1;
     ssize_t actual;
     size_t remaining = fitlen == 0 ? src->len : fitlen;
 
-    va_start(args, path_fmt);
     te_string_append_va(&pathname, path_fmt, args);
-    va_end(args);
 
     fd  = open(pathname.ptr, O_WRONLY | flags, mode);
     if (fd < 0)
@@ -591,6 +590,53 @@ out:
     }
     te_string_free(&pathname);
 
+    return rc;
+}
+
+te_errno
+te_file_write_string(const te_string *src, size_t fitlen,
+                     int flags, mode_t mode,
+                     const char *path_fmt, ...)
+{
+    va_list args;
+    te_errno rc;
+
+    va_start(args, path_fmt);
+    rc = te_file_write_string_va(src, fitlen, flags, mode,
+                                 path_fmt, args);
+    va_end(args);
+
+    return rc;
+}
+
+te_errno te_file_write_spec_buf(size_t minlen, size_t maxlen,
+                                size_t *p_len,
+                                const char *spec,
+                                int flags, mode_t mode,
+                                const char *path_fmt, ...)
+{
+    size_t size = te_rand_unsigned(minlen, maxlen);
+    te_string str = TE_STRING_INIT;
+    te_errno rc;
+    va_list args;
+
+    te_string_reserve(&str, size + 1);
+    rc = te_fill_spec_buf(str.ptr, size, spec);
+    if (rc != 0)
+    {
+        te_string_free(&str);
+        return rc;
+    }
+
+    str.len = size;
+    va_start(args, path_fmt);
+    rc = te_file_write_string_va(&str, 0, flags, mode, path_fmt, args);
+    va_end(args);
+
+    te_string_free(&str);
+
+    if (rc == 0 && p_len != NULL)
+        *p_len = size;
     return rc;
 }
 

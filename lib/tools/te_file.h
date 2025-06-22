@@ -305,6 +305,10 @@ extern te_errno te_file_read_string(te_string *dest, bool binary,
  * - if @p src is longer than @p fitlen, it will be truncated;
  * - if @p src is shorter, it will be repeated until the length is reached.
  *
+ * If @p flags contains @p O_APPEND and @p fitlen is not zero, it defines
+ * the length of the current segment being appended, not that of the whole
+ * file.
+ *
  * @param src      source TE string
  * @param fitlen   desired file length (ignored if zero)
  * @param flags    POSIX open flags, such as @c O_CREAT
@@ -318,6 +322,53 @@ extern te_errno te_file_write_string(const te_string *src, size_t fitlen,
                                      int flags, mode_t mode,
                                      const char *path_fmt, ...)
                                      TE_LIKE_PRINTF(5, 6);
+
+/**
+ * Same as te_file_write_string(), but the pathname is constructed from
+ * a variadc list argument.
+ *
+ * @param src      source TE string
+ * @param fitlen   desired file length (ignored if zero)
+ * @param flags    POSIX open flags, such as @c O_CREAT
+ * @param mode     POSIX access mode for newly created files
+ * @param path_fmt pathname format string
+ * @param args     variadic list
+ *
+ * @return status code
+ */
+extern te_errno te_file_write_string_va(const te_string *src, size_t fitlen,
+                                        int flags, mode_t mode,
+                                        const char *path_fmt, va_list args)
+                                        TE_LIKE_VPRINTF(5);
+
+/**
+ * Generate the contents of the file from a pattern as in te_make_spec_buf().
+ *
+ * @note If @p spec includes a terminating zero byte, it *will* be present
+ *       in the file.
+ *
+ * @note Currently the content is generated in-memory and then
+ *       written to disk, so the function may not work very well
+ *       with large file sizes.
+ *
+ * @param[in]  minlen      minimum length of the generated content
+ * @param[in]  maxlen      maximum length of the generated content
+ * @param[out] p_len       actual size of the generared content
+ *                         (may be @c NULL)
+ * @param[in]  spec        pattern for the generated contents
+ *                         (see te_compile_buf_pattern() for
+ *                         the syntax description)
+ * @param[in]  path_fmt    pathname format string
+ * @param ...              arguments
+ *
+ * @return Status code.
+ */
+extern te_errno te_file_write_spec_buf(size_t minlen, size_t maxlen,
+                                       size_t *p_len,
+                                       const char *spec,
+                                       int flags, mode_t mode,
+                                       const char *path_fmt, ...)
+                                       TE_LIKE_PRINTF(7, 8);
 
 /**
  * Read the contents of the file @p path into @p buffer.

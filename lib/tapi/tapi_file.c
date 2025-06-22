@@ -43,6 +43,7 @@
 #include "logger_api.h"
 #include "tapi_file.h"
 #include "te_file.h"
+#include "te_rand.h"
 
 char *
 tapi_file_make_name(te_string *dest)
@@ -401,6 +402,93 @@ tapi_file_append_ta(const char *ta, const char *filename, const char *fmt, ...)
     va_end(ap);
 
     free(old_contents);
+    return rc;
+}
+
+static te_errno
+generate_file_chunks(const char *filename, const tapi_file_chunk_spec *specs,
+                     bool *first_chunk)
+{
+    static const mode_t create_mode = (S_IRUSR | S_IWUSR |
+                                       S_IRGRP | S_IWGRP |
+                                       S_IROTH | S_IWOTH);
+    size_t i;
+    te_errno rc = 0;
+
+    for (i = 0; specs[i].kind != TAPI_FILE_CHUNK_SPEC_KIND_END && rc == 0; i++)
+    {
+        switch (specs[i].kind)
+        {
+            case TAPI_FILE_CHUNK_SPEC_KIND_LITERAL:
+            {
+                const te_string str =
+                    TE_STRING_INIT_RO_PTR_BYTES(specs[i].maxlen == 0 ?
+                                                strlen(specs[i].u.spec) :
+                                                specs[i].maxlen,
+                                                specs[i].u.spec);
+
+                rc = te_file_write_string(&str, specs[i].minlen,
+                                          O_CREAT |
+                                          (*first_chunk ? O_EXCL : O_APPEND),
+                                          create_mode,
+                                          "%s", filename);
+                *first_chunk = false;
+                break;
+            }
+            case TAPI_FILE_CHUNK_SPEC_KIND_PATTERN:
+                rc = te_file_write_spec_buf(specs[i].minlen, specs[i].maxlen,
+                                            NULL, specs[i].u.spec,
+                                            O_CREAT |
+                                            (*first_chunk ? O_EXCL : O_APPEND),
+                                            create_mode,
+                                            "%s", filename);
+                *first_chunk = false;
+                break;
+            case TAPI_FILE_CHUNK_SPEC_KIND_COMPOUND:
+            {
+                size_t n = te_rand_unsigned(specs[i].minlen, specs[i].maxlen);
+                size_t j;
+
+                for (j = 0; j < n && rc == 0; j++)
+                {
+                    rc = generate_file_chunks(filename, specs[i].u.nested,
+                                              first_chunk);
+                }
+                break;
+            }
+            default:
+                assert(0);
+                break;
+        }
+    }
+
+    return rc;
+}
+
+te_errno
+tapi_file_create_by_spec_ta(const char *ta,
+                            const char *filename,
+                            const tapi_file_chunk_spec *specs)
+{
+    te_string local_pathname = TE_STRING_INIT;
+    te_errno rc = 0;
+    bool first_chunk = true;
+
+    if (ta == NULL)
+        te_string_append(&local_pathname, "%s", filename);
+    else
+        tapi_file_make_pathname(&local_pathname);
+
+    rc = generate_file_chunks(local_pathname.ptr, specs, &first_chunk);
+
+    if (rc == 0 && ta != NULL)
+        rc = rcf_ta_put_file(ta, 0, local_pathname.ptr, filename);
+
+    if (rc != 0 || ta != NULL)
+        unlink(local_pathname.ptr);
+
+    te_string_free(&local_pathname);
+
     return rc;
 }
 

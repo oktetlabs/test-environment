@@ -110,22 +110,40 @@ extern te_string_free_func te_string_free_heap;
 
 
 /**
- * Initialize a TE string with a pointer to a plain C string.
+ * Initialize a TE string with a pointer to a sequence of bytes.
  *
- * The produced TE string should only be used in a readonly manner,\
+ * The produced TE string should only be used in a readonly manner,
  * so it is mostly useful in conjunction with #te_substring API.
  *
  * The reserved size is intentionally set to a zero so that any
  * attempt to extend the TE string would immediately result in
  * a failure.
  *
- * @param str_      A pointer to a plain C string.
+ * As the length of the string is explicitly specified by @p len_,
+ * @p buf_ may contain embedded zero characters. However, it is
+ * advised that there be a terminating zero right after @p buf_
+ * content (this is neither checked nor enforced).
+ *
+ * @param buf_      A pointer to a sequence of bytes
+ *                  (may contain embedded zeroes)
  */
-#define TE_STRING_INIT_RO_PTR(str_) \
-    { .ptr = TE_CONST_PTR_CAST(char, str_),     \
-      .size = 0, .len = strlen(str_),           \
+#define TE_STRING_INIT_RO_PTR_BYTES(len_, buf_) \
+    { .ptr = TE_CONST_PTR_CAST(char, buf_),     \
+      .size = 0, .len = (len_),                 \
       .ext_buf = true,                          \
       .free_func = &te_string_reset }
+
+/**
+ * Initialize a TE string with a pointer to a plain C string.
+ *
+ * Like #TE_STRING_INIT_RO_PTR_BYTES, but it expects a zero-terminated
+ * string with no embedded zeroes, so its length may be automatically
+ * calculated.
+ *
+ * @param str_      A pointer to a plain C string (null-terminated).
+ */
+#define TE_STRING_INIT_RO_PTR(str_) \
+    TE_STRING_INIT_RO_PTR_BYTES(strlen(str_), str_)
 
 /**
  * Reset TE string (mark its empty).

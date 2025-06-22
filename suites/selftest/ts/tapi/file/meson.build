@@ -10,6 +10,7 @@ tests = [
     'file_put',
     'file_read',
     'file_resolve',
+    'file_spec_buf',
     'file_write',
 ]
 

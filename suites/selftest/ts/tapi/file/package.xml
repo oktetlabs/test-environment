@@ -65,6 +65,22 @@
             </arg>
         </run>
         <run>
+            <script name="file_spec_buf"/>
+            <arg name="env" ref="env" />
+            <arg name="minlen">
+                <value>100</value>
+            </arg>
+            <arg name="maxlen">
+                <value>10000</value>
+            </arg>
+            <arg name="minrepeat">
+                <value>1</value>
+            </arg>
+            <arg name="maxrepeat">
+                <value>10</value>
+            </arg>
+        </run>
+        <run>
             <script name="file_write"/>
             <arg name="env" ref="env" />
         </run>

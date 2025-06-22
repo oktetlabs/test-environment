@@ -233,7 +233,95 @@ extern te_errno tapi_file_append_ta(const char *ta, const char *filename,
                                     const char *fmt, ...)
     TE_LIKE_PRINTF(3, 4);
 
+/**
+ * The kind of a chunk in #tapi_file_chunk_spec.
+ */
+typedef enum tapi_file_chunk_spec_kind {
+    /** The last chunk in the list. */
+    TAPI_FILE_CHUNK_SPEC_KIND_END,
+    /**
+     * The literal chunk: @a spec is treated
+     * as a literal sequence of characters.
+     *
+     * If @a maxlen is not zero, it is treated
+     * as the size of the string, otherwise @a spec
+     * must be zero-terminated.
+     *
+     * @a minlen may be
+     * used to specify the length of the chunk
+     * (see @p fitlen of te_file_write_string()
+     * for the exact semantics).
+     */
+    TAPI_FILE_CHUNK_SPEC_KIND_LITERAL,
+    /**
+     * The simple pattern chunk: @a spec is
+     * treated as a block pattern as in
+     * te_compile_buf_pattern().
+     *
+     * @a minlen and @a maxlen are used to
+     * determine the length of the generated
+     * block as in te_make_spec_buf().
+     */
+    TAPI_FILE_CHUNK_SPEC_KIND_PATTERN,
+    /**
+     * The compound chunk: @a nested is a list
+     * of sub-chunks terminated by a
+     * #TAPI_FILE_CHUNK_SPEC_KIND_END.
+     *
+     * @a minlen and @a maxlen are used to
+     * determine the number of times the list
+     * of sub-chunks is reused.
+     */
+    TAPI_FILE_CHUNK_SPEC_KIND_COMPOUND,
+} tapi_file_chunk_spec_kind;
 
+/**
+ * A description of a chunk for tapi_file_create_by_spec_ta().
+ *
+ * When a list of #tapi_file_chunk_spec is passed to
+ * tapi_file_create_by_spec_ta(), the last item must have
+ * @a kind set to #TAPI_FILE_CHUNK_SPEC_KIND_END.
+ */
+typedef struct tapi_file_chunk_spec {
+    /** The kind of the chunk. */
+    tapi_file_chunk_spec_kind kind;
+    /** Minimum length of a generated chunk. */
+    size_t minlen;
+    /** Maximum length of a generated chunk. */
+    size_t maxlen;
+    union {
+        /**
+         * The chunk specification, either a literal string or
+         * a pattern as in te_compile_buf_pattern().
+         */
+        const char *spec;
+        /**
+         * The list of sub-chunks, must be terminated by
+         * #TAPI_FILE_CHUNK_SPEC_KIND_END.
+         */
+        const struct tapi_file_chunk_spec *nested;
+    } u;
+} tapi_file_chunk_spec;
+
+/**
+ * Create the file on the TA according to a list of content patterns.
+ *
+ * @note Currently the content is generated locally and then
+ *       transferred to the agent, so the function may not work very well
+ *       with large file sizes.
+ *
+ * @param  ta           Test Agent name (may be @c NULL, in which case
+ *                      the file is created on the Engine side).
+ * @param  filename     Pathname of the file at the agent.
+ * @param  specs        List of chunk specifications
+ *                      (the last item should have @a kind field
+ *                      set to #TAPI_FILE_CHUNK_SPEC_KIND_END.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_file_create_by_spec_ta(const char *ta,
+                                            const char *filename,
+                                            const tapi_file_chunk_spec *specs);
 
 /**
  * Copy file from the one TA to other or between the Engine and an agent.
