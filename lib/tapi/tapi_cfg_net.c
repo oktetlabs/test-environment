@@ -1950,6 +1950,105 @@ tapi_cfg_net_delete_all_ip6_addresses(void)
 
 /* See description in tapi_cfg_net.h */
 int
+tapi_cfg_net_use_configured_ip(unsigned int af, cfg_net_t *net)
+{
+    int                 rc;
+    cfg_val_type        type;
+    char               *str;
+    unsigned int        i;
+    cfg_handle          net_hndl;
+    unsigned int        net_pfx;
+    cfg_handle          entry_hndl;
+    cfg_handle          addr_hndl;
+    struct sockaddr     addr;
+
+    if (net == NULL)
+    {
+        ERROR("%s: Net pointer is NULL", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    if (af != AF_INET && af != AF_INET6)
+    {
+        ERROR("%s: Address family %u is not supported yet",
+              __FUNCTION__, af);
+        return TE_RC(TE_TAPI, TE_EAFNOSUPPORT);
+    }
+
+    /*
+     * Assign addresses to each node of the net based on the already
+     * configured IP addresses of the corresponding interfaces.
+     */
+    for (i = 0; i < net->n_nodes; ++i)
+    {
+        cfg_val_type  cvt = CVT_STRING;
+        char         *node_oid;
+        unsigned int  j;
+        unsigned int  addr_num;
+        cfg_handle   *addr_handles;
+
+        if (tapi_cfg_net_get_node_rsrc_type(&net->nodes[i]) !=
+                NET_NODE_RSRC_TYPE_INTERFACE)
+        {
+            ERROR("Cannot use configured IP address for non-interface node type");
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+
+        rc = cfg_get_instance(net->nodes[i].handle, &cvt, &node_oid);
+        if (rc != 0)
+        {
+            ERROR("Failed to get the interface OID: %r", rc);
+            return rc;
+        }
+
+        rc = cfg_find_pattern_fmt(&addr_num, &addr_handles, "%s/net_addr:*",
+                                  node_oid);
+        free(node_oid);
+        if (rc != 0)
+        {
+            ERROR("Failed to get existing IP addresses: %r", rc);
+            return rc;
+        }
+
+        for (j = 0; j < addr_num; j++)
+        {
+            char *addr_str;
+
+            rc = cfg_get_inst_name(addr_handles[j], &addr_str);
+            if (rc != 0)
+            {
+                ERROR("Failed to get instance name of address instance %u",
+                      addr_handles[j]);
+                continue;
+            }
+
+            rc = te_sockaddr_netaddr_from_string(addr_str, &addr);
+            free(addr_str);
+            if (rc != 0)
+            {
+                ERROR("Failed to parse the IP address in instance name %s: %r",
+                      addr_str, rc);
+                continue;
+            }
+
+            if (addr.sa_family != af)
+                continue;
+
+            rc = cfg_add_instance_child_fmt(NULL, CVT_ADDRESS, &addr,
+                                            net->nodes[i].handle,
+                                            "/ip%u_address:%jx",
+                                            af == AF_INET ? 4 : 6,
+                                            (uintmax_t)0);
+            break;
+        }
+
+        free(addr_handles);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg_net.h */
+int
 tapi_cfg_net_assign_ip(unsigned int af, cfg_net_t *net,
                        tapi_cfg_net_assigned *assigned)
 {
@@ -2275,6 +2374,40 @@ tapi_cfg_net_assigned_get_subnet_ip(tapi_cfg_net_assigned *assigned,
         *addr = net_addr;
     }
     free(net_oid);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_net.h */
+te_errno
+tapi_cfg_net_all_use_configured_ip(unsigned int af)
+{
+    te_errno        rc;
+    cfg_nets_t      nets;
+    unsigned int    i;
+
+    /* Get available networks configuration */
+    rc = tapi_cfg_net_get_nets(&nets);
+    if (rc != 0)
+    {
+        ERROR("Failed to get networks from Configurator: %r", rc);
+        return rc;
+    }
+
+    for (i = 0; i < nets.n_nets; ++i)
+    {
+        if (nets.nets[i].is_virtual)
+            continue;
+
+        rc = tapi_cfg_net_use_configured_ip(af, nets.nets + i);
+        if (rc != 0)
+        {
+            ERROR("Failed to assign IPsubnet to net #%u: %r", i, rc);
+            break;
+        }
+    }
+
+    tapi_cfg_net_free_nets(&nets);
 
     return rc;
 }
