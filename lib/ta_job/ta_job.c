@@ -1115,7 +1115,7 @@ filter_regexp_exec(ta_job_manager_t *manager, filter_t *filter,
                 }
 
             case PCRE2_ERROR_PARTIAL:
-                future_start_offset = ovector[2];
+                future_start_offset = ovector[0];
                 te_rc = 0;
                 goto out;
 
