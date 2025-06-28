@@ -632,9 +632,12 @@ tad_icmp4_match_post_cb(csap_p              csap,
 {
     tad_icmp4_proto_data       *proto_data;
     tad_icmp4_proto_pdu_data   *pkt_data = meta_pkt_layer->opaque;
+    tad_bps_pkt_frag_def       *add_def = NULL;
+    tad_bps_pkt_frag_data      *add_data = NULL;
     tad_pkt                    *pkt;
     te_errno                    rc;
     unsigned int                bitoff = 0;
+    uint8_t                     type;
 
     if (~csap->state & CSAP_STATE_RESULTS)
         return 0;
@@ -650,8 +653,23 @@ tad_icmp4_match_post_cb(csap_p              csap,
 
     rc = tad_bps_pkt_frag_match_post(&proto_data->hdr, &pkt_data->hdr,
                                      pkt, &bitoff, meta_pkt_layer->nds);
+    if (rc != 0)
+        return rc;
 
-    return rc;
+    type = pkt_data->hdr.dus[0].val_i32;
+
+    tad_icmp4_frag_structs_by_type(type, proto_data, pkt_data,
+                                   &add_def, &add_data);
+
+    if (add_def != NULL && add_data != NULL)
+    {
+        rc = tad_bps_pkt_frag_match_post(add_def, add_data,
+                                         pkt, &bitoff, meta_pkt_layer->nds);
+        if (rc != 0)
+            return rc;
+    }
+
+    return 0;
 }
 
 /* See description in tad_ipstack_impl.h */
@@ -667,8 +685,11 @@ tad_icmp4_match_do_cb(csap_p           csap,
     tad_icmp4_proto_data       *proto_data;
     tad_icmp4_proto_pdu_data   *ptrn_data = ptrn_opaque;
     tad_icmp4_proto_pdu_data   *pkt_data = meta_pkt->layers[layer].opaque;
+    tad_bps_pkt_frag_def       *add_def = NULL;
+    tad_bps_pkt_frag_data      *add_data = NULL;
     te_errno                    rc;
     unsigned int                bitoff = 0;
+    uint8_t                     type;
 
     UNUSED(ptrn_pdu);
 
@@ -692,6 +713,23 @@ tad_icmp4_match_do_cb(csap_p           csap,
         F_VERB(CSAP_LOG_FMT "Match PDU vs ICMPv4 header failed on bit "
                "offset %u: %r", CSAP_LOG_ARGS(csap), (unsigned)bitoff, rc);
         return rc;
+    }
+
+    type = pkt_data->hdr.dus[0].val_i32;
+
+    tad_icmp4_frag_structs_by_type(type, proto_data, pkt_data,
+                                   &add_def, &add_data);
+    if (add_def != NULL && add_data != NULL)
+    {
+        rc = tad_bps_pkt_frag_match_do(add_def, add_data, add_data,
+                                       pdu, &bitoff);
+        if (rc != 0)
+        {
+            F_VERB(CSAP_LOG_FMT "Failed to match ICMPv4 subtype header "
+                   "on bit offset %u: %r", CSAP_LOG_ARGS(csap),
+                   (unsigned)bitoff, rc);
+            return rc;
+        }
     }
 
     rc = tad_pkt_get_frag(sdu, pdu, bitoff >> 3,
