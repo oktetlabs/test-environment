@@ -11,6 +11,7 @@ set -e
 declare -a meson_args
 te_cppflags=
 CROSS_FILE=
+NATIVE_FILE=
 
 process_opts()
 {
@@ -18,6 +19,9 @@ process_opts()
         case "$1" in
             --cross-file=*)
                 CROSS_FILE="${1#--cross-file=}" ;;
+
+            --native-file=*)
+                NATIVE_FILE="${1#--native-file=}" ;;
 
             *)  echo "Unknown option: $1" >&2;
                 exit 1 ;;
@@ -33,6 +37,7 @@ for f in ${TE_CPPFLAGS} ; do
     te_cppflags+="${f}"
 done
 test -z "${CROSS_FILE}" || meson_args+=(--cross-file="${CROSS_FILE}")
+test -z "${NATIVE_FILE}" || meson_args+=(--native-file="${NATIVE_FILE}")
 test -z "${te_cppflags}" || meson_args+=(-Dte_cppflags="${te_cppflags}")
 
 test -z "${TE_PREFIX}" || meson_args+=(-Dte_libdir="${TE_PREFIX}/lib")

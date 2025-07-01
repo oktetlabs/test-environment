@@ -550,7 +550,7 @@ generate_config_file() {
         test -n "$as" && echo "as = '${as}'" >> $conffile
         test -n "$strip" && echo "strip = '${strip}'" >> $conffile
         test -n "$pkgconfig" && echo "pkgconfig = '${pkgconfig}'" >> $conffile
-        meson_args="${meson_args} --native-file=${conffile}"
+        eval TE_BS_MESON_${p}_NATIVE_FILE=\"\${conffile}\"
         return
     fi
 
@@ -582,7 +582,7 @@ generate_config_file() {
 	cpu = ''
 	endian = ''
 	EOF
-    meson_args="${meson_args} --cross-file=${conffile}"
+    eval TE_BS_MESON_${p}_CROSS_FILE=\"\${conffile}\"
 }
 
 process_platform() {
@@ -863,10 +863,13 @@ build_platform() {
         ""|meson)
             local pmeson_nv_args="TE_BS_MESON_${p}_NV_ARGS"
             local pmeson_args="TE_BS_MESON_${p}_ARGS"
+            local pmeson_cross="TE_BS_MESON_${p}_CROSS_FILE"
+            local pmeson_native="TE_BS_MESON_${p}_NATIVE_FILE"
 
             ${SCRIPT_DIR}/te_cross_build_meson "${p}" \
                 "${!pmeson_nv_args}" "${!pmeson_args}" \
-                || error "Platform ${p} cross build using meson failed"
+                "${!pmeson_cross}" "${!pmeson_native}" \
+                || error "Platform ${p} build using meson failed"
             ;;
         *)
             error "Unknown build system '${!build}' for platform '$p'"

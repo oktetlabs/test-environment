@@ -36,6 +36,10 @@ RSYNC_VCS_STUFF+=("--exclude=.git")
 declare -a RSYNC_VCS_IGNORES
 RSYNC_VCS_IGNORES+=("--filter=:- .gitignore")
 
+declare -r CROSS_FILE="cross.txt"
+declare -r NATIVE_FILE="native.txt"
+
+
 error() {
     echo ERROR: $* >&2
     exit 1
@@ -91,7 +95,9 @@ mk_platform_src() {
 }
 
 make_workspace() {
-    local p="$1"
+    local p="$1" ; shift
+    local cross_file="$1" ; shift
+    local native_file="$1" ; shift
     local ws_file="${p}.ws"
     local ws_base_dir="/tmp"
 
@@ -125,15 +131,20 @@ make_workspace() {
     # Make source workspace
     mk_platform_src "${p}" "${ws}"/src "${rsync}"
 
-    # If non-local build, sync build directory
+    # If non-local build, sync files and build directory
     if test "${ws}" != . ; then
         if test -d build ; then
             rsync_to "${p}" build "${ws}"
         else
             # Remove also destdir to make sure there will be no artifacts
             # from the previous build
-            te_eval_or_ssh "${p}" "cd \"${ws}\" && rm -fr build destdir"
+            te_eval_or_ssh "${p}" \
+                "cd \"${ws}\" && rm -fr ${CROSS_FILE} ${NATIVE_FILE} build destdir"
         fi
+        test -z "${cross_file}" \
+            || rsync_to "${p}" "${cross_file}" "${ws}/"
+        test -z "${native_file}" \
+            || rsync_to "${p}" "${native_file}" "${ws}/"
     fi
 
     if test -n "${TE_RCF_CONSISTENCY_CHECKS_EXT_FILES}" ; then
@@ -199,7 +210,11 @@ process_ext_and_apps_parms() {
 
 build_ext() {
     local p="$1"; shift
+    local cross_file="$1" ; shift
+    local native_file="$1" ; shift
 
+    local cross_file_opt="${cross_file:+ --cross-file=${ws}/${cross_file}}"
+    local native_file_opt="${native_file:+ --native-file=${ws}/${native_file}}"
     local pcppflags="${p}_CPPFLAGS"
     local pcflags="${p}_CFLAGS"
     local pldflags="${p}_LDFLAGS"
@@ -247,7 +262,7 @@ build_ext() {
             --srcdir="${ws_ext_src}" \
             --prepare="${!pextprep}" \
             --builddir="${ws_ext_builddir}" \
-            --build="${extbuild}" \
+            --build="${extbuild}${cross_file_opt}${native_file_opt}" \
             --expheaders="${!pextinsth}" \
             --expheaders-dest="${!pextinsth_dest}" \
             --explibs="${!pextinstl}" \
@@ -260,6 +275,11 @@ build_ext() {
 
 build_agent_apps() {
     local p="$1"; shift
+    local cross_file="$1" ; shift
+    local native_file="$1" ; shift
+
+    local cross_file_opt="${cross_file:+ --cross-file=${ws}/${cross_file}}"
+    local native_file_opt="${native_file:+ --native-file=${ws}/${native_file}}"
     local pcppflags="${p}_CPPFLAGS"
     local pcflags="${p}_CFLAGS"
     local pldflags="${p}_LDFLAGS"
@@ -323,7 +343,7 @@ build_agent_apps() {
             --builddir="${ws_app_builddir}" \
             --telibs="${!papplibs}" \
             --includes="${teincludes}" \
-            --build="${appbuild}" \
+            --build="${appbuild}${cross_file_opt}${native_file_opt}" \
             --expbin="${!pappinstbin}" \
             --envvars="${!pappenv} ${USE_ENV_CCACHE_DIR}" \
             --bin="${ws_platform_bin}" $enable_tce --build-meson || exit 1
@@ -336,11 +356,31 @@ build_platform() {
     local p="$1" ; shift
     local meson_nv_args="$1" ; shift
     local meson_args="$1" ; shift
+    local meson_cross="$1" ; shift
+    local meson_native="$1" ; shift
     local result=0
     local ws
     local remote_build=false
     local destdir
     local te_agents="${TE_INSTALL}"/agents
+
+    if test -n "${meson_cross}" ; then
+        if ! diff -q "${meson_cross}" "${CROSS_FILE}" 2>/dev/null ; then
+            cp "${meson_cross}" "${CROSS_FILE}"
+            rm -f meson.nv_args
+        fi
+        meson_cross="${CROSS_FILE}"
+        meson_nv_args="--cross-file=${meson_cross} ${meson_nv_args}"
+    fi
+
+    if test -n "${meson_native}" ; then
+        if ! diff -q "${meson_native}" "${NATIVE_FILE}" 2>/dev/null ; then
+            cp "${meson_native}" "${NATIVE_FILE}"
+            rm -f meson.nv_args
+        fi
+        meson_native="${NATIVE_FILE}"
+        meson_nv_args="--native-file=${meson_native} ${meson_nv_args}"
+    fi
 
     echo "${meson_nv_args}" >meson.nv_args.new
     echo "${meson_args}" >meson.args.new
@@ -351,11 +391,11 @@ build_platform() {
         rm -rf build meson.nv_args meson.args
     fi
 
-    make_workspace "${p}"
+    make_workspace "${p}" "${meson_cross}" "${meson_native}"
 
     test "${ws}" = . || remote_build=true
 
-    build_ext "${p}"
+    build_ext "${p}" "${meson_cross}" "${meson_native}"
 
     # handle m32 option
     local build_m32=false
@@ -414,7 +454,7 @@ build_platform() {
     ) || result=$?
 
     if test ${result} -eq 0 ; then
-        build_agent_apps "${p}" || result=$?
+        build_agent_apps "${p}" "${meson_cross}" "${meson_native}" || result=$?
     fi
 
     if ${remote_build} ; then
@@ -460,6 +500,8 @@ do_build() {
     local p="$1" ; shift
     local meson_nv_args="$1" ; shift
     local meson_args="$1" ; shift
+    local meson_cross="$1" ; shift
+    local meson_native="$1" ; shift
 
     . "${SCRIPT_DIR}"/te_functions
     . "${SCRIPT_DIR}"/te_meson_functions
@@ -483,6 +525,7 @@ do_build() {
     trap "trap_sigint $p" SIGINT
 
     build_platform "${p}" "${meson_nv_args}" "${meson_args}" \
+        "${meson_cross}" "${meson_native}" \
         || error "Platform ${p} build failed"
     popd
 }

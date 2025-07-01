@@ -7,6 +7,28 @@
 
 set -e
 
+CROSS_FILE=
+NATIVE_FILE=
+
+process_opts()
+{
+    while test -n "$1" ; do
+        case "$1" in
+            --cross-file=*)
+                CROSS_FILE="${1#--cross-file=}" ;;
+
+            --native-file=*)
+                NATIVE_FILE="${1#--native-file=}" ;;
+
+            *)  echo "Unknown option: $1" >&2;
+                exit 1 ;;
+        esac
+        shift 1
+    done
+}
+
+process_opts "$@"
+
 # pkg-config does not handle -Wl,-whole-archive flags gracefully and
 # reoders t. Extract the information here, pass via meson argument and
 # enforce whole linkage using linker arguments directly.
@@ -51,6 +73,9 @@ build_using_meson() {
     local c_link_args="${TE_PLATFORM_LDFLAGS}"
 
     dpdk_get_libs
+
+    test -z "${CROSS_FILE}" || meson_opts+=(--cross-file="${CROSS_FILE}")
+    test -z "${NATIVE_FILE}" || meson_opts+=(--native-file="${NATIVE_FILE}")
 
     # Applications are installed to TA root directory
     meson_opts+=("--prefix" "/")

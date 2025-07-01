@@ -12,6 +12,7 @@ declare -a meson_args
 te_cppflags=
 te_ldflags=
 CROSS_FILE=
+NATIVE_FILE=
 
 process_opts()
 {
@@ -19,6 +20,9 @@ process_opts()
         case "$1" in
             --cross-file=*)
                 CROSS_FILE="${1#--cross-file=}" ;;
+
+            --native-file=*)
+                NATIVE_FILE="${1#--native-file=}" ;;
 
             --extra-deps=*)
                 meson_args+=(-Dextra_deps="${1#--extra-deps=}") ;;
@@ -46,6 +50,7 @@ for f in ${TE_CPPFLAGS} ; do
     te_cppflags+="${f}"
 done
 test -z "${CROSS_FILE}" || meson_args+=(--cross-file="${CROSS_FILE}")
+test -z "${NATIVE_FILE}" || meson_args+=(--native-file="${NATIVE_FILE}")
 test -z "${te_cppflags}" || meson_args+=(-Dte_cppflags="${te_cppflags}")
 test -z "${te_ldflags}" || meson_args+=(-Dte_ldflags="${te_ldflags}")
 
