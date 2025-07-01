@@ -99,8 +99,11 @@ foreach build_subdir : build_subdirs
 endforeach
 
 if build_subdirs.contains('eth') or build_subdirs.contains('pcap')
-    dep_pcap = cc.find_library('pcap', required: false)
     required_deps += 'pcap'
+    dep_pcap = dependency('libpcap', required: false)
+    if not dep_pcap.found()
+      dep_pcap = cc.find_library('pcap', required: false)
+    endif
     if dep_pcap.found()
         deps += dep_pcap
     else
