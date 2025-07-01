@@ -32,6 +32,7 @@ for f in ${TE_CPPFLAGS} ; do
     test -z "${te_cppflags}" || te_cppflags+=","
     te_cppflags+="${f}"
 done
+test -z "${CROSS_FILE}" || meson_args+=(--cross-file="${CROSS_FILE}")
 test -z "${te_cppflags}" || meson_args+=(-Dte_cppflags="${te_cppflags}")
 
 test -z "${TE_PREFIX}" || meson_args+=(-Dte_libdir="${TE_PREFIX}/lib")
@@ -45,7 +46,6 @@ fi
 echo "${meson_args[@]}" >meson.args.new
 
 if test ! -f meson.args ; then
-    test -z "${CROSS_FILE}" || meson_args+=(--cross-file="${CROSS_FILE}")
     meson setup ${PWD} ${EXT_SOURCES} "${meson_args[@]}"
     echo "${meson_args[@]}" >meson.args
 elif ! diff -q meson.args meson.args.new 2>/dev/null ; then

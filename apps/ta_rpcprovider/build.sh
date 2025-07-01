@@ -45,6 +45,7 @@ for f in ${TE_CPPFLAGS} ; do
     test -z "${te_cppflags}" || te_cppflags+=","
     te_cppflags+="${f}"
 done
+test -z "${CROSS_FILE}" || meson_args+=(--cross-file="${CROSS_FILE}")
 test -z "${te_cppflags}" || meson_args+=(-Dte_cppflags="${te_cppflags}")
 test -z "${te_ldflags}" || meson_args+=(-Dte_ldflags="${te_ldflags}")
 
@@ -55,7 +56,6 @@ meson_args+=(-Dapp-name="${app_name}")
 echo "${meson_args[@]}" >meson.args.new
 
 if test ! -f meson.args ; then
-    test -z "${CROSS_FILE}" || meson_args+=(--cross-file="${CROSS_FILE}")
     meson setup ${PWD} ${EXT_SOURCES} "${meson_args[@]}"
     echo "${meson_args[@]}" >meson.args
 elif ! diff -q meson.args meson.args.new 2>/dev/null ; then
