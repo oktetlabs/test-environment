@@ -22,6 +22,12 @@
 #include "linux/genetlink.h"
 #include "linux/devlink.h"
 
+#if HAVE_DECL_DEVLINK_CMD_INFO_GET || \
+    HAVE_DECL_DEVLINK_CMD_ESWITCH_GET || \
+    HAVE_DECL_DEVLINK_CMD_ESWITCH_SET || \
+    HAVE_DECL_DEVLINK_CMD_PARAM_GET || \
+    HAVE_DECL_DEVLINK_CMD_PARAM_SET
+
 /*
  * Devlink family ID. It can be different on different hosts and
  * should be determined with CTRL_CMD_GETFAMILY request.
@@ -47,6 +53,8 @@ static int devlink_family = -1;
             devlink_family = _family;                             \
         }                                                         \
     } while (0)
+
+#endif
 
 #if HAVE_DECL_DEVLINK_CMD_INFO_GET
 
