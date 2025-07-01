@@ -44,7 +44,7 @@ if build_subdirs.contains('cli')
     #deps += [ cc.find_library('m') ]
 endif
 if build_subdirs.contains('snmp')
-    error('TAD SNMI is not supported by meson build')
+    error('TAD SNMP is not supported by meson build')
 endif
 
 if req_protocols.length() == 0
