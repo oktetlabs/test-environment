@@ -301,6 +301,21 @@ netconf_devlink_get_eswitch(netconf_handle nh, const char *bus,
     return rc;
 }
 
+#else /* HAVE_DECL_DEVLINK_CMD_ESWITCH_GET */
+
+/* See description in netconf.h */
+te_errno
+netconf_devlink_get_eswitch(netconf_handle nh, const char *bus,
+                            const char *dev, netconf_list **list)
+{
+    UNUSED(nh);
+    UNUSED(bus);
+    UNUSED(dev);
+    UNUSED(list);
+
+    return TE_EOPNOTSUPP;
+}
+
 #endif /* HAVE_DECL_DEVLINK_CMD_ESWITCH_GET */
 
 #if HAVE_DECL_DEVLINK_CMD_ESWITCH_SET
@@ -374,6 +389,22 @@ netconf_devlink_eswitch_mode_set(netconf_handle nh, const char *bus,
         rc = te_rc_os2te(errno);
 
     return rc;
+}
+
+#else /* HAVE_DECL_DEVLINK_CMD_ESWITCH_SET */
+
+/* See description in netconf.h */
+te_errno
+netconf_devlink_eswitch_mode_set(netconf_handle nh, const char *bus,
+                                 const char *dev,
+                                 netconf_devlink_eswitch_mode mode)
+{
+    UNUSED(nh);
+    UNUSED(bus);
+    UNUSED(dev);
+    UNUSED(mode);
+
+    return TE_EOPNOTSUPP;
 }
 
 #endif /* HAVE_DECL_DEVLINK_CMD_ESWITCH_SET */
