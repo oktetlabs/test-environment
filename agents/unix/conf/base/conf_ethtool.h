@@ -445,6 +445,8 @@ typedef struct ta_ethtool_rxfh {
     bool indir_change;
     /** If @c true, reset indirection table to default values. */
     bool indir_reset;
+    /** Should be set to @c true if change of RSS hash key is required. */
+    bool hash_key_change;
 } ta_ethtool_rxfh;
 
 /**

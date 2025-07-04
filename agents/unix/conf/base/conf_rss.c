@@ -137,6 +137,7 @@ hash_key_set(unsigned int gid, const char *oid,
     if (rc != 0)
         return rc;
 
+    rxfh->hash_key_change = true;
     return te_str_hex_str2raw(value, RSS_HASH_KEY(rxfh->rxfh),
                               rxfh->rxfh->key_size);
 #endif

@@ -880,6 +880,7 @@ ta_ethtool_get_rssh(unsigned int gid, const char *if_name,
     result->rxfh = got_rxfh;
     result->indir_change = false;
     result->indir_reset = false;
+    result->hash_key_change = false;
 
     rc = ta_obj_add(TA_OBJ_TYPE_IF_RSSH, te_string_value(&obj_name),
                     "", gid, result, &free_ta_ethtool_rxfh, &obj);
@@ -931,6 +932,8 @@ ta_ethtool_commit_rssh(unsigned int gid, const char *if_name,
     if (ta_rxfh->indir_reset)
     {
         ta_rxfh->rxfh->indir_size = 0;
+        if (!ta_rxfh->hash_key_change)
+            ta_rxfh->rxfh->key_size = 0;
         remove_indir_data = true;
     }
 
