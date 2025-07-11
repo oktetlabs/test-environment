@@ -1249,7 +1249,6 @@ static te_errno
 get_script(xmlNodePtr node, tester_cfg *cfg, run_item *ritem)
 {
     te_errno            rc;
-    const test_info    *ti;
     bool                objective_found = false;
     bool                execute_found = false;
     test_script        *script = &ritem->u.script;
@@ -1280,6 +1279,17 @@ get_script(xmlNodePtr node, tester_cfg *cfg, run_item *ritem)
         node = xmlNodeChildren(node);
     }
 
+    if (script->name != NULL)
+    {
+        const test_info *ti = find_test_info(cfg->cur_pkg->ti, script->name);
+
+        if (ti != NULL)
+        {
+            script->objective = TE_STRDUP(ti->objective);
+            script->page = TE_STRDUP(ti->page);
+        }
+    }
+
     while (node != NULL)
     {
         /* Get optional 'objective' */
@@ -1291,20 +1301,17 @@ get_script(xmlNodePtr node, tester_cfg *cfg, run_item *ritem)
                       script->name);
                 return TE_RC(TE_TESTER, TE_EINVAL);
             }
+
+            /*
+             * Objective from package.xml is more specific and overrides objective
+             * from tests-info.xml (which is extracted from c-file documentation).
+             */
+            free(script->objective);
+            script->objective = NULL;
             if ((rc = get_node_with_text_content(&node, "objective",
                                                  &script->objective)) != 0)
                 return rc;
             objective_found = true;
-
-            ti = find_test_info(cfg->cur_pkg->ti, script->name);
-            if (ti != NULL)
-            {
-                if (script->objective == NULL)
-                {
-                    script->objective = TE_STRDUP(ti->objective);
-                }
-                script->page = TE_STRDUP(ti->page);
-            }
             continue;
         }
 
