@@ -2822,6 +2822,12 @@ rpc_dpdk_eth_await_link_up(rcf_rpc_server *rpcs,
     in.wait_int_ms = wait_int_ms;
     in.after_up_ms = after_up_ms;
 
+    /*
+     * Wait an extra second to make sure the other side has enough time
+     * to respond.
+     */
+    rpcs->timeout = wait_int_ms * nb_attempts + after_up_ms + 1000;
+
     rcf_rpc_call(rpcs, "dpdk_eth_await_link_up", &in, &out);
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(dpdk_eth_await_link_up, out.retval);
 
