@@ -16,6 +16,10 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
+
 #include "te_serial_parser.h"
 #include "te_kernel_log.h"
 #include "te_alloc.h"

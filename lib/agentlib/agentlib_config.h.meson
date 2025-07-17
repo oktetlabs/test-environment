@@ -53,3 +53,15 @@
 
 /* Define to 1 if you have getpwnam_r function file. */
 #mesondefine HAVE_GETPWNAM_R
+
+/* Define to 1 if you have random_r function. */
+#mesondefine HAVE_RANDOM_R
+
+/* Define to 1 if you have sysv_signal function. */
+#mesondefine HAVE_SYSV_SIGNAL
+
+/* Define to 1 if you have open64 function. */
+#mesondefine HAVE_OPEN64
+
+/* Define to 1 if you have off64_t type. */
+#mesondefine HAVE_OFF64_T

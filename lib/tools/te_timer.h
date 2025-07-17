@@ -31,6 +31,8 @@
 #ifndef __TE_TIMER_H__
 #define __TE_TIMER_H__
 
+#include <time.h>
+
 #include "te_defs.h"
 #include "te_errno.h"
 

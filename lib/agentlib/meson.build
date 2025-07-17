@@ -29,6 +29,21 @@ if cc.has_function('getpwnam_r')
    conf.set('HAVE_PWNAM_R', 1)
 endif
 
+if cc.has_function('random_r')
+   conf.set('HAVE_RANDOM_R', 1)
+endif
+
+if cc.has_function('sysv_signal')
+   conf.set('HAVE_SYSV_SIGNAL', 1)
+endif
+
+if cc.has_function('open64')
+   conf.set('HAVE_OPEN64', 1)
+endif
+
+if cc.has_type('off64_t', prefix: '#define _GNU_SOURCE\n#include <unistd.h>')
+    conf.set('HAVE_OFF64_T', 1)
+endif
 
 agentlib_config_h = configure_file(input: 'agentlib_config.h.meson',
                                    output: 'agentlib_config.h',

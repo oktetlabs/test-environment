@@ -70,12 +70,19 @@ static pthread_mutex_t alloc_lock = PTHREAD_MUTEX_INITIALIZER;
 static te_errno
 agent_port_alloc_init(void)
 {
+#ifdef HAVE_RANDOM_R
     struct random_data buf = {0};
+#endif
     char statebuf[8];
     int32_t rnd;
 
+#ifdef HAVE_RANDOM_R
     if (initstate_r(getpid(), statebuf, sizeof(statebuf), &buf) != 0 ||
         random_r(&buf, &rnd) != 0)
+#else
+    rnd = random();
+    if (initstate(getpid(), statebuf, sizeof(statebuf)) != 0)
+#endif
     {
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 

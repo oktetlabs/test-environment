@@ -3650,6 +3650,7 @@ TARPC_FUNC(bsd_signal,
 
 /*-------------- sysv_signal() --------------------------------*/
 
+#ifdef HAVE_SYSV_SIGNAL
 TARPC_FUNC(sysv_signal,
 {
     if (in->signum == RPC_SIGINT)
@@ -3723,6 +3724,7 @@ TARPC_FUNC(__sysv_signal,
     }
 }
 )
+#endif /* HAVE_SYSV_SIGNAL */
 
 /*-------------- siginterrupt() --------------------------------*/
 
@@ -6319,6 +6321,7 @@ TARPC_FUNC(open, {},
 )
 #endif
 
+#ifdef HAVE_OPEN64
 /*-------------- open64() --------------------------------*/
 TARPC_FUNC(open64, {},
 {
@@ -6328,6 +6331,7 @@ TARPC_FUNC(open64, {},
                                  file_mode_flags_rpc2h(in->mode)));
 }
 )
+#endif /* HAVE_OPEN64 */
 
 /*-------------- fopen() --------------------------------*/
 TARPC_FUNC(fopen, {},
@@ -8880,8 +8884,13 @@ TARPC_FUNC(splice,
     COPY_ARG(off_out);
 },
 {
+#ifdef HAVE_OFF64_T
+    off64_t off_in = 0;
+    off64_t off_out = 0;
+#else
     off_t off_in = 0;
     off_t off_out = 0;
+#endif
 
     if (out->off_in.off_in_len > 0)
         off_in = *out->off_in.off_in_val;
@@ -8890,9 +8899,9 @@ TARPC_FUNC(splice,
 
     MAKE_CALL(out->retval =
         func(in->fd_in,
-             out->off_in.off_in_len == 0 ? NULL : (off64_t *)&off_in,
+             out->off_in.off_in_len == 0 ? NULL : &off_in,
              in->fd_out,
-             out->off_out.off_out_len == 0 ? NULL : (off64_t *)&off_out,
+             out->off_out.off_out_len == 0 ? NULL : &off_out,
              in->len, splice_flags_rpc2h(in->flags)));
     if (out->off_in.off_in_len > 0)
         out->off_in.off_in_val[0] = (tarpc_off_t)off_in;

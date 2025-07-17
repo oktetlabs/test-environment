@@ -58,8 +58,12 @@
 #if HAVE_LINUX_IF_PACKET_H
 #include <linux/if_packet.h>
 #endif
+#ifdef HAVE_NETINET_IF_ETHER_H
+#include <netinet/if_ether.h>
+#else
 #if HAVE_LINUX_IF_ETHER_H
 #include <linux/if_ether.h>
+#endif
 #endif
 
 #if defined(USE_PF_PACKET) && defined(WITH_PACKET_MMAP_RX_RING)
