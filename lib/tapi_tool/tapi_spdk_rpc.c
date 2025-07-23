@@ -76,6 +76,30 @@ static const tapi_job_opt_bind nvmf_create_transport_binds[] = TAPI_JOB_OPT_SET(
                       zero_copy_recv)
 );
 
+/** Bindings for nvmf_create_subsystem command */
+static const tapi_job_opt_bind nvmf_create_subsystem_binds[] =
+    TAPI_JOB_OPT_SET(
+        /* Positional argument */
+        TAPI_JOB_OPT_STRING(NULL, false,
+                            tapi_spdk_rpc_nvmf_create_subsystem_opt, nqn),
+        /* Named arguments */
+        TAPI_JOB_OPT_STRING("-s", false,
+                            tapi_spdk_rpc_nvmf_create_subsystem_opt,
+                            serial_number),
+        TAPI_JOB_OPT_BOOL("-a", tapi_spdk_rpc_nvmf_create_subsystem_opt,
+                          allow_any_host),
+        TAPI_JOB_OPT_BOOL("-r", tapi_spdk_rpc_nvmf_create_subsystem_opt,
+                          ana_reporting)
+);
+
+/** Bindings for nvmf_delete_subsystem command */
+static const tapi_job_opt_bind nvmf_delete_subsystem_binds[] =
+    TAPI_JOB_OPT_SET(
+        /* Positional argument */
+        TAPI_JOB_OPT_STRING(NULL, false,
+                            tapi_spdk_rpc_nvmf_delete_subsystem_opt, nqn)
+);
+
 static te_errno
 create_rpc_job(tapi_spdk_rpc_app *app, const char *method,
                const tapi_job_opt_bind *binds, const void *opt,
@@ -274,5 +298,28 @@ tapi_spdk_rpc_nvmf_create_transport(
 
     return tapi_spdk_rpc_do_command(app, "nvmf_create_transport",
                                     nvmf_create_transport_binds, opt);
+}
+
+te_errno
+tapi_spdk_rpc_nvmf_create_subsystem(
+    tapi_spdk_rpc_app                             *app,
+    const tapi_spdk_rpc_nvmf_create_subsystem_opt *opt)
+{
+    if (app == NULL || opt == NULL || opt->nqn == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    return tapi_spdk_rpc_do_command(app, "nvmf_create_subsystem",
+                                    nvmf_create_subsystem_binds, opt);
+}
+
+te_errno tapi_spdk_rpc_nvmf_delete_subsystem(
+    tapi_spdk_rpc_app                             *app,
+    const tapi_spdk_rpc_nvmf_delete_subsystem_opt *opt)
+{
+    if (app == NULL || opt == NULL || opt->nqn == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    return tapi_spdk_rpc_do_command(app, "nvmf_delete_subsystem",
+                                    nvmf_delete_subsystem_binds, opt);
 }
 

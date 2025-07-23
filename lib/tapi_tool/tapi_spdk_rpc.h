@@ -71,6 +71,24 @@ typedef struct tapi_spdk_rpc_nvmf_create_transport_opt {
     bool zero_copy_recv;
 } tapi_spdk_rpc_nvmf_create_transport_opt;
 
+/** Options for nvmf_create_subsystem command */
+typedef struct tapi_spdk_rpc_nvmf_create_subsystem_opt {
+    /** NVMe Qualified Name (positional) */
+    const char *nqn;
+    /** Serial number (-s option) */
+    const char *serial_number;
+    /** Allow any host to connect (-a flag) */
+    bool allow_any_host;
+    /** Enable ANA reporting (-r flag) */
+    bool ana_reporting;
+} tapi_spdk_rpc_nvmf_create_subsystem_opt;
+
+/** Options for nvmf_create_subsystem command */
+typedef struct tapi_spdk_rpc_nvmf_delete_subsystem_opt {
+    /** NVMe Qualified Name (positional) */
+    const char *nqn;
+} tapi_spdk_rpc_nvmf_delete_subsystem_opt;
+
 /**
  * Create SPDK RPC application
  *
@@ -134,6 +152,30 @@ extern te_errno tapi_spdk_rpc_bdev_malloc_delete(
 extern te_errno tapi_spdk_rpc_nvmf_create_transport(
     tapi_spdk_rpc_app                             *app,
     const tapi_spdk_rpc_nvmf_create_transport_opt *opt);
+
+/**
+ * Execute nvmf_create_subsystem command
+ *
+ * @param app     SPDK RPC app handle
+ * @param opt     Command options
+ *
+ * @return Status code
+ */
+extern te_errno tapi_spdk_rpc_nvmf_create_subsystem(
+    tapi_spdk_rpc_app                             *app,
+    const tapi_spdk_rpc_nvmf_create_subsystem_opt *opt);
+
+/**
+ * Execute nvmf_delete_subsystem command
+ *
+ * @param app     SPDK RPC app handle
+ * @param opt     Command options
+ *
+ * @return Status code
+ */
+extern te_errno tapi_spdk_rpc_nvmf_delete_subsystem(
+    tapi_spdk_rpc_app                             *app,
+    const tapi_spdk_rpc_nvmf_delete_subsystem_opt *opt);
 
 /**
  * Destroy SPDK RPC application
