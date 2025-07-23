@@ -44,6 +44,24 @@ static const tapi_job_opt_bind server_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_BOOL("-v", tapi_spdk_rpc_server_opt, verbose)
 );
 
+/** Bindings for bdev_malloc_create command */
+static const tapi_job_opt_bind bdev_malloc_binds[] = TAPI_JOB_OPT_SET(
+    /* Positional arguments must come first */
+    TAPI_JOB_OPT_UINT(NULL, false, NULL, tapi_spdk_rpc_bdev_malloc_create_opt,
+                      size_mb),
+    TAPI_JOB_OPT_UINT(NULL, false, NULL, tapi_spdk_rpc_bdev_malloc_create_opt,
+                      block_size),
+    /* Optional named arguments */
+    TAPI_JOB_OPT_STRING("-b", false, tapi_spdk_rpc_bdev_malloc_create_opt,
+                        name)
+);
+
+/** Bindings for bdev_malloc_delete command */
+static const tapi_job_opt_bind bdev_malloc_delete_binds[] = TAPI_JOB_OPT_SET(
+    TAPI_JOB_OPT_STRING(NULL, false, tapi_spdk_rpc_bdev_malloc_delete_opt,
+                        name)
+);
+
 static te_errno
 create_rpc_job(tapi_spdk_rpc_app *app, const char *method,
                const tapi_job_opt_bind *binds, const void *opt,
@@ -210,3 +228,25 @@ tapi_spdk_rpc_destroy(tapi_spdk_rpc_app *app)
     free(app->server_opt);
     free(app);
 }
+
+te_errno
+tapi_spdk_rpc_bdev_malloc_create(
+    tapi_spdk_rpc_app *app, const tapi_spdk_rpc_bdev_malloc_create_opt *opt)
+{
+    if (app == NULL || opt == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    return tapi_spdk_rpc_do_command(app, "bdev_malloc_create",
+                                    bdev_malloc_binds, opt);
+}
+te_errno
+tapi_spdk_rpc_bdev_malloc_delete(
+    tapi_spdk_rpc_app *app, const tapi_spdk_rpc_bdev_malloc_delete_opt *opt)
+{
+    if (app == NULL || opt == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    return tapi_spdk_rpc_do_command(app, "bdev_malloc_delete",
+                                    bdev_malloc_delete_binds, opt);
+}
+

@@ -43,6 +43,23 @@ typedef struct tapi_spdk_rpc_server_opt {
 
 extern const tapi_spdk_rpc_server_opt tapi_spdk_rpc_server_default_opt;
 
+/** Options for bdev_malloc_create command */
+typedef struct tapi_spdk_rpc_bdev_malloc_create_opt {
+    /** Size in MB (positional argument) */
+    unsigned int size_mb;
+    /** Block size in bytes (positional argument) */
+    unsigned int block_size;
+    /** Name of the block device (-b option) */
+    const char *name;
+} tapi_spdk_rpc_bdev_malloc_create_opt;
+
+/** Options for bdev_malloc_delete command */
+typedef struct tapi_spdk_rpc_bdev_malloc_delete_opt {
+    /** Name of the block device */
+    const char *name;
+} tapi_spdk_rpc_bdev_malloc_delete_opt;
+
+
 /**
  * Create SPDK RPC application
  *
@@ -72,6 +89,28 @@ extern te_errno tapi_spdk_rpc_do_command(tapi_spdk_rpc_app       *app,
                                          const char              *method,
                                          const tapi_job_opt_bind *binds,
                                          const void              *opt);
+
+/**
+ * Execute bdev_malloc_create command
+ *
+ * @param app     SPDK RPC app handle
+ * @param opt     Command options
+ *
+ * @return Status code
+ */
+extern te_errno tapi_spdk_rpc_bdev_malloc_create(
+    tapi_spdk_rpc_app *app, const tapi_spdk_rpc_bdev_malloc_create_opt *opt);
+
+/**
+ * Execute bdev_malloc_delete command
+ *
+ * @param app     SPDK RPC app handle
+ * @param opt     Command options
+ *
+ * @return Status code
+ */
+extern te_errno tapi_spdk_rpc_bdev_malloc_delete(
+    tapi_spdk_rpc_app *app, const tapi_spdk_rpc_bdev_malloc_delete_opt *opt);
 
 /**
  * Destroy SPDK RPC application
