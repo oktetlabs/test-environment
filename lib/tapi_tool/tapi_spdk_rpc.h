@@ -59,6 +59,17 @@ typedef struct tapi_spdk_rpc_bdev_malloc_delete_opt {
     const char *name;
 } tapi_spdk_rpc_bdev_malloc_delete_opt;
 
+typedef enum tapi_spdk_rpc_nvmf_transport_type {
+    TAPI_SPDK_RPC_NVMF_TRANSPORT_TYPE_TCP
+} tapi_spdk_rpc_nvmf_transport_type;
+
+/** Options for nvmf_create_transport command */
+typedef struct tapi_spdk_rpc_nvmf_create_transport_opt {
+    /** Transport type (-t option) */
+    tapi_spdk_rpc_nvmf_transport_type type;
+    /** Enable zero-copy receive (-z flag) */
+    bool zero_copy_recv;
+} tapi_spdk_rpc_nvmf_create_transport_opt;
 
 /**
  * Create SPDK RPC application
@@ -111,6 +122,18 @@ extern te_errno tapi_spdk_rpc_bdev_malloc_create(
  */
 extern te_errno tapi_spdk_rpc_bdev_malloc_delete(
     tapi_spdk_rpc_app *app, const tapi_spdk_rpc_bdev_malloc_delete_opt *opt);
+
+/**
+ * Execute nvmf_create_transport command
+ *
+ * @param app     SPDK RPC app handle
+ * @param opt     Command options
+ *
+ * @return Status code
+ */
+extern te_errno tapi_spdk_rpc_nvmf_create_transport(
+    tapi_spdk_rpc_app                             *app,
+    const tapi_spdk_rpc_nvmf_create_transport_opt *opt);
 
 /**
  * Destroy SPDK RPC application
