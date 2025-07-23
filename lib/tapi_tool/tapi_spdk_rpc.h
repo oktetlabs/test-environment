@@ -107,6 +107,38 @@ typedef struct tapi_spdk_rpc_nvmf_subsystem_remove_ns_opt {
     unsigned int ns_id;
 } tapi_spdk_rpc_nvmf_subsystem_remove_ns_opt;
 
+typedef enum tapi_spdk_rpc_nvmf_transport_adrfam_type {
+    TAPI_SPDK_RPC_NVMF_TRANSPORT_ADRFAM_TYPE_IP4
+} tapi_spdk_rpc_nvmf_transport_adrfam_type;
+
+/** Options for nvmf_subsystem_add_listener command */
+typedef struct tapi_spdk_rpc_nvmf_subsystem_add_listener_opt {
+    /** Subsystem NQN (positional) */
+    const char *nqn;
+    /** Transport type (-t option) */
+    tapi_spdk_rpc_nvmf_transport_type type;
+    /** Address family (-f option) */
+    tapi_spdk_rpc_nvmf_transport_adrfam_type adrfam;
+    /** Transport address (-a option) */
+    const char *address;
+    /** Transport service ID/port (-s option) */
+    uint32_t trsvcid;
+} tapi_spdk_rpc_nvmf_subsystem_add_listener_opt;
+
+/** Options for nvmf_subsystem_remove_listener command */
+typedef struct tapi_spdk_rpc_nvmf_subsystem_remove_listener_opt {
+    /** Subsystem NQN (positional) */
+    const char *nqn;
+    /** Transport type (-t option) */
+    tapi_spdk_rpc_nvmf_transport_type type;
+    /** Address family (-f option) */
+    tapi_spdk_rpc_nvmf_transport_adrfam_type adrfam;
+    /** Transport address (-a option) */
+    const char *address;
+    /** Transport service ID/port (-s option) */
+    uint32_t trsvcid;
+} tapi_spdk_rpc_nvmf_subsystem_remove_listener_opt;
+
 /**
  * Create SPDK RPC application
  *
@@ -218,6 +250,30 @@ extern te_errno tapi_spdk_rpc_nvmf_subsystem_add_ns(
 extern te_errno tapi_spdk_rpc_nvmf_subsystem_remove_ns(
     tapi_spdk_rpc_app                                *app,
     const tapi_spdk_rpc_nvmf_subsystem_remove_ns_opt *opt);
+
+/**
+ * Execute nvmf_subsystem_add_listener command
+ *
+ * @param app     SPDK RPC app handle
+ * @param opt     Command options
+ *
+ * @return Status code
+ */
+extern te_errno tapi_spdk_rpc_nvmf_subsystem_add_listener(
+    tapi_spdk_rpc_app                                   *app,
+    const tapi_spdk_rpc_nvmf_subsystem_add_listener_opt *opt);
+
+/**
+ * Execute nvmf_subsystem_remove_listener command
+ *
+ * @param app     SPDK RPC app handle
+ * @param opt     Command options
+ *
+ * @return Status code
+ */
+extern te_errno tapi_spdk_rpc_nvmf_subsystem_remove_listener(
+    tapi_spdk_rpc_app                                      *app,
+    const tapi_spdk_rpc_nvmf_subsystem_remove_listener_opt *opt);
 
 /**
  * Destroy SPDK RPC application

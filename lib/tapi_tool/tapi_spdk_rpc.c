@@ -68,6 +68,11 @@ static const te_enum_map tapi_spdk_rpc_transport_type_map[] = {
     TE_ENUM_MAP_END
 };
 
+static const te_enum_map tapi_spdk_rpc_transport_adrfam_type_map[] = {
+    {.name = "ipv4", .value = TAPI_SPDK_RPC_NVMF_TRANSPORT_ADRFAM_TYPE_IP4},
+    TE_ENUM_MAP_END
+};
+
 /** Bindings for nvmf_create_transport command */
 static const tapi_job_opt_bind nvmf_create_transport_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_ENUM("-t", false, tapi_spdk_rpc_nvmf_create_transport_opt,
@@ -120,6 +125,48 @@ static const tapi_job_opt_bind nvmf_subsystem_remove_ns_binds[] =
                             tapi_spdk_rpc_nvmf_subsystem_remove_ns_opt, nqn),
         TAPI_JOB_OPT_UINT(NULL, false, NULL,
                           tapi_spdk_rpc_nvmf_subsystem_remove_ns_opt, ns_id)
+);
+
+/** Bindings for nvmf_subsystem_add_listener command */
+static const tapi_job_opt_bind nvmf_subsystem_add_listener_binds[] =
+    TAPI_JOB_OPT_SET(
+        /* Positional argument */
+        TAPI_JOB_OPT_STRING(
+            NULL, false, tapi_spdk_rpc_nvmf_subsystem_add_listener_opt, nqn),
+        /* Named arguments */
+        TAPI_JOB_OPT_ENUM("-t", false,
+                          tapi_spdk_rpc_nvmf_subsystem_add_listener_opt, type,
+                          tapi_spdk_rpc_transport_type_map),
+        TAPI_JOB_OPT_ENUM("-f", false,
+                          tapi_spdk_rpc_nvmf_subsystem_add_listener_opt,
+                          adrfam, tapi_spdk_rpc_transport_adrfam_type_map),
+        TAPI_JOB_OPT_STRING("-a", false,
+                            tapi_spdk_rpc_nvmf_subsystem_add_listener_opt,
+                            address),
+        TAPI_JOB_OPT_UINT("-s", false, NULL,
+                          tapi_spdk_rpc_nvmf_subsystem_add_listener_opt,
+                          trsvcid)
+);
+
+/** Bindings for nvmf_subsystem_remove_listener command */
+static const tapi_job_opt_bind nvmf_subsystem_remove_listener_binds[] =
+    TAPI_JOB_OPT_SET(
+        /* Positional argument */
+        TAPI_JOB_OPT_STRING(
+            NULL, false, tapi_spdk_rpc_nvmf_subsystem_remove_listener_opt, nqn),
+        /* Named arguments */
+        TAPI_JOB_OPT_ENUM("-t", false,
+                          tapi_spdk_rpc_nvmf_subsystem_remove_listener_opt, type,
+                          tapi_spdk_rpc_transport_type_map),
+        TAPI_JOB_OPT_ENUM("-f", false,
+                          tapi_spdk_rpc_nvmf_subsystem_remove_listener_opt,
+                          adrfam, tapi_spdk_rpc_transport_adrfam_type_map),
+        TAPI_JOB_OPT_STRING("-a", false,
+                            tapi_spdk_rpc_nvmf_subsystem_remove_listener_opt,
+                            address),
+        TAPI_JOB_OPT_UINT("-s", false, NULL,
+                          tapi_spdk_rpc_nvmf_subsystem_remove_listener_opt,
+                          trsvcid)
 );
 
 static te_errno
@@ -370,3 +417,29 @@ tapi_spdk_rpc_nvmf_subsystem_remove_ns(
                                     nvmf_subsystem_remove_ns_binds, opt);
 }
 
+te_errno
+tapi_spdk_rpc_nvmf_subsystem_add_listener(
+    tapi_spdk_rpc_app                                   *app,
+    const tapi_spdk_rpc_nvmf_subsystem_add_listener_opt *opt)
+{
+    if (app == NULL || opt == NULL || opt->nqn == NULL ||
+        opt->address == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    return tapi_spdk_rpc_do_command(app, "nvmf_subsystem_add_listener",
+                                    nvmf_subsystem_add_listener_binds, opt);
+}
+
+te_errno
+tapi_spdk_rpc_nvmf_subsystem_remove_listener(
+    tapi_spdk_rpc_app                                      *app,
+    const tapi_spdk_rpc_nvmf_subsystem_remove_listener_opt *opt)
+{
+    if (app == NULL || opt == NULL || opt->nqn == NULL ||
+        opt->address == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    return tapi_spdk_rpc_do_command(app, "nvmf_subsystem_remove_listener",
+                                    nvmf_subsystem_remove_listener_binds,
+                                    opt);
+}
