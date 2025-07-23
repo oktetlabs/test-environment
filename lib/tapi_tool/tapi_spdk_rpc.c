@@ -100,6 +100,28 @@ static const tapi_job_opt_bind nvmf_delete_subsystem_binds[] =
                             tapi_spdk_rpc_nvmf_delete_subsystem_opt, nqn)
 );
 
+/** Bindings for nvmf_subsystem_add_ns command */
+static const tapi_job_opt_bind nvmf_subsystem_add_ns_binds[] =
+    TAPI_JOB_OPT_SET(
+        /* Positional arguments */
+        TAPI_JOB_OPT_STRING(NULL, false,
+                            tapi_spdk_rpc_nvmf_subsystem_add_ns_opt, nqn),
+        TAPI_JOB_OPT_STRING(
+            NULL, false, tapi_spdk_rpc_nvmf_subsystem_add_ns_opt, bdev_name),
+        TAPI_JOB_OPT_UINT("-n", false, NULL,
+                          tapi_spdk_rpc_nvmf_subsystem_add_ns_opt, ns_id)
+);
+
+/** Bindings for nvmf_subsystem_remove_ns command */
+static const tapi_job_opt_bind nvmf_subsystem_remove_ns_binds[] =
+    TAPI_JOB_OPT_SET(
+        /* Positional arguments */
+        TAPI_JOB_OPT_STRING(NULL, false,
+                            tapi_spdk_rpc_nvmf_subsystem_remove_ns_opt, nqn),
+        TAPI_JOB_OPT_UINT(NULL, false, NULL,
+                          tapi_spdk_rpc_nvmf_subsystem_remove_ns_opt, ns_id)
+);
+
 static te_errno
 create_rpc_job(tapi_spdk_rpc_app *app, const char *method,
                const tapi_job_opt_bind *binds, const void *opt,
@@ -321,5 +343,30 @@ te_errno tapi_spdk_rpc_nvmf_delete_subsystem(
 
     return tapi_spdk_rpc_do_command(app, "nvmf_delete_subsystem",
                                     nvmf_delete_subsystem_binds, opt);
+}
+
+te_errno
+tapi_spdk_rpc_nvmf_subsystem_add_ns(
+    tapi_spdk_rpc_app                             *app,
+    const tapi_spdk_rpc_nvmf_subsystem_add_ns_opt *opt)
+{
+    if (app == NULL || opt == NULL || opt->nqn == NULL ||
+        opt->bdev_name == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    return tapi_spdk_rpc_do_command(app, "nvmf_subsystem_add_ns",
+                                    nvmf_subsystem_add_ns_binds, opt);
+}
+
+te_errno
+tapi_spdk_rpc_nvmf_subsystem_remove_ns(
+    tapi_spdk_rpc_app                             *app,
+    const tapi_spdk_rpc_nvmf_subsystem_remove_ns_opt *opt)
+{
+    if (app == NULL || opt == NULL || opt->nqn == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    return tapi_spdk_rpc_do_command(app, "nvmf_subsystem_remove_ns",
+                                    nvmf_subsystem_remove_ns_binds, opt);
 }
 

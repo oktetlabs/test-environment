@@ -89,6 +89,24 @@ typedef struct tapi_spdk_rpc_nvmf_delete_subsystem_opt {
     const char *nqn;
 } tapi_spdk_rpc_nvmf_delete_subsystem_opt;
 
+/** Options for nvmf_subsystem_add_ns command */
+typedef struct tapi_spdk_rpc_nvmf_subsystem_add_ns_opt {
+    /** Subsystem NQN (positional) */
+    const char *nqn;
+    /** Bdev name (positional) */
+    const char *bdev_name;
+    /** Namespace ID (-n flag)*/
+    unsigned int ns_id;
+} tapi_spdk_rpc_nvmf_subsystem_add_ns_opt;
+
+/** Options for nvmf_subsystem_remove_ns command */
+typedef struct tapi_spdk_rpc_nvmf_subsystem_remove_ns_opt {
+    /** Subsystem NQN (positional) */
+    const char *nqn;
+    /** Subsystem namespace ID (positional) */
+    unsigned int ns_id;
+} tapi_spdk_rpc_nvmf_subsystem_remove_ns_opt;
+
 /**
  * Create SPDK RPC application
  *
@@ -176,6 +194,30 @@ extern te_errno tapi_spdk_rpc_nvmf_create_subsystem(
 extern te_errno tapi_spdk_rpc_nvmf_delete_subsystem(
     tapi_spdk_rpc_app                             *app,
     const tapi_spdk_rpc_nvmf_delete_subsystem_opt *opt);
+
+/**
+ * Execute nvmf_subsystem_add_ns command
+ *
+ * @param app     SPDK RPC app handle
+ * @param opt     Command options
+ *
+ * @return Status code
+ */
+extern te_errno tapi_spdk_rpc_nvmf_subsystem_add_ns(
+    tapi_spdk_rpc_app                             *app,
+    const tapi_spdk_rpc_nvmf_subsystem_add_ns_opt *opt);
+
+/**
+ * Execute nvmf_subsystem_remove_ns command
+ *
+ * @param app     SPDK RPC app handle
+ * @param opt     Command options
+ *
+ * @return Status code
+ */
+extern te_errno tapi_spdk_rpc_nvmf_subsystem_remove_ns(
+    tapi_spdk_rpc_app                                *app,
+    const tapi_spdk_rpc_nvmf_subsystem_remove_ns_opt *opt);
 
 /**
  * Destroy SPDK RPC application
