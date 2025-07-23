@@ -1,0 +1,90 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/** @file
+ * @brief Test API for SPDK rpc.py
+ *
+ * @defgroup tapi_spdk_rpc Test API for SPDK RPC tool
+ * @ingroup te_ts_tapi
+ * @{
+ *
+ * Test API to control SPDK 'rpc.py' tool
+ *
+ * Copyright (C) 2025 OKTET Labs Ltd. All rights reserved.
+ */
+
+#ifndef __TE_TAPI_SPDK_RPC_H__
+#define __TE_TAPI_SPDK_RPC_H__
+
+#include "te_defs.h"
+#include "te_errno.h"
+#include "te_string.h"
+#include "tapi_job.h"
+#include "tapi_job_opt.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/** Forward declaration of SPDK RPC application handle */
+typedef struct tapi_spdk_rpc_app tapi_spdk_rpc_app;
+
+/** SPDK RPC server connection options */
+typedef struct tapi_spdk_rpc_server_opt {
+    /** Server socket path (default: /var/tmp/spdk.sock) or IP address */
+    const char *server;
+    /** RPC port number (if server is IP address) */
+    tapi_job_opt_uint_t port;
+    /** RPC timeout in seconds */
+    tapi_job_opt_uint_t timeout;
+    /** Retry connecting to the RPC server N times with 0.2s interval. */
+    tapi_job_opt_uint_t conn_retries;
+    /** Set verbose mode to info */
+    bool verbose;
+} tapi_spdk_rpc_server_opt;
+
+extern const tapi_spdk_rpc_server_opt tapi_spdk_rpc_server_default_opt;
+
+/**
+ * Create SPDK RPC application
+ *
+ * @param[in]  factory     Job factory
+ * @param[in]  rpc_path    Path to rpc.py script
+ * @param[in]  opt         Server connection options.
+ * @param[out] app         Location for the app handle
+ *
+ * @return Status code
+ */
+extern te_errno tapi_spdk_rpc_create(tapi_job_factory_t             *factory,
+                                     const char                     *rpc_path,
+                                     const tapi_spdk_rpc_server_opt *opt,
+                                     tapi_spdk_rpc_app             **app);
+
+/**
+ * Execute an RPC command with given arguments
+ *
+ * @param app         SPDK RPC app handle
+ * @param method      RPC method name
+ * @param binds       Method-specific option bindings
+ * @param opt         Method-specific options
+ *
+ * @return Status code
+ */
+extern te_errno tapi_spdk_rpc_do_command(tapi_spdk_rpc_app       *app,
+                                         const char              *method,
+                                         const tapi_job_opt_bind *binds,
+                                         const void              *opt);
+
+/**
+ * Destroy SPDK RPC application
+ *
+ * @param app     App handle
+ */
+extern void tapi_spdk_rpc_destroy(tapi_spdk_rpc_app *app);
+
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+#endif /* __TE_TAPI_SPDK_RPC__H__ */
+
+/**@} <!-- END tapi_spdk_rpc --> */
