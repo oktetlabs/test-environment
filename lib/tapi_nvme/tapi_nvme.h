@@ -106,6 +106,7 @@ typedef struct tapi_nvme_target {
     tapi_nvme_subnqn subnqn;            /**< NVMe Qualified Name */
     unsigned int nvmet_port;            /**< NVMe target port */
     const char *device;                 /**< Name of device */
+    const char *serial_number;          /**< Serial number of device */
     const struct sockaddr *addr;        /**< Endpoint to target */
     tapi_nvme_target_methods methods;   /**< Available methods of target */
     void *impl;                         /**< Target specified data */
@@ -118,6 +119,7 @@ typedef struct tapi_nvme_target {
     .subnqn = "te_testing",                                     \
     .nvmet_port = 1,                                            \
     .device = NULL,                                             \
+    .serial_number = NULL,                                      \
     .addr = NULL,                                               \
     .methods = TAPI_NVME_TARGET_METHODS_DEFAULTS,               \
     .impl = NULL,                                               \
