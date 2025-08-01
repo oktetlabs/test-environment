@@ -136,9 +136,11 @@ static bool
 has_field_name(const char *fullname, const char *stem,
                const test_entity_value *v)
 {
-    if (v->plain != NULL)
+    char *plain_or_ext = v->plain != NULL ? v->plain : v->ext;
+
+    if (plain_or_ext != NULL)
     {
-        return te_compound_dereference_str(v->plain, stem, fullname,
+        return te_compound_dereference_str(plain_or_ext, stem, fullname,
                                            has_compound_name, NULL) == 0;
     }
 
