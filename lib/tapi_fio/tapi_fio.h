@@ -229,6 +229,7 @@ typedef struct tapi_fio_opts {
     tapi_fio_ioengine ioengine;  /**< I/O Engine type */
     te_string output_path;       /**< File name where store FIO result */
     bool direct;              /**< Use O_DIRECT I/O */
+    bool scramble_buffers;    /**< Use random data for every I/O */
     bool exit_on_error;       /**< Terminate all jobs when one exits in
                                     * error */
     const char *rand_gen;        /**< Random generator type */
@@ -254,6 +255,7 @@ typedef struct tapi_fio_opts {
     .ioengine = TAPI_FIO_IOENGINE_SYNC,                 \
     .output_path = TE_STRING_INIT,                      \
     .direct = true,                                     \
+    .scramble_buffers = true,                           \
     .exit_on_error = true,                              \
     .rand_gen = NULL,                                   \
     .user = NULL,                                       \

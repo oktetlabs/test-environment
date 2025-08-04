@@ -148,6 +148,7 @@ static const tapi_job_opt_bind fio_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_DUMMY("--group_reporting"),
     TAPI_JOB_OPT_STRING("--output=", true, tapi_fio_opts, output_path.ptr),
     TAPI_JOB_OPT_BOOL("--direct=1", tapi_fio_opts, direct),
+    TAPI_JOB_OPT_BOOL("--scramble_buffers=1", tapi_fio_opts, scramble_buffers),
     TAPI_JOB_OPT_BOOL("--exitall_on_error=1", tapi_fio_opts, exit_on_error),
     {
         rand_generator_argument, "--random_generator=", true, NULL,
