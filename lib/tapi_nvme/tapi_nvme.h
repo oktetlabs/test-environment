@@ -107,6 +107,7 @@ typedef struct tapi_nvme_target {
     unsigned int nvmet_port;            /**< NVMe target port */
     const char *device;                 /**< Name of device */
     const char *serial_number;          /**< Serial number of device */
+    unsigned int ns_id;                 /**< Namespace ID to create */
     const struct sockaddr *addr;        /**< Endpoint to target */
     tapi_nvme_target_methods methods;   /**< Available methods of target */
     void *impl;                         /**< Target specified data */
