@@ -80,8 +80,9 @@ agent_port_alloc_init(void)
     if (initstate_r(getpid(), statebuf, sizeof(statebuf), &buf) != 0 ||
         random_r(&buf, &rnd) != 0)
 #else
-    rnd = random();
-    if (initstate(getpid(), statebuf, sizeof(statebuf)) != 0)
+    errno = 0;
+    initstate(getpid(), statebuf, sizeof(statebuf));
+    if (errno != 0)
 #endif
     {
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
@@ -89,6 +90,10 @@ agent_port_alloc_init(void)
         ERROR("Failed to initialize random number");
         return rc;
     }
+
+#ifndef HAVE_RANDOM_R
+    rnd = random();
+#endif
 
     port_offset = (rnd % BUCKETS_COUNT) * PORTS_PER_BUCKET_COUNT;
     initialization_needed = false;
