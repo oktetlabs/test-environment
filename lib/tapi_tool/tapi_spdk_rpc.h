@@ -139,6 +139,22 @@ typedef struct tapi_spdk_rpc_nvmf_subsystem_remove_listener_opt {
     uint32_t trsvcid;
 } tapi_spdk_rpc_nvmf_subsystem_remove_listener_opt;
 
+/** Options for bdev_nvme_attach_controller */
+typedef struct tapi_spdk_rpc_bdev_nvme_attach_controller_opt {
+    /** Bdev name */
+    const char *name;
+    /** Transport type: pcie or rdma */
+    const char *trtype;
+    /** Transport address: BDF or IP */
+    const char *traddr;
+} tapi_spdk_rpc_bdev_nvme_attach_controller_opt;
+
+/** Options for bdev_nvme_detach_controller */
+typedef struct tapi_spdk_rpc_bdev_nvme_detach_controller_opt {
+    /** Bdev name */
+    const char *name;
+} tapi_spdk_rpc_bdev_nvme_detach_controller_opt;
+
 /**
  * Create SPDK RPC application
  *
@@ -262,6 +278,31 @@ extern te_errno tapi_spdk_rpc_nvmf_subsystem_remove_ns(
 extern te_errno tapi_spdk_rpc_nvmf_subsystem_add_listener(
     tapi_spdk_rpc_app                                   *app,
     const tapi_spdk_rpc_nvmf_subsystem_add_listener_opt *opt);
+
+
+/**
+ * Execute bdev_nvme_attach_controller command
+ *
+ * @param app     SPDK RPC app handle
+ * @param opt     Command options
+ *
+ * @return Status code
+ */
+extern te_errno tapi_spdk_rpc_bdev_nvme_attach_controller(
+    tapi_spdk_rpc_app                                   *app,
+    const tapi_spdk_rpc_bdev_nvme_attach_controller_opt *opt);
+
+/**
+ * Execute bdev_nvme_detach_controller command
+ *
+ * @param app     SPDK RPC app handle
+ * @param opt     Command options
+ *
+ * @return Status code
+ */
+extern te_errno tapi_spdk_rpc_bdev_nvme_detach_controller(
+    tapi_spdk_rpc_app                                   *app,
+    const tapi_spdk_rpc_bdev_nvme_detach_controller_opt *opt);
 
 /**
  * Execute nvmf_subsystem_remove_listener command

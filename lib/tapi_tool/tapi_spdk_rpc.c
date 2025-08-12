@@ -169,6 +169,24 @@ static const tapi_job_opt_bind nvmf_subsystem_remove_listener_binds[] =
                           trsvcid)
 );
 
+static const tapi_job_opt_bind bdev_nvme_attach_controller_binds[] =
+    TAPI_JOB_OPT_SET(
+        TAPI_JOB_OPT_STRING(
+            "-b", false, tapi_spdk_rpc_bdev_nvme_attach_controller_opt, name),
+        TAPI_JOB_OPT_STRING("-t", false,
+                            tapi_spdk_rpc_bdev_nvme_attach_controller_opt,
+                            trtype),
+        TAPI_JOB_OPT_STRING("-a", false,
+                            tapi_spdk_rpc_bdev_nvme_attach_controller_opt,
+                            traddr)
+);
+
+static const tapi_job_opt_bind bdev_nvme_detach_controller_binds[] =
+    TAPI_JOB_OPT_SET(
+        TAPI_JOB_OPT_STRING(
+            NULL, false, tapi_spdk_rpc_bdev_nvme_detach_controller_opt, name)
+);
+
 static te_errno
 create_rpc_job(tapi_spdk_rpc_app *app, const char *method,
                const tapi_job_opt_bind *binds, const void *opt,
@@ -442,4 +460,22 @@ tapi_spdk_rpc_nvmf_subsystem_remove_listener(
     return tapi_spdk_rpc_do_command(app, "nvmf_subsystem_remove_listener",
                                     nvmf_subsystem_remove_listener_binds,
                                     opt);
+}
+
+te_errno
+tapi_spdk_rpc_bdev_nvme_attach_controller(
+    tapi_spdk_rpc_app                                   *app,
+    const tapi_spdk_rpc_bdev_nvme_attach_controller_opt *opt)
+{
+    return tapi_spdk_rpc_do_command(app, "bdev_nvme_attach_controller",
+                                    bdev_nvme_attach_controller_binds, opt);
+}
+
+te_errno
+tapi_spdk_rpc_bdev_nvme_detach_controller(
+    tapi_spdk_rpc_app                                   *app,
+    const tapi_spdk_rpc_bdev_nvme_detach_controller_opt *opt)
+{
+    return tapi_spdk_rpc_do_command(app, "bdev_nvme_detach_controller",
+                                    bdev_nvme_detach_controller_binds, opt);
 }
