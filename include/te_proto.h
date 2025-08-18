@@ -50,6 +50,11 @@
 #define TE_PROTO_GET_SNIFFERS   "get_sniffers"
 #define TE_PROTO_GET_SNIF_DUMP  "get_snif_dump"
 
+#define TE_PROTO_TA_EVENTS               "ta_events"
+#define TE_PROTO_TA_EVENTS_TRIGGER_EVENT "trigger_event"
+#define TE_PROTO_TA_EVENTS_EVENT         "event"
+
+
 #ifdef RCF_NEED_TYPES
 /**
  * Types recoding table.
