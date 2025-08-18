@@ -1638,6 +1638,20 @@ extern te_optional_uintmax_t test_get_opt_value_bin_unit_param(
     int argc, char **argv, const char *name);
 
 /**
+ * Get the optional boolean type from the arguments
+ *
+ * @param argc       count of arguments
+ * @param argv       list of arguments
+ * @param name       name of parameter
+ *
+ * @return an optional boolean value
+ *
+ * @sa te_optional_bool-t
+ */
+extern te_optional_bool_t test_get_opt_bool_param(int argc, char **argv,
+                                                  const char *name);
+
+/**
  * Same as TEST_STRING_PARAM() but for optional parameters.
  *
  * @param var_name_  variable with the same name as the name of
@@ -1758,6 +1772,27 @@ extern te_optional_uintmax_t test_get_opt_value_bin_unit_param(
  */
 #define TEST_GET_OPT_VALUE_BIN_UNIT_PARAM(var_name_) \
     (var_name_) = TEST_OPT_VALUE_BIN_UNIT_PARAM(var_name_)
+
+
+/**
+ * Get the value of the option boolean param.
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ *
+ * @return optional unsigned value
+ */
+#define TEST_OPT_BOOL_PARAM(var_name_)                                       \
+    test_get_opt_bool_param(argc, argv, #var_name_)
+
+/**
+ * Same as TEST_GET_BOOL_PARAM() but for optional parameters.
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ */
+#define TEST_GET_OPT_BOOL_PARAM(var_name_)                                   \
+    (var_name_) = TEST_OPT_BOOL_PARAM(var_name_)
 
 /**@}*/
 
