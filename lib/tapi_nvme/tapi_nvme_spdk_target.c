@@ -198,8 +198,7 @@ tapi_nvme_spdk_target_setup(tapi_nvme_target *target)
     rc = create_transport(app, target);
     if (rc != 0)
     {
-        ERROR("Failed to create SPDK transport");
-        return rc;
+        WARN("Failed to create SPDK transport, probably it's already exists");
     }
 
     rc = create_subsystem(app, target);
