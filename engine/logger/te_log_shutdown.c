@@ -22,6 +22,7 @@
 
 #include "te_stdint.h"
 #include "te_raw_log.h"
+#include "te_str.h"
 #include "logger_int.h"
 #include "ipc_client.h"
 #include "logger_internal.h"
@@ -46,7 +47,7 @@ static void sig_handler(int sig)
  * This is an entry point of te_log_shutdown task.
  */
 int
-main(void)
+main(int argc, const char *argv[])
 {
     int                 result = EXIT_SUCCESS;
     int                 len = strlen(LGR_SHUTDOWN);
@@ -56,6 +57,24 @@ main(void)
     struct ipc_client  *log_client = NULL;
     struct sigaction    sigact;
     te_errno            rc;
+    long int            log_shut_timeout = SHUTDOWN_TIMEOUT;
+
+    /* Process command line arguments */
+    if (argc > 2)
+    {
+        fprintf(stderr, "%s: too many arguments\n", __FILE__);
+        return EXIT_FAILURE;
+    }
+    else if (argc == 2)
+    {
+        rc = te_strtol_silent(argv[1], 10, &log_shut_timeout);
+        if (rc != 0)
+        {
+            fprintf(stderr, "%s: invalid timeout value: '%s'\n", __FILE__,
+                    argv[1]);
+            return EXIT_FAILURE;
+        }
+    }
 
     /* Set up the signal handler */
     sigact.sa_handler = sig_handler;
@@ -90,7 +109,7 @@ main(void)
     /* Do not wait for signal if failed to send the shutdown request */
     if (result != EXIT_FAILURE)
     {
-        alarm(SHUTDOWN_TIMEOUT);
+        alarm(log_shut_timeout);
         while (!signal_received)
             pause();
 
