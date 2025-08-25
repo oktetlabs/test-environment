@@ -329,6 +329,8 @@ Generic options:
   --logger-max-size=<size>      Maximum size of RAW log (4Gb by default;
                                 negative for unlimited; may be specified in
                                 units of G[igabytes]).
+  --logger-shut-timeout=<to>    How long to wait for Logger shutdown, in
+                                seconds (120 sec by default)
 
   --trc-log=<filename>          Generate bzip2-ed TRC log
   --trc-db=<filename>           TRC database to be used
@@ -797,9 +799,13 @@ process_opts()
                 opt_name="${1%%=*}"
                 opt_value="${1#${opt_name}=}"
                 opt_str="--${opt_name#--logger-}=\"${opt_value}\""
-                LOGGER_OPTS="${LOGGER_OPTS} ${opt_str}"
                 if [[ "${opt_name}" = "--logger-meta-file" ]] ; then
                     LOGGER_META_FILE="${opt_value}"
+                fi
+                if [[ "${opt_name}" = "--logger-shut-timeout" ]] ; then
+                    LOGGER_SHUT_TIMEOUT="${opt_value}"
+                else
+                    LOGGER_OPTS="${LOGGER_OPTS} ${opt_str}"
                 fi
                 ;;
             --logger-*) LOGGER_OPTS="${LOGGER_OPTS} --${1#--logger-}" ;;
@@ -1435,12 +1441,16 @@ test "${START_OK}" -eq 1 && SHUTDOWN=yes
 
 shutdown_daemon() {
     DAEMON=$1
+    DAEMON_SHUT_TIMEOUT=""
     if test -n "${SHUTDOWN}" -a -n "$(eval echo '${'$DAEMON'_OK}')" ; then
         DAEMON_NAME="$(eval echo '${'$DAEMON'_NAME}')"
         DAEMON_SHUT="$(eval echo '${'$DAEMON'_SHUT}')"
+        if [[ $DAEMON == "LOGGER" ]] ; then
+            DAEMON_SHUT_TIMEOUT=" ${LOGGER_SHUT_TIMEOUT}"
+        fi
         te_log_message Dispatcher Start "Shutdown ${DAEMON_NAME}"
         myecho -n "--->>> Shutdown ${DAEMON_NAME}... "
-        ${DAEMON_SHUT}
+        ${DAEMON_SHUT}${DAEMON_SHUT_TIMEOUT}
         if test $? -eq 0 ; then
             myecho "done"
         else

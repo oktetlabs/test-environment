@@ -56,7 +56,7 @@ executable('te_log_shutdown', 'te_log_shutdown.c', install: true,
            include_directories: te_include,
            c_args: c_args,
            dependencies: [ dep_lib_ipc, dep_lib_rcfapi,
-                           dep_lib_logger_core ])
+                           dep_lib_logger_core, dep_lib_tools ])
 
 executable('te_log_flush', 'te_log_flush.c', install: true,
            include_directories: te_include,
