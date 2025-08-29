@@ -608,7 +608,7 @@ tad_pkt_flatten_copy(tad_pkt *pkt, uint8_t **data, size_t *len)
         return TE_RC(TE_TAD_PKT, TE_EINVAL);
 
     total_len = (len == NULL || *len == 0) ? tad_pkt_len(pkt) : *len;
-    if (*data == NULL)
+    if (*data == NULL && total_len != 0)
         *data = TE_ALLOC(total_len);
 
     ptr = *data;
