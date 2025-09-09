@@ -211,6 +211,24 @@ static rcf_pch_cfg_object node_rule =
 te_errno
 ta_unix_conf_rule_init(void)
 {
+    netconf_list *nlist;
+
+    errno = 0;
+    if ((nlist = netconf_rule_dump(nh, AF_INET)) == NULL)
+    {
+        if (errno == EOPNOTSUPP)
+        {
+            WARN("IPv4 rules are not supported, no /agent/rule");
+            return 0;
+        }
+        else if (errno != 0)
+        {
+            WARN("No IPv4 rules in dump: %s", strerror(errno));
+        }
+    }
+
+    netconf_list_free(nlist);
+
     return rcf_pch_add_node("/agent", &node_rule);
 }
 
