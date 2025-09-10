@@ -41,10 +41,13 @@ extern te_errno fio_app_stop(tapi_fio_app *app);
  *
  * @param app           App context.
  * @param timeout_sec   Timeout in seconds.
+ * @param[out] status   Exit status (may be @c NULL)
  *
  * @return Status code
  */
-extern te_errno fio_app_wait(tapi_fio_app *app, int16_t timeout_sec);
+extern te_errno fio_app_wait(tapi_fio_app *app,
+                             int16_t timeout_sec,
+                             tapi_job_status_t *status);
 
 /**
  * Receive fio report in JSON format.

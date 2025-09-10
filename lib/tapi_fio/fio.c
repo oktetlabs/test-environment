@@ -32,13 +32,13 @@ fio_stop(tapi_fio *fio)
 }
 
 static te_errno
-fio_wait(tapi_fio *fio, int16_t timeout_sec)
+fio_wait(tapi_fio *fio, int16_t timeout_sec, tapi_job_status_t *status)
 {
     te_errno errno;
 
     ENTRY("FIO waiting %d sec", timeout_sec);
 
-    errno = fio_app_wait(&fio->app, timeout_sec);
+    errno = fio_app_wait(&fio->app, timeout_sec, status);
 
     EXIT();
     return errno;

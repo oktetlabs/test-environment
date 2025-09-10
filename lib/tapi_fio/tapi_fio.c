@@ -106,14 +106,22 @@ tapi_fio_start(tapi_fio *fio)
 
 /* See description in tapi_fio.h */
 te_errno
-tapi_fio_wait(tapi_fio *fio, int16_t timeout_sec)
+tapi_fio_wait_status(tapi_fio *fio, int16_t timeout_sec,
+                     tapi_job_status_t *status)
 {
     if (fio == NULL ||
         fio->methods == NULL ||
         fio->methods->wait == NULL)
         return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
 
-    return fio->methods->wait(fio, timeout_sec);
+    return fio->methods->wait(fio, timeout_sec, status);
+}
+
+/* See description in tapi_fio.h */
+te_errno
+tapi_fio_wait(tapi_fio *fio, int16_t timeout_sec)
+{
+    return tapi_fio_wait_status(fio, timeout_sec, NULL);
 }
 
 /* See description in tapi_fio.h */

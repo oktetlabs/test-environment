@@ -250,15 +250,14 @@ fio_app_stop(tapi_fio_app *app)
 
 /* See description in tapi_internal.h */
 te_errno
-fio_app_wait(tapi_fio_app *app, int16_t timeout_sec)
+fio_app_wait(tapi_fio_app *app, int16_t timeout_sec, tapi_job_status_t *status)
 {
-    tapi_job_status_t status;
     te_errno rc;
 
     if (timeout_sec == TAPI_FIO_TIMEOUT_DEFAULT)
         timeout_sec = get_default_timeout(&app->opts);
 
-    rc = tapi_job_wait(app->job, TE_SEC2MS(timeout_sec), &status);
+    rc = tapi_job_wait(app->job, TE_SEC2MS(timeout_sec), status);
     if (rc != 0)
         return rc;
 

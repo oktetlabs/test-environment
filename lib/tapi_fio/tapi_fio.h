@@ -296,6 +296,7 @@ typedef te_errno (*tapi_fio_method_start)(tapi_fio *fio);
  *
  * @param fio           FIO context
  * @param timeout_sec   Timeout in seconds
+ * @param[out] status   Exit status (may be @c NULL)
  *
  * @return Status code.
  * @retval 0               No errors.
@@ -305,7 +306,8 @@ typedef te_errno (*tapi_fio_method_start)(tapi_fio *fio);
  * @sa tapi_fio_wait
  */
 typedef te_errno (*tapi_fio_method_wait)(tapi_fio *fio,
-                                         int16_t timeout_sec);
+                                         int16_t timeout_sec,
+                                         tapi_job_status_t *status);
 
 /**
  * Method for stop FIO.
@@ -394,6 +396,21 @@ extern void tapi_fio_opts_init(tapi_fio_opts *options);
  * @retval TE_EOPNOTSUPP   If FIO control structure not valid.
  */
 extern te_errno tapi_fio_start(tapi_fio *fio);
+
+/**
+ * Wait certain time for FIO to complete (and return exit status)
+ *
+ * @param fio           FIO context
+ * @param timeout_sec   Timeout in seconds
+ * @param[out] status   Exit status (may be @c NULL)
+ *
+ * @return Status code.
+ * @retval 0               No errors.
+ * @retval TE_EOPNOTSUPP   If FIO control structure not valid.
+ */
+extern te_errno tapi_fio_wait_status(tapi_fio *fio,
+                                     int16_t timeout_sec,
+                                     tapi_job_status_t *status);
 
 /**
  * Wait certain time for FIO to complete.
