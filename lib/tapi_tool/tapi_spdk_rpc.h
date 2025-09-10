@@ -177,13 +177,15 @@ extern te_errno tapi_spdk_rpc_create(tapi_job_factory_t             *factory,
  * @param method      RPC method name
  * @param binds       Method-specific option bindings
  * @param opt         Method-specific options
+ * @param response    RPC command response
  *
  * @return Status code
  */
 extern te_errno tapi_spdk_rpc_do_command(tapi_spdk_rpc_app       *app,
                                          const char              *method,
                                          const tapi_job_opt_bind *binds,
-                                         const void              *opt);
+                                         const void              *opt,
+                                         te_string               *response);
 
 /**
  * Execute bdev_malloc_create command

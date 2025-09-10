@@ -24,7 +24,7 @@ struct tapi_spdk_rpc_app {
     char                     *rpc_path;
     tapi_spdk_rpc_server_opt *server_opt;
     tapi_job_channel_t       *out_chs[2];
-    tapi_job_channel_t       *error_filter;
+    tapi_job_channel_t       *stdout_filter;
 };
 
 const tapi_spdk_rpc_server_opt tapi_spdk_rpc_server_default_opt = {
@@ -242,7 +242,7 @@ create_rpc_job(tapi_spdk_rpc_app *app, const char *method,
                                           .use_stdout = true,
                                           .log_level = TE_LL_INFO,
                                           .readable = true,
-                                          .filter_var = &app->error_filter,
+                                          .filter_var = &app->stdout_filter,
                                           .filter_name = "RPC stdout",
                                       })});
     if (rc != 0)
@@ -257,7 +257,8 @@ create_rpc_job(tapi_spdk_rpc_app *app, const char *method,
 
 te_errno
 tapi_spdk_rpc_do_command(tapi_spdk_rpc_app *app, const char *method,
-                         const tapi_job_opt_bind *binds, const void *opt)
+                         const tapi_job_opt_bind *binds, const void *opt,
+                         te_string *response)
 {
     tapi_job_t       *job = NULL;
     tapi_job_status_t status;
@@ -289,7 +290,7 @@ tapi_spdk_rpc_do_command(tapi_spdk_rpc_app *app, const char *method,
         tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;
 
         /* Try to read error message */
-        if (tapi_job_receive(TAPI_JOB_CHANNEL_SET(app->error_filter), 100,
+        if (tapi_job_receive(TAPI_JOB_CHANNEL_SET(app->stdout_filter), 100,
                              &buf) == 0 &&
             buf.data.len > 0)
         {
@@ -304,6 +305,20 @@ tapi_spdk_rpc_do_command(tapi_spdk_rpc_app *app, const char *method,
         te_string_free(&buf.data);
         rc = TE_RC(TE_TAPI, TE_EFAIL);
         goto out;
+    }
+
+    if (response != NULL)
+    {
+        tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;
+
+        /* Try to read stdout */
+        if (tapi_job_receive(TAPI_JOB_CHANNEL_SET(app->stdout_filter), 100,
+                             &buf) != 0)
+        {
+            ERROR("Cannot read RPC command response");
+            goto out;
+        }
+        *response = buf.data;
     }
 
 out:
@@ -362,7 +377,7 @@ tapi_spdk_rpc_bdev_malloc_create(
         return TE_RC(TE_TAPI, TE_EINVAL);
 
     return tapi_spdk_rpc_do_command(app, "bdev_malloc_create",
-                                    bdev_malloc_binds, opt);
+                                    bdev_malloc_binds, opt, NULL);
 }
 te_errno
 tapi_spdk_rpc_bdev_malloc_delete(
@@ -372,7 +387,7 @@ tapi_spdk_rpc_bdev_malloc_delete(
         return TE_RC(TE_TAPI, TE_EINVAL);
 
     return tapi_spdk_rpc_do_command(app, "bdev_malloc_delete",
-                                    bdev_malloc_delete_binds, opt);
+                                    bdev_malloc_delete_binds, opt, NULL);
 }
 
 te_errno
@@ -384,7 +399,7 @@ tapi_spdk_rpc_nvmf_create_transport(
         return TE_RC(TE_TAPI, TE_EINVAL);
 
     return tapi_spdk_rpc_do_command(app, "nvmf_create_transport",
-                                    nvmf_create_transport_binds, opt);
+                                    nvmf_create_transport_binds, opt, NULL);
 }
 
 te_errno
@@ -396,7 +411,7 @@ tapi_spdk_rpc_nvmf_create_subsystem(
         return TE_RC(TE_TAPI, TE_EINVAL);
 
     return tapi_spdk_rpc_do_command(app, "nvmf_create_subsystem",
-                                    nvmf_create_subsystem_binds, opt);
+                                    nvmf_create_subsystem_binds, opt, NULL);
 }
 
 te_errno tapi_spdk_rpc_nvmf_delete_subsystem(
@@ -407,7 +422,7 @@ te_errno tapi_spdk_rpc_nvmf_delete_subsystem(
         return TE_RC(TE_TAPI, TE_EINVAL);
 
     return tapi_spdk_rpc_do_command(app, "nvmf_delete_subsystem",
-                                    nvmf_delete_subsystem_binds, opt);
+                                    nvmf_delete_subsystem_binds, opt, NULL);
 }
 
 te_errno
@@ -420,7 +435,7 @@ tapi_spdk_rpc_nvmf_subsystem_add_ns(
         return TE_RC(TE_TAPI, TE_EINVAL);
 
     return tapi_spdk_rpc_do_command(app, "nvmf_subsystem_add_ns",
-                                    nvmf_subsystem_add_ns_binds, opt);
+                                    nvmf_subsystem_add_ns_binds, opt, NULL);
 }
 
 te_errno
@@ -432,7 +447,7 @@ tapi_spdk_rpc_nvmf_subsystem_remove_ns(
         return TE_RC(TE_TAPI, TE_EINVAL);
 
     return tapi_spdk_rpc_do_command(app, "nvmf_subsystem_remove_ns",
-                                    nvmf_subsystem_remove_ns_binds, opt);
+                                    nvmf_subsystem_remove_ns_binds, opt, NULL);
 }
 
 te_errno
@@ -445,7 +460,7 @@ tapi_spdk_rpc_nvmf_subsystem_add_listener(
         return TE_RC(TE_TAPI, TE_EINVAL);
 
     return tapi_spdk_rpc_do_command(app, "nvmf_subsystem_add_listener",
-                                    nvmf_subsystem_add_listener_binds, opt);
+                                    nvmf_subsystem_add_listener_binds, opt, NULL);
 }
 
 te_errno
@@ -459,7 +474,7 @@ tapi_spdk_rpc_nvmf_subsystem_remove_listener(
 
     return tapi_spdk_rpc_do_command(app, "nvmf_subsystem_remove_listener",
                                     nvmf_subsystem_remove_listener_binds,
-                                    opt);
+                                    opt, NULL);
 }
 
 te_errno
@@ -468,7 +483,7 @@ tapi_spdk_rpc_bdev_nvme_attach_controller(
     const tapi_spdk_rpc_bdev_nvme_attach_controller_opt *opt)
 {
     return tapi_spdk_rpc_do_command(app, "bdev_nvme_attach_controller",
-                                    bdev_nvme_attach_controller_binds, opt);
+                                    bdev_nvme_attach_controller_binds, opt, NULL);
 }
 
 te_errno
@@ -477,5 +492,5 @@ tapi_spdk_rpc_bdev_nvme_detach_controller(
     const tapi_spdk_rpc_bdev_nvme_detach_controller_opt *opt)
 {
     return tapi_spdk_rpc_do_command(app, "bdev_nvme_detach_controller",
-                                    bdev_nvme_detach_controller_binds, opt);
+                                    bdev_nvme_detach_controller_binds, opt, NULL);
 }
