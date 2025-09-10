@@ -63,6 +63,7 @@ te_engine_libs = [
     'tapi_fio',
     'tapi_serial',
     'tapi_storage',
+    'tapi_net',
     'tapi_nvme',
     'tapi_tad',
     'tapi_tcp_states',
