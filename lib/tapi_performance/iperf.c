@@ -476,6 +476,9 @@ app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
         /* Not supported */
         report->zero_intervals = 0;
         report->min_bps_per_stream = 0;
+        report->udp_packets = 0;
+        report->udp_lost_packets = 0;
+        report->udp_lost_percent = 0;
     }
     else
     {

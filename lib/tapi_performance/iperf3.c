@@ -416,6 +416,137 @@ end:
     return rc;
 }
 
+static te_errno
+get_packets(json_t *jsum, const char *oname,
+            uint64_t *packets, uint64_t *lost_packets)
+{
+    json_t *jval;
+
+    jval = json_object_get(jsum, "packets");
+    if (!json_is_integer(jval))
+    {
+        ERROR("%s: Integer end.%s.packets is expected", __func__, oname);
+        return TE_EINVAL;
+    }
+
+    *packets = json_integer_value(jval);
+
+    jval = json_object_get(jsum, "lost_packets");
+    if (!json_is_integer(jval))
+    {
+        ERROR("%s: Integer end.%s.lost_packets is expected", __func__, oname);
+        return TE_EINVAL;
+    }
+
+    *lost_packets = json_integer_value(jval);
+    return 0;
+}
+
+static te_errno
+get_end_sum_udp_stat(const json_t *jrpt, tapi_perf_report_kind kind,
+                     tapi_perf_report *report)
+{
+    uint64_t packets;
+    uint64_t lost_packets;
+    double lost_percent;
+    json_t *jend, *jsum, *jsum_bd, *jval;
+    te_string str = TE_STRING_INIT;
+    const char *oname = "sum";
+
+    if (!json_is_object(jrpt))
+        return TE_EINVAL;
+
+    jend = json_object_get(jrpt, "end");
+    if (!json_is_object(jend))
+        return TE_EINVAL;
+
+    jsum = json_object_get(jend, oname);
+    if (!json_is_object(jsum))
+    {
+        /* Not UDP mode */
+        report->udp_packets = 0;
+        report->udp_lost_packets = 0;
+        report->udp_lost_percent = 0;
+        return 0;
+    }
+
+    switch (kind)
+    {
+        case TAPI_PERF_REPORT_KIND_DEFAULT:
+            /* Do nothing, got "end.sum" object above */
+            break;
+
+        case TAPI_PERF_REPORT_KIND_SENDER:
+            oname = "sum_sent";
+            jsum = json_object_get(jend, oname);
+            if (!json_is_object(jsum))
+            {
+                ERROR("%s: JSON object end.%s is expected", __func__, oname);
+                return TE_EINVAL;
+            }
+            break;
+
+        case TAPI_PERF_REPORT_KIND_RECEIVER:
+            oname = "sum_received";
+            jsum = json_object_get(jend, oname);
+            if (!json_is_object(jsum))
+            {
+                ERROR("%s: JSON object end.%s is expected", __func__, oname);
+                return TE_EINVAL;
+            }
+            break;
+
+        default:
+            assert(0);
+    }
+
+    if (get_packets(jsum, oname, &packets, &lost_packets) != 0)
+        return TE_EINVAL;
+
+    te_string_append(&str, "%s_bidir_reverse", oname);
+
+    jsum_bd = json_object_get(jend, str.ptr);
+    if (json_is_object(jsum_bd))
+    {
+        uint64_t packets_bd;
+        uint64_t lost_packets_bd;
+
+        /*
+         * Dual (bidirectional) mode detected,
+         * take *_bidir_reverse object data into account and count loss.
+         */
+        if (get_packets(jsum_bd, str.ptr, &packets_bd, &lost_packets_bd) != 0)
+        {
+            te_string_free(&str);
+            return TE_EINVAL;
+        }
+
+        packets += packets_bd;
+        lost_packets += lost_packets_bd;
+
+        report->udp_packets = packets;
+        report->udp_lost_packets = lost_packets;
+        report->udp_lost_percent =  ((double)lost_packets / packets) * 100;
+
+        te_string_free(&str);
+        return 0;
+    }
+
+    te_string_free(&str);
+
+    if (jsonvalue2double(json_object_get(jsum, "lost_percent"),
+                                         &lost_percent) != 0)
+    {
+        ERROR("%s: end.%s.lost_percent is expected", __func__, oname);
+        return TE_EINVAL;
+    }
+
+    report->udp_packets = packets;
+    report->udp_lost_packets = lost_packets;
+    report->udp_lost_percent = lost_percent;
+    return 0;
+}
+
 /*
  * Extract statistics report from JSON object.
  *
@@ -558,6 +689,9 @@ get_report(const json_t *jrpt, tapi_perf_report_kind kind,
     /* Estimate minimal per-thread bps */
     if (get_min_stream_bps(jrpt, kind, &tmp_report.min_bps_per_stream) != 0)
         GET_REPORT_ERROR("object \"end.streams\"");
+
+    if (get_end_sum_udp_stat(jrpt, kind, &tmp_report) != 0)
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
     tmp_report.bytes = total_bytes;
     tmp_report.bits_per_second = total_bits_per_second;
