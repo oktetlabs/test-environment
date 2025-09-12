@@ -240,6 +240,30 @@ extern tapi_net_iface_type tapi_net_iface_type_by_name(
  */
 extern te_errno tapi_net_setup_ifaces(const tapi_net_ctx *net_ctx);
 
+/**
+ * Get interface name of the top-most interface in the stack.
+ *
+ * @param  iface_head   Head of the interface stack.
+ *
+ * @return Interface name or @c NULL on error.
+ */
+extern const char *tapi_net_get_top_iface_name(
+                       const tapi_net_iface_head *iface_head);
+
+/**
+ * Get address of the top-most interface in the stack.
+ *
+ * @param[in]  iface_head   Head of the interface stack.
+ * @param[out] addr         Address of the interface.
+ *
+ * @return Status of the adding.
+ * @retval TE_ENOENT     No address assigned to requested interface.
+ * @retval 0             Success.
+ */
+extern te_errno tapi_net_get_top_iface_addr(
+                    const tapi_net_iface_head *iface_head,
+                    const struct sockaddr **addr);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

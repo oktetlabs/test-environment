@@ -445,3 +445,45 @@ tapi_net_setup_ifaces(const tapi_net_ctx *net_ctx)
 
     return 0;
 }
+
+const char *
+tapi_net_get_top_iface_name(const tapi_net_iface_head *iface_head)
+{
+    const tapi_net_iface *iface_cur;
+
+    if (iface_head == NULL)
+        return NULL;
+
+    iface_cur = SLIST_FIRST(iface_head);
+
+    while (SLIST_NEXT(iface_cur, iface_next) != NULL)
+        iface_cur = SLIST_NEXT(iface_cur, iface_next);
+
+    return iface_cur->name;
+}
+
+te_errno
+tapi_net_get_top_iface_addr(const tapi_net_iface_head *iface_head,
+                            const struct sockaddr **addr)
+{
+    const tapi_net_iface *iface_cur;
+
+    assert(iface_head != NULL);
+    assert(addr != NULL);
+
+    iface_cur = SLIST_FIRST(iface_head);
+
+    while (SLIST_NEXT(iface_cur, iface_next) != NULL)
+        iface_cur = SLIST_NEXT(iface_cur, iface_next);
+
+    if (iface_cur->addr == NULL)
+    {
+        ERROR("%s: no address is assigned to requested interface",
+              __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_ENOENT);
+    }
+
+    *addr = iface_cur->addr;
+
+    return 0;
+}
