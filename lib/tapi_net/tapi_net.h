@@ -231,6 +231,15 @@ extern tapi_net_iface *tapi_net_find_iface_by_name(tapi_net_ta *net_cfg_ta,
 extern tapi_net_iface_type tapi_net_iface_type_by_name(
                                const char *iface_type_str);
 
+/**
+ * Setup interfaces specified in the network context.
+ *
+ * @param net_ctx    Network context.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_net_setup_ifaces(const tapi_net_ctx *net_ctx);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

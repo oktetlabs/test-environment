@@ -271,3 +271,177 @@ tapi_net_iface_type_by_name(const char *iface_type_str)
     return te_enum_map_from_str(iface_type_map, iface_type_str,
                                 TAPI_NET_IFACE_TYPE_UNKNOWN);
 }
+
+typedef te_errno (*setup_iface_handler)(const char *ta,
+                                        const tapi_net_iface *iface,
+                                        const tapi_net_iface *base_iface);
+
+static te_errno
+setup_base_iface(const char *ta, const tapi_net_iface *iface,
+                 const tapi_net_iface *base_iface)
+{
+    cfg_handle *handles = NULL;
+    unsigned int count = 0;
+
+    UNUSED(base_iface);
+
+    cfg_find_pattern_fmt(&count, &handles, "/agent:%s/interface:%s/",
+                         ta, iface->name);
+    if (count != 1)
+    {
+        ERROR("Failed to find base interface '%s' in Configurator Tree",
+              iface->name);
+        return TE_RC(TE_TAPI, TE_ENOENT);
+    }
+
+    return 0;
+}
+
+static te_errno
+unknown_iface_handler(const char *ta,
+                      const tapi_net_iface *iface,
+                      const tapi_net_iface *base_iface)
+{
+    UNUSED(ta);
+    UNUSED(iface);
+    UNUSED(base_iface);
+
+    ERROR("Unsupported interface type");
+
+    return TE_RC(TE_TAPI, TE_EINVAL);
+}
+
+static te_errno
+setup_vlan_iface(const char *ta, const tapi_net_iface *iface,
+                 const tapi_net_iface *base_iface)
+{
+    char *iface_real_name = NULL;
+    te_errno rc;
+
+    if (base_iface == NULL)
+    {
+        ERROR("Base interface must specified for VLAN interface");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = tapi_cfg_base_if_add_vlan(ta, base_iface->name,
+                                   iface->conf.vlan.vlan_id, &iface_real_name);
+    if (rc != 0)
+    {
+        ERROR("Failed to add VLAN interface: %r", rc);
+        return rc;
+    }
+
+    if (strcmp(iface->name, iface_real_name) != 0)
+    {
+        ERROR("Created VLAN interface has different name");
+        return TE_RC(TE_TAPI, TE_EFAIL);
+    }
+
+    return 0;
+}
+
+static te_errno
+setup_qinq_iface(const char *ta, const tapi_net_iface *iface,
+                 const tapi_net_iface *base_iface)
+{
+    UNUSED(ta);
+    UNUSED(iface);
+
+    if (base_iface == NULL)
+    {
+        ERROR("Base interface must specified for QinQ interface");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    ERROR("QinQ setup is not supported yet");
+
+    return TE_RC(TE_TAPI, TE_EINVAL);
+}
+
+static te_errno
+setup_gre_iface(const char *ta, const tapi_net_iface *iface,
+                const tapi_net_iface *base_iface)
+{
+    UNUSED(ta);
+    UNUSED(iface);
+
+    if (base_iface == NULL)
+    {
+        ERROR("Base interface must specified for GRE interface");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    ERROR("GRE setup is not supported yet");
+
+    return TE_RC(TE_TAPI, TE_EINVAL);
+}
+
+static const TE_ENUM_MAP_ACTION(setup_iface_handler) setup_iface_actions[] = {
+    { "base", setup_base_iface },
+    { "vlan", setup_vlan_iface },
+    { "qinq", setup_qinq_iface },
+    { "gre",  setup_gre_iface },
+    TE_ENUM_MAP_END
+};
+
+static te_errno
+setup_iface_stack(const char *ta, const tapi_net_iface_head *iface_stack)
+{
+    const tapi_net_iface *iface_prev = NULL;
+    const tapi_net_iface *iface = NULL;
+    const tapi_net_iface *tmp = NULL;
+    te_errno rc;
+
+    SLIST_FOREACH_SAFE(iface, iface_stack, iface_next, tmp)
+    {
+        const char *type_name = te_enum_map_from_any_value(iface_type_map,
+                                                           iface->type,
+                                                           "unknown");
+
+        if (iface->type == TAPI_NET_IFACE_TYPE_BASE && iface_prev != NULL)
+        {
+            ERROR("Base interface must come first in the interface stack");
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+
+        TE_ENUM_DISPATCH(setup_iface_actions, unknown_iface_handler,
+                         type_name, rc, ta, iface, iface_prev);
+        if (rc != 0)
+        {
+            ERROR("Failed to set up %s interface on %s: %r", type_name, ta, rc);
+            return rc;
+        }
+
+        iface_prev = iface;
+    }
+
+    return 0;
+}
+
+te_errno
+tapi_net_setup_ifaces(const tapi_net_ctx *net_ctx)
+{
+    const tapi_net_iface_head *iface;
+    const tapi_net_ta *agent;
+    te_errno rc;
+
+    if (net_ctx == NULL)
+        return 0;
+
+    TE_VEC_FOREACH(&net_ctx->agents, agent)
+    {
+        TE_VEC_FOREACH(&agent->ifaces, iface)
+        {
+            rc = setup_iface_stack(agent->ta_name, iface);
+            if (rc != 0)
+            {
+                ERROR("%s: failed to setup one of interfaces on %s",
+                      __FUNCTION__, agent->ta_name);
+                return rc;
+            }
+        }
+    }
+
+    return 0;
+}
