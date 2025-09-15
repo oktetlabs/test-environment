@@ -14,6 +14,7 @@
 #include "te_alloc.h"
 #include "te_str.h"
 #include "tapi_cfg_base.h"
+#include "tapi_cfg_net.h"
 #include "logger_api.h"
 #include "tapi_net.h"
 
@@ -484,6 +485,388 @@ tapi_net_get_top_iface_addr(const tapi_net_iface_head *iface_head,
     }
 
     *addr = iface_cur->addr;
+
+    return 0;
+}
+
+/* Match net from Configurator tree with one from network context. */
+static bool
+match_cfg_net(const cfg_net_t *cfg_net, const tapi_net_link *net_link)
+{
+    char *ifname[TAPI_NET_EP_NUM] = {};
+    char *ta[TAPI_NET_EP_NUM] = {};
+    char *oid_str;
+    cfg_oid *oid;
+    bool found = false;
+    te_errno rc;
+    int i;
+
+    assert(cfg_net != NULL);
+    assert(net_link != NULL);
+
+    if (cfg_net->n_nodes != TAPI_NET_EP_NUM)
+        return false;
+
+    for (i = 0; i < TAPI_NET_EP_NUM; i++)
+    {
+        cfg_val_type type = CVT_STRING;
+
+        rc = cfg_get_instance(cfg_net->nodes[i].handle, &type, &oid_str);
+        if (rc != 0)
+            return false;
+
+        oid = cfg_convert_oid_str(oid_str);
+        free(oid_str);
+
+        if (!oid->inst)
+            return false;
+
+        /* TODO: Anti-pattern. Changes in CFG API are required to fix it. */
+        if (strcmp(cfg_oid_inst_subid(oid, 1), "agent") != 0 ||
+            strcmp(cfg_oid_inst_subid(oid, 2), "interface") != 0)
+        {
+            cfg_free_oid(oid);
+            return false;
+        }
+
+        ta[i] = TE_STRDUP(CFG_OID_GET_INST_NAME(oid, 1));
+        ifname[i] = TE_STRDUP(CFG_OID_GET_INST_NAME(oid, 2));
+
+        cfg_free_oid(oid);
+    }
+
+    for (i = 0; i < TAPI_NET_EP_NUM; i++)
+    {
+        int flip = TAPI_NET_EP_NUM - i - 1;
+
+        if (strcmp(ta[0], net_link->endpoints[i].ta_name) == 0 &&
+            strcmp(ifname[0], net_link->endpoints[i].if_name) == 0 &&
+            strcmp(ta[1], net_link->endpoints[flip].ta_name) == 0 &&
+            strcmp(ifname[1], net_link->endpoints[flip].if_name) == 0)
+        {
+            found = true;
+            break;
+        }
+    }
+
+    for (i = 0; i < TAPI_NET_EP_NUM; i++)
+    {
+        free(ifname[i]);
+        free(ta[i]);
+    }
+
+    return found;
+}
+
+/* Check if a network with the same two endpoints already exists in Configurator. */
+static bool
+net_link_exists(const tapi_net_link *net_link)
+{
+    cfg_nets_t nets;
+    unsigned int i;
+    te_errno rc;
+
+    rc = tapi_cfg_net_get_nets(&nets);
+    if (rc != 0)
+        return false;
+
+    for (i = 0; i < nets.n_nets; i++)
+    {
+        if (match_cfg_net(&nets.nets[i], net_link))
+        {
+            tapi_cfg_net_free_nets(&nets);
+            return true;
+        }
+    }
+
+    tapi_cfg_net_free_nets(&nets);
+
+    return false;
+}
+
+/** Register network in Configurator. */
+static te_errno
+net_register(const tapi_net_link *net_link, cfg_net_t **cfg_net)
+{
+    te_string oid_ep0_str = TE_STRING_INIT_STATIC(CFG_OID_MAX);
+    te_string oid_ep1_str = TE_STRING_INIT_STATIC(CFG_OID_MAX);
+    cfg_net_t *cfg_net_tmp;
+    te_errno rc;
+
+    assert(net_link != NULL);
+    assert(cfg_net != NULL);
+
+    cfg_net_tmp = TE_ALLOC(sizeof(*cfg_net_tmp));
+
+    te_string_append(&oid_ep0_str, "/agent:%s/interface:%s",
+                     net_link->endpoints[0].ta_name,
+                     net_link->endpoints[0].if_name);
+    te_string_append(&oid_ep1_str, "/agent:%s/interface:%s",
+                     net_link->endpoints[1].ta_name,
+                     net_link->endpoints[1].if_name);
+
+    rc = tapi_cfg_net_register_net(net_link->name, cfg_net_tmp,
+                                   oid_ep0_str.ptr, NET_NODE_TYPE_AGENT,
+                                   oid_ep1_str.ptr, NET_NODE_TYPE_AGENT,
+                                   NULL);
+    if (rc != 0)
+    {
+        ERROR("Failed to register network '%s': %r", net_link->name, rc);
+        return rc;
+    }
+
+    *cfg_net = cfg_net_tmp;
+
+    return 0;
+}
+
+static unsigned
+inet_version(int af)
+{
+    switch (af)
+    {
+       case AF_INET:
+           return 4;
+
+       case AF_INET6:
+           return 6;
+
+       default:
+           TE_FATAL_ERROR("Unsupported address family: %d", af);
+    }
+}
+
+static te_errno
+net_get_node_info(cfg_handle node_handle, int af, struct sockaddr **addr,
+                  char **ta_name, char **iface_name)
+{
+    cfg_val_type type = CVT_ADDRESS;
+    cfg_handle *ip_handles = NULL;
+    char *node_oid = NULL;
+    char *oid_str = NULL;
+    cfg_oid *oid = NULL;
+    unsigned int ip_num;
+    te_errno rc = 0;
+
+    rc = cfg_get_oid_str(node_handle, &node_oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to get OID of network node %u: %r", node_handle, rc);
+        goto out;
+    }
+
+    rc = cfg_get_string(&oid_str, "%s", node_oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to get interface of network node %s: %r", node_oid, rc);
+        goto out;
+    }
+
+    oid = cfg_convert_oid_str(oid_str);
+    if (oid == NULL)
+    {
+        ERROR("Failed to convert OID of network node %u: %r", node_handle, rc);
+        goto out;
+    }
+
+    if (ta_name != NULL)
+        *ta_name = cfg_oid_get_inst_name(oid, 1);
+    if (iface_name != NULL)
+        *iface_name = cfg_oid_get_inst_name(oid, 2);
+
+    if (addr != NULL)
+    {
+        rc = cfg_find_pattern_fmt(&ip_num, &ip_handles, "%s/ip%u_address:*",
+                                  node_oid, inet_version(af));
+        if (rc != 0)
+        {
+            ERROR("Failed to find IPv%u address of network node %s: %r",
+                  inet_version(af), node_oid, rc);
+            goto out;
+        }
+
+        if (ip_num != 1)
+        {
+            ERROR("Node %s has %d IPv%u addresses, unsupported",
+                  node_oid, ip_num, inet_version(af));
+            rc = TE_RC(TE_TAPI, TE_EINVAL);
+        }
+
+        rc = cfg_get_instance(ip_handles[0], &type, addr);
+        if (rc != 0)
+        {
+            ERROR("Failed to get IPv%u address of network node %s: %r",
+                  inet_version(af), node_oid, rc);
+        }
+    }
+
+out:
+    free(ip_handles);
+    free(oid_str);
+    cfg_free_oid(oid);
+    free(node_oid);
+
+    return rc;
+}
+
+static const tapi_net_link *
+find_net_link_by_cfg_net(const cfg_net_t *cfg_net,
+                         const tapi_net_ctx *net_ctx)
+{
+    const tapi_net_link *net_link;
+
+    TE_VEC_FOREACH(&net_ctx->nets, net_link)
+    {
+        if (match_cfg_net(cfg_net, net_link))
+            return net_link;
+    }
+
+    return NULL;
+}
+
+static te_errno
+agent_if_addr_set_by_net(const cfg_net_t *cfg_net, tapi_net_ctx *net_ctx)
+{
+    const tapi_net_link *net_link;
+    struct sockaddr *addr;
+    tapi_net_iface *iface;
+    tapi_net_ta *agent;
+    unsigned int i;
+    char *ta_name;
+    char *if_name;
+    te_errno rc;
+    int af;
+
+    assert(cfg_net != NULL);
+    assert(net_ctx != NULL);
+
+    net_link = find_net_link_by_cfg_net(cfg_net, net_ctx);
+    if (net_link == NULL)
+        return 0;
+
+    af = net_link->af;
+
+    for (i = 0; i < cfg_net->n_nodes; i++)
+    {
+        rc = net_get_node_info(cfg_net->nodes[i].handle, af, &addr,
+                               &ta_name, &if_name);
+        if (rc != 0)
+        {
+            ERROR("Failed to get information about one of network nodes: %r",
+                  rc);
+            free(ta_name);
+            free(if_name);
+            return rc;
+        }
+
+        agent = tapi_net_find_agent_by_name(net_ctx, ta_name);
+        if (agent == NULL)
+        {
+            ERROR("Agent %s is missing in test network configuration");
+            return TE_RC(TE_TAPI, TE_ENOENT);
+        }
+
+        iface = tapi_net_find_iface_by_name(agent, if_name);
+        if (iface == NULL)
+        {
+            ERROR("Interface %s is missing on %s agent in test network configuration",
+                  if_name, ta_name);
+            return TE_RC(TE_TAPI, TE_ENOENT);
+        }
+
+        iface->addr = addr;
+
+        free(ta_name);
+        free(if_name);
+    }
+
+    return 0;
+}
+
+/**
+ * Fill in IP addresses for logical interfaces based on netowrks in Configurator.
+ *
+ * This function set appropriate IP addresses for the logical interface
+ * structures mentioned in Configurator to use them after in tests.
+ */
+static te_errno
+net_addr_fill(tapi_net_ctx *net_ctx)
+{
+    cfg_nets_t nets;
+    te_errno rc = 0;
+    unsigned int i;
+
+    rc = tapi_cfg_net_get_nets(&nets);
+    if (rc != 0)
+    {
+        ERROR("Failed to get nets configuration: %r", rc);
+        return rc;
+    }
+
+    for (i = 0; i < nets.n_nets; i++)
+    {
+        rc = agent_if_addr_set_by_net(&nets.nets[i], net_ctx);
+        if (rc != 0)
+        {
+            ERROR("Failed to process %s network: %r", nets.nets[i].name, rc);
+            goto out;
+        }
+    }
+
+out:
+    tapi_cfg_net_free_nets(&nets);
+
+    return rc;
+}
+
+te_errno
+tapi_net_setup(tapi_net_ctx *net_ctx)
+{
+    const tapi_net_link *net_link;
+    te_errno rc;
+
+    assert(net_ctx != NULL);
+
+    rc = tapi_net_setup_ifaces(net_ctx);
+    if (rc != 0)
+    {
+        ERROR("%s: failed to setup interfaces specified in network context: %r",
+              __FUNCTION__, rc);
+    }
+
+    TE_VEC_FOREACH(&net_ctx->nets, net_link)
+    {
+        cfg_net_t *cfg_net;
+
+        if (net_link_exists(net_link))
+            continue;
+
+        rc = net_register(net_link, &cfg_net);
+        if (rc != 0)
+            return rc;
+
+        rc = tapi_cfg_net_assign_ip(net_link->af, cfg_net, NULL);
+        if (rc != 0)
+        {
+            ERROR("%s: failed to assign IPs to net %s: %r", __FUNCTION__,
+                  net_link->name, rc);
+            return rc;
+        }
+    }
+
+    rc = net_addr_fill(net_ctx);
+    if (rc != 0)
+    {
+        ERROR("%s: failed to obtain interface addresses from Configurator: %r",
+              __FUNCTION__, rc);
+    }
+
+    rc = tapi_cfg_net_all_up(false);
+    if (rc != 0)
+    {
+        ERROR("%s: failed to up all interfaces mentioned in networks configuration: %r",
+              __FUNCTION__, rc);
+    }
 
     return 0;
 }

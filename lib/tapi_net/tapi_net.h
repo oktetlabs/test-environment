@@ -264,6 +264,15 @@ extern te_errno tapi_net_get_top_iface_addr(
                     const tapi_net_iface_head *iface_head,
                     const struct sockaddr **addr);
 
+/**
+ * Setup network based on network context.
+ *
+ * @param net_ctx       Network contex to use for setup.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_net_setup(tapi_net_ctx *net_ctx);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
