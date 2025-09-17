@@ -407,3 +407,39 @@ tapi_tcp_ip6_icmp_ip6_eth_csap_create(
                                     IPPROTO_TCP, tcp_csap);
 }
 
+te_errno
+tapi_icmp6_wrap_tmpl(asn_value *tmpl,
+                     const void *src_eth, const void *dst_eth,
+                     uint8_t *ip6_src, uint8_t *ip6_dst, int hop_limit,
+                     uint8_t icmp_type, uint8_t icmp_code,
+                     icmp6_msg_body *msg_body)
+{
+    uint16_t eth_type = ETHERTYPE_IPV6;
+    te_errno rc = 0;
+
+    rc = tapi_icmp6_add_pdu(&tmpl, NULL, false, icmp_type, icmp_code,
+                            msg_body, NULL);
+    if (rc != 0)
+    {
+        ERROR("Failed to add icmp6 PDU: %r", rc);
+        return rc;
+    }
+
+    rc = tapi_ip6_add_pdu(&tmpl, NULL, false, ip6_src, ip6_dst,
+                          IPPROTO_ICMPV6, hop_limit);
+    if (rc != 0)
+    {
+        ERROR("Failed to add inner ip6 PDU: %r", rc);
+        return rc;
+    }
+
+    rc = tapi_eth_add_pdu(&tmpl, NULL, false, dst_eth, src_eth, &eth_type,
+                          TE_BOOL3_ANY, TE_BOOL3_FALSE);
+    if (rc != 0)
+    {
+        ERROR("Failed to add eth PDU: %r", rc);
+        return rc;
+    }
+
+    return 0;
+}

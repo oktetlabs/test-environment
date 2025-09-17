@@ -94,6 +94,64 @@ extern te_errno tapi_tcp_ip_icmp_ip_eth_csap_create(
                                 int                    af,
                                 csap_handle_t         *tcp_csap);
 
+/**
+ * Encapsulate packet template in ICMP header.
+ *
+ * @param[in]  tmpl         Packet template to encapsulate.
+ * @param[in]  src_eth      Source MAC address for ETH header.
+ * @param[in]  dst_eth      Destination address for ETH header.
+ * @param[in]  src_addr     Source IP address for IP header.
+ * @param[in]  dst_addr     Destination IP address for IP header.
+ * @param[in]  ttl_hoplimit TTL or Hop Limit for IP header.
+ * @param[in]  ip4_tos      TOS field for IP header. For IPv4 only.
+ *                          (may be @c -1 for the default value).
+ * @param[in]  af           Address family.
+ * @param[in]  icmp_type    ICMP type.
+ * @param[in]  icmp_code    ICMP code.
+ * @param[in]  msg_body     ICMP message body. For IPv6 only.
+ *                          (may be @c NULL for the default value).
+ * @param[out] icmp_tmpl    Resulting packet template.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_icmp_tmpl_encap_ext(
+                    const asn_value *tmpl,
+                    const void *src_eth, const void *dst_eth,
+                    const struct sockaddr *src_addr,
+                    const struct sockaddr *dst_addr,
+                    int ttl_hoplimit, int ip4_tos, int af,
+                    uint8_t icmp_type, uint8_t icmp_code,
+                    icmp6_msg_body *msg_body,
+                    asn_value **icmp_tmpl);
+
+/**
+ * Wrapper for @b tapi_icmp_tmpl_encap_ext with default options.
+ *
+ * @param[in]  tmpl         Packet template to encapsulate.
+ * @param[in]  src_eth      Source MAC address for ETH header.
+ * @param[in]  dst_eth      Destination address for ETH header.
+ * @param[in]  src_addr     Source IP address for IP header.
+ * @param[in]  dst_addr     Destination IP address for IP header.
+ * @param[in]  af           Address family.
+ * @param[in]  icmp_type    ICMP type.
+ * @param[in]  icmp_code    ICMP code.
+ * @param[out] icmp_tmpl    Resulting packet template.
+ *
+ * @return Status code
+ */
+static inline te_errno
+tapi_icmp_tmpl_encap(const asn_value *tmpl,
+                      const void *src_eth, const void *dst_eth,
+                      const struct sockaddr *src_addr,
+                      const struct sockaddr *dst_addr,
+                      int af, uint8_t icmp_type, uint8_t icmp_code,
+                      asn_value **icmp_tmpl)
+{
+    return tapi_icmp_tmpl_encap_ext(tmpl, src_eth, dst_eth, src_addr,
+                                     dst_addr, -1, -1, af, icmp_type,
+                                     icmp_code, NULL, icmp_tmpl);
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

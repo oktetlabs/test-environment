@@ -147,3 +147,105 @@ tapi_tcp_ip_icmp_ip_eth_csap_create(const char    *ta_name,
                                         msg_loc_saddr, msg_rem_saddr,
                                         af, IPPROTO_TCP, tcp_csap);
 }
+
+static te_errno
+tmpl_icmp_wrap(asn_value *tmpl,
+               const void *src_eth, const void *dst_eth,
+               const struct sockaddr *src_addr,
+               const struct sockaddr *dst_addr,
+               int ttl_hoplimit, int ip4_tos, int af,
+               uint8_t icmp_type, uint8_t icmp_code,
+               icmp6_msg_body *msg_body)
+{
+    te_errno rc = 0;
+
+    switch (af)
+    {
+        case AF_INET:
+            rc = tapi_icmp4_wrap_tmpl(tmpl, src_eth, dst_eth,
+                                      (uint8_t *)&(SIN(src_addr)->sin_addr),
+                                      (uint8_t *)&(SIN(dst_addr)->sin_addr),
+                                      ttl_hoplimit, ip4_tos, icmp_type,
+                                      icmp_code);
+            break;
+
+        case AF_INET6:
+        {
+            icmp6_msg_body *body_ptr = msg_body;
+            icmp6_msg_body body = {};
+
+            if (body_ptr == NULL)
+            {
+                body.msg_type = icmp_type;
+                body_ptr = &body;
+            }
+
+            rc = tapi_icmp6_wrap_tmpl(tmpl, src_eth, dst_eth,
+                                      (uint8_t *)&(SIN6(src_addr)->sin6_addr),
+                                      (uint8_t *)&(SIN6(dst_addr)->sin6_addr),
+                                      ttl_hoplimit, icmp_type, icmp_code,
+                                      body_ptr);
+            break;
+        }
+
+        default:
+            ERROR("Invalid IP address family: %d", af);
+            rc = TE_EINVAL;
+    }
+
+    return rc;
+}
+
+te_errno
+tapi_icmp_tmpl_encap_ext(const asn_value *tmpl,
+                         const void *src_eth, const void *dst_eth,
+                         const struct sockaddr *src_addr,
+                         const struct sockaddr *dst_addr,
+                         int ttl_hoplimit, int ip4_tos, int af,
+                         uint8_t icmp_type, uint8_t icmp_code,
+                         icmp6_msg_body *msg_body,
+                         asn_value **icmp_tmpl)
+{
+    asn_value          *tmpl_copy = NULL;
+    uint16_t            prio[2] = {0};
+    uint16_t            vid[2] = {0};
+    uint16_t            cfi[2] = {0};
+    asn_value          *pdus = NULL;
+    size_t              n_tags;
+    te_errno            rc = 0;
+
+    tmpl_copy = asn_copy_value(tmpl);
+    if (tmpl_copy == NULL)
+    {
+        ERROR("Failed to copy original ASN.1 template");
+        return TE_EFAIL;
+    }
+
+    n_tags = TE_ARRAY_LEN(vid);
+    rc = tapi_eth_header_free(tmpl_copy, &n_tags, vid, prio, cfi);
+    if (rc != 0)
+        goto err;
+
+    rc = tmpl_icmp_wrap(tmpl_copy, src_eth, dst_eth, src_addr, dst_addr,
+                        ttl_hoplimit, ip4_tos, af, icmp_type, icmp_code,
+                        msg_body);
+    if (rc != 0)
+        goto err;
+
+    pdus = asn_find_descendant(tmpl_copy, NULL, "pdus");
+    rc = tapi_ndn_pdus_inject_vlan_tags(pdus, vid, prio, cfi, n_tags);
+    if (rc != 0)
+    {
+        ERROR("Failed to reinject VLAN tags for ICMP packet: %r", rc);
+        goto err;
+    }
+
+    *icmp_tmpl = tmpl_copy;
+
+    return 0;
+
+err:
+    asn_free_value(tmpl_copy);
+
+    return rc;
+}

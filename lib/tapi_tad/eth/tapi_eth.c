@@ -521,3 +521,54 @@ out:
 
     return TE_RC(TE_TAPI, err);
 }
+
+te_errno
+tapi_eth_header_free(asn_value *tmpl, size_t *n_tags, uint16_t *vid,
+                     uint16_t *prio, uint16_t *cfi)
+{
+    asn_child_desc_t *eth_hdrs = NULL;
+    asn_value        *pdus = NULL;
+    asn_value        *eth = NULL;
+    unsigned int      n_hdrs;
+    te_errno          rc;
+
+    if (tmpl == NULL)
+        return 0;
+
+    pdus = asn_find_descendant(tmpl, &rc, "pdus");
+    if (rc != 0)
+    {
+        ERROR("Failed to get pdus: %r", rc);
+        return rc;
+    }
+
+    rc = asn_find_child_choice_values(pdus, TE_PROTO_ETH,
+                                      &eth_hdrs, &n_hdrs);
+    if (rc != 0)
+    {
+        ERROR("Failed to get eth PDU from template");
+        return rc;
+    }
+    if (n_hdrs < 1)
+    {
+        ERROR("No ethernet headers found in template");
+        return TE_ENOENT;
+    }
+
+    eth = eth_hdrs[n_hdrs - 1].value;
+    rc = tapi_ndn_eth_read_vlan_tci(eth, n_tags, vid, prio, cfi);
+    if (rc != 0)
+    {
+        ERROR("Failed to read VLAN TCI");
+        return rc;
+    }
+
+    rc = asn_remove_indexed(pdus, eth_hdrs[n_hdrs - 1].index, "");
+    if (rc != 0)
+    {
+        ERROR("Failed to remove ethernet header from template: %r", rc);
+        return rc;
+    }
+
+    return 0;
+}

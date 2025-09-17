@@ -224,6 +224,27 @@ tapi_icmp_ip4_csap_create(const char    *ta_name,
                           in_addr_t      dst_addr,
                           csap_handle_t *icmp_csap);
 
+/**
+ * Encapsulate packet template in ICMPv4 header, adding required IPv4 and
+ * Ethernet layers.
+ *
+ * @param[in,out] tmpl      Packet template to encapsulate.
+ * @param[in]     src_eth   Source MAC address for the Ethernet header.
+ * @param[in]     dst_eth   Destination MAC address for the Ethernet header.
+ * @param[in]     ip4_src   Source IPv4 address (in network byte order).
+ * @param[in]     ip4_dst   Destination IPv4 address (in network byte order).
+ * @param[in]     ip4_ttl   TTL value for the IPv4 header.
+ * @param[in]     ip4_tos   Type of Service field for the IPv4 header.
+ * @param[in]     icmp_type ICMPv4 type.
+ * @param[in]     icmp_code ICMPv4 code.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_icmp4_wrap_tmpl(asn_value *tmpl, const void *src_eth,
+                                     const void *dst_eth, uint8_t *ip4_src,
+                                     uint8_t *ip4_dst, int ip4_ttl,
+                                     int ip4_tos, uint8_t icmp_type,
+                                     uint8_t icmp_code);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -332,3 +332,42 @@ tapi_icmp_ip4_csap_create(const char    *ta_name,
 
     return TE_RC(TE_TAPI, rc);
 }
+
+te_errno
+tapi_icmp4_wrap_tmpl(asn_value *tmpl,
+                    const void *src_eth, const void *dst_eth,
+                    uint8_t *ip4_src, uint8_t *ip4_dst,
+                    int ip4_ttl, int ip4_tos,
+                    uint8_t icmp_type, uint8_t icmp_code)
+{
+    uint16_t eth_type = ETHERTYPE_IP;
+    te_errno rc;
+
+    rc = tapi_icmp4_add_pdu(&tmpl, NULL, false, icmp_type, icmp_code);
+    if (rc != 0)
+    {
+        ERROR("Failed to add icmp4 PDU: %r", rc);
+        return rc;
+    }
+
+    rc = tapi_ip4_add_pdu(&tmpl, NULL, false,
+                          *(in_addr_t *)ip4_src,
+                          *(in_addr_t *)ip4_dst,
+                          IPPROTO_ICMP, ip4_ttl, ip4_tos);
+    if (rc != 0)
+    {
+        ERROR("Failed to add inner ipv4 PDU: %r", rc);
+        return rc;
+    }
+
+    rc = tapi_eth_add_pdu(&tmpl, NULL, false,
+                          dst_eth, src_eth, &eth_type,
+                          TE_BOOL3_ANY, TE_BOOL3_FALSE);
+    if (rc != 0)
+    {
+        ERROR("Failed to add eth PDU: %r", rc);
+        return rc;
+    }
+
+    return 0;
+}

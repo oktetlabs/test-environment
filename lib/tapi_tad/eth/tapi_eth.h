@@ -285,6 +285,28 @@ extern te_errno tapi_eth_based_csap_create_by_tmpl(const char      *ta_name,
                                                    const asn_value *tmpl,
                                                    csap_handle_t   *eth_csap);
 
+/**
+ * Remove the last Ethernet header from a packet template with extracting
+ * VLAN TCI parameters.
+ *
+ * @param[in,out] tmpl    Packet template containing PDUs.
+ * @param[out]    n_tags  Number of VLAN tags found in the Ethernet header
+ *                        (may be @c NULL if not needed).
+ * @param[out]    vid     VLAN identifier extracted from the Ethernet header
+ *                        (may be @c NULL if not needed).
+ * @param[out]    prio    VLAN priority extracted from the Ethernet
+ *                        header (may be @c NULL if not needed).
+ * @param[out]    cfi     CFI value extracted from the Ethernet header
+ *                        (may be @c NULL if not needed).
+ *
+ * @return Status code:
+ * @retval 0           Success.
+ * @retval TE_ENOENT   No Ethernet headers were found.
+ */
+extern te_errno tapi_eth_header_free(asn_value *tmpl, size_t *n_tags,
+                                     uint16_t *vid, uint16_t *prio,
+                                     uint16_t *cfi);
+
 #endif /* __TE_TAPI_ETH_H__ */
 
 /**@} <!-- END tapi_tad_eth --> */

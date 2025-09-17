@@ -302,6 +302,28 @@ extern te_errno tapi_tcp_ip6_icmp_ip6_eth_csap_create(
                             const struct sockaddr_in6  *msg_rem_saddr,
                             csap_handle_t              *tcp_csap);
 
+/**
+ * Encapsulate packet template in ICMPv6 header, adding required IPv6 and
+ * Ethernet layers.
+ *
+ * @param[in,out] tmpl       Packet template to encapsulate.
+ * @param[in]     src_eth    Source MAC address for the Ethernet header.
+ * @param[in]     dst_eth    Destination MAC address for the Ethernet header.
+ * @param[in]     ip6_src    Source IPv6 address (in network byte order).
+ * @param[in]     ip6_dst    Destination IPv6 address (in network byte order).
+ * @param[in]     hop_limit  Hop Limit value for the IPv6 header.
+ * @param[in]     icmp_type  ICMPv6 type.
+ * @param[in]     icmp_code  ICMPv6 code.
+ * @param[in]     msg_body   Optional ICMPv6 message body (may be @c NULL).
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_icmp6_wrap_tmpl(asn_value *tmpl, const void *src_eth,
+                                     const void *dst_eth, uint8_t *ip6_src,
+                                     uint8_t *ip6_dst, int hop_limit,
+                                     uint8_t icmp_type, uint8_t icmp_code,
+                                     icmp6_msg_body *msg_body);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
