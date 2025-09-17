@@ -1,149 +1,21 @@
 #!/bin/bash
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (C) 2022-2023 OKTET Labs Ltd. All rights reserved.
+# Copyright (C) 2025 OKTET Labs Ltd. All rights reserved.
 
 set -u
 
-INSTALLCMD="ln -s"
-FORCE=
-DRYRUN=
-QUIET=
-CHAIN=
-UNINSTALL=
-
-function print_usage ()
-{
-    cat <<EOF
-Usage: $0 [--force] [--copy] [--dry-run]
-
-Installs TE Git hooks into the current working tree.
-
-  --chain    Chain an already installed hook, so that
-             it would run before this one
-
-  --force    Allows to replace an already existing hooks
-
-  --copy     Use copy, not symlinking to install hooks
-
-  --dry-run  Do not install anything, just print the commands
-
-  --uninstall Remove installed hooks
-
-  --quiet    Do not print informational messages
-
-
-A hook may be installed in the TE tree or in some testsuite
-or other project if they share the same Contributor's guidelines.
-
-Currently only a pre-push hook is implemented.
-
-The following configuration options affect the behaviour of
-the hooks. They may be set permanently in Git repo config files, e.g.:
-
-   git config --local hooks.allownonascii true
-
-EOF
-
-    sed -n 's/^[[:space:]]*##! \?//p' \
-        "${src_repo}/scripts/hooks/git-prepush-hook" |
-        while read -r name descr; do
-            printf "%-40s %s\n" "hooks.${name}" "${descr}"
-        done
-}
-
-dest_repo="$(git rev-parse --show-toplevel)" || exit 1
-pushd "$(dirname "$0")" >/dev/null || exit 1
-src_repo="$(git rev-parse --show-toplevel)" || exit 1
-popd >/dev/null || exit 1
-
-hook="${dest_repo}/.git/hooks/pre-push"
-src="scripts/hooks/git-prepush-hook"
-
-if [[ "${src_repo}" != "${dest_repo}" ]]; then
-    src="${src_repo}/${src}"
+if command -v ol_install_hooks >/dev/null 2>/dev/null; then
+    OL_INSTALL_HOOKS=ol_install_hooks
 else
-    src="../../${src}"
-fi
-
-for arg; do
-    case "${arg}" in
-        -h | --help)
-            print_usage
-            exit 0
-            ;;
-        --chain)
-            CHAIN=1
-            ;;
-        --force)
-            FORCE=1
-            ;;
-        --copy)
-            INSTALLCMD="cp"
-            ;;
-        --uninstall)
-            UNINSTALL=1
-            ;;
-        -q | --quiet)
-            QUIET="yes"
-            ;;
-        -n | --dry-run)
-            DRYRUN="echo"
-            ;;
-        *)
-            echo "Unknown option ${arg}" >&2
-            print_usage
-            exit 1
-            ;;
-    esac
-done
-
-${DRYRUN} cd "${dest_repo}/.git/hooks"
-
-if [[ -n "${UNINSTALL}" ]]; then
-    if [[ ! -a "${hook}" ]]; then
-        [[ -z "${QUIET}" ]] && \
-            echo "WARNING: a hook is not installed, nothing to do" >&2
-        exit 0
+    if [[ -z "${OL_QA_TOOLS:-}" ]]; then
+        OL_QA_TOOLS="$(dirname "$0")/../../qa-tools"
     fi
-
-    if ! cmp -s "${hook}" "${src}"; then
-        if [[ -z "${FORCE}" ]]; then
-            echo "The installed hook is not ours, refusing to uninstall" >&2
-            exit 1
-        fi
-    fi
-
-    if [[ -a "${hook}.chain" ]]; then
-        [[ -z "${QUIET}" ]] \
-            && echo "Restoring old ${hook}" >&2
-        ${DRYRUN} mv -f "${hook}.chain" "${hook}" || exit 1
-    else
-        rm -f "${hook}" || exit 1
-        [[ -z "${QUIET}" ]] \
-            && echo "The pre-push hook uninstalled from ${dest_repo}" >&2
-    fi
-
-    exit 0
-fi
-
-if [[ -a "${hook}" ]]; then
-    if [[ -n "${CHAIN}" ]]; then
-        if [[ -a "${hook}.chain" ]]; then
-            echo "a user hook is already chained" >&2
-            exit 1
-        else
-            [[ -z "${QUIET}" ]] \
-                && echo "Moving existing ${hook} to ${hook}.chain" >&2
-            ${DRYRUN} mv "${hook}" "${hook}.chain" || exit 1
-        fi
-    elif [[ -z "${FORCE}" ]]; then
-        echo "The pre-push hook already installed" >&2
+    OL_INSTALL_HOOKS="${OL_QA_TOOLS}/scripts/ol_install_hooks"
+    if [[ ! -x "${OL_INSTALL_HOOKS}" ]]; then
+        echo "ol_install_hooks cannot be found" >&2
         exit 1
-    else
-        ${DRYRUN} rm -f "${hook}" || exit 1
     fi
 fi
 
-#shellcheck disable=SC2248
-${DRYRUN} ${INSTALLCMD} "${src}" "${hook}" || exit 1
-[[ -z "${QUIET}" ]] && echo "The pre-push hook installed in ${dest_repo}" >&2
+echo "Warning: te_install_hooks is deprecated, use ol_install_hooks instead" >&2
+exec "${OL_INSTALL_HOOKS}" "$@"
