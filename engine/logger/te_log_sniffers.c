@@ -1203,6 +1203,11 @@ sniffers_handler(char *agent)
         ERROR("Sniffer polling configuration contains errors.");
         return;
     }
+    if (snifp_sets.period == 0)
+    {
+        RING("Sniffer polling for TA %s is disabled using 0 period", agent);
+        return;
+    }
     polling_period = snifp_sets.period * 1000;
 
     SNIFFER_MALLOC(snif_ta, sizeof(snif_ta_l));
