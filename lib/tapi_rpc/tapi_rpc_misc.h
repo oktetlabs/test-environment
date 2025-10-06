@@ -472,7 +472,7 @@ extern int rpc_pattern_sender(rcf_rpc_server *rpcs, int s,
  * @param args            Pointer to @ref tapi_pat_receiver structure.
  *
  * @return Status code.
- * @retval >= 0   number of received bytes
+ * @retval 0      success
  * @retval -2     data doesn't match the pattern
  * @retval -1     in the case of another failure
  */

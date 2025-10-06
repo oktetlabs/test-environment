@@ -847,8 +847,9 @@ rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
     if (args->recv_failed_ptr != NULL)
         *(args->recv_failed_ptr) = out.func_failed;
 
-    CHECK_RETVAL_VAR(pattern_receiver, out.retval,
-                     !(out.retval <= 0 && out.retval >= -2), -1);
+    CHECK_RETVAL_VAR_ERR_COND(pattern_receiver, out.retval,
+                              !(out.retval <= 0 && out.retval >= -2), -1,
+                              (out.retval == -1 || out.retval == -2));
 
     TAPI_RPC_LOG(rpcs, pattern_receiver, "fd=%d, gen_func='%s', "
                  "gen_arg=[" TARPC_PAT_GEN_ARG_FMT "], iomux='%s', "
