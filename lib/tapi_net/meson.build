@@ -4,15 +4,18 @@
 headers += files(
     'tapi_net.h',
     'tapi_net_yaml.h',
+    'tapi_net_env.h',
 )
 sources += files(
     'tapi_net.c',
     'tapi_net_yaml.c',
+    'tapi_net_env.c',
 )
 
 te_libs += [
     'tools',
     'tapi',
+    'tapi_env',
 ]
 
 dep_yaml = dependency('yaml-0.1', required: false)
