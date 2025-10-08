@@ -83,6 +83,31 @@ static const te_enum_map tapi_net_yaml_af_map[] = {
  *    Parsed into: tapi_net_link[]; each net has name "test_net_<idx>",
  *    address family, and two endpoints (agent/iface).
  *
+ * 3) nat: list of NAT rules per agent (optional).
+ *    Each item is a mapping:
+ *      - agent : string (required)
+ *      - rules : sequence<rule> (required)
+ *
+ *    rule mapping:
+ *      - type : enum { snat, dnat } (required)
+ *      - mode : enum { address, masquerade } (required)
+ *      - from : { agent: string, iface: string } (required)
+ *      - to   : { agent: string, iface: string } (conditional)
+ *
+ *    Semantics:
+ *      - For mode = "address":
+ *          Both @c from and @c to endpoint objects are required.
+ *          Static translation occurs between these two interfaces.
+ *
+ *      - For mode = "masquerade":
+ *          Supported only for @c type = "snat".
+ *          The @c to field should be omitted.
+ *          The configurator applies standard source NAT
+ *          masquerading rules.
+ *
+ *    Parsed into: tapi_net_nat_rule[] associated with each
+ *    @c tapi_net_ta in the network context.
+ *
  * === Variable expansion ===
  *
  * Scalar values in the YAML (strings and integers written as scalars) are

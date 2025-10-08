@@ -30,11 +30,13 @@ typedef enum cfg_yaml_root_field {
     CFG_YAML_ROOT_FIELD_UNKNOWN = -1,
     CFG_YAML_ROOT_FIELD_IFACE_LIST,
     CFG_YAML_ROOT_FIELD_NET_LIST,
+    CFG_YAML_ROOT_FIELD_NAT_LIST,
 } cfg_yaml_root_field;
 
 static const te_enum_map cfg_yaml_root_field_map[] = {
     {.name = "interfaces",  .value = CFG_YAML_ROOT_FIELD_IFACE_LIST},
     {.name = "networks",    .value = CFG_YAML_ROOT_FIELD_NET_LIST},
+    {.name = "nat",         .value = CFG_YAML_ROOT_FIELD_NAT_LIST},
     TE_ENUM_MAP_END
 };
 
@@ -61,6 +63,46 @@ static const te_enum_map cfg_yaml_ep_field_map[] = {
     {.name = "agent",      .value = CFG_YAML_EP_FIELD_AGENT},
     {.name = "base_iface", .value = CFG_YAML_EP_FIELD_BASE_IFACE},
     {.name = "iface",      .value = CFG_YAML_EP_FIELD_IFACE},
+    TE_ENUM_MAP_END
+};
+
+typedef enum cfg_yaml_nat_field {
+    CFG_YAML_NAT_FIELD_UNKNOWN = -1,
+    CFG_YAML_NAT_FIELD_AGENT,
+    CFG_YAML_NAT_FIELD_RULES,
+} cfg_yaml_nat_field;
+
+static const te_enum_map cfg_yaml_nat_field_map[] = {
+    { .name = "agent", .value = CFG_YAML_NAT_FIELD_AGENT },
+    { .name = "rules", .value = CFG_YAML_NAT_FIELD_RULES },
+    TE_ENUM_MAP_END
+};
+
+typedef enum cfg_yaml_nat_rule_field {
+    CFG_YAML_NAT_RULE_FIELD_UNKNOWN = -1,
+    CFG_YAML_NAT_RULE_FIELD_TYPE,
+    CFG_YAML_NAT_RULE_FIELD_MODE,
+    CFG_YAML_NAT_RULE_FIELD_FROM,
+    CFG_YAML_NAT_RULE_FIELD_TO,
+} cfg_yaml_nat_rule_field;
+
+static const te_enum_map cfg_yaml_nat_rule_field_map[] = {
+    { .name = "type", .value = CFG_YAML_NAT_RULE_FIELD_TYPE },
+    { .name = "mode", .value = CFG_YAML_NAT_RULE_FIELD_MODE },
+    { .name = "from", .value = CFG_YAML_NAT_RULE_FIELD_FROM },
+    { .name = "to",   .value = CFG_YAML_NAT_RULE_FIELD_TO },
+    TE_ENUM_MAP_END
+};
+
+static const te_enum_map cfg_yaml_nat_rule_type_map[] = {
+    { .name = "dnat", .value = TAPI_NET_NAT_RULE_TYPE_DNAT },
+    { .name = "snat", .value = TAPI_NET_NAT_RULE_TYPE_SNAT },
+    TE_ENUM_MAP_END
+};
+
+static const te_enum_map cfg_yaml_nat_rule_mode_map[] = {
+    { .name = "address",    .value = TAPI_NET_NAT_RULE_MODE_ADDRESS },
+    { .name = "masquerade", .value = TAPI_NET_NAT_RULE_MODE_MASQUERADE },
     TE_ENUM_MAP_END
 };
 
@@ -927,6 +969,302 @@ iface_list_node_parse(yaml_node_t *iface_list_node, yaml_document_t *doc,
     return 0;
 }
 
+static te_errno
+nat_rule_node_parse(yaml_node_t *rule_node, yaml_document_t *doc,
+                    tapi_net_nat_rule *rule)
+{
+    yaml_node_pair_t *pair;
+    te_errno rc;
+
+    assert(rule_node != NULL);
+    assert(rule != NULL);
+    assert(doc != NULL);
+
+    if (rule_node->type != YAML_MAPPING_NODE)
+    {
+        ERROR(YAML_ERR_PREFIX "NAT rule must be a mapping at " YAML_NODE_LINE_COLUMN_FMT,
+              YAML_NODE_LINE_COLUMN(rule_node));
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    pair = rule_node->data.mapping.pairs.start;
+    do {
+        yaml_node_t *v = yaml_document_get_node(doc, pair->value);
+        yaml_node_t *k = yaml_document_get_node(doc, pair->key);
+        cfg_yaml_nat_rule_field field;
+        tapi_net_endpoint *ep = NULL;
+        char *ta_name = NULL;
+        char *iface = NULL;
+
+        if (k->type != YAML_SCALAR_NODE)
+        {
+            ERROR(YAML_ERR_PREFIX "unexpected NAT rule key type at " YAML_NODE_LINE_COLUMN_FMT,
+                  YAML_NODE_LINE_COLUMN(k));
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+
+        field = te_enum_map_from_str(cfg_yaml_nat_rule_field_map,
+                                     (char *)k->data.scalar.value,
+                                     CFG_YAML_NAT_RULE_FIELD_UNKNOWN);
+
+        switch (field)
+        {
+            case CFG_YAML_NAT_RULE_FIELD_TYPE:
+            {
+                char *nat_type_str = NULL;
+
+                if (v->type != YAML_SCALAR_NODE)
+                {
+                    ERROR(YAML_ERR_PREFIX "NAT 'type' must be scalar at " YAML_NODE_LINE_COLUMN_FMT,
+                          YAML_NODE_LINE_COLUMN(v));
+                    return TE_RC(TE_TAPI, TE_EINVAL);
+                }
+
+                rc = expanded_val_get_str((char *)v->data.scalar.value,
+                                          &nat_type_str);
+                if (rc != 0)
+                {
+                    ERROR(YAML_ERR_PREFIX "failed to parse NAT type '%s' at " YAML_NODE_LINE_COLUMN_FMT ": %r",
+                          (char *)v->data.scalar.value,
+                           YAML_NODE_LINE_COLUMN(v), rc);
+                    return rc;
+                }
+
+                rule->type = te_enum_map_from_str(
+                                 cfg_yaml_nat_rule_type_map, nat_type_str,
+                                 TAPI_NET_NAT_RULE_TYPE_UNKNOWN);
+                free(nat_type_str);
+                break;
+            }
+
+            case CFG_YAML_NAT_RULE_FIELD_MODE:
+            {
+                char *nat_mode_str = NULL;
+
+                if (v->type != YAML_SCALAR_NODE)
+                {
+                    ERROR(YAML_ERR_PREFIX "NAT 'mode' must be scalar at " YAML_NODE_LINE_COLUMN_FMT,
+                          YAML_NODE_LINE_COLUMN(v));
+                    return TE_RC(TE_TAPI, TE_EINVAL);
+                }
+
+                rc = expanded_val_get_str((char *)v->data.scalar.value,
+                                          &nat_mode_str);
+                if (rc != 0)
+                {
+                    ERROR(YAML_ERR_PREFIX "failed to parse NAT mode '%s' at " YAML_NODE_LINE_COLUMN_FMT ": %r",
+                          (char *)v->data.scalar.value,
+                          YAML_NODE_LINE_COLUMN(v), rc);
+                    return rc;
+                }
+
+                rule->mode = te_enum_map_from_str(cfg_yaml_nat_rule_mode_map,
+                                                  nat_mode_str,
+                                                  TAPI_NET_NAT_RULE_MODE_UNKNOWN);
+                free(nat_mode_str);
+                break;
+            }
+
+            case CFG_YAML_NAT_RULE_FIELD_FROM:
+                ep = &rule->from;
+                /*@fallthrough@*/
+
+            case CFG_YAML_NAT_RULE_FIELD_TO:
+                if (ep == NULL)
+                    ep = &rule->to;
+
+                rc = endpoint_node_parse(v, doc, &ta_name, NULL, &iface);
+                if (rc != 0)
+                {
+                    ERROR(YAML_ERR_PREFIX "failed to parse endpoint node: %r", rc);
+                    return rc;
+                }
+
+                fill_ep_info(ep, ta_name, iface);
+                break;
+
+            default:
+                ERROR(YAML_ERR_PREFIX "unsupported field in NAT rule '%s' at " YAML_NODE_LINE_COLUMN_FMT,
+                      (char *)k->data.scalar.value, YAML_NODE_LINE_COLUMN(k));
+                return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+    } while (++pair < rule_node->data.mapping.pairs.top);
+
+    rc = tapi_net_nat_rule_validate(rule);
+    if (rc != 0)
+    {
+        ERROR(YAML_ERR_PREFIX "failed to validate parsed NAT rule: %r", rc);
+        return rc;
+    }
+
+    return 0;
+}
+
+static te_errno
+nat_rule_list_node_parse(yaml_node_t *rule_list, yaml_document_t *doc,
+                         const char *ta_name, tapi_net_ctx *net_ctx)
+{
+    yaml_node_item_t *item = rule_list->data.sequence.items.start;
+    tapi_net_ta *agent = NULL;
+    te_errno rc;
+
+    assert(rule_list != NULL);
+    assert(net_ctx != NULL);
+    assert(ta_name != NULL);
+    assert(doc != NULL);
+
+    agent = tapi_net_find_agent_by_name(net_ctx, ta_name);
+    if (agent == NULL)
+    {
+        ERROR(YAML_ERR_PREFIX "unknown NAT agent '%s'", ta_name);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    do {
+        tapi_net_nat_rule rule;
+        yaml_node_t *rule_node = yaml_document_get_node(doc, *item);
+
+        tapi_net_nat_rule_init(&rule);
+        rc = nat_rule_node_parse(rule_node, doc, &rule);
+        if (rc != 0)
+        {
+            ERROR(YAML_ERR_PREFIX "failed to parse NAT rule at " YAML_NODE_LINE_COLUMN_FMT ": %r",
+                  YAML_NODE_LINE_COLUMN(rule_node), rc);
+            return rc;
+        }
+
+        rc = tapi_net_nat_rule_check_dup(agent, &rule);
+        if (rc != 0)
+            return rc;
+
+        TE_VEC_APPEND(&agent->nat_rules, rule);
+    } while (++item < rule_list->data.sequence.items.top);
+
+    return 0;
+}
+
+static te_errno
+nat_node_parse(yaml_node_t *nat_node, yaml_document_t *doc,
+               tapi_net_ctx *net_ctx)
+{
+    yaml_node_t *rules_node = NULL;
+    yaml_node_pair_t *pair;
+    char *nat_agent = NULL;
+    te_errno rc = 0;
+
+    if (nat_node->type != YAML_MAPPING_NODE)
+    {
+        ERROR(YAML_ERR_PREFIX "unexpected NAT node type at " YAML_NODE_LINE_COLUMN_FMT,
+              YAML_NODE_LINE_COLUMN(nat_node));
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    pair = nat_node->data.mapping.pairs.start;
+    do {
+        yaml_node_t *k = yaml_document_get_node(doc, pair->key);
+        yaml_node_t *v = yaml_document_get_node(doc, pair->value);
+        cfg_yaml_nat_rule_field field;
+
+        if (k->type != YAML_SCALAR_NODE)
+        {
+            ERROR(YAML_ERR_PREFIX "unexpected NAT field type at " YAML_NODE_LINE_COLUMN_FMT,
+                  YAML_NODE_LINE_COLUMN(k));
+            rc = TE_EINVAL;
+            goto out;
+        }
+
+        field = te_enum_map_from_str(cfg_yaml_nat_field_map,
+                                     (char *)k->data.scalar.value,
+                                     CFG_YAML_NAT_FIELD_UNKNOWN);
+
+        switch (field)
+        {
+            case CFG_YAML_NAT_FIELD_AGENT:
+                if (v->type != YAML_SCALAR_NODE)
+                {
+                    ERROR(YAML_ERR_PREFIX "NAT agent must be scalar at " YAML_NODE_LINE_COLUMN_FMT,
+                          YAML_NODE_LINE_COLUMN(v));
+                    rc = TE_EINVAL;
+                    goto out;
+                }
+
+                rc = expanded_val_get_str((char *)v->data.scalar.value, &nat_agent);
+                if (rc != 0)
+                {
+                    ERROR(YAML_ERR_PREFIX "failed to parse NAT agent name '%s' at " YAML_NODE_LINE_COLUMN_FMT ": %r",
+                          (char *)v->data.scalar.value,
+                          YAML_NODE_LINE_COLUMN(v), rc);
+                    goto out;
+                }
+                break;
+
+            case CFG_YAML_NAT_FIELD_RULES:
+                if (v->type != YAML_SEQUENCE_NODE)
+                {
+                    ERROR(YAML_ERR_PREFIX "NAT rules must be a sequence at " YAML_NODE_LINE_COLUMN_FMT,
+                          YAML_NODE_LINE_COLUMN(v));
+                    rc = TE_EINVAL;
+                    goto out;
+                }
+
+                rules_node = v;
+                break;
+
+            default:
+                ERROR(YAML_ERR_PREFIX "unsupported field '%s' in NAT section at " YAML_NODE_LINE_COLUMN_FMT,
+                      (char *)k->data.scalar.value, YAML_NODE_LINE_COLUMN(k));
+                rc = TE_EINVAL;
+                goto out;
+        }
+    } while (++pair < nat_node->data.mapping.pairs.top);
+
+    if (nat_agent == NULL || rules_node == NULL)
+    {
+        ERROR(YAML_ERR_PREFIX "NAT is missing required fields");
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    rc = nat_rule_list_node_parse(rules_node, doc, nat_agent, net_ctx);
+    if (rc != 0)
+    {
+        ERROR(YAML_ERR_PREFIX "failed to parse node with list of NAT rules: %r",
+              rc);
+        return rc;
+    }
+
+out:
+    free(nat_agent);
+    return rc;
+}
+
+/* Parse root 'nat' list. */
+static te_errno
+nat_list_node_parse(yaml_node_t *nat_list_node, yaml_document_t *doc,
+                    tapi_net_ctx *net_ctx)
+{
+    yaml_node_item_t *item;
+    te_errno rc;
+
+    assert(net_ctx != NULL);
+    assert(doc != NULL);
+
+    if (nat_list_node == NULL)
+        return 0;
+
+    item = nat_list_node->data.sequence.items.start;
+
+    do {
+        yaml_node_t *nat_node = yaml_document_get_node(doc, *item);
+
+        rc = nat_node_parse(nat_node, doc, net_ctx);
+        if (rc != 0)
+            return rc;
+    } while (++item < nat_list_node->data.sequence.items.top);
+
+    return 0;
+}
+
 /*
  * Parse root node and fill network configuration context.
  * The function allocates memory for netwroks and agents mentioned
@@ -938,6 +1276,7 @@ root_node_parse(yaml_node_t *root, yaml_document_t *doc,
 {
     yaml_node_t *iface_list_node = NULL;
     yaml_node_t *net_list_node = NULL;
+    yaml_node_t *nat_list_node = NULL;
     cfg_yaml_root_field type;
     yaml_node_pair_t *pair;
     size_t num_agents;
@@ -1013,6 +1352,17 @@ root_node_parse(yaml_node_t *root, yaml_document_t *doc,
 
                 break;
 
+            case CFG_YAML_ROOT_FIELD_NAT_LIST:
+                nat_list_node = v;
+
+                if (nat_list_node->type != YAML_SEQUENCE_NODE)
+                {
+                    ERROR(YAML_ERR_PREFIX "NAT list node is not a sequence");
+                    return TE_RC(TE_TAPI, TE_EINVAL);
+                }
+
+                break;
+
             default:
                 ERROR(YAML_ERR_PREFIX "unexpected root field '%s' at " YAML_NODE_LINE_COLUMN_FMT,
                       (char *)k->data.scalar.value, YAML_NODE_LINE_COLUMN(k));
@@ -1037,6 +1387,13 @@ root_node_parse(yaml_node_t *root, yaml_document_t *doc,
     if (rc != 0)
     {
         ERROR(YAML_ERR_PREFIX "failed to parse network list node");
+        return rc;
+    }
+
+    rc = nat_list_node_parse(nat_list_node, doc, net_ctx);
+    if (rc != 0)
+    {
+        ERROR(YAML_ERR_PREFIX "failed to parse NAT list node");
         return rc;
     }
 
