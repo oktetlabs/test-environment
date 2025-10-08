@@ -83,17 +83,48 @@ typedef struct tapi_net_iface {
 /** Singly-linked list of logical interfaces. */
 typedef SLIST_HEAD(tapi_net_iface_head, tapi_net_iface) tapi_net_iface_head;
 
-/** Test agent with a list of logical interfaces. */
-typedef struct tapi_net_ta {
-    char *ta_name;   /**< Test Agent name. */
-    te_vec ifaces;   /**< Vector of logical interfaces built on TA. */
-} tapi_net_ta;
-
 /** Network endpoint of single connection. */
 typedef struct tapi_net_endpoint {
     char *ta_name;    /**< Agent name. */
     char *if_name;    /**< Interface name. */
 } tapi_net_endpoint;
+
+/** Type of NAT rule. */
+typedef enum tapi_net_nat_rule_type {
+    /** Unknown NAT type. */
+    TAPI_NET_NAT_RULE_TYPE_UNKNOWN = -1,
+    /** Destination address translation. */
+    TAPI_NET_NAT_RULE_TYPE_DNAT,
+    /** Source address translation. */
+    TAPI_NET_NAT_RULE_TYPE_SNAT,
+} tapi_net_nat_rule_type;
+
+/** Mode of NAT rule. */
+typedef enum tapi_net_nat_rule_mode {
+    /** Unknown NAT rule mode. */
+    TAPI_NET_NAT_RULE_MODE_UNKNOWN = -1,
+    /** Address-based NAT rule mode. */
+    TAPI_NET_NAT_RULE_MODE_ADDRESS,
+    /** Masquerade NAT rule mode (SNAT only). */
+    TAPI_NET_NAT_RULE_MODE_MASQUERADE,
+} tapi_net_nat_rule_mode;
+
+/** Single NAT rule. */
+typedef struct tapi_net_nat_rule {
+    tapi_net_nat_rule_type type;    /**< Type of NAT rule. */
+    tapi_net_nat_rule_mode mode;    /**< Mode of NAT rule. */
+    tapi_net_endpoint from;         /**< Endpoint where the rule
+                                         is matched. */
+    tapi_net_endpoint to;           /**< Endpoint whose IP is used
+                                         for translation. */
+} tapi_net_nat_rule;
+
+/** Test agent with a list of logical interfaces. */
+typedef struct tapi_net_ta {
+    char *ta_name;        /**< Test Agent name. */
+    te_vec ifaces;        /**< Vector of logical interfaces built on TA. */
+    te_vec nat_rules;     /**< Vector of NAT rules set on TA. */
+} tapi_net_ta;
 
 /**
  * Logical network between two endpoints.
@@ -272,6 +303,49 @@ extern te_errno tapi_net_get_top_iface_addr(
  * @return Status code.
  */
 extern te_errno tapi_net_setup(tapi_net_ctx *net_ctx);
+
+/**
+ * Initialize NAT rule.
+ *
+ * @param rule     NAT rule to init.
+ */
+extern void tapi_net_nat_rule_init(tapi_net_nat_rule *rule);
+
+/**
+ * Validate NAT rule.
+ *
+ * @param rule     NAT rule to validate.
+ *
+ * @return Status code.
+ * @retval TE_EINVAL     Validation failed.
+ * @retval 0             Success.
+ */
+extern te_errno tapi_net_nat_rule_validate(const tapi_net_nat_rule *rule);
+
+/**
+ * Check NAT rule duplicates.
+ *
+ * @param agent   Test agent which owns the NAT rule list.
+ * @param rule    Rule to validate.
+ *
+ * @return Status code.
+ * @retval TE_EEXIST     Conflicting rule already exists.
+ * @retval 0             Success.
+ */
+extern te_errno tapi_net_nat_rule_check_dup(const tapi_net_ta *agent,
+                                            const tapi_net_nat_rule *rule);
+
+/**
+ * Resolve IP address of specific network endpoint.
+ *
+ * @param net_ctx       Network contex to use for resolving.
+ * @param ep            Network endpoint.
+ *
+ * @return Resolved IP address.
+ */
+extern const struct sockaddr *tapi_net_ep_resolve_ip_addr(
+                                  tapi_net_ctx *ctx,
+                                  const tapi_net_endpoint *ep);
 
 #ifdef __cplusplus
 } /* extern "C" */

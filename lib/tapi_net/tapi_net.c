@@ -15,6 +15,7 @@
 #include "te_str.h"
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_net.h"
+#include "tapi_cfg_iptables.h"
 #include "logger_api.h"
 #include "tapi_net.h"
 
@@ -23,6 +24,9 @@
 /** Maximal possible VLAN ID. */
 #define TAPI_NET_VLAN_ID_MAX 4094
 
+/* Name of the iptables table used for NAT rules. */
+#define TAPI_NET_IPTABLES_NAT_TABLE_NAME  "nat"
+
 static const te_enum_map iface_type_map[] = {
     {.name = "base",  .value = TAPI_NET_IFACE_TYPE_BASE},
     {.name = "vlan",  .value = TAPI_NET_IFACE_TYPE_VLAN},
@@ -30,6 +34,17 @@ static const te_enum_map iface_type_map[] = {
     {.name = "gre",   .value = TAPI_NET_IFACE_TYPE_GRE},
     TE_ENUM_MAP_END
 };
+
+/* Free an endpoint. */
+static void
+net_ep_free(tapi_net_endpoint *ep)
+{
+    if (ep == NULL)
+        return;
+
+    free(ep->ta_name);
+    free(ep->if_name);
+}
 
 /* Free a stack of interfaces. */
 static void
@@ -50,6 +65,16 @@ tapi_vec_destroy_iface_stack(const void *item)
     }
 }
 
+/* Free a NAT rule. */
+static void
+tapi_vec_destroy_nat_rule(const void *item)
+{
+    tapi_net_nat_rule *rule = (tapi_net_nat_rule *)item;
+
+    net_ep_free(&rule->from);
+    net_ep_free(&rule->to);
+}
+
 /* Free agent resources. */
 static void
 tapi_vec_destroy_agent(const void *item)
@@ -58,6 +83,7 @@ tapi_vec_destroy_agent(const void *item)
 
     free(agent->ta_name);
     te_vec_free(&agent->ifaces);
+    te_vec_free(&agent->nat_rules);
 }
 
 /* Free network endpoint strings. */
@@ -68,10 +94,7 @@ tapi_vec_destroy_net(const void *item)
     size_t i;
 
     for (i = 0; i < TAPI_NET_EP_NUM; i++)
-    {
-        free(net->endpoints[i].ta_name);
-        free(net->endpoints[i].if_name);
-    }
+        net_ep_free(&net->endpoints[i]);
 }
 
 /* Allocate memory for interface instanse and fill fields. */
@@ -174,6 +197,10 @@ tapi_net_ta_init(const char *ta_name, tapi_net_ta *net_cfg_ta)
     net_cfg_ta->ifaces = TE_VEC_INIT(tapi_net_iface_head);
     te_vec_set_destroy_fn_safe(&net_cfg_ta->ifaces,
                                tapi_vec_destroy_iface_stack);
+
+    net_cfg_ta->nat_rules = TE_VEC_INIT(tapi_net_nat_rule);
+    te_vec_set_destroy_fn_safe(&net_cfg_ta->nat_rules,
+                               tapi_vec_destroy_nat_rule);
 }
 
 void
@@ -201,6 +228,7 @@ tapi_net_ta_destroy(tapi_net_ta *net_cfg_ta)
 {
     free(net_cfg_ta->ta_name);
     te_vec_free(&net_cfg_ta->ifaces);
+    te_vec_free(&net_cfg_ta->nat_rules);
 }
 
 void
@@ -819,6 +847,296 @@ out:
     return rc;
 }
 
+const struct sockaddr *
+tapi_net_ep_resolve_ip_addr(tapi_net_ctx *ctx, const tapi_net_endpoint *ep)
+{
+    tapi_net_iface *iface = NULL;
+    tapi_net_ta *ta = NULL;
+
+    ta = tapi_net_find_agent_by_name(ctx, ep->ta_name);
+    if (ta == NULL)
+    {
+        ERROR("%s: '%s' agent is not found in network context", __FUNCTION__,
+              ep->ta_name);
+        return NULL;
+    }
+
+    iface = tapi_net_find_iface_by_name(ta, ep->if_name);
+    if (iface == NULL)
+    {
+        ERROR("%s: '%s' interface is not found in network context", __FUNCTION__,
+               ep->if_name);
+        return NULL;
+    }
+
+    return iface->addr;
+}
+
+void
+tapi_net_nat_rule_init(tapi_net_nat_rule *rule)
+{
+    if (rule == NULL)
+        return;
+
+    memset(rule, 0, sizeof(*rule));
+
+    rule->type = TAPI_NET_NAT_RULE_TYPE_UNKNOWN;
+    rule->mode = TAPI_NET_NAT_RULE_MODE_UNKNOWN;
+}
+
+te_errno
+tapi_net_nat_rule_validate(const tapi_net_nat_rule *rule)
+{
+    if (rule == NULL)
+        return 0;
+
+    if (rule->type == TAPI_NET_NAT_RULE_TYPE_UNKNOWN ||
+        rule->mode == TAPI_NET_NAT_RULE_MODE_UNKNOWN ||
+        rule->from.ta_name == NULL ||
+        rule->from.if_name == NULL)
+    {
+        ERROR("%s: NAT rule is missing required fields", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (rule->type == TAPI_NET_NAT_RULE_TYPE_DNAT)
+    {
+        if (rule->mode != TAPI_NET_NAT_RULE_MODE_ADDRESS)
+        {
+            ERROR("%s: 'address' mode is only supported for DNAT",
+                  __FUNCTION__);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+
+        if (rule->to.ta_name == NULL || rule->to.if_name == NULL)
+        {
+            ERROR("%s: DNAT requires 'to' endpoint", __FUNCTION__);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+    }
+    else
+    {
+        if (rule->mode == TAPI_NET_NAT_RULE_MODE_ADDRESS)
+        {
+            if (rule->to.ta_name == NULL || rule->to.if_name == NULL)
+            {
+                ERROR("%s: SNAT in 'address' mode requires 'to' endpoint",
+                      __FUNCTION__);
+                return TE_RC(TE_TAPI, TE_EINVAL);
+            }
+        }
+    }
+
+    return 0;
+}
+
+te_errno
+tapi_net_nat_rule_check_dup(const tapi_net_ta *agent,
+                            const tapi_net_nat_rule *rule)
+{
+    const tapi_net_nat_rule *existing;
+
+    assert(agent != NULL);
+    assert(rule != NULL);
+    assert(rule->from.if_name != NULL);
+
+    TE_VEC_FOREACH(&agent->nat_rules, existing)
+    {
+        if (existing->type == rule->type &&
+            existing->from.if_name != NULL &&
+            strcmp(existing->from.if_name, rule->from.if_name) == 0)
+        {
+            ERROR("%s: duplicate %s rule for interface '%s' on agent '%s' ",
+                  __FUNCTION__, (rule->type == TAPI_NET_NAT_RULE_TYPE_SNAT) ?
+                                    "SNAT" : "DNAT",
+                  rule->from.if_name, agent->ta_name);
+            return TE_RC(TE_TAPI, TE_EEXIST);
+        }
+    }
+
+    return 0;
+}
+
+static te_errno
+nat_chain_rule_add(const char *ta, const char *ifname, unsigned int af,
+                   const char *base_chain, const char *rule)
+{
+    te_errno rc;
+
+    rc = tapi_cfg_iptables_chain_add(ta, ifname, af,
+                                     TAPI_NET_IPTABLES_NAT_TABLE_NAME,
+                                     base_chain, true);
+    if (rc != 0)
+    {
+        ERROR("Failed to add iptables chain on %s: %r", ta, rc);
+        return rc;
+    }
+
+    rc = tapi_cfg_iptables_cmd(ta, ifname, af,
+                               TAPI_NET_IPTABLES_NAT_TABLE_NAME,
+                               base_chain, rule);
+    if (rc != 0)
+    {
+        ERROR("Failed to execute an iptables rule on %s: %r", ta, rc);
+        return rc;
+    }
+
+    return 0;
+}
+
+static te_errno
+dnat_rule_apply(tapi_net_ctx *net_ctx, const tapi_net_nat_rule *rule)
+{
+    const struct sockaddr *addr_to = NULL;
+    te_string rule_str = TE_STRING_INIT;
+    char *ip_addr_str = NULL;
+    te_errno rc;
+
+    assert(net_ctx != NULL);
+    assert(rule != NULL);
+
+    if (rule->mode != TAPI_NET_NAT_RULE_MODE_ADDRESS)
+    {
+        ERROR("Only 'address' mode is supported for DNAT");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    addr_to = tapi_net_ep_resolve_ip_addr(net_ctx, &rule->to);
+    if (addr_to == NULL)
+    {
+        ERROR("Failed to resolve address for 'to' endpoint in DNAT rule");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    ip_addr_str = te_ip2str(addr_to);
+    if (ip_addr_str == NULL)
+    {
+        ERROR("Failed to convert IP address to string for DNAT rule");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    te_string_append(&rule_str, "-A -j DNAT --to-destination %s", ip_addr_str);
+
+    rc = nat_chain_rule_add(rule->from.ta_name, rule->from.if_name,
+                            addr_to->sa_family, "PREROUTING",
+                            rule_str.ptr);
+    te_string_free(&rule_str);
+    free(ip_addr_str);
+    if (rc != 0)
+        return rc;
+
+    return 0;
+}
+
+static te_errno
+snat_rule_apply(tapi_net_ctx *net_ctx, const tapi_net_nat_rule *rule)
+{
+    const struct sockaddr *addr_from = NULL;
+    const struct sockaddr *addr_to = NULL;
+    te_string rule_str = TE_STRING_INIT;
+    char *ip_addr_str = NULL;
+    te_errno rc;
+
+    assert(net_ctx != NULL);
+    assert(rule != NULL);
+
+    addr_from = tapi_net_ep_resolve_ip_addr(net_ctx, &rule->from);
+    if (addr_from == NULL)
+    {
+        ERROR("Failed to resolve address for 'from' endpoint in SNAT rule");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (rule->mode == TAPI_NET_NAT_RULE_MODE_MASQUERADE)
+    {
+        te_string_append(&rule_str, "-A -j MASQUERADE");
+        rc = nat_chain_rule_add(rule->from.ta_name, rule->from.if_name,
+                                addr_from->sa_family,
+                                "POSTROUTING", rule_str.ptr);
+        te_string_free(&rule_str);
+        return rc;
+    }
+
+    if (rule->mode != TAPI_NET_NAT_RULE_MODE_ADDRESS)
+    {
+        ERROR("Unsupported type of SNAT rule");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    addr_to = tapi_net_ep_resolve_ip_addr(net_ctx, &rule->to);
+    if (addr_to == NULL)
+    {
+        ERROR("Failed to resolve address for 'to' endpoint in SNAT rule");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    ip_addr_str = te_ip2str(addr_to);
+    if (ip_addr_str == NULL)
+    {
+        ERROR("Failed to convert IP address to string for SNAT rule");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    te_string_append(&rule_str, "-A -j SNAT --to-source %s", ip_addr_str);
+
+    rc = nat_chain_rule_add(rule->from.ta_name, rule->from.if_name,
+                            addr_to->sa_family,  "POSTROUTING",
+                            rule_str.ptr);
+    te_string_free(&rule_str);
+    free(ip_addr_str);
+    if (rc != 0)
+        return rc;
+
+    return 0;
+}
+
+te_errno
+nat_apply(tapi_net_ctx *net_ctx)
+{
+    const tapi_net_ta *agent;
+    te_errno rc;
+
+    assert(net_ctx != NULL);
+
+    TE_VEC_FOREACH(&net_ctx->agents, agent)
+    {
+        const tapi_net_nat_rule *rule;
+
+        TE_VEC_FOREACH(&agent->nat_rules, rule)
+        {
+            if (strcmp(rule->from.ta_name, agent->ta_name) != 0)
+            {
+                ERROR("Rule refers to different agent in 'from': %s",
+                      rule->from.ta_name);
+                return TE_RC(TE_TAPI, TE_EINVAL);
+            }
+
+            switch (rule->type)
+            {
+                case TAPI_NET_NAT_RULE_TYPE_DNAT:
+                    rc = dnat_rule_apply(net_ctx, rule);
+                    break;
+
+                case TAPI_NET_NAT_RULE_TYPE_SNAT:
+                    rc = snat_rule_apply(net_ctx, rule);
+                    break;
+
+                default:
+                    ERROR("Unknown NAT rule type");
+                    return TE_RC(TE_TAPI, TE_EINVAL);
+            }
+
+            if (rc != 0)
+            {
+                ERROR("Failed to apply NAT rule: %r", rc);
+                return rc;
+            }
+        }
+    }
+
+    return 0;
+}
+
 te_errno
 tapi_net_setup(tapi_net_ctx *net_ctx)
 {
@@ -859,6 +1177,13 @@ tapi_net_setup(tapi_net_ctx *net_ctx)
     {
         ERROR("%s: failed to obtain interface addresses from Configurator: %r",
               __FUNCTION__, rc);
+    }
+
+    rc = nat_apply(net_ctx);
+    if (rc != 0)
+    {
+        ERROR("%s: failed to apply NAT rules: %r", __FUNCTION__, rc);
+        return rc;
     }
 
     rc = tapi_cfg_net_all_up(false);
