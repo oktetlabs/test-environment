@@ -37,6 +37,7 @@ typedef struct te_mi_meas_value {
     te_mi_meas_aggr aggr;
     double val;
     te_mi_meas_multiplier multiplier;
+    const char *base_units;
 } te_mi_meas_value;
 
 typedef TAILQ_HEAD(te_mi_meas_value_h, te_mi_meas_value) te_mi_meas_value_h;
@@ -309,7 +310,8 @@ te_mi_meas_value_str_append(const te_mi_meas_value *value, te_mi_meas_type type,
     te_json_add_float(ctx, value->val, 6);
 
     te_json_add_key_str(ctx, "base_units",
-                        te_mi_meas_get_base_unit_str(type, value->aggr));
+                        value->base_units != NULL ? value->base_units :
+                            te_mi_meas_get_base_unit_str(type, value->aggr));
 
     te_json_add_key_enum(ctx, meas_multiplier_names, "multiplier",
                          value->multiplier);
@@ -514,7 +516,8 @@ te_mi_logger_data2str(const te_mi_logger *logger)
 
 static te_mi_meas_value *
 te_mi_meas_value_add(te_mi_meas_value_h *values, te_mi_meas_aggr aggr,
-                     double val, te_mi_meas_multiplier multiplier)
+                     double val, te_mi_meas_multiplier multiplier,
+                     const char *base_units)
 {
     te_mi_meas_value *result;
 
@@ -523,6 +526,7 @@ te_mi_meas_value_add(te_mi_meas_value_h *values, te_mi_meas_aggr aggr,
     result->aggr = aggr;
     result->val = val;
     result->multiplier = multiplier;
+    result->base_units = base_units;
     TAILQ_INSERT_TAIL(values, result, next);
 
     return result;
@@ -1290,6 +1294,17 @@ te_mi_logger_add_meas(te_mi_logger *logger, te_errno *retval,
                       te_mi_meas_aggr aggr, double val,
                       te_mi_meas_multiplier multiplier)
 {
+    te_mi_logger_add_meas_units(logger, retval, type, name, aggr, val,
+                                multiplier, NULL);
+}
+
+void
+te_mi_logger_add_meas_units(te_mi_logger *logger, te_errno *retval,
+                            te_mi_meas_type type, const char *name,
+                            te_mi_meas_aggr aggr, double val,
+                            te_mi_meas_multiplier multiplier,
+                            const char *base_units)
+{
     te_mi_meas_impl *meas;
     te_errno rc = 0;
 
@@ -1333,7 +1348,7 @@ te_mi_logger_add_meas(te_mi_logger *logger, te_errno *retval,
     if (meas == NULL)
         meas = te_mi_meas_impl_add(&logger->meas_q, type, name);
 
-    te_mi_meas_value_add(&meas->values, aggr, val, multiplier);
+    te_mi_meas_value_add(&meas->values, aggr, val, multiplier, base_units);
 
 out:
     te_mi_set_logger_error(logger, retval, rc);
@@ -1351,8 +1366,9 @@ te_mi_logger_add_meas_obj(te_mi_logger *logger, te_errno *retval,
         return;
     }
 
-   te_mi_logger_add_meas(logger, retval, meas->type, meas->name, meas->aggr,
-                          meas->val, meas->multiplier);
+   te_mi_logger_add_meas_units(logger, retval, meas->type, meas->name,
+                               meas->aggr, meas->val, meas->multiplier,
+                               meas->base_units);
 }
 
 void
