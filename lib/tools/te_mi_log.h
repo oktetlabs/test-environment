@@ -287,6 +287,8 @@ typedef struct te_mi_meas {
     double val;
     /** Scale of a measurement result */
     te_mi_meas_multiplier multiplier;
+    /** User-supplied base units */
+    const char *base_units;
 } te_mi_meas;
 
 /**
@@ -304,7 +306,14 @@ extern te_errno te_mi_logger_meas_create(const char *tool,
 #define TE_MI_MEAS(_type, _name, _aggr, _val, _multiplier)   \
     (te_mi_meas){ TE_MI_MEAS_ ## _type, (_name),        \
                   TE_MI_MEAS_AGGR_ ## _aggr, (_val),    \
-                  TE_MI_MEAS_MULTIPLIER_ ## _multiplier }
+                  TE_MI_MEAS_MULTIPLIER_ ## _multiplier, NULL }
+
+/** Convenience te_mi_meas constructor with base units */
+#define TE_MI_MEAS_UNITS(_type, _name, _aggr, _val, _multiplier, _base_units) \
+    (te_mi_meas){ TE_MI_MEAS_ ## _type, (_name),        \
+                  TE_MI_MEAS_AGGR_ ## _aggr, (_val),    \
+                  TE_MI_MEAS_MULTIPLIER_ ## _multiplier, \
+                  _base_units }
 
 /** Convenience te_mi_meas vector constructor for te_mi_log_meas() */
 #define TE_MI_MEAS_V(...) \
@@ -371,6 +380,28 @@ extern void te_mi_logger_add_meas(te_mi_logger *logger, te_errno *retval,
                                   te_mi_meas_type type, const char *name,
                                   te_mi_meas_aggr aggr, double val,
                                   te_mi_meas_multiplier multiplier);
+/**
+ * Variation of te_mi_logger_add_result() function that allows passing
+ * custom base units.
+ *
+ * @param           logger      MI logger
+ * @param           retval      Return code. If @c NULL is passed, @p logger
+ *                              is not @c NULL and error occures, error flag
+ *                              is stored in @p logger, which will fail the
+ *                              next te_mi_logger_flush().
+ * @param[in]       type        The type of the measurement result
+ * @param[in]       name        The name of the measurement result used to
+ *                              identify measurements in logs, may be @c NULL
+ * @param[in]       aggr        Aggregation type of the measurement
+ * @param[in]       val         Value of the measurement
+ * @param[in]       multiplier  Scale of the measurement value
+ * @param[in]       base_units  Base units of the measurement
+ */
+extern void te_mi_logger_add_meas_units(te_mi_logger *logger, te_errno *retval,
+                                        te_mi_meas_type type, const char *name,
+                                        te_mi_meas_aggr aggr, double val,
+                                        te_mi_meas_multiplier multiplier,
+                                        const char *base_units);
 
 /**
  * Variation of te_mi_logger_add_result() function that accepts
