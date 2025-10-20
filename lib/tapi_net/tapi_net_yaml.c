@@ -946,7 +946,6 @@ iface_list_node_parse(yaml_node_t *iface_list_node, yaml_document_t *doc,
         tapi_net_ta agent = {};
         char **if_name_list = NULL;
         char *ta_name = NULL;
-        size_t i;
 
         yaml_node_t *iface_node = yaml_document_get_node(doc, *item);
 
