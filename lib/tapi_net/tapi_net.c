@@ -811,14 +811,8 @@ agent_if_addr_set_by_net(const cfg_net_t *cfg_net, tapi_net_ctx *net_ctx)
     return 0;
 }
 
-/**
- * Fill in IP addresses for logical interfaces based on netowrks in Configurator.
- *
- * This function set appropriate IP addresses for the logical interface
- * structures mentioned in Configurator to use them after in tests.
- */
-static te_errno
-net_addr_fill(tapi_net_ctx *net_ctx)
+te_errno
+tapi_net_addr_fill(tapi_net_ctx *net_ctx)
 {
     cfg_nets_t nets;
     te_errno rc = 0;
@@ -1172,7 +1166,7 @@ tapi_net_setup(tapi_net_ctx *net_ctx)
         }
     }
 
-    rc = net_addr_fill(net_ctx);
+    rc = tapi_net_addr_fill(net_ctx);
     if (rc != 0)
     {
         ERROR("%s: failed to obtain interface addresses from Configurator: %r",

@@ -336,6 +336,18 @@ extern te_errno tapi_net_nat_rule_check_dup(const tapi_net_ta *agent,
                                             const tapi_net_nat_rule *rule);
 
 /**
+ * Fill in IP addresses for logical interfaces based on netowrks in Configurator.
+ *
+ * This function set appropriate IP addresses for the logical interface
+ * structures mentioned in Configurator to use them after in tests.
+ *
+ * @param net_ctx       Network contex
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_net_addr_fill(tapi_net_ctx *net_ctx);
+
+/**
  * Resolve IP address of specific network endpoint.
  *
  * @param net_ctx       Network contex to use for resolving.
