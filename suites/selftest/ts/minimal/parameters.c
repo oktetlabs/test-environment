@@ -21,6 +21,12 @@
 #include "te_config.h"
 #include "tapi_test.h"
 
+static const te_enum_map opt_bool_map[] = {
+    {.name = "TE_BOOL3_FALSE", .value = TE_BOOL3_FALSE},
+    {.name = "TE_BOOL3_UNKNOWN", .value = TE_BOOL3_UNKNOWN},
+    {.name = "TE_BOOL3_TRUE", .value = TE_BOOL3_TRUE},
+    TE_ENUM_MAP_END};
+
 int
 main(int argc, char **argv)
 {
@@ -49,6 +55,9 @@ main(int argc, char **argv)
     te_optional_double_t opt_unit_val_param = TE_OPTIONAL_DOUBLE_UNDEF;
     te_optional_uintmax_t opt_bin_unit_none_param = TE_OPTIONAL_UINTMAX_VAL(0);
     te_optional_uintmax_t opt_bin_unit_val_param = TE_OPTIONAL_UINTMAX_UNDEF;
+    te_bool3 opt_bool_none_param = TE_BOOL3_FALSE;
+    te_bool3 opt_bool_false_param = TE_BOOL3_UNKNOWN;
+    te_bool3 opt_bool_true_param = TE_BOOL3_UNKNOWN;
     tapi_test_expected_result good_result;
     tapi_test_expected_result good_result_noprefix;
     tapi_test_expected_result good_int_result;
@@ -84,6 +93,9 @@ main(int argc, char **argv)
     TEST_GET_OPT_VALUE_UNIT_PARAM(opt_unit_val_param);
     TEST_GET_OPT_VALUE_BIN_UNIT_PARAM(opt_bin_unit_none_param);
     TEST_GET_OPT_VALUE_BIN_UNIT_PARAM(opt_bin_unit_val_param);
+    TEST_GET_OPT_BOOL3_PARAM(opt_bool_none_param);
+    TEST_GET_OPT_BOOL3_PARAM(opt_bool_false_param);
+    TEST_GET_OPT_BOOL3_PARAM(opt_bool_true_param);
 
     TEST_STEP("Getting expected result parameters");
     TEST_GET_EXPECTED_RESULT_PARAM(good_result);
@@ -161,6 +173,21 @@ main(int argc, char **argv)
     CHECK_OPTNUMERIC_PARAMS(opt_bin_unit_none_param, opt_bin_unit_val_param,
                             1ull << 20, "%ju");
 #undef CHECK_OPTNUMERIC_PARAMS
+
+#define CHECK_OPTBOOL3_PARAM(_name, _expected)                                 \
+    do {                                                                       \
+        if ((_name) != (_expected))                                            \
+        {                                                                      \
+            TEST_VERDICT(                                                      \
+                "'%s' has unexpected value: %s", #_name,                       \
+                te_enum_map_from_any_value(opt_bool_map, (_name), "INVALID")); \
+        }                                                                      \
+    } while (0)
+
+    CHECK_OPTBOOL3_PARAM(opt_bool_none_param, TE_BOOL3_UNKNOWN);
+    CHECK_OPTBOOL3_PARAM(opt_bool_false_param, TE_BOOL3_FALSE);
+    CHECK_OPTBOOL3_PARAM(opt_bool_true_param, TE_BOOL3_TRUE);
+#undef CHECK_OPTBOOL3_PARAM
 
     TEST_STEP("Checking expected results");
 #define CHECK_EXPECTED(_var, _rc, _value) \
