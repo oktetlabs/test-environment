@@ -261,6 +261,10 @@
          additional choices may be available based on kernel configuration.
          Name: empty
 
+    - oid: "/agent/sys/net/ipv4/icmp_ratelimit"
+      access: read_write
+      type: int32
+
     - oid: "/agent/sys/net/ipv4/conf"
       access: read_only
       type: none
