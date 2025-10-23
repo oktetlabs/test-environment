@@ -957,6 +957,16 @@ test_get_test_id(int argc, char **argv)
     return value;
 }
 
+/* See description in tapi_test.h */
+bool
+test_is_cmd_monitor(int argc, char **argv)
+{
+    const char *te_test_name = TEST_STRING_PARAM(te_test_name);
+
+    return strncmp(te_test_name, "tester_monitor",
+                   strlen("tester_monitor")) == 0;
+}
+
 static unsigned int
 test_get_rand_uint(const char *name, const char *str_val)
 {

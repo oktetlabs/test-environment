@@ -46,6 +46,9 @@
 
             <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                         href="trc/trc.trc.xml" parse="xml"/>
+
+            <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                        href="trc/monitors.trc.xml" parse="xml"/>
         </iter>
     </test>
 </trc_db>
