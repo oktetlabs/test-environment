@@ -159,17 +159,27 @@ if cc.has_function(f, args: te_cflags,
     c_args += [ '-DHAVE_' + f.to_upper() ]
 endif
 
-link_libs = [ '-lrte_ethdev', '-lrte_telemetry', '-lrte_meter',
-              '-lrte_net', '-lrte_mbuf', '-lrte_mempool',
-              '-lrte_ring', '-lrte_kvargs', '-lrte_eal' ]
+link_libs = []
 
 # Check if the rte_log library exists
 f = 'rte_log'
-has_rte_log = cc.has_function(f, args: te_cflags + te_ldflags + ['-lrte_log'],
+has_rte_log = cc.has_function(f, args: te_cflags + te_ldflags + ['-lrte_log'] + link_libs,
                               prefix: '#include "rte_log.h"')
 if has_rte_log
-    link_libs += [ '-lrte_log' ]
+    link_libs = [ '-lrte_log' ] + link_libs
 endif
+
+# Check if the rte_argparse library exists
+f = 'rte_argparse_parse'
+has_rte_argparse = cc.has_function(f, args: te_cflags + te_ldflags + ['-lrte_argparse'] + link_libs,
+                                    prefix: '#include "rte_argparse.h"')
+if has_rte_argparse
+    link_libs = [ '-lrte_argparse' ] + link_libs
+endif
+
+link_libs = [ '-lrte_ethdev', '-lrte_meter', '-lrte_net', '-lrte_mbuf',
+              '-lrte_mempool', '-lrte_ring', '-lrte_eal',
+              '-lrte_telemetry', '-lrte_kvargs' ] + link_libs
 
 f = 'rte_flow_isolate'
 if cc.has_function(f, args: te_cflags + te_ldflags + link_libs,
