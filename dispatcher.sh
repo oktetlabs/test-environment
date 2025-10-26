@@ -261,13 +261,13 @@ usage()
 cat <<EOF
 Usage: dispatcher.sh [<generic options>] [[<test options> tests ]...
 Generic options:
-  -q                            Suppress part of output messages
+  -q                            Suppress part of output messages.
   -n                            Do not build TE, TA and any Test Suites
-                                (cumulate no-builder and tester-no-build)
-  --force                       Never prompt
+                                (cumulate no-builder and tester-no-build).
+  --force                       Never prompt.
 
-  --daemon[=<PID>]              Run/use TE engine daemons
-  --shutdown[=<PID>]            Shut down TE engine daemons on exit
+  --daemon[=<PID>]              Run/use TE engine daemons.
+  --shutdown[=<PID>]            Shut down TE engine daemons on exit.
 
   --conf-dir=<directory>        specify configuration file directory,
                                 overrides previous value and --conf-dirs
@@ -275,59 +275,59 @@ Generic options:
   --conf-dirs=<directories>     specify list of configuration file directories
                                 separated by colon (top priority first,
                                 may be specified many times, appends to
-                                --conf-dir)
+                                --conf-dir).
 
     In configuration files options below <filename> is full name of the
     configuration file or name of the file in the configuration directory.
 
-  --conf-builder=<filename>     Builder config file (${CONF_BUILDER_DFLT} by default)
-  --conf-cs=<filename>          Configurator config file (${CONF_CS_DFLT} by default)
-  --conf-logger=<filename>      Logger config file (${CONF_LOGGER_DFLT} by default)
-  --conf-rcf=<filename>         RCF config file (${CONF_RCF_DFLT} by default)
-  --conf-rgt=<filename>         RGT config file (rgt.conf by default)
-  --conf-tester=<filename>      Tester config file (${CONF_TESTER_DFLT} by default)
-  --conf-nut=<filename>         NUT config file (${CONF_NUT_DFLT} by default)
+  --conf-builder=<filename>     Builder config file (${CONF_BUILDER_DFLT} by default).
+  --conf-cs=<filename>          Configurator config file (${CONF_CS_DFLT} by default).
+  --conf-logger=<filename>      Logger config file (${CONF_LOGGER_DFLT} by default).
+  --conf-rcf=<filename>         RCF config file (${CONF_RCF_DFLT} by default).
+  --conf-rgt=<filename>         RGT config file (rgt.conf by default).
+  --conf-tester=<filename>      Tester config file (${CONF_TESTER_DFLT} by default).
+  --conf-nut=<filename>         NUT config file (${CONF_NUT_DFLT} by default).
 
   --script=<filename>           Name of the file with shell script to be
-                                included as source
+                                included as source.
 
-  --live-log                    Run RGT in live mode
+  --live-log                    Run RGT in live mode.
 
   --log-dir=<dirname>           Directory where to save tmp_raw_log file
-                                (used if TE_LOG_RAW is not set directly)
+                                (used if TE_LOG_RAW is not set directly).
   --log-html=<dirname>          Name of the directory with structured HTML logs
-                                to be generated (do not generate by default)
+                                to be generated (do not generate by default).
   --log-plain-html=<filename>   Name of the file with plain HTML logs
-                                to be generated (do not generate by default)
+                                to be generated (do not generate by default).
   --log-json=<dirname>          Name of the directory for JSON logs
-                                to be generated (do not generate by default)
+                                to be generated (do not generate by default).
   --log-txt=<filename>          Name of the file with logs in text format
-                                to be generated (log.txt by default)
+                                to be generated (log.txt by default).
   --log-txt-detailed-packets    Include detailed packet dumps in text log.
-  --log-txt-line-prefix         Add a prefix before every message line in text log
+  --log-txt-line-prefix         Add a prefix before every message line in text log.
   --log-junit=<filename>        Name of the file with logs in JUnit format
                                 to be generated.
 
-  --no-builder                  Do not build TE and TA
-  --no-nuts-build               Do not build NUTs
-  --no-tester                   Do not run Tester
-  --no-cs                       Do not run Configurator
-  --no-rcf                      Do not run RCF
-  --no-run                      Do not run Logger, RCF, Configurator and Tester
+  --no-builder                  Do not build TE and TA.
+  --no-nuts-build               Do not build NUTs.
+  --no-tester                   Do not run Tester.
+  --no-cs                       Do not run Configurator.
+  --no-rcf                      Do not run RCF.
+  --no-run                      Do not run Logger, RCF, Configurator and Tester.
 
-  --opts=<filename>             Get additional command-line options from file
+  --opts=<filename>             Get additional command-line options from file.
 
   --export=<name=value>         Export an environment variable.
 
   --cs-print-trees              Print configurator trees.
   --cs-log-diff                 Log backup diff unconditionally.
 
-  --builder-debug               Be more verbose when build
+  --builder-debug               Be more verbose when build.
 
-  --build-from-scratch          Build everything from scratch
+  --build-from-scratch          Build everything from scratch.
 
   --build-only                  Build TE, do not run RCF and Configurator,
-                                build but do not run Test Suites
+                                build but do not run Test Suites.
 
   --build-parallel[=num]        Enable parallel build using num threads.
 
@@ -341,7 +341,7 @@ Generic options:
                                 Note that log colourising only works with
                                 Ninja 1.9 or later.
 
-  --profile-build=<logfile>     Gather timings for the build process into <logfile>
+  --profile-build=<logfile>     Gather timings for the build process into <logfile>.
 
   --no-rcf-cc-simple            Do not execute simple RCF consistency checks.
 
@@ -365,7 +365,7 @@ Generic options:
   --tester-verbskip             Force Tester to log skipped iterations.
 
   --tester-cmd-monitor          Specify command monitor to be run for all
-                                tests in form [ta,]time_to_wait:command
+                                tests in form [ta,]time_to_wait:command.
 
     The following Tester options get test path as a value:
         <testpath>      :=  / | <path-item> | <testpath>/<path-item>
@@ -397,13 +397,13 @@ Generic options:
                                 leak (must be specified together with tester-vg).
 
   --tester-random-seed=<number> Random seed to initialize pseudo-random number
-                                generator
+                                generator.
   --tester-verbose              Increase verbosity of the Tester (the first
                                 level is set by default).
   --tester-quiet                Decrease verbosity of the Tester.
-  --tester-out-tin              Output Test Identification Numbers to terminal
+  --tester-out-tin              Output Test Identification Numbers to terminal.
   --tester-out-expected         If result is expected (in accordance with TRC),
-                                output the result together with OK
+                                output the result together with OK.
   --tester-interactive          Interactive ask user for tests to run.
   --tester-run-while=<result>   Continue testing as long as tests produce results matching a given value
                                 - passed (stop test if obtained result
@@ -413,7 +413,7 @@ Generic options:
                                 - expected (stop test if obtained result
                                   is not the one that declared in TRC)
                                 - unexpected (stop test if obtained
-                                  result is the one that declared in TRC)
+                                  result is the one that declared in TRC).
   --tester-run-until-verdict=<verdict>
                                 Continue testing until a test produces a verdict matching the given
                                 verdict string.
@@ -442,21 +442,21 @@ Generic options:
                                 negative for unlimited; may be specified in
                                 units of G[igabytes]).
   --logger-shut-timeout=<to>    How long to wait for Logger shutdown, in
-                                seconds (120 sec by default)
+                                seconds (120 sec by default).
 
-  --trc-log=<filename>          Generate bzip2-ed TRC log
-  --trc-db=<filename>           TRC database to be used
-  --trc-tag=<TAG>               Tag to get specific expected results
+  --trc-log=<filename>          Generate bzip2-ed TRC log.
+  --trc-db=<filename>           TRC database to be used.
+  --trc-tag=<TAG>               Tag to get specific expected results.
   --trc-key2html=<filename>     File with key substitutions when output to HTML
-                                report
-  --trc-ignore-log-tags         Ignore tags from log
-  --trc-html=<filename>         Name of the file for HTML report
-  --trc-brief-html=<filename>   Name of the file for brief HTML report
+                                report.
+  --trc-ignore-log-tags         Ignore tags from log.
+  --trc-html=<filename>         Name of the file for HTML report.
+  --trc-brief-html=<filename>   Name of the file for brief HTML report.
   --trc-html-header=<filename>  Name of the file with header for all HTML
                                 reports.
   --trc-txt=<filename>          Name of the file for text report
-                                (by default, it is generated to stdout)
-  --trc-quiet                   Do not output total statistics to stdout
+                                (by default, it is generated to stdout).
+  --trc-quiet                   Do not output total statistics to stdout.
   --trc-comparison=<method>     Specify the method to match parameter values in TRC
                                 - exact (the default)
                                 - casefold
@@ -464,21 +464,21 @@ Generic options:
                                 - tokens (the values are split into tokens which are
                                 either sequences of XML name characters or single characters;
                                 the matching is done on these lists; in additional, numeric
-                                tokens are compared as numbers (so e.g. 10 and 0xa render equal)
-  --trc-update                  Update TRC database
+                                tokens are compared as numbers (so e.g. 10 and 0xa render equal).
+  --trc-update                  Update TRC database.
   --trc-init                    Initialize TRC database (be careful,
-                                TRC database file will be rewritten)
+                                TRC database file will be rewritten).
 
   --vg-engine                   Run RCF, Configurator, Logger and Tester under
-                                valgrind (without by default)
-  --vg-cs                       Run Configurator under valgrind
-  --vg-logger                   Run Logger under valgrind (without by default)
+                                valgrind (without by default).
+  --vg-cs                       Run Configurator under valgrind.
+  --vg-logger                   Run Logger under valgrind (without by default).
   --vg-rcf                      Run RCF under valgrind (without by default)
-                                (without by default)
-  --vg-tester                   Run Tester under valgrind (without by default)
+                                (without by default).
+  --vg-tester                   Run Tester under valgrind (without by default).
   --gdb-tester                  Run Tester under gdb.
-  --tce                         Do TCE processing for all TCE-enabled components
-  --tce=<list>                  Do TCE processing for specific components (comma-separated) or 'all'
+  --tce                         Do TCE processing for all TCE-enabled components.
+  --tce=<list>                  Do TCE processing for specific components (comma-separated) or 'all'.
 
   --no-meta                     Do not generate testing metadata.
   --meta=<name>[:<value>]       Set metadata variable.
