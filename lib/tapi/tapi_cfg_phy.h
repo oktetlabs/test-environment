@@ -6,7 +6,7 @@
  * (storage/cm/cm_base.xml).
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2004-2025 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TAPI_CFG_PHY_H__
@@ -364,7 +364,7 @@ extern te_errno tapi_cfg_phy_commit(const char *ta, const char *if_name);
  *         TE_PHY_DUPLEX_FULL - full duplex;
  *         or -1 if name string does not recognized
  */
-extern int tapi_cfg_phy_duplex_str2id(char *name);
+extern int tapi_cfg_phy_duplex_str2id(const char *name);
 
 /**
  * Get PHY duplex state by id.
@@ -375,7 +375,7 @@ extern int tapi_cfg_phy_duplex_str2id(char *name);
  *         full - full duplex;
  *         or NULL if id does not recognized
  */
-extern char *tapi_cfg_phy_duplex_id2str(int duplex);
+extern const char *tapi_cfg_phy_duplex_id2str(int duplex);
 
 /**
  * Turn off all advertised modes and advertise only one.

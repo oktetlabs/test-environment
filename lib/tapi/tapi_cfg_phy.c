@@ -6,7 +6,7 @@
  * (storage/cm/cm_base.xml).
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2004-2025 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER     "Configuration PHY"
@@ -71,7 +71,7 @@ tapi_cfg_phy_autoneg_admin_set(const char *ta, const char *if_name,
 
 /* See description in tapi_cfg_phy.h */
 extern int
-tapi_cfg_phy_duplex_str2id(char *name)
+tapi_cfg_phy_duplex_str2id(const char *name)
 {
     if (name == NULL)
         return -1;
@@ -87,7 +87,7 @@ tapi_cfg_phy_duplex_str2id(char *name)
 }
 
 /* See description in tapi_cfg_phy.h */
-extern char *
+extern const char *
 tapi_cfg_phy_duplex_id2str(int duplex)
 {
     switch (duplex)
@@ -154,7 +154,7 @@ tapi_cfg_phy_duplex_admin_set(const char *ta, const char *if_name,
                               int state)
 {
     te_errno  rc = 0;
-    char     *duplex;
+    const char *duplex;
 
     duplex = tapi_cfg_phy_duplex_id2str(state);
 
