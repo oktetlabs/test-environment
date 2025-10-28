@@ -361,6 +361,18 @@ extern te_errno tapi_cfg_phy_lp_advertised(const char *ta,
 extern te_errno tapi_cfg_phy_commit(const char *ta, const char *if_name);
 
 /**
+ * Get PHY autoneg state by name string.
+ *
+ * @param name          Autoneg state name string
+ *
+ * @return #TE_PHY_AUTONEG_ON      - autonegatiation on;
+ *         #TE_PHY_AUTONEG_OFF     - autonegatiation off;
+ *         #TE_PHY_AUTONEG_UNKNOWN - autonegatiation unknown;
+ *         or @c -1 if name string does not recognized
+ */
+extern int tapi_cfg_phy_autoneg_str2id(const char *name);
+
+/**
  * Get PHY duplex state by name string.
  *
  * @param name          Duplex state name string
@@ -371,6 +383,15 @@ extern te_errno tapi_cfg_phy_commit(const char *ta, const char *if_name);
  *         or @c -1 if name string does not recognized
  */
 extern int tapi_cfg_phy_duplex_str2id(const char *name);
+
+/**
+ * Get PHY speed state by name string.
+ *
+ * @param name          Speed state name string
+ *
+ * @return TE_PHY_SPEED_* or @c 0 if name string does not recognized
+ */
+extern int tapi_cfg_phy_speed_str2id(const char *name);
 
 /**
  * Get PHY duplex state by id.

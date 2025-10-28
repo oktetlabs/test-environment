@@ -68,12 +68,24 @@ tapi_cfg_phy_autoneg_admin_set(const char *ta, const char *if_name,
 
     return tapi_cfg_phy_autoneg_set(ta, if_name, state);
 }
+/* See description in tapi_cfg_phy.h */
+extern int
+tapi_cfg_phy_autoneg_str2id(const char *name)
+{
+    return te_enum_map_from_str(te_phy_autoneg_map, name, -1);
+}
 
 /* See description in tapi_cfg_phy.h */
 extern int
 tapi_cfg_phy_duplex_str2id(const char *name)
 {
     return te_enum_map_from_str(te_phy_duplex_map, name, -1);
+}
+/* See description in tapi_cfg_phy.h */
+extern int
+tapi_cfg_phy_speed_str2id(const char *name)
+{
+    return te_enum_map_from_str(te_phy_speed_map, name, 0);
 }
 
 /* See description in tapi_cfg_phy.h */
