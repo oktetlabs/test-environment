@@ -73,31 +73,14 @@ tapi_cfg_phy_autoneg_admin_set(const char *ta, const char *if_name,
 extern int
 tapi_cfg_phy_duplex_str2id(const char *name)
 {
-    if (name == NULL)
-        return -1;
-
-    if (strcmp(name, TE_PHY_DUPLEX_STRING_HALF) == 0)
-        return TE_PHY_DUPLEX_HALF;
-    else if (strcmp(name, TE_PHY_DUPLEX_STRING_FULL) == 0)
-        return TE_PHY_DUPLEX_FULL;
-    else if (strcmp(name, TE_PHY_DUPLEX_STRING_UNKNOWN) == 0)
-        return TE_PHY_DUPLEX_UNKNOWN;
-
-    return -1;
+    return te_enum_map_from_str(te_phy_duplex_map, name, -1);
 }
 
 /* See description in tapi_cfg_phy.h */
 extern const char *
 tapi_cfg_phy_duplex_id2str(int duplex)
 {
-    switch (duplex)
-    {
-        case TE_PHY_DUPLEX_HALF: return TE_PHY_DUPLEX_STRING_HALF;
-        case TE_PHY_DUPLEX_FULL: return TE_PHY_DUPLEX_STRING_FULL;
-        case TE_PHY_DUPLEX_UNKNOWN: return TE_PHY_DUPLEX_STRING_UNKNOWN;
-    }
-
-    return NULL;
+    return te_enum_map_from_value(te_phy_duplex_map, duplex);
 }
 
 /* See description in tapi_cfg_phy.h */

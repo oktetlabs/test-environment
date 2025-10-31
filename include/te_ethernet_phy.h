@@ -5,12 +5,13 @@
  * PHY useful constants definition (Both: TAPI and configurator)
  *
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2004-2025 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_ETHERNET_PHY_H__
 #define __TE_ETHERNET_PHY_H__
 
+#include "te_enum.h"
 
 /*
  * String constants
@@ -44,11 +45,6 @@
 #define TE_PHY_AUTONEG_ON             (1)       /* Autonegotiation on */
 #define TE_PHY_AUTONEG_UNKNOWN        (2)       /* Unknown autoneg state */
 
-/* PHY duplex states */
-#define TE_PHY_DUPLEX_HALF            (0)       /* Half duplex */
-#define TE_PHY_DUPLEX_FULL            (1)       /* Full duplex */
-#define TE_PHY_DUPLEX_UNKNOWN         (0xff)    /* Unknown duplex state */
-
 /* PHY speed values */
 #define TE_PHY_SPEED_UNKNOWN          (-1)      /* Unknown speed value */
 #define TE_PHY_SPEED_10               (10)      /* 10 Mb/sec */
@@ -73,5 +69,30 @@
 #define TE_PHY_PAUSE_SYMMETRIC              (2)     /* Symmetric */
 #define TE_PHY_PAUSE_SYMMETRIC_RX_ONLY      (3)     /* Symmetric or receive only */
 #define TE_PHY_PAUSE_UNKNOWN                (4)     /* Unknown pause frame use */
+
+#define TE_PHY_DUPLEX(state_) \
+    (const te_enum_map){                            \
+        .name = TE_PHY_DUPLEX_STRING_ ## state_,    \
+        .value = TE_PHY_DUPLEX_ ## state_           \
+    }
+
+/** PHY duplex states */
+enum te_phy_duplex {
+    /** PHY half duplex state */
+    TE_PHY_DUPLEX_HALF    = 0,
+    /** PHY full duplex state */
+    TE_PHY_DUPLEX_FULL    = 1,
+    /** PHY unknown duplex state */
+    TE_PHY_DUPLEX_UNKNOWN = 0xff,
+};
+
+static const te_enum_map te_phy_duplex_map[] = {
+    TE_PHY_DUPLEX(FULL),
+    TE_PHY_DUPLEX(HALF),
+    TE_PHY_DUPLEX(UNKNOWN),
+    TE_ENUM_MAP_END
+};
+
+#undef TE_PHY_DUPLEX
 
 #endif /* __TE_ETHERNET_PHY_H__ */
