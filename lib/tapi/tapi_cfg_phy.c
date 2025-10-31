@@ -355,7 +355,7 @@ tapi_cfg_phy_state_wait_up(const char *ta,
  * @param ta                  Test agent name
  * @param if_name             Interface name
  * @param speed               Speed (if <= 0, all speeds match)
- * @param duplex              Duplex state (if TE_PHY_DUPLEX_UNKNOWN, all
+ * @param duplex              Duplex state (if #TE_PHY_DUPLEX_UNKNOWN, all
  *                            states match)
  * @param state               If @p do_set is @c true, this tells whether
  *                            advertising should be enabled. Otherwise the

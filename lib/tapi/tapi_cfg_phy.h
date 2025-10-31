@@ -36,8 +36,8 @@ extern "C" {
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Pointer to the returned autonegotiation state value:
- *                      TE_PHY_AUTONEG_OFF - autonegotiation OFF
- *                      TE_PHY_AUTONEG_ON  - autonegotiation ON
+ *                      #TE_PHY_AUTONEG_OFF - autonegotiation OFF
+ *                      #TE_PHY_AUTONEG_ON  - autonegotiation ON
  *
  * @return Status code.
  */
@@ -51,8 +51,8 @@ extern te_errno tapi_cfg_phy_autoneg_get(const char *ta,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Autonegotiation state value:
- *                      TE_PHY_AUTONEG_OFF - autonegotiation OFF
- *                      TE_PHY_AUTONEG_ON  - autonegotiation ON
+ *                      #TE_PHY_AUTONEG_OFF - autonegotiation OFF
+ *                      #TE_PHY_AUTONEG_ON  - autonegotiation ON
  *
  * @return Status code
  */
@@ -69,8 +69,8 @@ extern te_errno tapi_cfg_phy_autoneg_set(const char *ta,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Pointer to the returned duplex state value:
- *                      TE_PHY_DUPLEX_HALF - half duplex
- *                      TE_PHY_DUPLEX_FULL - full duplex
+ *                      #TE_PHY_DUPLEX_HALF - half duplex
+ *                      #TE_PHY_DUPLEX_FULL - full duplex
  *
  * @return Status code
  */
@@ -87,8 +87,8 @@ extern te_errno tapi_cfg_phy_duplex_oper_get(const char *ta,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Pointer to the returned duplex state value:
- *                      TE_PHY_DUPLEX_HALF - half duplex
- *                      TE_PHY_DUPLEX_FULL - full duplex
+ *                      #TE_PHY_DUPLEX_HALF - half duplex
+ *                      #TE_PHY_DUPLEX_FULL - full duplex
  *
  * @return Status code
  */
@@ -102,8 +102,8 @@ extern te_errno tapi_cfg_phy_duplex_admin_get(const char *ta,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Duplex state value:
- *                      TE_PHY_DUPLEX_HALF - half duplex
- *                      TE_PHY_DUPLEX_FULL - full duplex
+ *                      #TE_PHY_DUPLEX_HALF - half duplex
+ *                      #TE_PHY_DUPLEX_FULL - full duplex
  *
  * @return Status code
  */
@@ -158,8 +158,8 @@ extern te_errno tapi_cfg_phy_speed_admin_set(const char *ta,
  * @param if_name       Interface name
  * @param speed         Speed value (Mbit/sec)
  * @param duplex        Duplex state value
- *                      TE_PHY_DUPLEX_HALF - half duplex
- *                      TE_PHY_DUPLEX_FULL - full duplex
+ *                      #TE_PHY_DUPLEX_HALF - half duplex
+ *                      #TE_PHY_DUPLEX_FULL - full duplex
  *
  * @return Status code
  */
@@ -173,8 +173,8 @@ extern te_errno tapi_cfg_phy_mode_oper_get(const char *ta,
  * @param if_name       Interface name
  * @param speed         Speed value (Mbit/sec)
  * @param duplex        Duplex state value
- *                      TE_PHY_DUPLEX_HALF - half duplex
- *                      TE_PHY_DUPLEX_FULL - full duplex
+ *                      #TE_PHY_DUPLEX_HALF - half duplex
+ *                      #TE_PHY_DUPLEX_FULL - full duplex
  *
  * @return Status code
  */
@@ -189,8 +189,8 @@ extern te_errno tapi_cfg_phy_mode_admin_get(const char *ta,
  * @param if_name       Interface name
  * @param speed         Speed value (Mbit/sec)
  * @param duplex        Duplex state value
- *                      TE_PHY_DUPLEX_HALF - half duplex
- *                      TE_PHY_DUPLEX_FULL - full duplex
+ *                      #TE_PHY_DUPLEX_HALF - half duplex
+ *                      #TE_PHY_DUPLEX_FULL - full duplex
  *
  * @return Status code
  */
@@ -207,8 +207,8 @@ extern te_errno tapi_cfg_phy_mode_admin_set(const char *ta,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Pointer to the returned link state value:
- *                      TE_PHY_STATE_DOWN - link down
- *                      TE_PHY_STATE_UP   - link up
+ *                      #TE_PHY_STATE_DOWN - link down
+ *                      #TE_PHY_STATE_UP   - link up
  *
  * @return Status code
  */
@@ -243,8 +243,8 @@ extern te_errno tapi_cfg_phy_state_wait_up(const char *ta,
  * @param speed         Speed value (Mbit/sec, see linux/ethtool.h for
  *                      more details)
  * @param duplex        Duplex state value:
- *                      TE_PHY_DUPLEX_HALF - half duplex
- *                      TE_PHY_DUPLEX_FULL - full duplex
+ *                      #TE_PHY_DUPLEX_HALF - half duplex
+ *                      #TE_PHY_DUPLEX_FULL - full duplex
  * @param state         Pointer to mode state:
  *                      @c true - the mode is advertised
  *                      @c false - the mode is not advertised
@@ -268,8 +268,8 @@ extern te_errno tapi_cfg_phy_is_mode_advertised(const char *ta,
  * @param speed         Speed value (Mbit/sec, see linux/ethtool.h for
  *                      more details)
  * @param duplex        Duplex state value:
- *                      TE_PHY_DUPLEX_HALF - half duplex
- *                      TE_PHY_DUPLEX_FULL - full duplex
+ *                      #TE_PHY_DUPLEX_HALF - half duplex
+ *                      #TE_PHY_DUPLEX_FULL - full duplex
  * @param state         Mode state:
  *                      @c false - the mode is not advertised
  *                      @c true - the mode is advertised
@@ -360,9 +360,9 @@ extern te_errno tapi_cfg_phy_commit(const char *ta, const char *if_name);
  *
  * @param name          Duplex state name string
  *
- * @return TE_PHY_DUPLEX_HALF - half duplex;
- *         TE_PHY_DUPLEX_FULL - full duplex;
- *         or -1 if name string does not recognized
+ * @return #TE_PHY_DUPLEX_HALF    - half duplex;
+ *         #TE_PHY_DUPLEX_FULL    - full duplex;
+ *         or @c -1 if name string does not recognized
  */
 extern int tapi_cfg_phy_duplex_str2id(const char *name);
 
@@ -373,7 +373,7 @@ extern int tapi_cfg_phy_duplex_str2id(const char *name);
  *
  * @return half - half duplex;
  *         full - full duplex;
- *         or NULL if id does not recognized
+ *         or @c NULL if id does not recognized
  */
 extern const char *tapi_cfg_phy_duplex_id2str(int duplex);
 
@@ -404,10 +404,10 @@ extern te_errno tapi_cfg_phy_advertise_one(const char *ta,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Pointer to the returned pause frame use value:
- *                      TE_PHY_PAUSE_NONE               - no pause frame use
- *                      TE_PHY_PAUSE_TX_ONLY            - transmit only
- *                      TE_PHY_PAUSE_SYMMETRIC          - symmetric
- *                      TE_PHY_PAUSE_SYMMETRIC_RX_ONLY  - symmetric or receive only
+ *                      #TE_PHY_PAUSE_NONE              - no pause frame use
+ *                      #TE_PHY_PAUSE_TX_ONLY           - transmit only
+ *                      #TE_PHY_PAUSE_SYMMETRIC         - symmetric
+ *                      #TE_PHY_PAUSE_SYMMETRIC_RX_ONLY - symmetric or receive only
  *
  * @return Status code
  */
@@ -424,8 +424,8 @@ extern te_errno tapi_cfg_phy_pause_lp_adv_get(const char *ta,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Pointer to the returned autonegotiation state value:
- *                      TE_PHY_AUTONEG_OFF      - autonegotiation OFF
- *                      TE_PHY_AUTONEG_ON       - autonegotiation ON
+ *                      #TE_PHY_AUTONEG_OFF      - autonegotiation OFF
+ *                      #TE_PHY_AUTONEG_ON       - autonegotiation ON
  *
  * @return Status code
  */
@@ -446,8 +446,8 @@ extern te_errno tapi_cfg_phy_autoneg_lp_adv_get(const char *ta,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Pointer to the returned autonegotiation state value:
- *                      TE_PHY_AUTONEG_OFF - autonegotiation OFF
- *                      TE_PHY_AUTONEG_ON  - autonegotiation ON
+ *                      #TE_PHY_AUTONEG_OFF - autonegotiation OFF
+ *                      #TE_PHY_AUTONEG_ON  - autonegotiation ON
  *
  * @return Status code
  */
@@ -462,8 +462,8 @@ extern te_errno tapi_cfg_phy_autoneg_oper_get(const char *ta,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Pointer to the returned autonegotiation state value:
- *                      TE_PHY_AUTONEG_OFF - autonegotiation OFF
- *                      TE_PHY_AUTONEG_ON  - autonegotiation ON
+ *                      #TE_PHY_AUTONEG_OFF - autonegotiation OFF
+ *                      #TE_PHY_AUTONEG_ON  - autonegotiation ON
  *
  * @return Status code
  */
@@ -479,8 +479,8 @@ extern te_errno tapi_cfg_phy_autoneg_admin_get(const char *ta,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Autonegotiation state value:
- *                      TE_PHY_AUTONEG_OFF - autonegotiation OFF
- *                      TE_PHY_AUTONEG_ON  - autonegotiation ON
+ *                      #TE_PHY_AUTONEG_OFF - autonegotiation OFF
+ *                      #TE_PHY_AUTONEG_ON  - autonegotiation ON
  *
  * @return Status code
  */
