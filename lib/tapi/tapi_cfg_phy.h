@@ -69,8 +69,9 @@ extern te_errno tapi_cfg_phy_autoneg_set(const char *ta,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Pointer to the returned duplex state value:
- *                      #TE_PHY_DUPLEX_HALF - half duplex
- *                      #TE_PHY_DUPLEX_FULL - full duplex
+ *                      #TE_PHY_DUPLEX_HALF    - half duplex
+ *                      #TE_PHY_DUPLEX_FULL    - full duplex
+ *                      #TE_PHY_DUPLEX_UNKNOWN - duplex unknown
  *
  * @return Status code
  */
@@ -87,8 +88,9 @@ extern te_errno tapi_cfg_phy_duplex_oper_get(const char *ta,
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Pointer to the returned duplex state value:
- *                      #TE_PHY_DUPLEX_HALF - half duplex
- *                      #TE_PHY_DUPLEX_FULL - full duplex
+ *                      #TE_PHY_DUPLEX_HALF    - half duplex
+ *                      #TE_PHY_DUPLEX_FULL    - full duplex
+ *                      #TE_PHY_DUPLEX_UNKNOWN - duplex unknown
  *
  * @return Status code
  */
@@ -158,8 +160,9 @@ extern te_errno tapi_cfg_phy_speed_admin_set(const char *ta,
  * @param if_name       Interface name
  * @param speed         Speed value (Mbit/sec)
  * @param duplex        Duplex state value
- *                      #TE_PHY_DUPLEX_HALF - half duplex
- *                      #TE_PHY_DUPLEX_FULL - full duplex
+ *                      #TE_PHY_DUPLEX_HALF    - half duplex
+ *                      #TE_PHY_DUPLEX_FULL    - full duplex
+ *                      #TE_PHY_DUPLEX_UNKNOWN - duplex unknown
  *
  * @return Status code
  */
@@ -173,8 +176,9 @@ extern te_errno tapi_cfg_phy_mode_oper_get(const char *ta,
  * @param if_name       Interface name
  * @param speed         Speed value (Mbit/sec)
  * @param duplex        Duplex state value
- *                      #TE_PHY_DUPLEX_HALF - half duplex
- *                      #TE_PHY_DUPLEX_FULL - full duplex
+ *                      #TE_PHY_DUPLEX_HALF    - half duplex
+ *                      #TE_PHY_DUPLEX_FULL    - full duplex
+ *                      #TE_PHY_DUPLEX_UNKNOWN - duplex unknown
  *
  * @return Status code
  */
@@ -243,8 +247,9 @@ extern te_errno tapi_cfg_phy_state_wait_up(const char *ta,
  * @param speed         Speed value (Mbit/sec, see linux/ethtool.h for
  *                      more details)
  * @param duplex        Duplex state value:
- *                      #TE_PHY_DUPLEX_HALF - half duplex
- *                      #TE_PHY_DUPLEX_FULL - full duplex
+ *                      #TE_PHY_DUPLEX_HALF    - half duplex
+ *                      #TE_PHY_DUPLEX_FULL    - full duplex
+ *                      #TE_PHY_DUPLEX_UNKNOWN - duplex unknown
  * @param state         Pointer to mode state:
  *                      @c true - the mode is advertised
  *                      @c false - the mode is not advertised
@@ -362,6 +367,7 @@ extern te_errno tapi_cfg_phy_commit(const char *ta, const char *if_name);
  *
  * @return #TE_PHY_DUPLEX_HALF    - half duplex;
  *         #TE_PHY_DUPLEX_FULL    - full duplex;
+ *         #TE_PHY_DUPLEX_UNKNOWN - duplex unknown;
  *         or @c -1 if name string does not recognized
  */
 extern int tapi_cfg_phy_duplex_str2id(const char *name);
@@ -371,8 +377,9 @@ extern int tapi_cfg_phy_duplex_str2id(const char *name);
  *
  * @param duplex        Duplex state id
  *
- * @return half - half duplex;
- *         full - full duplex;
+ * @return half    - half duplex;
+ *         full    - full duplex;
+ *         unknown - unknown duplex;
  *         or @c NULL if id does not recognized
  */
 extern const char *tapi_cfg_phy_duplex_id2str(int duplex);
