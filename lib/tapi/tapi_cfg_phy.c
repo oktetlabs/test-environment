@@ -92,7 +92,7 @@ tapi_cfg_phy_speed_str2id(const char *name)
 extern const char *
 tapi_cfg_phy_autoneg_id2str(int autoneg)
 {
-    return te_enum_map_from_value(tapi_cfg_phy_autoneg_map, autoneg);
+    return te_enum_map_from_value(te_phy_autoneg_map, autoneg);
 }
 
 /* See description in tapi_cfg_phy.h */
@@ -106,7 +106,7 @@ tapi_cfg_phy_duplex_id2str(int duplex)
 extern const char *
 tapi_cfg_phy_speed_id2str(int speed)
 {
-    return te_enum_map_from_value(tapi_cfg_phy_speed_map, speed);
+    return te_enum_map_from_value(te_phy_speed_map, speed);
 }
 
 /* See description in tapi_cfg_phy.h */

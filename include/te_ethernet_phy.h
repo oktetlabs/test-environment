@@ -34,6 +34,16 @@
 #define TE_PHY_DUPLEX_STRING_HALF     "half"    /* Half duplex */
 #define TE_PHY_DUPLEX_STRING_UNKNOWN  "unknown" /* Unknown duplex state */
 
+/* Port constants */
+#define TE_PHY_PORT_STRING_TP       "Twisted Pair" /**< RJ-45 */
+#define TE_PHY_PORT_STRING_AUI      "AUI"   /**< Attachment Unit Interface */
+#define TE_PHY_PORT_STRING_MII      "MII"   /**< Media Independent Interface */
+#define TE_PHY_PORT_STRING_FIBRE    "FIBRE" /**< Fibre */
+#define TE_PHY_PORT_STRING_BNC      "BNC"   /**< BNC/coax */
+#define TE_PHY_PORT_STRING_DA       "DA"    /**< Direct Attach */
+#define TE_PHY_PORT_STRING_NONE     "None"  /**< No physical port */
+#define TE_PHY_PORT_STRING_OTHER    "Other" /**< Unknown port type */
+
 #define TE_PHY_AUTONEG(state_) \
     (const te_enum_map){                            \
         .name = TE_PHY_AUTONEG_STRING_ ## state_,   \
@@ -44,6 +54,12 @@
     (const te_enum_map){                            \
         .name = TE_PHY_DUPLEX_STRING_ ## state_,    \
         .value = TE_PHY_DUPLEX_ ## state_           \
+    }
+
+#define TE_PHY_PORT(mode_) \
+    (const te_enum_map){                            \
+        .name = TE_PHY_PORT_STRING_ ## mode_,       \
+        .value = TE_PHY_PORT_ ## mode_              \
     }
 
 #define TE_PHY_SPEED(speed_) \
@@ -77,6 +93,26 @@ enum te_phy_duplex {
     TE_PHY_DUPLEX_FULL    = 1,
     /** PHY unknown duplex state */
     TE_PHY_DUPLEX_UNKNOWN = 0xff,
+};
+
+/** PHY port types */
+enum te_phy_port {
+    /** Twisted Pair */
+    TE_PHY_PORT_TP      = 0x00,
+    /** Attachment Unit Interface */
+    TE_PHY_PORT_AUI     = 0x01,
+    /** Media Independent Interface */
+    TE_PHY_PORT_MII     = 0x02,
+    /** Fibre */
+    TE_PHY_PORT_FIBRE   = 0x03,
+    /** BNC/coax */
+    TE_PHY_PORT_BNC     = 0x04,
+    /** Direct Attach */
+    TE_PHY_PORT_DA      = 0x05,
+    /** No physical port */
+    TE_PHY_PORT_NONE    = 0xef,
+    /** Unknown port type */
+    TE_PHY_PORT_OTHER   = 0xff,
 };
 
 /** PHY speed values (in Mbps) */
@@ -143,6 +179,18 @@ static const te_enum_map te_phy_duplex_map[] = {
     TE_ENUM_MAP_END
 };
 
+static const te_enum_map te_phy_port_map[] = {
+    TE_PHY_PORT(TP),
+    TE_PHY_PORT(AUI),
+    TE_PHY_PORT(MII),
+    TE_PHY_PORT(FIBRE),
+    TE_PHY_PORT(BNC),
+    TE_PHY_PORT(DA),
+    TE_PHY_PORT(NONE),
+    TE_PHY_PORT(OTHER),
+    TE_ENUM_MAP_END
+};
+
 static const te_enum_map te_phy_speed_map[] = {
     { .name = "unknown", .value = TE_PHY_SPEED_UNKNOWN },
     TE_PHY_SPEED(10),
@@ -165,6 +213,7 @@ static const te_enum_map te_phy_speed_map[] = {
 };
 
 #undef TE_PHY_SPEED
+#undef TE_PHY_PORT
 #undef TE_PHY_DUPLEX
 #undef TE_PHY_AUTONEG
 

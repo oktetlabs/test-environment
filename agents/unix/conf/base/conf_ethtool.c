@@ -986,6 +986,10 @@ ta_ethtool_lsets_field_get(ta_ethtool_lsets *lsets,
             case TA_ETHTOOL_LSETS_DUPLEX:
                 *value = lsets->sets.xlinksettings.fields.duplex;
                 break;
+
+            case TA_ETHTOOL_LSETS_PORT:
+                *value = lsets->sets.xlinksettings.fields.port;
+                break;
         }
 #else
         ERROR("%s(): ETHTOOL_GLINKSETTINGS is not defined but "
@@ -1007,6 +1011,10 @@ ta_ethtool_lsets_field_get(ta_ethtool_lsets *lsets,
 
             case TA_ETHTOOL_LSETS_DUPLEX:
                 *value = lsets->sets.xset.duplex;
+                break;
+
+            case TA_ETHTOOL_LSETS_PORT:
+                *value = lsets->sets.xset.port;
                 break;
         }
     }
@@ -1036,6 +1044,10 @@ ta_ethtool_lsets_field_set(ta_ethtool_lsets *lsets,
             case TA_ETHTOOL_LSETS_DUPLEX:
                 lsets->sets.xlinksettings.fields.duplex = value;
                 break;
+
+            case TA_ETHTOOL_LSETS_PORT:
+                lsets->sets.xlinksettings.fields.port = value;
+                break;
         }
 #else
         ERROR("%s(): ETHTOOL_GLINKSETTINGS is not defined but "
@@ -1057,6 +1069,10 @@ ta_ethtool_lsets_field_set(ta_ethtool_lsets *lsets,
 
             case TA_ETHTOOL_LSETS_DUPLEX:
                 lsets->sets.xset.duplex = value;
+                break;
+
+            case TA_ETHTOOL_LSETS_PORT:
+                lsets->sets.xset.port = value;
                 break;
         }
     }

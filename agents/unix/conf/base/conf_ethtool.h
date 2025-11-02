@@ -96,6 +96,7 @@ typedef enum ta_ethtool_lsets_field {
     TA_ETHTOOL_LSETS_AUTONEG,   /**< Autonegotiation */
     TA_ETHTOOL_LSETS_SPEED,     /**< Speed */
     TA_ETHTOOL_LSETS_DUPLEX,    /**< Duplex */
+    TA_ETHTOOL_LSETS_PORT,      /**< Physical connector type */
 } ta_ethtool_lsets_field;
 
 /**

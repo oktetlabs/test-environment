@@ -139,6 +139,39 @@ phy_field_get(unsigned int gid, const char *if_name,
 
     return ta_ethtool_lsets_field_get(lsets_ptr, field, value);
 }
+/*
+ * Get value of agent/interface/phy/port telling physical connector type.
+ */
+static te_errno
+phy_port_get(unsigned int gid, const char *oid, char *value,
+             const char *if_name)
+{
+    te_errno rc;
+    unsigned int port;
+    const char *port_str;
+
+    UNUSED(oid);
+
+    rc = phy_field_get(gid, if_name, TA_ETHTOOL_LSETS_PORT, &port, false);
+    if (rc != 0)
+        return rc;
+
+    port_str = te_enum_map_from_value(te_phy_port_map, port);
+    if (port_str == NULL)
+    {
+            ERROR("%s(): unknown port value %u", __FUNCTION__, port);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    rc = te_snprintf(value, RCF_MAX_VAL, "%s", port_str);
+    if (rc != 0)
+    {
+        ERROR("%s(): te_snprintf() failed", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    return 0;
+}
 
 /*
  * Get value of agent/interface/phy/autoneg telling whether
@@ -690,8 +723,11 @@ RCF_PCH_CFG_NODE_RWC_COLLECTION(node_phy_mode, "mode",
                                 NULL, NULL,
                                 phy_mode_list, &node_phy);
 
+RCF_PCH_CFG_NODE_RO(node_phy_port, "port", NULL,
+                    &node_phy_mode, phy_port_get);
+
 RCF_PCH_CFG_NODE_RWC(node_phy_autoneg, "autoneg", NULL,
-                     &node_phy_mode, phy_autoneg_get, phy_autoneg_set,
+                     &node_phy_port, phy_autoneg_get, phy_autoneg_set,
                      &node_phy);
 
 RCF_PCH_CFG_NODE_RWC(node_phy_speed_admin, "speed_admin", NULL,

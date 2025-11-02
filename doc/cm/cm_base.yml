@@ -542,6 +542,21 @@
          Name: none
          Value: none
 
+    - oid: "/agent/interface/phy/port"
+      access: read_only
+      type: string
+      d: |
+         Network interface port mode status
+         Name: none
+         Value: "Twisted Pair" - Twisted Pair
+                "AUI" - Attachment Unit Interface
+                "MII" - Media Independent Interface
+                "FIBRE" - Fibre
+                "BNC" - BNC/coax
+                "DA" - Direct Attach
+                "NONE" - No physical port
+                "OTHER" - Unknown port type
+
     - oid: "/agent/interface/phy/autoneg"
       access: read_write
       type: int32
