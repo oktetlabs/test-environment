@@ -394,6 +394,18 @@ extern int tapi_cfg_phy_duplex_str2id(const char *name);
 extern int tapi_cfg_phy_speed_str2id(const char *name);
 
 /**
+ * Get PHY autoneg state by id.
+ *
+ * @param autoneg       Autoneg state id
+ *
+ * @return #TE_PHY_AUTONEG_STRING_ON      - autonegatiation on;
+ *         #TE_PHY_AUTONEG_STRING_OFF     - autonegatiation off;
+ *         #TE_PHY_AUTONEG_STRING_UNKNOWN - autonegatiation unknown;
+ *         or @c NULL if id does not recognized
+ */
+extern const char *tapi_cfg_phy_autoneg_id2str(int autoneg);
+
+/**
  * Get PHY duplex state by id.
  *
  * @param duplex        Duplex state id
@@ -404,6 +416,15 @@ extern int tapi_cfg_phy_speed_str2id(const char *name);
  *         or @c NULL if id does not recognized
  */
 extern const char *tapi_cfg_phy_duplex_id2str(int duplex);
+
+/**
+ * Get PHY speed state by id.
+ *
+ * @param speed         Speed state id
+ *
+ * @return TE_PHY_SPEED_STRING_* or @c NULL if id does not recognized
+ */
+extern const char *tapi_cfg_phy_speed_id2str(int speed);
 
 /**
  * Turn off all advertised modes and advertise only one.
