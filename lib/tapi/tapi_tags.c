@@ -21,6 +21,7 @@
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_if.h"
 #include "tapi_cfg_pci.h"
+#include "tapi_cfg_phy.h"
 
 /* See the description from tapi_tags.h */
 te_errno
@@ -209,4 +210,146 @@ out:
     free(fw_ver);
 
     return rc;
+}
+
+static te_errno
+tapi_tags_add_phy_speed_tag(const char *iut_ta, const char *iut_if_name,
+                            const char *tst_ta, const char *tst_if_name,
+                            const char *tag_prefix)
+{
+    te_string value = TE_STRING_INIT;
+    int iut_link;
+    int iut_speed;
+    int tst_speed;
+    const char *iut_speed_str;
+    const char *tst_speed_str;
+    bool tst_is_valid = !te_str_is_null_or_empty(tst_ta) &&
+                        !te_str_is_null_or_empty(tst_if_name);
+    te_errno rc;
+
+    rc = tapi_cfg_phy_state_get(iut_ta, iut_if_name, &iut_link);
+    if (rc != 0)
+        return rc;
+
+    if (iut_link != TE_PHY_STATE_UP)
+    {
+        WARN("The host %s interface %s is not UP", iut_ta, iut_if_name);
+        return 0;
+    }
+
+    rc = tapi_cfg_phy_speed_admin_get(iut_ta, iut_if_name, &iut_speed);
+    if (rc != 0)
+        return rc;
+
+    tst_speed = iut_speed;
+
+    if (tst_is_valid)
+    {
+        rc = tapi_cfg_phy_speed_admin_get(tst_ta, tst_if_name, &tst_speed);
+        if (rc != 0)
+            return rc;
+    }
+
+    iut_speed_str = tapi_cfg_phy_speed_id2str(iut_speed);
+    tst_speed_str = tapi_cfg_phy_speed_id2str(tst_speed);
+
+    if (iut_speed != tst_speed)
+    {
+        WARN("The hosts intrefaces have different PHY link speeds: "
+             "%s's %s - %s%s and %s's %s - %s%s",
+             iut_ta, iut_if_name, iut_speed_str,
+             iut_speed == TE_PHY_SPEED_UNKNOWN ? "" : "Mbps",
+             tst_ta, tst_if_name, tst_speed_str,
+             tst_speed == TE_PHY_SPEED_UNKNOWN ? "" : "Mbps");
+    }
+
+    if (iut_speed == TE_PHY_SPEED_UNKNOWN)
+        WARN("The host %s interface %s have unknown PHY link speed",
+             iut_ta, iut_if_name);
+
+    if (tst_speed == TE_PHY_SPEED_UNKNOWN && tst_is_valid)
+        WARN("The host %s interface %s have unknown PHY link speed",
+             tst_ta, tst_if_name);
+
+    te_string_append(&value, "%ssp-%s%s",
+                     tag_prefix,
+                     iut_speed_str,
+                     iut_speed == TE_PHY_SPEED_UNKNOWN ? "" : "Mbps");
+
+    rc = tapi_tags_add_tag(te_string_value(&value), NULL);
+
+    te_string_free(&value);
+
+    return rc;
+}
+
+static te_errno
+tapi_tags_add_phy_port_tag(const char *iut_ta, const char *iut_if_name,
+                           const char *tst_ta, const char *tst_if_name,
+                           const char *tag_prefix)
+{
+    te_string value = TE_STRING_INIT;
+    enum te_phy_port iut_port;
+    enum te_phy_port tst_port;
+    const char *iut_port_str;
+    const char *tst_port_str;
+    bool tst_is_valid = !te_str_is_null_or_empty(tst_ta) &&
+                        !te_str_is_null_or_empty(tst_if_name);
+    te_errno rc;
+
+    rc = tapi_cfg_phy_port_get(iut_ta, iut_if_name, &iut_port);
+    if (rc != 0)
+        return rc;
+
+    tst_port = iut_port;
+
+    if (tst_is_valid)
+    {
+        rc = tapi_cfg_phy_port_get(tst_ta, tst_if_name, &tst_port);
+        if (rc != 0)
+            return rc;
+    }
+
+    iut_port_str = tapi_cfg_phy_port_id2str(iut_port);
+    tst_port_str = tapi_cfg_phy_port_id2str(tst_port);
+
+    if (iut_port != tst_port)
+    {
+        WARN("The hosts intrefaces have different PHY connector types: "
+             "%s's %s - %s and %s's %s - %s",
+             iut_ta, iut_if_name, iut_port_str,
+             tst_ta, tst_if_name, tst_port_str);
+    }
+
+    te_string_append(&value, "%sport-%s", tag_prefix, iut_port_str);
+
+    rc = tapi_tags_add_tag(te_string_value(&value), NULL);
+
+    te_string_free(&value);
+
+    return rc;
+}
+
+/* See the description from tapi_tags.h */
+te_errno
+tapi_tags_add_phy_tags(const char *iut_ta, const char *iut_if_name,
+                       const char *tst_ta, const char *tst_if_name,
+                       const char *tag_prefix)
+{
+    te_errno rc;
+
+    if (tag_prefix == NULL)
+        tag_prefix = "";
+
+    rc = tapi_tags_add_phy_speed_tag(iut_ta, iut_if_name, tst_ta, tst_if_name,
+                                     tag_prefix);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_tags_add_phy_port_tag(iut_ta, iut_if_name, tst_ta, tst_if_name,
+                                    tag_prefix);
+    if (rc != 0)
+        return rc;
+
+    return 0;
 }

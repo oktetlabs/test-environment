@@ -78,6 +78,35 @@ extern te_errno tapi_tags_add_firmwareversion_tag(const char *ta,
                                                   const char *if_name,
                                                   const char *tag_prefix);
 
+/**
+ * Add PHY tags of the network interface.
+ *
+ * Adds such PHY tags as:
+ * - @c "sp-" - IUT speed state
+ * - @c "port-" - IUT port mode status.
+ *
+ * This function should be used to pass the TRC tag from the root prologue
+ * only to the tester.
+ *
+ * @param iut_ta        IUT agent name.
+ * @param iut_if_name   IUT network interface name.
+ * @param tst_ta        TST agent name or @c NULL.
+ * @param tst_if_name   TST network interface name or @c NULL.
+ * @param tag_prefix    Tag name prefix or @c NULL.
+ *
+ * @return              Status code.
+ *
+ * @note TST TA and interface name can be used to compare with IUT configuration
+ *       to ensure that the TST and IUT configuration (speed and port mode
+ *       parameters) values are synchronized correctly. If TST values are
+ *       @c NULL, the comparison will be skipped. TST input data is optional.
+ */
+extern te_errno tapi_tags_add_phy_tags(const char *iut_ta,
+                                       const char *iut_if_name,
+                                       const char *tst_ta,
+                                       const char *tst_if_name,
+                                       const char *tag_prefix);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
