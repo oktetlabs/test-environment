@@ -19,6 +19,7 @@
 #include "conf_api.h"
 #include "tapi_test.h"
 #include "tapi_cfg_base.h"
+#include "tapi_cfg_if.h"
 #include "tapi_cfg_pci.h"
 
 /* See the description from tapi_tags.h */
@@ -152,6 +153,60 @@ tapi_tags_add_net_pci_tags(const char *ta, const char *if_name)
 done:
     te_string_free(&str);
     free(pci_oid);
+
+    return rc;
+}
+
+static inline bool
+is_good_tag_symbol(char c)
+{
+    return (isalnum(c) || c == '_' || c == '.' || c == '-');
+}
+
+static void
+firmwareversion_string_escape(char *fw_ver)
+{
+    size_t i;
+
+    for (i = 0; i < strlen(fw_ver); i++)
+    {
+        if (!is_good_tag_symbol(fw_ver[i]))
+            fw_ver[i] = '-';
+    }
+ }
+
+/* See the description from tapi_tags.h */
+te_errno
+tapi_tags_add_firmwareversion_tag(const char *ta, const char *if_name,
+                                  const char *tag_prefix)
+{
+    te_string value = TE_STRING_INIT;
+    char *fw_ver = NULL;
+    te_errno rc;
+
+    rc = tapi_cfg_if_deviceinfo_firmwareversion_get(ta, if_name, &fw_ver);
+    if (rc != 0)
+        goto out;
+
+    if (te_str_is_null_or_empty(fw_ver))
+    {
+        WARN("%s has empty firmware version", ta);
+        goto out;
+    }
+
+    firmwareversion_string_escape(fw_ver);
+
+    rc = te_string_append(&value, "%sfw-%s", tag_prefix, fw_ver);
+    if (rc != 0)
+        goto out;
+
+    rc = tapi_tags_add_tag(te_string_value(&value), NULL);
+    if (rc != 0)
+        goto out;
+
+out:
+    te_string_free(&value);
+    free(fw_ver);
 
     return rc;
 }
