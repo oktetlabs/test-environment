@@ -81,6 +81,14 @@ tapi_cfg_phy_duplex_str2id(const char *name)
 {
     return te_enum_map_from_str(te_phy_duplex_map, name, -1);
 }
+
+/* See description in tapi_cfg_phy.h */
+extern enum te_phy_port
+tapi_cfg_phy_port_str2id(const char *name)
+{
+    return te_enum_map_from_str(te_phy_port_map, name, -1);
+}
+
 /* See description in tapi_cfg_phy.h */
 extern int
 tapi_cfg_phy_speed_str2id(const char *name)
@@ -100,6 +108,13 @@ extern const char *
 tapi_cfg_phy_duplex_id2str(int duplex)
 {
     return te_enum_map_from_value(te_phy_duplex_map, duplex);
+}
+
+/* See description in tapi_cfg_phy.h */
+extern const char *
+tapi_cfg_phy_port_id2str(enum te_phy_port port)
+{
+    return te_enum_map_from_value(te_phy_port_map, port);
 }
 
 /* See description in tapi_cfg_phy.h */
@@ -175,6 +190,30 @@ tapi_cfg_phy_duplex_admin_set(const char *ta, const char *if_name,
                             ta, if_name);
 
     return rc;
+}
+
+/* See description in tapi_cfg_phy.h */
+te_errno
+tapi_cfg_phy_port_get(const char *ta, const char *if_name,
+                      enum te_phy_port *state)
+{
+    te_errno  rc = 0;
+    char *port;
+
+    rc = cfg_get_instance_sync_fmt(NULL, (void *)&port,
+                            "/agent:%s/interface:%s/phy:/port:",
+                            ta, if_name);
+    if (rc != 0)
+        return rc;
+
+    *state = tapi_cfg_phy_port_str2id(port);
+
+    free(port);
+
+    if (*state == -1)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    return 0;
 }
 
 /* See description in tapi_cfg_phy.h */

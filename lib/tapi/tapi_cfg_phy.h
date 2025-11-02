@@ -114,6 +114,19 @@ extern te_errno tapi_cfg_phy_duplex_admin_set(const char *ta,
                                               int state);
 
 /**
+ * Get PHY port.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param state         Pointer to the returned physical connector type
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_phy_port_get(const char *ta,
+                                      const char *if_name,
+                                      enum te_phy_port *state);
+
+/**
  * Get PHY speed oper value.
  *
  * @param ta            Test Agent name
@@ -385,6 +398,22 @@ extern int tapi_cfg_phy_autoneg_str2id(const char *name);
 extern int tapi_cfg_phy_duplex_str2id(const char *name);
 
 /**
+ * Get PHY physical connector type by name string.
+ *
+ * @param name          Port type name string
+ *
+ * @return #TE_PHY_PORT_TP    - Twisted Pair;
+ *         #TE_PHY_PORT_AUI   - Attachment Unit Interface;
+ *         #TE_PHY_PORT_FIBRE - Fibre;
+ *         #TE_PHY_PORT_BNC   - BNC/coax;
+ *         #TE_PHY_PORT_DA    - Direct Attach;
+ *         #TE_PHY_PORT_NONE  - No physical port;
+ *         #TE_PHY_PORT_OTHER - Unknown port type;
+ *         or @c -1 if name string does not recognized
+ */
+extern enum te_phy_port tapi_cfg_phy_port_str2id(const char *name);
+
+/**
  * Get PHY speed state by name string.
  *
  * @param name          Speed state name string
@@ -416,6 +445,22 @@ extern const char *tapi_cfg_phy_autoneg_id2str(int autoneg);
  *         or @c NULL if id does not recognized
  */
 extern const char *tapi_cfg_phy_duplex_id2str(int duplex);
+
+/**
+ * Get PHY physical connector type by name id.
+ *
+ * @param port          Port type id
+ *
+ * @return #TE_PHY_PORT_STRING_TP    - Twisted Pair;
+ *         #TE_PHY_PORT_STRING_AUI   - Attachment Unit Interface;
+ *         #TE_PHY_PORT_STRING_FIBRE - Fibre;
+ *         #TE_PHY_PORT_STRING_BNC   - BNC/coax;
+ *         #TE_PHY_PORT_STRING_DA    - Direct Attach;
+ *         #TE_PHY_PORT_STRING_NONE  - No physical port;
+ *         #TE_PHY_PORT_STRING_OTHER - Unknown port type;
+ *         or @c NULL if id does not recognized
+ */
+extern const char *tapi_cfg_phy_port_id2str(enum te_phy_port port);
 
 /**
  * Get PHY speed state by id.
