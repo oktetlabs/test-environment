@@ -330,6 +330,7 @@ extern const char * tapi_rdma_perf_conn_str_get(
  *
  * @param[in]  factory    Job factory.
  * @param[in]  opts       RDMA perf options.
+ * @param[in]  extra_args Additional arguments for perf tool.
  * @param[in]  env        Environment for the app. May be @c NULL.
  * @param[in]  is_client  Are options for server or client side.
  * @param[out] app        The application handle.
@@ -340,6 +341,7 @@ extern const char * tapi_rdma_perf_conn_str_get(
  */
 extern te_errno tapi_rdma_perf_app_init_with_env(tapi_job_factory_t *factory,
                                                  tapi_rdma_perf_opts *opts,
+                                                 te_vec *extra_args,
                                                  const char **env,
                                                  bool is_client,
                                                  tapi_rdma_perf_app **app);
@@ -349,6 +351,7 @@ extern te_errno tapi_rdma_perf_app_init_with_env(tapi_job_factory_t *factory,
  *
  * @param[in]  factory    Job factory.
  * @param[in]  opts       RDMA perf options.
+ * @param[in]  extra_args Additional arguments for perf tool.
  * @param[in]  is_client  Are options for server or client side.
  * @param[out] app        The application handle.
  *
@@ -358,9 +361,10 @@ extern te_errno tapi_rdma_perf_app_init_with_env(tapi_job_factory_t *factory,
  */
 static inline te_errno
 tapi_rdma_perf_app_init(tapi_job_factory_t *factory, tapi_rdma_perf_opts *opts,
-                        bool is_client, tapi_rdma_perf_app **app)
+                        te_vec *extra_args, bool is_client,
+                        tapi_rdma_perf_app **app)
 {
-    return tapi_rdma_perf_app_init_with_env(factory, opts, NULL,
+    return tapi_rdma_perf_app_init_with_env(factory, opts, extra_args, NULL,
                                             is_client, app);
 }
 

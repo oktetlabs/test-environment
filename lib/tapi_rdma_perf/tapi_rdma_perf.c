@@ -537,6 +537,7 @@ static const te_enum_map test_type_map[] = {
 te_errno
 tapi_rdma_perf_app_init_with_env(tapi_job_factory_t *factory,
                                  tapi_rdma_perf_opts *opts,
+                                 te_vec *extra_args,
                                  const char **env,
                                  bool is_client,
                                  tapi_rdma_perf_app **app)
@@ -613,6 +614,20 @@ tapi_rdma_perf_app_init_with_env(tapi_job_factory_t *factory,
         te_vec_deep_free(&handle->args);
         free(handle);
         return TE_RC(TE_TAPI, rc);
+    }
+
+    if (extra_args != NULL)
+    {
+        rc = tapi_job_opt_append_strings((const char **)extra_args->data.ptr,
+                                         &handle->args);
+        if (rc != 0)
+        {
+            ERROR("Failed to add extra arguments to array of arguments: %r",
+                  rc);
+            te_vec_deep_free(&handle->args);
+            free(handle);
+            return TE_RC(TE_TAPI, rc);
+        }
     }
 
     job_descr.spawner = NULL;
