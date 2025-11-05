@@ -268,21 +268,9 @@ phy_duplex_get_common(unsigned int gid, const char *oid, char *value,
     if (rc != 0)
         return rc;
 
-    switch (duplex)
+    duplex_str = te_enum_map_from_value(te_phy_duplex_map, duplex);
+    if (duplex_str == NULL)
     {
-        case DUPLEX_HALF:
-            duplex_str = TE_PHY_DUPLEX_STRING_HALF;
-            break;
-
-        case DUPLEX_FULL:
-            duplex_str = TE_PHY_DUPLEX_STRING_FULL;
-            break;
-
-        case DUPLEX_UNKNOWN:
-            duplex_str = TE_PHY_DUPLEX_STRING_UNKNOWN;
-            break;
-
-        default:
             ERROR("%s(): unknown duplex value %u", __FUNCTION__, duplex);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
@@ -418,19 +406,8 @@ phy_duplex_admin_set(unsigned int gid, const char *oid, const char *value,
 
     UNUSED(oid);
 
-    if (strcmp(value, TE_PHY_DUPLEX_STRING_HALF) == 0)
-    {
-        duplex = DUPLEX_HALF;
-    }
-    else if (strcmp(value, TE_PHY_DUPLEX_STRING_FULL) == 0)
-    {
-        duplex = DUPLEX_FULL;
-    }
-    else if (strcmp(value, TE_PHY_DUPLEX_STRING_UNKNOWN) == 0)
-    {
-        duplex = DUPLEX_UNKNOWN;
-    }
-    else
+    duplex = te_enum_map_from_str(te_phy_duplex_map, value, UINT_MAX);
+    if (duplex == UINT_MAX)
     {
         ERROR("%s(): duplex value '%s' is not supported", __FUNCTION__,
               value);
