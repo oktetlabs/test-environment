@@ -151,6 +151,10 @@
       access: read_write
       type: int32
 
+    - oid: "/agent/sys/net/netfilter/nf_conntrack_tcp_loose"
+      access: read_write
+      type: int32
+
     - oid: "/agent/sys/net/ipv4"
       access: read_only
       type: none
