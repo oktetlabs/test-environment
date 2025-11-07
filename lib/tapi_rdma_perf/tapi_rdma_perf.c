@@ -538,6 +538,7 @@ te_errno
 tapi_rdma_perf_app_init_with_env(tapi_job_factory_t *factory,
                                  tapi_rdma_perf_opts *opts,
                                  te_vec *extra_args,
+                                 tapi_job_simple_filter_t *extra_filters,
                                  const char **env,
                                  bool is_client,
                                  tapi_rdma_perf_app **app)
@@ -545,6 +546,7 @@ tapi_rdma_perf_app_init_with_env(tapi_job_factory_t *factory,
     te_errno                rc = 0;
     tapi_job_simple_desc_t  job_descr;
     tapi_rdma_perf_app     *handle = NULL;
+    tapi_job_simple_filter_t *filter;
 
     const char *tx_depth_limit_str = getenv("TE_RDMA_PERFTEST_LIMIT_TX_DEPTH");
 
@@ -687,6 +689,23 @@ tapi_rdma_perf_app_init_with_env(tapi_job_factory_t *factory,
               handle->name, rc);
         te_vec_deep_free(&handle->args);
         free(handle);
+        return rc;
+    }
+
+    if (extra_filters == NULL)
+        return rc;
+    /* Last element should have use_stdout and use_stderr set to false */
+    for (filter = extra_filters;
+         filter->use_stdout || filter->use_stderr;
+         filter++)
+    {
+        if ((rc = tapi_job_attach_simple_filter(&job_descr, filter)) != 0)
+        {
+            tapi_job_destroy(*job_descr.job_loc, -1);
+            te_vec_deep_free(&handle->args);
+            free(handle);
+            return rc;
+        }
     }
 
     return rc;

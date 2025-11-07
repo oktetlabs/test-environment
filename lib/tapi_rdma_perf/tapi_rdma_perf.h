@@ -328,32 +328,35 @@ extern const char * tapi_rdma_perf_conn_str_get(
 /**
  * Initiate RDMA perf app with specific environment.
  *
- * @param[in]  factory    Job factory.
- * @param[in]  opts       RDMA perf options.
- * @param[in]  extra_args Additional arguments for perf tool.
- * @param[in]  env        Environment for the app. May be @c NULL.
- * @param[in]  is_client  Are options for server or client side.
- * @param[out] app        The application handle.
+ * @param[in]  factory       Job factory.
+ * @param[in]  opts          RDMA perf options.
+ * @param[in]  extra_args    Additional arguments for perf tool.
+ * @param[in]  env           Environment for the app. May be @c NULL.
+ * @param[in]  extra_filters Test suite specific filters for perf tool.
+ * @param[in]  is_client     Are options for server or client side.
+ * @param[out] app           The application handle.
  *
  * @return Status code.
  *
  * @sa tapi_rdma_perf_app_destroy
  */
 extern te_errno tapi_rdma_perf_app_init_with_env(tapi_job_factory_t *factory,
-                                                 tapi_rdma_perf_opts *opts,
-                                                 te_vec *extra_args,
-                                                 const char **env,
-                                                 bool is_client,
-                                                 tapi_rdma_perf_app **app);
+                                    tapi_rdma_perf_opts *opts,
+                                    te_vec *extra_args,
+                                    tapi_job_simple_filter_t *extra_filters,
+                                    const char **env,
+                                    bool is_client,
+                                    tapi_rdma_perf_app **app);
 
 /**
  * Initiate RDMA perf app.
  *
- * @param[in]  factory    Job factory.
- * @param[in]  opts       RDMA perf options.
- * @param[in]  extra_args Additional arguments for perf tool.
- * @param[in]  is_client  Are options for server or client side.
- * @param[out] app        The application handle.
+ * @param[in]  factory       Job factory.
+ * @param[in]  opts          RDMA perf options.
+ * @param[in]  extra_args    Additional arguments for perf tool.
+ * @param[in]  extra_filters Test suite specific filters for perf tool.
+ * @param[in]  is_client     Are options for server or client side.
+ * @param[out] app           The application handle.
  *
  * @return Status code.
  *
@@ -361,11 +364,13 @@ extern te_errno tapi_rdma_perf_app_init_with_env(tapi_job_factory_t *factory,
  */
 static inline te_errno
 tapi_rdma_perf_app_init(tapi_job_factory_t *factory, tapi_rdma_perf_opts *opts,
-                        te_vec *extra_args, bool is_client,
-                        tapi_rdma_perf_app **app)
+                        te_vec *extra_args,
+                        tapi_job_simple_filter_t *extra_filters,
+                        bool is_client, tapi_rdma_perf_app **app)
 {
-    return tapi_rdma_perf_app_init_with_env(factory, opts, extra_args, NULL,
-                                            is_client, app);
+    return tapi_rdma_perf_app_init_with_env(factory, opts, extra_args,
+                                            extra_filters, NULL, is_client,
+                                            app);
 }
 
 /**
