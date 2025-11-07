@@ -1670,6 +1670,7 @@ static void
 free_test_entity_value(test_entity_value *value)
 {
     xmlFree(value->name);
+    xmlFree(value->objective);
     xmlFree(value->ext);
     free(value->plain);
     test_requirements_free(&value->reqs);
@@ -1698,6 +1699,10 @@ alloc_and_get_value(xmlNodePtr node, const test_session *session,
 
     /* 'name' is optional */
     value->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
+    /* 'objective' is optional */
+    value->objective = XML2CHAR(xmlGetProp(node,
+                                           CONST_CHAR2XML("objective")));
+
     rc = resolve_value_type(value, node, session, default_type);
     if (rc != 0)
     {

@@ -141,6 +141,13 @@
                 </xsd:documentation>
             </xsd:annotation>
         </xsd:attribute>
+        <xsd:attribute name="objective" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation>
+                    Objective for the value.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
         <xsd:attribute name="type" type="xsd:Name">
             <xsd:annotation>
                 <xsd:documentation>

@@ -305,7 +305,7 @@
 
         <run>
             <script name="rand" />
-            <arg name="n_numbers"><value>1000</value></arg>
+            <arg name="n_numbers"><value objective="test 1000 numbers">1000</value></arg>
         </run>
 
         <run>

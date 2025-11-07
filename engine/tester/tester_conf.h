@@ -108,6 +108,9 @@ struct test_entity_value {
     char                       *ext;    /**< Reference to external value */
     test_requirements           reqs;   /**< Attached requirements */
     bool global; /**< Is this variable global? */
+
+    /** Objective of the value */
+    char *objective;
 };
 
 

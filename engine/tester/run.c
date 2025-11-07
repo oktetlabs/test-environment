@@ -1282,6 +1282,57 @@ test_params_to_te_string(te_string *str, const unsigned int n_args,
     VERB("%s(): %s", __FUNCTION__, str->ptr);
 }
 
+/**
+ * Construct iteration objective from objective of the test/session/package
+ * and objectives of parameter values.
+ *
+ * @param str         TE string for constructed value.
+ * @param objective   The test/session/package objective.
+ * @param n_args      Number of test iteration arguments.
+ * @param args        Test iteration arguments.
+ */
+static void
+collect_objectives(te_string *str, const char *objective,
+                   const unsigned int n_args,
+                   const test_iter_arg *args)
+{
+    unsigned int i;
+    const test_iter_arg *p;
+    bool colon = true;
+    bool comma = false;
+
+    if (objective != NULL)
+    {
+        te_string_append(str, "%s", objective);
+    }
+    else
+    {
+        colon = false;
+    }
+
+    for (i = 0, p = args; i < n_args; ++i, ++p)
+    {
+        if (p->variable)
+            continue;
+
+        if (p->objective != NULL)
+        {
+            if (colon)
+            {
+                te_string_chop(str, ".");
+                te_string_append(str, ": ");
+                colon = false;
+            }
+
+            if (comma)
+                te_string_append(str, ", ");
+
+            te_string_append(str, "%s", p->objective);
+            comma = true;
+        }
+    }
+}
+
 static te_errno
 param_to_json(char *key, size_t idx, char *value, bool has_more, void *user)
 {
@@ -1754,7 +1805,10 @@ log_test_start(unsigned int flags,
     json_t                 *param_fields;
 
     te_string   params_str  = TE_STRING_INIT;
+    te_string   obj_str     = TE_STRING_INIT;
     char       *hash_str    = NULL;
+
+    const char *objective = NULL;
 
 #define SET_JSON_STRING(_target, _string) \
     do {                                                                 \
@@ -1833,7 +1887,8 @@ log_test_start(unsigned int flags,
         {
             const char *page_name =
                 ri->page != NULL ? ri->page : ri->u.script.page;
-            const char *objective = ri->objective != NULL ?
+
+            objective = ri->objective != NULL ?
                 ri->objective : ri->u.script.objective;
 
             SET_JSON_STRING(tmp, "test");
@@ -1843,12 +1898,6 @@ log_test_start(unsigned int flags,
             {
                 SET_JSON_STRING(tmp, page_name);
                 SET_NEW_JSON(result, "page", tmp);
-            }
-
-            if (objective != NULL)
-            {
-                SET_JSON_STRING(tmp, objective);
-                SET_NEW_JSON(result, "objective", tmp);
             }
 
             if (tin != TE_TIN_INVALID)
@@ -1869,7 +1918,6 @@ log_test_start(unsigned int flags,
             }
             SET_NEW_JSON(result, "hash", tmp);
 
-
             if (flags & TESTER_CFG_WALK_OUTPUT_PARAMS)
             {
                 test_params_to_te_string(&params_str, ri->n_args, ctx->args);
@@ -1887,11 +1935,7 @@ log_test_start(unsigned int flags,
             SET_JSON_STRING(tmp, "session");
             SET_NEW_JSON(result, "node_type", tmp);
 
-            if (ri->u.session.objective != NULL)
-            {
-                SET_JSON_STRING(tmp, ri->u.session.objective);
-                SET_NEW_JSON(result, "objective", tmp);
-            }
+            objective = ri->u.session.objective;
             break;
 
         case RUN_ITEM_PACKAGE:
@@ -1904,19 +1948,24 @@ log_test_start(unsigned int flags,
             if (authors != NULL)
                 SET_NEW_JSON(result, "authors", authors);
 
-            if (ri->u.package->objective != NULL)
-            {
-                SET_JSON_STRING(tmp, ri->u.package->objective);
-                SET_NEW_JSON(result, "objective", tmp);
-            }
-
+            objective = ri->u.package->objective;
             break;
 
         default:
             ERROR("Invalid run item type %d", ri->type);
     }
 
+    collect_objectives(&obj_str, objective, ri->n_args,
+                       ctx->args);
+    objective = te_string_value(&obj_str);
+    if (!te_str_is_null_or_empty(objective))
+    {
+        SET_JSON_STRING(tmp, objective);
+        SET_NEW_JSON(result, "objective", tmp);
+    }
+
     te_string_free(&params_str);
+    te_string_free(&obj_str);
     tester_control_log(result, "test_start", 1);
     json_decref(result);
 
@@ -3658,8 +3707,8 @@ run_get_value(const test_entity_value *value,
 
 
 /**
- * Callback function to collect all requirements associated with
- * argument value.
+ * Callback function to collect all requirements and objective associated
+ * with argument value.
  *
  * The function complies with test_entity_value_enum_error_cb()
  * prototype. Always returns @c 0.
@@ -3668,10 +3717,19 @@ static te_errno
 run_prepare_arg_value_collect_reqs(const test_entity_value *value,
                                    te_errno status, void *opaque)
 {
-    test_requirements *reqs = opaque;
+    test_iter_arg *arg = opaque;
 
     if (TE_RC_GET_ERROR(status) == TE_EEXIST)
-        test_requirements_clone(&value->reqs, reqs);
+    {
+        test_requirements_clone(&value->reqs, &arg->reqs);
+
+        /*
+         * Do not set to NULL - it may hide objective set in enumeration
+         * type when processing test arguments of that type.
+         */
+        if (value->objective != NULL)
+            arg->objective = value->objective;
+    }
 
     return 0;
 }
@@ -3764,7 +3822,7 @@ run_prepare_arg_cb(const test_var_arg *va, void *opaque)
 
     rc = test_var_arg_get_value(data->ri, va, i_value,
                                 run_prepare_arg_value_collect_reqs,
-                                &data->arg->reqs,
+                                data->arg,
                                 &value);
     if (rc != 0)
     {
@@ -3982,7 +4040,10 @@ run_iter_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     /* TODO: Optimize arguments fill in */
     assert(ri->n_args == ctx->n_args);
     for (i = 0; i < ctx->n_args; ++i)
+    {
         test_requirements_free(&ctx->args[i].reqs);
+        ctx->args[i].objective = NULL;
+    }
 
     EXIT("CONT");
     return TESTER_CFG_WALK_CONT;

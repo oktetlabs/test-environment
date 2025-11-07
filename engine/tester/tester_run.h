@@ -36,6 +36,9 @@ typedef struct test_iter_arg {
     const char                 *value;  /**< Current parameter value */
     struct test_requirements    reqs;   /**< Associated requirements */
     bool variable; /**< Is this argument in fact a variable */
+
+    /** Current value objective */
+    const char *objective;
 } test_iter_arg;
 
 
