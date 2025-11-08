@@ -333,6 +333,7 @@ extern const char * tapi_rdma_perf_conn_str_get(
  * @param[in]  extra_args    Additional arguments for perf tool.
  * @param[in]  env           Environment for the app. May be @c NULL.
  * @param[in]  extra_filters Test suite specific filters for perf tool.
+ * @param[in]  in_ch         Specify input channel for perftest tool.
  * @param[in]  is_client     Are options for server or client side.
  * @param[out] app           The application handle.
  *
@@ -344,6 +345,7 @@ extern te_errno tapi_rdma_perf_app_init_with_env(tapi_job_factory_t *factory,
                                     tapi_rdma_perf_opts *opts,
                                     te_vec *extra_args,
                                     tapi_job_simple_filter_t *extra_filters,
+                                    tapi_job_channel_t **in_ch,
                                     const char **env,
                                     bool is_client,
                                     tapi_rdma_perf_app **app);
@@ -355,6 +357,7 @@ extern te_errno tapi_rdma_perf_app_init_with_env(tapi_job_factory_t *factory,
  * @param[in]  opts          RDMA perf options.
  * @param[in]  extra_args    Additional arguments for perf tool.
  * @param[in]  extra_filters Test suite specific filters for perf tool.
+ * @param[in]  in_ch         Specify input channel for perftest tool.
  * @param[in]  is_client     Are options for server or client side.
  * @param[out] app           The application handle.
  *
@@ -366,11 +369,12 @@ static inline te_errno
 tapi_rdma_perf_app_init(tapi_job_factory_t *factory, tapi_rdma_perf_opts *opts,
                         te_vec *extra_args,
                         tapi_job_simple_filter_t *extra_filters,
-                        bool is_client, tapi_rdma_perf_app **app)
+                        tapi_job_channel_t **in_ch, bool is_client,
+                        tapi_rdma_perf_app **app)
 {
     return tapi_rdma_perf_app_init_with_env(factory, opts, extra_args,
-                                            extra_filters, NULL, is_client,
-                                            app);
+                                            extra_filters, in_ch, NULL,
+                                            is_client, app);
 }
 
 /**

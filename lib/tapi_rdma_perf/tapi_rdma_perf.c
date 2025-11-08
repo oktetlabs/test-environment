@@ -539,6 +539,7 @@ tapi_rdma_perf_app_init_with_env(tapi_job_factory_t *factory,
                                  tapi_rdma_perf_opts *opts,
                                  te_vec *extra_args,
                                  tapi_job_simple_filter_t *extra_filters,
+                                 tapi_job_channel_t **in_ch,
                                  const char **env,
                                  bool is_client,
                                  tapi_rdma_perf_app **app)
@@ -638,7 +639,8 @@ tapi_rdma_perf_app_init_with_env(tapi_job_factory_t *factory,
     job_descr.argv = (const char **)handle->args.data.ptr;
     job_descr.env = env;
     job_descr.job_loc = &handle->job;
-    job_descr.stdin_loc = NULL;
+    if (in_ch != NULL)
+        job_descr.stdin_loc = in_ch;
     job_descr.stdout_loc = &handle->out_chs[0];
     job_descr.stderr_loc = &handle->out_chs[1];
     job_descr.filters = TAPI_JOB_SIMPLE_FILTERS(
