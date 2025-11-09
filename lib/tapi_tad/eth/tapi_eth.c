@@ -530,7 +530,7 @@ tapi_eth_header_free(asn_value *tmpl, size_t *n_tags, uint16_t *vid,
     asn_value        *pdus = NULL;
     asn_value        *eth = NULL;
     unsigned int      n_hdrs;
-    te_errno          rc;
+    te_errno          rc = 0;
 
     if (tmpl == NULL)
         return 0;
@@ -560,15 +560,18 @@ tapi_eth_header_free(asn_value *tmpl, size_t *n_tags, uint16_t *vid,
     if (rc != 0)
     {
         ERROR("Failed to read VLAN TCI");
-        return rc;
+        goto out;
     }
 
     rc = asn_remove_indexed(pdus, eth_hdrs[n_hdrs - 1].index, "");
     if (rc != 0)
     {
         ERROR("Failed to remove ethernet header from template: %r", rc);
-        return rc;
+        goto out;
     }
 
-    return 0;
+out:
+    free(eth_hdrs);
+
+    return rc;
 }
