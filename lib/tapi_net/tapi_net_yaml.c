@@ -1080,6 +1080,9 @@ nat_rule_node_parse(yaml_node_t *rule_node, yaml_document_t *doc,
                 }
 
                 fill_ep_info(ep, ta_name, iface);
+                free(ta_name);
+                free(iface);
+
                 break;
 
             default:
