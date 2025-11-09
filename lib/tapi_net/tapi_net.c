@@ -61,6 +61,7 @@ tapi_vec_destroy_iface_stack(const void *item)
         iface = SLIST_FIRST(head);
         SLIST_REMOVE_HEAD(head, iface_next);
         free(iface->name);
+        free(iface->addr);
         free(iface);
     }
 }
@@ -104,6 +105,7 @@ iface_init(const char *if_name, tapi_net_iface_type iface_type)
     tapi_net_iface *iface_tmp = NULL;
 
     iface_tmp = TE_ALLOC(sizeof(*iface_tmp));
+    iface_tmp->addr = NULL;
     iface_tmp->type = iface_type;
     iface_tmp->name = TE_STRDUP(if_name);
 
@@ -316,6 +318,7 @@ setup_base_iface(const char *ta, const tapi_net_iface *iface,
 
     cfg_find_pattern_fmt(&count, &handles, "/agent:%s/interface:%s/",
                          ta, iface->name);
+    free(handles);
     if (count != 1)
     {
         ERROR("Failed to find base interface '%s' in Configurator Tree",
@@ -364,8 +367,11 @@ setup_vlan_iface(const char *ta, const tapi_net_iface *iface,
     if (strcmp(iface->name, iface_real_name) != 0)
     {
         ERROR("Created VLAN interface has different name");
+        free(iface_real_name);
         return TE_RC(TE_TAPI, TE_EFAIL);
     }
+
+    free(iface_real_name);
 
     return 0;
 }
@@ -614,17 +620,14 @@ net_link_exists(const tapi_net_link *net_link)
 
 /** Register network in Configurator. */
 static te_errno
-net_register(const tapi_net_link *net_link, cfg_net_t **cfg_net)
+net_register(const tapi_net_link *net_link, cfg_net_t *cfg_net)
 {
     te_string oid_ep0_str = TE_STRING_INIT_STATIC(CFG_OID_MAX);
     te_string oid_ep1_str = TE_STRING_INIT_STATIC(CFG_OID_MAX);
-    cfg_net_t *cfg_net_tmp;
     te_errno rc;
 
     assert(net_link != NULL);
     assert(cfg_net != NULL);
-
-    cfg_net_tmp = TE_ALLOC(sizeof(*cfg_net_tmp));
 
     te_string_append(&oid_ep0_str, "/agent:%s/interface:%s",
                      net_link->endpoints[0].ta_name,
@@ -633,7 +636,7 @@ net_register(const tapi_net_link *net_link, cfg_net_t **cfg_net)
                      net_link->endpoints[1].ta_name,
                      net_link->endpoints[1].if_name);
 
-    rc = tapi_cfg_net_register_net(net_link->name, cfg_net_tmp,
+    rc = tapi_cfg_net_register_net(net_link->name, cfg_net,
                                    oid_ep0_str.ptr, NET_NODE_TYPE_AGENT,
                                    oid_ep1_str.ptr, NET_NODE_TYPE_AGENT,
                                    NULL);
@@ -642,8 +645,6 @@ net_register(const tapi_net_link *net_link, cfg_net_t **cfg_net)
         ERROR("Failed to register network '%s': %r", net_link->name, rc);
         return rc;
     }
-
-    *cfg_net = cfg_net_tmp;
 
     return 0;
 }
@@ -756,7 +757,7 @@ static te_errno
 agent_if_addr_set_by_net(const cfg_net_t *cfg_net, tapi_net_ctx *net_ctx)
 {
     const tapi_net_link *net_link;
-    struct sockaddr *addr;
+    struct sockaddr *addr = NULL;
     tapi_net_iface *iface;
     tapi_net_ta *agent;
     unsigned int i;
@@ -791,6 +792,7 @@ agent_if_addr_set_by_net(const cfg_net_t *cfg_net, tapi_net_ctx *net_ctx)
         if (agent == NULL)
         {
             ERROR("Agent %s is missing in test network configuration");
+            free(addr);
             return TE_RC(TE_TAPI, TE_ENOENT);
         }
 
@@ -799,6 +801,7 @@ agent_if_addr_set_by_net(const cfg_net_t *cfg_net, tapi_net_ctx *net_ctx)
         {
             ERROR("Interface %s is missing on %s agent in test network configuration",
                   if_name, ta_name);
+            free(addr);
             return TE_RC(TE_TAPI, TE_ENOENT);
         }
 
@@ -1148,7 +1151,7 @@ tapi_net_setup(tapi_net_ctx *net_ctx)
 
     TE_VEC_FOREACH(&net_ctx->nets, net_link)
     {
-        cfg_net_t *cfg_net;
+        cfg_net_t cfg_net;
 
         if (net_link_exists(net_link))
             continue;
@@ -1157,7 +1160,10 @@ tapi_net_setup(tapi_net_ctx *net_ctx)
         if (rc != 0)
             return rc;
 
-        rc = tapi_cfg_net_assign_ip(net_link->af, cfg_net, NULL);
+        rc = tapi_cfg_net_assign_ip(net_link->af, &cfg_net, NULL);
+
+        tapi_cfg_net_free_net(&cfg_net);
+
         if (rc != 0)
         {
             ERROR("%s: failed to assign IPs to net %s: %r", __FUNCTION__,
