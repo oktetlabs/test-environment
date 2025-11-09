@@ -2368,10 +2368,13 @@ tapi_cfg_net_all_check_mtu(void)
             if (rc != 0)
             {
                 ERROR("Failed to get MTU of %s: %r", oid, rc);
+                free(oid);
                 goto cleanup;
             }
 
             RING("%s/mtu: = %d", oid, mtu);
+
+            free(oid);
 
             /* Store MTU value of the first node in the network */
             if (net_mtu == 0)
