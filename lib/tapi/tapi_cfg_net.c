@@ -368,9 +368,12 @@ tapi_cfg_net_register_net(const char *name, cfg_net_t *net, ...)
 
     while ((node_val = va_arg(ap, const char *)) != NULL)
     {
-        net->nodes = realloc(net->nodes, sizeof(*net->nodes) * node_num);
-        node = &net->nodes[node_num - 1];
+        TE_REALLOC(net->nodes, sizeof(*net->nodes) * node_num);
 
+        node = &net->nodes[node_num - 1];
+        memset(node, 0, sizeof(*node));
+
+        node->rsrc_type = NET_NODE_RSRC_TYPE_UNKNOWN;
         node->type = va_arg(ap, enum net_node_type);
 
         rc = cfg_add_instance_fmt(&node->handle, CFG_VAL(STRING, node_val),
@@ -389,7 +392,15 @@ tapi_cfg_net_register_net(const char *name, cfg_net_t *net, ...)
     }
 
     if (rc == 0)
+    {
         net->n_nodes = (node_num - 1);
+    }
+    else
+    {
+        free(net->nodes);
+        net->nodes = NULL;
+        net->n_nodes = 0;
+    }
 
     va_end(ap);
 
