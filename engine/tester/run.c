@@ -3653,12 +3653,12 @@ run_exception_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
  * @param value         Aggregated argument value
  * @param args          Context arguments
  * @param n_args        Number of arguments in the context
- * @param reqs          List for collected requirements
+ * @param arg           Target argument
  */
 static const char *
 run_get_value(const test_entity_value *value,
               const test_iter_arg *args, const unsigned int n_args,
-              test_requirements *reqs)
+              test_iter_arg *arg)
 {
     VERB("%s(): name=%s plain=%p ref=%p ext=%p global=%s",
          __FUNCTION__, value->name, value->plain, value->ref,
@@ -3673,7 +3673,7 @@ run_get_value(const test_entity_value *value,
     else if (value->ref != NULL)
     {
         VERB("%s(): ref to %p", __FUNCTION__, value->ref);
-        return run_get_value(value->ref, args, n_args, reqs);
+        return run_get_value(value->ref, args, n_args, arg);
     }
     else if (value->ext != NULL)
     {
@@ -3687,7 +3687,10 @@ run_get_value(const test_entity_value *value,
 
         if (i < n_args)
         {
-            test_requirements_clone(&args[i].reqs, reqs);
+            test_requirements_clone(&args[i].reqs, &arg->reqs);
+
+            if (args[i].objective != NULL)
+                arg->objective = args[i].objective;
 
             return args[i].value;
         }
@@ -3835,7 +3838,7 @@ run_prepare_arg_cb(const test_var_arg *va, void *opaque)
 
     data->arg->variable = va->variable;
     data->arg->value = run_get_value(value, data->ctx_args,
-                                     data->ctx_n_args, &data->arg->reqs);
+                                     data->ctx_n_args, data->arg);
     if (data->arg->value == NULL)
     {
         ERROR("Unable to get value of the argument of the run item '%s'",

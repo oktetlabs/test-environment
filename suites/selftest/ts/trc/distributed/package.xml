@@ -111,7 +111,7 @@
         <run>
             <package name="iterated_package"/>
             <arg name="a">
-                <value>1</value>
+                <value objective="test inherited value objective">1</value>
                 <value>2</value>
             </arg>
         </run>
