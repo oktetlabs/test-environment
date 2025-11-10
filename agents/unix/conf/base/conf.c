@@ -8310,9 +8310,8 @@ user_add(unsigned int gid, const char *oid, const char *value,
 #endif
 
 
-    TE_SPRINTF(buf, "/tmp/%s/.ssh/id_dsa", user);
-    /* 1024 is the only allowed size for a DSA key */
-    rc = agent_key_generate(AGENT_KEY_MANAGER_SSH, "dsa", 1024, user, buf);
+    TE_SPRINTF(buf, "/tmp/%s/.ssh/id_ed25519", user);
+    rc = agent_key_generate(AGENT_KEY_MANAGER_SSH, "ed25519", 1024, user, buf);
     if (rc != 0)
     {
         ERROR("Cannot create ssh key: %r", rc);
