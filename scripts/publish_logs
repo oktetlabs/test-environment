@@ -23,6 +23,7 @@ error() {
 #   tar_dir
 #####################################################################
 cleanup() {
+    trap '' EXIT ERR
     if [[ -n "${tar_dir}" ]] ; then
         rm -r "${tar_dir}"
         tar_dir=
