@@ -144,6 +144,118 @@ if [[ "${TE_RUN_META}" = "yes" ]] ; then
     trap "finish_metadata trap" EXIT
 fi
 
+# Parse options
+
+EXT_OPTS_PROCESSED=
+
+QUIET=
+DAEMON=
+SHUTDOWN=yes
+
+# No additional Tester options by default
+TESTER_OPTS=
+# No additional TRC options and tags by default
+TRC_OPTS=
+TRC_TAGS=
+# No additional option for rgt-xml2html-multi tool
+declare -a RGT_X2HM_OPTS
+# Logger options
+LOGGER_OPTS=
+# Build log mode options: plain, colo(u)r
+test -z "${TE_BUILD_COLORIZE:-}" && TE_BUILD_COLORIZE="no"
+# Configurator options
+CS_OPTS=
+# Building options
+BUILDER_DEBUG=
+BUILDER_FROM_SCRATCH=
+BUILD_MAKEFLAGS=
+PROFILE_BUILD=
+
+# TRC databases. If there is more than one, they will be
+# merged with te-trc-merge tool.
+declare -a TRC_DBS
+
+LIVE_LOG=
+
+VG_OPTIONS="--tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=32"
+VG_RCF=
+VG_CS=
+VG_LOGGER=
+VG_TESTER=
+GDB_TESTER=
+
+# RCF consistency checks options
+RCF_CONSISTENCY_CHECKS_SIMPLE=yes
+
+# Subsystems to be initialized
+BUILDER=yes
+TESTER=yes
+RCF=yes
+CS=yes
+LOGGER=yes
+
+# Whether Test Suite should be built
+BUILD_TS=yes
+
+# Configuration directories
+CONF_DIRS=
+CONF_DIRS_DEFAULT=false
+
+# Directory for raw log file
+TE_LOG_DIR="${TE_RUN_DIR}"
+
+# Default directory for capture log files
+TE_SNIFF_DEF_LOG_DIR="${TE_RUN_DIR}/caps"
+
+# Sniffer polling setting
+TE_SNIFF_LOG_OSIZE=0     # Megabytes (unlimited)
+TE_SNIFF_LOG_SPACE=256   # Megabytes
+TE_SNIFF_LOG_NAME=""     # Pattern
+TE_SNIFF_LOG_FSIZE=64    # Megabytes
+TE_SNIFF_LOG_OFILL=0     # Rotation
+TE_SNIFF_LOG_PERIOD=200  # Milliseconds
+
+TE_SNIFF_LOC=            # The variable contains an agent name and iface.
+                         # It gets a string from command line.
+TE_SNIFF_NAME=
+TE_SNIFF_FILTER=
+TE_SNIFF_SNAPLEN=
+
+# Configuration files
+CONF_BUILDER_DFLT=builder.conf
+CONF_LOGGER_DFLT=logger.conf
+CONF_TESTER_DFLT=tester.conf
+CONF_CS_DFLT=cs.conf
+CONF_RCF_DFLT=rcf.conf
+CONF_RGT_DFLT=
+CONF_NUT_DFLT=nut.conf
+
+# Whether NUTs processing is requested
+CONF_NUT_SET=
+# Whether NUTs should be built
+BUILD_NUTS=yes
+
+# If yes, generate on-line log in the logging directory
+LOG_ONLINE=
+
+# Name of the file with test logs to be genetated
+RGT_LOG_TXT=log.txt
+# Name of the file with plain HTML logs to be genetated
+RGT_LOG_HTML_PLAIN=
+# Name of the directory for structured HTML logs to be genetated
+RGT_LOG_HTML=
+# Name of the directory for JSON logs to be generated
+RGT_LOG_JSON=
+# Name of the file with log in JUnit format to be generated
+RGT_LOG_JUNIT=
+# Path to logs publishing script
+TE_PUBLISH_SCRIPT=
+# File passed with --logger-meta-file option
+LOGGER_META_FILE=
+
+TE_TESTER_SCRIPTS=
+export TE_TA_LIST_FILE=ta.list
+
 usage()
 {
 cat <<EOF
@@ -453,118 +565,6 @@ exit_with_log()
     cd "${TE_RUN_DIR}"
     exit 1
 }
-
-# Parse options
-
-EXT_OPTS_PROCESSED=
-
-QUIET=
-DAEMON=
-SHUTDOWN=yes
-
-# No additional Tester options by default
-TESTER_OPTS=
-# No additional TRC options and tags by default
-TRC_OPTS=
-TRC_TAGS=
-# No additional option for rgt-xml2html-multi tool
-declare -a RGT_X2HM_OPTS
-# Logger options
-LOGGER_OPTS=
-# Build log mode options: plain, colo(u)r
-test -z "${TE_BUILD_COLORIZE:-}" && TE_BUILD_COLORIZE="no"
-# Configurator options
-CS_OPTS=
-# Building options
-BUILDER_DEBUG=
-BUILDER_FROM_SCRATCH=
-BUILD_MAKEFLAGS=
-PROFILE_BUILD=
-
-# TRC databases. If there is more than one, they will be
-# merged with te-trc-merge tool.
-declare -a TRC_DBS
-
-LIVE_LOG=
-
-VG_OPTIONS="--tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=32"
-VG_RCF=
-VG_CS=
-VG_LOGGER=
-VG_TESTER=
-GDB_TESTER=
-
-# RCF consistency checks options
-RCF_CONSISTENCY_CHECKS_SIMPLE=yes
-
-# Subsystems to be initialized
-BUILDER=yes
-TESTER=yes
-RCF=yes
-CS=yes
-LOGGER=yes
-
-# Whether Test Suite should be built
-BUILD_TS=yes
-
-# Configuration directories
-CONF_DIRS=
-CONF_DIRS_DEFAULT=false
-
-# Directory for raw log file
-TE_LOG_DIR="${TE_RUN_DIR}"
-
-# Default directory for capture log files
-TE_SNIFF_DEF_LOG_DIR="${TE_RUN_DIR}/caps"
-
-# Sniffer polling setting
-TE_SNIFF_LOG_OSIZE=0     # Megabytes (unlimited)
-TE_SNIFF_LOG_SPACE=256   # Megabytes
-TE_SNIFF_LOG_NAME=""     # Pattern
-TE_SNIFF_LOG_FSIZE=64    # Megabytes
-TE_SNIFF_LOG_OFILL=0     # Rotation
-TE_SNIFF_LOG_PERIOD=200  # Milliseconds
-
-TE_SNIFF_LOC=            # The variable contains an agent name and iface.
-                         # It gets a string from command line.
-TE_SNIFF_NAME=
-TE_SNIFF_FILTER=
-TE_SNIFF_SNAPLEN=
-
-# Configuration files
-CONF_BUILDER_DFLT=builder.conf
-CONF_LOGGER_DFLT=logger.conf
-CONF_TESTER_DFLT=tester.conf
-CONF_CS_DFLT=cs.conf
-CONF_RCF_DFLT=rcf.conf
-CONF_RGT_DFLT=
-CONF_NUT_DFLT=nut.conf
-
-# Whether NUTs processing is requested
-CONF_NUT_SET=
-# Whether NUTs should be built
-BUILD_NUTS=yes
-
-# If yes, generate on-line log in the logging directory
-LOG_ONLINE=
-
-# Name of the file with test logs to be genetated
-RGT_LOG_TXT=log.txt
-# Name of the file with plain HTML logs to be genetated
-RGT_LOG_HTML_PLAIN=
-# Name of the directory for structured HTML logs to be genetated
-RGT_LOG_HTML=
-# Name of the directory for JSON logs to be generated
-RGT_LOG_JSON=
-# Name of the file with log in JUnit format to be generated
-RGT_LOG_JUNIT=
-# Path to logs publishing script
-TE_PUBLISH_SCRIPT=
-# File passed with --logger-meta-file option
-LOGGER_META_FILE=
-
-TE_TESTER_SCRIPTS=
-export TE_TA_LIST_FILE=ta.list
 
 resolve_conf_file_path()
 {
