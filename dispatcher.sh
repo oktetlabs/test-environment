@@ -493,7 +493,7 @@ Generic options:
  --sniff-name=<name>            Add for the sniffer a human-readable name.
  --sniff-snaplen=<val>          Add for the sniffer restriction on maximum
                                 number of bytes to capture for one packet.
-                                By default: ${TE_SNIFF_SNAPLEN:+unlimited}.
+                                By default: ${TE_SNIFF_SNAPLEN:-unlimited}.
  --sniff-space=<val>            Add for the sniffer restriction on maximum
                                 overall size of temporary files, Mb.
                                 By default: 64 Mb.
