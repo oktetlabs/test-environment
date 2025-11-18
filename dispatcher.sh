@@ -280,13 +280,13 @@ Generic options:
     In configuration files options below <filename> is full name of the
     configuration file or name of the file in the configuration directory.
 
-  --conf-builder=<filename>     Builder config file (${CONF_BUILDER} by default)
-  --conf-cs=<filename>          Configurator config file (${CONF_CS} by default)
-  --conf-logger=<filename>      Logger config file (${CONF_LOGGER} by default)
-  --conf-rcf=<filename>         RCF config file (${CONF_RCF} by default)
+  --conf-builder=<filename>     Builder config file (${CONF_BUILDER_DFLT} by default)
+  --conf-cs=<filename>          Configurator config file (${CONF_CS_DFLT} by default)
+  --conf-logger=<filename>      Logger config file (${CONF_LOGGER_DFLT} by default)
+  --conf-rcf=<filename>         RCF config file (${CONF_RCF_DFLT} by default)
   --conf-rgt=<filename>         RGT config file (rgt.conf by default)
-  --conf-tester=<filename>      Tester config file (${CONF_TESTER} by default)
-  --conf-nut=<filename>         NUT config file (${CONF_NUT} by default)
+  --conf-tester=<filename>      Tester config file (${CONF_TESTER_DFLT} by default)
+  --conf-nut=<filename>         NUT config file (${CONF_NUT_DFLT} by default)
 
   --script=<filename>           Name of the file with shell script to be
                                 included as source
