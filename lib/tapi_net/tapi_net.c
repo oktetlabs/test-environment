@@ -347,7 +347,6 @@ static te_errno
 setup_vlan_iface(const char *ta, const tapi_net_iface *iface,
                  const tapi_net_iface *base_iface)
 {
-    char *iface_real_name = NULL;
     te_errno rc;
 
     if (base_iface == NULL)
@@ -356,22 +355,14 @@ setup_vlan_iface(const char *ta, const tapi_net_iface *iface,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    rc = tapi_cfg_base_if_add_vlan(ta, base_iface->name,
-                                   iface->conf.vlan.vlan_id, &iface_real_name);
+    rc = tapi_cfg_base_if_add_vlan_with_name(ta, base_iface->name,
+                                             iface->conf.vlan.vlan_id,
+                                             iface->name);
     if (rc != 0)
     {
         ERROR("Failed to add VLAN interface: %r", rc);
         return rc;
     }
-
-    if (strcmp(iface->name, iface_real_name) != 0)
-    {
-        ERROR("Created VLAN interface has different name");
-        free(iface_real_name);
-        return TE_RC(TE_TAPI, TE_EFAIL);
-    }
-
-    free(iface_real_name);
 
     return 0;
 }
