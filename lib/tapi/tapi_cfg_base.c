@@ -873,14 +873,22 @@ tapi_cfg_restore_if_addresses(const char *ta,
     return rc;
 }
 
-/* See description in tapi_cfg_base.h */
-te_errno
-tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
-                          uint16_t vid, char **vlan_ifname)
+static te_errno
+tapi_cfg_base_if_add_vlan_common(const char *ta, const char *if_name,
+                                 uint16_t vid, const char *set_vlan_ifname,
+                                 char **result_vlan_ifname)
 {
+    cfg_val_type type = CVT_NONE;
+    const void *val = NULL;
     te_errno rc = 0;
 
-    if ((rc = cfg_add_instance_fmt(NULL, CVT_NONE, NULL,
+    if (set_vlan_ifname != NULL)
+    {
+        type = CVT_STRING;
+        val = set_vlan_ifname;
+    }
+
+    if ((rc = cfg_add_instance_fmt(NULL, type, val,
                                    "/agent:%s/interface:%s/vlans:%d",
                                    ta, if_name, vid)) != 0)
     {
@@ -889,7 +897,7 @@ tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
         return rc;
     }
 
-    if ((rc = cfg_get_instance_string_fmt(vlan_ifname,
+    if ((rc = cfg_get_instance_string_fmt(result_vlan_ifname,
                          "/agent:%s/interface:%s/vlans:%d/ifname:",
                          ta, if_name, vid)) != 0)
     {
@@ -898,18 +906,66 @@ tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
         return rc;
     }
 
-    rc = tapi_cfg_base_if_add_rsrc(ta, *vlan_ifname);
+    rc = tapi_cfg_base_if_add_rsrc(ta, *result_vlan_ifname);
     if (rc != 0)
     {
         ERROR("%s(): Failed to grab VLAN interface %s", __FUNCTION__,
-              *vlan_ifname);
+              *result_vlan_ifname);
         return rc;
     }
 
     if (tapi_host_ns_enabled())
-        rc = tapi_host_ns_if_add(ta, *vlan_ifname, if_name);
+        rc = tapi_host_ns_if_add(ta, *result_vlan_ifname, if_name);
 
     return rc;
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
+                          uint16_t vid, char **vlan_ifname)
+{
+    return tapi_cfg_base_if_add_vlan_common(ta, if_name, vid, NULL,
+                                            vlan_ifname);
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_add_vlan_with_name(const char *ta, const char *if_name,
+                                    uint16_t vid, const char *vlan_ifname)
+{
+    char *result_vlan_ifname = NULL;
+    te_errno rc;
+
+    if (vlan_ifname == NULL)
+    {
+        ERROR("%s(): VLAN interface name must be specified", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = tapi_cfg_base_if_add_vlan_common(ta, if_name, vid, vlan_ifname,
+                                          &result_vlan_ifname);
+    if (rc != 0)
+        return rc;
+
+    if (strcmp(vlan_ifname, result_vlan_ifname) != 0)
+    {
+        ERROR("%s(): created VLAN interface has different name: %s",
+              __FUNCTION__, result_vlan_ifname);
+        free(result_vlan_ifname);
+        rc = tapi_cfg_base_if_del_vlan(ta, if_name, vid);
+        if (rc != 0)
+        {
+            ERROR("%s(): failed to delete invalid VLAN interface: %r",
+                   __FUNCTION__, rc);
+        }
+
+        return TE_RC(TE_TAPI, TE_ENXIO);
+    }
+
+    free(result_vlan_ifname);
+
+    return 0;
 }
 
 /* See description in tapi_cfg_base.h */

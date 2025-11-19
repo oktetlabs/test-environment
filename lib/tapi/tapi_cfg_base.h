@@ -761,6 +761,27 @@ extern te_errno tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
                                           uint16_t vid, char **vlan_ifname);
 
 /**
+ * Add VLAN interface with a specific name. The new interface is grabbed just
+ * after creation.
+ *
+ * @param ta            Test Agent name.
+ * @param if_name       Base interface name.
+ * @param vid           VLAN ID to create.
+ * @param vlan_ifname   VLAN interface name.
+ *
+ * @note MTU of the new VLAN interface is OS-dependent. For example, Linux
+ * makes this MTU equal to the master interface MTU; Solaris creates VLAN
+ * interface with maximum allowed MTU independently from the master
+ * interface settings. Caller should care about MTU himself.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_base_if_add_vlan_with_name(const char *ta,
+                                                    const char *if_name,
+                                                    uint16_t vid,
+                                                    const char *vlan_ifname);
+
+/**
  * Delete VLAN if it exists and add VLAN interface and get its name if
  * possible.
  *
