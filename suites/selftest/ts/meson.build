@@ -80,6 +80,7 @@ packages = [
     'apps',
     'tad',
     'trc',
+    'monitors',
 ]
 
 mydir = package_dir
