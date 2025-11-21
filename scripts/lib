@@ -72,3 +72,21 @@ source_if_exists() {
         source "$fname" "$@"
     fi
 }
+
+##############################################################
+# Call bash function if it is defined, otherwise run fallback.
+# Arguments:
+#   Function name
+#   Fallback code (string or command)
+#   Arguments passed to the function if it exists
+##############################################################
+function call_with_fallback() {
+    local fname="$1" ; shift
+    local fallback="$1" ; shift
+
+    if declare -p -F -f "${fname}" >/dev/null 2>&1 ; then
+        "${fname}" "$@"
+    else
+        eval "${fallback}"
+    fi
+}
