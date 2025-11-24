@@ -1004,9 +1004,6 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
         }
 
         p_oid = cfg_convert_oid_str(oid);
-        VERB("Parsed %s ID with %u parts ptr=0x%x",
-             (p_oid->inst) ? "instance" : "object",
-             p_oid->len, p_oid->ids);
         if (p_oid == NULL)
         {
             /* It may be memory allocation failure, but it's unlikely */
@@ -1014,6 +1011,9 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
                   "representation", oid);
             SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EFMT));
         }
+        VERB("Parsed %s ID with %u parts ptr=0x%x",
+             (p_oid->inst) ? "instance" : "object",
+             p_oid->len, p_oid->ids);
         if (!p_oid->inst)
         {
             cfg_free_oid(p_oid);
