@@ -38,7 +38,7 @@
         </test>
 
         <test name="loadavg" type="script">
-            <objective>objective Check that TAPI functions get loadavg information from Configurator.</objective>
+            <objective>Check that TAPI functions get loadavg information from Configurator</objective>
 
             <iter result="PASSED">
                 <notes/>
