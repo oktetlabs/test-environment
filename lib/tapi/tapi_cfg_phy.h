@@ -48,6 +48,9 @@ extern te_errno tapi_cfg_phy_autoneg_get(const char *ta,
 /**
  * Set PHY autonegotiation state.
  *
+ * @note This function changes tree in CS locally and tapi_cfg_phy_commit()
+ *       must be used to apply these changes.
+ *
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param state         Autonegotiation state value:
@@ -100,6 +103,9 @@ extern te_errno tapi_cfg_phy_duplex_admin_get(const char *ta,
 
 /**
  * Set PHY duplex state.
+ *
+ * @note This function changes tree in CS locally and tapi_cfg_phy_commit()
+ *       must be used to apply these changes.
  *
  * @param ta            Test Agent name
  * @param if_name       Interface name
@@ -156,6 +162,9 @@ extern te_errno tapi_cfg_phy_speed_admin_get(const char *ta,
 /**
  * Set PHY speed.
  *
+ * @note This function changes tree in CS locally and tapi_cfg_phy_commit()
+ *       must be used to apply these changes.
+ *
  * @param ta            Test Agent name
  * @param if_name       Interface name
  * @param speed         Speed value (Mbit/sec)
@@ -201,6 +210,9 @@ extern te_errno tapi_cfg_phy_mode_admin_get(const char *ta,
 
 /**
  * Set PHY interface mode: speed and duplex state.
+ *
+ * @note This function changes tree in CS locally and tapi_cfg_phy_commit()
+ *       must be used to apply these changes.
  *
  * @param ta            Test Agent name
  * @param if_name       Interface name
@@ -333,6 +345,9 @@ extern te_errno tapi_cfg_phy_mode_adv_get(const char *ta,
 
 /**
  * Set advertising state for a link mode.
+ *
+ * @note This function changes tree in CS locally and tapi_cfg_phy_commit()
+ *       must be used to apply these changes.
  *
  * @param ta            Test Agent name
  * @param if_name       Interface name
