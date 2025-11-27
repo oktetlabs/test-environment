@@ -305,7 +305,7 @@ else
     [[ -z "${BAD_INCOMING}" || -d "${BAD_INCOMING}" ]] \
         || usage "ERROR: invalid directory for bad incoming"
 
-    for f in $(find "${INCOMING_DIR}" -type f); do
+    for f in $(find "${INCOMING_DIR}" -type f ! -mmin 1); do
         process_file "$f"
         if [[ $? -ne 0 && -n "${BAD_INCOMING}" ]] ; then
             ${DRY_RUN}mv -f "$f" "${BAD_INCOMING}"
