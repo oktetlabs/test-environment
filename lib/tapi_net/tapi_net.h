@@ -17,6 +17,7 @@
 
 #include "te_errno.h"
 #include "te_defs.h"
+#include "te_enum.h"
 #include "te_queue.h"
 #include "te_sockaddr.h"
 #include "te_vector.h"
@@ -44,6 +45,58 @@ typedef enum tapi_net_iface_type {
     /** GRE tunnel interface. */
     TAPI_NET_IFACE_TYPE_GRE,
 } tapi_net_iface_type;
+
+/** Type of link aggregation. */
+typedef enum tapi_net_lag_type {
+    /** Unknown or unsupported link aggregation type. */
+    TAPI_NET_LAG_TYPE_UNKNOWN = -1,
+    /** Linux bonding driver. */
+    TAPI_NET_LAG_TYPE_BOND,
+    /** teamd-based implementation. */
+    TAPI_NET_LAG_TYPE_TEAM,
+} tapi_net_lag_type;
+
+/**
+ * Aggregation mode.
+ *
+ * @note The numeric values of this enumeration MUST match the
+ *       aggregation mode expected by the agent backend
+ *       (see agents/unix/conf/base/conf_aggr.c).
+ */
+typedef enum tapi_net_lag_mode {
+    TAPI_NET_LAG_MODE_UNKNOWN = -1,      /**< Unknown mode. */
+    TAPI_NET_LAG_MODE_ACTIVE_BACKUP = 1, /**< Active backup mode. */
+    TAPI_NET_LAG_MODE_LACP = 4,          /**< LACP mode. */
+} tapi_net_lag_mode;
+
+/* Mapping between LAG types and their string representation . */
+static const te_enum_map tapi_net_lag_type_map[] = {
+    {.name = "bond", .value = TAPI_NET_LAG_TYPE_BOND},
+    {.name = "team", .value = TAPI_NET_LAG_TYPE_TEAM},
+    TE_ENUM_MAP_END
+};
+
+/* Mapping between LAG modes and their string representation. */
+static const te_enum_map tapi_net_lag_mode_map[] = {
+    {.name = "active-backup", .value = TAPI_NET_LAG_MODE_ACTIVE_BACKUP},
+    {.name = "lacp",          .value = TAPI_NET_LAG_MODE_LACP},
+    TE_ENUM_MAP_END
+};
+
+/**
+ * Link aggregation.
+ *
+ * LAG is a logical interface created on top of a set of physical
+ * base interfaces. It gets its own name and can be used as a base
+ * for VLAN/QinQ/GRE and in NAT rules.
+ */
+typedef struct tapi_net_lag {
+    char *if_name;                 /**< Name of the aggregated interface. */
+    tapi_net_lag_type type;        /**< Link aggregation type. */
+    tapi_net_lag_mode mode;        /**< Link aggregation mode. */
+    char **slaves;                 /**< NULL-terminated array of
+                                        slave interface names. */
+} tapi_net_lag;
 
 /** VLAN-specific configuration. */
 typedef struct tapi_net_vlan {
@@ -124,6 +177,7 @@ typedef struct tapi_net_ta {
     char *ta_name;        /**< Test Agent name. */
     te_vec ifaces;        /**< Vector of logical interfaces built on TA. */
     te_vec nat_rules;     /**< Vector of NAT rules set on TA. */
+    te_vec lags;          /**< Vector of link aggregation interfaces on TA. */
 } tapi_net_ta;
 
 /**
@@ -230,6 +284,34 @@ extern te_errno tapi_net_logical_iface_add(tapi_net_iface_type iface_type,
                                            const char *if_name,
                                            tapi_net_iface *base_iface,
                                            tapi_net_iface **iface);
+
+/**
+ * Add a link aggregation interface to an agent.
+ *
+ * @param ta         Test agent.
+ * @param if_name    Name of aggregated interface.
+ * @param lag_type   Backend type.
+ * @param lag_mode   Type-specific LAG mode.
+ * @param slaves     NULL-terminated list of slave interface names.
+ *
+ * @return TE status code.
+ */
+extern te_errno tapi_net_ta_add_lag(tapi_net_ta *ta, const char *if_name,
+                                    tapi_net_lag_type lag_type,
+                                    tapi_net_lag_mode lag_mode,
+                                    const char **slaves);
+
+/**
+ * Find stack of logical interfaces by slave interface in aggregation.
+ *
+ * @param ta          Test agent.
+ * @param slave_name  Name of slave interface in aggregation.
+ *
+ * @return Pointer to stack, or @c NULL in case of error.
+ */
+extern const tapi_net_iface_head *tapi_net_find_iface_stack_by_aggr_slave(
+                                      const tapi_net_ta *ta,
+                                      const char *slave_name);
 
 /**
  * Find TA network configuration in network context.

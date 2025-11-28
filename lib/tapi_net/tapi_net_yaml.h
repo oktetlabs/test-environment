@@ -44,6 +44,7 @@ static const te_enum_map tapi_net_yaml_af_map[] = {
  *
  * Root mapping contains:
  *   - "interfaces": sequence (required)
+ *   - "lags":       sequence (optional)
  *   - "networks":   sequence (required)
  *
  * 1) interfaces: list of base NICs per agent.
@@ -55,7 +56,24 @@ static const te_enum_map tapi_net_yaml_af_map[] = {
  *    base interfaces as SLIST stacks (base at head). See
  *    tapi_net_ta/tapi_net_iface.
  *
- * 2) networks: list of point-to-point logical networks.
+ * 2) aggregates: link aggregation configuration (optional).
+ *    Each item is a mapping and required:
+ *       - agent   : string
+ *       - name    : string
+ *       - type    : enum { team, bond }
+ *       - mode    : enum { active-backup, lacp }
+ *       - slaves  : sequence<string>
+ *
+ *    Semantics:
+ *      - LAG declaration replaces the listed physical slave interfaces with
+ *        one new BASE interface whose name is the LAG name.
+ *      - After processing LAGs, the agent's interface stacks are updated:
+ *        slaves removed and "lag name" added as a new BASE stack.
+ *
+ *    Parsed into: tapi_net_lag[] associated with each
+ *    @c tapi_net_ta in the network context.
+ *
+ * 3) networks: list of point-to-point logical networks.
  *    Each item is a mapping with fields:
  *      - iface_type : enum { base, vlan, qinq, gre } (required)
  *      - af         : enum { inet, inet6 }           (required)
@@ -83,7 +101,7 @@ static const te_enum_map tapi_net_yaml_af_map[] = {
  *    Parsed into: tapi_net_link[]; each net has name "test_net_<idx>",
  *    address family, and two endpoints (agent/iface).
  *
- * 3) nat: list of NAT rules per agent (optional).
+ * 4) nat: list of NAT rules per agent (optional).
  *    Each item is a mapping:
  *      - agent : string (required)
  *      - rules : sequence<rule> (required)

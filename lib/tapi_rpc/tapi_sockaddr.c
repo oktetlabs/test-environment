@@ -35,6 +35,7 @@
 #include "te_errno.h"
 #include "te_stdint.h"
 #include "te_alloc.h"
+#include "te_ethernet.h"
 
 #include "tapi_sockaddr.h"
 #include "tapi_rpc_socket.h"

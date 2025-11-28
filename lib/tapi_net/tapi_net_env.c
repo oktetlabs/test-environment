@@ -50,5 +50,7 @@ tapi_net_env_get_iface_stack(tapi_env *env, tapi_net_ctx *net_ctx,
         }
     }
 
-    return NULL;
+    /* The requested base interface may be a slave in aggregation. */
+    return tapi_net_find_iface_stack_by_aggr_slave(
+                agent, env_if->if_info.if_name);
 }

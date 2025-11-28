@@ -13,11 +13,14 @@
 #include "te_enum.h"
 #include "te_alloc.h"
 #include "te_str.h"
+#include "tapi_cfg.h"
+#include "tapi_cfg_aggr.h"
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_net.h"
 #include "tapi_cfg_iptables.h"
 #include "logger_api.h"
 #include "tapi_net.h"
+#include "tapi_sockaddr.h"
 
 /** Minimal possible VLAN ID. */
 #define TAPI_NET_VLAN_ID_MIN 1
@@ -84,7 +87,18 @@ tapi_vec_destroy_agent(const void *item)
 
     free(agent->ta_name);
     te_vec_free(&agent->ifaces);
+    te_vec_free(&agent->lags);
     te_vec_free(&agent->nat_rules);
+}
+
+/* Free a LAG resources. */
+static void
+tapi_vec_destroy_lag(const void *item)
+{
+    tapi_net_lag *lag = (tapi_net_lag *)item;
+
+    free(lag->if_name);
+    te_str_free_array(lag->slaves);
 }
 
 /* Free network endpoint strings. */
@@ -187,6 +201,174 @@ tapi_net_iface_set_qinq_conf(tapi_net_iface *iface, const tapi_net_qinq *qinq)
     return 0;
 }
 
+/* Build and fill a LAG structure. */
+static te_errno
+tapi_net_lag_init(tapi_net_lag *lag, const char *if_name,
+                  tapi_net_lag_type lag_type, tapi_net_lag_type lag_mode,
+                  const char **slaves)
+{
+    size_t slave_cnt = 0;
+    size_t i;
+
+    assert(lag != NULL);
+    assert(if_name != NULL);
+    assert(slaves != NULL);
+
+    memset(lag, 0, sizeof(*lag));
+
+    lag->type = lag_type;
+    lag->mode = lag_mode;
+
+    while (slaves[slave_cnt] != NULL)
+        slave_cnt++;
+
+    if (slave_cnt == 0)
+    {
+        ERROR("LAG '%s' must have at least one slave", if_name);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    lag->slaves = TE_ALLOC((slave_cnt + 1) * sizeof(char *));
+
+    for (i = 0; i < slave_cnt; i++)
+        lag->slaves[i] = TE_STRDUP(slaves[i]);
+    lag->slaves[slave_cnt] = NULL;
+
+    lag->if_name = TE_STRDUP(if_name);
+
+    return 0;
+}
+
+/*
+ * Validate that all slave names exist among TA base interfaces,
+ * and remove their stacks.
+ */
+static te_errno
+tapi_net_ta_remove_slaves(tapi_net_ta *ta, const char **slaves)
+{
+    tapi_net_iface_head *stack;
+    tapi_net_iface *base_iface;
+    size_t slave_cnt = 0;
+    bool *found = NULL;
+    size_t iface_cnt;
+    size_t slave_idx;
+    size_t i;
+
+    assert(ta != NULL);
+    assert(slaves != NULL);
+
+    while (slaves[slave_cnt] != NULL)
+        slave_cnt++;
+
+    if (slave_cnt == 0)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    iface_cnt = te_vec_size(&ta->ifaces);
+
+    found = TE_ALLOC(slave_cnt * sizeof(*found));
+
+    for (i = 0; i < iface_cnt; i++)
+    {
+        stack = &TE_VEC_GET(tapi_net_iface_head, &ta->ifaces, i);
+        base_iface = SLIST_FIRST(stack);
+        if (base_iface == NULL)
+            continue;
+
+        for (slave_idx = 0; slave_idx < slave_cnt; slave_idx++)
+        {
+            if (!found[slave_idx] &&
+                strcmp(base_iface->name, slaves[slave_idx]) == 0)
+            {
+                found[slave_idx] = true;
+                break;
+            }
+        }
+    }
+
+    for (slave_idx = 0; slave_idx < slave_cnt; slave_idx++)
+    {
+        if (!found[slave_idx])
+        {
+            ERROR("LAG slave interface '%s' does not exist on agent '%s'",
+                  slaves[slave_idx], ta->ta_name);
+            free(found);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+    }
+
+    free(found);
+
+    i = 0;
+    while (i < te_vec_size(&ta->ifaces))
+    {
+        bool is_slave = false;
+
+        stack = &TE_VEC_GET(tapi_net_iface_head, &ta->ifaces, i);
+        base_iface = SLIST_FIRST(stack);
+        if (base_iface != NULL)
+        {
+            for (slave_idx = 0; slave_idx < slave_cnt; slave_idx++)
+            {
+                if (strcmp(base_iface->name, slaves[slave_idx]) == 0)
+                {
+                    is_slave = true;
+                    break;
+                }
+            }
+        }
+
+        if (is_slave)
+        {
+            tapi_vec_destroy_iface_stack(stack);
+            te_vec_remove_index(&ta->ifaces, i);
+            continue;
+        }
+
+        i++;
+    }
+
+    return 0;
+}
+
+/* Create a new base interface stack for LAG. */
+static void
+tapi_net_ta_create_lag_iface(tapi_net_ta *ta, const char *if_name)
+{
+    char **names;
+
+    names = te_str_make_array(if_name, NULL);
+
+    tapi_net_ta_set_ifaces(ta, (const char **)names);
+    te_str_free_array(names);
+}
+
+te_errno
+tapi_net_ta_add_lag(tapi_net_ta *ta, const char *if_name,
+                    tapi_net_lag_type lag_type, tapi_net_lag_mode lag_mode,
+                    const char **slaves)
+{
+    tapi_net_lag lag;
+    te_errno rc;
+
+    assert(ta != NULL);
+    assert(if_name != NULL);
+    assert(slaves != NULL);
+
+    rc = tapi_net_lag_init(&lag, if_name, lag_type, lag_mode, slaves);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_net_ta_remove_slaves(ta, (const char **)lag.slaves);
+    if (rc != 0)
+        return rc;
+
+    tapi_net_ta_create_lag_iface(ta, if_name);
+
+    TE_VEC_APPEND(&ta->lags, lag);
+
+    return 0;
+}
+
 void
 tapi_net_ta_init(const char *ta_name, tapi_net_ta *net_cfg_ta)
 {
@@ -199,6 +381,9 @@ tapi_net_ta_init(const char *ta_name, tapi_net_ta *net_cfg_ta)
     net_cfg_ta->ifaces = TE_VEC_INIT(tapi_net_iface_head);
     te_vec_set_destroy_fn_safe(&net_cfg_ta->ifaces,
                                tapi_vec_destroy_iface_stack);
+
+    net_cfg_ta->lags = TE_VEC_INIT(tapi_net_lag);
+    te_vec_set_destroy_fn_safe(&net_cfg_ta->lags, tapi_vec_destroy_lag);
 
     net_cfg_ta->nat_rules = TE_VEC_INIT(tapi_net_nat_rule);
     te_vec_set_destroy_fn_safe(&net_cfg_ta->nat_rules,
@@ -230,6 +415,7 @@ tapi_net_ta_destroy(tapi_net_ta *net_cfg_ta)
 {
     free(net_cfg_ta->ta_name);
     te_vec_free(&net_cfg_ta->ifaces);
+    te_vec_free(&net_cfg_ta->lags);
     te_vec_free(&net_cfg_ta->nat_rules);
 }
 
@@ -1125,6 +1311,184 @@ nat_apply(tapi_net_ctx *net_ctx)
     return 0;
 }
 
+const tapi_net_iface_head *
+tapi_net_find_iface_stack_by_aggr_slave(const tapi_net_ta *ta,
+                                        const char *slave_name)
+{
+    const tapi_net_iface_head *iface_head;
+    const char *if_name = NULL;
+    const tapi_net_lag *lag;
+    size_t i;
+
+    assert(ta != NULL);
+    assert(slave_name != NULL);
+
+    TE_VEC_FOREACH(&ta->lags, lag)
+    {
+        for (i = 0; lag->slaves[i] != NULL; i++)
+        {
+            if (strcmp(lag->slaves[i], slave_name) == 0)
+            {
+                if_name = lag->if_name;
+                break;
+            }
+        }
+
+        if (if_name != NULL)
+            break;
+    }
+
+    if (if_name == NULL)
+        return NULL;
+
+    TE_VEC_FOREACH(&ta->ifaces, iface_head)
+    {
+        tapi_net_iface *iface = SLIST_FIRST(iface_head);
+
+        if (iface != NULL && iface->name != NULL &&
+            strcmp(iface->name, if_name) == 0)
+        {
+            return iface_head;
+        }
+    }
+
+    return NULL;
+}
+
+static te_errno
+tapi_net_prepare_cfg_aggr_type(tapi_net_lag_type type, tapi_net_lag_mode mode,
+                               te_string *cfg_aggr_type)
+{
+    const char *type_str;
+
+    assert(cfg_aggr_type != NULL);
+
+    if (type == TAPI_NET_LAG_TYPE_UNKNOWN || mode == TAPI_NET_LAG_MODE_UNKNOWN)
+    {
+        ERROR("Aggregation type or mode is not unknown");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    te_string_reset(cfg_aggr_type);
+
+    type_str = te_enum_map_from_value(tapi_net_lag_type_map, type);
+
+    te_string_append(cfg_aggr_type, "%s%d", type_str, mode);
+
+    return 0;
+}
+
+static te_errno
+tapi_net_ta_setup_lag(tapi_net_ta *ta, const tapi_net_lag *lag)
+{
+    te_string agg_type = TE_STRING_INIT_STATIC(128);
+    struct sockaddr_storage ll_addr;
+    char *aggr_ifname = NULL;
+    te_errno bond_destr_rc;
+    te_errno rc;
+    size_t i;
+
+    assert(ta != NULL);
+    assert(lag != NULL);
+
+    if (lag->if_name == NULL || lag->slaves == NULL || lag->slaves[0] == NULL)
+    {
+        ERROR("Invalid LAG description on TA '%s'", ta->ta_name);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = tapi_net_prepare_cfg_aggr_type(lag->type, lag->mode, &agg_type);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_cfg_aggr_create_bond(ta->ta_name, lag->if_name, &aggr_ifname,
+                                   agg_type.ptr);
+    if (rc != 0)
+    {
+        ERROR("Failed to create aggregation '%s' on TA '%s': %r",
+              lag->if_name, ta->ta_name, rc);
+        free(aggr_ifname);
+        return rc;
+    }
+
+    if (strcmp(aggr_ifname, lag->if_name) != 0)
+    {
+        ERROR("Created aggregated interface has different name: %s",
+              aggr_ifname);
+        rc = TE_RC(TE_TAPI, TE_ENXIO);
+        free(aggr_ifname);
+        goto bond_destr;
+    }
+
+    rc = tapi_cfg_base_get_alien_link_addr(SA(&ll_addr));
+    if (rc != 0)
+    {
+        ERROR("Failed to get new link-local address for aggregation '%s' on TA '%s': %r",
+              lag->if_name, ta->ta_name);
+        goto bond_destr;
+    }
+
+    rc = tapi_cfg_set_hwaddr(ta->ta_name, aggr_ifname, SA(&ll_addr)->sa_data,
+                             ETHER_ADDR_LEN);
+    if (rc != 0)
+    {
+        ERROR("Failed to set new link-local address for aggregation '%s' on TA '%s': %r",
+              lag->if_name, ta->ta_name);
+        goto bond_destr;
+    }
+
+    for (i = 0; lag->slaves[i] != NULL; i++)
+    {
+        const char *slave = lag->slaves[i];
+
+        rc = tapi_cfg_aggr_bond_enslave(ta->ta_name, lag->if_name, slave);
+        if (rc != 0)
+        {
+            ERROR("Failed to enslave '%s' to aggregation '%s' on TA '%s': %r",
+                  slave, lag->if_name, ta->ta_name, rc);
+            goto bond_destr;
+        }
+    }
+
+    return 0;
+
+bond_destr:
+    bond_destr_rc = tapi_cfg_aggr_destroy_bond(ta->ta_name, aggr_ifname);
+    if (bond_destr_rc != 0)
+    {
+        ERROR("Failed to delete invalid aggregated interface: %r",
+              bond_destr_rc);
+    }
+
+    return rc;
+}
+
+static te_errno
+tapi_net_setup_lags(tapi_net_ctx *net_ctx)
+{
+    tapi_net_ta *agent;
+    tapi_net_lag *lag;
+    te_errno rc;
+
+    assert(net_ctx != NULL);
+
+    TE_VEC_FOREACH(&net_ctx->agents, agent)
+    {
+        TE_VEC_FOREACH(&agent->lags, lag)
+        {
+            rc = tapi_net_ta_setup_lag(agent, lag);
+            if (rc != 0)
+            {
+                ERROR("Failed to setup LAG '%s' on TA '%s': %r",
+                      lag->if_name, agent->ta_name, rc);
+                return rc;
+            }
+        }
+    }
+
+    return 0;
+}
+
 te_errno
 tapi_net_setup(tapi_net_ctx *net_ctx)
 {
@@ -1132,6 +1496,13 @@ tapi_net_setup(tapi_net_ctx *net_ctx)
     te_errno rc;
 
     assert(net_ctx != NULL);
+
+    rc = tapi_net_setup_lags(net_ctx);
+    if (rc != 0)
+    {
+        ERROR("%s: failed to setup link aggregations: %r", __FUNCTION__, rc);
+        return rc;
+    }
 
     rc = tapi_net_setup_ifaces(net_ctx);
     if (rc != 0)

@@ -30,12 +30,14 @@
 typedef enum cfg_yaml_root_field {
     CFG_YAML_ROOT_FIELD_UNKNOWN = -1,
     CFG_YAML_ROOT_FIELD_IFACE_LIST,
+    CFG_YAML_ROOT_FIELD_LAG_LIST,
     CFG_YAML_ROOT_FIELD_NET_LIST,
     CFG_YAML_ROOT_FIELD_NAT_LIST,
 } cfg_yaml_root_field;
 
 static const te_enum_map cfg_yaml_root_field_map[] = {
     {.name = "interfaces",  .value = CFG_YAML_ROOT_FIELD_IFACE_LIST},
+    {.name = "aggregates",  .value = CFG_YAML_ROOT_FIELD_LAG_LIST},
     {.name = "networks",    .value = CFG_YAML_ROOT_FIELD_NET_LIST},
     {.name = "nat",         .value = CFG_YAML_ROOT_FIELD_NAT_LIST},
     TE_ENUM_MAP_END
@@ -52,6 +54,15 @@ static const te_enum_map cfg_yaml_iface_field_map[] = {
     {.name = "names", .value = CFG_YAML_IFACE_FIELD_NAME_LIST},
     TE_ENUM_MAP_END
 };
+
+typedef enum cfg_yaml_lag_field {
+    CFG_YAML_LAG_FIELD_UNKNOWN = -1,
+    CFG_YAML_LAG_FIELD_AGENT,
+    CFG_YAML_LAG_FIELD_NAME,
+    CFG_YAML_LAG_FIELD_TYPE,
+    CFG_YAML_LAG_FIELD_MODE,
+    CFG_YAML_LAG_FIELD_SLAVES,
+} cfg_yaml_lag_field;
 
 typedef enum cfg_yaml_ep_field {
     CFG_YAML_EP_FIELD_UNKNOWN = -1,
@@ -191,8 +202,179 @@ const cfg_net_node_ctx cfg_net_node_ctx_def = {
     .ep_list_node = NULL,
 };
 
+typedef struct cfg_yaml_lag_ctx {
+    char *agent;
+    char *name;
+    tapi_net_lag_type type;
+    tapi_net_lag_mode mode;
+    yaml_node_t *slaves_node;
+} cfg_yaml_lag_ctx;
+
+static const cfg_yaml_lag_ctx cfg_yaml_lag_ctx_def = {
+    .agent = NULL,
+    .name = NULL,
+    .type = TAPI_NET_LAG_TYPE_UNKNOWN,
+    .mode = TAPI_NET_LAG_MODE_UNKNOWN,
+    .slaves_node = NULL,
+};
+
 /* Callback type for handling netowork node fields. */
 typedef te_errno (*cfg_yaml_net_field_handler)(yaml_node_t *v, void *ctx);
+
+/* Callback type for handling netowork node fields. */
+typedef te_errno (*cfg_yaml_lag_field_handler)(yaml_node_t *v, void *ctx);
+
+/* Handle agent name field in network node. */
+static te_errno
+lag_node_agent_field_hadler(yaml_node_t *v, void *ctx)
+{
+    cfg_yaml_lag_ctx *lag_ctx = ctx;
+    te_errno rc;
+
+    if (v->type != YAML_SCALAR_NODE)
+    {
+        ERROR(YAML_ERR_PREFIX "'agent' in 'aggregates' must be scalar at "
+              YAML_NODE_LINE_COLUMN_FMT, YAML_NODE_LINE_COLUMN(v));
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    rc = expanded_val_get_str((const char *)v->data.scalar.value,
+                              &lag_ctx->agent);
+    if (rc != 0)
+    {
+        ERROR(YAML_ERR_PREFIX, "failed to expand agent name: %r", rc);
+        return rc;
+    }
+
+    return 0;
+}
+
+/* Handle aggreagtion interface name field in network node. */
+static te_errno
+lag_node_name_field_hadler(yaml_node_t *v, void *ctx)
+{
+    cfg_yaml_lag_ctx *lag_ctx = ctx;
+    te_errno rc;
+
+    if (v->type != YAML_SCALAR_NODE)
+    {
+        ERROR(YAML_ERR_PREFIX "'name' in 'aggregates' must be scalar at "
+              YAML_NODE_LINE_COLUMN_FMT, YAML_NODE_LINE_COLUMN(v));
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    rc = expanded_val_get_str((const char *)v->data.scalar.value,
+                              &lag_ctx->name);
+    if (rc != 0)
+    {
+        ERROR(YAML_ERR_PREFIX, "failed to expand name: %r", rc);
+        return rc;
+    }
+
+    return 0;
+}
+
+/* Handle aggregation type in network node. */
+static te_errno
+lag_node_type_field_hadler(yaml_node_t *v, void *ctx)
+{
+    cfg_yaml_lag_ctx *lag_ctx = ctx;
+    char *type_str = NULL;
+    te_errno rc;
+
+    if (v->type != YAML_SCALAR_NODE)
+    {
+        ERROR(YAML_ERR_PREFIX "'type' in 'aggregates' must be scalar at "
+              YAML_NODE_LINE_COLUMN_FMT, YAML_NODE_LINE_COLUMN(v));
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = expanded_val_get_str((const char *)v->data.scalar.value, &type_str);
+    if (rc != 0)
+    {
+        ERROR(YAML_ERR_PREFIX, "failed to aggreagation type: %r", rc);
+        return rc;
+    }
+
+    lag_ctx->type = te_enum_map_from_str(tapi_net_lag_type_map,
+                                         type_str, TAPI_NET_LAG_TYPE_UNKNOWN);
+    if (lag_ctx->type == TAPI_NET_LAG_TYPE_UNKNOWN)
+    {
+        ERROR(YAML_ERR_PREFIX "unknown LAG type '%s' in 'aggregates'",
+              type_str);
+        free(type_str);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    free(type_str);
+
+    return 0;
+}
+
+/* Handle aggreagation mode in network node. */
+static te_errno
+lag_node_mode_field_hadler(yaml_node_t *v, void *ctx)
+{
+    cfg_yaml_lag_ctx *lag_ctx = ctx;
+    char *mode_str = NULL;
+    te_errno rc;
+
+    if (v->type != YAML_SCALAR_NODE)
+    {
+        ERROR(YAML_ERR_PREFIX "'mode' in 'aggregates' must be scalar at "
+              YAML_NODE_LINE_COLUMN_FMT, YAML_NODE_LINE_COLUMN(v));
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = expanded_val_get_str((const char *)v->data.scalar.value, &mode_str);
+    if (rc != 0)
+    {
+        ERROR(YAML_ERR_PREFIX, "failed to aggreagation mode: %r", rc);
+        return rc;
+    }
+
+    lag_ctx->mode = te_enum_map_from_str(tapi_net_lag_mode_map,
+                                         mode_str, TAPI_NET_LAG_MODE_UNKNOWN);
+    if (lag_ctx->mode == TAPI_NET_LAG_MODE_UNKNOWN)
+    {
+        ERROR(YAML_ERR_PREFIX "unknown LAG mode '%s' in 'aggregates'",
+              mode_str);
+        free(mode_str);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    free(mode_str);
+
+    return 0;
+}
+
+/* Handle aggregation slaves in network node. */
+static te_errno
+lag_node_slaves_node_field_hadler(yaml_node_t *v, void *ctx)
+{
+    cfg_yaml_lag_ctx *lag_ctx = ctx;
+
+    if (v->type != YAML_SEQUENCE_NODE)
+    {
+        ERROR(YAML_ERR_PREFIX "'slaves' in 'aggregates' must be a sequence at "
+              YAML_NODE_LINE_COLUMN_FMT, YAML_NODE_LINE_COLUMN(v));
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    lag_ctx->slaves_node = v;
+
+    return 0;
+}
+
+/* Default handler for unknown LAG field.*/
+static te_errno
+lag_node_unknown_field_handler(yaml_node_t *v, void *user_ctx)
+{
+    UNUSED(v);
+    UNUSED(user_ctx);
+
+    ERROR(YAML_ERR_PREFIX "unknown field in LAG node");
+
+    return TE_RC(TE_TAPI, TE_EINVAL);
+}
 
 /* Handle interface type field in network node. */
 static te_errno
@@ -366,6 +548,17 @@ static const TE_ENUM_MAP_ACTION(cfg_yaml_net_field_handler) cfg_fld_acts[] = {
     { "qinq_outer_id",   net_node_handle_qinq_outer_id },
     { "qinq_inner_id",   net_node_handle_qinq_inner_id },
     { "endpoints",       net_node_handle_ep_list },
+    TE_ENUM_MAP_END
+};
+
+/* Mapping between YAML LAG field names and their handlers. */
+static const TE_ENUM_MAP_ACTION(cfg_yaml_lag_field_handler)
+cfg_lag_fld_acts[] = {
+    { "agent",           lag_node_agent_field_hadler },
+    { "name",            lag_node_name_field_hadler },
+    { "type",            lag_node_type_field_hadler },
+    { "mode",            lag_node_mode_field_hadler },
+    { "slaves",          lag_node_slaves_node_field_hadler },
     TE_ENUM_MAP_END
 };
 
@@ -998,6 +1191,212 @@ iface_list_node_parse(yaml_node_t *iface_list_node, yaml_document_t *doc,
 }
 
 static te_errno
+lag_info_validate(const cfg_yaml_lag_ctx *lag_ctx)
+{
+    if (lag_ctx->agent == NULL || lag_ctx->name == NULL ||
+        lag_ctx->type == TAPI_NET_LAG_TYPE_UNKNOWN ||
+        lag_ctx->mode == TAPI_NET_LAG_MODE_UNKNOWN ||
+        lag_ctx->slaves_node == NULL)
+    {
+        ERROR(YAML_ERR_PREFIX "incomplete LAG entry in 'aggregates'");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    return 0;
+}
+
+/* Parse mapping fields of a single LAG entry. */
+static te_errno
+lag_node_parse_fields(yaml_node_t *lag_node, yaml_document_t *doc,
+                      cfg_yaml_lag_ctx *ctx)
+{
+    yaml_node_pair_t *pair;
+    te_errno rc;
+
+    assert(ctx != NULL);
+    assert(lag_node != NULL);
+    assert(doc != NULL);
+
+    if (lag_node->type != YAML_MAPPING_NODE)
+    {
+        ERROR(YAML_ERR_PREFIX "LAG entry must be a mapping at "
+              YAML_NODE_LINE_COLUMN_FMT, YAML_NODE_LINE_COLUMN(lag_node));
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    pair = lag_node->data.mapping.pairs.start;
+
+    do {
+        yaml_node_t *k = yaml_document_get_node(doc, pair->key);
+        yaml_node_t *v = yaml_document_get_node(doc, pair->value);
+
+        if (k->type != YAML_SCALAR_NODE)
+        {
+            ERROR(YAML_ERR_PREFIX "unexpected key type in 'aggregates' at "
+                  YAML_NODE_LINE_COLUMN_FMT, YAML_NODE_LINE_COLUMN(k));
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+
+        TE_ENUM_DISPATCH(cfg_lag_fld_acts, lag_node_unknown_field_handler,
+                         (char *)k->data.scalar.value, rc, v, ctx);
+        if (rc != 0)
+            return rc;
+    } while (++pair < lag_node->data.mapping.pairs.top);
+
+    return 0;
+}
+
+/* Build NULL-terminated array of slave names. */
+static te_errno
+lag_node_build_slaves(yaml_document_t *doc,
+                      const cfg_yaml_lag_ctx *ctx,
+                      char ***slaves_out)
+{
+    yaml_node_item_t *item;
+    yaml_node_item_t *top;
+    char **slaves = NULL;
+    size_t slaves_num;
+    te_errno rc;
+    size_t i;
+
+    assert(doc != NULL);
+    assert(ctx != NULL);
+    assert(slaves_out != NULL);
+
+    if (ctx->slaves_node == NULL)
+    {
+        ERROR(YAML_ERR_PREFIX "LAG 'slaves' list is required in 'aggregates'");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    item = ctx->slaves_node->data.sequence.items.start;
+    top  = ctx->slaves_node->data.sequence.items.top;
+
+    slaves_num = top - item;
+    if (slaves_num == 0)
+    {
+        ERROR(YAML_ERR_PREFIX "empty 'slaves' list in 'aggregates'");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    slaves = TE_ALLOC((slaves_num + 1) * sizeof(*slaves));
+
+    for (i = 0; item < top; ++item, ++i)
+    {
+        yaml_node_t *slave_node = yaml_document_get_node(doc, *item);
+
+        if (slave_node->type != YAML_SCALAR_NODE)
+        {
+            ERROR(YAML_ERR_PREFIX "unexpected node type in 'slaves' at "
+                  YAML_NODE_LINE_COLUMN_FMT, YAML_NODE_LINE_COLUMN(slave_node));
+            rc = TE_RC(TE_TAPI, TE_EINVAL);
+            goto error;
+        }
+
+        rc = expanded_val_get_str((const char *)slave_node->data.scalar.value,
+                                  &slaves[i]);
+        if (rc != 0)
+        {
+            ERROR(YAML_ERR_PREFIX "failed to expand slave name in 'aggregates': %r",
+                  rc);
+            goto error;
+        }
+    }
+
+    slaves[i] = NULL;
+    *slaves_out = slaves;
+
+    return 0;
+
+error:
+    te_str_free_array(slaves);
+
+    return rc;
+}
+
+static te_errno
+lag_node_parse(yaml_node_t *lag_node, yaml_document_t *doc,
+               tapi_net_ctx *net_ctx)
+{
+    cfg_yaml_lag_ctx ctx = cfg_yaml_lag_ctx_def;
+    char **slave_list = NULL;
+    te_errno rc = 0;
+
+    tapi_net_ta *ta;
+
+    assert(net_ctx != NULL);
+    assert(lag_node != NULL);
+    assert(doc != NULL);
+
+    rc = lag_node_parse_fields(lag_node, doc, &ctx);
+    if (rc != 0)
+        goto out;
+
+    rc = lag_info_validate(&ctx);
+    if (rc != 0)
+        goto out;
+
+    rc = lag_node_build_slaves(doc, &ctx, &slave_list);
+    if (rc != 0)
+        goto out;
+
+    ta = tapi_net_find_agent_by_name(net_ctx, ctx.agent);
+    if (ta == NULL)
+    {
+        ERROR(YAML_ERR_PREFIX "unknown agent '%s' in 'aggregates'", ctx.agent);
+        rc = TE_RC(TE_TAPI, TE_EINVAL);
+        goto out;
+    }
+
+    rc = tapi_net_ta_add_lag(ta, ctx.name, ctx.type, ctx.mode,
+                             (const char **)slave_list);
+    if (rc != 0)
+    {
+        ERROR(YAML_ERR_PREFIX "failed to add LAG '%s' for agent '%s': %r",
+              ctx.name, ctx.agent, rc);
+        goto out;
+    }
+
+out:
+    te_str_free_array(slave_list);
+
+    free(ctx.agent);
+    free(ctx.name);
+
+    return rc;
+}
+
+/* Parse list of LAG definitions from 'aggregates' section. */
+static te_errno
+lag_list_node_parse(yaml_node_t *lag_list_node, yaml_document_t *doc,
+                    tapi_net_ctx *net_ctx)
+{
+    yaml_node_item_t *item;
+    te_errno rc;
+
+    assert(net_ctx != NULL);
+    assert(doc != NULL);
+
+    if (lag_list_node == NULL)
+        return 0;
+
+    item = lag_list_node->data.sequence.items.start;
+
+    do {
+        yaml_node_t *lag_node = yaml_document_get_node(doc, *item);
+
+        rc = lag_node_parse(lag_node, doc, net_ctx);
+        if (rc != 0)
+        {
+            ERROR(YAML_ERR_PREFIX "failed to parse LAG node: %r", rc);
+            return rc;
+        }
+    } while (++item < lag_list_node->data.sequence.items.top);
+
+    return 0;
+}
+
+static te_errno
 nat_rule_node_parse(yaml_node_t *rule_node, yaml_document_t *doc,
                     tapi_net_nat_rule *rule)
 {
@@ -1306,6 +1705,7 @@ root_node_parse(yaml_node_t *root, yaml_document_t *doc,
                 tapi_net_ctx *net_ctx)
 {
     yaml_node_t *iface_list_node = NULL;
+    yaml_node_t *lag_list_node = NULL;
     yaml_node_t *net_list_node = NULL;
     yaml_node_t *nat_list_node = NULL;
     cfg_yaml_root_field type;
@@ -1363,6 +1763,17 @@ root_node_parse(yaml_node_t *root, yaml_document_t *doc,
 
                 break;
 
+            case CFG_YAML_ROOT_FIELD_LAG_LIST:
+                lag_list_node = v;
+
+                if (lag_list_node->type != YAML_SEQUENCE_NODE)
+                {
+                    ERROR(YAML_ERR_PREFIX "aggregates list node is not a sequence");
+                    return TE_RC(TE_TAPI, TE_EINVAL);
+                }
+
+                break;
+
             case CFG_YAML_ROOT_FIELD_NET_LIST:
                 net_list_node = v;
 
@@ -1411,6 +1822,13 @@ root_node_parse(yaml_node_t *root, yaml_document_t *doc,
     if (rc != 0)
     {
         ERROR(YAML_ERR_PREFIX "failed to parse interface list node");
+        return rc;
+    }
+
+    rc = lag_list_node_parse(lag_list_node, doc, net_ctx);
+    if (rc != 0)
+    {
+        ERROR(YAML_ERR_PREFIX "failed to parse aggregates list node");
         return rc;
     }
 
