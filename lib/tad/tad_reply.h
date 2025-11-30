@@ -58,10 +58,13 @@ tad_reply_clone(tad_reply_context *dst, const tad_reply_context *src)
 {
     memset(dst, 0, sizeof(*dst));
 
-    dst->opaque = TE_ALLOC(src->spec->opaque_size);
-
     dst->spec = src->spec;
-    memcpy(dst->opaque, src->opaque, src->spec->opaque_size);
+
+    if (src->spec->opaque_size != 0)
+    {
+        dst->opaque = TE_ALLOC(src->spec->opaque_size);
+        memcpy(dst->opaque, src->opaque, src->spec->opaque_size);
+    }
 
     return 0;
 }
