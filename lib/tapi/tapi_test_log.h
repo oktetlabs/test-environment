@@ -214,10 +214,7 @@ extern "C" {
  * @param fmt  the content of the verdict as format string with arguments
  */
 #define RING_VERDICT(fmt...) \
-    do {                                                                   \
-        LGR_MESSAGE(TE_LL_RING | TE_LL_CONTROL, TE_LOG_VERDICT_USER, fmt); \
-        te_test_tester_message(TE_TEST_MSG_VERDICT, fmt);                  \
-    } while (0)
+    (te_test_verdict(__FILE__, __LINE__, TE_LL_RING, fmt))
 
 /**
  * Macro should be used to output verdict with WARN log level from tests.
@@ -225,10 +222,7 @@ extern "C" {
  * @param fmt  the content of the verdict as format string with arguments
  */
 #define WARN_VERDICT(fmt...) \
-    do {                                                                   \
-        LGR_MESSAGE(TE_LL_WARN | TE_LL_CONTROL, TE_LOG_VERDICT_USER, fmt); \
-        te_test_tester_message(TE_TEST_MSG_VERDICT, fmt);                  \
-    } while (0)
+    (te_test_verdict(__FILE__, __LINE__, TE_LL_WARN, fmt))
 
 /**
  * Macro should be used to output verdict with ERROR log level from tests.
@@ -236,11 +230,7 @@ extern "C" {
  * @param fmt  the content of the verdict as format string with arguments
  */
 #define ERROR_VERDICT(fmt...) \
-    do {                                                                   \
-        LGR_MESSAGE(TE_LL_ERROR | TE_LL_CONTROL, TE_LOG_VERDICT_USER,      \
-                    fmt);                                                  \
-        te_test_tester_message(TE_TEST_MSG_VERDICT, fmt);                  \
-    } while (0)
+    (te_test_verdict(__FILE__, __LINE__, TE_LL_ERROR, fmt))
 
 /**
  * Terminate a test with failure status, report an error as verdict.
@@ -334,6 +324,24 @@ extern void te_test_tester_message_va(te_test_msg_type type,
  */
 extern void te_test_tester_message(te_test_msg_type type,
                                    const char *fmt, ...);
+
+/**
+ * Generate test verdict.
+ *
+ * Do not use the function directly. Use it via #RING_VERDICT(),
+ * #WARN_VERDICT(), #ERROR_VERDICT() macro functions * which provide
+ * @p file and @p line arguments.
+ *
+ * @param file          File name
+ * @param line          Line number in the file
+ * @param level         TE logging level
+ * @param fmt           printf()-like format string with TE extensions
+ *
+ * @note The function uses @e te_test_id and @e te_lgr_entity
+ *       (via #TE_LGR_ENTITY) global variables.
+ */
+extern void te_test_verdict(const char *file, unsigned int line,
+                            unsigned int level, const char *fmt, ...);
 
 /**
  * Update state of the test to be dumped in case of failure.

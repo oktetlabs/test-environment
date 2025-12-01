@@ -39,6 +39,7 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_format.h"
+#include "logger_defs.h"
 #include "ipc_client.h"
 #include "tapi_test.h"
 #include "tester_msg.h"
@@ -198,5 +199,24 @@ te_test_tester_message(te_test_msg_type type, const char *fmt, ...)
 
     va_start(ap, fmt);
     te_test_tester_message_va(type, fmt, ap);
+    va_end(ap);
+}
+
+void
+te_test_verdict(const char *file, unsigned int line, unsigned int level,
+                const char *fmt, ...)
+{
+    struct timeval  tv;
+    va_list         ap;
+
+    gettimeofday(&tv, NULL);
+
+    va_start(ap, fmt);
+    te_log_message_va(file, line, tv.tv_sec, tv.tv_usec, level | TE_LL_CONTROL,
+                      TE_LGR_ENTITY, TE_LOG_VERDICT_USER, fmt, ap);
+    va_end(ap);
+
+    va_start(ap, fmt);
+    te_test_tester_message_va(TE_TEST_MSG_VERDICT, fmt, ap);
     va_end(ap);
 }
