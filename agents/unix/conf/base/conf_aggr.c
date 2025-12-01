@@ -27,6 +27,7 @@
 #include "unix_internal.h"
 #include "te_shell_cmd.h"
 #include "te_str.h"
+#include "te_alloc.h"
 
 #if HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
@@ -127,6 +128,42 @@ aggr_interface_get_free(const char *format, char ifname[IFNAMSIZ])
     return 0;
 }
 
+/**
+ * Check that the user interface name is free, otherwise
+ * get a non-existent interface.
+ *
+ * @param aggr      Aggregation information.
+ * @param format    Format of the interface name, such as "bond%d".
+ * @param ifname    Array to store the interface name found.
+ *
+ * @return Status code.
+ */
+static te_errno
+aggr_interface_get_user_or_free(const aggregation *aggr,
+                                const char *format,
+                                char ifname[IFNAMSIZ])
+{
+    bool shared = false;
+
+    if (aggr->name != NULL &&
+        aggr->name[0] != '\0' &&
+        strlen(aggr->name) < IFNAMSIZ)
+    {
+        snprintf(ifname, IFNAMSIZ, "%s", aggr->name);
+        snprintf(rsrc, RCF_MAX_VAL, "/agent:%s/interface:%s",
+                 ta_name, ifname);
+
+        if (if_nametoindex(ifname) == 0 &&
+            ta_rsrc_create_lock(rsrc, &shared, false, 0) == 0)
+        {
+            return 0;
+        }
+
+    }
+
+    return aggr_interface_get_free(format, ifname);
+}
+
 /*
  * Bonding support
  */
@@ -134,13 +171,16 @@ aggr_interface_get_free(const char *format, char ifname[IFNAMSIZ])
 static te_errno
 trunk_create(aggregation *aggr)
 {
+    te_errno rc;
     FILE *f;
+
+    /* Get a name for the new bond device */
+    rc = aggr_interface_get_user_or_free(aggr, "bond%d", aggr->ifname);
+    if (rc != 0)
+        return rc;
 
     if (ta_system("/sbin/modprobe bonding max_bonds=0") != 0)
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-
-    /* Get a name for the new bond device */
-    aggr_interface_get_free("bond%d", aggr->ifname);
 
     f = fopen("/sys/class/net/bonding_masters", "a");
     if (f == NULL)
@@ -310,8 +350,12 @@ trunk_list(aggregation *aggr, char **member_list)
 static te_errno
 team_create(aggregation *aggr)
 {
+    te_errno rc;
+
     /* Get a name for the new bond device */
-    aggr_interface_get_free("bond%d", aggr->ifname);
+    rc = aggr_interface_get_user_or_free(aggr, "bond%d", aggr->ifname);
+    if (rc != 0)
+        return rc;
 
     if (aggr->mode == AGGREGATION_MODE_AB)
     {
@@ -591,17 +635,13 @@ aggregation_add(unsigned int gid, const char *oid, char *value,
     a = calloc(sizeof(aggregation), 1);
     a->type = type;
     a->mode = mode;
+    a->name = TE_STRDUP(aggr_name);
+
     rc = aggr_types_data[type].create(a);
     if (rc != 0)
     {
         free(a);
         return rc;
-    }
-    a->name = strdup(aggr_name);
-    if (a->name == NULL)
-    {
-        free(a);
-        return -1;
     }
 
     /* Insert aggregation into the linked list */
