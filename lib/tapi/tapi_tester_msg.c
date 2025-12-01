@@ -202,21 +202,45 @@ te_test_tester_message(te_test_msg_type type, const char *fmt, ...)
     va_end(ap);
 }
 
+static void
+te_log_and_test_message_va(const char *file, unsigned int line,
+                           unsigned int level, const char *lgr_user,
+                           te_test_msg_type msg_type,
+                           const char *fmt, va_list ap)
+{
+    struct timeval tv;
+    va_list ap_copy;
+
+    gettimeofday(&tv, NULL);
+
+    va_copy(ap_copy, ap);
+    te_log_message_va(file, line, tv.tv_sec, tv.tv_usec, level | TE_LL_CONTROL,
+                      TE_LGR_ENTITY, lgr_user, fmt, ap_copy);
+    va_end(ap_copy);
+
+    te_test_tester_message_va(msg_type, fmt, ap);
+}
+
 void
 te_test_verdict(const char *file, unsigned int line, unsigned int level,
                 const char *fmt, ...)
 {
-    struct timeval  tv;
-    va_list         ap;
-
-    gettimeofday(&tv, NULL);
+    va_list ap;
 
     va_start(ap, fmt);
-    te_log_message_va(file, line, tv.tv_sec, tv.tv_usec, level | TE_LL_CONTROL,
-                      TE_LGR_ENTITY, TE_LOG_VERDICT_USER, fmt, ap);
+    te_log_and_test_message_va(file, line, level, TE_LOG_VERDICT_USER,
+                               TE_TEST_MSG_VERDICT, fmt, ap);
     va_end(ap);
+}
+
+void
+te_test_artifact(const char *file, unsigned int line, unsigned int level,
+                 const char *fmt, ...)
+{
+    va_list ap;
 
     va_start(ap, fmt);
-    te_test_tester_message_va(TE_TEST_MSG_VERDICT, fmt, ap);
+    te_log_and_test_message_va(file, line, level, TE_LOG_ARTIFACT_USER,
+                               TE_TEST_MSG_ARTIFACT, fmt, ap);
     va_end(ap);
 }

@@ -254,10 +254,7 @@ extern "C" {
  *                   with parameters)
  */
 #define REGISTER_ARTIFACT(_level, _fmt...) \
-    do {                                   \
-        LGR_MESSAGE((_level) | TE_LL_CONTROL, TE_LOG_ARTIFACT_USER, _fmt); \
-        te_test_tester_message(TE_TEST_MSG_ARTIFACT, _fmt);                \
-    } while(0)
+    (te_test_artifact(__FILE__, __LINE__, (_level), _fmt))
 
 /**
  * Macro should be used to output artifact from tests.
@@ -342,6 +339,23 @@ extern void te_test_tester_message(te_test_msg_type type,
  */
 extern void te_test_verdict(const char *file, unsigned int line,
                             unsigned int level, const char *fmt, ...);
+
+/**
+ * Generate artifact.
+ *
+ * Do not use the function directly. Use it via #REGISTER_ARTIFACT() and
+ * similar macro functions only which provide @p file and @p line arguments.
+ *
+ * @param file          File name
+ * @param line          Line number in the file
+ * @param level         TE logging level
+ * @param fmt           printf()-like format string with TE extensions
+ *
+ * @note The function uses @e te_test_id and @e te_lgr_entity
+ *       (via #TE_LGR_ENTITY) global variables.
+ */
+extern void te_test_artifact(const char *file, unsigned int line,
+                             unsigned int level, const char *fmt, ...);
 
 /**
  * Update state of the test to be dumped in case of failure.
