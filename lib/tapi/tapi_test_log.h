@@ -317,6 +317,18 @@ extern "C" {
  *
  * @param type          Message type
  * @param fmt           printf()-like format string with TE extensions
+ * @param ap            format string arguments
+ *
+ * @note The function uses @e te_test_id global variable.
+ */
+extern void te_test_tester_message_va(te_test_msg_type type,
+                                      const char *fmt, va_list ap);
+
+/**
+ * Compose test message and send it to Tester.
+ *
+ * @param type          Message type
+ * @param fmt           printf()-like format string with TE extensions
  *
  * @note The function uses @e te_test_id global variable.
  */

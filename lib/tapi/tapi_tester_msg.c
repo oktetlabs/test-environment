@@ -117,18 +117,10 @@ te_test_tester_message_close(void)
 #endif
 }
 
-/**
- * Compose test message and send it to Tester.
- *
- * @param fmt           printf()-like format string with TE extensions
- *
- * @note The function uses @e te_test_id global variable.
- */
 void
-te_test_tester_message(te_test_msg_type type, const char *fmt, ...)
+te_test_tester_message_va(te_test_msg_type type, const char *fmt, va_list ap)
 {
     te_errno    rc;
-    va_list     ap;
     size_t      len = 0;
 
 #ifdef HAVE_PTHREAD_H
@@ -175,9 +167,7 @@ te_test_tester_message(te_test_msg_type type, const char *fmt, ...)
     msg.hdr.type = type;
     cm.offset = 0;
 
-    va_start(ap, fmt);
     rc = te_log_vprintf_old(&cm, fmt, ap);
-    va_end(ap);
 
     if (rc == 0 || rc == TE_ESMALLBUF)
     {
@@ -199,4 +189,14 @@ te_test_tester_message(te_test_msg_type type, const char *fmt, ...)
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&lock);
 #endif
+}
+
+void
+te_test_tester_message(te_test_msg_type type, const char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    te_test_tester_message_va(type, fmt, ap);
+    va_end(ap);
 }
