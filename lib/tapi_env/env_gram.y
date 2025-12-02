@@ -12,6 +12,7 @@
 #endif
 
 #include "logger_api.h"
+#include "te_alloc.h"
 
 #include "tapi_env.h"
 
@@ -64,15 +65,11 @@ env_cfg_parse(tapi_env *e, const char *cfg)
 static tapi_env_net *
 create_net(void)
 {
-    tapi_env_net *p = calloc(1, sizeof(*p));
+    tapi_env_net *p = TE_ALLOC(sizeof(*p));
 
-    assert(p != NULL);
-    if (p != 0)
-    {
-        STAILQ_INIT(&p->net_addrs);
-        env->n_nets++;
-        SLIST_INSERT_HEAD(&env->nets, p, links);
-    }
+    STAILQ_INIT(&p->net_addrs);
+    env->n_nets++;
+    SLIST_INSERT_HEAD(&env->nets, p, links);
 
     return p;
 }
@@ -80,30 +77,18 @@ create_net(void)
 static tapi_env_if *
 create_host_if(void)
 {
-    tapi_env_if    *iface = calloc(1, sizeof(*iface));
+    tapi_env_if *iface = TE_ALLOC(sizeof(*iface));
+    tapi_env_host *host = TE_ALLOC(sizeof(*host));
 
-    assert(iface != NULL);
-    if (iface != NULL)
-    {
-        tapi_env_host  *host = calloc(1, sizeof(*host));
+    SLIST_INIT(&host->processes);
 
-        assert(host != NULL);
-        if (host != NULL)
-        {
-            SLIST_INIT(&host->processes);
-        }
+    CIRCLEQ_INSERT_TAIL(&env->ifs, iface, links);
 
-        CIRCLEQ_INSERT_TAIL(&env->ifs, iface, links);
+    if (curr_net == NULL)
+        curr_net = create_net();
 
-        if (curr_net == NULL)
-            curr_net = create_net();
-
-        iface->net = curr_net;
-        iface->host = host;
-
-        assert(iface->net != NULL);
-        assert(iface->host != NULL);
-    }
+    iface->net = curr_net;
+    iface->host = host;
 
     return iface;
 }
@@ -111,19 +96,14 @@ create_host_if(void)
 static tapi_env_process *
 create_process(void)
 {
-    tapi_env_process *p = calloc(1, sizeof(*p));
+    tapi_env_process *p = TE_ALLOC(sizeof(*p));
 
-    assert(p != NULL);
-    if (p != NULL)
-    {
-        STAILQ_INIT(&p->pcos);
-        STAILQ_INIT(&p->ifs);
-        if (curr_host_if == NULL)
-            curr_host_if = create_host_if();
-        p->net = curr_net;
-        if (curr_host_if != NULL && curr_host_if->host != NULL)
-            SLIST_INSERT_HEAD(&curr_host_if->host->processes, p, links);
-    }
+    STAILQ_INIT(&p->pcos);
+    STAILQ_INIT(&p->ifs);
+    if (curr_host_if == NULL)
+        curr_host_if = create_host_if();
+    p->net = curr_net;
+    SLIST_INSERT_HEAD(&curr_host_if->host->processes, p, links);
 
     return p;
 }
@@ -322,76 +302,49 @@ pcos:
 pco:
     quotedname COLON ENTITY_TYPE
     {
-        char         *name = $1;
-        tapi_env_pco *p = calloc(1, sizeof(*p));
+        tapi_env_pco *p = TE_ALLOC(sizeof(*p));
 
         if (curr_proc == NULL)
             curr_proc = create_process();
 
-        assert(p != NULL);
-        if (p != NULL)
-        {
-            p->name = name;
-            name = NULL;
-            p->type = $3;
-            p->process = curr_proc;
-            if (curr_proc != NULL)
-            {
-                STAILQ_INSERT_TAIL(&curr_proc->pcos, p, links);
-            }
-        }
-        free(name);
+        p->name = $1;
+        p->type = $3;
+        p->process = curr_proc;
+        STAILQ_INSERT_TAIL(&curr_proc->pcos, p, links);
     }
     ;
 
 address:
     ADDRESS COLON quotedname COLON ADDR_FAMILY COLON ADDR_TYPE
     {
-        char            *name = $3;
-        tapi_env_addr   *p = calloc(1, sizeof(*p));
+        tapi_env_addr *p = TE_ALLOC(sizeof(*p));
 
         if (curr_host_if == NULL)
             curr_host_if = create_host_if();
 
-        assert(p != NULL);
-        if (p != NULL)
-        {
-            p->name = name;
-            name = NULL;
-            p->source = NULL;
-            p->iface = curr_host_if;
-            p->family = $5;
-            p->type = $7;
-            p->handle = CFG_HANDLE_INVALID;
-            CIRCLEQ_INSERT_TAIL(&env->addrs, p, links);
-        }
-        free(name);
+        p->name = $3;
+        p->source = NULL;
+        p->iface = curr_host_if;
+        p->family = $5;
+        p->type = $7;
+        p->handle = CFG_HANDLE_INVALID;
+        CIRCLEQ_INSERT_TAIL(&env->addrs, p, links);
     }
     |
     ADDRESS COLON quotedname COLON ADDR_FAMILY COLON ADDR_TYPE COLON quotedname
     {
-        char            *name = $3;
-        char            *source = $9;
-        tapi_env_addr   *p = calloc(1, sizeof(*p));
+        tapi_env_addr *p = TE_ALLOC(sizeof(*p));
 
         if (curr_host_if == NULL)
             curr_host_if = create_host_if();
 
-        assert(p != NULL);
-        if (p != NULL)
-        {
-            p->name = name;
-            name = NULL;
-            p->source = source;
-            source = NULL;
-            p->iface = curr_host_if;
-            p->family = $5;
-            p->type = $7;
-            p->handle = CFG_HANDLE_INVALID;
-            CIRCLEQ_INSERT_TAIL(&env->addrs, p, links);
-        }
-        free(name);
-        free(source);
+        p->name = $3;
+        p->source = $9;
+        p->iface = curr_host_if;
+        p->family = $5;
+        p->type = $7;
+        p->handle = CFG_HANDLE_INVALID;
+        CIRCLEQ_INSERT_TAIL(&env->addrs, p, links);
     }
     ;
 
@@ -403,29 +356,22 @@ interface:
         if (curr_host_if == NULL)
             curr_host_if = create_host_if();
 
-        if (curr_host_if != NULL)
+        if (curr_host_if->name != NULL &&
+            strcmp(curr_host_if->name, name) != 0)
         {
-            if (curr_host_if->name != NULL &&
-                strcmp(curr_host_if->name, name) != 0)
-            {
-                ERROR("Interface name conflict: '%s' vs '%s'",
-                      curr_host_if->name, name);
-            }
-            free(curr_host_if->name);
-            curr_host_if->name = name;
-
-            if (curr_proc != NULL)
-            {
-                tapi_env_ps_if *ps_if = calloc(1, sizeof(*ps_if));
-
-                assert(ps_if != NULL);
-                ps_if->iface = curr_host_if;
-                STAILQ_INSERT_TAIL(&curr_proc->ifs, ps_if, links);
-            }
-
-            name = NULL;
+            ERROR("Interface name conflict: '%s' vs '%s'",
+                  curr_host_if->name, name);
         }
-        free(name);
+        free(curr_host_if->name);
+        curr_host_if->name = name;
+
+        if (curr_proc != NULL)
+        {
+            tapi_env_ps_if *ps_if = TE_ALLOC(sizeof(*ps_if));
+
+            ps_if->iface = curr_host_if;
+            STAILQ_INSERT_TAIL(&curr_proc->ifs, ps_if, links);
+        }
     }
     ;
 
@@ -439,22 +385,11 @@ aliases:
 alias:
     quotedname EQUAL quotedname
     {
-        char             *alias = $1;
-        char             *name = $3;
-        tapi_env_alias   *p = calloc(1, sizeof(*p));
+        tapi_env_alias *p = TE_ALLOC(sizeof(*p));
 
-        assert(p != NULL);
-        if (p != NULL)
-        {
-            p->alias = alias;
-            p->name = name;
-            SLIST_INSERT_HEAD(&env->aliases, p, links);
-        }
-        else
-        {
-            free(alias);
-            free(name);
-        }
+        p->alias = $1;
+        p->name = $3;
+        SLIST_INSERT_HEAD(&env->aliases, p, links);
     }
     ;
 
