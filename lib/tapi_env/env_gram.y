@@ -108,6 +108,35 @@ create_process(void)
     return p;
 }
 
+static void
+add_process(tapi_env_host *host, tapi_env_process *anew)
+{
+    tapi_env_process *p;
+
+    /* Merge processes with the same name */
+    if (anew->name != NULL)
+    {
+        SLIST_FOREACH(p, &host->processes, links)
+        {
+            if (p->name != NULL && strcmp(p->name, anew->name) == 0)
+            {
+                STAILQ_CONCAT(&p->pcos, &anew->pcos);
+                STAILQ_CONCAT(&p->ifs, &anew->ifs);
+                /*
+                 * If process is used in many networks, avoid usage of
+                 * network type to determine PCO type.
+                 */
+                p->net = NULL;
+
+                free(anew->name);
+                free(anew);
+                return;
+            }
+        }
+    }
+    SLIST_INSERT_HEAD(&host->processes, anew, links);
+}
+
 %}
 
 %token OBRACE EBRACE QUOTE COLON COMMA EQUAL
@@ -244,7 +273,7 @@ host:
                     {
                         SLIST_REMOVE(&curr_host_if->host->processes,
                                      proc, tapi_env_process, links);
-                        SLIST_INSERT_HEAD(&p->processes, proc, links);
+                        add_process(p, proc);
                     }
                     /* - substitute reference in interface */
                     free(curr_host_if->host);
@@ -285,12 +314,43 @@ process:
         else
             curr_proc = NULL;
     }
+    |
+    quotedname OBRACE process_items EBRACE
+    {
+        /* Current process is always created by process items */
+        assert(curr_proc != NULL);
+        curr_proc->name = $1;
+
+        /* Temporarily remove process from the list to merge it */
+        SLIST_REMOVE(&curr_host_if->host->processes, curr_proc,
+                     tapi_env_process, links);
+        add_process(curr_host_if->host, curr_proc);
+        curr_proc = NULL;
+    }
     ;
 
 process_items:
     pcos
     |
     pcos COMMA interface
+    {
+        tapi_env_ps_if *ps_if = TE_ALLOC(sizeof(*ps_if));
+
+        ps_if->iface = curr_host_if;
+
+        assert(curr_proc != NULL);
+        STAILQ_INSERT_TAIL(&curr_proc->ifs, ps_if, links);
+    }
+    |
+    interface
+    {
+        tapi_env_ps_if *ps_if = TE_ALLOC(sizeof(*ps_if));
+
+        ps_if->iface = curr_host_if;
+
+        curr_proc = create_process();
+        STAILQ_INSERT_TAIL(&curr_proc->ifs, ps_if, links);
+    }
     ;
 
 pcos:
@@ -364,14 +424,6 @@ interface:
         }
         free(curr_host_if->name);
         curr_host_if->name = name;
-
-        if (curr_proc != NULL)
-        {
-            tapi_env_ps_if *ps_if = TE_ALLOC(sizeof(*ps_if));
-
-            ps_if->iface = curr_host_if;
-            STAILQ_INSERT_TAIL(&curr_proc->ifs, ps_if, links);
-        }
     }
     ;
 

@@ -462,6 +462,7 @@ typedef STAILQ_HEAD(tapi_env_pcos, tapi_env_pco) tapi_env_pcos;
 typedef struct tapi_env_process {
     SLIST_ENTRY(tapi_env_process)   links;  /**< Links */
 
+    char               *name; /**< Name of the process or @c NULL */
     tapi_env_pcos       pcos; /**< Tail queue of PCOs in process */
     tapi_env_ps_ifs     ifs;  /**< List of process interfaces */
 

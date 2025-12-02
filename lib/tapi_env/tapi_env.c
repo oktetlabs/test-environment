@@ -408,6 +408,7 @@ tapi_env_free(tapi_env *env)
                 free(ps_if);
             }
             SLIST_REMOVE(&host->processes, proc, tapi_env_process, links);
+            free(proc->name);
             free(proc);
         }
         SLIST_REMOVE(&env->hosts, host, tapi_env_host, links);
