@@ -1229,6 +1229,12 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
                                     },
                                     {.use_stdout = true,
                                      .readable = true,
+                                     .re = "(?m)^[ #]+ NIC statistics for port ([0-9]+) [ #]+$",
+                                     .extract = 1,
+                                     .filter_var = &testpmd_job->stats_port_filter,
+                                    },
+                                    {.use_stdout = true,
+                                     .readable = true,
                                      .re = "(?m)^Link speed: ([0-9]+ [MG])bps$",
                                      .extract = 1,
                                      .filter_var = &testpmd_job->link_speed_filter,
@@ -1647,18 +1653,33 @@ tapi_dpdk_testpmd_get_link_speed(tapi_dpdk_testpmd_job_t *testpmd_job,
 }
 
 te_errno
-tapi_dpdk_testpmd_get_stats(tapi_dpdk_testpmd_job_t *testpmd_job,
-                            te_meas_stats_t *tx,
-                            te_meas_stats_t *rx)
+tapi_dpdk_testpmd_get_stats_many_ports(tapi_dpdk_testpmd_job_t *testpmd_job,
+                                       unsigned int n_ports,
+                                       unsigned int *n_port_ids,
+                                       unsigned int *port_ids,
+                                       te_meas_stats_t *tx,
+                                       te_meas_stats_t *rx)
 {
     tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;
+    const unsigned int idx_max = 4095;
+    unsigned int *idx;
+    unsigned int prod = 0;
+    unsigned int rx_cons = 0;
+    unsigned int tx_cons = 0;
     unsigned long tx_pps = 0;
     unsigned long rx_pps = 0;
     te_errno rc = 0;
 
+    if (testpmd_job == NULL || n_port_ids == NULL || port_ids == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    /* Ring must be one element bigger than maximum */
+    idx = TE_ALLOC((idx_max + 1) * sizeof(*idx));
+
     do {
-        rc = tapi_job_receive(TAPI_JOB_CHANNEL_SET(testpmd_job->tx_pps_filter,
+        rc = tapi_job_receive(TAPI_JOB_CHANNEL_SET(testpmd_job->stats_port_filter,
                                                    testpmd_job->rx_pps_filter,
+                                                   testpmd_job->tx_pps_filter,
                                                    testpmd_job->err_filter),
                               TAPI_DPDK_TESTPMD_RECEIVE_TIMEOUT_MS, &buf);
         if (rc != 0)
@@ -1667,31 +1688,75 @@ tapi_dpdk_testpmd_get_stats(tapi_dpdk_testpmd_job_t *testpmd_job,
         if (buf.eos)
             break;
 
-        if (buf.filter == testpmd_job->tx_pps_filter)
+        if (buf.filter == testpmd_job->stats_port_filter)
+        {
+            unsigned int port_id;
+
+            if ((rc = te_strtoui(buf.data.ptr, 0, &port_id)) != 0)
+            {
+                ERROR("Failed to parse port ID '%s'", buf.data.ptr);
+                goto out;
+            }
+
+            idx[prod] = find_port_index(n_ports, n_port_ids, port_ids, port_id);
+            if (idx[prod] == UINT_MAX)
+            {
+                rc = TE_RC(TE_TAPI, TE_EFAIL);
+                goto out;
+
+            }
+            prod = ring_next_index(idx_max, prod);
+            if (prod == rx_cons || prod == tx_cons)
+            {
+                ERROR("Producer(%u)/consumer(%u,%u) overflow",
+                      prod, rx_cons, tx_cons);
+                rc = TE_RC(TE_TAPI, TE_EFAIL);
+                goto out;
+            }
+        }
+        else if (buf.filter == testpmd_job->tx_pps_filter)
         {
             if ((rc = te_strtoul(buf.data.ptr, 0, &tx_pps)) != 0)
                 goto out;
 
+            if (tx_cons == prod)
+            {
+                ERROR("Producer(%u)/Tx consumer(%u) underflow", prod, tx_cons);
+                rc = TE_RC(TE_TAPI, TE_EFAIL);
+                goto out;
+            }
+
             if (tx != NULL &&
-                te_meas_stats_update(tx, (double)tx_pps) ==
+                te_meas_stats_update(&tx[idx[tx_cons]], (double)tx_pps) ==
                 TE_MEAS_STATS_UPDATE_NOMEM)
             {
                 rc = TE_ENOMEM;
                 goto out;
             }
+
+            tx_cons = ring_next_index(idx_max, tx_cons);
         }
         else if (buf.filter == testpmd_job->rx_pps_filter)
         {
             if ((rc = te_strtoul(buf.data.ptr, 0, &rx_pps)) != 0)
                 goto out;
 
+            if (rx_cons == prod)
+            {
+                ERROR("Producer(%u)/Rx consumer(%u) underflow", prod, rx_cons);
+                rc = TE_RC(TE_TAPI, TE_EFAIL);
+                goto out;
+            }
+
             if (rx != NULL &&
-                te_meas_stats_update(rx, (double)rx_pps) ==
+                te_meas_stats_update(&rx[idx[rx_cons]], (double)rx_pps) ==
                 TE_MEAS_STATS_UPDATE_NOMEM)
             {
                 rc = TE_ENOMEM;
                 goto out;
             }
+
+            rx_cons = ring_next_index(idx_max, rx_cons);
         }
         else if (buf.filter == testpmd_job->err_filter)
         {
@@ -1706,11 +1771,11 @@ tapi_dpdk_testpmd_get_stats(tapi_dpdk_testpmd_job_t *testpmd_job,
             WARN("Dropped messages count: %lu", buf.dropped);
 
         te_string_reset(&buf.data);
-    } while (te_meas_stats_continue(tx) ||
-             te_meas_stats_continue(rx));
+    } while (te_meas_stats_array_continue(tx, n_ports) ||
+             te_meas_stats_array_continue(rx, n_ports));
 
-    if (te_meas_stats_continue(tx) ||
-        te_meas_stats_continue(rx))
+    if (te_meas_stats_array_continue(tx, n_ports) ||
+        te_meas_stats_array_continue(rx, n_ports))
     {
         ERROR("Channel had been closed before required number of stats were received");
         rc = TE_RC(TE_TAPI, TE_EFAIL);
@@ -1719,8 +1784,22 @@ tapi_dpdk_testpmd_get_stats(tapi_dpdk_testpmd_job_t *testpmd_job,
 
 out:
     te_string_free(&buf.data);
+    free(idx);
 
     return rc;
+}
+
+te_errno
+tapi_dpdk_testpmd_get_stats(tapi_dpdk_testpmd_job_t *testpmd_job,
+                            te_meas_stats_t *tx,
+                            te_meas_stats_t *rx)
+{
+    unsigned int n_port_ids = 0;
+    unsigned int port_id;
+
+    return tapi_dpdk_testpmd_get_stats_many_ports(testpmd_job, 1,
+                                                  &n_port_ids, &port_id,
+                                                  tx, rx);
 }
 
 bool

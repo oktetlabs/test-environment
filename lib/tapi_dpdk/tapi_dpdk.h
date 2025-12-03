@@ -50,6 +50,7 @@ typedef struct tapi_dpdk_testpmd_job_t {
     tapi_job_channel_t *err_filter;
     tapi_job_channel_t *tx_pps_filter;
     tapi_job_channel_t *rx_pps_filter;
+    tapi_job_channel_t *stats_port_filter;
     tapi_job_channel_t *infos_port_filter;
     tapi_job_channel_t *link_speed_filter;
     tapi_job_channel_t *tx_dbells_filter;
@@ -151,6 +152,29 @@ extern te_errno tapi_dpdk_testpmd_get_link_speed_many_ports(
  */
 extern te_errno tapi_dpdk_testpmd_get_stats(
                                     tapi_dpdk_testpmd_job_t *testpmd_job,
+                                    te_meas_stats_t *tx,
+                                    te_meas_stats_t *rx);
+
+/**
+ * Get performance statistics from running test-pmd job with many ports.
+ *
+ * @note The @p testpmd_job must be started.
+ *
+ * @param testpmd_job           Handle of running test-pmd job
+ * @param n_ports               Number of elements in @p port_id, @p tx and
+ *                              @p rx arrays
+ * @param[in,out] n_port_ids    Number of set port IDs
+ * @param[in,out] port_ids      Port IDs array
+ * @param[out] tx               Evaluated Tx statistics array
+ * @param[out] rx               Evaluated Rx statistics array
+ *
+ * @return          Status code
+ */
+extern te_errno tapi_dpdk_testpmd_get_stats_many_ports(
+                                    tapi_dpdk_testpmd_job_t *testpmd_job,
+                                    unsigned int n_ports,
+                                    unsigned int *n_port_ids,
+                                    unsigned int *port_ids,
                                     te_meas_stats_t *tx,
                                     te_meas_stats_t *rx);
 
