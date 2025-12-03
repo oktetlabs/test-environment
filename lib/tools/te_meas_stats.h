@@ -24,18 +24,11 @@ extern "C" {
 
 #define TE_MEAS_STATS_DEFAULT_DEVIATION_COEFF 3
 
-#define TE_MEAS_STATS_CONTINUE(meas_stats)                                     \
-        ((meas_stats) != NULL &&                                               \
-         ((meas_stats)->data.num_datapoints + (meas_stats)->num_zeros) <       \
-         (meas_stats)->data.max_num_datapoints &&                              \
-         (!(meas_stats)->stab_required ||                                      \
-         !te_meas_stats_stab_is_stable(&(meas_stats)->stab,                    \
-                                       &(meas_stats)->data)))
+#define TE_MEAS_STATS_CONTINUE(meas_stats) \
+    (te_meas_stats_continue(meas_stats))
 
-#define TE_MEAS_STATS_UPDATE_FAILED(uc)               \
-        ((uc) == TE_MEAS_STATS_UPDATE_OUT_OF_RANGE || \
-         (uc) == TE_MEAS_STATS_UPDATE_NOMEM)
-
+#define TE_MEAS_STATS_UPDATE_FAILED(uc) \
+    (te_meas_stats_update_failed(uc))
 
 /** Statistics collector behavior configuration flags */
 typedef enum {
@@ -191,6 +184,37 @@ te_meas_stats_stab_is_stable(const te_meas_stats_stab_t *stab,
     return (data->num_datapoints >= stab->min_num_datapoints &&
             stab->required_cv > stab->correct_data.cv) ?
             true : false;
+}
+
+/**
+ * Check if measurements should continue based on collected stats.
+ *
+ * @param meas_stats    Collected statistics
+ *
+ * @return      @c true if measurements should continue, @c false otherwise
+ */
+static inline bool
+te_meas_stats_continue(const te_meas_stats_t *meas_stats)
+{
+    return meas_stats != NULL &&
+        (meas_stats->data.num_datapoints + meas_stats->num_zeros) <
+        meas_stats->data.max_num_datapoints &&
+        (!meas_stats->stab_required ||
+         !te_meas_stats_stab_is_stable(&meas_stats->stab, &meas_stats->data));
+}
+
+/**
+ * Check if stats update failed based on update code.
+ *
+ * @param uc            Measurement statistics update ccde
+ *
+ * @return      @c true if update failed, @c false otherwise
+ */
+static inline bool
+te_meas_stats_update_failed(te_meas_stats_update_codes uc)
+{
+    return uc == TE_MEAS_STATS_UPDATE_OUT_OF_RANGE ||
+           uc == TE_MEAS_STATS_UPDATE_NOMEM;
 }
 
 /**

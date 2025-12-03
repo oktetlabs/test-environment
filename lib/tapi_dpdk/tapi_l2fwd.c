@@ -119,11 +119,11 @@ tapi_dpdk_l2fwd_get_stats(tapi_dpdk_l2fwd_job_t *l2fwd_job,
             WARN("Dropped messages count: %lu", buf.dropped);
 
         te_string_reset(&buf.data);
-    } while (TE_MEAS_STATS_CONTINUE(tx) ||
-             TE_MEAS_STATS_CONTINUE(rx));
+    } while (te_meas_stats_continue(tx) ||
+             te_meas_stats_continue(rx));
 
-    if (TE_MEAS_STATS_CONTINUE(tx) ||
-        TE_MEAS_STATS_CONTINUE(rx))
+    if (te_meas_stats_continue(tx) ||
+        te_meas_stats_continue(rx))
     {
         ERROR("Channel had been closed before required number of stats were received");
         rc = TE_RC(TE_TAPI, TE_EFAIL);
