@@ -50,6 +50,7 @@ typedef struct tapi_dpdk_testpmd_job_t {
     tapi_job_channel_t *err_filter;
     tapi_job_channel_t *tx_pps_filter;
     tapi_job_channel_t *rx_pps_filter;
+    tapi_job_channel_t *infos_port_filter;
     tapi_job_channel_t *link_speed_filter;
     tapi_job_channel_t *tx_dbells_filter;
     tapi_job_channel_t *tx_dbells_skip_filter;
@@ -118,6 +119,25 @@ extern te_errno tapi_dpdk_testpmd_start(tapi_dpdk_testpmd_job_t *testpmd_job);
 extern te_errno tapi_dpdk_testpmd_get_link_speed(
                                     tapi_dpdk_testpmd_job_t *testpmd_job,
                                     unsigned int *link_speed);
+
+/**
+ * Get link speed from running test-pmd job with many ports.
+ *
+ * @param testpmd_job           Handle of test-pmd job
+ * @param n_ports               Expected number of ports
+ * @param[in,out] n_port_ids    Number of set port IDs
+ * @param[in,out] port_ids      Port IDs array
+ * @param[out] link_speed       Array of link speeds in Mbps
+ *
+ * @return          Status code
+ */
+extern te_errno tapi_dpdk_testpmd_get_link_speed_many_ports(
+                                    tapi_dpdk_testpmd_job_t *testpmd_job,
+                                    unsigned int n_ports,
+                                    unsigned int *n_port_ids,
+                                    unsigned int *port_ids,
+                                    unsigned int *link_speed);
+
 /**
  * Get performance statistics from running test-pmd job.
  *

@@ -1233,6 +1233,12 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
                                      .extract = 1,
                                      .filter_var = &testpmd_job->link_speed_filter,
                                     },
+                                    {.use_stdout = true,
+                                     .readable = true,
+                                     .re = "(?m)^\\*+ Infos for port ([0-9]+) +\\*+$",
+                                     .extract = 1,
+                                     .filter_var = &testpmd_job->infos_port_filter,
+                                    },
                                     {.use_stderr = true,
                                      .log_level = TE_LL_ERROR,
                                      .readable = true,
@@ -1452,62 +1458,192 @@ tapi_dpdk_testpmd_destroy(tapi_dpdk_testpmd_job_t *testpmd_job)
     return 0;
 }
 
+/**
+ * Find @p port_id index in @p port_ids array alredy filled in with
+ * @p *n_port_ids entries with maximum of @p n_ports entries.
+ *
+ * If entry with @p port_id not found, add a new entry if space is
+ * availble.
+ *
+ * @return Entry index or @c UINT_MAX if no space left.
+ */
+static unsigned int
+find_port_index(unsigned int n_ports, unsigned int *n_port_ids,
+                unsigned int *port_ids, unsigned int port_id)
+{
+    unsigned int i;
+
+    for (i = 0; i < *n_port_ids; ++i)
+    {
+        if (port_id == port_ids[i])
+            break;
+    }
+    if (i < *n_port_ids)
+    {
+        INFO("Found port %u at index %u", port_id, i);
+    }
+    else if (*n_port_ids >= n_ports)
+    {
+        ERROR("Too many ports found");
+        return UINT_MAX;
+    }
+    else
+    {
+        port_ids[i] = port_id;
+        INFO("Added port %u at index %u", port_id, i);
+        (*n_port_ids)++;
+    }
+
+    return i;
+}
+
+/**
+ * Get next index in the ring.
+ */
+static unsigned int
+ring_next_index(unsigned int max, unsigned int cur)
+{
+    return cur == max ? 0 : (cur + 1);
+}
+
+te_errno
+tapi_dpdk_testpmd_get_link_speed_many_ports(
+        tapi_dpdk_testpmd_job_t *testpmd_job,
+        unsigned int n_ports,
+        unsigned int *n_port_ids,
+        unsigned int *port_ids,
+        unsigned int *link_speed)
+{
+    tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;
+    unsigned int *idx;
+    unsigned int prod = 0;
+    unsigned int cons = 0;
+    unsigned int i;
+    te_errno rc = 0;
+
+    if (testpmd_job == NULL || n_port_ids == NULL || port_ids == NULL ||
+        link_speed == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    /* Ring must be one element bigger than maximum */
+    idx = TE_ALLOC((n_ports + 1) * sizeof(*idx));
+
+    for (i = 0; i < n_ports * 2; ++i)
+    {
+        rc = tapi_job_receive(
+                TAPI_JOB_CHANNEL_SET(testpmd_job->infos_port_filter,
+                                     testpmd_job->link_speed_filter),
+                TAPI_DPDK_TESTPMD_RECEIVE_TIMEOUT_MS, &buf);
+
+        if (rc != 0)
+        {
+            ERROR("Failed to get link speed from testpmd job");
+            goto out;
+        }
+
+        if (buf.eos)
+        {
+            ERROR("End of stream before link speed message");
+            rc = TE_RC(TE_TAPI, TE_EFAIL);
+            goto out;
+        }
+
+        if (buf.dropped > 0)
+            WARN("Dropped messages count: %lu", buf.dropped);
+
+        if (buf.filter == testpmd_job->infos_port_filter)
+        {
+            unsigned int port_id;
+
+            if ((rc = te_strtoui(buf.data.ptr, 0, &port_id)) != 0)
+            {
+                ERROR("Failed to parse port ID '%s'", buf.data.ptr);
+                goto out;
+            }
+
+            idx[prod] = find_port_index(n_ports, n_port_ids, port_ids, port_id);
+            if (idx[prod] == UINT_MAX)
+            {
+                rc = TE_RC(TE_TAPI, TE_EFAIL);
+                goto out;
+            }
+            prod = ring_next_index(n_ports, prod);
+            if (prod == cons)
+            {
+                ERROR("Producer(%u)/consumer(%u) overflow", prod, cons);
+                rc = TE_RC(TE_TAPI, TE_EFAIL);
+                goto out;
+            }
+        }
+        else if (buf.filter == testpmd_job->link_speed_filter)
+        {
+            unsigned int multiplier;
+            unsigned int speed;
+
+            switch (buf.data.ptr[buf.data.len - 1])
+            {
+                case 'G':
+                    multiplier = 1000;
+                    break;
+
+                case 'M':
+                    multiplier = 1;
+                    break;
+
+                default:
+                    ERROR("Invalid bps prefix in the link speed");
+                    rc = TE_RC(TE_TAPI, TE_EINVAL);
+                    goto out;
+            }
+
+            /* Remove bps prefix and a space after the link speed value */
+            te_string_cut(&buf.data, 2);
+
+            if ((rc = te_strtoui(buf.data.ptr, 0, &speed)) != 0)
+            {
+                ERROR("Failed to parse link speed");
+                rc = TE_RC(TE_TAPI, TE_EFAIL);
+                goto out;
+            }
+
+            INFO("Got link speed %u with multiplier %u with index %u",
+                 speed, multiplier, idx[cons]);
+            if (cons == prod)
+            {
+                ERROR("Producer(%u)/consumer(%u) underflow", prod, cons);
+                rc = TE_RC(TE_TAPI, TE_EFAIL);
+                goto out;
+            }
+
+            link_speed[idx[cons]] = speed * multiplier;
+            cons = ring_next_index(n_ports, cons);
+        }
+        else
+        {
+            ERROR("Received buf from a job contains invalid filter pointer");
+            rc = TE_RC(TE_TAPI, TE_EFAIL);
+            goto out;
+        }
+
+        te_string_reset(&buf.data);
+    }
+
+out:
+    te_string_free(&buf.data);
+    free(idx);
+    return rc;
+}
+
 te_errno
 tapi_dpdk_testpmd_get_link_speed(tapi_dpdk_testpmd_job_t *testpmd_job,
                                  unsigned int *link_speed)
 {
-    tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;
-    unsigned int multiplier;
-    te_errno rc = 0;
+    unsigned int n_port_ids = 0;
+    unsigned int port_id;
 
-    rc = tapi_job_receive(TAPI_JOB_CHANNEL_SET(testpmd_job->link_speed_filter),
-                          TAPI_DPDK_TESTPMD_RECEIVE_TIMEOUT_MS, &buf);
-
-    if (rc != 0)
-    {
-        ERROR("Failed to get link speed from testpmd job");
-        return rc;
-    }
-
-    if (buf.eos)
-    {
-        ERROR("End of stream before link speed message");
-        te_string_free(&buf.data);
-        return TE_RC(TE_TAPI, TE_EFAIL);
-    }
-
-    if (buf.dropped > 0)
-        WARN("Dropped messages count: %lu", buf.dropped);
-
-    switch (buf.data.ptr[buf.data.len - 1])
-    {
-        case 'G':
-            multiplier = 1000;
-            break;
-
-        case 'M':
-            multiplier = 1;
-            break;
-
-        default:
-            ERROR("Invalid bps prefix in the link speed");
-            te_string_free(&buf.data);
-            return TE_RC(TE_TAPI, TE_EINVAL);
-    }
-
-    /* Remove bps prefix and a space after the link speed value */
-    te_string_cut(&buf.data, 2);
-
-    if ((rc = te_strtoui(buf.data.ptr, 0, link_speed)) != 0)
-    {
-        ERROR("Failed to parse link speed");
-        te_string_free(&buf.data);
-        return TE_RC(TE_TAPI, TE_EFAIL);
-    }
-
-    *link_speed *= multiplier;
-
-    return 0;
+    return tapi_dpdk_testpmd_get_link_speed_many_ports(testpmd_job, 1,
+                                                       &n_port_ids, &port_id,
+                                                       link_speed);
 }
 
 te_errno
