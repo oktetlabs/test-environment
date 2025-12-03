@@ -133,7 +133,7 @@
         Value: Amount of memory (in megabytes) to be granted to a process.
 
     - oid: "/local/dpdk/offloads"
-      access: read_only
+      access: read_create
       type: none
       d: |
         DPDK has a mechanism which poll mode drivers can use to advertise
@@ -142,7 +142,7 @@
         So, tests need to exercise a knowledge base to know which devices
         support which offloads, and which offloads happen to be immutable.
 
-        Name: none
+        Name: DPDK ethdev name
         Value: none
 
     - oid: "/local/dpdk/offloads/dev"
