@@ -440,3 +440,21 @@ te_meas_stats_update(te_meas_stats_t *meas_stats, double new_datapoint)
 
     return code;
 }
+
+bool
+te_meas_stats_array_continue(const te_meas_stats_t *meas_stats,
+                             unsigned int n_meas)
+{
+    unsigned int i;
+
+    if (meas_stats == NULL)
+        return false;
+
+    for (i = 0; i < n_meas; ++i)
+    {
+        if (te_meas_stats_continue(&meas_stats[i]))
+            return true;
+    }
+
+    return false;
+}

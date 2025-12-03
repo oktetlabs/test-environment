@@ -204,6 +204,21 @@ te_meas_stats_continue(const te_meas_stats_t *meas_stats)
 }
 
 /**
+ * Check if measurements should continue based on collected stats for
+ * an array of measurements.
+ *
+ * Measurements should countinue if any measurement in array should
+ * continue.
+ *
+ * @param meas_stats    Collected statistics
+ * @param n_meas        Number of elements in @p meas_stats array
+ *
+ * @return      @c true if measurements should continue, @c false otherwise
+ */
+extern bool te_meas_stats_array_continue(const te_meas_stats_t *meas_stats,
+                                         unsigned int n_meas);
+
+/**
  * Check if stats update failed based on update code.
  *
  * @param uc            Measurement statistics update ccde
