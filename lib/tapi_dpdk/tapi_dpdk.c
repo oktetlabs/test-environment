@@ -19,6 +19,7 @@
 #include "tapi_rpc_rte_eal.h"
 #include "tapi_file.h"
 #include "te_ethernet.h"
+#include "te_vector.h"
 #include "tapi_job_factory_rpc.h"
 
 #define COMMANDS_FILE_NAME "testpmd_commands"
@@ -321,54 +322,101 @@ tapi_dpdk_build_eal_arguments(rcf_rpc_server *rpcs,
     return rc;
 }
 
+static te_errno
+tapi_dpdk_build_ports_vector(rcf_rpc_server *rpcs, tapi_env *env, te_vec *ports)
+{
+    const tapi_env_ps_if *ps_if;
+    const tapi_env_pco *pco;
+    unsigned int port_id = 0;
+
+    if (rpcs == NULL || ports == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    pco = tapi_env_rpcs2pco(env, rpcs);
+    if (pco == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    STAILQ_FOREACH(ps_if, &pco->process->ifs, links)
+    {
+        /*
+         * Assume here that ports are added to EAL arguments in
+         * specified order, probed in the order and IDs are
+         * assigned starting from 0.
+         */
+        TE_VEC_APPEND(ports, port_id);
+        port_id++;
+    }
+
+    return 0;
+}
+
 static void
-append_testpmd_command(unsigned int port_number, te_string *setup_cmd,
+append_testpmd_command(te_vec *ports, te_string *setup_cmd,
                        te_string *start_cmd, testpmd_param_enum param,
                        const char *cmd_val_fmt, ...)
 {
     bool start = false;
     bool add_val = true;
     bool add_port = false;
+    unsigned int *port;
+    va_list ap;
+
+    TE_VEC_FOREACH(ports, port)
+    {
+        switch (param)
+        {
+            case TESTPMD_PARAM_FLOW_CTRL_AUTONEG:
+                te_string_append(setup_cmd, "set flow_ctrl autoneg ");
+                add_port = true;
+                break;
+
+            case TESTPMD_PARAM_FLOW_CTRL_RX:
+                te_string_append(setup_cmd, "set flow_ctrl rx ");
+                add_port = true;
+                break;
+
+            case TESTPMD_PARAM_FLOW_CTRL_TX:
+                te_string_append(setup_cmd, "set flow_ctrl tx ");
+                add_port = true;
+                break;
+
+            case TESTPMD_PARAM_MTU:
+                te_string_append(setup_cmd, "port config mtu %u ", *port);
+                break;
+
+            default:
+                break;
+        }
+
+        va_start(ap, cmd_val_fmt);
+        te_string_append_va(setup_cmd, cmd_val_fmt, ap);
+        va_end(ap);
+
+        if (add_port)
+            te_string_append(setup_cmd, " %u", *port);
+
+        te_string_append(setup_cmd, "\n");
+    }
 
     switch (param)
     {
-        case TESTPMD_PARAM_FLOW_CTRL_AUTONEG:
-            CHECK_RC(te_string_append(setup_cmd, "set flow_ctrl autoneg "));
-            add_port = true;
-            break;
-
-        case TESTPMD_PARAM_FLOW_CTRL_RX:
-            CHECK_RC(te_string_append(setup_cmd, "set flow_ctrl rx "));
-            add_port = true;
-            break;
-
-        case TESTPMD_PARAM_FLOW_CTRL_TX:
-            CHECK_RC(te_string_append(setup_cmd, "set flow_ctrl tx "));
-            add_port = true;
-            break;
-
         case TESTPMD_PARAM_LPBK_MODE:
-            CHECK_RC(te_string_append(setup_cmd, "port config all loopback "));
-            break;
-
-        case TESTPMD_PARAM_MTU:
-            CHECK_RC(te_string_append(setup_cmd, "port config mtu %u ",
-                                      port_number));
+            te_string_append(setup_cmd, "port config all loopback ");
             break;
 
         case TESTPMD_PARAM_START_TX_FIRST:
-            CHECK_RC(te_string_append(start_cmd, "start tx_first "));
+            te_string_append(start_cmd, "start tx_first ");
             start = true;
             break;
 
         case TESTPMD_PARAM_START:
-            CHECK_RC(te_string_append(start_cmd, "start"));
+            te_string_append(start_cmd, "start");
             start = true;
             add_val = false;
             break;
 
         case TESTPMD_PARAM_TXPKTS:
-            CHECK_RC(te_string_append(start_cmd, "set txpkts "));
+            te_string_append(start_cmd, "set txpkts ");
             start = true;
             break;
 
@@ -378,19 +426,12 @@ append_testpmd_command(unsigned int port_number, te_string *setup_cmd,
 
     if (add_val)
     {
-        va_list  ap;
-
         va_start(ap, cmd_val_fmt);
-        CHECK_RC(te_string_append_va(start ? start_cmd : setup_cmd,
-                                     cmd_val_fmt, ap));
+        te_string_append_va(start ? start_cmd : setup_cmd, cmd_val_fmt, ap);
         va_end(ap);
     }
 
-    if (add_port)
-        CHECK_RC(te_string_append(start ? start_cmd : setup_cmd,
-                                  " %u", port_number));
-
-    CHECK_RC(te_string_append(start ? start_cmd : setup_cmd, "\n"));
+    te_string_append(start ? start_cmd : setup_cmd, "\n");
 }
 
 /*
@@ -409,7 +450,7 @@ append_testpmd_command(unsigned int port_number, te_string *setup_cmd,
  *       settings itself.
  */
 static te_errno
-adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
+adjust_testpmd_defaults(te_kvpair_h *test_args, te_vec *ports,
                         unsigned int n_fwd_cpus,
                         te_string *cmdline_setup, te_string *cmdline_start,
                         int *argc_out, char ***argv_out)
@@ -484,11 +525,12 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
 
     if (!param_is_set[TESTPMD_PARAM_MBUF_COUNT])
     {
-        uint64_t needed_mbuf_count = (params[TESTPMD_PARAM_TXQ].val *
-                                      (params[TESTPMD_PARAM_TXD].val +
-                                       params[TESTPMD_PARAM_BURST].val)) +
-                                     (params[TESTPMD_PARAM_RXQ].val *
-                                      params[TESTPMD_PARAM_RXD].val) +
+        uint64_t needed_mbuf_count = te_vec_size(ports) *
+                                     ((params[TESTPMD_PARAM_TXQ].val *
+                                       (params[TESTPMD_PARAM_TXD].val +
+                                        params[TESTPMD_PARAM_BURST].val)) +
+                                      (params[TESTPMD_PARAM_RXQ].val *
+                                       params[TESTPMD_PARAM_RXD].val)) +
                                      params[TESTPMD_PARAM_MBCACHE].val *
                                      n_fwd_cpus;
 
@@ -525,7 +567,7 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
     if (!param_is_set[TESTPMD_PARAM_MTU] &&
         tapi_dpdk_mtu_by_pkt_size(txpkts_size, &mtu))
     {
-        append_testpmd_command(port_number, cmdline_setup, cmdline_start,
+        append_testpmd_command(ports, cmdline_setup, cmdline_start,
                                TESTPMD_PARAM_MTU, "%u", mtu);
     }
 
@@ -549,7 +591,7 @@ generate_cmdline_filename(const char *dir, char **cmdline_filename)
 
 static void
 append_testpmd_cmdline_from_args(te_kvpair_h *test_args,
-                                 unsigned int port_number,
+                                 te_vec *ports,
                                  te_string *cmdline_setup,
                                  te_string *cmdline_start)
 {
@@ -561,7 +603,7 @@ append_testpmd_cmdline_from_args(te_kvpair_h *test_args,
         if (is_testpmd_command(pair->key, &param) &&
             strcmp(pair->value, "FALSE") != 0)
         {
-            append_testpmd_command(port_number, cmdline_setup, cmdline_start,
+            append_testpmd_command(ports, cmdline_setup, cmdline_start,
                                    param, "%s", pair->value);
         }
     }
@@ -938,7 +980,7 @@ typedef struct tapi_dpdk_testpmd_prep_eal {
     te_string testpmd_path;
     int testpmd_argc;
     char **testpmd_argv;
-    unsigned int port_number;
+    te_vec ports;
     unsigned int nb_cores;
     tapi_cpu_index_t *grabbed_cpu_ids;
     unsigned int nb_cpus_grabbed;
@@ -950,6 +992,7 @@ tapi_dpdk_testpmd_prepare_eal_init(tapi_dpdk_testpmd_prep_eal *prep_eal)
     memset(prep_eal, 0, sizeof(*prep_eal));
     prep_eal->testpmd_path = (te_string)TE_STRING_INIT;
     prep_eal->testpmd_argv = NULL;
+    prep_eal->ports = TE_VEC_INIT(unsigned int);
     prep_eal->grabbed_cpu_ids = NULL;
 }
 
@@ -972,7 +1015,7 @@ tapi_dpdk_testpmd_prepare_eal_cleanup(tapi_dpdk_testpmd_prep_eal *prep_eal,
     prep_eal->grabbed_cpu_ids = NULL;
 
     prep_eal->nb_cores = 0;
-    prep_eal->port_number = 0;
+    te_vec_free(&prep_eal->ports);
     for (i = 0; i < prep_eal->testpmd_argc; i++)
         free(prep_eal->testpmd_argv[i]);
     free(prep_eal->testpmd_argv);
@@ -1056,18 +1099,27 @@ tapi_dpdk_prepare_and_build_eal_args(rcf_rpc_server *rpcs, tapi_env *env,
     if (rc != 0)
         goto fail_build_eal_args;
 
+    rc = tapi_dpdk_build_ports_vector(rpcs, env, &prep_eal->ports);
+    if (rc != 0)
+        goto fail_build_ports_vector;
+
     vdev_arg = tapi_dpdk_get_vdev_eal_argument(prep_eal->testpmd_argc,
                                                prep_eal->testpmd_argv);
     if (vdev_arg != NULL)
     {
+        unsigned int vdev_port_id;
+
         if ((rc = tapi_dpdk_get_vdev_port_number(vdev_arg,
-                                                 &prep_eal->port_number)) != 0)
+                                                 &vdev_port_id)) != 0)
             goto fail_get_port_number;
+
+        TE_VEC_APPEND(&prep_eal->ports, vdev_port_id);
     }
 
     return 0;
 
 fail_get_port_number:
+fail_build_ports_vector:
 fail_build_eal_args:
 fail_get_testpmd_path:
 fail_grab_cpus:
@@ -1089,7 +1141,6 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
 {
     int testpmd_argc = 0;
     char **testpmd_argv = NULL;
-    unsigned int port_number;
     tapi_dpdk_testpmd_prep_eal prep_eal;
 
     char *cmdline_file = NULL;
@@ -1110,12 +1161,11 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     testpmd_argv = prep_eal.testpmd_argv;
     prep_eal.testpmd_argc = 0;
     prep_eal.testpmd_argv = NULL;
-    port_number = prep_eal.port_number;
     n_fwd_cpus = prep_eal.nb_cores;
 
     /* Separate EAL arguments from testpmd arguments */
     tapi_dpdk_append_argument("--", &testpmd_argc, &testpmd_argv);
-    rc = adjust_testpmd_defaults(test_args, port_number, n_fwd_cpus,
+    rc = adjust_testpmd_defaults(test_args, &prep_eal.ports, n_fwd_cpus,
                                  &cmdline_setup, &cmdline_start,
                                  &testpmd_argc, &testpmd_argv);
     if (rc != 0)
@@ -1130,8 +1180,8 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     }
 
     generate_cmdline_filename(tmp_dir, &cmdline_file);
-    append_testpmd_cmdline_from_args(test_args, port_number, &cmdline_setup,
-                                     &cmdline_start);
+    append_testpmd_cmdline_from_args(test_args, &prep_eal.ports,
+                                     &cmdline_setup, &cmdline_start);
     /*
      * Disable device start to execute setup commands first and then start the
      * device.
@@ -1203,7 +1253,12 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     testpmd_job->cmdline_setup = cmdline_setup;
     testpmd_job->cmdline_start = cmdline_start;
     testpmd_job->ta = tapi_strdup(rpcs->ta);
-    testpmd_job->port_number = port_number;
+    testpmd_job->ports = prep_eal.ports;
+    /*
+     * ports vector is moved to testpmd_job,
+     * reinit here to avoid free on cleanup.
+     */
+    prep_eal.ports = TE_VEC_INIT(unsigned int);
 
 out:
     if (rc != 0)
@@ -1285,7 +1340,12 @@ tapi_dpdk_testpmd_is_opt_supported(rcf_rpc_server *rpcs, tapi_env *env,
         goto out;
 
     testpmd_job->ta = tapi_strdup(rpcs->ta);
-    testpmd_job->port_number = prep_eal.port_number;
+    testpmd_job->ports = prep_eal.ports;
+    /*
+     * ports vector is moved to testpmd_job,
+     * reinit here to avoid free on cleanup.
+     */
+    prep_eal.ports = TE_VEC_INIT(unsigned int);
 
     *opt_supported = tapi_job_start(testpmd_job->job) == 0 ? true : false;
     if (*opt_supported)
@@ -1387,6 +1447,7 @@ tapi_dpdk_testpmd_destroy(tapi_dpdk_testpmd_job_t *testpmd_job)
     free(testpmd_job->cmdline_file);
     te_string_free(&testpmd_job->cmdline_setup);
     te_string_free(&testpmd_job->cmdline_start);
+    te_vec_free(&testpmd_job->ports);
 
     return 0;
 }
