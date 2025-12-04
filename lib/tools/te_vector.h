@@ -273,6 +273,9 @@ static inline size_t
 te_vec_size(const te_vec *vec)
 {
     assert(vec != NULL);
+    if (vec->data.len == 0)
+        return 0;
+
     assert(vec->element_size != 0);
     return vec->data.len / vec->element_size;
 }
