@@ -304,3 +304,72 @@ tapi_dpdk_stats_log_rates(const char *tool, const te_meas_stats_t *meas_stats,
 
     return 0;
 }
+
+te_errno
+tapi_dpdk_stats_log_aggr_rates(const char *tool, unsigned int n_meas_stats,
+                               const te_meas_stats_t *meas_stats,
+                               unsigned int packet_size,
+                               unsigned int *link_speed,
+                               const char *prefix)
+{
+    te_mi_logger *logger;
+    bool has_aggr_l2_link_usage = true;
+    double aggr_l1_link_usage = 0;
+    uint64_t aggr_l1_bitrate = 0;
+    uint64_t aggr_pps = 0;
+    unsigned int i;
+
+    if (meas_stats == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    if (n_meas_stats == 0)
+        return 0;
+
+    for (i = 0; i < n_meas_stats; ++i)
+    {
+        uint64_t pps = meas_stats[i].stab_required ?
+            meas_stats[i].stab.correct_data.mean :
+            meas_stats[i].data.mean;
+
+        uint64_t l1_bitrate =
+            tapi_dpdk_stats_calculate_l1_bitrate(pps, packet_size);
+
+        aggr_pps += pps;
+        aggr_l1_bitrate += l1_bitrate;
+
+        if (link_speed[i] != 0)
+        {
+            double l1_link_usage;
+
+            tapi_dpdk_stats_calculate_l1_link_usage(l1_bitrate, link_speed[i],
+                                                    &l1_link_usage);
+            aggr_l1_link_usage += l1_link_usage;
+        }
+        else
+        {
+            has_aggr_l2_link_usage = false;
+        }
+    }
+
+    aggr_l1_link_usage /= n_meas_stats;
+
+    if (te_mi_logger_meas_create(tool, &logger) != 0)
+    {
+        WARN("Failed to create logger, skip MI logging");
+        logger = NULL;
+    }
+    else if (prefix != NULL)
+    {
+        te_mi_logger_add_meas_key(logger, NULL, "Side", "%s", prefix);
+    }
+
+    tapi_dpdk_stats_pps_artifact(logger, aggr_pps, prefix);
+    tapi_dpdk_stats_l1_bitrate_artifact(logger, aggr_l1_bitrate, prefix);
+    if (has_aggr_l2_link_usage)
+        tapi_dpdk_stats_l1_link_usage_artifact(logger, aggr_l1_link_usage,
+                                               prefix);
+
+    te_mi_logger_destroy(logger);
+
+    return 0;
+}

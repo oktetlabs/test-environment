@@ -168,6 +168,27 @@ te_errno tapi_dpdk_stats_log_rates(const char *tool,
                                    unsigned int packet_size,
                                    unsigned int link_speed, const char *prefix);
 
+/**
+ * Report aggregate rates corresponding to PPS, packet_size and link speed
+ * as test artifacts when many ports were tested.
+ *
+ * @param tool              Tool used for measurement gathering
+ *                          (must not be @c NULL)
+ * @param n_meas_stats      Number of elements in @p meas_stats and
+ *                          @p link_speed arrays
+ * @param meas_stats        Array of measurement statistics
+ * @param packet_size       Packet size in bytes (without L1 and FCS)
+ * @param link_speed        Array of link speeds in Mbps
+ * @param prefix            Prefix of artifact messages (may be @c NULL)
+ *
+ * @return      0 on success
+ */
+te_errno tapi_dpdk_stats_log_aggr_rates(const char *tool,
+                                        unsigned int n_meas_stats,
+                                        const te_meas_stats_t *meas_stats,
+                                        unsigned int packet_size,
+                                        unsigned int *link_speed,
+                                        const char *prefix);
 
 #ifdef __cplusplus
 } /* extern "C" */
