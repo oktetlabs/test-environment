@@ -189,6 +189,7 @@ test_arg2testpmd_arg(const char *test_arg)
 {
     te_string result = TE_STRING_INIT;
     const char testpmd_arg_prefix[] = "--";
+    char *chop;
     size_t i;
 
     CHECK_RC(te_string_append(&result, "%s%s", testpmd_arg_prefix,
@@ -200,6 +201,10 @@ test_arg2testpmd_arg(const char *test_arg)
         if (result.ptr[i] == '_')
             result.ptr[i] = '-';
     }
+
+    chop = strchr(te_string_value(&result), TAPI_DPDK_TESTPMD_ARG_NMAE_CHOP);
+    if (chop != NULL)
+        *chop = '\0';
 
     return result.ptr;
 }
