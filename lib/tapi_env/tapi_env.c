@@ -283,9 +283,9 @@ tapi_env_get(const char *cfg, tapi_env *env)
 
     if (env->cfg_nets.n_nets < env->n_nets)
     {
-        ERROR("Too few networks in available configuration (%u) in "
-              "comparison with required (%u)",
-              env->cfg_nets.n_nets, env->n_nets);
+        WARN("Too few networks in available configuration (%u) in "
+             "comparison with required (%u)",
+             env->cfg_nets.n_nets, env->n_nets);
         return TE_EENV;
     }
 
