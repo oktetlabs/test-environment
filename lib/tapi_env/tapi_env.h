@@ -66,16 +66,23 @@
                 TEST_FAIL("'env' is mandatory parameter");              \
             }                                                           \
             rc = tapi_env_get(str_, &env);                              \
-            if (TE_RC_GET_ERROR(rc) == TE_ETADEAD)                      \
+            switch (TE_RC_GET_ERROR(rc))                                \
             {                                                           \
-                result = TE_EXIT_ERROR;                                 \
-                ERROR("Stopping test execution because of "             \
-                      "unsolvable problems");                           \
-                TEST_STOP;                                              \
-            }                                                           \
-            else if (rc != 0)                                           \
-            {                                                           \
-                TEST_FAIL("tapi_env_get() failed: %s : %r", str_, rc);  \
+                case 0:                                                 \
+                    break;                                              \
+                case TE_EENV:                                           \
+                    TEST_SKIP("Cannot bind env");                       \
+                    break;                                              \
+                case TE_ETADEAD:                                        \
+                    result = TE_EXIT_ERROR;                             \
+                    ERROR("Stopping test execution because of "         \
+                          "unsolvable problems");                       \
+                    TEST_STOP;                                          \
+                    break;                                              \
+                default:                                                \
+                    TEST_FAIL("tapi_env_get() failed: %s : %r",         \
+                              str_, rc);                                \
+                    break;                                              \
             }                                                           \
         }                                                               \
         CFG_WAIT_CHANGES;                                               \
