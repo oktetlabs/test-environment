@@ -286,16 +286,13 @@ append_testpmd_arguments_from_test_args(te_kvpair_h *test_args, int *argc_out,
 }
 
 static void
-build_coremask_eal_arg(unsigned int n_cores, tapi_cpu_index_t *cpu_ids,
-                       lcore_mask_t *lcore_mask)
+build_core_list_eal_arg(unsigned int n_cores, tapi_cpu_index_t *cpu_ids,
+                       te_vec *lcores)
 {
-    lcore_mask_t result = {{0}};
     unsigned int i;
 
     for (i = 0; i < n_cores; i++)
-        CHECK_RC(tapi_rte_lcore_mask_set_bit(&result, cpu_ids[i].thread_id));
-
-    *lcore_mask = result;
+        TE_VEC_APPEND(lcores, cpu_ids[i].thread_id);
 }
 
 te_errno
@@ -305,15 +302,15 @@ tapi_dpdk_build_eal_arguments(rcf_rpc_server *rpcs,
                               const char *program_name,
                               int *argc_out, char ***argv_out)
 {
+    te_vec lcores = TE_VEC_INIT(unsigned long);
     int extra_argc = 0;
     char **extra_argv = NULL;
-    lcore_mask_t lcore_mask;
     te_errno rc;
     int i;
 
-    build_coremask_eal_arg(n_cpus, cpu_ids, &lcore_mask);
+    build_core_list_eal_arg(n_cpus, cpu_ids, &lcores);
 
-    rc = tapi_rte_make_eal_args(env, rpcs, program_name, &lcore_mask,
+    rc = tapi_rte_make_eal_args(env, rpcs, program_name, &lcores,
                                 extra_argc, (const char **)extra_argv,
                                 argc_out, argv_out);
     if (rc != 0)
@@ -322,6 +319,7 @@ tapi_dpdk_build_eal_arguments(rcf_rpc_server *rpcs,
     for (i = 0; i < extra_argc; i++)
         free(extra_argv[i]);
     free(extra_argv);
+    te_vec_free(&lcores);
 
     return rc;
 }

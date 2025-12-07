@@ -164,103 +164,6 @@ out:
     return rc;
 }
 
-static char
-val2xdigit(uint8_t val)
-{
-    if (val < 10)
-        return '0' + val;
-    else
-        return 'a' + val - 10;
-}
-
-static void
-val2xdigits(uint8_t val, char *digits)
-{
-    uint8_t hi = val / 16;
-    uint8_t lo = val % 16;
-
-    digits[0] = val2xdigit(hi);
-    digits[1] = val2xdigit(lo);
-}
-
-static char *
-lcore_mask_to_hex(const lcore_mask_t *mask)
-{
-    /* Size of the mask in bytes excluding leading zero bytes */
-    unsigned int mask_size = 0;
-    unsigned int str_size;
-    char *result;
-    int str_i;
-    int i;
-
-    for (i = TE_ARRAY_LEN(mask->bytes); i > 0; i--)
-    {
-        if (mask->bytes[i - 1] != 0)
-        {
-            mask_size = i;
-            break;
-        }
-    }
-
-    if (mask_size == 0)
-        return NULL;
-
-    /* sizeof() string literal includes terminating '\0' */
-    str_size = sizeof("0x") + (mask_size * 2);
-    result = TE_ALLOC(str_size);
-
-    result[0] = '0';
-    result[1] = 'x';
-
-    for (i = mask_size - 1, str_i = 2; i >= 0; i--, str_i += 2)
-        val2xdigits(mask->bytes[i], &result[str_i]);
-
-    return result;
-}
-
-static bool
-lcore_mask_is_zero(const lcore_mask_t *mask)
-{
-    uint8_t test = 0;
-    unsigned int i;
-
-    for (i = 0; i < TE_ARRAY_LEN(mask->bytes); ++i)
-            test |= mask->bytes[i];
-
-    return (test == 0);
-}
-
-static bool
-lcore_mask_bit_is_set(const lcore_mask_t *mask, unsigned int bit)
-{
-    unsigned int index;
-
-    if (bit >= TE_ARRAY_LEN(mask->bytes) * CHAR_BIT)
-        return false;
-
-    index = bit / CHAR_BIT;
-
-    return mask->bytes[index] & (1U << (bit % CHAR_BIT));
-}
-
-te_errno
-tapi_rte_lcore_mask_set_bit(lcore_mask_t *mask, unsigned int bit)
-{
-    unsigned int index;
-
-    if (bit >= TE_ARRAY_LEN(mask->bytes) * CHAR_BIT)
-    {
-        ERROR("lcore mask is too small for bit %u", bit);
-        return TE_ENOSPC;
-    }
-
-    index = bit / CHAR_BIT;
-
-    mask->bytes[index] |= (1U << (bit % CHAR_BIT));
-
-    return 0;
-}
-
 te_errno
 tapi_rte_get_nb_required_service_cores(const char *ta, const char *vendor,
                                        const char *device,
@@ -1292,12 +1195,11 @@ tapi_eal_get_nb_required_service_cores_rpcs(tapi_env *env, rcf_rpc_server *rpcs,
 static te_errno
 grab_lcores_by_service_core_count(const char *ta,
                                   unsigned int service_core_count,
-                                  lcore_mask_t *lcore_mask)
+                                  te_vec *lcores)
 {
     /* The number of required lcores include service cores and 1 main core */
     unsigned int lcore_count = service_core_count + 1;
     tapi_cpu_index_t *indices = NULL;
-    lcore_mask_t mask = {{0}};
     size_t nb_cpus;
     te_errno rc;
     size_t i;
@@ -1321,13 +1223,7 @@ grab_lcores_by_service_core_count(const char *ta,
     }
 
     for (i = 0; i < lcore_count; i++)
-    {
-        rc = tapi_rte_lcore_mask_set_bit(&mask, indices[i].thread_id);
-        if (rc != 0)
-            goto out;
-    }
-
-    *lcore_mask = mask;
+        TE_VEC_APPEND(lcores, indices[i].thread_id);
 
 out:
     free(indices);
@@ -1336,77 +1232,72 @@ out:
 }
 
 static te_errno
-build_lcore_mask_arg(int *argc, char ***argv, const lcore_mask_t *lcore_mask)
+build_lcores_arg(int *argc, char ***argv, const te_vec *lcores)
 {
-    char *hex;
+    te_string str = TE_STRING_INIT;
+    const unsigned long *lcore;
 
-    if (lcore_mask_is_zero(lcore_mask))
+    if (te_vec_size(lcores) == 0)
     {
         ERROR("Provided lcore mask is zero");
         return TE_EINVAL;
     }
 
-    hex = lcore_mask_to_hex(lcore_mask);
-    if (hex == NULL)
-        return TE_ENOMEM;
+    TE_VEC_FOREACH(lcores, lcore)
+        te_string_append(&str, "%lu,", *lcore);
 
-    append_arg(argc, argv, "-c");
-    append_arg(argc, argv, "%s", hex);
-    free(hex);
+    te_string_chop(&str, ",");
+
+    append_arg(argc, argv, "--lcores=%s", te_string_value(&str));
+    te_string_free(&str);
 
     return 0;
 }
 
 static te_errno
-build_service_core_mask_arg(int *argc, char ***argv,
-                            const lcore_mask_t *lcore_mask,
+build_service_core_list_arg(int *argc, char ***argv,
+                            const te_vec *lcores,
                             unsigned int n_service_cores)
 {
-    lcore_mask_t s_core_mask = {{0}};
+    te_string str = TE_STRING_INIT;
+    const unsigned long *lcore;
     bool first = true;
-    unsigned int bit;
     unsigned int n;
-    te_errno rc;
-    char *hex;
 
     if (n_service_cores == 0)
         return 0;
 
     n = n_service_cores;
-    for (bit = 0; bit < TE_ARRAY_LEN(s_core_mask.bytes) * CHAR_BIT; bit++)
+    TE_VEC_FOREACH(lcores, lcore)
     {
-        if (lcore_mask_bit_is_set(lcore_mask, bit))
+        /* Skip the main lcore; it can't be treated as a service lcore. */
+        if (first)
         {
-            /* Skip the main lcore; it can't be treated as a service lcore. */
-            if (first)
-            {
-                first = false;
-                continue;
-            }
-
-            rc = tapi_rte_lcore_mask_set_bit(&s_core_mask, bit);
-            if (rc != 0)
-                return rc;
-
-            n--;
-            if (n == 0)
-                break;
+            first = false;
+            continue;
         }
+
+        te_string_append(&str, "%lu,", *lcore);
+
+        n--;
+        if (n == 0)
+            break;
     }
 
     if (n > 0)
     {
+        te_string_free(&str);
         ERROR("Specified lcore mask does not allow for %u service cores",
               n_service_cores);
         return TE_EINVAL;
     }
 
-    hex = lcore_mask_to_hex(&s_core_mask);
-    if (hex == NULL)
-        return TE_ENOMEM;
+    te_string_chop(&str, ",");
 
-    append_arg(argc, argv, "-s%s", hex);
-    free(hex);
+    append_arg(argc, argv, "--service-corelist");
+    append_arg(argc, argv, "%s", te_string_value(&str));
+
+    te_string_free(&str);
 
     return 0;
 }
@@ -1527,7 +1418,7 @@ tapi_rte_get_numa_node(tapi_env *env, rcf_rpc_server *rpcs, int *numa_node)
 te_errno
 tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
                        const char *program_name,
-                       const lcore_mask_t *lcore_mask_override,
+                       const te_vec *lcores_override,
                        int argc, const char **argv,
                        int *out_argc, char ***out_argv)
 {
@@ -1542,7 +1433,8 @@ tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
     char                   *app_prefix = NULL;
     char                   *extra_eal_args = NULL;
     unsigned int            service_core_count = 0;
-    lcore_mask_t            lcore_mask;
+    const te_vec           *lcores_to_use = NULL;
+    te_vec                  lcores = TE_VEC_INIT(unsigned long);
 
     if (env == NULL || rpcs == NULL)
         return TE_EINVAL;
@@ -1683,23 +1575,25 @@ tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
     if (rc != 0)
         goto cleanup;
 
-    if (lcore_mask_override != NULL)
+    if (lcores_override != NULL)
     {
-        lcore_mask = *lcore_mask_override;
+        lcores_to_use = lcores_override;
     }
     else
     {
         rc = grab_lcores_by_service_core_count(rpcs->ta, service_core_count,
-                                               &lcore_mask);
+                                               &lcores);
         if (rc != 0)
             goto cleanup;
+
+        lcores_to_use = &lcores;
     }
 
-    rc = build_lcore_mask_arg(&my_argc, &my_argv, &lcore_mask);
+    rc = build_lcores_arg(&my_argc, &my_argv, lcores_to_use);
     if (rc != 0)
         goto cleanup;
 
-    rc = build_service_core_mask_arg(&my_argc, &my_argv, &lcore_mask,
+    rc = build_service_core_list_arg(&my_argc, &my_argv, lcores_to_use,
                                      service_core_count);
     if (rc != 0)
         goto cleanup;
@@ -1708,6 +1602,7 @@ tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
     *out_argv = my_argv;
 
 cleanup:
+    te_vec_free(&lcores);
     if (rc != 0)
     {
         for (i = 0; i < my_argc; ++i)
