@@ -195,8 +195,8 @@ rpc_bond_get_slaves(rcf_rpc_server *rpcs, const char *bond_ifname,
                                      out.slaves.slaves_val[i].ifname,
                                      true);
         if (rc == 0)
-            rc = te_string_append(&str, "%s%s", (i == 0) ? "" : ", ",
-                                  out.slaves.slaves_val[i].ifname);
+            te_string_append(&str, "%s%s", (i == 0) ? "" : ", ",
+                             out.slaves.slaves_val[i].ifname);
 
         if (rc != 0)
         {
@@ -448,14 +448,11 @@ te_errno
 te_iovec_rpc2str_append(te_string *str, const rpc_iovec *iovs,
                         size_t count)
 {
-    te_errno rc = 0;
     size_t i;
 
 #define STR_APPEND(fmt_...) \
-    do {                                      \
-        rc = te_string_append(str, fmt_);     \
-        if (rc != 0)                          \
-            return rc;                        \
+    do {                                \
+        te_string_append(str, fmt_);    \
     } while (0)
 
     if (iovs == NULL)
@@ -2413,29 +2410,18 @@ tapi_saved_mtus2str(te_saved_mtus *mtus, char **str)
 {
     te_string     s = TE_STRING_INIT;
     te_saved_mtu *saved_mtu;
-    te_errno      rc;
 
     /*
      * This is done to ensure that on success empty string
      * is returned if list of MTU values is empty,
      * not NULL pointer.
      */
-    rc = te_string_append(&s, "%s", "");
-    if (rc != 0)
-    {
-        te_string_free(&s);
-        return TE_RC(TE_TAPI, rc);
-    }
+    te_string_append(&s, "%s", "");
 
     LIST_FOREACH(saved_mtu, mtus, links)
     {
-        rc = te_string_append(&s, "%s/%s=%d;", saved_mtu->ta,
-                              saved_mtu->if_name, saved_mtu->mtu);
-        if (rc != 0)
-        {
-            te_string_free(&s);
-            return TE_RC(TE_TAPI, rc);
-        }
+        te_string_append(&s, "%s/%s=%d;", saved_mtu->ta,
+                         saved_mtu->if_name, saved_mtu->mtu);
     }
 
     *str = s.ptr;
@@ -2839,10 +2825,7 @@ tapi_store_saved_mtus(const char *ta,
     if (rc != 0)
         return rc;
 
-    rc = te_string_append(&path, "/tmp/sapi_ts_mtus_%s_%s_XXXXXX",
-                          ta, name);
-    if (rc != 0)
-        goto cleanup;
+    te_string_append(&path, "/tmp/sapi_ts_mtus_%s_%s_XXXXXX", ta, name);
 
     fd = mkstemp(path.ptr);
     if (fd < 0)
@@ -2969,9 +2952,7 @@ tapi_retrieve_saved_mtus(const char *ta,
         }
         buf[sys_rc] = '\0';
 
-        rc = te_string_append(&str, "%s", buf);
-        if (rc != 0)
-            goto cleanup;
+        te_string_append(&str, "%s", buf);
     }
 
     rc = tapi_str2saved_mtus(str.ptr, mtus);
@@ -3333,28 +3314,15 @@ rpc_read_fd2te_string_append(rcf_rpc_server *rpcs, int fd, int time2wait,
                              size_t amount, te_string *testr)
 {
     int rc;
-    te_errno te_rc;
     void *buf = NULL;
     size_t len;
-
-    bool awaiting_error;
-
-    awaiting_error = RPC_AWAITING_ERROR(rpcs);
 
     rc = rpc_read_fd(rpcs, fd, time2wait, amount, &buf, &len);
     if (rc < 0)
         return rc;
 
-    te_rc = te_string_append_buf(testr, (char *)buf, len);
+    te_string_append_buf(testr, (char *)buf, len);
     free(buf);
-    if (te_rc != 0)
-    {
-        if (!awaiting_error)
-            TAPI_JMP_DO(TE_EFAIL);
-
-        rpcs->_errno = TE_RC(TE_TAPI, te_rc);
-        return -1;
-    }
 
     return 0;
 }

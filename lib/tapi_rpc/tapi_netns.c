@@ -183,11 +183,7 @@ tapi_netns_add_ta(const char *host, const char *ns_name, const char *ta_name,
                                         "ext_rcf_listener:" : "");
 
     if (!te_str_is_null_or_empty(ld_preload))
-    {
-        rc = te_string_append(&preload, "ld_preload=%s:", ld_preload);
-        if (rc != 0)
-            return TE_RC(TE_TAPI, rc);
-    }
+        te_string_append(&preload, "ld_preload=%s:", ld_preload);
 
     res = snprintf(confstr, sizeof(confstr),
                    "host=%s:port=%d:sudo:connect=%s:%s%sshell="

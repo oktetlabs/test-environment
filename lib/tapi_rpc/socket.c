@@ -89,19 +89,6 @@ rpc_cmsg_nxthdr(rpc_msghdr *rpc_msg,
 }
 
 /**
- * Check return value of te_string operation, go to the final part
- * of the current function if it failed.
- *
- * @param _expr       Expression to check.
- */
-#define TE_STR_RC(_expr) \
-    do {                          \
-        rc = (_expr);             \
-        if (rc != 0)              \
-            goto finish;          \
-    } while (0)
-
-/**
  * Replace end of string with "...".
  *
  * @param str     Pointer to te_string structure.
@@ -132,59 +119,51 @@ msghdr_rpc2str(const rpc_msghdr *rpc_msg, te_string *str)
 
     if (rpc_msg == NULL)
     {
-        TE_STR_RC(te_string_append(str, "(nil)"));
+        te_string_append(str, "(nil)");
         goto finish;
     }
 
-    TE_STR_RC(te_string_append(str, "{ "));
+    te_string_append(str, "{ ");
 
-    TE_STR_RC(te_string_append(
-                       str,
-                       "msg_name: %p [%s], ",
-                       rpc_msg->msg_name,
-                       sockaddr_h2str(rpc_msg->msg_name)));
+    te_string_append(str, "msg_name: %p [%s], ",
+                     rpc_msg->msg_name, sockaddr_h2str(rpc_msg->msg_name));
 
-    TE_STR_RC(te_string_append(str,
-                               "msg_namelen: %" TE_PRINTF_SOCKLEN_T "u, ",
-                               rpc_msg->msg_namelen));
+    te_string_append(str, "msg_namelen: %" TE_PRINTF_SOCKLEN_T "u, ",
+                     rpc_msg->msg_namelen);
 
     if (rpc_msg->msg_iov == NULL)
     {
-        TE_STR_RC(te_string_append(str, "msg_iov: (nil), "));
+        te_string_append(str, "msg_iov: (nil), ");
     }
     else
     {
-        TE_STR_RC(te_string_append(str, "msg_iov: { "));
+        te_string_append(str, "msg_iov: { ");
 
         for (i = 0; i < rpc_msg->msg_riovlen; i++)
         {
-            TE_STR_RC(te_string_append(
-                       str,
-                       "{ iov_base: %p, iov_len: %" TE_PRINTF_SIZE_T "u }",
-                       rpc_msg->msg_iov[i].iov_base,
-                       rpc_msg->msg_iov[i].iov_len));
+            te_string_append(str,
+                "{ iov_base: %p, iov_len: %" TE_PRINTF_SIZE_T "u }",
+                rpc_msg->msg_iov[i].iov_base,
+                rpc_msg->msg_iov[i].iov_len);
 
             if (i < rpc_msg->msg_riovlen - 1)
-                TE_STR_RC(te_string_append(str, ", "));
+                te_string_append(str, ", ");
         }
 
-        TE_STR_RC(te_string_append(str, " }, "));
+        te_string_append(str, " }, ");
     }
 
-    TE_STR_RC(te_string_append(str, "msg_iovlen: %" TE_PRINTF_SIZE_T "u, ",
-                               rpc_msg->msg_iovlen));
+    te_string_append(str, "msg_iovlen: %" TE_PRINTF_SIZE_T "u, ",
+                     rpc_msg->msg_iovlen);
 
-    TE_STR_RC(te_string_append(
-                 str, "msg_control: %p, msg_controllen: %"
-                 TE_PRINTF_SIZE_T "u, ",
-                 rpc_msg->msg_control,
-                 rpc_msg->msg_controllen));
+    te_string_append(str,
+        "msg_control: %p, msg_controllen: %" TE_PRINTF_SIZE_T "u, ",
+        rpc_msg->msg_control, rpc_msg->msg_controllen);
 
-    TE_STR_RC(te_string_append(
-                        str, "msg_flags: %s",
-                        send_recv_flags_rpc2str(rpc_msg->msg_flags)));
+    te_string_append(str, "msg_flags: %s",
+                     send_recv_flags_rpc2str(rpc_msg->msg_flags));
 
-    TE_STR_RC(te_string_append(str, " }"));
+    te_string_append(str, " }");
 
 finish:
 
@@ -204,18 +183,17 @@ mmsghdrs_rpc2str(const struct rpc_mmsghdr *rpc_mmsgs, unsigned int num,
 
     if (rpc_mmsgs == NULL)
     {
-        TE_STR_RC(te_string_append(str, "(nil)"));
+        te_string_append(str, "(nil)");
         goto finish;
     }
 
     for (i = 0; i < num; i++)
     {
-        TE_STR_RC(te_string_append(str, "{ msg_hdr: "));
+        te_string_append(str, "{ msg_hdr: ");
         msghdr_rpc2str(&rpc_mmsgs[i].msg_hdr, str);
-        TE_STR_RC(te_string_append(str, ", msg_len: %u }",
-                                   rpc_mmsgs[i].msg_len));
+        te_string_append(str, ", msg_len: %u }", rpc_mmsgs[i].msg_len);
         if (i < num - 1)
-            TE_STR_RC(te_string_append(str, ", "));
+            te_string_append(str, ", ");
     }
 
 finish:
@@ -225,8 +203,6 @@ finish:
 
     return str->ptr;
 }
-
-#undef TE_STR_RC
 
 int
 rpc_socket(rcf_rpc_server *rpcs,

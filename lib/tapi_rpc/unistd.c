@@ -3688,9 +3688,7 @@ tapi_rpc_append_fd_to_te_string(rcf_rpc_server *rpcs,
         }
 
         tmp_buf[received] = '\0';
-        rc = te_string_append(testr, "%s", tmp_buf);
-        if (rc != 0)
-            break;
+        te_string_append(testr, "%s", tmp_buf);
     };
 
     return rc;

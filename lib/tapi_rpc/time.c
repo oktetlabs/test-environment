@@ -183,16 +183,16 @@ rpc_gettimeofday(rcf_rpc_server *rpcs,
 }
 
 /* Append string representation of clock ID to TE string */
-static te_errno
+static void
 append_clock_id(te_string *str, tarpc_clock_id_type id_type, int id)
 {
     if (id_type == TARPC_CLOCK_ID_NAMED)
     {
-        return te_string_append(str, "clock_id=%s", clock_id_rpc2str(id));
+        te_string_append(str, "clock_id=%s", clock_id_rpc2str(id));
     }
     else
     {
-        return te_string_append(str, "clock_fd=%d", id);
+        te_string_append(str, "clock_fd=%d", id);
     }
 }
 
