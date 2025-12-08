@@ -449,7 +449,7 @@ get_end_sum_udp_stat(const json_t *jrpt, tapi_perf_report_kind kind,
     uint64_t packets;
     uint64_t lost_packets;
     double lost_percent;
-    json_t *jend, *jsum, *jsum_bd, *jval;
+    json_t *jend, *jsum, *jsum_bd;
     te_string str = TE_STRING_INIT;
     const char *oname = "sum";
 
