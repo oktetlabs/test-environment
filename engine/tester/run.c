@@ -2693,17 +2693,11 @@ get_trc_tags(tqh_strings *trc_tags)
         }
 
         if (strlen(tag_value) > 0)
-            rc = te_string_append(&tag, "%s:%s", tag_name, tag_value);
+            te_string_append(&tag, "%s:%s", tag_name, tag_value);
         else
-            rc = te_string_append(&tag, "%s", tag_name);
+            te_string_append(&tag, "%s", tag_name);
         free(tag_value);
         free(tag_name);
-        if (rc != 0)
-        {
-            ERROR("%s(): Failed to construct TRC tag: %r", __FUNCTION__, rc);
-            rc = TE_RC(TE_TESTER, TE_EFAULT);
-            goto cleanup;
-        }
 
         rc = trc_add_tag(trc_tags, te_string_value(&tag));
         te_string_reset(&tag);
