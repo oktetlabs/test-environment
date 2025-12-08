@@ -33,8 +33,8 @@ te_bool_to_str(te_string *str, const char *name,
 {
     bool value = *(bool *)arg;
 
-    return te_string_append(str, "%s=%s",
-                            name, (value ? "true" : "false"));
+    te_string_append(str, "%s=%s", name, (value ? "true" : "false"));
+    return 0;
 }
 
 /**
@@ -90,7 +90,8 @@ static te_errno                                                       \
 TE_CONCAT(_type, _to_str)(te_string *str, const char *name,           \
                           const void *arg)                            \
 {                                                                     \
-    return te_string_append(str, "%s=" _format, name, *(_type*)arg);  \
+    te_string_append(str, "%s=" _format, name, *(_type*)arg);         \
+    return 0;                                                         \
 }                                                                     \
                                                                       \
 static te_errno                                                       \
@@ -141,7 +142,7 @@ sockaddr_to_str(te_string *str, const char *name, const void *arg)
     rc = te_sockaddr_h2str(CONST_SA(arg), &buf);
     if (rc == 0)
     {
-        rc = te_string_append(str, "%s=%s", name, buf);
+        te_string_append(str, "%s=%s", name, buf);
         free(buf);
     }
     return rc;
@@ -213,7 +214,8 @@ sockaddr_compare(const void *a, const void *b)
 static te_errno
 str_to_str(te_string *str, const char *name, const void *arg)
 {
-    return te_string_append(str, "%s=%s", name, (char*)arg);
+    te_string_append(str, "%s=%s", name, (char*)arg);
+    return 0;
 }
 
 /**
@@ -305,11 +307,8 @@ te_conf_obj_to_str(const te_conf_obj *fields, size_t fields_number,
     for (i = 0; i < fields_number; i++)
         if ((mask & fields[i].flag) != 0)
         {
-            if (string.ptr && (rc = te_string_append(&string, ",")) != 0)
-            {
-                ERROR_MSG("%s", "not enough memory");
-                break;
-            }
+            if (string.ptr != NULL)
+                te_string_append(&string, ",");
 
             arg = base + fields[i].offset;
             rc = fields[i].methods->to_str(&string, fields[i].name, arg);
