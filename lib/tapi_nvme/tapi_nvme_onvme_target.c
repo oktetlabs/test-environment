@@ -68,9 +68,9 @@ onvme_build_args(te_vec *args, tapi_nvme_target *target)
     do {                                                                \
         te_string buf = TE_STRING_INIT;                                 \
                                                                         \
-        rc = te_string_append(&buf, cmd_fmt);                           \
+        te_string_append(&buf, cmd_fmt);                                \
                                                                         \
-        if (rc != 0 || (rc = TE_VEC_APPEND(&result, buf.ptr)) != 0)     \
+        if ((rc = TE_VEC_APPEND(&result, buf.ptr)) != 0)                \
         {                                                               \
             te_string_free(&buf);                                       \
             onvme_args_free(&result);                                   \

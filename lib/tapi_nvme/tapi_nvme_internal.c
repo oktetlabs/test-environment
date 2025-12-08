@@ -20,13 +20,11 @@ tapi_nvme_internal_file_append(rcf_rpc_server *rpcs, unsigned int timeout_sec,
                                const char *string, const char *fmt, ...)
 {
     int fd;
-    te_errno rc;
     va_list arguments;
     te_string path = NVME_TE_STRING_INIT_STATIC(NAME_MAX);
 
     va_start(arguments, fmt);
-    if ((rc = te_string_append_va(&path, fmt, arguments)) != 0)
-        return rc;
+    te_string_append_va(&path, fmt, arguments);
     va_end(arguments);
 
     RPC_AWAIT_IUT_ERROR(rpcs);
@@ -57,15 +55,13 @@ int
 tapi_nvme_internal_file_read(rcf_rpc_server *rpcs, char *buffer, size_t size,
     const char *fmt, ...)
 {
-    te_errno rc;
     int read, fd;
     va_list arguments;
 
     te_string path = NVME_TE_STRING_INIT_STATIC(NAME_MAX);
 
     va_start(arguments, fmt);
-    if ((rc = te_string_append_va(&path, fmt, arguments)) != 0)
-        return rc;
+    te_string_append_va(&path, fmt, arguments);
     va_end(arguments);
 
     RPC_AWAIT_IUT_ERROR(rpcs);
@@ -118,11 +114,7 @@ tapi_nvme_internal_mkdir(rcf_rpc_server *rpcs, const char *fmt, ...)
     te_string path = NVME_TE_STRING_INIT_STATIC(NAME_MAX);
 
     va_start(arguments, fmt);
-    if (te_string_append_va(&path, fmt, arguments) != 0)
-    {
-        ERROR("%s: Cannot create path with format %s", fmt);
-        return false;
-    }
+    te_string_append_va(&path, fmt, arguments);
     va_end(arguments);
 
     RPC_AWAIT_IUT_ERROR(rpcs);
@@ -143,11 +135,7 @@ tapi_nvme_internal_rmdir(rcf_rpc_server *rpcs, const char *fmt, ...)
     te_string path = NVME_TE_STRING_INIT_STATIC(NAME_MAX);
 
     va_start(arguments, fmt);
-    if (te_string_append_va(&path, fmt, arguments) != 0)
-    {
-        ERROR("%s: Cannot create path with format %s", fmt);
-        return false;
-    }
+    te_string_append_va(&path, fmt, arguments);
     va_end(arguments);
 
     if (!tapi_nvme_internal_isdir_exist(rpcs, path.ptr))

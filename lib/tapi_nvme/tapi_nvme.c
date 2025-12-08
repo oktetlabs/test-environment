@@ -398,8 +398,7 @@ initiator_dev_admin_list(rcf_rpc_server *rpcs, const char *admin,
     te_vec names = TE_VEC_INIT(tapi_nvme_internal_dirinfo);
     tapi_nvme_internal_dirinfo *dirinfo;
 
-    if ((rc = te_string_append(&path, "%s/%s", BASE_NVME_FABRICS, admin)) != 0)
-        return rc;
+    te_string_append(&path, "%s/%s", BASE_NVME_FABRICS, admin);
 
     rc = tapi_nvme_internal_filterdir(rpcs, path.ptr, "nvme", &names);
     if (rc != 0)
@@ -451,11 +450,8 @@ initiator_dev_info_get(rcf_rpc_server *rpcs, const initiator_dev *dev,
         te_errno _rc;                                                       \
         te_string _path = TE_STRING_INIT_STATIC(NAME_MAX);                  \
                                                                             \
-        _rc = te_string_append(&_path, "%s/%s/%s",                          \
-                               BASE_NVME_FABRICS, _admin, _file);           \
-                                                                            \
-        if (_rc != 0)                                                       \
-            return _rc;                                                     \
+        te_string_append(&_path, "%s/%s/%s",                                \
+                         BASE_NVME_FABRICS, _admin, _file);                 \
                                                                             \
         if ((_rc = _func(rpcs, info, _path.ptr)) != 0)                      \
             return _rc;                                                     \
@@ -594,16 +590,6 @@ get_new_device(tapi_nvme_host_ctrl *host_ctrl, const te_vec *before)
     return rc;
 }
 
-#define NVME_ADD_OPT(_te_str, args...)                        \
-    do {                                                      \
-        te_errno rc;                                          \
-        if ((rc = te_string_append(_te_str, args)) != 0)      \
-        {                                                     \
-            te_string_free(_te_str);                          \
-            return rc;                                        \
-        }                                                     \
-    } while(0)
-
 typedef enum nvme_connect_type {
     NVME_CONNECT,
     NVME_CONNECT_ALL,
@@ -636,13 +622,13 @@ nvme_connect_build_specific_opts(te_string *str_opts,
         return 0;
 
     if (opts->hdr_digest == true)
-        NVME_ADD_OPT(str_opts, "--hdr_digest ");
+        te_string_append(str_opts, "--hdr_digest ");
 
     if (opts->data_digest == true)
-        NVME_ADD_OPT(str_opts, "--data_digest ");
+        te_string_append(str_opts, "--data_digest ");
 
     if (opts->duplicate_connection == true)
-        NVME_ADD_OPT(str_opts, "--duplicate_connect ");
+        te_string_append(str_opts, "--duplicate_connect ");
 
     return 0;
 }
@@ -655,15 +641,16 @@ nvme_connect_build_opts(te_string *str_opts,
     const char *nvme_base_cmd = nvme_connect_type_str(opts.type);
 
     assert(nvme_base_cmd);
-    NVME_ADD_OPT(str_opts, "%s ", nvme_base_cmd);
-    NVME_ADD_OPT(str_opts, "--traddr=%s ", te_sockaddr_get_ipstr(target->addr));
-    NVME_ADD_OPT(str_opts, "--trsvcid=%d ",
-                 ntohs(te_sockaddr_get_port(target->addr)));
-    NVME_ADD_OPT(str_opts, "--transport=%s ",
-                 tapi_nvme_transport_str(target->transport));
+    te_string_append(str_opts, "%s ", nvme_base_cmd);
+    te_string_append(str_opts, "--traddr=%s ",
+                     te_sockaddr_get_ipstr(target->addr));
+    te_string_append(str_opts, "--trsvcid=%d ",
+                     ntohs(te_sockaddr_get_port(target->addr)));
+    te_string_append(str_opts, "--transport=%s ",
+                     tapi_nvme_transport_str(target->transport));
 
     if (opts.type == NVME_CONNECT)
-        NVME_ADD_OPT(str_opts, "--nqn=%s ",  target->subnqn);
+        te_string_append(str_opts, "--nqn=%s ",  target->subnqn);
 
     return nvme_connect_build_specific_opts(str_opts, opts.tapi_opts);
 }
@@ -892,9 +879,9 @@ tapi_nvme_initiator_flush(tapi_nvme_host_ctrl *host_ctrl,
 
     te_string cmd = TE_STRING_INIT_STATIC(RPC_SHELL_CMDLINE_MAX);
 
-    NVME_ADD_OPT(&cmd, "nvme flush %s ", host_ctrl->device);
+    te_string_append(&cmd, "nvme flush %s ", host_ctrl->device);
     if (namespace != NULL)
-        NVME_ADD_OPT(&cmd, "--namespace-id=%s", namespace);
+        te_string_append(&cmd, "--namespace-id=%s", namespace);
 
     return run_command_dump_output_rc(host_ctrl->rpcs, RUN_COMMAND_DEF_TIMEOUT,
                                       "%s", cmd.ptr);
@@ -926,12 +913,12 @@ tapi_nvme_initiator_discover_from(tapi_nvme_host_ctrl *host_ctrl)
         TEST_FAIL("You're allowed to call discover only if "
                   "target is connected");
 
-    NVME_ADD_OPT(&cmd, "nvme discover ");
-    NVME_ADD_OPT(&cmd, "--traddr=%s ", te_sockaddr_get_ipstr(target->addr));
-    NVME_ADD_OPT(&cmd, "--trsvcid=%d ",
-                 ntohs(te_sockaddr_get_port(target->addr)));
-    NVME_ADD_OPT(&cmd, "--transport=%s ",
-                 tapi_nvme_transport_str(target->transport));
+    te_string_append(&cmd, "nvme discover ");
+    te_string_append(&cmd, "--traddr=%s ", te_sockaddr_get_ipstr(target->addr));
+    te_string_append(&cmd, "--trsvcid=%d ",
+                     ntohs(te_sockaddr_get_port(target->addr)));
+    te_string_append(&cmd, "--transport=%s ",
+                     tapi_nvme_transport_str(target->transport));
 
     return run_command_dump_output_rc(
         host_ctrl->rpcs, RUN_COMMAND_DEF_TIMEOUT, "%s", cmd.ptr);
