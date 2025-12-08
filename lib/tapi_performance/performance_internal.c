@@ -144,12 +144,7 @@ perf_app_create_job_from_args(tapi_job_factory_t *factory, te_vec *args,
         if (*arg == NULL)
             break;  /* the last item is not an argument but terminator */
 
-        rc = te_string_append(&cmd, "%s ", *arg);
-        if (rc != 0)
-        {
-            te_string_free(&cmd);
-            return rc;
-        }
+        te_string_append(&cmd, "%s ", *arg);
     }
 
     rc = perf_app_create_job(factory, args, &job, &out_filter, &err_filter);
@@ -313,17 +308,17 @@ perf_get_tool_input_tuple(const tapi_perf_server *server,
 
     bandwidth = te_unit_pack(opts->bandwidth_bits);
 
-    CHECK_RC(te_string_append(output_str, "ip=%s, ", proto_rpc2str(opts->ipversion)));
-    CHECK_RC(te_string_append(output_str, "protocol=%s, ",
-                              proto_rpc2str(opts->protocol)));
-    CHECK_RC(te_string_append(output_str, "bandwidth=%.1f%sbits/sec, ",
-                              bandwidth.value, te_unit_prefix2str(bandwidth.unit)));
-    CHECK_RC(te_string_append(output_str, "num_bytes=%"PRId64", ", opts->num_bytes));
-    CHECK_RC(te_string_append(output_str, "duration=%"PRId32"sec, ", opts->duration_sec));
-    CHECK_RC(te_string_append(output_str, "length=%"PRId32"bytes, ", opts->length));
-    CHECK_RC(te_string_append(output_str, "num_streams=%"PRId16", ", opts->streams));
-    CHECK_RC(te_string_append(output_str, "server_cmd=\"%s\", ", server->app.cmd));
-    CHECK_RC(te_string_append(output_str, "client_cmd=\"%s\", ", client->app.cmd));
+    te_string_append(output_str, "ip=%s, ", proto_rpc2str(opts->ipversion));
+    te_string_append(output_str, "protocol=%s, ",
+                     proto_rpc2str(opts->protocol));
+    te_string_append(output_str, "bandwidth=%.1f%sbits/sec, ",
+                     bandwidth.value, te_unit_prefix2str(bandwidth.unit));
+    te_string_append(output_str, "num_bytes=%"PRId64", ", opts->num_bytes);
+    te_string_append(output_str, "duration=%"PRId32"sec, ", opts->duration_sec);
+    te_string_append(output_str, "length=%"PRId32"bytes, ", opts->length);
+    te_string_append(output_str, "num_streams=%"PRId16", ", opts->streams);
+    te_string_append(output_str, "server_cmd=\"%s\", ", server->app.cmd);
+    te_string_append(output_str, "client_cmd=\"%s\", ", client->app.cmd);
 }
 
 void
@@ -334,8 +329,8 @@ perf_get_tool_result_tuple(const tapi_perf_report *report,
 
     throughput = te_unit_pack(report->bits_per_second);
 
-    CHECK_RC(te_string_append(output_str, "res_num_bytes=%"PRIu64", ", report->bytes));
-    CHECK_RC(te_string_append(output_str, "res_time=%.1fsec, ", report->seconds));
-    CHECK_RC(te_string_append(output_str, "res_throughput=%.1f%sbits/sec",
-                              throughput.value, te_unit_prefix2str(throughput.unit)));
+    te_string_append(output_str, "res_num_bytes=%"PRIu64", ", report->bytes);
+    te_string_append(output_str, "res_time=%.1fsec, ", report->seconds);
+    te_string_append(output_str, "res_throughput=%.1f%sbits/sec",
+                     throughput.value, te_unit_prefix2str(throughput.unit));
 }

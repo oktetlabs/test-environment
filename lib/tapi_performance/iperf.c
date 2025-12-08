@@ -57,7 +57,7 @@ set_opt_ipversion(te_string *cmd, const tapi_perf_opts *options)
             break;
 
         case RPC_IPPROTO_IPV6:
-            CHECK_RC(te_string_append(cmd, "-V"));
+            te_string_append(cmd, "-V");
             break;
 
         default:
@@ -83,7 +83,7 @@ set_opt_protocol(te_string *cmd, const tapi_perf_opts *options)
             break;
 
         case RPC_IPPROTO_UDP:
-            CHECK_RC(te_string_append(cmd, "-u"));
+            te_string_append(cmd, "-u");
             break;
 
         default:
@@ -102,7 +102,7 @@ static void
 set_opt_src_host(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->src_host != NULL && options->src_host[0] != '\0')
-        CHECK_RC(te_string_append(cmd, "-B%s", options->src_host));
+        te_string_append(cmd, "-B%s", options->src_host);
 }
 
 /*
@@ -115,7 +115,7 @@ static void
 set_opt_port(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->port >= 0)
-        CHECK_RC(te_string_append(cmd, "-p%u", options->port));
+        te_string_append(cmd, "-p%u", options->port);
 }
 
 /*
@@ -128,7 +128,7 @@ static void
 set_opt_bandwidth(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->bandwidth_bits >= 0)
-        CHECK_RC(te_string_append(cmd, "-b%"PRId64, options->bandwidth_bits));
+        te_string_append(cmd, "-b%"PRId64, options->bandwidth_bits);
 }
 
 /*
@@ -141,7 +141,7 @@ static void
 set_opt_bytes(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->num_bytes >= 0)
-        CHECK_RC(te_string_append(cmd, "-n%"PRId64, options->num_bytes));
+        te_string_append(cmd, "-n%"PRId64, options->num_bytes);
 }
 
 /*
@@ -154,7 +154,7 @@ static void
 set_opt_time(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->duration_sec >= 0)
-        CHECK_RC(te_string_append(cmd, "-t%"PRId32, options->duration_sec));
+        te_string_append(cmd, "-t%"PRId32, options->duration_sec);
 }
 
 /*
@@ -168,7 +168,7 @@ static void
 set_opt_interval(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->interval_sec >= 0)
-        CHECK_RC(te_string_append(cmd, "-i%"PRId32, options->interval_sec));
+        te_string_append(cmd, "-i%"PRId32, options->interval_sec);
 }
 
 /*
@@ -181,7 +181,7 @@ static void
 set_opt_length(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->length >= 0)
-        CHECK_RC(te_string_append(cmd, "-l%"PRId32, options->length));
+        te_string_append(cmd, "-l%"PRId32, options->length);
 }
 
 /*
@@ -194,7 +194,7 @@ static void
 set_opt_streams(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->streams >= 0)
-        CHECK_RC(te_string_append(cmd, "-P%"PRId16, options->streams));
+        te_string_append(cmd, "-P%"PRId16, options->streams);
 }
 
 /*
@@ -207,7 +207,7 @@ static void
 set_opt_dual(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->dual)
-        CHECK_RC(te_string_append(cmd, "-d"));
+        te_string_append(cmd, "-d");
 }
 
 /* Get option by index */
