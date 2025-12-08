@@ -1703,9 +1703,7 @@ tapi_tcp_set_ts_opt(asn_value *val,
         char        _buf[200];                                  \
         te_string   _labels_str = TE_STRING_BUF_INIT(_buf);     \
                                                                 \
-        rc = te_string_append(&_labels_str, _labels);           \
-        if (rc != 0)                                            \
-            return rc;                                          \
+        te_string_append(&_labels_str, _labels);                \
         if (_is_val)                                            \
             rc = asn_write_uint32(_pdu, _val, _labels_str.ptr); \
         else                                                    \
