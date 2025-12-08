@@ -142,9 +142,7 @@ tapi_fio_stop(tapi_fio *fio)
 
 #define REPORT(...)                                         \
     do {                                                    \
-        te_errno rc;                                        \
-        if ((rc = te_string_append(log, __VA_ARGS__)) != 0) \
-            return rc;                                      \
+        te_string_append(log, __VA_ARGS__);                 \
     } while (0)
 
 #define KBYTE2MBIT(_val)    ((_val) * 8 / 1000.)
