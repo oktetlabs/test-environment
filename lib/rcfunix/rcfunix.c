@@ -422,13 +422,7 @@ system_with_timeout(int timeout, te_string *out, const char *fmt, ...)
         }
         else if (read_rc > 0 && out != NULL)
         {
-            if ((rc = te_string_append(out, "%s", buf)) != 0)
-            {
-                ERROR("te_string_append() failed to add '%s' with error: %r",
-                      buf, rc);
-                free(cmd);
-                return rc;
-            }
+            te_string_append(out, "%s", buf);
         }
     }
 
@@ -1087,56 +1081,40 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     if (ta->is_local)
     {
-        rc = te_string_append(&ta->cmd_prefix, "(");
-        if (rc == 0)
-            rc = te_string_append(&ta->start_prefix, "%s", ta->cmd_prefix.ptr);
+        te_string_append(&ta->cmd_prefix, "(");
+        te_string_append(&ta->start_prefix, "%s", ta->cmd_prefix.ptr);
         ta->cmd_suffix = ")";
     }
     else
     {
         if (ta->ssh_proxy[0] != '\0')
-            rc = te_string_append(&ta->ssh_opts,
-                                  " -o ProxyCommand='%s -W %%h:%%p %s'",
-                                  RCFUNIX_SSH, ta->ssh_proxy);
-        if (rc == 0 && (*flags & TA_NO_HKEY_CHK))
-            rc = te_string_append(&ta->ssh_opts, " %s", NO_HKEY_CHK);
-        if (rc == 0 && ta->key[0] != '\0')
-            rc = te_string_append(&ta->ssh_opts, " %s", ta->key);
-        if (rc == 0)
-            rc = te_string_append(&ta->ssh_opts, " %s%s", ta->user, ta->host);
+            te_string_append(&ta->ssh_opts,
+                             " -o ProxyCommand='%s -W %%h:%%p %s'",
+                             RCFUNIX_SSH, ta->ssh_proxy);
+        if ((*flags & TA_NO_HKEY_CHK))
+            te_string_append(&ta->ssh_opts, " %s", NO_HKEY_CHK);
+        if (ta->key[0] != '\0')
+            te_string_append(&ta->ssh_opts, " %s", ta->key);
+        te_string_append(&ta->ssh_opts, " %s%s", ta->user, ta->host);
 
-        rc = te_string_append(&ta->cmd_prefix, "%s", RCFUNIX_SSH);
-        if (rc == 0 && ta->ssh_port != 0)
-            rc = te_string_append(&ta->cmd_prefix, " -p %u", ta->ssh_port);
+        te_string_append(&ta->cmd_prefix, "%s", RCFUNIX_SSH);
+        if (ta->ssh_port != 0)
+            te_string_append(&ta->cmd_prefix, " -p %u", ta->ssh_port);
 
         /*
          * If SSH proxy is used, TA start command should forward RCF port
          * since it is assumed that target host is not directly reachable.
          */
-        if (rc == 0)
-            rc = te_string_append(&ta->start_prefix, "%s", ta->cmd_prefix.ptr);
-        if (rc == 0 && ta->ssh_proxy[0] != '\0')
-            rc = te_string_append(&ta->start_prefix, " -L %s:%s:%s",
-                                  ta->port, rcfunix_connect_to(ta, true),
-                                  ta->port);
+        te_string_append(&ta->start_prefix, "%s", ta->cmd_prefix.ptr);
+        if (ta->ssh_proxy[0] != '\0')
+            te_string_append(&ta->start_prefix, " -L %s:%s:%s",
+                             ta->port, rcfunix_connect_to(ta, true), ta->port);
 
         /* Add common SSH options including host to connect to */
-        if (rc == 0)
-            rc = te_string_append(&ta->cmd_prefix, "%s \"",
-                                  ta->ssh_opts.ptr);
-        if (rc == 0)
-            rc = te_string_append(&ta->start_prefix, "%s \"",
-                                  ta->ssh_opts.ptr);
+        te_string_append(&ta->cmd_prefix, "%s \"", ta->ssh_opts.ptr);
+        te_string_append(&ta->start_prefix, "%s \"", ta->ssh_opts.ptr);
 
         ta->cmd_suffix = "\"";
-    }
-    if (rc != 0)
-    {
-        ERROR("Failed to compose TA command prefix: %r", rc);
-        te_string_free(&cfg_str);
-        te_string_free(&cmd);
-        rcfunix_ta_free(ta);
-        return rc;
     }
 
     /*
@@ -1153,9 +1131,9 @@ rcfunix_start(const char *ta_name, const char *ta_type,
          * Use dot at the end of cp source path to copy the directory
          * content including hidden files to destination.
          */
-        rc = te_string_append(&cmd,
-                "%smkdir %s && cp -a %s/. %s%s", ta->cmd_prefix.ptr,
-                ta->run_dir, ta_type_dir, ta->run_dir, ta->cmd_suffix);
+        te_string_append(&cmd, "%smkdir %s && cp -a %s/. %s%s",
+                         ta->cmd_prefix.ptr, ta->run_dir, ta_type_dir,
+                         ta->run_dir, ta->cmd_suffix);
     }
     else
     {
@@ -1172,18 +1150,11 @@ rcfunix_start(const char *ta_name, const char *ta_type,
          * Do mkdir without -p to be sure that the directory does not
          * exists yet and fail otherwise.
          */
-        rc = te_string_append(&cmd,
-                "%smkdir %s%s && echo put %s/. %s | sftp -rpq %s%s",
-                ta->cmd_prefix.ptr, ta->run_dir, ta->cmd_suffix,
-                ta_type_dir, ta->run_dir, ssh_port_str, ta->ssh_opts.ptr);
-    }
-    if (rc != 0)
-    {
-        ERROR("Failed to compose TA copy command: %r\n%s", rc, cmd.ptr);
-        te_string_free(&cfg_str);
-        te_string_free(&cmd);
-        rcfunix_ta_free(ta);
-        return rc;
+        te_string_append(&cmd,
+                         "%smkdir %s%s && echo put %s/. %s | sftp -rpq %s%s",
+                         ta->cmd_prefix.ptr, ta->run_dir, ta->cmd_suffix,
+                         ta_type_dir, ta->run_dir, ssh_port_str,
+                         ta->ssh_opts.ptr);
     }
 
     RING("CMD to copy: %s", cmd.ptr);
@@ -1226,16 +1197,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
          * We need two backslashes here: the first is C escape sequence,
          * the second is to avoid processing variable on the engine side.
          */
-        rc = te_string_append(&cmd, "%secho -n \\$SHELL%s",
-                              ta->start_prefix.ptr, ta->cmd_suffix);
-        if (rc != 0)
-        {
-            ERROR("Failed to compose command to detect shell name: %r", rc);
-            te_string_free(&cfg_str);
-            te_string_free(&cmd);
-            rcfunix_ta_free(ta);
-            return rc;
-        }
+        te_string_append(&cmd, "%secho -n \\$SHELL%s",
+                         ta->start_prefix.ptr, ta->cmd_suffix);
 
         RING("Command to detect shell name: %s", cmd.ptr);
         if (!(*flags & TA_FAKE))
@@ -1274,33 +1237,27 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     /* Clean up command string */
     te_string_reset(&cmd);
 
-    rc = te_string_append(&cmd, "%s", ta->start_prefix.ptr);
-
-    if (rc == 0)
-        rc = te_string_append(&cmd, "%s",
-                                   rcfunix_ta_sudo(ta));
+    te_string_append(&cmd, "%s", ta->start_prefix.ptr);
+    te_string_append(&cmd, "%s", rcfunix_ta_sudo(ta));
 
     /*
      * Run non-local TA in /bin/bash if it is needed
      */
-    if (rc == 0 && !ta->is_local && !shell_is_bash)
-        rc = te_string_append(&cmd, "/bin/bash -c '");
+    if (ta->is_local && !shell_is_bash)
+        te_string_append(&cmd, "/bin/bash -c '");
 
     /*
      * Add directory with agent to the PATH
      */
-    if (rc == 0)
-        rc = te_string_append(&cmd,
-                "PATH=%s${PATH}:%s ",
-                ta->is_local ? "" : "\\", ta->run_dir);
+    te_string_append(&cmd, "PATH=%s${PATH}:%s ",
+                     ta->is_local ? "" : "\\", ta->run_dir);
 
     /*
      * Add agent working directory to the LD_LIBRARY_PATH
      */
-    if (rc == 0)
-        rc = te_string_append(&cmd,
-               "LD_LIBRARY_PATH=%s${LD_LIBRARY_PATH}%s${LD_LIBRARY_PATH:+:}%s ",
-               ta->is_local ? "" : "\\", ta->is_local ? "" : "\\", ta->run_dir);
+    te_string_append(&cmd,
+        "LD_LIBRARY_PATH=%s${LD_LIBRARY_PATH}%s${LD_LIBRARY_PATH:+:}%s ",
+        ta->is_local ? "" : "\\", ta->is_local ? "" : "\\", ta->run_dir);
 
     /*
      * Update LD_PRELOAD variable, existing LD_PRELOAD variable
@@ -1309,41 +1266,34 @@ rcfunix_start(const char *ta_name, const char *ta_type,
      * - we do not know any conditions when LD_PRELOAD is non-empty initially.
      */
     ld_preload = te_kvpairs_get(conf, "ld_preload");
-    if (rc == 0 && !te_str_is_null_or_empty(ld_preload))
-        rc = te_string_append(&cmd, "LD_PRELOAD=%s ", ld_preload);
+    if (!te_str_is_null_or_empty(ld_preload))
+        te_string_append(&cmd, "LD_PRELOAD=%s ", ld_preload);
 
-    if (rc == 0 && ta->ext_rcf_listener)
-    {
-        rc = te_string_append(&cmd, "%s/ta_rcf_listener %s ", ta->run_dir,
-                              ta->port);
-    }
+    if (ta->ext_rcf_listener)
+        te_string_append(&cmd, "%s/ta_rcf_listener %s ", ta->run_dir, ta->port);
 
-    if (rc == 0 && (shell != NULL) && (strlen(shell) > 0))
+    if ((shell != NULL) && (strlen(shell) > 0))
     {
         VERB("Using '%s' as shell for TA '%s'", shell, ta->ta_name);
-        rc = te_string_append(&cmd, "%s ", shell);
+        te_string_append(&cmd, "%s ", shell);
     }
 
     /*
      * Test Agent is always running in background, therefore it's
      * necessary to redirect its stdout and stderr to a file.
      */
-    if (rc == 0)
-        rc = te_string_append(&cmd,
-                "%s/ta %s %s %s",
-                ta->run_dir, ta->ta_name, ta->port,
-                (cfg_str.ptr == NULL) ? "" : cfg_str.ptr);
+    te_string_append(&cmd, "%s/ta %s %s %s",
+                     ta->run_dir, ta->ta_name, ta->port,
+                     (cfg_str.ptr == NULL) ? "" : cfg_str.ptr);
 
     /*
      * Add the final single quote if /bin/bash is used
      */
-    if (rc == 0 && !ta->is_local && !shell_is_bash)
-        rc = te_string_append(&cmd, "'");
+    if (!ta->is_local && !shell_is_bash)
+        te_string_append(&cmd, "'");
 
-    if (rc == 0)
-        rc = te_string_append(&cmd,
-                "%s 2>&1 | te_tee %s %s 10 >ta.%s ",
-                ta->cmd_suffix, TE_LGR_ENTITY, ta->ta_name, ta->ta_name);
+    te_string_append(&cmd, "%s 2>&1 | te_tee %s %s 10 >ta.%s ",
+                     ta->cmd_suffix, TE_LGR_ENTITY, ta->ta_name, ta->ta_name);
 
     if (rc != 0)
     {
@@ -1496,13 +1446,9 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
     if (ta->core_watcher_pid > 0)
         stop_core_watcher(ta);
 
-    rc = te_string_append(&cmd, "%srm -rf %s%s",
-                       ta->cmd_prefix.ptr, ta->run_dir, ta->cmd_suffix);
-    if (rc != 0)
-    {
-        ERROR("Failed to make rm command: %r", rc);
-        goto done;
-    }
+    te_string_append(&cmd, "%srm -rf %s%s",
+                     ta->cmd_prefix.ptr, ta->run_dir, ta->cmd_suffix);
+
     /* we want to be careful with what we remove */
     if (cmd.len < strlen("rm -rf /tmp/"))
     {
