@@ -853,10 +853,7 @@ get_instance_oid_by_object_oid(const char *object, cfg_inst_subid *p_ids,
         if (strcmp(p_subst_ids[i].subid, p_ids[i].subid) != 0)
             break;
 
-        rc = te_string_append(oid, "/%s:%s", p_ids[i].subid,
-                              p_ids[i].name);
-        if (rc != 0)
-            break;
+        te_string_append(oid, "/%s:%s", p_ids[i].subid, p_ids[i].name);
     }
 
     if (rc != 0)
@@ -866,15 +863,11 @@ get_instance_oid_by_object_oid(const char *object, cfg_inst_subid *p_ids,
     }
 
     for (; i < p_subst_oid->len; i++)
-    {
-        rc = te_string_append(oid, "/%s:", p_subst_ids[i].subid);
-        if (rc != 0)
-            break;
-    }
+        te_string_append(oid, "/%s:", p_subst_ids[i].subid);
 
     cfg_free_oid(p_subst_oid);
 
-    return rc;
+    return 0;
 }
 
 /**
@@ -911,9 +904,7 @@ do_substitutions(rcf_pch_cfg_object *obj, char *value, const char *sub_id,
     if (subst->name == NULL)
         goto out;
 
-    rc = te_string_append(&value_s, "%s", value);
-    if (rc != 0)
-        goto out;
+    te_string_append(&value_s, "%s", value);
 
     rc = get_instance_oid_by_object_oid(subst->ref_name, p_ids, &inst_oid);
     if (rc != 0)
@@ -927,11 +918,9 @@ do_substitutions(rcf_pch_cfg_object *obj, char *value, const char *sub_id,
     if (rc != 0)
         goto out;
 
-    rc = te_string_append(&subs,
-                        CS_SUBSTITUTION_DELIMITER"%s"CS_SUBSTITUTION_DELIMITER,
-                        inst_oid.ptr);
-    if (rc != 0)
-        goto out;
+    te_string_append(&subs,
+                     CS_SUBSTITUTION_DELIMITER"%s"CS_SUBSTITUTION_DELIMITER,
+                     inst_oid.ptr);
 
     rc = subst->apply(&value_s, subs.ptr, ret_val);
     if (rc != 0)
@@ -1480,7 +1469,6 @@ update_rsrc_lock_file(rsrc_lock *lock, const char *fname, int fd)
 {
     te_string str = TE_STRING_INIT;
     bool empty = true;
-    te_errno rc;
     pid_t *pid;
 
     TE_VEC_FOREACH(&lock->pids, pid)
@@ -1495,18 +1483,11 @@ update_rsrc_lock_file(rsrc_lock *lock, const char *fname, int fd)
     if (empty || lock->type == RSRC_LOCK_UNDEFINED)
         return delete_rsrc_lock_file(fname);
 
-    rc = te_string_append(&str, "%s", rsrc_lock_type_names[lock->type]);
-    if (rc != 0)
-        return rc;
+    te_string_append(&str, "%s", rsrc_lock_type_names[lock->type]);
 
     TE_VEC_FOREACH(&lock->pids, pid)
     {
-        rc = te_string_append(&str, " %u", (unsigned int)*pid);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return rc;
-        }
+        te_string_append(&str, " %u", (unsigned int)*pid);
     }
 
     if (ftruncate(fd, 0) != 0 ||
