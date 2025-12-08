@@ -388,8 +388,7 @@ tapi_wpa_supplicant_configure_va(
 
     if (bssid != NULL)
     {
-        CHECK_NZ_RETURN(te_string_append(&bss, TE_PRINTF_MAC_FMT,
-                                         TE_PRINTF_MAC_VAL(bssid)));
+        te_string_append(&bss, TE_PRINTF_MAC_FMT, TE_PRINTF_MAC_VAL(bssid));
     }
 
     CHECK_NZ_RETURN(cfg_set_instance_fmt(
@@ -403,7 +402,7 @@ tapi_wpa_supplicant_configure_va(
                         CFG_SUPPLICANT_PATH_FMT "/scan_ssid:", ta, ifname));
 
     va_copy(ap_copy, ap);
-    CHECK_NZ_RETURN(te_string_append_va(&optstr, opts_fmt, ap_copy));
+    te_string_append_va(&optstr, opts_fmt, ap_copy);
     va_end(ap_copy);
 
     CHECK_NZ_RETURN(cfg_set_instance_fmt(
