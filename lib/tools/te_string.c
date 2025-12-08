@@ -56,12 +56,11 @@ te_errno
 te_string_append(te_string *str, const char *fmt, ...)
 {
     va_list  ap;
-    te_errno rc;
 
     va_start(ap, fmt);
-    rc = te_string_append_va(str, fmt, ap);
+    te_string_append_va(str, fmt, ap);
     va_end(ap);
-    return rc;
+    return 0;
 }
 
 te_errno

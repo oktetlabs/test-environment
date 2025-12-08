@@ -179,17 +179,14 @@ te_log_bufs_cleanup(void)
 int
 te_log_buf_append(te_log_buf *buf, const char *fmt, ...)
 {
-    te_errno rc;
     size_t   old_len = buf->str.len;
     va_list  ap;
 
     VALIDATE_LOG_BUF(buf);
 
     va_start(ap, fmt);
-    rc = te_string_append_va(&buf->str, fmt, ap);
+    te_string_append_va(&buf->str, fmt, ap);
     va_end(ap);
-    if (rc != 0)
-        return -1;
 
     /* Must be at worst the same */
     assert(buf->str.len >= old_len);
@@ -204,7 +201,7 @@ te_log_buf_get(te_log_buf *buf)
 
     if (buf->str.len == 0)
     {
-        assert(te_string_append(&buf->str, "") == 0);
+        te_string_append(&buf->str, "");
     }
 
     return buf->str.ptr;
@@ -223,8 +220,6 @@ te_bit_mask_or_flag2te_str(te_string *te_str, unsigned long long bit_mask,
     uint64_t            bit_or_flag;
     const char         *str;
 
-    te_errno rc;
-
     for (i = 0; (str = bit_map != NULL ? bit_map[i].str : flag_map[i].str)
                 != NULL; ++i)
     {
@@ -241,9 +236,7 @@ te_bit_mask_or_flag2te_str(te_string *te_str, unsigned long long bit_mask,
 
         if (append)
         {
-            rc = te_string_append(te_str, "%s%s", added ? "|" : "", str);
-            if (rc != 0)
-                return rc;
+            te_string_append(te_str, "%s%s", added ? "|" : "", str);
             added = true;
             bit_mask &= ~bit_or_flag;
         }
@@ -251,10 +244,7 @@ te_bit_mask_or_flag2te_str(te_string *te_str, unsigned long long bit_mask,
 
     if (bit_mask != 0 && append_left)
     {
-        rc = te_string_append(te_str, "%s%#llx", added ? "|" : "",
-                              bit_mask);
-        if (rc != 0)
-            return rc;
+        te_string_append(te_str, "%s%#llx", added ? "|" : "", bit_mask);
     }
 
     if (left_bit_mask != NULL)
@@ -301,9 +291,7 @@ te_extended_bit_mask2te_str(te_string *str,
 
     if (added)
     {
-        rc = te_string_append(str, "|");
-        if (rc != 0)
-            return rc;
+        te_string_append(str, "|");
     }
 
     rc = te_bit_mask_or_flag2te_str(str, left, NULL, fm, &left, false,
@@ -312,7 +300,7 @@ te_extended_bit_mask2te_str(te_string *str,
         return rc;
 
     if (left != 0)
-        return te_string_append(str, "%s%#llx", added ? "|" : "", left);
+        te_string_append(str, "%s%#llx", added ? "|" : "", left);
 
     return 0;
 }
@@ -331,14 +319,9 @@ te_errno
 te_args2te_str(te_string *str, int argc, const char **argv)
 {
     int i;
-    te_errno rc;
 
     for (i = 0; i < argc; ++i)
-    {
-        rc = te_string_append(str, "%s\"%s\"", i == 0 ? "" : ", ", argv[i]);
-        if (rc != 0)
-            return rc;
-    }
+        te_string_append(str, "%s\"%s\"", i == 0 ? "" : ", ", argv[i]);
 
     return 0;
 }

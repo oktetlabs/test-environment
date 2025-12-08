@@ -1129,7 +1129,6 @@ te_log_message_split(const char *file, unsigned int line,
     size_t      step_len;
     va_list     ap;
     long int    i;
-    int         rc;
 
     char       *p;
     char       *p_end;
@@ -1139,11 +1138,8 @@ te_log_message_split(const char *file, unsigned int line,
     char       *q;
 
     va_start(ap, fmt);
-    rc = te_string_append_va(&str, fmt, ap);
+    te_string_append_va(&str, fmt, ap);
     va_end(ap);
-
-    if (rc != 0)
-        return rc;
 
     str_end = str.ptr + str.len;
     p = str.ptr;
