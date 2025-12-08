@@ -176,7 +176,8 @@ te_raw_log_expand(const log_msg_view *view, te_string *target)
             {
                 /* Too few arguments in the message */
                 /* Simply write the rest of format string */
-                return te_string_append(target, "%.*s", (fmt_end - fmt), fmt);
+                te_string_append(target, "%.*s", (fmt_end - fmt), fmt);
+                return 0;
             }
             arg += sizeof(te_log_nfl);
             if (arg + arg_len >= view_end)
@@ -189,9 +190,7 @@ te_raw_log_expand(const log_msg_view *view, te_string *target)
             {
                 case '%':
                 {
-                    rc = te_string_append(target, "%%");
-                    if (rc != 0)
-                        return rc;
+                    te_string_append(target, "%%");
                     break;
                 }
                 case 'c':
@@ -224,17 +223,13 @@ te_raw_log_expand(const log_msg_view *view, te_string *target)
                             continue;
                         val = ntohl(val);
 
-                        rc = te_string_append(target, "%08x", val);
-                        if (rc != 0)
-                            return rc;
+                        te_string_append(target, "%08x", val);
                     }
                     break;
                 }
                 case 's':
                 {
-                    rc = te_string_append(target, "%.*s", arg_len, arg);
-                    if (rc != 0)
-                        return rc;
+                    te_string_append(target, "%.*s", arg_len, arg);
                     break;
                 }
                 case 'r':
@@ -247,14 +242,8 @@ te_raw_log_expand(const log_msg_view *view, te_string *target)
                     src_str = te_rc_mod2str(err);
                     err_str = te_rc_err2str(err);
                     if (strlen(src_str) > 0)
-                    {
-                        rc = te_string_append(target, "%s-", src_str);
-                        if (rc != 0)
-                            return rc;
-                    }
-                    rc = te_string_append(target, "%s", err_str);
-                    if (rc != 0)
-                        return rc;
+                        te_string_append(target, "%s-", src_str);
+                    te_string_append(target, "%s", err_str);
                     break;
                 }
                 case 'T':
@@ -301,24 +290,18 @@ te_raw_log_expand(const log_msg_view *view, te_string *target)
                                 tuple_cnt--;
                                 if (line_cnt == 0)
                                 {
-                                    rc = te_string_append(target, "\n  ");
+                                    te_string_append(target, "\n  ");
                                     line_cnt = tuple_width * n_tuples;
                                     tuple_cnt = tuple_width;
                                 }
                                 else if (tuple_cnt == 0)
                                 {
-                                    rc = te_string_append(target, " ");
+                                    te_string_append(target, " ");
                                     tuple_cnt = tuple_width;
                                 }
-                                if (rc != 0)
-                                    return rc;
-                                rc = te_string_append(target, "%02X", ((const char *)arg)[i]);
-                                if (rc != 0)
-                                    return rc;
+                                te_string_append(target, "%02X", ((const char *)arg)[i]);
                             }
-                            rc = te_string_append(target, "\n\n");
-                            if (rc != 0)
-                                return rc;
+                            te_string_append(target, "\n\n");
                         }
                     }
                     break;
