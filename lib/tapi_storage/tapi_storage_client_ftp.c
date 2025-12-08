@@ -417,9 +417,7 @@ send_control_msg_va(tapi_storage_client *client,
     te_errno   rc;
 
     cmdbuf_w->len = 0;
-    rc = te_string_append_va(cmdbuf_w, fmt, ap);
-    if (rc != 0)
-        return rc;
+    te_string_append_va(cmdbuf_w, fmt, ap);
     rc = send_request(client->rpcs, ftp_context->control_socket, cmdbuf_w);
     return rc;
 }

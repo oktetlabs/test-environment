@@ -67,9 +67,10 @@ dump_local_fs(tapi_local_file *file, void *user_data)
         return 0;
 
     opaque->num++;
-    return te_string_append(opaque->dump, " file: %s, size: %llu, tv: %u\n",
-                            file->pathname, file->property.size,
-                            file->property.date.tv_sec);
+    te_string_append(opaque->dump, " file: %s, size: %llu, tv: %u\n",
+                     file->pathname, file->property.size,
+                     file->property.date.tv_sec);
+    return 0;
 }
 
 /**
@@ -175,7 +176,6 @@ free_local_file_le(tapi_local_file_le *file)
 static char *
 local_fs_get_pathname(tapi_local_file_type type, const char *pathname)
 {
-    te_errno    rc;
     te_string   localfs = TE_STRING_INIT;
     char       *str;
     char       *token;
@@ -190,36 +190,18 @@ local_fs_get_pathname(tapi_local_file_type type, const char *pathname)
             *basename++ = '\0';
     }
 
-    rc = te_string_append(&localfs, "%s", TE_CFG_LOCAL_FS_FMT);
-    if (rc != 0)
-    {
-        free(str);
-        te_string_free(&localfs);
-        return NULL;
-    }
+    te_string_append(&localfs, "%s", TE_CFG_LOCAL_FS_FMT);
 
     for (token = strtok(str, "/");
          token != NULL;
          token = strtok(NULL, "/"))
     {
-        rc = te_string_append(&localfs, "%s%s", SUBID_DIR, token);
-        if (rc != 0)
-        {
-            free(str);
-            te_string_free(&localfs);
-            return NULL;
-        }
+        te_string_append(&localfs, "%s%s", SUBID_DIR, token);
     }
     if (type == TAPI_FILE_TYPE_FILE && basename != NULL &&
         *basename != '\0')
     {
-        rc = te_string_append(&localfs, "%s%s", SUBID_FILE, basename);
-        if (rc != 0)
-        {
-            free(str);
-            te_string_free(&localfs);
-            return NULL;
-        }
+        te_string_append(&localfs, "%s%s", SUBID_FILE, basename);
     }
     free(str);
     return localfs.ptr;
