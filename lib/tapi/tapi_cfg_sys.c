@@ -72,7 +72,6 @@ tapi_cfg_sys_parse_path_va(char *buf, size_t len,
 
     size_t    i = 0;
     size_t    j = 0;
-    te_errno  rc = 0;
     bool instance_name = false;
 
     if (len == 0 || buf == NULL)
@@ -82,9 +81,7 @@ tapi_cfg_sys_parse_path_va(char *buf, size_t len,
         return TE_RC(TE_TAPI, TE_ESMALLBUF);
     }
 
-    rc = te_string_append_va(&str, fmt, ap);
-    if (rc != 0)
-        return rc;
+    te_string_append_va(&str, fmt, ap);
 
     obj_name = buf_aux;
     for (i = 0; ; i++)

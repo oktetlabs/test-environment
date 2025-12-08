@@ -54,10 +54,8 @@ get_cache_area_instance(const char *area_fmt, va_list ap)
     static char buf[CFG_OID_MAX];
     te_string   oid = TE_STRING_BUF_INIT(buf);
 
-    if (te_string_append(&oid, "%s/", TAPI_CACHE_ROOT_INST) != 0)
-        return NULL;
-    if (te_string_append_va(&oid, area_fmt, ap) != 0)
-        return NULL;
+    te_string_append(&oid, "%s/", TAPI_CACHE_ROOT_INST);
+    te_string_append_va(&oid, area_fmt, ap);
 
     return oid.ptr;
 }

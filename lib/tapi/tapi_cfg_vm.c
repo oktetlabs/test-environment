@@ -30,13 +30,10 @@ tapi_cfg_vm_copy_local(const char *ta, const char *vm_name, const char *tmpl)
     te_errno rc;
     te_string agent = TE_STRING_INIT;
 
-    rc = te_string_append(&agent, "/agent:%s/vm:%s", ta, vm_name);
-    if (rc != 0)
-        goto out;
+    te_string_append(&agent, "/agent:%s/vm:%s", ta, vm_name);
 
     rc = cfg_copy_subtree_fmt(agent.ptr, "%s", tmpl);
 
-out:
     te_string_free(&agent);
 
     return rc;
@@ -52,11 +49,9 @@ tapi_cfg_vm_pass_pci(const char *ta, const char *vm_name,
     char *pci_addr_by_device = NULL;
     cfg_oid *oid;
 
-    rc = te_string_append(&pci_addr_by_vendor,
+    te_string_append(&pci_addr_by_vendor,
                     "/agent:%s/hardware:/pci:/vendor:%04lx/device:%04lx/instance:%lu",
                     ta, vendor, device, instance);
-    if (rc != 0)
-        goto exit;
 
     rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, pci_addr_by_vendor.ptr),
                               "/agent:%s/rsrc:%s", ta, pci_pt_name);

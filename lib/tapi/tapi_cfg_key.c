@@ -279,10 +279,8 @@ tapi_cfg_key_append_public(const char *ta, const char *key_name,
             rc = TE_RC(TE_TAPI, TE_ENOCONF);
             goto cleanup;
         }
-        rc = te_string_append(&full_path, "%s/%s", tmp_dir, list_name);
+        te_string_append(&full_path, "%s/%s", tmp_dir, list_name);
         free(tmp_dir);
-        if (rc != 0)
-            goto cleanup;
         full_list_name = full_path.ptr;
     }
 

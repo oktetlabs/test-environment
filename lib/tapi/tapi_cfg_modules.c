@@ -415,14 +415,7 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
         goto out;
     }
 
-    rc = te_string_append(&module_path, "%s/%s.ko", ta_lib_mod_dir,
-                          module_name);
-    if (rc != 0)
-    {
-        ERROR("Failed to construct the module '%s' path: %r",
-              module_name, rc);
-        goto out;
-    }
+    te_string_append(&module_path, "%s/%s.ko", ta_lib_mod_dir, module_name);
 
     rc = tapi_cfg_module_add(ta_name, module_name, 0);
     if (rc != 0)

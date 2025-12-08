@@ -257,17 +257,13 @@ tapi_cfg_if_rss_print_indir_table(const char *ta,
     if (rc != 0)
         return rc;
 
-    rc = te_string_append(&str, "RSS indirection table for interface "
-                          "%s on agent %s, RSS context %u\ncontains %u "
-                          "entries.", if_name, ta, rss_context, size);
-    if (rc != 0)
-        goto finish;
+    te_string_append(&str, "RSS indirection table for interface "
+                     "%s on agent %s, RSS context %u\ncontains %u entries.",
+                     if_name, ta, rss_context, size);
 
     if (size > 0)
     {
-        rc = te_string_append(&str, "\n\nEntry ---> Rx queue\n");
-        if (rc != 0)
-            goto finish;
+        te_string_append(&str, "\n\nEntry ---> Rx queue\n");
 
         for (i = 0; i < size; i++)
         {
@@ -276,9 +272,7 @@ tapi_cfg_if_rss_print_indir_table(const char *ta,
             if (rc != 0)
                 goto finish;
 
-            rc = te_string_append(&str, "%5u ---> %d\n", i, val);
-            if (rc != 0)
-                goto finish;
+            te_string_append(&str, "%5u ---> %d\n", i, val);
         }
     }
 

@@ -197,9 +197,7 @@ tapi_tags_add_firmwareversion_tag(const char *ta, const char *if_name,
 
     firmwareversion_string_escape(fw_ver);
 
-    rc = te_string_append(&value, "%sfw-%s", tag_prefix, fw_ver);
-    if (rc != 0)
-        goto out;
+    te_string_append(&value, "%sfw-%s", tag_prefix, fw_ver);
 
     rc = tapi_tags_add_tag(te_string_value(&value), NULL);
     if (rc != 0)

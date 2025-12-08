@@ -101,12 +101,11 @@ tapi_host_ns_if_make_link(const char *host, const char *ta,
         host = host_loc;
     }
 
-    rc = te_string_append(&str, TAPI_HOST_NS_TREE_IF, host, ta, ifname);
-    if (rc == 0)
-        *link = str.ptr;
+    te_string_append(&str, TAPI_HOST_NS_TREE_IF, host, ta, ifname);
+    *link = str.ptr;
     free(host_loc);
 
-    return rc;
+    return 0;
 }
 
 /* See description in tapi_host_ns.h */

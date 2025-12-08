@@ -2641,18 +2641,11 @@ tapi_cfg_get_int_fmt(int *value, const char *format, ...)
     te_errno      rc = 0;
 
     va_start(valist, format);
-    rc = te_string_append_va(&str, format, valist);
+    te_string_append_va(&str, format, valist);
     va_end(valist);
-
-    if (rc != 0)
-    {
-        ERROR("%s(): failed to construct oid", __FUNCTION__);
-        goto cleanup;
-    }
 
     rc = tapi_cfg_get_int_str(value, str.ptr);
 
-cleanup:
     te_string_free(&str);
     return rc;
 }
@@ -2686,18 +2679,10 @@ tapi_cfg_set_int_fmt(int value, int *old_value, const char *format, ...)
     te_errno      rc = 0;
 
     va_start(valist, format);
-    rc = te_string_append_va(&str, format, valist);
+    te_string_append_va(&str, format, valist);
     va_end(valist);
 
-    if (rc != 0)
-    {
-        ERROR("%s(): failed to construct oid", __FUNCTION__);
-        goto cleanup;
-    }
-
     rc = tapi_cfg_set_int_str(value, old_value, str.ptr);
-
-cleanup:
 
     te_string_free(&str);
     return rc;
@@ -2726,18 +2711,11 @@ tapi_cfg_get_uint64_fmt(uint64_t *value, const char *format, ...)
     te_errno rc = 0;
 
     va_start(valist, format);
-    rc = te_string_append_va(&str, format, valist);
+    te_string_append_va(&str, format, valist);
     va_end(valist);
-
-    if (rc != 0)
-    {
-        ERROR("%s(): failed to construct oid", __FUNCTION__);
-        goto cleanup;
-    }
 
     rc = tapi_cfg_get_uint64_str(value, str.ptr);
 
-cleanup:
     te_string_free(&str);
     return rc;
 }
@@ -2776,18 +2754,10 @@ tapi_cfg_set_uint64_fmt(uint64_t value, uint64_t *old_value,
     te_errno rc = 0;
 
     va_start(valist, format);
-    rc = te_string_append_va(&str, format, valist);
+    te_string_append_va(&str, format, valist);
     va_end(valist);
 
-    if (rc != 0)
-    {
-        ERROR("%s(): failed to construct oid", __FUNCTION__);
-        goto cleanup;
-    }
-
     rc = tapi_cfg_set_uint64_str(value, old_value, str.ptr);
-
-cleanup:
 
     te_string_free(&str);
     return rc;
@@ -2865,11 +2835,8 @@ te_errno
 tapi_cfg_add_new_user(const char *agent, int uid)
 {
     te_string user_name = TE_STRING_INIT_STATIC(1024);
-    te_errno rc;
 
-    rc = te_string_append(&user_name, "%s%d", TE_USER_PREFIX, uid);
-    if (rc != 0)
-        return rc;
+    te_string_append(&user_name, "%s%d", TE_USER_PREFIX, uid);
 
     return cfg_add_instance_fmt(NULL, CVT_NONE, NULL,
                                 "/agent:%s/user:%s", agent,
@@ -2903,11 +2870,8 @@ te_errno
 tapi_cfg_del_user(const char *agent, int uid)
 {
     te_string user_name = TE_STRING_INIT_STATIC(1024);
-    te_errno rc;
 
-    rc = te_string_append(&user_name, "%s%d", TE_USER_PREFIX, uid);
-    if (rc != 0)
-        return rc;
+    te_string_append(&user_name, "%s%d", TE_USER_PREFIX, uid);
 
     return cfg_del_instance_fmt(false, "/agent:%s/user:%s", agent,
                                 user_name.ptr);

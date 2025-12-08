@@ -1263,13 +1263,9 @@ tapi_cfg_base_if_add_ipvlan(const char *ta, const char *link,
     int         rc;
     te_string   mode_flag = TE_STRING_INIT_STATIC(64); /* i.e. 'l3s:private' */
 
-    if ((rc = te_string_append(&mode_flag, "%s:%s",
-                           mode != NULL ? mode : TAPI_CFG_IPVLAN_MODE_DEFAULT,
-                           flag != NULL ? flag : TAPI_CFG_IPVLAN_FLAG_DEFAULT
-                           )) != 0)
-    {
-        return rc;
-    }
+    te_string_append(&mode_flag, "%s:%s",
+                     mode != NULL ? mode : TAPI_CFG_IPVLAN_MODE_DEFAULT,
+                     flag != NULL ? flag : TAPI_CFG_IPVLAN_FLAG_DEFAULT);
 
     rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, mode_flag.ptr),
                               "/agent:%s/interface:%s/ipvlan:%s",
@@ -1358,16 +1354,12 @@ tapi_cfg_base_if_set_ipvlan_mode(const char *ta, const char *link,
                                  const char *ifname, const char *mode,
                                  const char *flag)
 {
-    int         rc;
     te_string   mode_flag = TE_STRING_INIT_STATIC(64); /* i.e. 'l3s:private' */
 
-    if ((rc = te_string_append(&mode_flag, "%s:%s",
-                           mode != NULL ? mode : TAPI_CFG_IPVLAN_MODE_DEFAULT,
-                           flag != NULL ? flag : TAPI_CFG_IPVLAN_FLAG_DEFAULT
-                           )) != 0)
-    {
-        return rc;
-    }
+    te_string_append(&mode_flag, "%s:%s",
+                     mode != NULL ? mode : TAPI_CFG_IPVLAN_MODE_DEFAULT,
+                     flag != NULL ? flag : TAPI_CFG_IPVLAN_FLAG_DEFAULT);
+
     return cfg_set_instance_fmt(CFG_VAL(STRING, mode_flag.ptr),
                                 "/agent:%s/interface:%s/ipvlan:%s",
                                 ta, link, ifname);
