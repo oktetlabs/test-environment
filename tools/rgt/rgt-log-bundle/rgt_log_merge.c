@@ -231,8 +231,7 @@ merge(const char *split_log_path, const char *sniff_path,
 
             if (get_needed_frags)
             {
-                CHECK_TE_RC(te_string_append(needed_frags, " %s_after",
-                                             rec.frag_name));
+                te_string_append(needed_frags, " %s_after", rec.frag_name);
                 needed_frags_cnt++;
             }
             else
@@ -291,15 +290,12 @@ merge(const char *split_log_path, const char *sniff_path,
 
                 if (get_needed_frags)
                 {
-                    CHECK_TE_RC(te_string_append(needed_frags,
-                                                 " %s_inner_%" PRIu64,
-                                                 rec.frag_name, i));
+                    te_string_append(needed_frags, " %s_inner_%" PRIu64,
+                                     rec.frag_name, i);
                     if (rec.sniff_logs && sniff_path != NULL)
                     {
-                        CHECK_TE_RC(te_string_append(
-                                               needed_frags,
-                                               " %s_sniff_%" PRIu64,
-                                               rec.frag_name, i));
+                        te_string_append(needed_frags, " %s_sniff_%" PRIu64,
+                                         rec.frag_name, i);
                         sniff_logs_needed = true;
                     }
 
@@ -334,9 +330,7 @@ merge(const char *split_log_path, const char *sniff_path,
     {
         if (sniff_logs_needed)
         {
-            CHECK_TE_RC(te_string_append(
-                               needed_frags,
-                               " sniff_heads sniff_heads_idx"));
+            te_string_append(needed_frags, " sniff_heads sniff_heads_idx");
         }
 
         CHECK_OS_RC(fseeko(f_frags_list, 0, SEEK_SET));
@@ -569,16 +563,14 @@ main(int argc, char **argv)
          */
 
         te_string_reset(&cmd);
-        CHECK_TE_RC(te_string_append(&cmd, "pixz -x "));
+        te_string_append(&cmd, "pixz -x ");
         CHECK_RC(res = merge(split_log_path, sniff_path, f_raw_gist,
                              f_frags_list, f_result, NULL, true, &cmd));
 
         if (res > 0)
         {
-            CHECK_TE_RC(te_string_append(
-                             &cmd, " <\"%s\" | "
-                             "tar x -C \"%s/\"", bundle_path,
-                             split_log_path));
+            te_string_append(&cmd, " <\"%s\" | tar x -C \"%s/\"",
+                             bundle_path, split_log_path);
 
             res = system(cmd.ptr);
             if (res != 0)

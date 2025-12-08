@@ -279,12 +279,11 @@ restore_caps_files_names(void)
             orig_name[j] = '\0';
 
         te_string_reset(&fsrc);
-        CHECK_TE_RC(te_string_append(&fsrc, "%s/%s%u.pcap",
-                                     caps_path, TMP_PREFIX,
-                                     (unsigned)file_id));
+        te_string_append(&fsrc, "%s/%s%u.pcap",
+                         caps_path, TMP_PREFIX, (unsigned)file_id);
 
         te_string_reset(&fdst);
-        CHECK_TE_RC(te_string_append(&fdst, "%s/%s", caps_path, orig_name));
+        te_string_append(&fdst, "%s/%s", caps_path, orig_name);
 
         CHECK_OS_RC(rename(fsrc.ptr, fdst.ptr));
 

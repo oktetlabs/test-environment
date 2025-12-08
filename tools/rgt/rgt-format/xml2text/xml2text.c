@@ -266,22 +266,12 @@ fprintf_log(gen_ctx_user_t *ctx, const char *fmt, ...)
 {
     te_string str = TE_STRING_INIT;
     va_list ap;
-    te_errno rc;
 
     va_start(ap, fmt);
-    rc = te_string_append_va(&str, fmt, ap);
+    te_string_append_va(&str, fmt, ap);
     va_end(ap);
 
-    if (rc != 0)
-    {
-        va_start(ap, fmt);
-        vfprintf(ctx->fd, fmt, ap);
-        va_end(ap);
-    }
-    else
-    {
-        fwrite_log(ctx, str.ptr, str.len, 1);
-    }
+    fwrite_log(ctx, str.ptr, str.len, 1);
 
     te_string_free(&str);
 }

@@ -396,12 +396,11 @@ append_to_frag(int node_id, fragment_type frag_type,
 
     te_string frag_name = TE_STRING_INIT;
 
-    CHECK_TE_RC(te_string_append(&frag_name, "%d_frag_",
-                                 node_id));
+    te_string_append(&frag_name, "%d_frag_", node_id);
     switch (frag_type)
     {
         case FRAG_START:
-            CHECK_TE_RC(te_string_append(&frag_name, "%s", "start"));
+            te_string_append(&frag_name, "%s", "start");
             break;
 
         case FRAG_INNER:
@@ -419,13 +418,13 @@ append_to_frag(int node_id, fragment_type frag_type,
             else
                 node_descr->cur_file_size += length;
 
-            CHECK_TE_RC(te_string_append(&frag_name, "inner_%" PRIu64,
-                                         node_descr->cur_file_num));
+            te_string_append(&frag_name, "inner_%" PRIu64,
+                             node_descr->cur_file_num);
             break;
         }
 
         case FRAG_END:
-            CHECK_TE_RC(te_string_append(&frag_name, "%s", "end"));
+            te_string_append(&frag_name, "%s", "end");
             break;
 
         case FRAG_AFTER:
@@ -433,7 +432,7 @@ append_to_frag(int node_id, fragment_type frag_type,
 
             node_descr->after_frag = true;
 
-            CHECK_TE_RC(te_string_append(&frag_name, "%s", "after"));
+            te_string_append(&frag_name, "%s", "after");
             break;
     }
 
@@ -857,8 +856,7 @@ process_pcap_files(const char *sniff_dir, const char *dst_path,
         if (len >= 5 && strcmp(&ent->d_name[len - 5], ".pcap") == 0)
         {
             te_string_reset(&fpath);
-            CHECK_TE_RC(te_string_append(&fpath, "%s/%s",
-                                         sniff_dir, ent->d_name));
+            te_string_append(&fpath, "%s/%s", sniff_dir, ent->d_name);
 
             if (caps_max == caps_num)
             {
@@ -1437,8 +1435,7 @@ print_frags_list(const char *output_path, FILE *f_raw_gist,
         }
     }
 
-    CHECK_TE_RC(te_string_append(&path, "%s/%d_frag_end",
-                                 output_path, node_id));
+    te_string_append(&path, "%s/%d_frag_end", output_path, node_id);
     f_frag = fopen(path.ptr, "r");
     if (f_frag == NULL && errno != ENOENT)
     {

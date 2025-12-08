@@ -88,8 +88,7 @@ rgt_load_caps_idx(const char *split_log_path,
 
     RGT_ERROR_INIT;
 
-    CHECK_TE_RC(te_string_append(&idx_path, "%s/sniff_heads_idx",
-                                 split_log_path));
+    te_string_append(&idx_path, "%s/sniff_heads_idx", split_log_path);
     rc = stat(te_string_value(&idx_path), &st);
     if (rc < 0)
     {
