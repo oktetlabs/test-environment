@@ -83,7 +83,7 @@ static te_errno
 play(tapi_media_player *player, const char *source, const char *options)
 {
     te_string         cmd = TE_STRING_INIT;
-    te_errno          rc;
+    te_errno          rc = 0;
     static const char default_opts[] = "-cache 32 "
                                        "-vo null "
                                        "-ao null "
@@ -108,10 +108,7 @@ play(tapi_media_player *player, const char *source, const char *options)
 
     reset_errors(player);
 
-    rc = te_string_append(&cmd, "%s %s %s", player->player, options,
-                          source);
-    if (rc != 0)
-        return TE_RC(TE_TAPI, rc);
+    te_string_append(&cmd, "%s %s %s", player->player, options, source);
 
     player->pid = rpc_te_shell_cmd(player->rpcs, cmd.ptr, -1,
                                    &player->stdin, &player->stdout,
