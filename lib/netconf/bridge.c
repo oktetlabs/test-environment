@@ -177,7 +177,6 @@ netconf_port_list(netconf_handle nh, const char *brname,
     netconf_list *nlist;
     netconf_node *node;
     te_string     str = TE_STRING_INIT;
-    te_errno      rc = 0;
     uint32_t      br_ifind;
 
     IFNAME_TO_INDEX(brname, br_ifind);
@@ -195,22 +194,15 @@ netconf_port_list(netconf_handle nh, const char *brname,
             if (filter_cb != NULL &&
                 filter_cb(node->data.bridge_port.name, filter_opaque) == true)
                 continue;
-            rc = te_string_append(&str, "%s ", node->data.bridge_port.name);
-            if (rc != 0)
-            {
-                te_string_free(&str);
-                rc = TE_RC(TE_TA_UNIX, rc);
-                break;
-            }
+            te_string_append(&str, "%s ", node->data.bridge_port.name);
         }
     }
 
     netconf_list_free(nlist);
 
-    if (rc == 0)
-        *list = str.ptr;
+    *list = str.ptr;
 
-    return rc;
+    return 0;
 }
 
 /**
@@ -387,7 +379,6 @@ netconf_bridge_list(netconf_handle nh, netconf_bridge_list_filter_func filter_cb
     netconf_list *nlist;
     netconf_node *node;
     te_string     str = TE_STRING_INIT;
-    te_errno      rc = 0;
 
     nlist = netconf_dump_request(nh, RTM_GETLINK, AF_UNSPEC,
                                  bridge_list_cb, NULL);
@@ -404,20 +395,13 @@ netconf_bridge_list(netconf_handle nh, netconf_bridge_list_filter_func filter_cb
             if (filter_cb != NULL &&
                 filter_cb(node->data.bridge.ifname, filter_opaque) == false)
                 continue;
-            rc = te_string_append(&str, "%s ", node->data.bridge.ifname);
-            if (rc != 0)
-            {
-                te_string_free(&str);
-                rc = TE_RC(TE_TA_UNIX, rc);
-                break;
-            }
+            te_string_append(&str, "%s ", node->data.bridge.ifname);
         }
     }
 
     netconf_list_free(nlist);
 
-    if (rc == 0)
-        *list = str.ptr;
+    *list = str.ptr;
 
-    return rc;
+    return 0;
 }

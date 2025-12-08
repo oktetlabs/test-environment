@@ -53,7 +53,6 @@ netconf_udp_tunnel_list(netconf_handle nh,
     netconf_node   *node;
     te_string       str = TE_STRING_INIT;
     char           *ifname;
-    te_errno        rc = 0;
 
     if (strcmp(link_kind, "geneve") == 0)
         nlist = netconf_dump_request(nh, RTM_GETLINK, AF_UNSPEC,
@@ -85,20 +84,13 @@ netconf_udp_tunnel_list(netconf_handle nh,
                 filter_cb(ifname, filter_opaque) == false)
                 continue;
 
-            rc = te_string_append(&str, "%s ", ifname);
-            if (rc != 0)
-            {
-                te_string_free(&str);
-                rc = TE_RC(TE_TA_UNIX, rc);
-                break;
-            }
+            te_string_append(&str, "%s ", ifname);
         }
     }
 
     netconf_list_free(nlist);
 
-    if (rc == 0)
-        *list = str.ptr;
+    *list = str.ptr;
 
-    return rc;
+    return 0;
 }

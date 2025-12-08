@@ -340,7 +340,6 @@ netconf_veth_list(netconf_handle nh, netconf_veth_list_filter_func filter_cb,
     netconf_list *nlist;
     netconf_node *node;
     te_string     str = TE_STRING_INIT;
-    te_errno      rc = 0;
 
     nlist = netconf_dump_request(nh, RTM_GETLINK, AF_UNSPEC,
                                  veth_list_cb, NULL);
@@ -358,20 +357,13 @@ netconf_veth_list(netconf_handle nh, netconf_veth_list_filter_func filter_cb,
                 filter_cb(node->data.veth.ifname, filter_opaque) == false)
                 continue;
 
-            rc = te_string_append(&str, "%s ", node->data.veth.ifname);
-            if (rc != 0)
-            {
-                te_string_free(&str);
-                rc = TE_RC(TE_TA_UNIX, rc);
-                break;
-            }
+            te_string_append(&str, "%s ", node->data.veth.ifname);
         }
     }
 
     netconf_list_free(nlist);
 
-    if (rc == 0)
-        *list = str.ptr;
+    *list = str.ptr;
 
-    return rc;
+    return 0;
 }

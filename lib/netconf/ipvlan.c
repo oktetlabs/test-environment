@@ -170,7 +170,6 @@ netconf_ipvlan_list(netconf_handle nh, const char *link, char **list)
     netconf_node *node;
     te_string     str = TE_STRING_INIT;
     int           index;
-    te_errno      rc = 0;
 
     if (link == NULL || list == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -188,20 +187,13 @@ netconf_ipvlan_list(netconf_handle nh, const char *link, char **list)
     for (node = nlist->head; node != NULL; node = node->next)
     {
         if (node->data.ipvlan.link == index)
-        {
-            rc = te_string_append(&str, "%s ", node->data.ipvlan.ifname);
-            if (rc != 0)
-                break;
-        }
+            te_string_append(&str, "%s ", node->data.ipvlan.ifname);
     }
 
-    if (rc == 0)
-        *list = str.ptr;
-    else
-        te_string_free(&str);
+    *list = str.ptr;
 
     netconf_list_free(nlist);
-    return rc;
+    return 0;
 }
 
 /* See description in netconf.h */
