@@ -161,7 +161,6 @@ te_rpc_error_set(te_errno err, const char *msg, ...)
         te_string   str = TE_STRING_BUF_INIT(te_rpc_err.str);
         char       *s;
         va_list     ap;
-        te_errno    ret;
 
         tarpc_out_arg *out_common = te_rpc_err.out_common;
 
@@ -170,15 +169,9 @@ te_rpc_error_set(te_errno err, const char *msg, ...)
         out_common->errno_changed = true;
 
         va_start(ap, msg);
-        ret = te_string_append_va(&str, msg, ap);
+        te_string_append_va(&str, msg, ap);
         va_end(ap);
-        if (ret != 0)
-        {
-            ERROR("te_string_append() failed to write error "
-                  "message, rc = %r", ret);
-            te_rpc_err.str[0] = '\0';
-        }
-        else if (str.len > 0)
+        if (str.len > 0)
         {
             ERROR("%s", str.ptr);
         }

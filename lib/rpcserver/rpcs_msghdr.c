@@ -44,10 +44,8 @@ rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
     memset(helper, 0, sizeof(*helper));
 
     va_start(ap, name_fmt);
-    rc = te_string_append_va(&name_base_str, name_fmt, ap);
+    te_string_append_va(&name_base_str, name_fmt, ap);
     va_end(ap);
-    if (rc != 0)
-        return rc;
 
     tarpc_addr = &tarpc_msg->msg_name;
 
@@ -98,10 +96,8 @@ rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
             if (check_args != RPCS_MSGHDR_CHECK_ARGS_NONE)
             {
                 te_string_reset(&name_str);
-                rc = te_string_append(&name_str, "%s.msg_iov[%d].iov_val",
-                                      name_base_str.ptr, i);
-                if (rc != 0)
-                    return rc;
+                te_string_append(&name_str, "%s.msg_iov[%d].iov_val",
+                                 name_base_str.ptr, i);
 
                 tarpc_init_checked_arg(
                     arglist, msg->msg_iov[i].iov_base,
@@ -158,10 +154,7 @@ rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
         if (msg->msg_name != NULL)
         {
             te_string_reset(&name_str);
-            rc = te_string_append(&name_str, "%s.msg_name",
-                                   name_base_str.ptr);
-             if (rc != 0)
-                 return rc;
+            te_string_append(&name_str, "%s.msg_name", name_base_str.ptr);
 
              tarpc_init_checked_arg(
                arglist, (uint8_t *)helper->addr,
@@ -174,10 +167,7 @@ rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
         if (msg->msg_iov != NULL)
         {
             te_string_reset(&name_str);
-            rc = te_string_append(&name_str, "%s.msg_iov",
-                                  name_base_str.ptr);
-            if (rc != 0)
-                return rc;
+            te_string_append(&name_str, "%s.msg_iov", name_base_str.ptr);
 
             tarpc_init_checked_arg(
                 arglist, (uint8_t *)msg->msg_iov,
@@ -188,8 +178,7 @@ rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
         if (msg->msg_control != NULL)
         {
             te_string_reset(&name_str);
-            rc = te_string_append(&name_str, "%s.msg_control",
-                                  name_base_str.ptr);
+            te_string_append(&name_str, "%s.msg_control", name_base_str.ptr);
             if (rc != 0)
                 return rc;
 
@@ -323,9 +312,7 @@ rpcs_mmsghdrs_tarpc2h(rpcs_msghdr_check_args_mode check_args,
     for (i = 0; i < num; i++)
     {
         te_string_reset(&name_str);
-        rc = te_string_append(&name_str, "mmsgs[%u]", i);
-        if (rc != 0)
-            goto finish;
+        te_string_append(&name_str, "mmsgs[%u]", i);
 
         mmsgs_aux[i].msg_len = tarpc_mmsgs[i].msg_len;
         rc = rpcs_msghdr_tarpc2h(check_args, &tarpc_mmsgs[i].msg_hdr,
