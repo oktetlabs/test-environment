@@ -31,24 +31,14 @@ extern "C" {
         unsigned int index;                                                   \
         te_string gather_str = TE_STRING_INIT;                                \
                                                                               \
-        gather_rc = te_string_append(&gather_str, "%s%s%s\n",                 \
-                                     empty_string_if_null(prefix),            \
-                                     prefix == NULL ? "" : ": ", title);      \
-        if (gather_rc != 0)                                                   \
-        {                                                                     \
-            te_string_free(&gather_str);                                      \
-            break;                                                            \
-        }                                                                     \
+        te_string_append(&gather_str, "%s%s%s\n",                             \
+                         empty_string_if_null(prefix),                        \
+                         prefix == NULL ? "" : ": ", title);                  \
                                                                               \
         for (index = 0; index < N; index++)                                   \
-        {                                                                     \
-            gather_rc = te_string_append(&gather_str, fmt_str, __VA_ARGS__);  \
-            if (gather_rc != 0)                                               \
-                break;                                                        \
-        }                                                                     \
+            te_string_append(&gather_str, fmt_str, __VA_ARGS__);              \
                                                                               \
-        if (gather_rc == 0)                                                   \
-            RING("%s", gather_str.ptr);                                       \
+        RING("%s", gather_str.ptr);                                           \
                                                                               \
         te_string_free(&gather_str);                                          \
     } while (0)

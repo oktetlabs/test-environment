@@ -192,9 +192,8 @@ test_arg2testpmd_arg(const char *test_arg)
     char *chop;
     size_t i;
 
-    CHECK_RC(te_string_append(&result, "%s%s", testpmd_arg_prefix,
-                              test_arg +
-                              (sizeof(TAPI_DPDK_TESTPMD_ARG_PREFIX) - 1)));
+    te_string_append(&result, "%s%s", testpmd_arg_prefix,
+                     test_arg + (sizeof(TAPI_DPDK_TESTPMD_ARG_PREFIX) - 1));
 
     for (i = 0; i < result.len; i++)
     {
@@ -649,23 +648,15 @@ tapi_dpdk_add_dbells_params(te_kvpair_h *test_params, const char *q_num,
     if (rc != 0)
         return rc;
 
-    rc = te_string_append(&dbells, "%s_dbells,", pref);
-    if (rc != 0)
-        goto out;
+    te_string_append(&dbells, "%s_dbells,", pref);
 
     for (q = 0; q < qnum; q++)
-    {
-        rc = te_string_append(&dbells, "%s_q%u_dbells,", pref, q);
-        if (rc != 0)
-            goto out;
-    }
+        te_string_append(&dbells, "%s_q%u_dbells,", pref, q);
 
     display_xstats_arg = TAPI_DPDK_TESTPMD_ARG_PREFIX "display-xstats";
     display_xstats = te_kvpairs_get(test_params, display_xstats_arg);
 
-    rc = te_string_append(&dbells, "%s", empty_string_if_null(display_xstats));
-    if (rc != 0)
-        goto out;
+    te_string_append(&dbells, "%s", empty_string_if_null(display_xstats));
 
     if (display_xstats != NULL)
     {
@@ -974,7 +965,7 @@ append_testpmd_nb_cores_arg(unsigned int n_fwd_cpus,
 
     tapi_dpdk_append_argument("--nb-cores", argc_out, argv_out);
 
-    CHECK_RC(te_string_append(&nb_cores, "%lu", n_fwd_cpus));
+    te_string_append(&nb_cores, "%lu", n_fwd_cpus);
 
     tapi_dpdk_append_argument(nb_cores.ptr, argc_out, argv_out);
 
@@ -1091,10 +1082,7 @@ tapi_dpdk_prepare_and_build_eal_args(rcf_rpc_server *rpcs, tapi_env *env,
 
     prep_eal->nb_cores = prep_eal->nb_cpus_grabbed - 1 - service_cores_count;
 
-    rc = te_string_append(&prep_eal->testpmd_path, "%s/dpdk-testpmd",
-                          working_dir);
-    if (rc != 0)
-        goto fail_get_testpmd_path;
+    te_string_append(&prep_eal->testpmd_path, "%s/dpdk-testpmd", working_dir);
 
     rc = tapi_dpdk_build_eal_arguments(rpcs, env, prep_eal->nb_cpus_grabbed,
                                        prep_eal->grabbed_cpu_ids,
@@ -1126,7 +1114,6 @@ tapi_dpdk_prepare_and_build_eal_args(rcf_rpc_server *rpcs, tapi_env *env,
 fail_get_port_number:
 fail_build_ports_vector:
 fail_build_eal_args:
-fail_get_testpmd_path:
 fail_grab_cpus:
     tapi_dpdk_testpmd_prepare_eal_cleanup(prep_eal, true, rpcs->ta);
     free(working_dir);
@@ -1368,12 +1355,7 @@ tapi_dpdk_testpmd_is_opt_supported(rcf_rpc_server *rpcs, tapi_env *env,
     if (*opt_supported)
     {
         *opt_supported = false;
-        rc = te_string_append(&stop_testpmd_cmd, "\r");
-        if (rc != 0)
-        {
-            ERROR("Failed to create stop testpmd command string");
-            goto out;
-        }
+        te_string_append(&stop_testpmd_cmd, "\r");
 
         wait_timeout_ms = 100;
         max_wait_timeout_ms = 60000;

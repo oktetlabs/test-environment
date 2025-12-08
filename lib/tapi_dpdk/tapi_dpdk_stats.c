@@ -124,7 +124,6 @@ tapi_dpdk_stats_summary_artifact(const te_meas_stats_t *meas_stats,
     unsigned int freq_size;
     unsigned int bin_edges_num;
     te_string str = TE_STRING_INIT;
-    int gather_rc = 0;
     unsigned int i;
     unsigned int j;
     char *fmt_str;
@@ -134,21 +133,16 @@ tapi_dpdk_stats_summary_artifact(const te_meas_stats_t *meas_stats,
     if (summary->sample_deviation == NULL)
         return TE_EFAULT;
 
-    gather_rc = te_string_append(&str, "%s%s%s",
-                                empty_string_if_null(prefix),
-                                prefix == NULL ? "" : ": ",
-                                "Datapoints and ratios of theirs devations "
-                                "from prefixed subsample mean to subsample "
-                                "deviation\n");
-    if (gather_rc != 0)
-        goto out;
+    te_string_append(&str, "%s%s%s",
+                     empty_string_if_null(prefix),
+                     prefix == NULL ? "" : ": ",
+                     "Datapoints and ratios of theirs devations "
+                     "from prefixed subsample mean to subsample "
+                     "deviation\n");
 
     for (i = 0; i < data->num_datapoints; i++)
     {
-        gather_rc = te_string_append(&str, "%u. %.0f\n{ ",
-                                     i + 1, data->sample[i]);
-        if (gather_rc != 0)
-            goto out;
+        te_string_append(&str, "%u. %.0f\n{ ", i + 1, data->sample[i]);
 
         for (j = 0; j < data->num_datapoints - i; j++)
         {
@@ -156,11 +150,8 @@ tapi_dpdk_stats_summary_artifact(const te_meas_stats_t *meas_stats,
             if (j == data->num_datapoints - i - 1)
                 fmt_str = "%u: %.3f }\n";
 
-            gather_rc = te_string_append(&str, fmt_str,
-                                         j + i + 1,
-                                         summary->sample_deviation[i][j + i]);
-            if (gather_rc != 0)
-                goto out;
+            te_string_append(&str, fmt_str,
+                             j + i + 1, summary->sample_deviation[i][j + i]);
         }
     }
 
@@ -179,8 +170,6 @@ tapi_dpdk_stats_summary_artifact(const te_meas_stats_t *meas_stats,
                                             summary->bin_edges[index],
                                             data->mean),
                                       summary->freq[index] * 100);
-        if (gather_rc != 0)
-            goto out;
     }
     else
     {
@@ -196,14 +185,11 @@ tapi_dpdk_stats_summary_artifact(const te_meas_stats_t *meas_stats,
                                                summary->bin_edges[index + 1],
                                                data->mean),
                                       summary->freq[index] * 100);
-        if (gather_rc != 0)
-            goto out;
     }
 
-out:
     te_string_free(&str);
 
-    return gather_rc;
+    return 0;
 }
 
 void
