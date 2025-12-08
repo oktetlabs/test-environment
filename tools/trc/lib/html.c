@@ -307,11 +307,8 @@ trc_include_external_html(FILE *f, const char *src)
 {
     te_string cmd = TE_STRING_INIT_STATIC(4096);
     FILE *finclude;
-    te_errno rc;
 
-    rc = te_string_append(&cmd, "trc_include_html.sh %s", src);
-    if (rc != 0)
-        return rc;
+    te_string_append(&cmd, "trc_include_html.sh %s", src);
 
     finclude = popen(cmd.ptr, "r");
 

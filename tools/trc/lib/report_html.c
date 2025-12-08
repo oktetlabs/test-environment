@@ -2140,7 +2140,6 @@ trc_report_keys_collect(trc_keys *keys,
                         trc_report_ctx *ctx,
                         unsigned int flags)
 {
-    te_errno                rc = 0;
     te_trc_db_walker       *walker;
     trc_db_walker_motion    mv;
     unsigned int            level = 0;
@@ -2151,8 +2150,7 @@ trc_report_keys_collect(trc_keys *keys,
     if (walker == NULL)
         return TE_ENOMEM;
 
-    while ((rc == 0) &&
-           ((mv = trc_db_walker_move(walker)) != TRC_DB_WALKER_ROOT))
+    while (((mv = trc_db_walker_move(walker)) != TRC_DB_WALKER_ROOT))
     {
         const trc_report_test_data *test_data =
             trc_db_walker_get_user_data(walker, ctx->db_uid);
@@ -2178,10 +2176,7 @@ trc_report_keys_collect(trc_keys *keys,
 
                     last_test_name = trc_db_walker_get_test(walker)->name;
 
-                    rc = te_string_append(&test_path, "/%s",
-                                          last_test_name);
-                    if (rc != 0)
-                        break;
+                    te_string_append(&test_path, "/%s", last_test_name);
 
                     if (!trc_report_test_output(stats, flags))
                         break;
@@ -2214,7 +2209,7 @@ trc_report_keys_collect(trc_keys *keys,
 
     trc_db_free_walker(walker);
     te_string_free(&test_path);
-    return rc;
+    return 0;
 }
 
 #define TRC_REPORT_OL_KEY_PREFIX        "OL "
@@ -3378,18 +3373,13 @@ trc_report_javascript_table(FILE         *f, trc_report_ctx *ctx,
 
                     last_test_name = trc_db_walker_get_test(walker)->name;
 
-                    rc = te_string_append(&test_path, "/%s",
-                                          last_test_name);
-                    if (rc != 0)
-                        break;
+                    te_string_append(&test_path, "/%s", last_test_name);
 
                     if (!trc_report_test_output(stats, flags))
                         break;
 
-                    rc = te_string_append(&subtests[level - 1], "'%s',",
-                                          test_path.ptr);
-                    if (rc != 0)
-                        break;
+                    te_string_append(&subtests[level - 1], "'%s',",
+                                     test_path.ptr);
 
                     rc = trc_report_javascript_table_entry(f, test->name,
                                                            test_type,
@@ -3473,11 +3463,7 @@ trc_report_html_table(FILE    *f, trc_report_ctx *ctx,
                 {
                     /* Test entry */
                     if (level > 1)
-                    {
-                        rc = te_string_append(&level_str, "*/");
-                        if (rc != 0)
-                            break;
-                    }
+                        te_string_append(&level_str, "*/");
                 }
                 /*@fallthrough@*/
 
@@ -3493,10 +3479,7 @@ trc_report_html_table(FILE    *f, trc_report_ctx *ctx,
 
                     last_test_name = trc_db_walker_get_test(walker)->name;
 
-                    rc = te_string_append(&test_path, "/%s",
-                                          last_test_name);
-                    if (rc != 0)
-                        break;
+                    te_string_append(&test_path, "/%s", last_test_name);
                     if (is_stats)
                         rc = trc_report_test_stats_to_html(f, ctx, walker,
                                                            flags,
@@ -3614,8 +3597,7 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
     /* HTML header */
     if (title == NULL)
     {
-        rc = te_string_append(&title_string, "%s",
-                              trc_html_title_def);
+        te_string_append(&title_string, "%s", trc_html_title_def);
         TAILQ_FOREACH(tag, &gctx->tags, links)
         {
             te_string_append(&title_string, "%s %s",

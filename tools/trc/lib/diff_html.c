@@ -2387,11 +2387,9 @@ trc_diff_result_to_html(const trc_diff_result *result,
         {
             if (!curr->is_iter)
             {
-                rc = te_string_append(&test_name, "%s%s",
-                                      curr->level == 0 ? "" : "/",
-                                      curr->ptr.test->name);
-                if (rc != 0)
-                    goto cleanup;
+                te_string_append(&test_name, "%s%s",
+                                 curr->level == 0 ? "" : "/",
+                                 curr->ptr.test->name);
             }
 
             /*
@@ -2446,11 +2444,7 @@ trc_diff_result_to_html(const trc_diff_result *result,
         else
         {
             if (curr->level > 0)
-            {
-                rc = te_string_append(&test_name, "*-");
-                if (rc != 0)
-                    goto cleanup;
-            }
+                te_string_append(&test_name, "*-");
 
             fprintf(f, trc_diff_full_table_test_row_start,
                     i, test_name.ptr, curr->ptr.test->name,

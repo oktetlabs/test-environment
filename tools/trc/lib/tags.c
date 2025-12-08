@@ -132,17 +132,11 @@ trc_tags_json_to_list(tqh_strings *parsed_tags, char *json_buf)
         }
 
         if (cur_tag_value != NULL)
-            rc = te_string_append(&tag_combine, "%s:%s", cur_tag, cur_tag_value);
+            te_string_append(&tag_combine, "%s:%s", cur_tag, cur_tag_value);
         else
-            rc = te_string_append(&tag_combine, "%s", cur_tag);
+            te_string_append(&tag_combine, "%s", cur_tag);
 
         json_decref(tag);
-
-        if (rc != 0)
-        {
-            ERROR("Failed to combine tag name and tag value");
-            goto cleanup;
-        }
 
         rc = trc_add_tag(parsed_tags, te_string_value(&tag_combine));
         te_string_reset(&tag_combine);

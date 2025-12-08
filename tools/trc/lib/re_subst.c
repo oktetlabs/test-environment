@@ -290,21 +290,12 @@ key_domains_read(FILE *f)
         if (*s != '\0')
             continue;
 
-        rc = te_string_append(&match_str, "^ref://%s/(.*)", domain);
+        te_string_append(&match_str, "^ref://%s/(.*)", domain);
+        te_string_append(&replace_str, "<a href=\"%s\\1\">%s:\\1</a>",
+                         url, domain);
 
-        if (rc == 0)
-        {
-            rc = te_string_append(&replace_str,
-                                  "<a href=\"%s\\1\">%s:\\1</a>",
-                                  url, domain);
-        }
-
-        if (rc == 0)
-        {
-            rc = add_subst(url_namespace, te_string_value(&match_str),
-                           te_string_value(&replace_str));
-        }
-
+        rc = add_subst(url_namespace, te_string_value(&match_str),
+                       te_string_value(&replace_str));
         if (rc != 0)
         {
             ERROR("%s(): failed to add URL substitution for domain %s",
