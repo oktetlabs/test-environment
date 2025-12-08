@@ -31,7 +31,7 @@ create_files(size_t nfiles, rcf_rpc_server *rpcs, const char *path)
     for (i = 0; i < nfiles; i++)
     {
         te_string_reset(&filename);
-        CHECK_RC(te_string_append(&filename, "%s/%zu", path, i));
+        te_string_append(&filename, "%s/%zu", path, i);
         if (tapi_file_create_ta(rpcs->ta, filename.ptr, "%s", "") != 0)
             break;
         ncreated++;

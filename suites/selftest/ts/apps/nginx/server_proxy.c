@@ -123,8 +123,8 @@ share_put_file(rcf_rpc_server *rpcs, const char *filepath)
     CHECK_RC(tapi_file_copy_ta(NULL, filepath, rpcs->ta,
                                SRV_LOC_ROOT_PATH "/" SRV_LOC_ROOT_FILENAME));
 
-    CHECK_RC(te_string_append(&cmd, "chmod go+r %s",
-                              SRV_LOC_ROOT_PATH "/" SRV_LOC_ROOT_FILENAME));
+    te_string_append(&cmd, "chmod go+r %s",
+                     SRV_LOC_ROOT_PATH "/" SRV_LOC_ROOT_FILENAME);
 
     rpc_system(rpcs, cmd.ptr);
 }
@@ -135,7 +135,7 @@ share_cleanup(rcf_rpc_server *rpcs)
     char buf[RPC_SHELL_CMDLINE_MAX];
     te_string cmd = TE_STRING_BUF_INIT(buf);
 
-    CHECK_RC(te_string_append(&cmd, "rm -rf %s", SRV_LOC_ROOT_PATH));
+    te_string_append(&cmd, "rm -rf %s", SRV_LOC_ROOT_PATH);
 
     rpc_system(rpcs, cmd.ptr);
 }

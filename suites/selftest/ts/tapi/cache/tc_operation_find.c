@@ -36,10 +36,8 @@ cb_func(cfg_handle handle, void *opaque)
     for (i = 0; i < op->num_expected_found; i++)
     {
         te_string_reset(&oid_expected);
-        rc = te_string_append(&oid_expected, "%s/%s",
-                              TAPI_CACHE_ROOT_INST, op->expected_found[i]);
-        if (rc != 0)
-            break;
+        te_string_append(&oid_expected, "%s/%s",
+                         TAPI_CACHE_ROOT_INST, op->expected_found[i]);
 
         if (strcmp(oid, oid_expected.ptr) == 0)
         {

@@ -161,12 +161,12 @@ main(int argc, char **argv)
 
                 if (strcmp(subinstances[j],"nil") == 0)
                 {
-                    CHECK_RC(te_string_append(&ar, "%s", areas[i]));
+                    te_string_append(&ar, "%s", areas[i]);
                 }
                 else
                 {
-                    CHECK_RC(te_string_append(&ar, "%s/bar:%s",
-                                              areas[i], subinstances[j]));
+                    te_string_append(&ar, "%s/bar:%s",
+                                     areas[i], subinstances[j]);
                 }
 
                 rc = cfg_find_fmt(NULL, "%s/%s/baz:%s",
