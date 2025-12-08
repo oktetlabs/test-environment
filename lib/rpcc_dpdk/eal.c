@@ -331,7 +331,7 @@ tapi_rte_get_dev_args(const char *ta, const char *vendor, const char *device,
 
         if (args != NULL && args[0] != '\0')
         {
-            rc = te_string_append(&result, "%s%s", first ? "" : ",", args);
+            te_string_append(&result, "%s%s", first ? "" : ",", args);
             first = false;
         }
 
