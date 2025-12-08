@@ -243,9 +243,7 @@ expand_substitution(cfg_inst_val val_in, cfg_inst_val *val_out,
         return rc;
     }
 
-    rc = te_string_append(&val_out_str, "%s", val_in_str);
-    if (rc != 0)
-        goto out;
+    te_string_append(&val_out_str, "%s", val_in_str);
 
     rc = replace_substitutions_to_values(&val_out_str, &is_subs_found);
     if (rc != 0)

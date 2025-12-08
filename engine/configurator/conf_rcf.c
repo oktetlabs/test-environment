@@ -78,9 +78,8 @@ cfg_rcfunix_make_confstr(te_string *confstr, cfg_instance *ta)
 
             if (confstr->len == 0)
             {
-                rc = te_string_append(confstr, ":");
-                if (rc != 0)
-                    break;
+                te_string_append(confstr, ":");
+                rc = 0;
             }
             continue;
         }
@@ -104,12 +103,11 @@ cfg_rcfunix_make_confstr(te_string *confstr, cfg_instance *ta)
             inst->val.val_str[0] == '\0')
             continue;
 
-        rc = te_string_append(confstr, "%s%s%s:",
-                              p->name,
-                              p->has_value ? "=" : "",
-                              p->has_value ? inst->val.val_str : "");
-        if (rc != 0)
-            break;
+        te_string_append(confstr, "%s%s%s:",
+                         p->name,
+                         p->has_value ? "=" : "",
+                         p->has_value ? inst->val.val_str : "");
+        rc = 0;
     }
 
     if (rc != 0)

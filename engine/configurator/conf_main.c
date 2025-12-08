@@ -2047,8 +2047,9 @@ get_path_to_xslt_filter(te_string *path)
         return TE_ENOENT;
     }
 
-    return te_string_append(path, "%s/default/share/xsl/%s", dir_name,
-                            CONF_SUBTREE_BACKUP_FILTER_NAME);
+    te_string_append(path, "%s/default/share/xsl/%s", dir_name,
+                     CONF_SUBTREE_BACKUP_FILTER_NAME);
+    return 0;
 }
 
 /**
@@ -2071,32 +2072,29 @@ filter_backup_by_subtrees(const char *current_backup, const te_vec *subtrees,
     te_errno rc;
 
     if (subtrees == NULL || te_vec_size(subtrees) == 0)
-        return te_string_append(target_backup, "%s", current_backup);
+    {
+        te_string_append(target_backup, "%s", current_backup);
+        return 0;
+    }
 
-    rc = te_string_append(&filter_filename, CONF_FILTERS_FILE_NAME,
-                          tmp_dir, getpid(), get_time_ms());
-    if (rc != 0)
-        goto out;
+    te_string_append(&filter_filename, CONF_FILTERS_FILE_NAME,
+                     tmp_dir, getpid(), get_time_ms());
 
     rc = cfg_backup_create_filter_file(filter_filename.ptr, subtrees);
     if (rc != 0)
         goto out;
 
-    rc = te_string_append(target_backup, CONF_SUBTREE_BACKUP_NAME,
-                          tmp_dir, getpid(), get_time_ms());
-    if (rc != 0)
-        goto out;
+    te_string_append(target_backup, CONF_SUBTREE_BACKUP_NAME,
+                     tmp_dir, getpid(), get_time_ms());
 
     rc = get_path_to_xslt_filter(&xslt_file);
     if (rc != 0)
         goto out;
 
-    rc = te_string_append(&filter_cmd,
-                          "xsltproc --stringparam filters %s %s %s > %s",
-                          filter_filename.ptr, xslt_file.ptr,
-                          current_backup, target_backup->ptr);
-    if (rc != 0)
-        goto out;
+    te_string_append(&filter_cmd,
+                     "xsltproc --stringparam filters %s %s %s > %s",
+                     filter_filename.ptr, xslt_file.ptr,
+                     current_backup, target_backup->ptr);
 
     rc = system(filter_cmd.ptr);
     if (rc != 0)
