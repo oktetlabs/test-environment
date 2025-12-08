@@ -311,9 +311,7 @@ sys_if_dir_list(const char *oid, const char *prefix, const char *sub_id,
     if (rc != 0)
         return rc;
 
-    rc = te_string_append(&prefix_ext, "%s/%s", prefix, sub_id);
-    if (rc != 0)
-        return rc;
+    te_string_append(&prefix_ext, "%s/%s", prefix, sub_id);
 
     rc = get_dir_list(path, buf, sizeof(buf), true,
                       &sys_if_list_include_callback, (void *)prefix_ext.ptr,
@@ -421,7 +419,7 @@ sys_opt_list(unsigned int gid, const char *oid,
         te_string str = TE_STRING_BUF_INIT(buf);
 
         for (i = 0; i < fields_num; i++)
-            CHECK_NZ_RETURN(te_string_append(&str, "%d ", i));
+            te_string_append(&str, "%d ", i);
     }
     else
     {

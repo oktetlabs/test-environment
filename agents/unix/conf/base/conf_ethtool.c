@@ -672,10 +672,7 @@ ta_ethtool_get_strings(unsigned int gid, const char *if_name,
         uint32_t buf[1];
     } sset_info;
 
-    rc = te_string_append(&obj_name, "%s.%u",
-                          if_name, set_id);
-    if (rc != 0)
-        return rc;
+    te_string_append(&obj_name, "%s.%u", if_name, set_id);
 
     obj = ta_obj_find(TA_OBJ_TYPE_IF_STRINGS, te_string_value(&obj_name),
                       gid);
@@ -831,8 +828,8 @@ static te_errno
 rssh_object_name(te_string *str, const char *if_name,
                  unsigned int rss_context)
 {
-    return te_string_append(str, "%s.%u",
-                            if_name, rss_context);
+    te_string_append(str, "%s.%u", if_name, rss_context);
+    return 0;
 }
 
 /* Release memory allocated for ta_ethtool_rxfh structure */
@@ -1441,9 +1438,7 @@ ta_ethtool_lmode_list_names(ta_ethtool_lsets *lsets,
 
         if (enabled)
         {
-            rc = te_string_append(list_str, "%s ", modes_info[i].name);
-            if (rc != 0)
-                return rc;
+            te_string_append(list_str, "%s ", modes_info[i].name);
         }
     }
 

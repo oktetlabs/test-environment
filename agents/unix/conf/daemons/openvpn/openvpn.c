@@ -658,7 +658,6 @@ openvpn_##_gh##_list(unsigned int gid, const char *oid, const char *sub_id, \
 {                                                                           \
     te_openvpn_server *instance = openvpn_get_server(openvpn);              \
     _gh               *gh;                                                  \
-    te_errno           rc;                                                  \
     te_string          str = TE_STRING_INIT;                                \
                                                                             \
     UNUSED(oid);                                                            \
@@ -669,14 +668,7 @@ openvpn_##_gh##_list(unsigned int gid, const char *oid, const char *sub_id, \
                                                                             \
     for (gh = instance->_gh##s; gh != NULL; gh = gh->next)                  \
     {                                                                       \
-        rc = te_string_append(&str,                                         \
-                              gh->next == NULL ? "%s" : "%s ",              \
-                              gh->name);                                    \
-        if (rc != 0)                                                        \
-        {                                                                   \
-            te_string_free(&str);                                           \
-            return TE_RC(TE_TA_UNIX, rc);                                   \
-        }                                                                   \
+        te_string_append(&str, gh->next == NULL ? "%s" : "%s ", gh->name);  \
     }                                                                       \
     *list = str.ptr;                                                        \
                                                                             \
@@ -772,7 +764,6 @@ openvpn_option_list(unsigned int gid, const char *oid,
                     const char *openvpn, ...)
 {
     te_openvpn_server *instance = openvpn_get_server(openvpn);
-    te_errno           rc;
     te_string          str = TE_STRING_INIT;
     option            *opt;
 
@@ -784,14 +775,7 @@ openvpn_option_list(unsigned int gid, const char *oid,
 
     for (opt = instance->options; opt != NULL; opt = opt->next)
     {
-        rc = te_string_append(&str,
-                              opt->next == NULL ? "%s" : "%s ",
-                              opt->name);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, opt->next == NULL ? "%s" : "%s ", opt->name);
     }
 
     *list = str.ptr;
@@ -2992,7 +2976,6 @@ openvpn_list(unsigned int gid, const char *oid,
              const char *sub_id, char **list, ...)
 {
     te_openvpn_server *p = server_head;
-    te_errno           rc;
     te_string          str = TE_STRING_INIT;
 
     UNUSED(gid);
@@ -3001,14 +2984,7 @@ openvpn_list(unsigned int gid, const char *oid,
 
     while (p != NULL)
     {
-        rc = te_string_append(&str,
-                              p->next == NULL ? "%s" : "%s ",
-                              p->name);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, p->next == NULL ? "%s" : "%s ", p->name);
 
         p = p->next;
     }

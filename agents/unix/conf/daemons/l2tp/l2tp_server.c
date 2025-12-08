@@ -251,17 +251,11 @@ static char *
 l2tp_build_filename(const char *basename)
 {
     te_string filename = TE_STRING_INIT;
-    te_errno  rc;
 
     if (basename == NULL)
         return NULL;
 
-    rc = te_string_append(&filename, "%s.XXXXXX", basename);
-    if (rc != 0)
-    {
-        ERROR("Failed to build file name");
-        te_string_free(&filename);
-    }
+    te_string_append(&filename, "%s.XXXXXX", basename);
 
     return filename.ptr;
 }
@@ -948,10 +942,8 @@ l2tp_server_start(te_l2tp_server *l2tp)
         return res;
     fclose(pid_file);
 
-    res = te_string_append(&cmd, "%s -D -c %s -p %s",
-                           L2TP_SERVER_EXEC, l2tp->conf_file, l2tp->pid_file);
-    if (res != 0)
-        return res;
+    te_string_append(&cmd, "%s -D -c %s -p %s",
+                     L2TP_SERVER_EXEC, l2tp->conf_file, l2tp->pid_file);
 
     RING("Run command: %s", cmd.ptr);
     l2tp->pid = te_shell_cmd(cmd.ptr, -1, NULL, NULL, NULL);
@@ -1504,7 +1496,6 @@ l2tp_lns_section_list(unsigned int gid, const char *oid,
     te_l2tp_server  *l2tp = l2tp_server_find();
     te_l2tp_section *l2tp_section;
     te_string        str = TE_STRING_INIT;
-    te_errno         rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1514,14 +1505,7 @@ l2tp_lns_section_list(unsigned int gid, const char *oid,
     SLIST_FOREACH(l2tp_section, &l2tp->section, list)
     {
         if (strcmp(l2tp_section->secname, L2TP_GLOBAL) != 0)
-        {
-            rc = te_string_append(&str, "%s ",l2tp_section->secname);
-            if (rc != 0)
-            {
-                te_string_free(&str);
-                return TE_RC(TE_TA_UNIX, rc);
-            }
-        }
+            te_string_append(&str, "%s ",l2tp_section->secname);
     }
     *list = str.ptr;
 
@@ -1996,7 +1980,6 @@ l2tp_lns_bit_list(unsigned int gid, const char *oid,
     te_l2tp_section *l2tp_section = l2tp_find_section(l2tp, lns_name);
     te_l2tp_option  *l2tp_option;
     te_string        str = TE_STRING_INIT;
-    te_errno         rc = 0;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2007,16 +1990,11 @@ l2tp_lns_bit_list(unsigned int gid, const char *oid,
     {
         if (strcmp(l2tp_option->name, "hidden bit") == 0)
         {
-            rc = te_string_append(&str, "hidden ");
+            te_string_append(&str, "hidden ");
         }
         else if (strcmp(l2tp_option->name, "length bit") == 0)
         {
-            rc = te_string_append(&str, "length ");
-        }
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
+            te_string_append(&str, "length ");
         }
     }
     *list = str.ptr;
@@ -2492,7 +2470,6 @@ l2tp_lns_range_list_routine(const char *lns_name, const char *option_name)
     te_l2tp_ipv4_range   *l2tp_range;
 
     te_string        str = TE_STRING_INIT;
-    te_errno         rc;
 
     if (l2tp_section != NULL && l2tp_option != NULL)
     {
@@ -2500,13 +2477,8 @@ l2tp_lns_range_list_routine(const char *lns_name, const char *option_name)
         {
             SLIST_FOREACH(l2tp_range, &l2tp_option->l2tp_range, list)
             {
-                rc = te_string_append(&str, "%s-%s ", l2tp_range->start,
-                                      l2tp_range->end);
-                if (rc != 0)
-                {
-                    te_string_free(&str);
-                    break;
-                }
+                te_string_append(&str, "%s-%s ", l2tp_range->start,
+                                 l2tp_range->end);
             }
         }
     }
@@ -2785,7 +2757,6 @@ l2tp_lns_pppopt_list(unsigned int gid, const char *oid,
     te_l2tp_section *l2tp_section = l2tp_find_section(l2tp, lns_name);
     te_l2tp_option  *l2tp_option;
     te_string        str = TE_STRING_INIT;
-    te_errno         rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2797,12 +2768,7 @@ l2tp_lns_pppopt_list(unsigned int gid, const char *oid,
         if (l2tp_option->type == L2TP_OPTION_TYPE_PPP &&
             l2tp_option->value == NULL)
         {
-            rc = te_string_append(&str, "%s ", l2tp_option->name);
-            if (rc != 0)
-            {
-                te_string_free(&str);
-                return TE_RC(TE_TA_UNIX, rc);
-            }
+            te_string_append(&str, "%s ", l2tp_option->name);
         }
     }
     *list = str.ptr;
@@ -2916,7 +2882,6 @@ l2tp_lns_client_list(unsigned int gid, const char *oid, const char *sub_id,
     te_l2tp_opt_auth *auth = l2tp_find_auth_opt(l2tp_section, auth_type);
     te_l2tp_secret   *l2tp_client;
     te_string         str = TE_STRING_INIT;
-    te_errno          rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2925,12 +2890,7 @@ l2tp_lns_client_list(unsigned int gid, const char *oid, const char *sub_id,
 
     SLIST_FOREACH(l2tp_client, &auth->secret, list)
     {
-        rc = te_string_append(&str, "%s ", l2tp_client->name);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, "%s ", l2tp_client->name);
     }
     *list = str.ptr;
 
@@ -3046,7 +3006,6 @@ l2tp_lns_auth_list(unsigned int gid, const char *oid,
     te_l2tp_section  *l2tp_section = l2tp_find_section(l2tp, lns_name);
     te_l2tp_opt_auth *auth;
     te_string         str = TE_STRING_INIT;
-    te_errno          rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -3055,12 +3014,7 @@ l2tp_lns_auth_list(unsigned int gid, const char *oid,
 
     SLIST_FOREACH(auth, &l2tp_section->auth_opts, list)
     {
-        rc = te_string_append(&str, "%s ", auth->name);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, "%s ", auth->name);
     }
     *list = str.ptr;
 
@@ -3516,12 +3470,7 @@ l2tp_lns_connected_list(unsigned int gid, const char *oid,
 
     SLIST_FOREACH(l2tp_connected, &l2tp->client, list)
     {
-        rc = te_string_append(&str, "%s ", l2tp_connected->cname);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, "%s ", l2tp_connected->cname);
     }
     *list = str.ptr;
 

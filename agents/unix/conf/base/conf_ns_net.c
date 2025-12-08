@@ -473,12 +473,7 @@ netns_interface_list(unsigned int gid, const char *oid,
 
     SLIST_FOREACH(netif, &netns->ifs_h, ent_l)
     {
-        rc = te_string_append(&te_str, "%s ", netif->name);
-        if (rc != 0)
-        {
-            te_string_free(&te_str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&te_str, "%s ", netif->name);
     }
 
     *list = te_str.ptr;

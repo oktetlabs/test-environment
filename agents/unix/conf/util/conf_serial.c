@@ -185,7 +185,6 @@ static te_errno
 console_list(unsigned int gid, const char *oid, const char *sub_id,
              char **list)
 {
-    te_errno            rc;
     serial_console_t   *console;
     te_string           str = TE_STRING_INIT;
 
@@ -195,14 +194,8 @@ console_list(unsigned int gid, const char *oid, const char *sub_id,
 
     SLIST_FOREACH(console, &consoles, next)
     {
-        rc = te_string_append(&str,
-                              (str.ptr != NULL) ? " %s" : "%s",
-                              console->inst_name);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s",
+                         console->inst_name);
     }
     *list = str.ptr;
 

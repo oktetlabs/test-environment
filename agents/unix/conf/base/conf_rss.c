@@ -72,7 +72,8 @@ rx_queues_get(unsigned int gid, const char *oid,
         return rc;
     }
 
-    return te_string_append(&str_val, "%u", (unsigned int)(rxnfc.data));
+    te_string_append(&str_val, "%u", (unsigned int)(rxnfc.data));
+    return 0;
 #endif
 }
 
@@ -172,14 +173,7 @@ hash_func_list(unsigned int gid,
         return rc;
 
     for (i = 0; i < func_names->num; i++)
-    {
-        rc = te_string_append(&str, "%s ", func_names->strings[i]);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return rc;
-        }
-    }
+        te_string_append(&str, "%s ", func_names->strings[i]);
 
     *list_out = str.ptr;
     return 0;
@@ -235,7 +229,8 @@ hash_func_get(unsigned int gid, const char *oid,
         }
     }
 
-    return te_string_append(&str_val, "%u", result);
+    te_string_append(&str_val, "%u", result);
+    return 0;
 #endif
 }
 
@@ -351,14 +346,7 @@ indir_list(unsigned int gid, const char *oid,
     }
 
     for (i = 0; i < rxfh->rxfh->indir_size; i++)
-    {
-        rc = te_string_append(&str, "%u ", i);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return rc;
-        }
-    }
+        te_string_append(&str, "%u ", i);
 
     *list_out = str.ptr;
     return 0;
@@ -407,7 +395,8 @@ indir_get(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    return te_string_append(&str_val, "%u", rxfh->rxfh->rss_config[idx]);
+    te_string_append(&str_val, "%u", rxfh->rxfh->rss_config[idx]);
+    return 0;
 #endif
 }
 
@@ -618,9 +607,7 @@ rss_ctx_list(unsigned int gid,
     }
 
     /* TODO: support not default RSS contexts. */
-    rc = te_string_append(&str, "0");
-    if (rc != 0)
-        return rc;
+    te_string_append(&str, "0");
 
     *list_out = str.ptr;
     return 0;

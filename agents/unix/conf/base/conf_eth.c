@@ -313,10 +313,7 @@ eth_feature_list(unsigned int    gid,
 
     for (i = 0; if_context->valid && (i < if_context->nb_features); ++i)
     {
-        rc = te_string_append(&list_container, "%s ",
-                              if_context->features[i].name);
-        if (rc != 0)
-            goto fail;
+        te_string_append(&list_container, "%s ", if_context->features[i].name);
     }
 
     *list_out = list_container.ptr;
@@ -655,8 +652,8 @@ eth_priv_flags_get(unsigned int gid, const char *oid_str,
     if (rc != 0)
         return rc;
 
-    return te_string_append_chk(&str_val, "%u",
-                                (*data & (1 << idx)) ? 1 : 0);
+    te_string_append_chk(&str_val, "%u", (*data & (1 << idx)) ? 1 : 0);
+    return 0;
 }
 
 /* set state of private flag */

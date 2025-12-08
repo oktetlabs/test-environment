@@ -1204,7 +1204,6 @@ ps_arg_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
     struct ps_entry *ps;
     struct ps_arg_entry *arg;
     bool first = true;
-    te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1215,13 +1214,8 @@ ps_arg_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
 
     SLIST_FOREACH(arg, &ps->args, links)
     {
-        rc = te_string_append(&result, "%s%u", first ? "" : " ", arg->order);
+        te_string_append(&result, "%s%u", first ? "" : " ", arg->order);
         first = false;
-        if (rc != 0)
-        {
-            te_string_free(&result);
-            return rc;
-        }
     }
 
     *list = result.ptr;
@@ -1359,7 +1353,6 @@ ps_env_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
     struct ps_entry *ps;
     struct ps_env_entry *env;
     bool first = true;
-    te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1370,13 +1363,8 @@ ps_env_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
 
     SLIST_FOREACH(env, &ps->envs, links)
     {
-        rc = te_string_append(&result, "%s%s", first ? "" : " ", env->name);
+        te_string_append(&result, "%s%s", first ? "" : " ", env->name);
         first = false;
-        if (rc != 0)
-        {
-            te_string_free(&result);
-            return rc;
-        }
     }
 
     *list = result.ptr;
@@ -1499,7 +1487,6 @@ ps_opt_list(unsigned int gid, const char *oid, const char *sub_id,
     struct ps_entry *ps;
     struct ps_opt_entry *opt;
     bool first = true;
-    te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1510,13 +1497,8 @@ ps_opt_list(unsigned int gid, const char *oid, const char *sub_id,
 
     SLIST_FOREACH(opt, &ps->opts, links)
     {
-        rc = te_string_append(&result, "%s%s", first ? "" : " ", opt->name);
+        te_string_append(&result, "%s%s", first ? "" : " ", opt->name);
         first = false;
-        if (rc != 0)
-        {
-            te_string_free(&result);
-            return rc;
-        }
     }
 
     *list = result.ptr;

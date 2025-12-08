@@ -843,7 +843,6 @@ nginx_http_us_server_list(unsigned int gid, const char *oid,
     te_string                   str = TE_STRING_INIT;
     nginx_http_upstream        *us;
     nginx_http_us_server       *srv;
-    te_errno                    rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -855,13 +854,7 @@ nginx_http_us_server_list(unsigned int gid, const char *oid,
 
     LIST_FOREACH(srv, &us->servers, links)
     {
-        rc = te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s",
-                              srv->name);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s", srv->name);
     }
 
     *list = str.ptr;
@@ -934,7 +927,6 @@ nginx_http_upstream_list(unsigned int gid, const char *oid,
     te_string                   str = TE_STRING_INIT;
     nginx_inst                 *inst;
     nginx_http_upstream        *us;
-    te_errno                    rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -946,13 +938,7 @@ nginx_http_upstream_list(unsigned int gid, const char *oid,
 
     LIST_FOREACH(us, &inst->http_upstreams, links)
     {
-        rc = te_string_append(&str,
-                              (str.ptr != NULL) ? " %s" : "%s", us->name);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s", us->name);
     }
 
     *list = str.ptr;
@@ -1036,7 +1022,6 @@ nginx_http_loc_proxy_hdr_list(unsigned int gid, const char *oid,
     te_string           str = TE_STRING_INIT;
     nginx_http_loc     *loc;
     nginx_http_header  *hdr;
-    te_errno            rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1048,13 +1033,7 @@ nginx_http_loc_proxy_hdr_list(unsigned int gid, const char *oid,
 
     LIST_FOREACH(hdr, &loc->proxy_headers, links)
     {
-        rc = te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s",
-                              loc->name);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s", loc->name);
     }
 
     *list = str.ptr;
@@ -1136,7 +1115,6 @@ nginx_http_listen_entry_list(unsigned int gid, const char *oid,
     te_string                 str = TE_STRING_INIT;
     nginx_http_server        *srv;
     nginx_http_listen_entry  *entry;
-    te_errno                  rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1148,13 +1126,7 @@ nginx_http_listen_entry_list(unsigned int gid, const char *oid,
 
     LIST_FOREACH(entry, &srv->listen_entries, links)
     {
-        rc = te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s",
-                              entry->name);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s", entry->name);
     }
 
     *list = str.ptr;
@@ -1243,7 +1215,6 @@ nginx_http_loc_list(unsigned int gid, const char *oid, const char *sub_id,
     te_string           str = TE_STRING_INIT;
     nginx_http_server  *srv;
     nginx_http_loc     *loc;
-    te_errno            rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1255,13 +1226,7 @@ nginx_http_loc_list(unsigned int gid, const char *oid, const char *sub_id,
 
     LIST_FOREACH(loc, &srv->locations, links)
     {
-        rc = te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s",
-                              loc->name);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s", loc->name);
     }
 
     *list = str.ptr;
@@ -1369,7 +1334,6 @@ nginx_http_server_list(unsigned int gid, const char *oid, const char *sub_id,
     te_string           str = TE_STRING_INIT;
     nginx_inst         *inst;
     nginx_http_server  *srv;
-    te_errno            rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1381,13 +1345,7 @@ nginx_http_server_list(unsigned int gid, const char *oid, const char *sub_id,
 
     LIST_FOREACH(srv, &inst->http_servers, links)
     {
-        rc = te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s",
-                              srv->name);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s", srv->name);
     }
 
     *list = str.ptr;

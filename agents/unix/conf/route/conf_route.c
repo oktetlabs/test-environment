@@ -993,12 +993,7 @@ route_nexthop_list(unsigned int gid, const char *oid, const char *sub_id,
     {
         TAILQ_FOREACH(rt_nh, &rt_info->nexthops, links)
         {
-            rc = te_string_append(&str, "%u ", i);
-            if (rc != 0)
-            {
-                te_string_free(&str);
-                return rc;
-            }
+            te_string_append(&str, "%u ", i);
             i++;
         }
     }

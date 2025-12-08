@@ -198,12 +198,10 @@ read_hugepage_attr_value(const char *filename, unsigned int hp_size,
 {
     FILE *file;
     te_string buf = TE_STRING_INIT;
-    te_errno rc;
+    te_errno rc = 0;
 
-    rc = te_string_append(&buf, SYS_HUGEPAGES "/hugepages-%ukB/%s",
-                          hp_size, filename);
-    if (rc != 0)
-        return rc;
+    te_string_append(&buf, SYS_HUGEPAGES "/hugepages-%ukB/%s",
+                     hp_size, filename);
 
     file = fopen(buf.ptr, "r");
     if (file == NULL)
@@ -252,12 +250,10 @@ write_value(const struct hugepage_info *hp_info, unsigned int number)
 {
     FILE *file;
     te_string buf = TE_STRING_INIT;
-    te_errno rc;
+    te_errno rc = 0;
 
-    rc = te_string_append(&buf, SYS_HUGEPAGES "/hugepages-%ukB/%s",
-                          hp_info->size, HUGEPAGES_FILENAME_NR);
-    if (rc != 0)
-        return rc;
+    te_string_append(&buf, SYS_HUGEPAGES "/hugepages-%ukB/%s",
+                     hp_info->size, HUGEPAGES_FILENAME_NR);
 
     file = fopen(buf.ptr, "r+");
     if (file == NULL)
@@ -354,9 +350,7 @@ mount_hugepage_dir(const struct hugepage_info *hp_info,
 
     mp_info->is_created = (rv == 0) ? false : true;
 
-    rc = te_string_append(&options, "pagesize=%ukB", hp_info->size);
-    if (rc != 0)
-        return rc;
+    te_string_append(&options, "pagesize=%ukB", hp_info->size);
 
     if (mount("hugetlbfs", mp_info->name, "hugetlbfs", 0, options.ptr) != 0)
     {
@@ -511,7 +505,6 @@ hugepages_list(unsigned int gid, const char *oid,
 {
     struct hugepage_info *hp_info;
     te_string buf = TE_STRING_INIT;
-    te_errno rc = 0;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -519,17 +512,12 @@ hugepages_list(unsigned int gid, const char *oid,
 
     LIST_FOREACH(hp_info, &hugepages, link)
     {
-        rc = te_string_append(&buf, "%u ", hp_info->size);
-        if (rc != 0)
-            break;
+        te_string_append(&buf, "%u ", hp_info->size);
     }
 
-    if (rc == 0)
-        *list = buf.ptr;
-    else
-        te_string_free(&buf);
+    *list = buf.ptr;
 
-    return rc;
+    return 0;
 }
 
 static te_errno
@@ -742,22 +730,13 @@ hugepages_mountpoint_list(unsigned int gid, const char *oid, const char *sub_id,
 
     LIST_FOREACH(mp_info, &hp_info->mount_dirs, link)
     {
-        rc = te_string_append(&result, "%s ", mp_info->name);
-        if (rc != 0)
-            break;
+        te_string_append(&result, "%s ", mp_info->name);
     }
 
-    if (rc == 0)
-    {
-        te_string_replace_all_substrings(&result, PATH_DELIMITER, "/");
-        *list = result.ptr;
-    }
-    else
-    {
-        te_string_free(&result);
-    }
+    te_string_replace_all_substrings(&result, PATH_DELIMITER, "/");
+    *list = result.ptr;
 
-    return rc;
+    return 0;
 }
 
 te_errno

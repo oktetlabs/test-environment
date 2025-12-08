@@ -99,15 +99,7 @@ main(int argc, char *argv[])
     new_args[0] = "/bin/bash";
     new_args[1] = "-c";
     for (i = 2; i < argc; i++)
-    {
-        te_rc = te_string_append(&cmd_str, "%s ", argv[i]);
-        if (te_rc != 0)
-        {
-            ERROR("te_string_append() failed when constructing "
-                  "command string, rc = %r", te_rc);
-            exit(EXIT_FAILURE);
-        }
-    }
+        te_string_append(&cmd_str, "%s ", argv[i]);
     new_args[2] = cmd_str.ptr;
     new_args[3] = NULL;
 

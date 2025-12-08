@@ -193,15 +193,12 @@ iptables_obtain_table_list(te_string *table_list)
     for (i = 0; i < TE_ARRAY_LEN(tables); i++)
     {
         int rc;
-        te_errno te_rc;
 
         rc = ta_system_fmt(IPTABLES_TOOL " -t %s -L >/dev/null", tables[i]);
         if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
             continue;
 
-        te_rc = te_string_append(table_list, "%s ", tables[i]);
-        if (te_rc != 0)
-            return te_rc;
+        te_string_append(table_list, "%s ", tables[i]);
     }
 
     return 0;
@@ -942,13 +939,8 @@ iptables_cmd_set(unsigned int  gid, const char *oid,
      * the parameter @c '-j' without target value. Second substitution takes
      * precedence.
      */
-    rc = te_string_append(&buf, "%s %s -t %s ",
-                          iptables_get_tool(ip), iptables_tool_options, table);
-    if (rc)
-    {
-        te_string_free(&buf);
-        return rc;
-    }
+    te_string_append(&buf, "%s %s -t %s ",
+                     iptables_get_tool(ip), iptables_tool_options, table);
 
     /*
      * Find parameter @c " -j" without target value. If this parameter
@@ -1008,25 +1000,14 @@ iptables_cmd_set(unsigned int  gid, const char *oid,
         /*
          * Copy a command and move the pointers to the parameter @c "-j".
          */
-        rc = te_string_append(&buf, "-%c %s ", command, val_p);
-        if (rc)
-        {
-            te_string_free(&buf);
-            return rc;
-        }
+        te_string_append(&buf, "-%c %s ", command, val_p);
 
         buf.len -= strlen(val_p) - (parameter_j_p - val_p);
         val_p = parameter_j_p + strlen(parameter_j);
 
         command = 'j';
     }
-    rc = te_string_append(&buf, "-%c %s_%s%s", command, chain, ifname,
-                          val_p);
-    if (rc)
-    {
-        te_string_free(&buf);
-        return rc;
-    }
+    te_string_append(&buf, "-%c %s_%s%s", command, chain, ifname, val_p);
 
 #undef SKIP_SPACES
 

@@ -80,7 +80,6 @@ port_list(unsigned int gid, const char *oid,
 static te_errno
 port_get(unsigned int gid, char *oid, char *if_oid, char *brname, char *ifname)
 {
-    int rc;
     te_string str = TE_STRING_EXT_BUF_INIT(if_oid, RCF_MAX_VAL);
 
     UNUSED(gid);
@@ -89,11 +88,7 @@ port_get(unsigned int gid, char *oid, char *if_oid, char *brname, char *ifname)
 
     if (rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, ifname))
     {
-        rc = te_string_append(&str, "/agent:%s/interface:%s", ta_name, ifname);
-        if (rc != 0)
-        {
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, "/agent:%s/interface:%s", ta_name, ifname);
     }
     return 0;
 }

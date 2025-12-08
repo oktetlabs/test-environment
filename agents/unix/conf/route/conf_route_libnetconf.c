@@ -679,13 +679,12 @@ append_routes(netconf_list *nlist, te_string *const str)
         /* Append this route to the list */
 
         if (str->len != 0)
-            CHECK_NZ_RETURN(te_string_append(str, " "));
+            te_string_append(str, " ");
 
         if (route->dst == NULL)
         {
             assert(route->dstlen == 0);
-            CHECK_NZ_RETURN(te_string_append(str, family == AF_INET ?
-                                             "0.0.0.0|0" : "::|0"));
+            te_string_append(str, family == AF_INET ?  "0.0.0.0|0" : "::|0");
         }
         else
         {
@@ -693,16 +692,15 @@ append_routes(netconf_list *nlist, te_string *const str)
 
             if (inet_ntop(route->family, route->dst,
                           addr_buf, sizeof(addr_buf)) != NULL)
-                CHECK_NZ_RETURN(te_string_append(str, "%s|%d", addr_buf,
-                                                 route->dstlen));
+                te_string_append(str, "%s|%d", addr_buf, route->dstlen);
         }
 
         if (route->metric != 0)
-            CHECK_NZ_RETURN(te_string_append(str, ",metric=%d", route->metric));
+            te_string_append(str, ",metric=%d", route->metric);
         if (route->tos != 0)
-            CHECK_NZ_RETURN(te_string_append(str, ",tos=%d", route->tos));
+            te_string_append(str, ",tos=%d", route->tos);
         if (route->table != NETCONF_RT_TABLE_MAIN)
-            CHECK_NZ_RETURN(te_string_append(str, ",table=%d", route->table));
+            te_string_append(str, ",table=%d", route->table);
     }
 
     return 0;

@@ -563,12 +563,7 @@ socks_server_start(te_socks_server *instance)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    rc = te_string_append(&cmd,
-                          "%s -p %s",
-                          SOCKS_PATH,
-                          instance->pid_path);
-    if (rc != 0)
-        return rc;
+    te_string_append(&cmd, "%s -p %s", SOCKS_PATH, instance->pid_path);
 
     /* Filter out unsupported protocols */
     LIST_FOREACH(proto, &instance->protocols, list)
@@ -598,14 +593,11 @@ socks_server_start(te_socks_server *instance)
             goto cleanup;
         }
 
-        rc = te_string_append(&cmd,
-                              " -i %s%s%s:%u",
-                              iface->addr_family == RPC_AF_INET6 ? "[" : "",
-                              ip,
-                              iface->addr_family == RPC_AF_INET6 ? "]" : "",
-                              (unsigned int)iface->port);
-        if (rc != 0)
-            goto cleanup;
+        te_string_append(&cmd, " -i %s%s%s:%u",
+                         iface->addr_family == RPC_AF_INET6 ? "[" : "",
+                         ip,
+                         iface->addr_family == RPC_AF_INET6 ? "]" : "",
+                         (unsigned int)iface->port);
 
         ip_at_least_one = true;
     }
@@ -626,25 +618,13 @@ socks_server_start(te_socks_server *instance)
     /* Set user data location */
     if (!LIST_EMPTY(&instance->users))
     {
-        rc = te_string_append(&cmd,
-                              " -u %s",
-                              SOCKS_PATH,
-                              instance->user_pass_path);
-        if (rc != 0)
-            goto cleanup;
+        te_string_append(&cmd, " -u %s", SOCKS_PATH, instance->user_pass_path);
     }
 
     /* Set outbound interface */
-    rc = te_string_append(&cmd,
-                          " -J %s",
-                          instance->outbound_interface);
-    if (rc != 0)
-        goto cleanup;
+    te_string_append(&cmd, " -J %s", instance->outbound_interface);
 
-    rc = te_string_append(&cmd,
-                          " &");
-    if (rc != 0)
-        goto cleanup;
+    te_string_append(&cmd, " &");
 
     if (ta_system(cmd.ptr) != 0)
     {
@@ -999,7 +979,6 @@ socks_proto_list(unsigned int gid, const char *oid, const char *sub_id,
 {
     te_socks_server *instance = socks_get_server(socks);
     te_socks_proto  *p;
-    te_errno         rc;
     te_string        str = TE_STRING_INIT;
 
     UNUSED(oid);
@@ -1010,14 +989,7 @@ socks_proto_list(unsigned int gid, const char *oid, const char *sub_id,
 
     LIST_FOREACH(p, &instance->protocols, list)
     {
-        rc = te_string_append(&str,
-                              (str.ptr != NULL) ? " %s" : "%s",
-                              p->name);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s", p->name);
     }
     *list = str.ptr;
 
@@ -1156,7 +1128,6 @@ socks_interface_list(unsigned int gid, const char *oid, const char *sub_id,
 {
     te_socks_server    *instance = socks_get_server(socks);
     te_socks_interface *iface;
-    te_errno            rc;
     te_string           str = TE_STRING_INIT;
 
     UNUSED(oid);
@@ -1167,14 +1138,7 @@ socks_interface_list(unsigned int gid, const char *oid, const char *sub_id,
 
     LIST_FOREACH(iface, &instance->interfaces, list)
     {
-        rc = te_string_append(&str,
-                              (str.ptr != NULL) ? " %s" : "%s",
-                              iface->name);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s", iface->name);
     }
     *list = str.ptr;
 
@@ -1485,7 +1449,6 @@ socks_cipher_list(unsigned int gid, const char *oid, const char *sub_id,
 {
     te_socks_server *instance = socks_get_server(socks);
     te_socks_cipher *c;
-    te_errno         rc;
     te_string        str = TE_STRING_INIT;
 
     UNUSED(oid);
@@ -1496,14 +1459,7 @@ socks_cipher_list(unsigned int gid, const char *oid, const char *sub_id,
 
     LIST_FOREACH(c, &instance->ciphers, list)
     {
-        rc = te_string_append(&str,
-                              (str.ptr != NULL) ? " %s" : "%s",
-                              c->name);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s", c->name);
     }
     *list = str.ptr;
 
@@ -1628,7 +1584,6 @@ socks_user_list(unsigned int gid, const char *oid, const char *sub_id,
 {
     te_socks_server *instance = socks_get_server(socks);
     te_socks_user   *u;
-    te_errno         rc;
     te_string        str = TE_STRING_INIT;
 
     UNUSED(oid);
@@ -1639,14 +1594,7 @@ socks_user_list(unsigned int gid, const char *oid, const char *sub_id,
 
     LIST_FOREACH(u, &instance->users, list)
     {
-        rc = te_string_append(&str,
-                              (str.ptr != NULL) ? " %s" : "%s",
-                              u->name);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s", u->name);
     }
     *list = str.ptr;
 
@@ -1913,7 +1861,6 @@ socks_list(unsigned int gid, const char *oid,
            const char *sub_id, char **list, ...)
 {
     te_socks_server    *s;
-    te_errno            rc;
     te_string           str = TE_STRING_INIT;
 
     UNUSED(gid);
@@ -1922,14 +1869,7 @@ socks_list(unsigned int gid, const char *oid,
 
     LIST_FOREACH(s, &servers, list)
     {
-        rc = te_string_append(&str,
-                              (str.ptr != NULL) ? " %s" : "%s",
-                              s->name);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s", s->name);
     }
 
     *list = str.ptr;

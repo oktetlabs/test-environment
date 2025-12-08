@@ -268,11 +268,8 @@ append_rules_for_family(te_string *str, int af)
 
         /* Append this rule to the list */
 
-        if (str->ptr && (rc = te_string_append(str, " ")) != 0)
-        {
-            ERROR("%s(): Cannot add space to string", __FUNCTION__);
-            break;
-        }
+        if (str->ptr != NULL)
+            te_string_append(str, " ");
 
         rc = te_conf_ip_rule_to_str(rule, &data);
         if (rc != 0)
@@ -281,7 +278,7 @@ append_rules_for_family(te_string *str, int af)
                   __FUNCTION__);
             break;
         }
-        rc = te_string_append(str, "%s", data);
+        te_string_append(str, "%s", data);
         free(data);
 
         if (rc != 0)

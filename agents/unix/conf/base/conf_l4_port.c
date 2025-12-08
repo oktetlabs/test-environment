@@ -219,7 +219,6 @@ l4_port_allocated_list(unsigned int gid, const char *oid, const char *empty1,
                        char **list)
 {
     te_string result = TE_STRING_INIT;
-    te_errno rc;
     uint16_t *p;
 
     UNUSED(gid);
@@ -228,12 +227,7 @@ l4_port_allocated_list(unsigned int gid, const char *oid, const char *empty1,
 
     TE_VEC_FOREACH(&allocated_ports, p)
     {
-        rc = te_string_append(&result, "%u ", *p);
-        if (rc != 0)
-        {
-            te_string_free(&result);
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        }
+        te_string_append(&result, "%u ", *p);
     }
 
     *list = result.ptr;

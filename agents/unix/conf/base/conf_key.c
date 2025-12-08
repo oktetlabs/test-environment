@@ -181,15 +181,7 @@ key_list(unsigned int gid, const char *oid, const char *sub_id, char **list)
 
     TE_VEC_FOREACH(&known_keys, iter)
     {
-        te_errno rc;
-
-        rc = te_string_append(&buf, "%s%s",
-                              buf.len == 0 ? "" : " ", iter->name);
-        if (rc != 0)
-        {
-            te_string_free(&buf);
-            return TE_RC_UPSTREAM(TE_TA_UNIX, rc);
-        }
+        te_string_append(&buf, "%s%s", buf.len == 0 ? "" : " ", iter->name);
     }
 
     te_string_move(list, &buf);

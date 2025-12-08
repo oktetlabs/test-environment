@@ -1061,7 +1061,6 @@ nginx_ssl_entry_list(unsigned int gid, const char *oid, const char *sub_id,
     te_string         str = TE_STRING_INIT;
     nginx_inst       *inst;
     nginx_ssl_entry  *entry;
-    te_errno          rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1072,13 +1071,7 @@ nginx_ssl_entry_list(unsigned int gid, const char *oid, const char *sub_id,
 
     LIST_FOREACH(entry, &inst->ssl_entries, links)
     {
-        rc = te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s",
-                              entry->name);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s", entry->name);
     }
 
     *list = str.ptr;
@@ -1169,7 +1162,6 @@ static te_errno
 nginx_list(unsigned int gid, const char *oid, const char *sub_id, char **list)
 {
     nginx_inst      *inst;
-    te_errno         rc;
     te_string        str = TE_STRING_INIT;
 
     UNUSED(gid);
@@ -1178,13 +1170,7 @@ nginx_list(unsigned int gid, const char *oid, const char *sub_id, char **list)
 
     LIST_FOREACH(inst, &nginxs, links)
     {
-        rc = te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s",
-                              inst->name);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
+        te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s", inst->name);
     }
 
     *list = str.ptr;

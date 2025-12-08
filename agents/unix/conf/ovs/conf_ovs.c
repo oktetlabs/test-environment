@@ -269,13 +269,8 @@ ovs_value_get_effective(ovs_ctx_t   *ctx,
     INFO("Querying the effective '%s' property value of the %s '%s'",
          property_name, facility_name, instance_name);
 
-    rc = te_string_append(&cmd, "%s ovs-vsctl get %s %s %s", ctx->env.ptr,
-                          facility_name, instance_name, property_name);
-    if (rc != 0)
-    {
-        ERROR("Failed to construct ovs-vsctl invocation command line");
-        return rc;
-    }
+    te_string_append(&cmd, "%s ovs-vsctl get %s %s %s", ctx->env.ptr,
+                     facility_name, instance_name, property_name);
 
     ret = te_shell_cmd(cmd.ptr, -1, NULL, &out_fd, NULL);
     if (ret == -1)
@@ -327,7 +322,7 @@ ovs_command(ovs_ctx_t           *ctx,
                                  ...)
 {
     te_string  cmd_str = TE_STRING_INIT;
-    te_errno   rc;
+    te_errno   rc = 0;
     char      *user_cmd;
     int        ret;
     int        out_fd;
@@ -344,14 +339,8 @@ ovs_command(ovs_ctx_t           *ctx,
         return TE_RC(TE_TA_UNIX, TE_EFAIL);
     }
 
-    rc = te_string_append(&cmd_str, "%s %s", ctx->env.ptr, user_cmd);
+    te_string_append(&cmd_str, "%s %s", ctx->env.ptr, user_cmd);
     free(user_cmd);
-    if (rc != 0)
-    {
-        ERROR("Failed to format OvS command: %r", rc);
-        te_string_free(&cmd_str);
-        return rc;
-    }
 
     ret = te_shell_cmd(cmd_str.ptr, -1,
                        NULL, (handler != NULL ? &out_fd : NULL), NULL);
@@ -833,11 +822,10 @@ ovs_cmd_vsctl_append_if_dpdk(interface_entry   *interface,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    rc = te_string_append(cmdp, " options:dpdk-devargs=");
-    if (rc == 0)
-        te_string_append_shell_arg_as_is(cmdp, interface->dpdk_devargs);
+    te_string_append(cmdp, " options:dpdk-devargs=");
+    te_string_append_shell_arg_as_is(cmdp, interface->dpdk_devargs);
 
-    return rc;
+    return 0;
 }
 
 static te_errno
@@ -857,12 +845,8 @@ ovs_cmd_vsctl_append_if_dpdkvhostuserclient(interface_entry *interface,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    rc = te_string_append(cmdp, " options:vhost-server-path=");
-    if (rc == 0)
-    {
-        rc = te_string_append_shell_arg_as_is(cmdp,
-                                              interface->vhost_server_path);
-    }
+    te_string_append(cmdp, " options:vhost-server-path=");
+    rc = te_string_append_shell_arg_as_is(cmdp, interface->vhost_server_path);
 
     return rc;
 }
@@ -872,7 +856,6 @@ ovs_cmd_vsctl_append_if_tunnel(interface_entry *interface,
                                te_string       *cmdp)
 {
     unsigned int i;
-    te_errno rc;
 
     if (interface->tunnel_options[INTERFACE_TUNNEL_REMOTE_IP] == NULL)
     {
@@ -886,14 +869,9 @@ ovs_cmd_vsctl_append_if_tunnel(interface_entry *interface,
         if (interface->tunnel_options[i] == NULL)
             continue;
 
-        rc = te_string_append(cmdp, " options:%s=%s",
-                              interface_tunnel_option_names[i],
-                              interface->tunnel_options[i]);
-        if (rc != 0)
-        {
-            ERROR("Failed to append option '%s'", interface->tunnel_options[i]);
-            return rc;
-        }
+        te_string_append(cmdp, " options:%s=%s",
+                         interface_tunnel_option_names[i],
+                         interface->tunnel_options[i]);
     }
 
     return 0;
@@ -909,13 +887,8 @@ ovs_cmd_vsctl_append_interface_arguments(interface_entry *interface,
     INFO("Appending ovs-vsctl arguments for the interface '%s'",
          interface->name);
 
-    rc = te_string_append(cmdp, " -- set interface %s type=%s",
-                          interface->name, interface->type);
-    if (rc != 0)
-    {
-        ERROR("Failed to append the type argument");
-        return rc;
-    }
+    te_string_append(cmdp, " -- set interface %s type=%s",
+                     interface->name, interface->type);
 
     rc = 0;
     if (strcmp(interface->type, "dpdk") == 0)
@@ -935,35 +908,13 @@ ovs_cmd_vsctl_append_interface_arguments(interface_entry *interface,
         return 0;
 
     if (interface->mac_requested)
-    {
-        rc = te_string_append(cmdp, " mac=\\\"%s\\\"", interface->mac_request);
-        if (rc != 0)
-        {
-            ERROR("Failed to append the MAC request argument");
-            return rc;
-        }
-    }
+        te_string_append(cmdp, " mac=\\\"%s\\\"", interface->mac_request);
 
     if (interface->ofport_requested)
-    {
-        rc = te_string_append(cmdp, " ofport_request=%s",
-                              interface->ofport_request);
-        if (rc != 0)
-        {
-            ERROR("Failed to append the ofport request argument");
-            return rc;
-        }
-    }
+        te_string_append(cmdp, " ofport_request=%s", interface->ofport_request);
 
     if (interface->mtu_requested)
-    {
-        rc = te_string_append(cmdp, " mtu_request=%s", interface->mtu_request);
-        if (rc != 0)
-        {
-            ERROR("Failed to append the MTU request argument");
-            return rc;
-        }
-    }
+        te_string_append(cmdp, " mtu_request=%s", interface->mtu_request);
 
     return 0;
 }
@@ -1042,17 +993,12 @@ ovs_bridge_port_activate(ovs_ctx_t  *ctx,
     te_string        cmd = TE_STRING_INIT;
     interface_entry *interface;
     int              ret;
-    te_errno         rc;
+    te_errno         rc = 0;
 
     INFO("Activating the port '%s'", port->name);
 
-    rc = te_string_append(&cmd, "%s ovs-vsctl add-port %s %s",
-                          ctx->env.ptr, port->parent_bridge_name, port->name);
-    if (rc != 0)
-    {
-        ERROR("Failed to construct ovs-vsctl invocation command line");
-        goto out;
-    }
+    te_string_append(&cmd, "%s ovs-vsctl add-port %s %s",
+                     ctx->env.ptr, port->parent_bridge_name, port->name);
 
     SLIST_FOREACH(interface, &port->interfaces, port_links)
     {
@@ -1091,12 +1037,8 @@ ovs_bridge_port_deactivate(ovs_ctx_t  *ctx,
 
     INFO("Deactivating the port '%s'", port->name);
 
-    if (te_string_append(&cmd, "%s ovs-vsctl del-port %s %s", ctx->env.ptr,
-                         port->parent_bridge_name, port->name) != 0)
-    {
-        ERROR("Failed to construct ovs-vsctl invocation command line");
-        goto out;
-    }
+    te_string_append(&cmd, "%s ovs-vsctl del-port %s %s", ctx->env.ptr,
+                     port->parent_bridge_name, port->name);
 
     ret = te_shell_cmd(cmd.ptr, -1, NULL, NULL, NULL);
     if (ret == -1)
@@ -1308,15 +1250,10 @@ ovs_bridge_activate(ovs_ctx_t    *ctx,
 
     INFO("Activating the bridge '%s'", bridge->interface->name);
 
-    rc = te_string_append(&cmd, "%s ovs-vsctl add-br %s -- set bridge %s "
-                          "datapath_type=%s", ctx->env.ptr,
-                          bridge->interface->name, bridge->interface->name,
-                          bridge->datapath_type);
-    if (rc != 0)
-    {
-        ERROR("Failed to construct ovs-vsctl invocation command line");
-        goto out;
-    }
+    te_string_append(&cmd, "%s ovs-vsctl add-br %s -- set bridge %s "
+                     "datapath_type=%s", ctx->env.ptr,
+                     bridge->interface->name, bridge->interface->name,
+                     bridge->datapath_type);
 
     rc = ovs_cmd_vsctl_append_interface_arguments(bridge->interface, &cmd, ctx);
     if (rc != 0)
@@ -1352,12 +1289,8 @@ ovs_bridge_deactivate(ovs_ctx_t    *ctx,
 
     INFO("Deactivating the bridge '%s'", bridge->interface->name);
 
-    if (te_string_append(&cmd, "%s ovs-vsctl del-br %s",
-                         ctx->env.ptr, bridge->interface->name) != 0)
-    {
-        ERROR("Failed to construct ovs-vsctl invocation command line");
-        goto out;
-    }
+    te_string_append(&cmd, "%s ovs-vsctl del-br %s",
+                     ctx->env.ptr, bridge->interface->name);
 
     ret = te_shell_cmd(cmd.ptr, -1, NULL, NULL, NULL);
     if (ret == -1)
@@ -1479,12 +1412,7 @@ ovs_daemon_stop(ovs_ctx_t  *ctx,
 
     INFO("Trying to stop the daemon '%s'", name);
 
-    if (te_string_append(&cmd, "%s ovs-appctl -t %s exit",
-                         ctx->env.ptr, name) != 0)
-    {
-        ERROR("Failed to construct ovs-appctl invocation command line");
-        goto out;
-    }
+    te_string_append(&cmd, "%s ovs-appctl -t %s exit", ctx->env.ptr, name);
 
     ret = te_shell_cmd(cmd.ptr, -1, NULL, NULL, NULL);
     if (ret == -1)
@@ -1606,10 +1534,9 @@ ovs_dpdk_configure_other_cfg(const ovs_ctx_t *ctx)
     {
         te_string cfg = TE_STRING_INIT;
 
-        rc = te_string_append(&cfg, "%sother_config:%s=",
-                              ctx->ovs_cfg_cmd.ptr, p->key);
-        if (rc == 0)
-            rc = te_string_append_shell_arg_as_is(&cfg, p->value);
+        te_string_append(&cfg, "%sother_config:%s=",
+                         ctx->ovs_cfg_cmd.ptr, p->key);
+        rc = te_string_append_shell_arg_as_is(&cfg, p->value);
 
         if (rc == 0)
             rc = ovs_shell_cmd_wait(cfg.ptr);
@@ -1631,14 +1558,9 @@ ovs_configure(ovs_ctx_t *ctx)
     te_string dpdk_init = TE_STRING_INIT;
     te_errno rc;
 
-    rc = te_string_append(&dpdk_init, "%sother_config:dpdk-init=%s",
-                          ctx->ovs_cfg_cmd.ptr,
-                          ctx->dpdk_init ? "true" : "false");
-    if (rc != 0)
-    {
-        ERROR("Failed to create dpdk_init command");
-        return TE_EINVAL;
-    }
+    te_string_append(&dpdk_init, "%sother_config:dpdk-init=%s",
+                     ctx->ovs_cfg_cmd.ptr,
+                     ctx->dpdk_init ? "true" : "false");
 
     rc = ovs_shell_cmd_wait(dpdk_init.ptr);
     te_string_free(&dpdk_init);
@@ -1707,17 +1629,11 @@ ovs_await_resource(ovs_ctx_t  *ctx,
     te_string    resource_path = TE_STRING_INIT;
     unsigned int total_sleep_ms = 0;
     unsigned int sleep_ms = 1;
-    te_errno     rc;
 
     INFO("Waiting for '%s' to get ready", resource_name);
 
-    rc = te_string_append(&resource_path, "%s/%s",
-                          ctx->root_path.ptr, resource_name);
-    if (rc != 0)
-    {
-        ERROR("Failed to construct the resource path");
-        return rc;
-    }
+    te_string_append(&resource_path, "%s/%s",
+                     ctx->root_path.ptr, resource_name);
 
     do {
         te_msleep(sleep_ms);
@@ -2086,13 +2002,7 @@ ovs_other_config_list(unsigned int   gid,
 
     TAILQ_FOREACH(p, &ctx->other_cfg, links)
     {
-        rc = te_string_append(&list_container, "%s ", p->key);
-        if (rc != 0)
-        {
-            ERROR("Failed to construct the list");
-            te_string_free(&list_container);
-            goto out;
-        }
+        te_string_append(&list_container, "%s ", p->key);
     }
 
     *list = list_container.ptr;
@@ -2170,7 +2080,7 @@ ovs_log_set(unsigned int  gid,
     char         *level;
     ovs_ctx_t    *ctx;
     int           ret;
-    te_errno      rc;
+    te_errno      rc = 0;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2210,13 +2120,8 @@ ovs_log_set(unsigned int  gid,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
-    rc = te_string_append(&cmd, "%s ovs-appctl -t ovs-vswitchd vlog/set %s:%s",
-                          ctx->env.ptr, module->name, level);
-    if (rc != 0)
-    {
-        ERROR("Failed to construct ovs-appctl invocation command line");
-        goto out;
-    }
+    te_string_append(&cmd, "%s ovs-appctl -t ovs-vswitchd vlog/set %s:%s",
+                     ctx->env.ptr, module->name, level);
 
     ret = te_shell_cmd(cmd.ptr, -1, NULL, NULL, NULL);
     if (ret == -1)
@@ -2277,13 +2182,7 @@ ovs_log_list(unsigned int   gid,
 
     for (i = 0; i < ctx->nb_log_modules; ++i)
     {
-        rc = te_string_append(&list_container, "%s ", ctx->log_modules[i].name);
-        if (rc != 0)
-        {
-            ERROR("Failed to construct the list");
-            te_string_free(&list_container);
-            goto out;
-        }
+        te_string_append(&list_container, "%s ", ctx->log_modules[i].name);
     }
 
     *list = list_container.ptr;
@@ -2567,14 +2466,8 @@ ovs_interface_tunnel_option_list(unsigned int  gid,
         if (interface->tunnel_options[i] == NULL)
             continue;
 
-        rc = te_string_append(&list_container, "%s ",
-                              interface_tunnel_option_names[i]);
-        if (rc != 0)
-        {
-            ERROR("Failed to construct the list");
-            te_string_free(&list_container);
-            return rc;
-        }
+        te_string_append(&list_container, "%s ",
+                         interface_tunnel_option_names[i]);
     }
 
     *list = list_container.ptr;
@@ -3126,13 +3019,7 @@ ovs_interface_list(unsigned int   gid,
 
     SLIST_FOREACH(interface, &ctx->interfaces, links)
     {
-        rc = te_string_append(&list_container, "%s ", interface->name);
-        if (rc != 0)
-        {
-            ERROR("Failed to construct the list");
-            te_string_free(&list_container);
-            goto out;
-        }
+        te_string_append(&list_container, "%s ", interface->name);
     }
 
     *list = list_container.ptr;
@@ -3330,13 +3217,7 @@ ovs_bridge_list(unsigned int   gid,
 
     SLIST_FOREACH(bridge, &ctx->bridges, links)
     {
-        rc = te_string_append(&list_container, "%s ", bridge->interface->name);
-        if (rc != 0)
-        {
-            ERROR("Failed to construct the list of bridges");
-            te_string_free(&list_container);
-            goto out;
-        }
+        te_string_append(&list_container, "%s ", bridge->interface->name);
     }
 
     *list = list_container.ptr;
@@ -3530,13 +3411,7 @@ ovs_bridge_port_list(unsigned int   gid,
 
     SLIST_FOREACH(port, &bridge->ports, links)
     {
-        rc = te_string_append(&list_container, "%s ", port->name);
-        if (rc != 0)
-        {
-            ERROR("Failed to construct the port list");
-            te_string_free(&list_container);
-            goto out;
-        }
+        te_string_append(&list_container, "%s ", port->name);
     }
 
     *list = list_container.ptr;
@@ -3588,7 +3463,6 @@ ovs_configure_value_va(ovs_ctx_t *ctx, const char *entity, const char *name,
                       va_list ap)
 {
     te_string cmd = TE_STRING_INIT;
-    te_errno rc;
     int ret;
     const char *action_str;
 
@@ -3608,18 +3482,10 @@ ovs_configure_value_va(ovs_ctx_t *ctx, const char *entity, const char *name,
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    rc = te_string_append(&cmd, "%s ovs-vsctl %s %s %s %s%s",
-                          ctx->env.ptr, action_str, entity, name, cfg,
-                          (action == OVS_CFG_SET) ? "=" : " ");
-    if (rc == 0)
-        rc = te_string_append_va(&cmd, fmt, ap);
-
-    if (rc != 0)
-    {
-        ERROR("Failed to create configuration command");
-        te_string_free(&cmd);
-        return rc;
-    }
+    te_string_append(&cmd, "%s ovs-vsctl %s %s %s %s%s",
+                     ctx->env.ptr, action_str, entity, name, cfg,
+                     (action == OVS_CFG_SET) ? "=" : " ");
+    te_string_append_va(&cmd, fmt, ap);
 
     ret = te_shell_cmd(cmd.ptr, -1, NULL, NULL, NULL);
     te_string_free(&cmd);
@@ -3818,13 +3684,7 @@ ovs_bridge_port_vlan_trunks_list(unsigned int   gid,
         if (!port->vlan.trunks[i])
             continue;
 
-        rc = te_string_append(&list_container, "%d ", i);
-        if (rc != 0)
-        {
-            ERROR("Failed to construct the port trunks list");
-            te_string_free(&list_container);
-            return rc;
-        }
+        te_string_append(&list_container, "%d ", i);
     }
 
     *list = list_container.ptr;
@@ -4217,7 +4077,8 @@ ovs_bridge_flow_list_handler(const char *line,
     if (rule.cookie == 0 && rule.table != 0)
         return 0;
 
-    return te_string_append(result, "0x%"PRIx64" ", rule.cookie);
+    te_string_append(result, "0x%"PRIx64" ", rule.cookie);
+    return 0;
 }
 
 static te_errno
@@ -4433,26 +4294,23 @@ ovs_create_env_shell_arguments(te_string *env, const char *ta_dir)
 
     for (i = 0; i < TE_ARRAY_LEN(env_vars); i++)
     {
-        rc = te_string_append(&str, "%s=", env_vars[i]);
-        if (rc == 0)
-            rc = te_string_append_shell_arg_as_is(&str, ta_dir);
-
-        if (rc == 0)
-            rc = te_string_append(&str, " ");
-
+        te_string_append(&str, "%s=", env_vars[i]);
+        rc = te_string_append_shell_arg_as_is(&str, ta_dir);
         if (rc != 0)
             goto out;
+
+        te_string_append(&str, " ");
+
     }
 
-    rc = te_string_append(&str, "PATH=");
-    if (rc == 0)
-        rc = te_string_append_shell_arg_as_is(&str, ta_dir);
+    te_string_append(&str, "PATH=");
+    rc = te_string_append_shell_arg_as_is(&str, ta_dir);
 
     if (rc == 0)
-        rc = te_string_append(&str, "\":${PATH}\"");
-
-    if (rc == 0)
-        rc = te_string_append(env, "%s", str.ptr);
+    {
+        te_string_append(&str, "\":${PATH}\"");
+        te_string_append(env, "%s", str.ptr);
+    }
 
 out:
     te_string_free(&str);
@@ -4467,19 +4325,11 @@ ta_unix_conf_ovs_init(void)
 
     INFO("Initialising the facility static context");
 
-    rc = te_string_append(&ovs_ctx.root_path, "%s", ta_dir);
-    if (rc != 0)
-        goto fail;
+    te_string_append(&ovs_ctx.root_path, "%s", ta_dir);
 
-    rc = te_string_append(&ovs_ctx.conf_db_lock_path,
-                          "%s/.conf.db.~lock~", ta_dir);
-    if (rc != 0)
-        goto fail;
+    te_string_append(&ovs_ctx.conf_db_lock_path, "%s/.conf.db.~lock~", ta_dir);
 
-    rc = te_string_append(&ovs_ctx.conf_db_schema, "%s/vswitch.ovsschema",
-                          ta_dir);
-    if (rc != 0)
-        goto fail;
+    te_string_append(&ovs_ctx.conf_db_schema, "%s/vswitch.ovsschema", ta_dir);
     if (access(ovs_ctx.conf_db_schema.ptr, R_OK) != 0)
     {
         const char *def_schema = "/usr/share/openvswitch/vswitch.ovsschema";
@@ -4488,52 +4338,40 @@ ta_unix_conf_ovs_init(void)
         {
             WARN("No DB schema available: neither %s nor %s - drop OvS support",
                  ovs_ctx.conf_db_schema.ptr, def_schema);
+            rc = 0;
             goto fail;
         }
 
         te_string_reset(&ovs_ctx.conf_db_schema);
-        rc = te_string_append(&ovs_ctx.conf_db_schema, def_schema);
-        if (rc != 0)
-            goto fail;
+        te_string_append(&ovs_ctx.conf_db_schema, def_schema);
     }
 
-    rc = te_string_append(&ovs_ctx.conf_db_path, "%s/conf.db", ta_dir);
-    if (rc != 0)
-        goto fail;
+    te_string_append(&ovs_ctx.conf_db_path, "%s/conf.db", ta_dir);
 
     rc = ovs_create_env_shell_arguments(&ovs_ctx.env, ta_dir);
     if (rc != 0)
         goto fail;
 
-    rc = te_string_append(&ovs_ctx.dbtool_cmd,
-                          "%s ovsdb-tool create %s %s", ovs_ctx.env.ptr,
-                          ovs_ctx.conf_db_path.ptr,
-                          ovs_ctx.conf_db_schema.ptr);
-    if (rc != 0)
-        goto fail;
+    te_string_append(&ovs_ctx.dbtool_cmd,
+                     "%s ovsdb-tool create %s %s", ovs_ctx.env.ptr,
+                     ovs_ctx.conf_db_path.ptr,
+                     ovs_ctx.conf_db_schema.ptr);
 
-    rc = te_string_append(&ovs_ctx.dbserver_cmd, "%s ovsdb-server "
-                          "--remote=punix:db.sock --pidfile", ovs_ctx.env.ptr);
-    if (rc != 0)
-        goto fail;
+    te_string_append(&ovs_ctx.dbserver_cmd, "%s ovsdb-server "
+                     "--remote=punix:db.sock --pidfile", ovs_ctx.env.ptr);
 
-    rc = te_string_append(&ovs_ctx.vswitchd_cmd,
-                          "%s ovs-vswitchd --pidfile", ovs_ctx.env.ptr);
-    if (rc != 0)
-        goto fail;
+    te_string_append(&ovs_ctx.vswitchd_cmd,
+                     "%s ovs-vswitchd --pidfile", ovs_ctx.env.ptr);
 
-    rc = te_string_append(&ovs_ctx.vlog_list_cmd,
-                          "%s ovs-appctl -t ovs-vswitchd "
-                          "vlog/list | tail -n +3", ovs_ctx.env.ptr);
-    if (rc != 0)
-        goto fail;
+    te_string_append(&ovs_ctx.vlog_list_cmd,
+                     "%s ovs-appctl -t ovs-vswitchd "
+                     "vlog/list | tail -n +3", ovs_ctx.env.ptr);
 
-    rc = te_string_append(&ovs_ctx.ovs_cfg_cmd,
-                          "%s ovs-vsctl --no-wait set Open_vSwitch . ",
-                          ovs_ctx.env.ptr);
+    te_string_append(&ovs_ctx.ovs_cfg_cmd,
+                     "%s ovs-vsctl --no-wait set Open_vSwitch . ",
+                     ovs_ctx.env.ptr);
 
-    if (rc == 0)
-        return rcf_pch_add_node("/agent", &node_ovs);
+    return rcf_pch_add_node("/agent", &node_ovs);
 
 fail:
     if (rc != 0)

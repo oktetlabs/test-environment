@@ -627,7 +627,6 @@ bpf_list(unsigned int gid, const char *oid, const char *sub_id,
     te_string result = TE_STRING_INIT;
     bool first = true;
     bpf_entry *bpf;
-    te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -635,13 +634,8 @@ bpf_list(unsigned int gid, const char *oid, const char *sub_id,
 
     LIST_FOREACH(bpf, &bpf_list_h, next)
     {
-        rc = te_string_append(&result, "%s%u", first ? "" : " ", bpf->id);
+        te_string_append(&result, "%s%u", first ? "" : " ", bpf->id);
         first = false;
-        if (rc != 0)
-        {
-            te_string_free(&result);
-            return rc;
-        }
     }
 
     *list = result.ptr;
@@ -670,7 +664,6 @@ bpf_prog_map_list(unsigned int gid, const char *oid, const char *sub_id,
     bpf_entry *bpf;
     unsigned int i;
     unsigned int entries_nb = 0;
-    te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -708,13 +701,8 @@ bpf_prog_map_list(unsigned int gid, const char *oid, const char *sub_id,
         else
             name = bpf->progs[i].name;
 
-        rc = te_string_append(&result, "%s%s", first ? "" : " ", name);
+        te_string_append(&result, "%s%s", first ? "" : " ", name);
         first = false;
-        if (rc != 0)
-        {
-            te_string_free(&result);
-            return rc;
-        }
     }
 
     *list = result.ptr;
@@ -1175,10 +1163,8 @@ bpf_list_map_kv_pair(unsigned int gid, const char *oid, const char *sub_id,
         if (rc != 0)
             goto fail;
 
-        rc = te_string_append(&result, "%s%s", first ? "" : " ", buf_str.ptr);
+        te_string_append(&result, "%s%s", first ? "" : " ", buf_str.ptr);
         first = false;
-        if (rc != 0)
-            goto fail;
 
         memcpy(prev_key, key, map->key_size);
 
@@ -2012,7 +1998,6 @@ bpf_list_perf_map_event(unsigned int gid, const char *oid, const char *sub_id,
 {
     te_string                   result = TE_STRING_INIT;
     struct bpf_perf_map_entry  *map = NULL;
-    te_errno                    rc = 0;
     unsigned int                i = 0;
 
     UNUSED(gid);
@@ -2028,13 +2013,7 @@ bpf_list_perf_map_event(unsigned int gid, const char *oid, const char *sub_id,
 
     for (i = 0; i < map->num_events; ++i)
     {
-        rc = te_string_append(&result, "%s%u", i == 0 ? "" : " ", i);
-        if (rc != 0)
-        {
-            ERROR("%s(): te_string_append() failed", __FUNCTION__);
-            te_string_free(&result);
-            return rc;
-        }
+        te_string_append(&result, "%s%u", i == 0 ? "" : " ", i);
     }
 
     *list = result.ptr;

@@ -307,20 +307,21 @@ mod_get_module_res_name(const char *modname, const char *filename,
                         te_string *res_name)
 {
     struct stat st;
-    te_errno rc;
 
     if (filename != NULL)
-        return te_string_append(res_name, "%s", filename);
+    {
+        te_string_append(res_name, "%s", filename);
+        return 0;
+    }
 
-    rc = te_string_append(res_name, "%s/%s.ko", ta_lib_mod_dir, modname);
-    if (rc != 0)
-        return rc;
+    te_string_append(res_name, "%s/%s.ko", ta_lib_mod_dir, modname);
 
     if (stat(res_name->ptr, &st) == 0)
         return 0;
 
     te_string_free(res_name);
-    return te_string_append(res_name, "%s", modname);
+    te_string_append(res_name, "%s", modname);
+    return 0;
 }
 
 static te_errno
@@ -335,13 +336,12 @@ mod_make_cmd_printing_dependencies(const char *modname,
     if (rc != 0)
         return rc;
 
-    rc = te_string_append(cmd,
-                          "modinfo --field=depends %s | "
+    te_string_append(cmd, "modinfo --field=depends %s | "
                           "xargs -d ',' -n1 | sed '$d'",
                           res_name.ptr);
 
     te_string_free(&res_name);
-    return rc;
+    return 0;
 }
 
 static te_errno
@@ -386,11 +386,9 @@ mod_load_with_dependencies(const char *modname, const char *filename,
     if (load_itself)
     {
         te_string_free(&cmd);
-        rc = te_string_append(&cmd,
-                "path=%s/%s.ko ; test -f $path && insmod $path || modprobe %s",
-                ta_lib_mod_dir, modname, modname);
-        if (rc != 0)
-            goto close;
+        te_string_append(&cmd,
+            "path=%s/%s.ko ; test -f $path && insmod $path || modprobe %s",
+            ta_lib_mod_dir, modname, modname);
 
         rc = ta_system(cmd.ptr) == 0 ? 0 : TE_RC(TE_TA_UNIX, TE_EFAIL);
 
@@ -498,20 +496,14 @@ get_module_subdir_list(const char *module_name, char *buf, size_t len,
     if (rc != 0)
         return rc;
 
-    rc = te_string_append(&path_str, SYS_MODULE "/%s/", name);
-    if (rc != 0)
-        goto cleanup;
+    te_string_append(&path_str, SYS_MODULE "/%s/", name);
 
     va_start(ap, fmt);
-    rc = te_string_append_va(&path_str, fmt, ap);
+    te_string_append_va(&path_str, fmt, ap);
     va_end(ap);
-    if (rc != 0)
-        goto cleanup;
 
     rc = get_dir_list(path_str.ptr, buf, len, true,
                       include_cb, cb_data, NULL);
-
-cleanup:
 
     te_string_free(&path_str);
     return rc;
@@ -1006,8 +998,8 @@ module_param_set(unsigned int gid, const char *oid, const char *value,
         if (rc != 0)
             return rc;
 
-        rc = te_string_append(&path, SYS_MODULE"/%s/parameters/%s",
-                              name, param_name);
+        te_string_append(&path, SYS_MODULE"/%s/parameters/%s",
+                         name, param_name);
 
         if (access(path.ptr, W_OK) == 0)
         {

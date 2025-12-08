@@ -3236,16 +3236,8 @@ switchdev_name_list(unsigned int gid, const char *oid,
 
             if (link->switch_id != NULL && link->port_name != NULL)
             {
-                te_errno rc;
-
-                rc = te_string_append(&buffer, "%s:%s ", link->switch_id,
-                                      link->port_name);
-                if (rc != 0)
-                {
-                    ERROR("Failed to copy interface's switch_id and port_name");
-                    netconf_list_free(links);
-                    return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
-                }
+                te_string_append(&buffer, "%s:%s ", link->switch_id,
+                                 link->port_name);
             }
         }
         netconf_list_free(links);

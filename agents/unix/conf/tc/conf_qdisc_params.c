@@ -1051,7 +1051,6 @@ conf_qdisc_param_list(unsigned int gid, const char *oid,
                       const char *sub_id, char **list,
                       const char *if_name)
 {
-    te_errno rc;
     size_t i;
     te_string list_out = TE_STRING_INIT;
     struct rtnl_qdisc *qdisc = conf_tc_internal_get_qdisc(if_name);
@@ -1061,8 +1060,7 @@ conf_qdisc_param_list(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(sub_id);
 
-    if ((rc = te_string_append(&list_out, " ")) != 0)
-        return TE_RC(TE_TA_UNIX, rc);
+    te_string_append(&list_out, " ");
 
     /*
      * Return empty list if qdisc is not available or if it is disabled.
@@ -1086,37 +1084,18 @@ conf_qdisc_param_list(unsigned int gid, const char *oid,
                 if (value == -NLE_NOATTR || value == 0)
                     continue;
 
-                rc = te_string_append(&list_out, "%s ", netem_params[i].name);
-                if (rc != 0)
-                {
-                    te_string_free(&list_out);
-                    return rc;
-                }
+                te_string_append(&list_out, "%s ", netem_params[i].name);
             }
             break;
 
         case CONF_QDISC_TBF:
             for (i = 0; i < TE_ARRAY_LEN(tbf_params_list); i++)
-            {
-                rc = te_string_append(&list_out, "%s ", tbf_params_list[i].name);
-                if (rc != 0)
-                {
-                    te_string_free(&list_out);
-                    return rc;
-                }
-            }
+                te_string_append(&list_out, "%s ", tbf_params_list[i].name);
             break;
 
         case CONF_QDISC_CLSACT:
             for (i = 0; i < TE_ARRAY_LEN(clsact_param_list); i++)
-            {
-                rc = te_string_append(&list_out, "%s ", clsact_param_list[i].name);
-                if (rc != 0)
-                {
-                    te_string_free(&list_out);
-                    return rc;
-                }
-            }
+                te_string_append(&list_out, "%s ", clsact_param_list[i].name);
             break;
 
         default:

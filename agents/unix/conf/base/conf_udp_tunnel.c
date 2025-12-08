@@ -402,13 +402,8 @@ udp_tunnel_list(char **list, udp_tunnel_entry_type type)
         {
             if (p->type == type && !p->added)
             {
-                rc = te_string_append(&str, "%s ",
-                                      udp_tunnel_get_generic(p)->ifname);
-                if (rc != 0)
-                {
-                    te_string_free(&str);
-                    return rc;
-                }
+                te_string_append(&str, "%s ",
+                                 udp_tunnel_get_generic(p)->ifname);
             }
         }
         *list = str.ptr;

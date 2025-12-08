@@ -270,7 +270,6 @@ static te_errno
 pppoe_server_build_cmd(te_pppoe_server *pppoe, te_string *cmd)
 {
     te_pppoe_if *iface;
-    te_errno     rc;
 
     if (SLIST_EMPTY(&pppoe->ifs))
     {
@@ -284,32 +283,21 @@ pppoe_server_build_cmd(te_pppoe_server *pppoe, te_string *cmd)
 
     te_string_reset(cmd);
 
-    rc = te_string_append(cmd, "%s -O %s",
-                          PPPOE_SERVER_EXEC, PPPOE_SERVER_CONF);
-    if (rc != 0)
-        return rc;
+    te_string_append(cmd, "%s -O %s", PPPOE_SERVER_EXEC, PPPOE_SERVER_CONF);
 
     if (SIN(&pppoe->laddr)->sin_addr.s_addr != INADDR_ANY)
     {
-        rc = te_string_append(cmd, " -L %s",
-                              te_sockaddr_get_ipstr(SA(&pppoe->laddr)));
-        if (rc != 0)
-            return rc;
+        te_string_append(cmd, " -L %s", te_sockaddr_get_ipstr(SA(&pppoe->laddr)));
     }
 
     if (SIN(&pppoe->raddr)->sin_addr.s_addr != INADDR_ANY)
     {
-        rc = te_string_append(cmd, " -R %s",
-                              te_sockaddr_get_ipstr(SA(&pppoe->raddr)));
-        if (rc != 0)
-            return rc;
+        te_string_append(cmd, " -R %s", te_sockaddr_get_ipstr(SA(&pppoe->raddr)));
     }
 
     SLIST_FOREACH(iface, &pppoe->ifs, list)
     {
-        rc = te_string_append(cmd, " -I %s", iface->ifname);
-        if (rc != 0)
-            return rc;
+        te_string_append(cmd, " -I %s", iface->ifname);
     }
 
     INFO("Command to run pppoe server: '%s'", cmd->ptr);

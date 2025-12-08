@@ -243,12 +243,7 @@ open_pci_attr(const char *name, const char *attr, FILE **result)
     te_errno rc = 0;
     te_string buf = TE_STRING_INIT;
 
-    if ((rc = te_string_append(&buf, SYSFS_PCI_DEVICES_TREE "/%s/%s",
-                               name, attr)) != 0)
-    {
-        te_string_free(&buf);
-        return rc;
-    }
+    te_string_append(&buf, SYSFS_PCI_DEVICES_TREE "/%s/%s", name, attr);
 
     *result = fopen(buf.ptr, "r");
     if (*result == NULL)
@@ -685,8 +680,9 @@ update_device_list(void)
 static te_errno
 format_device_address(te_string *dest, const pci_address *dev)
 {
-    return te_string_append(dest, "%04x:%02x:%02x.%1.1o",
-                            dev->domain, dev->bus, dev->slot, dev->fn);
+    te_string_append(dest, "%04x:%02x:%02x.%1.1o",
+                     dev->domain, dev->bus, dev->slot, dev->fn);
+    return 0;
 }
 
 static bool
@@ -814,13 +810,8 @@ pci_device_instance_get(unsigned int gid, const char *oid, char *value,
     if (!is_device_accessible(dev))
         return TE_RC(TE_TA_UNIX, TE_EPERM);
 
-    rc = te_string_append(&result, "/agent:%s/hardware:/pci:/device:",
-                          ta_name);
-    if (rc != 0)
-    {
-        te_string_free(&result);
-        return rc;
-    }
+    te_string_append(&result, "/agent:%s/hardware:/pci:/device:", ta_name);
+
     rc = format_device_address(&result, &dev->address);
     if (rc != 0)
     {
@@ -1398,20 +1389,14 @@ format_sysfs_device_name(te_string *dest, const pci_device *dev,
 {
     te_errno rc;
 
-    rc = te_string_append(dest, SYSFS_PCI_DEVICES_TREE "/");
-    if (rc != 0)
-        return rc;
+    te_string_append(dest, SYSFS_PCI_DEVICES_TREE "/");
 
     rc = format_device_address(dest, &dev->address);
     if (rc != 0)
         return rc;
 
     if (suffix != NULL)
-    {
-        rc = te_string_append(dest, "%s", suffix);
-        if (rc != 0)
-            return rc;
-    }
+        te_string_append(dest, "%s", suffix);
 
     return 0;
 }
@@ -1637,16 +1622,11 @@ unbind_pci_device(const pci_device *dev)
 static te_errno
 maybe_load_driver(const char *drvname)
 {
-    te_errno rc;
+    te_errno rc = 0;
     int status;
     te_string buf = TE_STRING_INIT;
 
-    rc = te_string_append(&buf, "/sys/bus/pci/drivers/%s", drvname);
-    if (rc != 0)
-    {
-        te_string_free(&buf);
-        return rc;
-    }
+    te_string_append(&buf, "/sys/bus/pci/drivers/%s", drvname);
 
     if (access(buf.ptr, F_OK) == 0)
     {
@@ -1663,12 +1643,8 @@ maybe_load_driver(const char *drvname)
     RING("PCI driver '%s' not found, trying to load module", drvname);
 
     te_string_cut(&buf, buf.len);
-    rc = te_string_append(&buf, "/sbin/modprobe %s", drvname);
-    if (rc != 0)
-    {
-        te_string_free(&buf);
-        return rc;
-    }
+    te_string_append(&buf, "/sbin/modprobe %s", drvname);
+
     status = ta_system(buf.ptr);
     if (status < 0)
         rc = TE_OS_RC(TE_TA_UNIX, errno);
@@ -1698,16 +1674,12 @@ maybe_load_driver(const char *drvname)
 static te_errno
 let_generic_driver_know_pci_device(const pci_device *dev, const char *drvname)
 {
-    te_errno rc;
+    te_errno rc = 0;
     te_string buf = TE_STRING_INIT;
     int fd;
 
-    rc = te_string_append(&buf, "/sys/bus/pci/drivers/%s/new_id", drvname);
-    if (rc != 0)
-    {
-        te_string_free(&buf);
-        return rc;
-    }
+    te_string_append(&buf, "/sys/bus/pci/drivers/%s/new_id", drvname);
+
     fd = open(buf.ptr, O_WRONLY);
     if (fd < 0)
     {
@@ -1716,14 +1688,7 @@ let_generic_driver_know_pci_device(const pci_device *dev, const char *drvname)
         return rc;
     }
     te_string_cut(&buf, buf.len);
-    rc = te_string_append(&buf, "%04x %04x", dev->vendor_id,
-                          dev->device_id);
-    if (rc != 0)
-    {
-        close(fd);
-        te_string_free(&buf);
-        return rc;
-    }
+    te_string_append(&buf, "%04x %04x", dev->vendor_id, dev->device_id);
 
     /* Do not fail if ID is already added */
     if (write(fd, buf.ptr, buf.len) < 0 && errno != EEXIST)
@@ -1740,12 +1705,8 @@ bind_pci_device(const pci_device *dev, const char *drvname)
     te_string buf = TE_STRING_INIT;
     int fd;
 
-    rc = te_string_append(&buf, "/sys/bus/pci/drivers/%s/bind", drvname);
-    if (rc != 0)
-    {
-        te_string_free(&buf);
-        return rc;
-    }
+    te_string_append(&buf, "/sys/bus/pci/drivers/%s/bind", drvname);
+
     fd = open(buf.ptr, O_WRONLY);
     if (fd < 0)
     {
@@ -1779,14 +1740,10 @@ bind_pci_device(const pci_device *dev, const char *drvname)
             int eno = errno;
 
             te_string_cut(&buf, buf.len);
-            rc = te_string_append(&buf, "/sys/bus/pci/drivers/%s/",
-                                  drvname);
-            if (rc == 0)
-            {
-                rc = format_device_address(&buf, &dev->address);
-                if (rc == 0 && access(buf.ptr, F_OK) != 0)
-                    rc = TE_RC(TE_TA_UNIX, eno);
-            }
+            te_string_append(&buf, "/sys/bus/pci/drivers/%s/", drvname);
+            rc = format_device_address(&buf, &dev->address);
+            if (rc == 0 && access(buf.ptr, F_OK) != 0)
+                rc = TE_RC(TE_TA_UNIX, eno);
         }
     }
     close(fd);
@@ -1816,22 +1773,17 @@ sysfs_read_dev_major_minor(const char *name, const char *attr,
 static te_errno
 sysfs_read_dev_type(const char *name, int major, int minor, mode_t *type)
 {
-    te_errno rc;
     te_string buf = TE_STRING_INIT_STATIC(PATH_MAX);
     struct stat statbuf;
     struct stat dev_statbuf;
 
-    rc = te_string_append(&buf, SYSFS_PCI_DEVICES_TREE "/%s", name);
-    if (rc != 0)
-        return rc;
+    te_string_append(&buf, SYSFS_PCI_DEVICES_TREE "/%s", name);
 
     if (stat(buf.ptr, &dev_statbuf) != 0)
         return TE_OS_RC(TE_TA_UNIX, errno);
 
     te_string_reset(&buf);
-    rc = te_string_append(&buf, "/sys/dev/char/%d:%d", major, minor);
-    if (rc != 0)
-        return rc;
+    te_string_append(&buf, "/sys/dev/char/%d:%d", major, minor);
 
     if (stat(buf.ptr, &statbuf) == 0 && statbuf.st_ino == dev_statbuf.st_ino)
     {
@@ -1840,9 +1792,7 @@ sysfs_read_dev_type(const char *name, int major, int minor, mode_t *type)
     }
 
     te_string_reset(&buf);
-    rc = te_string_append(&buf, "/sys/dev/block/%d:%d", major, minor);
-    if (rc != 0)
-        return rc;
+    te_string_append(&buf, "/sys/dev/block/%d:%d", major, minor);
 
     if (stat(buf.ptr, &statbuf) == 0 && statbuf.st_ino == dev_statbuf.st_ino)
     {
@@ -1937,16 +1887,11 @@ pci_driver_dev_list_for_each(const pci_driver_dev_list_helper *dhl,
         te_string subdir = TE_STRING_INIT_STATIC(PATH_MAX);
         te_string devdir = TE_STRING_INIT_STATIC(PATH_MAX);
 
-        rc = te_string_append(&subdir, "%s", namelist[i]->d_name);
-        if (rc == 0 && dhl->subdir != NULL)
-            rc = te_string_append(&subdir, "/%s", dhl->subdir);
+        te_string_append(&subdir, "%s", namelist[i]->d_name);
+        if (dhl->subdir != NULL)
+            te_string_append(&subdir, "/%s", dhl->subdir);
 
-        if (rc != 0)
-            break;
-
-        rc = te_string_append(&devdir, "%s/%s", buf.ptr, subdir.ptr);
-        if (rc != 0)
-            break;
+        te_string_append(&devdir, "%s/%s", buf.ptr, subdir.ptr);
 
         devdirs = scandir(devdir.ptr, &devlist, NULL, alphasort);
         if (devdirs < 0)
@@ -1998,9 +1943,7 @@ create_device_callback(const pci_device *pci_dev, const char *subdir,
     if (rc != 0)
         return rc;
 
-    rc = te_string_append(&buf, "/%s/%s", subdir, device);
-    if (rc != 0)
-        return rc;
+    te_string_append(&buf, "/%s/%s", subdir, device);
 
     rc = sysfs_read_dev_major_minor(buf.ptr, "dev", &maj, &min);
 
@@ -2012,9 +1955,7 @@ create_device_callback(const pci_device *pci_dev, const char *subdir,
 
     dev = makedev(maj, min);
 
-    rc = te_string_append(&device_path, "/dev/%s", device);
-    if (rc != 0)
-        return rc;
+    te_string_append(&device_path, "/dev/%s", device);
 
     if (stat(device_path.ptr, &statbuf) == 0)
     {
@@ -2208,7 +2149,8 @@ append_list_callback(const pci_device *pci_dev, const char *subdir,
     UNUSED(pci_dev);
     UNUSED(subdir);
 
-    return te_string_append(list, "%s ", device);
+    te_string_append(list, "%s ", device);
+    return 0;
 }
 
 static te_errno
@@ -2314,9 +2256,7 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
             return 0;
         }
 
-        rc = te_string_append(&buf, "%s", namelist[0]->d_name);
-        if (rc != 0)
-            return rc;
+        te_string_append(&buf, "%s", namelist[0]->d_name);
 
         while (n--)
             free(namelist[n]);
@@ -2324,9 +2264,7 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
         free(namelist);
     }
 
-    rc = te_string_append(&buf, "%s", "/net");
-    if (rc != 0)
-        return rc;
+    te_string_append(&buf, "%s", "/net");
 
     net_list = calloc(1, RCF_MAX_VAL);
     if (net_list == NULL)
@@ -2372,13 +2310,7 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
         if (net_list[i] != ' ')
             continue;
 
-        rc = te_string_append(&buf, "%u ", n++);
-        if (rc != 0)
-        {
-            te_string_free(&buf);
-            free(net_list);
-            return rc;
-        }
+        te_string_append(&buf, "%u ", n++);
     }
     free(net_list);
 
@@ -2386,7 +2318,7 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
     {
         te_string_reset(&buf);
         /* The string must contain at least 2 chars */
-        (void)te_string_append(&buf, " ");
+        te_string_append(&buf, " ");
     }
 
     *list = buf.ptr;
@@ -2614,12 +2546,7 @@ pci_sriov_vf_get(unsigned int gid, const char *oid, char *value,
         return rc;
     }
 
-    rc = te_string_append(&buf, PCI_VIRTFN_PREFIX "%s", virtfn_id);
-    if (rc != 0)
-    {
-        te_string_free(&buf);
-        return rc;
-    }
+    te_string_append(&buf, PCI_VIRTFN_PREFIX "%s", virtfn_id);
 
     rc = readlink(buf.ptr, link, sizeof(link) - 1);
     te_string_free(&buf);
@@ -2982,19 +2909,12 @@ pci_param_list(unsigned int gid, const char *oid,
             strcmp(param->dev_name, addr_str) != 0)
             continue;
 
-        rc = te_string_append(&str, "%s ", param->name);
-        if (rc != 0)
-            goto cleanup;
+        te_string_append(&str, "%s ", param->name);
     }
 
-cleanup:
+    *list = str.ptr;
 
-    if (rc != 0)
-        te_string_free(&str);
-    else
-        *list = str.ptr;
-
-    return rc;
+    return 0;
 #endif
 }
 
@@ -3106,22 +3026,12 @@ param_value_list(unsigned int gid, const char *oid,
     for (i = 0; i < NETCONF_DEVLINK_PARAM_CMODES; i++)
     {
         if (param->values[i].defined)
-        {
-            rc = te_string_append(&str, "%s ",
-                                  devlink_param_cmode_netconf2str(i));
-            if (rc != 0)
-                goto cleanup;
-        }
+            te_string_append(&str, "%s ", devlink_param_cmode_netconf2str(i));
     }
 
-cleanup:
+    *list = str.ptr;
 
-    if (rc != 0)
-        te_string_free(&str);
-    else
-        *list = str.ptr;
-
-    return rc;
+    return 0;
 #endif
 }
 

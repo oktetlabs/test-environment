@@ -298,12 +298,7 @@ open_system_file(const char *path, FILE **result)
     te_errno rc = 0;
     te_string buf = TE_STRING_INIT;
 
-    if ((rc = te_string_append(&buf, SYSFS_SYSTEM_TREE "/%s", path)) != 0)
-    {
-        ERROR("Failed to create sysfs path '%s'", path);
-        te_string_free(&buf);
-        return rc;
-    }
+    te_string_append(&buf, SYSFS_SYSTEM_TREE "/%s", path);
 
     *result = fopen(buf.ptr, "r");
     if (*result == NULL)
@@ -332,12 +327,7 @@ read_cpu_topology_dec_attr(const char *name, const char *attr,
 
     te_string buf = TE_STRING_INIT;
 
-    if ((rc = te_string_append(&buf, "cpu/%s/topology/%s", name, attr)) != 0)
-    {
-        ERROR("Failed to create cpu topology path");
-        te_string_free(&buf);
-        return rc;
-    }
+    te_string_append(&buf, "cpu/%s/topology/%s", name, attr);
 
     rc = open_system_file(buf.ptr, &f);
     te_string_free(&buf);
@@ -471,8 +461,7 @@ get_node(const char *cpu_name, unsigned long *node_id)
     te_errno rc = 0;
     int n_nodes = 0;
 
-    if ((rc = te_string_append(&buf, SYSFS_SYSTEM_TREE "/cpu/%s", cpu_name)) != 0)
-        goto out;
+    te_string_append(&buf, SYSFS_SYSTEM_TREE "/cpu/%s", cpu_name);
 
     n_nodes = scandir(buf.ptr, &names, filter_node, NULL);
     if (n_nodes < 0)
@@ -587,11 +576,7 @@ is_cpu_online(const char *name, bool *is_online)
         return rc;
     }
 
-    if ((rc = te_string_append(&buf, "cpu/%s/online", name)) != 0)
-    {
-        ERROR("Failed to create online cpu path");
-        goto out;
-    }
+    te_string_append(&buf, "cpu/%s/online", name);
 
     rc = open_system_file(buf.ptr, &f);
     switch (TE_RC_GET_ERROR(rc))
@@ -1522,7 +1507,6 @@ numa_list(unsigned int gid, const char *oid, const char *sub_id,
     te_string result = TE_STRING_INIT;
     bool first = true;
     cpu_item *node;
-    te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1530,13 +1514,8 @@ numa_list(unsigned int gid, const char *oid, const char *sub_id,
 
     LIST_FOREACH(node, &global_cpu_item_root, next)
     {
-        rc = te_string_append(&result, "%s%u", first ? "" : " ", node->id);
+        te_string_append(&result, "%s%u", first ? "" : " ", node->id);
         first = false;
-        if (rc != 0)
-        {
-            te_string_free(&result);
-            return rc;
-        }
     }
 
     *list = result.ptr;
@@ -1572,13 +1551,8 @@ cpu_list(unsigned int gid, const char *oid, const char *sub_id,
 
     LIST_FOREACH(package, &node->children, next)
     {
-        rc = te_string_append(&result, "%s%u", first ? "" : " ", package->id);
+        te_string_append(&result, "%s%u", first ? "" : " ", package->id);
         first = false;
-        if (rc != 0)
-        {
-            te_string_free(&result);
-            return rc;
-        }
     }
 
     *list = result.ptr;
@@ -1617,13 +1591,8 @@ cpu_core_list(unsigned int gid, const char *oid, const char *sub_id,
 
     LIST_FOREACH(core, &package->children, next)
     {
-        rc = te_string_append(&result, "%s%u", first ? "" : " ", core->id);
+        te_string_append(&result, "%s%u", first ? "" : " ", core->id);
         first = false;
-        if (rc != 0)
-        {
-            te_string_free(&result);
-            return rc;
-        }
     }
 
     *list = result.ptr;
@@ -1665,13 +1634,8 @@ cpu_thread_list(unsigned int gid, const char *oid, const char *sub_id,
 
     LIST_FOREACH(thread, &core->children, next)
     {
-        rc = te_string_append(&result, "%s%u", first ? "" : " ", thread->id);
+        te_string_append(&result, "%s%u", first ? "" : " ", thread->id);
         first = false;
-        if (rc != 0)
-        {
-            te_string_free(&result);
-            return rc;
-        }
     }
 
     *list = result.ptr;
