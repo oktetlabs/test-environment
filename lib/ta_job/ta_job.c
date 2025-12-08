@@ -983,9 +983,7 @@ match_callback(ta_job_manager_t *manager, filter_t *filter,
 #else
         te_string message = TE_STRING_INIT;
 
-        rc = te_string_append(&message, "%.*s", log_size, buf);
-        if (rc != 0)
-            return rc;
+        te_string_append(&message, "%.*s", log_size, buf);
 
         LGR_MESSAGE(filter->log_level, log_user, "%s", message.ptr);
 
@@ -1018,7 +1016,7 @@ filter_regexp_exec(ta_job_manager_t *manager, filter_t *filter,
     bool first_exec;
     unsigned long int *ovector;
     int rc;
-    te_errno te_rc;
+    te_errno te_rc = 0;
     regexp_data_t *regexp = filter->regexp_data;
     char *subject;
     int subject_length;
@@ -1029,13 +1027,7 @@ filter_regexp_exec(ta_job_manager_t *manager, filter_t *filter,
      */
     int future_start_offset;
 
-    te_rc = te_string_append(&filter->saved_string, "%.*s",
-                             segment_length, segment);
-    if (te_rc != 0)
-    {
-        ERROR("Failed to append segment to filter's saved string");
-        goto out;
-    }
+    te_string_append(&filter->saved_string, "%.*s", segment_length, segment);
     subject = filter->saved_string.ptr;
     subject_length = filter->saved_string.len;
     future_start_offset = subject_length;
