@@ -82,14 +82,7 @@ tapi_bpf_build_bpf_obj_path(const char *ta, const char *bpf_prog_name)
         return NULL;
     }
 
-    rc = te_string_append(&buf, "%s/%s.o", ta_dir, bpf_prog_name);
-    if (rc != 0)
-    {
-        ERROR("%s(): Failed to build path to BPF object: %r",
-              __FUNCTION__, rc);
-        free(ta_dir);
-        return NULL;
-    }
+    te_string_append(&buf, "%s/%s.o", ta_dir, bpf_prog_name);
     free(ta_dir);
     return buf.ptr;
 }
@@ -472,11 +465,7 @@ tapi_bpf_prog_link(const char *ta, const char *ifname,
     assert(ifname != NULL);
     assert(prog != NULL);
 
-    if ((rc = te_string_append(&str, "/agent:%s/bpf:%u/prog:%s",
-                               ta, bpf_id, prog)) < 0)
-    {
-        return rc;
-    }
+    te_string_append(&str, "/agent:%s/bpf:%u/prog:%s", ta, bpf_id, prog);
 
     switch (link_type)
     {
@@ -1304,16 +1293,12 @@ tapi_bpf_prog_name_check(const char *ta, unsigned int bpf_id,
                          const char *prog_name)
 {
     te_string   str = TE_STRING_INIT_STATIC(RCF_MAX_ID);
-    te_errno    rc = 0;
 
     assert(ta != NULL);
     assert(prog_name != NULL);
 
-    if ((rc = te_string_append(&str, "/agent:%s/bpf:%u/program:%s",
-                               ta, bpf_id, prog_name)) != 0)
-    {
-        return rc;
-    }
+    te_string_append(&str, "/agent:%s/bpf:%u/program:%s",
+                     ta, bpf_id, prog_name);
 
     return tapi_bpf_check_name_exists(str.ptr);
 }
@@ -1325,19 +1310,15 @@ tapi_bpf_map_type_name_check(const char *ta, unsigned int bpf_id,
                              tapi_bpf_map_type map_type)
 {
     te_string   str = TE_STRING_INIT_STATIC(RCF_MAX_ID);
-    te_errno    rc = 0;
 
     assert(ta != NULL);
     assert(map_name != NULL);
 
-    if ((rc = te_string_append(&str, "/agent:%s/bpf:%u/%s:%s",
-                               ta, bpf_id,
-                               map_type == TAPI_BPF_MAP_TYPE_PERF_EVENT_ARRAY ?
-                               "perf_map" : "map",
-                               map_name)) != 0)
-    {
-        return rc;
-    }
+    te_string_append(&str, "/agent:%s/bpf:%u/%s:%s",
+                     ta, bpf_id,
+                     map_type == TAPI_BPF_MAP_TYPE_PERF_EVENT_ARRAY ?
+                     "perf_map" : "map",
+                     map_name);
 
     return tapi_bpf_check_name_exists(str.ptr);
 }

@@ -37,21 +37,15 @@ tapi_bpf_rxq_stats_init(const char *ta, const char *if_name,
         if (rc != 0)
             goto finish;
 
-        rc = te_string_append(&prog_path, "%s/", ta_dir);
-        if (rc != 0)
-            goto finish;
+        te_string_append(&prog_path, "%s/", ta_dir);
     }
 
     if (prog_dir != NULL)
     {
-        rc = te_string_append(&prog_path, "%s", prog_dir);
-        if (rc != 0)
-            goto finish;
+        te_string_append(&prog_path, "%s", prog_dir);
     }
 
-    rc = te_string_append(&prog_path, "/rxq_stats.o");
-    if (rc != 0)
-        goto finish;
+    te_string_append(&prog_path, "/rxq_stats.o");
 
     rc = tapi_bpf_obj_init(ta, te_string_value(&prog_path),
                            TAPI_BPF_PROG_TYPE_XDP, &id);
