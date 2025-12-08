@@ -1233,8 +1233,6 @@ tarpc_job_buffer2tapi_job_buffer(const rcf_rpc_server *rpcs,
                                  const tarpc_job_buffer *from,
                                  tapi_job_buffer_t *to)
 {
-    te_errno rc;
-
     to->dropped = from->dropped;
     to->eos = from->eos;
 
@@ -1246,10 +1244,8 @@ tarpc_job_buffer2tapi_job_buffer(const rcf_rpc_server *rpcs,
     if (to->filter == NULL)
         TEST_FAIL("Failed to find a filter with id %u", from->filter);
 
-    rc = te_string_append(&to->data, "%.*s", from->data.data_len,
-                          from->data.data_val);
-    if (rc != 0)
-        TEST_FAIL("TE string append failed");
+    te_string_append(&to->data, "%.*s", from->data.data_len,
+                     from->data.data_val);
 }
 
 static te_errno
