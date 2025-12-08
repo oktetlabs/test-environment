@@ -486,15 +486,8 @@ tapi_memaslap_args2str(te_vec *vec, char **str)
 
     TE_VEC_FOREACH(vec, arg)
     {
-        if (rc == 0 && *arg != NULL)
-            rc = te_string_append(&arguments, "%s%s", *arg, separator);
-    }
-
-    if (rc != 0)
-    {
-        te_string_free(&arguments);
-        ERROR("Failed to write memaslap args into string: %r", rc);
-        return rc;
+        if (*arg != NULL)
+            te_string_append(&arguments, "%s%s", *arg, separator);
     }
 
     te_string_cut(&arguments, strlen(separator));

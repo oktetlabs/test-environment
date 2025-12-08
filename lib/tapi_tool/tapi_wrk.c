@@ -83,7 +83,6 @@ tapi_wrk_args2str(te_vec *vec, size_t max_arg_len)
     void **arg;
     bool is_trunc;
     te_string str = TE_STRING_INIT;
-    te_errno rc = 0;
     const char *separator = " ";
     const char *trunc_str = "...TRUNCATED!";
 
@@ -92,7 +91,7 @@ tapi_wrk_args2str(te_vec *vec, size_t max_arg_len)
 
     TE_VEC_FOREACH(vec, arg)
     {
-        if (rc == 0 && *arg != NULL)
+        if (*arg != NULL)
         {
             is_trunc = false;
             if (strlen((char*)(*arg)) > max_arg_len)
@@ -101,15 +100,9 @@ tapi_wrk_args2str(te_vec *vec, size_t max_arg_len)
                 is_trunc = true;
             }
 
-            rc = te_string_append(&str, "%s%s%s",
-                                  *arg, is_trunc ? trunc_str : "", separator);
+            te_string_append(&str, "%s%s%s",
+                             *arg, is_trunc ? trunc_str : "", separator);
         }
-    }
-
-    if (rc != 0)
-    {
-        te_string_free(&str);
-        return NULL;
     }
 
     te_string_cut(&str, strlen(separator));

@@ -548,13 +548,7 @@ tapi_trex_gen_astf_config(const char *ta, const tapi_trex_opt *opt)
     te_kvpair_h kvpairs;
     te_kvpair_init(&kvpairs);
 
-    rc = te_string_append(&template, "%s", opt->astf_template);
-    if (rc != 0)
-    {
-        rc = TE_RC(TE_TAPI, rc);
-        ERROR("Failed to read TRex ASTF template: %r", rc);
-        goto cleanup;
-    }
+    te_string_append(&template, "%s", opt->astf_template);
 
     tapi_trex_gen_clients_astf_conf(opt->clients, &kvpairs);
     tapi_trex_gen_servers_astf_conf(opt->servers, &kvpairs);

@@ -136,12 +136,7 @@ create_optional_sizes(const void *value, const void *priv, te_vec *args)
 
     TE_VEC_FOREACH(*sizes, elem)
     {
-        rc = te_string_append(&tmp, "%d,", *elem);
-        if (rc != 0)
-        {
-            te_string_free(&tmp);
-            return rc;
-        }
+        te_string_append(&tmp, "%d,", *elem);
     }
     rc = te_vec_append_str_fmt(args, "%s", tmp.ptr);
     if (rc != 0)

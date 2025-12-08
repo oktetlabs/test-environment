@@ -802,17 +802,13 @@ get_error(tapi_ethtool_app *app,
 
         report->err_out = true;
 
-        rc = te_string_append(&report->err_data, "%s",
-                              te_string_value(&buffers[i].data));
-        if (rc != 0)
-            goto cleanup;
+        te_string_append(&report->err_data, "%s",
+                         te_string_value(&buffers[i].data));
 
         if (strcasestr(te_string_value(&buffers[i].data),
                        "Operation not supported") != NULL)
             report->err_code = TE_EOPNOTSUPP;
     }
-
-cleanup:
 
     tapi_job_buffers_free(buffers, count);
 
@@ -848,13 +844,9 @@ get_stdout(tapi_ethtool_app *app,
 
         report->out = true;
 
-        rc = te_string_append(&report->out_data, "%s",
-                              te_string_value(&buffers[i].data));
-        if (rc != 0)
-            goto cleanup;
+        te_string_append(&report->out_data, "%s",
+                         te_string_value(&buffers[i].data));
     }
-
-cleanup:
 
     tapi_job_buffers_free(buffers, count);
 
