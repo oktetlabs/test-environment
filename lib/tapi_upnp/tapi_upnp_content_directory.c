@@ -1005,12 +1005,9 @@ pre_print_cd(tapi_upnp_cd_container_node *container, void *user_data)
     opaque->align++;
     for (i = 0; i < opaque->align; i++)
     {
-        opaque->error = te_string_append(opaque->buf, " ");
-        if (opaque->error != 0)
-            return;
+        te_string_append(opaque->buf, " ");
     }
-    opaque->error = te_string_append(opaque->buf, "%s [\n",
-                                     container->data.base.title);
+    te_string_append(opaque->buf, "%s [\n", container->data.base.title);
 }
 
 /**
@@ -1031,12 +1028,10 @@ post_print_cd(tapi_upnp_cd_container_node *container, void *user_data)
 
     for (i = 0; i < opaque->align; i++)
     {
-        opaque->error = te_string_append(opaque->buf, " ");
-        if (opaque->error != 0)
-            return;
+        te_string_append(opaque->buf, " ");
     }
     opaque->align--;
-    opaque->error = te_string_append(opaque->buf, "],\n");
+    te_string_append(opaque->buf, "],\n");
 }
 
 /**
