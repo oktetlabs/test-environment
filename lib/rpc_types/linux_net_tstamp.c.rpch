@@ -374,18 +374,15 @@ hwtstamp_tx_types_flags_rpc2te_str(unsigned int flags, te_string *str)
         _type = RPC_HWTSTAMP_TX_ ## _name;                            \
         if (flags & (1 << _type))                                     \
         {                                                             \
-            rc = te_string_append(str, "%s%s",                        \
-                                  (flag_added ? " | " : ""),          \
-                                  hwtstamp_tx_types_rpc2str(_type));  \
-            if (rc != 0)                                              \
-                return rc;                                            \
+            te_string_append(str, "%s%s",                             \
+                             (flag_added ? " | " : ""),               \
+                             hwtstamp_tx_types_rpc2str(_type));       \
                                                                       \
             flag_added = true;                                        \
         }                                                             \
     } while (0)
 
     bool flag_added = false;
-    te_errno rc;
 
     CHECK_FLAG(OFF);
     CHECK_FLAG(ON);
@@ -394,7 +391,7 @@ hwtstamp_tx_types_flags_rpc2te_str(unsigned int flags, te_string *str)
     CHECK_FLAG(UNKNOWN);
 
     if (!flag_added)
-        return te_string_append(str, "0");
+        te_string_append(str, "0");
 
     return 0;
 #undef CHECK_FLAG
@@ -410,18 +407,15 @@ hwtstamp_rx_filters_flags_rpc2te_str(unsigned int flags, te_string *str)
         _filter = RPC_HWTSTAMP_FILTER_ ## _name;                          \
         if (flags & (1 << _filter))                                       \
         {                                                                 \
-            rc = te_string_append(str, "%s%s",                            \
-                                  (flag_added ? " | " : ""),              \
-                                  hwtstamp_rx_filters_rpc2str(_filter));  \
-            if (rc != 0)                                                  \
-                return rc;                                                \
+            te_string_append(str, "%s%s",                                 \
+                             (flag_added ? " | " : ""),                   \
+                             hwtstamp_rx_filters_rpc2str(_filter));       \
                                                                           \
             flag_added = true;                                            \
         }                                                                 \
     } while (0)
 
     bool flag_added = false;
-    te_errno rc;
 
     CHECK_FLAG(NONE);
     CHECK_FLAG(ALL);
@@ -442,7 +436,7 @@ hwtstamp_rx_filters_flags_rpc2te_str(unsigned int flags, te_string *str)
     CHECK_FLAG(UNKNOWN);
 
     if (!flag_added)
-        return te_string_append(str, "0");
+        te_string_append(str, "0");
 
     return 0;
 #undef CHECK_FLAG

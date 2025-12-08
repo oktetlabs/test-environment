@@ -177,12 +177,13 @@ timex_status_flags_h2rpc(unsigned int flags)
 te_errno
 timex_tarpc2te_str(const tarpc_timex *val, te_string *str)
 {
-    return te_string_append(str, "{ .modes = %s, .status = %s, offset = %"
-                            TE_PRINTF_64 "d, freq = %" TE_PRINTF_64 "d, "
-                            "time = { %ld, %ld } }",
-                            adj_mode_flags_rpc2str(val->modes),
-                            timex_status_flags_rpc2str(val->status),
-                            val->offset, val->freq,
-                            (long int)(val->time.tv_sec),
-                            (long int)(val->time.tv_usec));
+    te_string_append(str, "{ .modes = %s, .status = %s, offset = %"
+                     TE_PRINTF_64 "d, freq = %" TE_PRINTF_64 "d, "
+                     "time = { %ld, %ld } }",
+                     adj_mode_flags_rpc2str(val->modes),
+                     timex_status_flags_rpc2str(val->status),
+                     val->offset, val->freq,
+                     (long int)(val->time.tv_sec),
+                     (long int)(val->time.tv_usec));
+    return 0;
 }
