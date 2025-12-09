@@ -180,7 +180,7 @@ set_opt_interval(te_string *cmd, const tapi_perf_opts *options)
 static void
 set_opt_length(te_string *cmd, const tapi_perf_opts *options)
 {
-    if (options->length >= 0)
+    if (options->length > 0)
         te_string_append(cmd, "-l%"PRId32, options->length);
 }
 

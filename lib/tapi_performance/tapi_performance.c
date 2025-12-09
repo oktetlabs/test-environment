@@ -69,6 +69,7 @@ app_fini(tapi_perf_app *app)
 void
 tapi_perf_opts_init(tapi_perf_opts *opts)
 {
+    memset(opts, 0, sizeof(*opts));
     opts->host = NULL;
     opts->src_host = NULL;
     opts->port = -1;
@@ -78,7 +79,6 @@ tapi_perf_opts_init(tapi_perf_opts *opts)
     opts->num_bytes = -1;
     opts->duration_sec = 30;
     opts->interval_sec = TAPI_PERF_INTERVAL_DISABLED;
-    opts->length = 1470;
     opts->streams = 1;
     opts->reverse = false;
     opts->dual = false;
