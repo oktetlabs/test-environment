@@ -118,7 +118,8 @@ perf_app_create_job(tapi_job_factory_t *factory, te_vec *args,
     if (rc == 0)
     {
         rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_chs[1]),
-                                    "Perf_error_filter", true, 0, err_filter);
+                                    "Perf_error_filter", true,
+                                    TE_LL_WARN, err_filter);
     }
 
     if (rc != 0)
