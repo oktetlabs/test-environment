@@ -13,6 +13,7 @@
 
 #include "te_config.h"
 #include "logger_api.h"
+#include "conf_api.h"
 #include "te_str.h"
 #include "te_alloc.h"
 #include "te_enum.h"
@@ -106,37 +107,65 @@ static const te_enum_map cfg_yaml_nat_rule_mode_map[] = {
     TE_ENUM_MAP_END
 };
 
+static bool
+expand_local_env_or_unix(const char *param_name, const void *ctx,
+                         te_string *dest)
+{
+    const char *value = NULL;
+    char *cfg_value = NULL;
+    bool has_value;
+    te_errno rc;
+
+    UNUSED(ctx);
+
+    rc = cfg_get_string(&cfg_value, "/local:/env:%s", param_name);
+    if (rc == 0)
+        value = cfg_value;
+    else
+        value = getenv(param_name);
+
+    has_value = value != NULL;
+
+    if (has_value)
+        te_string_append(dest, "%s", value);
+
+    free(cfg_value);
+
+    return has_value;
+}
+
 static te_errno
 expanded_val_get_str(const char *src, char **retval)
 {
     te_string tmp = TE_STRING_INIT;
     te_errno rc;
 
-    rc = te_string_expand_env_vars(src, NULL, &tmp);
-    if (rc != 0)
-        te_string_free(&tmp);
-    else
-        te_string_move(retval, &tmp);
-
-    return rc;
-}
-
-static te_errno
-expanded_val_get_int(const char *src, int *retval)
-{
-    te_string tmp = TE_STRING_INIT;
-    te_errno rc;
-    int val;
-
-    rc = te_string_expand_env_vars(src, NULL, &tmp);
+    rc = te_string_expand_parameters(src, expand_local_env_or_unix, NULL,
+                                     &tmp);
     if (rc != 0)
     {
         te_string_free(&tmp);
         return rc;
     }
 
-    rc = te_strtoi(tmp.ptr, 0, &val);
-    te_string_free(&tmp);
+    te_string_move(retval, &tmp);
+
+    return 0;
+}
+
+static te_errno
+expanded_val_get_int(const char *src, int *retval)
+{
+    te_errno rc;
+    char *tmp;
+    int val;
+
+    rc = expanded_val_get_str(src, &tmp);
+    if (rc != 0)
+        return rc;
+
+    rc = te_strtoi(tmp, 0, &val);
+    free(tmp);
     if (rc != 0)
         return rc;
 
