@@ -1,0 +1,239 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2024-2025, OKTET Labs Ltd. All rights reserved.
+
+"""
+RST adjustment script.
+
+Required to make the generated documentation more readable. Overall we should
+get rid of doxyrest and doxygen.
+"""
+
+import argparse
+import sys
+import re
+from pathlib import Path
+
+
+def find_toctree_section(lines):
+    """Find the start and end indices of the toctree section."""
+    start_idx = None
+    end_idx = None
+
+    for i, line in enumerate(lines):
+        if line.strip().startswith('.. toctree::'):
+            start_idx = i
+            # Find the end of the toctree section
+            # Look for the next non-indented line after the toctree directive
+            for j in range(i + 1, len(lines)):
+                if lines[j].strip() == '':
+                    continue
+                # If we find a line that's not indented and not empty,
+                # the toctree section ends at the previous line
+                if not lines[j].startswith('\t') and not lines[j].startswith('    '):
+                    end_idx = j
+                    break
+            # If we reached the end of file without finding non-indented content
+            if end_idx is None:
+                end_idx = len(lines)
+            break
+
+    return start_idx, end_idx
+
+
+def find_refs_section(lines):
+    """Find the start and end indices of the refs section."""
+    start_idx = None
+    end_idx = None
+
+    # Look for consecutive lines starting with | and containing :ref:
+    in_refs = False
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+
+        if stripped.startswith('|') and ':ref:' in stripped:
+            if not in_refs:
+                # Starting a refs section
+                start_idx = i
+                in_refs = True
+        elif in_refs:
+            # We were in a refs section, check if this line continues it
+            if stripped == '':
+                # Empty line - could be part of refs section, continue
+                continue
+            elif stripped.startswith('|') and ':ref:' in stripped:
+                # Another refs line, continue
+                continue
+            else:
+                # Non-refs line, end the section
+                end_idx = i
+                break
+
+    # If we reached end of file while in refs section
+    if in_refs and end_idx is None:
+        end_idx = len(lines)
+
+    return start_idx, end_idx
+
+
+def is_author_line(line):
+    """Check if a line contains author information with email."""
+    stripped = line.strip()
+
+    # Look for email patterns: contains @ and possibly mailto:
+    email_patterns = [
+        r'.*`.*@.*<mailto:.*@.*>`.*',  # Name `email <mailto:email>`__
+        r'.*`.*@.*`.*',                # Name `email`
+        r'.*<mailto:.*@.*>.*',         # <mailto:email>
+        r'.*\b\w+@\w+\.\w+\b.*'        # Simple email pattern
+    ]
+
+    for pattern in email_patterns:
+        if re.search(pattern, stripped):
+            # Additional check: make sure it looks like an author line
+            # (not just any line containing email)
+            # Author lines are typically standalone and contain names
+            if ('`' in stripped and '@' in stripped) or ('mailto:' in stripped):
+                return True
+            # Simple email at end of line with name before it
+            if re.match(r'^[^<>]*\b\w+@\w+\.\w+\b\s*$', stripped):
+                return True
+
+    return False
+
+
+def move_toctree_to_end(lines):
+    """Move the toctree section to the end of the file."""
+    start_idx, end_idx = find_toctree_section(lines)
+
+    if start_idx is None:
+        print('Warning: No toctree section found')
+        return lines
+
+    # Extract the toctree section
+    toctree_section = lines[start_idx:end_idx]
+
+    # Remove the toctree section from its current position
+    new_lines = lines[:start_idx] + lines[end_idx:]
+
+    # Add the toctree section at the end
+    # Add a blank line before the toctree if the last line isn't empty
+    if new_lines and new_lines[-1].strip():
+        new_lines.append('\n')
+
+    new_lines.extend(toctree_section)
+
+    return new_lines
+
+
+def remove_refs_section(lines):
+    """Remove the refs section from the file."""
+    start_idx, end_idx = find_refs_section(lines)
+
+    if start_idx is None:
+        print('Warning: No refs section found')
+        return lines
+
+    # Remove the refs section
+    new_lines = lines[:start_idx] + lines[end_idx:]
+
+    # Clean up extra empty lines around the removed section
+    # Remove empty lines before the removal point if there are multiple
+    # pylint: disable=chained-comparison
+    while (start_idx > 0 and
+           start_idx < len(new_lines) and
+           new_lines[start_idx - 1].strip() == '' and
+           start_idx > 1 and
+           new_lines[start_idx - 2].strip() == ''):
+        new_lines.pop(start_idx - 1)
+        start_idx -= 1
+
+    return new_lines
+
+
+def strip_authors(lines):
+    """Remove author lines containing email addresses."""
+    new_lines = []
+
+    for line in lines:
+        if not is_author_line(line):
+            new_lines.append(line)
+        else:
+            print(f'Removing author line: {line.strip()}')
+
+    return new_lines
+
+
+def process_file(file_path, toctree_move_to_end=False, refs_remove=False, authors_strip=False):
+    """Process a single RST file."""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+
+        # Preserve line endings
+        original_lines = lines[:]
+
+        if toctree_move_to_end:
+            lines = move_toctree_to_end(lines)
+
+        if refs_remove:
+            lines = remove_refs_section(lines)
+
+        if authors_strip:
+            lines = strip_authors(lines)
+
+        # Only write if changes were made
+        if lines != original_lines:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.writelines(lines)
+            print(f'Processed: {file_path}')
+        else:
+            print(f'No changes needed: {file_path}')
+
+    except Exception as e: # pylint: disable=broad-exception-caught
+        print(f'Error processing {file_path}: {e}', file=sys.stderr)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Adjust RST toctree, refs sections, and author lines in documentation files'
+    )
+    parser.add_argument(
+        'files',
+        nargs='+',
+        help='RST files to process'
+    )
+    parser.add_argument(
+        '--toctree-move-to-end',
+        action='store_true',
+        help='Move toctree section to the end of the file'
+    )
+    parser.add_argument(
+        '--refs-remove',
+        action='store_true',
+        help='Remove refs block from the file'
+    )
+    parser.add_argument(
+        '--authors-strip',
+        action='store_true',
+        help='Remove author lines containing email addresses'
+    )
+
+    args = parser.parse_args()
+
+    if not args.toctree_move_to_end and not args.refs_remove and not args.authors_strip:
+        print('Error: At least one of --toctree-move-to-end, --refs-remove, '
+              'or --authors-strip must be specified')
+        sys.exit(1)
+
+    for file_path in args.files:
+        path = Path(file_path)
+        if not path.exists():
+            print(f'Warning: File not found: {file_path}')
+            continue
+
+        process_file(path, args.toctree_move_to_end, args.refs_remove, args.authors_strip)
+
+
+if __name__ == '__main__':
+    main()
