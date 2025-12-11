@@ -42,7 +42,9 @@
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_iptables.h"
 #include "tapi_cfg_net.h"
+#include "tapi_cfg_rcf.h"
 #include "tapi_host_ns.h"
+#include "tapi_namespaces.h"
 
 #define TAPI_CFG_NET_OID_INTERFACE \
                 "/agent/interface"
@@ -3620,4 +3622,99 @@ tapi_cfg_net_free_pci_info(cfg_net_pci_info_t *pci_info)
     free(pci_info->bound_driver);
     free(pci_info->net_driver);
     free(pci_info->dpdk_driver);
+}
+
+te_errno
+tapi_cfg_net_node_to_netns(const cfg_net_node_t *node, const char *netns,
+                           char **ns_ta)
+{
+    te_string new_node = TE_STRING_INIT;
+    te_string new_ta = TE_STRING_INIT;
+    te_errno rc;
+    char *iface;
+    char *ta;
+
+    if (node == NULL || netns == NULL)
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
+
+    rc = tapi_cfg_net_get_node_info(node->handle, AF_UNSPEC, NULL,
+                                    &ta, &iface);
+    if (rc != 0)
+    {
+        ERROR("Failed to get network node info: %r", rc);
+        return rc;
+    }
+
+    rc = tapi_netns_add(ta, netns);
+    if (rc != 0)
+    {
+        ERROR("Failed to add netns '%s' on TA '%s': %r", netns, ta, rc);
+        goto fail_add_ns;
+    }
+
+    te_string_append(&new_ta, "%s_%s", ta, netns);
+    rc = tapi_netns_add_ta_by_ta(ta, netns, te_string_value(&new_ta));
+    if (rc != 0)
+    {
+        ERROR("Failed to add TA in netns '%s' based on TA '%s': %r",
+              netns, ta, rc);
+        goto fail_add_ta;
+    }
+
+    rc = tapi_netns_if_set(ta, netns, iface);
+    if (rc != 0)
+    {
+        ERROR("Failed to move interface '%s' to netns '%s' on TA '%s': %r",
+              iface, netns, ta, rc);
+        goto fail_set_if;
+    }
+
+    rc = tapi_cfg_base_if_add_rsrc(te_string_value(&new_ta), iface);
+    if (rc != 0)
+    {
+        ERROR("Failed to grab interface '%s' on TA '%s': %r",
+              iface, te_string_value(&new_ta), rc);
+        goto fail_add_rsrc;
+    }
+
+    rc = tapi_cfg_base_if_up(te_string_value(&new_ta), iface);
+    if (rc != 0)
+    {
+        ERROR("Failed to bring interface '%s' up on TA '%s': %r",
+              iface, te_string_value(&new_ta), rc);
+        goto fail_if_up;
+    }
+
+    te_string_append(&new_node, "/agent:%s/interface:%s",
+                     te_string_value(&new_ta), iface);
+    rc = cfg_set_instance(node->handle,
+                          CFG_VAL(STRING, te_string_value(&new_node)));
+    if (rc != 0)
+    {
+        ERROR("Failed to update network node with a new value '%s': %r",
+              te_string_value(&new_node), rc);
+        goto fail_set_node;
+    }
+
+    if (ns_ta != NULL)
+        te_string_move(ns_ta, &new_ta);
+
+    goto done;
+
+fail_set_node:
+fail_add_rsrc:
+fail_if_up:
+fail_set_if:
+    (void)tapi_cfg_rcf_del_ta(te_string_value(&new_ta));
+
+fail_add_ta:
+    (void)tapi_netns_del(ta, netns);
+
+fail_add_ns:
+done:
+    te_string_free(&new_node);
+    te_string_free(&new_ta);
+    free(ta);
+    free(iface);
+    return rc;
 }

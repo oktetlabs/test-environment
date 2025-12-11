@@ -526,6 +526,19 @@ extern te_errno tapi_cfg_net_node_get_pci_oids(const cfg_net_node_t *node,
 extern te_errno tapi_cfg_net_node_interface(const char *node_value,
                                             char **iface_name);
 
+/**
+ * Move network node into a new network namespace and substitute
+ * node value with a new agent interface path.
+ *
+ * @param[in] node          Network node configuration.
+ * @param[in] netnet        Network namespace name.
+ * @param[out] ns_ta        Optional location for a new TA name.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_net_node_to_netns(const cfg_net_node_t *node,
+                                           const char *netns, char **ns_ta);
+
 /**@} <!-- END tapi_conf_net --> */
 
 #ifdef __cplusplus
