@@ -264,16 +264,29 @@ function group_start(str)
     if (auto_group) {
         group_description = (script_objective != "") ? script_objective : script_name;
 
+        # Create a unique group identifier by incorporating objective text
+        if (script_objective != "") {
+            group_suffix = script_objective;
+            # Sanitize the objective for use in group identifier
+            gsub(/[^a-zA-Z0-9]/, "-", group_suffix);
+            gsub(/-+/, "-", group_suffix);
+            gsub(/^-|-$/, "", group_suffix);
+            group_suffix = tolower(group_suffix);
+            group_id = script_name "-" group_suffix;
+        } else {
+            group_id = script_name;
+        }
+
         if (run_found) {
             printf("@defgroup %s%s-run %s\n",
-                   default_group_prefix, run_name, group_description)
+                   default_group_prefix, group_id, group_description)
             printf("@ingroup %s%s %s%s\n",
                    default_group_prefix, run_name,
                    default_group_prefix, script_name);
         }
         else {
             printf("@defgroup %s%s-run %s\n",
-                   default_group_prefix, script_name, group_description)
+                   default_group_prefix, group_id, group_description)
             printf("@ingroup %s%s\n",
                    default_group_prefix, script_name);
         }
