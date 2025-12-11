@@ -339,11 +339,21 @@ function group_start(str)
         gsub(" .*<script name=\"", "", script_name);
         gsub("\".*>", "", script_name);
 
-        in_script = 1;
         script_objective = "";
         script_objective_body = "";
         script_lines = run_code_line "\n" code_line;
         in_run = 1
+
+        # Check if this is a self-closing script tag
+        if (match($0, /\/>/)) {
+            # Self-closing tag - do the same as </script>
+            group_start();
+            print script_lines;
+            in_script = 0;
+        } else {
+            # Regular opening tag - wait for </script>
+            in_script = 1;
+        }
         next
     }
 }
