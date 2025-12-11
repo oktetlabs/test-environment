@@ -8,6 +8,18 @@
 BEGIN {
     script_objective = "";
     script_objective_body = "";
+    script_reqs = "";
+}
+
+# Extract and format requirement IDs from accumulated reqs
+function format_requirements()
+{
+    if (script_reqs != "") {
+        gsub(/^[ \t]+|[ \t]+$/, "", script_reqs);
+        gsub(/[ \t]+/, " ", script_reqs);
+        return "<b>Requirement ids:</b> " script_reqs "\n\n";
+    }
+    return "";
 }
 
 function objective_handle(str, do_next)
@@ -371,6 +383,12 @@ function group_start(str)
             print "";
         }
 
+        # Include requirements if available
+        req_output = format_requirements();
+        if (req_output != "") {
+            print req_output;
+        }
+
         print "@code"
     }
 }
@@ -397,6 +415,7 @@ function group_start(str)
 
         script_objective = "";
         script_objective_body = "";
+        script_reqs = "";
         script_lines = run_code_line "\n" code_line;
         in_run = 1
 
@@ -412,6 +431,19 @@ function group_start(str)
         }
         next
     }
+}
+
+in_script && /<req id=/ {
+    req_id = $0;
+    gsub(/.*<req id="/, "", req_id);
+    gsub(/".*/, "", req_id);
+    if (script_reqs != "") {
+        script_reqs = script_reqs ", " req_id;
+    } else {
+        script_reqs = req_id;
+    }
+    script_lines = script_lines "\n" $0;
+    next;
 }
 
 in_script && /<objective>/ {
@@ -520,6 +552,7 @@ auto_group && in_run && /<\/run>/ {
     auto_group = 0;
     script_objective = "";
     script_objective_body = "";
+    script_reqs = "";
     next
 }
 
