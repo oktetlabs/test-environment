@@ -5,6 +5,10 @@
 # This script extracts comments from a `package.xml' file and converts them
 # to the form suitable for Doxygen processing
 
+BEGIN {
+    script_objective = "";
+}
+
 function objective_handle(str, do_next)
 {
     if (sub(/@objective/, str)) {
@@ -258,16 +262,18 @@ in_page && /<run>/ {
 function group_start(str)
 {
     if (auto_group) {
+        group_description = (script_objective != "") ? script_objective : script_name;
+
         if (run_found) {
             printf("@defgroup %s%s-run %s\n",
-                   default_group_prefix, run_name, run_name)
+                   default_group_prefix, run_name, group_description)
             printf("@ingroup %s%s %s%s\n",
                    default_group_prefix, run_name,
                    default_group_prefix, script_name);
         }
         else {
             printf("@defgroup %s%s-run %s\n",
-                   default_group_prefix, script_name, script_name)
+                   default_group_prefix, script_name, group_description)
             printf("@ingroup %s%s\n",
                    default_group_prefix, script_name);
         }
@@ -296,17 +302,38 @@ function group_start(str)
         gsub(" .*<script name=\"", "", script_name);
         gsub("\".*>", "", script_name);
 
-        group_start()
-        # Log <run> that we skipped when it was handled
-        print run_code_line
-        print code_line
+        in_script = 1;
+        script_objective = "";
+        script_lines = run_code_line "\n" code_line;
         in_run = 1
         next
     }
 }
 
+in_script && /<objective>/ {
+    script_objective = $0;
+    gsub(".*<objective>", "", script_objective);
+    gsub("</objective>.*", "", script_objective);
+    script_lines = script_lines "\n" $0;
+    next;
+}
+
+in_script && /<\/script>/ {
+    script_lines = script_lines "\n" $0;
+    group_start();
+    print script_lines;
+    in_script = 0;
+    next;
+}
+
+in_script {
+    script_lines = script_lines "\n" $0;
+    next;
+}
+
 /<session/ {
     if (in_page) {
+        script_objective = "";
         group_start()
         print run_code_line
         print $0
