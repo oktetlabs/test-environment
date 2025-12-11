@@ -9,6 +9,7 @@ BEGIN {
     script_objective = "";
     script_objective_body = "";
     script_reqs = "";
+    session_depth = 0;
 }
 
 # Extract and format requirement IDs from accumulated reqs
@@ -531,13 +532,31 @@ in_script {
 }
 
 /<session/ {
+    session_depth++;
     if (in_page && auto_group) {
         script_objective = "";
         script_objective_body = "";
-        group_start()
-        print run_code_line
-        print $0
+        script_reqs = "";
+        # Only start group for first session or nested sessions
+        if (session_depth == 1 || in_run) {
+            group_start()
+            print run_code_line
+            print $0
+        } else {
+            print $0
+        }
         next
+    }
+}
+
+/<\/session>/ {
+    session_depth--;
+    if (in_run_template) {
+        print $0;
+        next;
+    }
+    if (in_prologue) {
+        next;
     }
 }
 
