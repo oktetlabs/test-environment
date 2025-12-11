@@ -146,6 +146,7 @@ free_ta_list(void)
 
         free(agent->name);
         free(agent->type);
+        free(agent->libname);
         te_kvpair_fini(&agent->conf);
 
         for (task = agent->initial_tasks; task != NULL; task = nexttask)
@@ -227,6 +228,8 @@ resolve_ta_methods(ta *agent, char *libname)
             ERROR("dlclose() failed");
         return -1;
     }
+
+    agent->libname = TE_STRDUP(libname);
     memcpy(&agent->m, m, sizeof(agent->m));
     agent->dlhandle = handle;
 
@@ -2461,6 +2464,7 @@ process_user_request(usrreq *req)
                     /* Suppose that calloc provided all NULLs */
                     free(agent->name);
                     free(agent->type);
+                    free(agent->libname);
                     te_kvpair_fini(&agent->conf);
 
                     free(agent);
@@ -2473,6 +2477,7 @@ process_user_request(usrreq *req)
                     /* Suppose that calloc provided all NULLs */
                     free(agent->name);
                     free(agent->type);
+                    free(agent->libname);
                     te_kvpair_fini(&agent->conf);
 
                     free(agent);
@@ -2615,6 +2620,7 @@ process_user_request(usrreq *req)
                     /* Free agent */
                     free(agt->name);
                     free(agt->type);
+                    free(agt->libname);
                     te_kvpair_fini(&agt->conf);
                     free(agt);
 

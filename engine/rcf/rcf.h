@@ -209,6 +209,7 @@ struct ta {
                                                  by start() method */
     char               *name;               /**< Test Agent name */
     char               *type;               /**< Test Agent type */
+    char               *libname;            /**< Dynamic library name */
     bool enable_synch_time;  /**< Enable synchronize time */
     te_kvpair_h         conf;               /**< Configurations list of kv_pairs */
     usrreq              sent;               /**< User requests sent
