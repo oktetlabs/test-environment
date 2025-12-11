@@ -7,6 +7,7 @@
 
 BEGIN {
     script_objective = "";
+    script_objective_body = "";
 }
 
 function objective_handle(str, do_next)
@@ -42,6 +43,9 @@ function objective_handle(str, do_next)
 
 function process(str)
 {
+    # Check for @autogroup first before any substitutions
+    is_autogroup = match(str, /@autogroup/);
+
     if (sub(/-->.*/, " ", str)) {
         objective_handle(str, 1);
         in_dox_comment = 0;
@@ -94,8 +98,13 @@ function process(str)
         default_group_prefix = str;
         next;
     }
-    else if (sub(/@autogroup/, str)) {
+    else if (is_autogroup) {
         auto_group = 1;
+        in_page = 1;
+        run_found = 0;
+        in_run = 0;
+        script_objective = "";
+        script_objective_body = "";
         next;
     }
 
@@ -291,6 +300,13 @@ function group_start(str)
                    default_group_prefix, script_name);
         }
         printf("@{\n");
+
+        # Include objective body if available
+        if (script_objective_body != "") {
+            print script_objective_body;
+            print "";
+        }
+
         print "@code"
     }
 }
@@ -317,6 +333,7 @@ function group_start(str)
 
         in_script = 1;
         script_objective = "";
+        script_objective_body = "";
         script_lines = run_code_line "\n" code_line;
         in_run = 1
         next
@@ -324,9 +341,72 @@ function group_start(str)
 }
 
 in_script && /<objective>/ {
-    script_objective = $0;
-    gsub(".*<objective>", "", script_objective);
-    gsub("</objective>.*", "", script_objective);
+    line = $0;
+    gsub(".*<objective>", "", line);
+    if (match(line, /<\/objective>/)) {
+        # Single line objective - process completely here
+        gsub("</objective>.*", "", line);
+        script_objective = line;
+        gsub(/^[ \t\n]+|[ \t\n]+$/, "", script_objective);
+        script_objective_body = "";
+        # Don't set in_objective_tag for single-line objectives
+    } else {
+        # Multi-line objective starts
+        in_objective_tag = 1;
+        objective_content = line;
+    }
+    script_lines = script_lines "\n" $0;
+    next;
+}
+
+in_script && in_objective_tag && /<\/objective>/ {
+    line = $0;
+    gsub("</objective>.*", "", line);
+    objective_content = objective_content "\n" line;
+
+    # Process the complete objective content
+    split(objective_content, obj_lines, "\n");
+    script_objective = "";
+    script_objective_body = "";
+
+    # Find first non-empty line as title
+    prev_was_list = 0;
+    for (i = 1; i <= length(obj_lines); i++) {
+        gsub(/^[ \t]+|[ \t]+$/, "", obj_lines[i]);
+        if (obj_lines[i] != "" && script_objective == "") {
+            script_objective = obj_lines[i];
+        } else if (obj_lines[i] != "" && script_objective != "") {
+            if (script_objective_body != "") {
+                script_objective_body = script_objective_body "\n";
+            }
+
+            # Check if current line is a list item
+            is_list = match(obj_lines[i], /^[ \t]*-[ \t]/);
+
+            # If previous was list and current is not, add empty line
+            if (prev_was_list && !is_list) {
+                script_objective_body = script_objective_body "\n";
+            }
+
+            # Convert markdown lists to Doxygen format
+            if (is_list) {
+                gsub(/^[ \t]*-[ \t]*/, "- ", obj_lines[i]);
+                prev_was_list = 1;
+            } else {
+                prev_was_list = 0;
+            }
+
+            script_objective_body = script_objective_body obj_lines[i];
+        }
+    }
+
+    in_objective_tag = 0;
+    script_lines = script_lines "\n" $0;
+    next;
+}
+
+in_script && in_objective_tag {
+    objective_content = objective_content "\n" $0;
     script_lines = script_lines "\n" $0;
     next;
 }
@@ -347,6 +427,7 @@ in_script {
 /<session/ {
     if (in_page) {
         script_objective = "";
+        script_objective_body = "";
         group_start()
         print run_code_line
         print $0
@@ -361,10 +442,10 @@ auto_group && in_run && /<\/run>/ {
     print "*/"
     run_found = 0
     in_run = 0;
-    if (auto_group) {
-        in_page = 0;
-        auto_group = 0;
-    }
+    in_page = 0;
+    auto_group = 0;
+    script_objective = "";
+    script_objective_body = "";
     next
 }
 
@@ -384,10 +465,10 @@ in_dox_comment {
 }
 
 END {
-    if (in_page) {
+    if (in_page && !auto_group) {
         if (run_found) {
             printf("\n@run_name %s\n", run_name);
         }
+        print "*/";
     }
-    print "*/";
 }
