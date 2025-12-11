@@ -58,6 +58,8 @@ cfg_rcfunix_make_confstr(te_string *confstr, cfg_instance *ta)
         { "notcopy",      false,  false },
         { "sudo",         false,  false },
         { "connect",      false,  true  },
+        { "ext_rcf_listener", false, false },
+        { "shell",        false,  true  },
         { "opaque",       false,  true  },
         { NULL,           false,  false },
     };

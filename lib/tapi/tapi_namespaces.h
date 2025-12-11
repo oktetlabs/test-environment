@@ -97,6 +97,20 @@ extern te_errno tapi_netns_create_ns_with_net_channel(const char *ta,
                                                       int rcfport);
 
 /**
+ * Add a new test agent located in the specified network namespace
+ * @p ns_name based on existing test agent @p base_ta.
+ *
+ * @param base_ta           Base test agent
+ * @param ns_name           The network namespace name
+ * @param ta_name           A new test agent name
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_netns_add_ta_by_ta(const char *base_ta,
+                                        const char *ns_name,
+                                        const char *ta_name);
+
+/**
  * Add new test agent located in the specified network namespace @p ns_name.
  *
  * @param host              The target hostname
