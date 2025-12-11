@@ -285,6 +285,47 @@ in_prologue {
     next;
 }
 
+# Handle run-template elements - document them like var/enum
+/<run-template / {
+    if (!has_default_group) {
+        print "/**";
+    }
+    if (has_default_group)
+        printf("@ingroup %s\n", default_group);
+
+    if (match($0, /description=/)) {
+        printf("@defgroup %s %s\n@{\n\n%s\n",
+               gensub(/\./, "-", "g", gensub(/.* name="([a-zA-Z0-9._]+)".*/, "\\1", 1, $0)),
+               gensub(/.* name="([a-zA-Z0-9._]+)".*/, "\\1", 1, $0),
+               gensub(/.* description="(.*)".*/, "\\1", 1, $0))
+    }
+    else {
+        printf("@defgroup run-template-%s %s\n@{\n",
+               gensub(/\./, "-", "g", gensub(/.* name="([a-zA-Z0-9._]+)".*/, "\\1", 1, $0)),
+               gensub(/.* name="([a-zA-Z0-9._]+)".*/, "\\1", 1, $0))
+    }
+    print "@par Template Definition";
+    print "@code";
+    in_run_template = 1;
+    next;
+}
+
+/<\/run-template>/ {
+    if (in_run_template) {
+        print "@endcode"
+        print "@}";
+        if (!has_default_group)
+            print "*/";
+        in_run_template = 0;
+    }
+    next;
+}
+
+in_run_template {
+    print $0;
+    next;
+}
+
 in_page && /<run>/ {
     run_code_line = $0
     in_run = 1;
