@@ -93,6 +93,7 @@ typedef enum {
     RCFOP_CONFGRP_START,    /**< Start of configuration group */
     RCFOP_CONFGRP_END,      /**< End of configuration group */
     RCFOP_ADD_TA,           /**< Add "live start/stop" TA */
+    RCFOP_GET_TA,           /**< Get TA information */
     RCFOP_DEL_TA,           /**< Delete "live start/stop" TA */
     RCFOP_TADEAD,           /**< Inform RCF that TA is dead */
     RCFOP_GET_SNIFFERS,     /**< Obtain the list of sniffers */

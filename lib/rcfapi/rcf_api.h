@@ -122,7 +122,7 @@ typedef enum {
  * @param type          Test Agent type
  * @param rcflib        Name of RCF TA-specific shared library to be
  *                      used to control Test Agent
- * @param confstr       TA-specific configuration string (kvpairs)
+ * @param confstr       TA-specific configuration s tring (kvpairs)
  * @param flags         Test Agent control flags (see ::rcf_ta_flags)
  *
  * @return Error code
@@ -153,6 +153,26 @@ extern te_errno rcf_add_ta_unix(const char *name, const char *type,
                                 unsigned int copy_timeout,
                                 unsigned int kill_timeout,
                                 unsigned int flags);
+
+/**
+ * Get Test Agent configuration from RCF.
+ *
+ * @param name          Test Agent name
+ * @param type          Location for Test Agent type or @c NULL
+ * @param rcflib        Location for name of RCF TA-specific shared
+ *                      library to be used to control Test Agent or
+ *                      @c NULL
+ * @param confstr       Location for TA-specific configuration
+ *                      string (kvpairs) or @c NULL
+ * @param flags         Location for Test Agent control flags
+ *                      (see ::rcf_ta_flags) or @c NULL
+ *
+ * @return Error code
+ * @retval 0            success
+ * @retval TE_ENOENT    Test Agent with such name does not exist
+ */
+extern te_errno rcf_get_ta(const char *name, char **type, char **rcflib,
+                           char **confstr, unsigned int *flags);
 
 /**
  * Delete Test Agent from RCF.

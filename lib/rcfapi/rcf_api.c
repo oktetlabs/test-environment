@@ -857,6 +857,50 @@ rcf_add_ta_unix(const char *name, const char *type,
 
 /* See description in rcf_api.h */
 te_errno
+rcf_get_ta(const char *name, char **type, char **rcflib, char **confstr,
+           unsigned int *flags)
+{
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
+
+    if (name == NULL)
+        return TE_RC(TE_RCF_API, TE_EWRONGPTR);
+
+    if (strlen(name) + 1 > sizeof(msg.ta))
+    {
+        ERROR("Too long (%zu chars, must be not more than %zu ones) "
+              "TA name = '%s'", strlen(name), sizeof(msg.ta) - 1, name);
+        return TE_RC(TE_RCF_API, TE_EINVAL);
+    }
+
+    RCF_API_INIT;
+
+    memset(&msg, 0, sizeof(msg));
+    msg.opcode = RCFOP_GET_TA;
+    te_strlcpy(msg.ta, name, sizeof(msg.ta));
+
+    rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
+                                   &msg, &anslen, NULL);
+
+    /* On success perform postprocessing */
+    if (rc == 0 && (rc = msg.error) == 0)
+    {
+        if (type != NULL)
+            *type = TE_STRDUP(msg.id);
+        if (rcflib != NULL)
+            *rcflib = TE_STRDUP(msg.file);
+        if (confstr != NULL)
+            *confstr = TE_STRDUP(msg.value);
+        if (flags != NULL)
+            *flags = msg.flags;
+    }
+
+    return rc;
+}
+
+/* See description in rcf_api.h */
+te_errno
 rcf_del_ta(const char *name)
 {
     return del_ta_executive(name);

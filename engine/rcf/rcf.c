@@ -2497,6 +2497,72 @@ process_user_request(usrreq *req)
             rcf_answer_user_request(req);
             return;
 
+        case RCFOP_GET_TA:
+            do {
+                te_string confstr = TE_STRING_INIT;
+                rcf_msg *new_msg;
+                size_t size;
+                ta **a;
+
+                new_msg = TE_ALLOC(sizeof(rcf_msg) + names_len);
+                *new_msg = *msg;
+                free(msg);
+                msg = req->message = new_msg;
+                msg->data_len = 0;
+                msg->error = 0;
+
+                for (a = &agents; *a != NULL; a = &(*a)->next)
+                {
+                    if (strcmp(msg->ta, (*a)->name) == 0)
+                        break; /** Leave current 'for' loop */
+                }
+
+                if (*a == NULL)
+                {
+                    ERROR("TA '%s' does not found", msg->ta);
+                    msg->error = TE_RC(TE_RCF, TE_ENOENT);
+                    break; /** Leave 'do/while' block */
+                }
+
+                size = strlen((*a)->type) + 1;
+                if (size > sizeof(msg->id))
+                {
+                    ERROR("Too small buffer for TA '%s' type '%s'",
+                          msg->ta, (*a)->type);
+                    msg->error = TE_RC(TE_RCF, TE_ESMALLBUF);
+                    break; /** Leave 'do/while' block */
+                }
+                memcpy(msg->id, (*a)->type, size);
+
+                size = strlen((*a)->libname) + 1;
+                if (size > sizeof(msg->file))
+                {
+                    ERROR("Too small buffer for TA '%s' libname '%s'",
+                          msg->ta, (*a)->libname);
+                    msg->error = TE_RC(TE_RCF, TE_ESMALLBUF);
+                    break; /** Leave 'do/while' block */
+                }
+                memcpy(msg->file, (*a)->libname, size);
+
+                te_kvpair_to_str(&(*a)->conf, &confstr);
+                size = confstr.len + 1;
+                if (size > sizeof(msg->value))
+                {
+                    ERROR("Too small buffer for TA '%s' confstr '%s'",
+                          msg->ta, te_string_value(&confstr));
+                    msg->error = TE_RC(TE_RCF, TE_ESMALLBUF);
+                    break; /** Leave 'do/while' block */
+                }
+                memcpy(msg->value, te_string_value(&confstr), size);
+                te_string_free(&confstr);
+
+                msg->flags  = (*a)->flags;
+
+            } while (0);
+
+            rcf_answer_user_request(req);
+            return;
+
         case RCFOP_DEL_TA:
             do {
                 ta         **a;
