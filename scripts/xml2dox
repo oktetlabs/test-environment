@@ -270,6 +270,21 @@ in_var {
     next
 }
 
+# Ignore prologue elements as per design
+/<prologue>/ {
+    in_prologue = 1;
+    next;
+}
+
+in_prologue && /<\/prologue>/ {
+    in_prologue = 0;
+    next;
+}
+
+in_prologue {
+    next;
+}
+
 in_page && /<run>/ {
     run_code_line = $0
     in_run = 1;
