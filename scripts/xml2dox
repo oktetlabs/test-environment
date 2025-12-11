@@ -4,6 +4,17 @@
 
 # This script extracts comments from a `package.xml' file and converts them
 # to the form suitable for Doxygen processing
+#
+# Features:
+# - Extracts Doxygen comments and directives (@page, @defgroup, etc.)
+# - Handles @autogroup and @autogroupprefix for automatic group generation
+# - Processes <enum> and <var> elements
+# - Extracts <script> objectives (single and multi-line)
+# - Handles nested <session> elements within <run> elements
+# - Extracts requirements from <req> elements and reqs attributes
+# - Supports <run-template> elements
+# - Documents list attribute groupings
+# - Ignores <prologue> elements as per design
 
 BEGIN {
     script_objective = "";
