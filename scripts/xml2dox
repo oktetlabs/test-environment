@@ -46,6 +46,9 @@ function process(str)
     # Check for @autogroup first before any substitutions
     is_autogroup = match(str, /@autogroup/);
 
+    # Check for @autogroupall first before any substitutions
+    is_autogroupall = match(str, /@autogroupall/);
+
     if (sub(/-->.*/, " ", str)) {
         objective_handle(str, 1);
         in_dox_comment = 0;
@@ -53,9 +56,9 @@ function process(str)
     else
         in_dox_comment = 1;
 
-    if (sub(/@page/, str) || sub(/@defgroup/, str) \
+    if ((sub(/@page/, str) || sub(/@defgroup/, str) \
         || sub(/@ingroup/, str) || sub(/@addtogroup/, str) \
-        || sub(/@autogroup/, str)) {
+        || sub(/@autogroup/, str)) && !is_autogroupall) {
         if (in_page) {
             if (run_found && auto_group) {
                 printf("\n@run_name %s\n", run_name);
@@ -83,7 +86,7 @@ function process(str)
         run_found = 0;
     }
 
-    if (sub(/@autogroupall/, str)) {
+    if (is_autogroupall) {
         sub("[ \t]+", "", str)
         sub("@autogroupall", "", str)
         default_group = str;
@@ -216,6 +219,9 @@ in_enum && /<\/enum>/ {
 
 /<var / {
     in_var = 1;
+    if (!has_default_group) {
+        print "/**";
+    }
     if (has_default_group)
         printf("@ingroup %s\n", default_group);
 
@@ -254,6 +260,8 @@ in_var && /<\/value>/ {
 
     in_var = 0;
     print $0;
+    if (!has_default_group)
+        print "*/";
     next;
 }
 
@@ -425,7 +433,7 @@ in_script {
 }
 
 /<session/ {
-    if (in_page) {
+    if (in_page && auto_group) {
         script_objective = "";
         script_objective_body = "";
         group_start()
@@ -469,6 +477,9 @@ END {
         if (run_found) {
             printf("\n@run_name %s\n", run_name);
         }
+        print "*/";
+    }
+    if (has_default_group) {
         print "*/";
     }
 }
