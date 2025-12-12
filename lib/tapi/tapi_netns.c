@@ -105,6 +105,52 @@ tapi_netns_if_unset(const char *ta, const char *ns_name, const char *if_name)
                                 ta, ns_name, if_name);
 }
 
+/**
+ * Configure created TA @p ta_name in basic aspects similar to @p base_ta.
+ */
+static te_errno
+configure_ta_by_ta(const char *base_ta, const char *ta_name)
+{
+    te_errno rc;
+    char *str;
+
+    /*
+     * Loopback interface should be UP in the namespace
+     * for logging from RPC servers to work correctly.
+     */
+    rc = tapi_cfg_base_if_add_rsrc(ta_name, "lo");
+    if (rc == 0)
+        rc = tapi_cfg_base_if_up(ta_name, "lo");
+    if (rc == 0)
+        rc = tapi_cfg_base_if_del_rsrc(ta_name, "lo");
+
+    if (rc != 0)
+    {
+        ERROR("Failed to bring loopback up on TA '%s': %r", ta_name, rc);
+        return rc;
+    }
+
+    rc = cfg_get_string(&str, "/agent:%s/rpcprovider:", base_ta);
+    if (rc == 0)
+    {
+        rc = cfg_set_instance_fmt(CFG_VAL(STRING, str),
+                                  "/agent:%s/rpcprovider:", ta_name);
+        free(str);
+        if (rc != 0)
+        {
+            ERROR("Failed to set TA '%s' RPC provider: %r", ta_name, rc);
+            return rc;
+        }
+    }
+    else if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
+    {
+        ERROR("Failed to get TA '%s' RPC provider: %r", base_ta, rc);
+        return rc;
+    }
+
+    return 0;
+}
+
 /* See description in tapi_namespaces.h */
 te_errno
 tapi_netns_add_ta_by_ta(const char *base_ta, const char *ns_name,
@@ -193,20 +239,10 @@ tapi_netns_add_ta_by_ta(const char *base_ta, const char *ns_name,
         goto fail_add_ta;
     }
 
-    /*
-     * Loopback interface should be UP in the namespace
-     * for logging from RPC servers to work correctly.
-     */
-    rc = tapi_cfg_base_if_add_rsrc(ta_name, "lo");
-    if (rc == 0)
-        rc = tapi_cfg_base_if_up(ta_name, "lo");
-    if (rc == 0)
-        rc = tapi_cfg_base_if_del_rsrc(ta_name, "lo");
-
+    rc = configure_ta_by_ta(base_ta, ta_name);
     if (rc != 0)
     {
-        ERROR("Failed to bring loopback up in namespace '%s' using TA '%s': %r",
-              ns_name, ta_name, rc);
+        ERROR("Failed to configure TA '%s': %r", ta_name, rc);
         (void)tapi_cfg_rcf_del_ta(ta_name);
     }
 
