@@ -75,6 +75,72 @@ extern te_errno tapi_cfg_if_coalesce_set_local(const char *ta,
 extern te_errno tapi_cfg_if_coalesce_commit(const char *ta,
                                             const char *if_name);
 
+/**
+ * Get interrupt coalescing parameter value at queue or interface level.
+ *
+ * @param ta        Test Agent name.
+ * @param if_name   Interface name.
+ * @param queue     Queue index or negative value for interface level.
+ * @param param     Parameter name.
+ * @param val       Where to save obtained value.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_coalesce_queue_get(const char *ta,
+                                               const char *if_name,
+                                               int queue,
+                                               const char *param,
+                                               uint64_t *val);
+/**
+ * Set interrupt coalescing parameter value at queue or interface level.
+ *
+ * @param ta        Test Agent name.
+ * @param if_name   Interface name.
+ * @param queue     Queue index or negative value for interface level.
+ * @param param     Parameter name.
+ * @param val       Value to set.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_coalesce_queue_set(const char *ta,
+                                               const char *if_name,
+                                               int queue,
+                                               const char *param,
+                                               uint64_t val);
+
+/**
+ * Set interrupt coalescing parameter value locally, to
+ * commit it later (may be together with other changes), at queue or
+ * interface level.
+ *
+ * @param ta        Test Agent name.
+ * @param if_name   Interface name.
+ * @param queue     Queue index or negative value for interface level.
+ * @param param     Parameter name.
+ * @param val       Value to set.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_coalesce_queue_set_local(const char *ta,
+                                                     const char *if_name,
+                                                     int queue,
+                                                     const char *param,
+                                                     uint64_t val);
+
+/**
+ * Commit changes made locally for coalescing parameters.
+ *
+ * @param ta        Test Agent name.
+ * @param if_name   Interface name.
+ * @param queues    If true, commit changes for queues, else - for
+ *                  global parameters.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_coalesce_queues_commit(const char *ta,
+                                                   const char *if_name,
+                                                   bool queues);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

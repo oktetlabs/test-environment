@@ -34,6 +34,7 @@
 /** Ethtool command type */
 typedef enum ta_ethtool_cmd {
     TA_ETHTOOL_COALESCE,      /**< ETHTOOL_[G|S]COALESCE */
+    TA_ETHTOOL_PQ_COALESCE,   /**< ETHTOOL_PERQUEUE + ETHTOOL_[G|S]COALESCE */
     TA_ETHTOOL_PAUSEPARAM,    /**< ETHTOOL_[G|S]PAUSEPARAM */
     TA_ETHTOOL_LINKSETTINGS,  /**< ETHTOOL_[G|S]LINKSETTINGS if supported,
                                    or ETHTOOL_[G|S]SET otherwise */
@@ -374,6 +375,18 @@ extern te_errno ta_ethtool_lmode_list_names(ta_ethtool_lsets *lsets,
 extern te_errno ta_ethtool_get_max_speed(ta_ethtool_lsets *lsets,
                                          unsigned int *speed,
                                          unsigned int *duplex);
+
+#ifdef ETHTOOL_PERQUEUE
+
+/** Data stored for TA_ETHTOOL_PQ_COALESCE command */
+typedef struct ta_ethtool_pq_coalesce {
+    /** Number of queues */
+    unsigned int queues_num;
+    /** Per queue interrupt coalescing data */
+    struct ethtool_per_queue_op pq_op;
+} ta_ethtool_pq_coalesce;
+
+#endif
 
 /** Set of strings returned by ETHTOOL_GSTRINGS */
 typedef struct ta_ethtool_strings {

@@ -488,7 +488,38 @@
          Name: none
          Value: none
 
-    - oid: "/agent/interface/coalesce/param"
+    - oid: "/agent/interface/coalesce/global"
+      access: read_only
+      type: none
+      d: |
+         Interrupt coalescing parameters at interface level
+         Name: none
+         Value: none
+
+    - oid: "/agent/interface/coalesce/global/param"
+      access: read_write
+      type: uint64
+      d: |
+         Name: Name of a field from ethtool_coalesce structure
+         Value: See documentation of ethtool_coalesce structure
+
+    - oid: "/agent/interface/coalesce/queues"
+      access: read_only
+      type: none
+      d: |
+         Interrupt coalescing parameters for network interface queues
+         Name: none
+         Value: none
+
+    - oid: "/agent/interface/coalesce/queues/queue"
+      access: read_only
+      type: none
+      d: |
+         Interrupt coalescing parameters for a specific queue
+         Name: Queue number
+         Value: none
+
+    - oid: "/agent/interface/coalesce/queues/queue/param"
       access: read_write
       type: uint64
       d: |

@@ -507,6 +507,165 @@ set_ethtool_lsets(const char *if_name, ta_ethtool_lsets *lsets)
     return call_ethtool_ioctl(if_name, native_cmd, cmd_data);
 }
 
+/**
+ * Get number of interface queues.
+ *
+ * @param if_name     Interface name.
+ * @param num         Output location for number of queues.
+ *
+ * @return Status code.
+ */
+static te_errno
+get_queues_num(const char *if_name, unsigned int *num)
+{
+#ifndef ETHTOOL_GCHANNELS
+    *num = 0;
+    return 0;
+#else
+    te_errno rc;
+    struct ethtool_channels channels;
+
+    memset(&channels, 0, sizeof(channels));
+    rc = call_ethtool_ioctl(if_name, ETHTOOL_GCHANNELS, &channels);
+    if (rc != 0)
+        return rc;
+
+    *num = MAX(channels.rx_count, channels.tx_count);
+    *num += channels.combined_count;
+    return 0;
+#endif
+}
+
+#ifdef ETHTOOL_PERQUEUE
+
+/**
+ * Get per queue interrupt coalescing data.
+ *
+ * @param if_name       Interface name.
+ * @param queues_num    Number of interface queues.
+ * @param obj           Data storage.
+ *
+ * @return Status code.
+ */
+static te_errno
+get_ethtool_pq_coalesce(const char *if_name,
+                        unsigned int queues_num,
+                        ta_ethtool_pq_coalesce *obj)
+{
+    te_errno rc;
+    unsigned int i;
+    unsigned int rem;
+    struct ethtool_per_queue_op *op = &obj->pq_op;
+    uint32_t *mask = op->queue_mask;
+    struct ethtool_coalesce *eptr;
+
+    op->cmd = ETHTOOL_PERQUEUE;
+    op->sub_command = ETHTOOL_GCOALESCE;
+
+    queues_num = MIN(queues_num, sizeof(op->queue_mask) * 8);
+    obj->queues_num = queues_num;
+
+    for (i = 0; i < queues_num / 32; i++)
+        mask[i] = ~0;
+
+    rem = queues_num % 32;
+    if (rem != 0)
+        mask[i] = (1 << rem) - 1;
+
+    rc = call_ethtool_ioctl(if_name, ETHTOOL_PERQUEUE, op);
+    if (rc != 0)
+        return rc;
+
+    /* Save copy of the current state to see what was changed later. */
+    eptr = (struct ethtool_coalesce *)(op->data);
+    memcpy(eptr + queues_num, eptr,
+           sizeof(struct ethtool_coalesce) * queues_num);
+
+    return 0;
+}
+
+/**
+ * Set per queue interrupt coalescing parameters.
+ *
+ * @param if_name       Interface name.
+ * @param queues_num    Number of interface queues.
+ * @param obj           Parameters data storage.
+ *
+ * @return Status code.
+ */
+static te_errno
+set_ethtool_pq_coalesce(const char *if_name,
+                        ta_ethtool_pq_coalesce *obj)
+{
+#define MASK_LEN (sizeof(obj->pq_op.queue_mask) / sizeof(uint32_t))
+
+    unsigned int q_num = 0;
+    unsigned int src_idx = 0;
+    unsigned int dst_idx = 0;
+    unsigned int i;
+    unsigned int j;
+    struct ethtool_per_queue_op *op;
+    struct ethtool_coalesce *eptr_dst;
+    struct ethtool_coalesce *eptr_src;
+    te_errno rc;
+
+    uint32_t changed_mask[MASK_LEN] = { 0, };
+
+    /* Determine for which queues changes were made */
+    eptr_src = (struct ethtool_coalesce *)(obj->pq_op.data);
+    eptr_dst = eptr_src + obj->queues_num;
+    for (i = 0; i < obj->queues_num; i++)
+    {
+        if (memcmp(eptr_src, eptr_dst, sizeof(struct ethtool_coalesce)) != 0)
+        {
+            changed_mask[i / 32] |= 1 << (i % 32);
+            q_num++;
+        }
+
+        eptr_src++;
+        eptr_dst++;
+    }
+
+    if (q_num == 0)
+        return 0;
+
+    /*
+     * Create request containing only the queues for which some
+     * changes are made.
+     */
+
+    op = TE_ALLOC(sizeof(*op) + sizeof(struct ethtool_coalesce) * q_num);
+    op->cmd = ETHTOOL_PERQUEUE;
+    op->sub_command = ETHTOOL_SCOALESCE;
+
+    memcpy(op->queue_mask, changed_mask, sizeof(op->queue_mask));
+
+    eptr_dst = (struct ethtool_coalesce *)(op->data);
+    eptr_src = (struct ethtool_coalesce *)(obj->pq_op.data);
+
+    for (i = 0; i < MASK_LEN && dst_idx < q_num; i++)
+    {
+        for (j = 0; j < 32 && dst_idx < q_num; j++)
+        {
+            if (changed_mask[i] & (1 << j))
+            {
+                memcpy(&eptr_dst[dst_idx], &eptr_src[src_idx],
+                       sizeof(struct ethtool_coalesce));
+                dst_idx++;
+            }
+
+            src_idx++;
+        }
+    }
+
+    rc = call_ethtool_ioctl(if_name, ETHTOOL_PERQUEUE, op);
+    free(op);
+    return rc;
+#undef MASK_LEN
+}
+
+#endif /* ETHTOOL_PERQUEUE */
+
 /* See description in conf_ethtool.h */
 te_errno
 get_ethtool_value(const char *if_name, unsigned int gid,
@@ -518,6 +677,7 @@ get_ethtool_value(const char *if_name, unsigned int gid,
     const char *obj_type;
     size_t val_size;
     int native_cmd = 0;
+    unsigned int queues_num = 0;
 
     switch (cmd)
     {
@@ -525,6 +685,25 @@ get_ethtool_value(const char *if_name, unsigned int gid,
             obj_type = TA_OBJ_TYPE_IF_COALESCE;
             val_size = sizeof(struct ethtool_coalesce);
             native_cmd = ETHTOOL_GCOALESCE;
+            break;
+
+        case TA_ETHTOOL_PQ_COALESCE:
+#ifdef ETHTOOL_PERQUEUE
+            rc = get_queues_num(if_name, &queues_num);
+            if (rc != 0)
+                  return rc;
+
+            obj_type = TA_OBJ_TYPE_IF_PQ_COALESCE;
+            val_size = sizeof(ta_ethtool_pq_coalesce);
+
+            /*
+             * Multiplied by 2 so that there is space for saving
+             * original state.
+             */
+            val_size += sizeof(struct ethtool_coalesce) * queues_num * 2;
+#else
+            return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
             break;
 
         case TA_ETHTOOL_PAUSEPARAM:
@@ -569,6 +748,12 @@ get_ethtool_value(const char *if_name, unsigned int gid,
             if (rc == 0)
                 lsets_check_set_support(if_name, *ptr_out);
         }
+#ifdef ETHTOOL_PERQUEUE
+        else if (cmd == TA_ETHTOOL_PQ_COALESCE)
+        {
+            rc = get_ethtool_pq_coalesce(if_name, queues_num, *ptr_out);
+        }
+#endif
         else
             rc = call_ethtool_ioctl(if_name, native_cmd, *ptr_out);
 
@@ -610,6 +795,10 @@ commit_ethtool_value(const char *if_name, unsigned int gid,
             native_cmd = ETHTOOL_SCOALESCE;
             break;
 
+        case TA_ETHTOOL_PQ_COALESCE:
+            obj_type = TA_OBJ_TYPE_IF_PQ_COALESCE;
+            break;
+
         case TA_ETHTOOL_PAUSEPARAM:
             obj_type = TA_OBJ_TYPE_IF_PAUSE;
             native_cmd = ETHTOOL_SPAUSEPARAM;
@@ -639,6 +828,12 @@ commit_ethtool_value(const char *if_name, unsigned int gid,
 
     if (cmd == TA_ETHTOOL_LINKSETTINGS)
         rc = set_ethtool_lsets(if_name, obj->user_data);
+    else if (cmd == TA_ETHTOOL_PQ_COALESCE)
+#ifdef ETHTOOL_PERQUEUE
+        rc = set_ethtool_pq_coalesce(if_name, obj->user_data);
+#else
+        rc = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
     else
         rc = call_ethtool_ioctl(if_name, native_cmd, obj->user_data);
 
