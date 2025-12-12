@@ -43,12 +43,19 @@ tapi_netns_add(const char *ta, const char *ns_name)
 {
     te_errno rc;
 
-    rc = cfg_add_instance_fmt(NULL, CVT_NONE, NULL,
-                              "/agent:%s/namespace:/net:%s", ta, ns_name);
+    rc = tapi_netns_add_rsrc(ta, ns_name);
     if (rc != 0)
         return rc;
 
-    return tapi_netns_add_rsrc(ta, ns_name);
+    rc = cfg_add_instance_fmt(NULL, CVT_NONE, NULL,
+                              "/agent:%s/namespace:/net:%s", ta, ns_name);
+    if (rc != 0)
+    {
+        (void)tapi_netns_del_rsrc(ta, ns_name);
+        return rc;
+    }
+
+    return 0;
 }
 
 /* See description in tapi_namespaces.h */
