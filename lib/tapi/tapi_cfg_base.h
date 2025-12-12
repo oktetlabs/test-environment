@@ -1154,6 +1154,26 @@ extern te_errno tapi_cfg_base_get_proc_number(const char *agent,
 extern te_errno tapi_cfg_base_get_latest_pid(const char *agent,
                                              uint64_t *latest_pid);
 
+/**
+ * Read alien link address value from the configurator, increase by @c 1 the
+ * last byte value for the next call.
+ *
+ * @param [out] addr  Pointer to the obtained address.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_base_get_alien_link_addr(struct sockaddr *addr);
+
+/**
+ * Read fake link address value from the configurator. If it is not allocated,
+ * get alien link address and save it in the configurator.
+ *
+ * @param [out] addr  Pointer to the obtained address.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_base_get_fake_link_addr(struct sockaddr *addr);
+
 /**@} <!-- END tapi_conf_iface --> */
 
 #ifdef __cplusplus

@@ -55,6 +55,10 @@
 #include "tapi_mem.h"
 #include "tapi_test_behaviour.h"
 
+/* Alien link address location in the configurator tree. */
+#define CFG_ALIEN_LINK_ADDR "/volatile:/alien_link_addr:"
+#define CFG_FAKE_LINK_ADDR "/volatile:/fake_link_addr:"
+
 /* See the description in tapi_cfg_base.h */
 char *
 tapi_cfg_base_get_ta_dir(const char *ta, tapi_cfg_base_ta_dir kind)
@@ -1569,4 +1573,71 @@ tapi_cfg_base_get_latest_pid(const char *agent, uint64_t *latest_pid)
                                      "/agent:%s/loadavg:/latest_pid:", agent);
 
     return rc;
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_get_alien_link_addr(struct sockaddr *addr)
+{
+    struct sockaddr *tmp;
+    te_errno rc;
+
+    rc = cfg_get_instance_addr_fmt(&tmp, CFG_ALIEN_LINK_ADDR);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to get alien link address: %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    memcpy(addr, tmp, sizeof(*addr));
+
+    /* Increase the last byte of the MAC address to get new value in the
+     * next request. */
+    tmp->sa_data[ETHER_ADDR_LEN - 1]++;
+
+    rc = cfg_set_instance_fmt(CFG_VAL(ADDRESS, tmp), CFG_ALIEN_LINK_ADDR);
+    free(tmp);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to set alien link address: %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    return 0;
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_get_fake_link_addr(struct sockaddr *addr)
+{
+    uint8_t unset_link_addr[ETHER_ADDR_LEN] = {0};
+    struct sockaddr *tmp;
+    te_errno rc;
+
+    rc = cfg_get_instance_addr_fmt(&tmp, CFG_FAKE_LINK_ADDR);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to get fake link address: %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    if (memcmp(unset_link_addr, tmp->sa_data, ETHER_ADDR_LEN) == 0)
+    {
+        free(tmp);
+        rc = cfg_get_instance_addr_fmt(&tmp, CFG_ALIEN_LINK_ADDR);
+        if (rc != 0)
+            return rc;
+
+        rc = cfg_set_instance_fmt(CFG_VAL(ADDRESS, tmp), CFG_FAKE_LINK_ADDR);
+        if (rc != 0)
+        {
+            free(tmp);
+            return rc;
+        }
+    }
+
+    memcpy(addr, tmp, sizeof(*addr));
+    free(tmp);
+
+    return 0;
 }
