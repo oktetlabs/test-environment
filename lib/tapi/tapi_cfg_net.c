@@ -3624,6 +3624,123 @@ tapi_cfg_net_free_pci_info(cfg_net_pci_info_t *pci_info)
     free(pci_info->dpdk_driver);
 }
 
+static te_errno
+restore_node_addresses_af(const char *iface_oid, const char *node_oid, int af)
+{
+    unsigned int node_addrs_num;
+    cfg_handle *node_addrs = NULL;
+    cfg_oid *node_addr_oid = NULL;
+    cfg_oid *pool_addr_oid = NULL;
+    char *pool_addr_handle_str = NULL;
+    cfg_handle pool_node_addr;
+    unsigned int i;
+    te_errno rc;
+
+    /* Get IP addresses of the node */
+    rc = cfg_find_pattern_fmt(&node_addrs_num, &node_addrs,
+                              "%s/ip%u_address:*", node_oid,
+                              af == AF_INET ? 4 : 6);
+    if (rc != 0)
+    {
+        ERROR("Failed to find IP addresses assigned to node '%s': %r",
+              node_oid, rc);
+        return rc;
+    }
+
+    /* Iterate over obtained addresses and restore it */
+    for (i = 0; i < node_addrs_num; ++i)
+    {
+        cfg_val_type type = CVT_ADDRESS;
+        struct sockaddr *addr;
+        unsigned long num;
+        int32_t prefix;
+
+        cfg_free_oid(node_addr_oid);
+        node_addr_oid = NULL;
+        rc = cfg_get_oid(node_addrs[i], &node_addr_oid);
+        if (rc != 0)
+        {
+            ERROR("Failed to get OID by node address handle %u: %r",
+                 node_addrs[i], rc);
+            break;
+        }
+
+        free(pool_addr_handle_str);
+        pool_addr_handle_str = cfg_oid_get_inst_name(node_addr_oid, -1);
+        rc = te_strtoul(pool_addr_handle_str, 0, &num);
+        if (rc != 0)
+        {
+            ERROR("Failed to get numeric CS handle by '%s': %r",
+                  pool_addr_handle_str, rc);
+            break;
+        }
+        pool_node_addr = num;
+
+        cfg_free_oid(pool_addr_oid);
+        pool_addr_oid = NULL;
+        rc = cfg_get_oid(pool_node_addr, &pool_addr_oid);
+        if (rc != 0)
+        {
+            ERROR("Failed to get OID by pool handle %u: %r",
+                 pool_node_addr, rc);
+            break;
+        }
+
+        rc = cfg_get_int32(&prefix, "/net_pool:%s/entry:%s/prefix:",
+                           CFG_OID_GET_INST_NAME(pool_addr_oid, 1),
+                           CFG_OID_GET_INST_NAME(pool_addr_oid, 2));
+        if (rc != 0)
+        {
+            ERROR("Failed to get pool prefix length: %r", rc);
+            break;
+        }
+
+        rc = cfg_get_instance(node_addrs[i], &type, &addr);
+        if (rc != 0)
+        {
+            ERROR("Failed to get node address: %r", rc);
+            break;
+        }
+
+        rc = tapi_cfg_base_add_net_addr(iface_oid, addr, prefix,
+                                        af == AF_INET, NULL);
+        free(addr);
+        if (rc != 0)
+        {
+            ERROR("Failed to add address to interface %s': %r",
+                  iface_oid, rc);
+            break;
+        }
+    }
+
+    cfg_free_oid(pool_addr_oid);
+    free(pool_addr_handle_str);
+    cfg_free_oid(node_addr_oid);
+    free(node_addrs);
+    return rc;
+}
+
+static te_errno
+restore_node_addresses(cfg_handle node_handle, const char *iface_oid)
+{
+    char *node_oid;
+    te_errno rc;
+
+    rc = cfg_get_oid_str(node_handle, &node_oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to string OID by handle: %r", rc);
+        return rc;
+    }
+
+    rc = restore_node_addresses_af(iface_oid, node_oid, AF_INET);
+    if (rc == 0)
+        rc = restore_node_addresses_af(iface_oid, node_oid, AF_INET6);
+
+    free(node_oid);
+    return rc;
+}
+
 te_errno
 tapi_cfg_net_node_to_netns(const cfg_net_node_t *node, const char *netns,
                            char **ns_ta)
@@ -3687,6 +3804,15 @@ tapi_cfg_net_node_to_netns(const cfg_net_node_t *node, const char *netns,
 
     te_string_append(&new_node, "/agent:%s/interface:%s",
                      te_string_value(&new_ta), iface);
+
+    rc = restore_node_addresses(node->handle, te_string_value(&new_node));
+    if (rc != 0)
+    {
+        ERROR("Failed to restore interface %s addreses in namespace %s: %r",
+              te_string_value(&new_node), netns, rc);
+        goto fail_restore_addresses;
+    }
+
     rc = cfg_set_instance(node->handle,
                           CFG_VAL(STRING, te_string_value(&new_node)));
     if (rc != 0)
@@ -3702,6 +3828,7 @@ tapi_cfg_net_node_to_netns(const cfg_net_node_t *node, const char *netns,
     goto done;
 
 fail_set_node:
+fail_restore_addresses:
 fail_add_rsrc:
 fail_if_up:
 fail_set_if:
