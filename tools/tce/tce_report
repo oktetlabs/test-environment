@@ -1,4 +1,4 @@
-#!/usr/bin/env gawk -f
+#!/usr/bin/env -S gawk -f
 # SPDX-License-Identifier: Apache-2.0
 #
 # Test Coverage Estimation report generator
