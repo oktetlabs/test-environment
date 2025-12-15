@@ -335,8 +335,8 @@ phy_set_supported_get(unsigned int gid, const char *oid, char *value,
         return rc;
     }
 
-    return te_string_append(&str_val, "%d",
-                            lsets_ptr->set_supported ? 1 : 0);
+    te_string_append(&str_val, "%d", lsets_ptr->set_supported ? 1 : 0);
+    return 0;
 }
 
 /* Common function to set link settings structure field */

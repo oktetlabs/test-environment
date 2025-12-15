@@ -230,13 +230,8 @@ static inline const char *te_string_value(const te_string *str)
  * @param str           TE string
  * @param fmt           Format string
  * @param ...           Format string arguments
- *
- * @return 0
- *
- * @note The function never returns an error. Its return type is not void
- *       for legacy reasons. New code should never check the return value.
  */
-extern te_errno te_string_append(te_string *str, const char *fmt, ...);
+extern void te_string_append(te_string *str, const char *fmt, ...);
 
 /**
  * Format the varargs according to @p fmt and append the result to the string.
@@ -244,12 +239,10 @@ extern te_errno te_string_append(te_string *str, const char *fmt, ...);
  * @param str           TE string
  * @param fmt           Format string
  * @param ap            List of arguments
- *
- * @return 0 (see te_string_append() for explanation)
  */
-extern te_errno te_string_append_va(te_string  *str,
-                                    const char *fmt,
-                                    va_list     ap);
+extern void te_string_append_va(te_string  *str,
+                                const char *fmt,
+                                va_list     ap);
 
 /**
  * Format arguments according to @p fmt and append the result to the string.

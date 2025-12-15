@@ -534,12 +534,11 @@ main(int argc, char **argv)
          * these are always needed, from frags_list it will be determined
          * which log fragment files should be unpacked.
          */
-        CHECK_TE_RC(
-            te_string_append(&cmd,
-                             "mkdir -p \"%s/\" && "
-                             "pixz -x log_gist.raw frags_list <\"%s\" | "
-                             "tar x -C \"%s/\"", split_log_path,
-                             bundle_path, split_log_path));
+        te_string_append(&cmd,
+                         "mkdir -p \"%s/\" && "
+                         "pixz -x log_gist.raw frags_list <\"%s\" | "
+                         "tar x -C \"%s/\"", split_log_path,
+                         bundle_path, split_log_path);
         res = system(cmd.ptr);
         if (res != 0)
         {

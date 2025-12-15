@@ -52,7 +52,7 @@ te_string_free(te_string *str)
     str->free_func(str);
 }
 
-te_errno
+void
 te_string_append(te_string *str, const char *fmt, ...)
 {
     va_list  ap;
@@ -60,7 +60,6 @@ te_string_append(te_string *str, const char *fmt, ...)
     va_start(ap, fmt);
     te_string_append_va(str, fmt, ap);
     va_end(ap);
-    return 0;
 }
 
 te_errno
@@ -195,15 +194,13 @@ te_string_append_va_chk(te_string *str, const char *fmt, va_list ap)
     return 0;
 }
 
-te_errno
+void
 te_string_append_va(te_string *str, const char *fmt, va_list ap)
 {
     te_errno rc = te_string_append_va_chk(str, fmt, ap);
 
     if (rc != 0)
         TE_FATAL_ERROR("Not enough space in supplied buffer");
-
-    return 0;
 }
 
 te_errno

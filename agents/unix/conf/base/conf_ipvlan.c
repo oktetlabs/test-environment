@@ -319,7 +319,8 @@ ipvlan_get(unsigned int gid, const char *oid, char *values,
         return rc;
 
     /* Build string, for example "l2:private" */
-    return te_string_append(&str, "%s:%s", mode_str, flag_str);
+    te_string_append(&str, "%s:%s", mode_str, flag_str);
+    return 0;
 }
 
 /**
