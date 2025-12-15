@@ -1243,7 +1243,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     /*
      * Run non-local TA in /bin/bash if it is needed
      */
-    if (ta->is_local && !shell_is_bash)
+    if (!ta->is_local && !shell_is_bash)
         te_string_append(&cmd, "/bin/bash -c '");
 
     /*
