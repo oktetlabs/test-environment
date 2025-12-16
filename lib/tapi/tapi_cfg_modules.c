@@ -18,6 +18,7 @@
 
 #define CFG_MODULE_OID_FMT "/agent:%s/module:%s"
 #define CFG_MODULE_PARAM_OID_FMT CFG_MODULE_OID_FMT"/parameter:%s"
+#define CFG_LOCAL_MODULE_OID_FMT "/local:%s/module:%s"
 
 static char *
 tapi_cfg_module_rsrc_name(const char *mod_name)
@@ -210,6 +211,24 @@ tapi_cfg_module_add(const char *ta_name, const char *mod_name, bool load)
         te_log_stack_push("Check if there is module '%s' on TA %s failed: %r",
                           mod_name, ta_name, rc);
         goto out;
+    }
+
+    if (cfg_find_fmt(NULL, CFG_LOCAL_MODULE_OID_FMT, ta_name, mod_name) == 0)
+    {
+        te_string ta_module = TE_STRING_INIT;
+
+        te_string_append(&ta_module, CFG_MODULE_OID_FMT, ta_name, mod_name);
+        rc = cfg_copy_subtree_fmt(te_string_value(&ta_module),
+                                  CFG_LOCAL_MODULE_OID_FMT, ta_name, mod_name);
+        if (rc != 0)
+        {
+            ERROR("Failed to copy module '%s' configuration from '"
+                  CFG_LOCAL_MODULE_OID_FMT "': %r",
+                  te_string_value(&ta_module), ta_name, mod_name, rc);
+            te_string_free(&ta_module);
+            goto out;
+        }
+        te_string_free(&ta_module);
     }
 
     if (load)

@@ -1,0 +1,28 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Local configuration tree to transparently specify system module load
+    parameters.
+
+    Copyright (C) 2025 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/local/module"
+      access: read_create
+      type: none
+      d: |
+         System module. Changes in the subtree affect the next load of
+         the module, but do not affect already loaded module.
+         Name: Name of the system module
+
+    - oid: "/local/module/parameter"
+      access: read_create
+      type: string
+      d: |
+         Parameter of a system module to be added on the next load.
+         Name: Name of the parameter
+         Value: Value of the parameter. It must have the same representation
+                as system returns on read (e.g. Y for boolean, not 1).

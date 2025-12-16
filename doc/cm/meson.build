@@ -27,6 +27,7 @@ cm_files = files(
     'cm_local_changed.yml',
     'cm_local_dpdk.yml',
     'cm_local_host.yml',
+    'cm_local_module.yml',
     'cm_mem.yml',
     'cm_module.yml',
     'cm_namespace.yml',

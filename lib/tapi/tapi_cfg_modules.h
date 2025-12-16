@@ -26,6 +26,9 @@ extern "C" {
  * No error is returned if module is already added or loaded. Check
  * it beforehand if needed.
  *
+ * Copy the module configuration from /local:ta_name/module:mod_name subtree
+ * if exists.
+ *
  * @param ta_name        Name of the agent
  * @param mod_name       Name of the module
  * @param load           Load it (applicable only if no parameters are needed.)
@@ -154,6 +157,9 @@ extern te_errno tapi_cfg_module_param_get_int(const char *ta_name,
 /**
  * Given a module file in a TA modules directory, insert the former.
  * Take care of the module dependencies if required.
+ *
+ * Copy the module configuration from /local:ta_name/module:mod_name subtree
+ * if exists.
  *
  * @param  ta_name           The TA name
  * @param  module_name       The filename without ".ko" extension
