@@ -365,6 +365,8 @@ append_testpmd_command(te_vec *ports, te_string *setup_cmd,
 
     TE_VEC_FOREACH(ports, port)
     {
+        bool skip = false;
+
         switch (param)
         {
             case TESTPMD_PARAM_FLOW_CTRL_AUTONEG:
@@ -387,8 +389,11 @@ append_testpmd_command(te_vec *ports, te_string *setup_cmd,
                 break;
 
             default:
+                skip = true;
                 break;
         }
+        if (skip)
+            break;
 
         va_start(ap, cmd_val_fmt);
         te_string_append_va(setup_cmd, cmd_val_fmt, ap);
