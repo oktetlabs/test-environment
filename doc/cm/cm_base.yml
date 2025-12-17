@@ -685,6 +685,51 @@
          Value: 0 - Changing is not supported
                 1 - Changing is supported
 
+    - oid: "/agent/interface/eee"
+      access: read_only
+      type: none
+      unit: true
+      d: |
+         Network interface Energy Efficient Ethernet parameters
+         Name: none
+         Value: none
+
+    - oid: "/agent/interface/eee/eee_active"
+      access: read_only
+      type: bool
+      volatile: true
+      d: |
+         Result of EEE auto negotiation.
+         Name: None
+         Value: 0 - disabled
+                1 - enabled
+
+    - oid: "/agent/interface/eee/eee_enabled"
+      access: read_write
+      type: bool
+      d: |
+         EEE enable state.
+         Name: None
+         Value: 0 - disabled
+                1 - enabled
+
+    - oid: "/agent/interface/eee/tx_lpi_enabled"
+      access: read_write
+      type: uint64
+      d: |
+         TX Low Power Idle (LPI) mode enable state.
+         Name: None
+         Value: 0 - disabled
+                1 - enabled
+
+    - oid: "/agent/interface/eee/tx_lpi_timer"
+      access: read_write
+      type: uint32
+      d: |
+         TX Low Power Idle (LPI) delay in microseconds.
+         Name: None
+         Value: See documentation of ethtool_eee structure
+
     - oid: "/agent/interface/feature"
       access: read_write
       type: int32

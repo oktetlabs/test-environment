@@ -39,6 +39,7 @@ typedef enum ta_ethtool_cmd {
     TA_ETHTOOL_LINKSETTINGS,  /**< ETHTOOL_[G|S]LINKSETTINGS if supported,
                                    or ETHTOOL_[G|S]SET otherwise */
     TA_ETHTOOL_PFLAGS,        /**< ETHTOOL_[G|S]PFLAGS */
+    TA_ETHTOOL_EEE,           /**< ETHTOOL_[G|S]EEE */
 } ta_ethtool_cmd;
 
 /**

@@ -339,6 +339,12 @@ extern void ta_cfg_obj_log(const ta_cfg_obj_t *obj);
  */
 #define TA_OBJ_TYPE_IF_RX_CLS_RULE "if_rx_cls_rule"
 
+/**
+ * Name for the object type containing Energy Efficient Ethernet data
+ * for network interface.
+ */
+#define TA_OBJ_TYPE_IF_EEE "if_eee"
+
 /** System-independent route types */
 typedef enum ta_route_type {
     TA_RT_TYPE_UNSPECIFIED,

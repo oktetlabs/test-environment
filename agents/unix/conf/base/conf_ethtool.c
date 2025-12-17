@@ -723,6 +723,16 @@ get_ethtool_value(const char *if_name, unsigned int gid,
             native_cmd = ETHTOOL_GPFLAGS;
             break;
 
+        case TA_ETHTOOL_EEE:
+#ifdef ETHTOOL_GEEE
+            obj_type = TA_OBJ_TYPE_IF_EEE;
+            val_size = sizeof(struct ethtool_eee);
+            native_cmd = ETHTOOL_GEEE;
+#else
+            return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+            break;
+
         default:
             ERROR("%s(): unknown ethtool command %d", __FUNCTION__, cmd);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -811,6 +821,15 @@ commit_ethtool_value(const char *if_name, unsigned int gid,
         case TA_ETHTOOL_PFLAGS:
             obj_type = TA_OBJ_TYPE_IF_PFLAGS;
             native_cmd = ETHTOOL_SPFLAGS;
+            break;
+
+        case TA_ETHTOOL_EEE:
+#ifdef ETHTOOL_SEEE
+            obj_type = TA_OBJ_TYPE_IF_EEE;
+            native_cmd = ETHTOOL_SEEE;
+#else
+            return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
             break;
 
         default:
