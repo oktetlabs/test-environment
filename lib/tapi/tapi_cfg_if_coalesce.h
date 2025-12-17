@@ -13,6 +13,7 @@
 #ifndef __TE_TAPI_CFG_IF_COALESCE_H__
 #define __TE_TAPI_CFG_IF_COALESCE_H__
 
+#include "te_defs.h"
 #include "te_errno.h"
 
 #ifdef __cplusplus
