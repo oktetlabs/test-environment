@@ -319,6 +319,8 @@ Generic options:
 
   --export=<name=value>         Export an environment variable.
 
+  --cs-include=<filename>       CS configuration file to be included after
+                                main configuration file(s).
   --cs-print-trees              Print configurator trees.
   --cs-log-diff                 Log backup diff unconditionally.
 

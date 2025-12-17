@@ -19,6 +19,7 @@
 #include <libxml/xinclude.h>
 #include "te_kvpair.h"
 #include "te_alloc.h"
+#include "te_file.h"
 #include "te_str.h"
 #include "te_string.h"
 #include "te_vector.h"
@@ -58,6 +59,9 @@ static const char *cs_sniff_cfg_file = NULL;  /**< Configuration file name
  * directive
  */
 static const char *cs_dirs_cfg = NULL;
+
+/** Configuration files to processed after main config(s) */
+static char **cs_includes = NULL;
 
 /** @name Configurator global options */
 #define CS_PRINT_TREES  0x1     /**< Print objects and object instances
@@ -2850,6 +2854,9 @@ process_cmd_line_opts(int argc, char **argv)
           "Auxiliary path where Configurator should search "
           "for included directories in the provided path.", NULL },
 
+        { "include", '\0', POPT_ARG_ARGV, &cs_includes, 0,
+          "Configuration file to be processed after main config(s).", NULL },
+
         POPT_AUTOHELP
         POPT_TABLEEND
     };
@@ -3059,6 +3066,32 @@ main(int argc, char **argv)
                   cfg_file_id, cs_cfg_file[cfg_file_id]);
             goto exit;
         }
+    }
+
+    for (cfg_file_id = 0;
+         cs_includes != NULL && cs_includes[cfg_file_id] != NULL;
+         cfg_file_id++)
+    {
+        char *resolved_file_name = NULL;
+
+        INFO("-> include '%s'", cs_includes[cfg_file_id]);
+        rc = te_file_resolve_pathname(cs_includes[cfg_file_id], cs_dirs_cfg,
+                                      F_OK, NULL, &resolved_file_name);
+        if (rc != 0)
+        {
+            ERROR("Failed to resolve include '%s' path: %r",
+                  cs_includes[cfg_file_id], rc);
+            goto exit;
+        }
+        rc = parse_config(resolved_file_name, NULL);
+        if (rc != 0)
+        {
+            ERROR("Fatal error during configuration file parsing: %s",
+                  resolved_file_name);
+            free(resolved_file_name);
+            goto exit;
+        }
+        free(resolved_file_name);
     }
 
     if (cs_sniff_cfg_file != NULL &&
