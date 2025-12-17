@@ -271,7 +271,7 @@
       type: string
       d: |
          Type of the network interface.
-         E.g. nic, tap, vhost-user
+         E.g. nic, tap, vhost-user, socket
          Name: None
 
     - oid: "/agent/vm/net/type_spec"
@@ -281,6 +281,9 @@
          Type specific configuration.
           - nic: model
           - tap: file descriptor (if a number) or TAP interface name
+          - socket: a single key=value option for socket netdev backend,
+                    e.g. "listen=:1234", "connect=127.0.0.1:1234" or
+                    "mcast=230.0.0.1:1234".
           - vhost-user: name of character device with Unix domain socket backend
          Name: None
 

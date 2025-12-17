@@ -222,6 +222,44 @@ vm_append_dgram_interface_cmd(te_string *cmd, struct vm_net_entry *net,
 }
 
 static te_errno
+vm_append_socket_interface_cmd(te_string *cmd, struct vm_net_entry *net,
+                               unsigned int interface_id)
+{
+    te_string netdev = TE_STRING_INIT;
+    te_string device = TE_STRING_INIT;
+    te_string opts = TE_STRING_INIT;
+    te_errno rc;
+
+    if (net->type_spec != NULL && strchr(net->type_spec, '=') == NULL)
+    {
+        ERROR("type_spec must be a key=value pair for socket net interface '%s'",
+              te_str_empty_if_null(net->name));
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    te_kvpair_to_str_gen(&net->netdev_opts, ",", &opts);
+    te_string_append(&netdev, "socket,id=netdev%u%s%s%s%s", interface_id,
+                     net->type_spec == NULL ? "" : ",",
+                     net->type_spec == NULL ? "" : net->type_spec,
+                     te_str_is_null_or_empty(opts.ptr) ? "" : ",",
+                     te_str_is_null_or_empty(opts.ptr) ? "" : opts.ptr);
+
+    rc = vm_append_virtio_dev_cmd(&device, net->mac_addr, interface_id,
+                                  &net->device_opts);
+    if (rc == 0)
+    {
+        te_string_append_shell_args_as_is(cmd, "-netdev", netdev.ptr,
+                                          "-device", device.ptr, NULL);
+    }
+
+    te_string_free(&netdev);
+    te_string_free(&device);
+    te_string_free(&opts);
+
+    return rc;
+}
+
+static te_errno
 vm_append_tap_interface_cmd(te_string *cmd, struct vm_net_entry *net,
                             unsigned int interface_id)
 {
@@ -367,6 +405,11 @@ vm_append_net_interfaces_cmd(te_string *cmd, vm_net_list_t *nets,
         {
             rc = vm_append_tap_interface_cmd(&interface_args, net,
                                              interface_id);
+        }
+        else if (strcmp(net->type, "socket") == 0)
+        {
+            rc = vm_append_socket_interface_cmd(&interface_args, net,
+                                                interface_id);
         }
         else if (strcmp(net->type, "vhost-user") == 0)
         {
