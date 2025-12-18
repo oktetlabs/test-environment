@@ -12,7 +12,7 @@
  * describes location of IUT and Tester RPC servers, nets, interfaces and
  * addresses.
  *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2004-2025 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TS_TAPI_ENV_ENV_H__
@@ -33,8 +33,10 @@
 
 #include "te_defs.h"
 #include "te_queue.h"
+#include "te_vector.h"
 #include "conf_api.h"
 #include "tapi_cfg_net.h"
+#include "tapi_cfg_stats.h"
 #include "tapi_rpc.h"
 #include "tapi_sniffer.h"
 #include "tapi_sockaddr.h"
@@ -410,6 +412,8 @@ typedef struct tapi_env_host {
     char   *libname;    /**< Name of dynamic library to be used on
                              the host as IUT */
 
+    te_vec  net_stats;  /**< Network stack statistics */
+
 } tapi_env_host;
 
 /** List of required hosts in environment */
@@ -442,6 +446,8 @@ typedef struct tapi_env_if {
 
     tapi_sniffer_id    *sniffer_id;    /**< ID of the sniffer created by
                                             request via TE_ENV_SNIFF_ON */
+
+    te_vec  stats;  /**< Network interface statistics */
 
 } tapi_env_if;
 
@@ -799,6 +805,36 @@ extern unsigned tapi_env_nets_count(tapi_env *env);
  * @return Network node configuration
  */
 extern const cfg_net_node_t *tapi_env_get_if_net_node(const tapi_env_if *iface);
+
+/**
+ * Gather statistics for all entities used in the environment.
+ *
+ * @param env     Environment
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_env_stats_gather(tapi_env *env);
+
+
+/**
+ * Log difference between previous and the last gathered stats for all
+ * entities used in the environment.
+ *
+ * @param env     Environment
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_env_stats_log_diff(tapi_env *env);
+
+/**
+ * Gather current statistics and log difference for all entities used
+ * in the environment.
+ *
+ * @param env     Environment
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_env_stats_gather_and_log_diff(tapi_env *env);
 
 #ifdef __cplusplus
 } /* extern "C" */

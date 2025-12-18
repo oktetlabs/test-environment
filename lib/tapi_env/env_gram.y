@@ -81,6 +81,7 @@ create_host_if(void)
     tapi_env_host *host = TE_ALLOC(sizeof(*host));
 
     SLIST_INIT(&host->processes);
+    host->net_stats = TE_VEC_INIT(struct tapi_cfg_net_stats);
 
     CIRCLEQ_INSERT_TAIL(&env->ifs, iface, links);
 
@@ -89,6 +90,7 @@ create_host_if(void)
 
     iface->net = curr_net;
     iface->host = host;
+    iface->stats = TE_VEC_INIT(struct tapi_cfg_if_stats);
 
     return iface;
 }

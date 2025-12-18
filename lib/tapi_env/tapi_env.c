@@ -408,6 +408,7 @@ tapi_env_free(tapi_env *env)
             free(proc);
         }
         SLIST_REMOVE(&env->hosts, host, tapi_env_host, links);
+        te_vec_free(&host->net_stats);
         free(host->ta);
         free(host->libname);
         free(host->name);
@@ -509,6 +510,7 @@ tapi_env_free(tapi_env *env)
     while ((iface = env->ifs.cqh_first) != (void *)&env->ifs)
     {
         CIRCLEQ_REMOVE(&env->ifs, iface, links);
+        te_vec_free(&iface->stats);
         if (iface->sniffer_id != NULL)
             (void)tapi_sniffer_del(iface->sniffer_id);
         free(iface->if_info.if_name);
