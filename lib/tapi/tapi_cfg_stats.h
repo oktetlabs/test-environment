@@ -172,6 +172,21 @@ extern te_errno
 tapi_cfg_stats_net_stats_print(const char           *ta,
                                tapi_cfg_net_stats   *stats);
 
+/**
+ * Print /proc/net/snmp like statistics difference with provided description.
+ *
+ * @param stats         Network statistics.
+ * @param prev          Previous network statistics or @c NULL.
+ * @param descr_fmt     Description format string with arguments.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_stats_net_stats_print_diff(
+                    const tapi_cfg_net_stats *stats,
+                    const tapi_cfg_net_stats *prev,
+                    const char *descr_fmt, ...)
+                    TE_LIKE_PRINTF(3, 4);
+
 /**@} <!-- END tapi_conf_stats --> */
 
 #ifdef __cplusplus
