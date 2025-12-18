@@ -17,8 +17,8 @@
 #include <string.h>
 #endif
 
-#include "te_alloc.h"
 #include "te_defs.h"
+#include "te_string.h"
 #include "logger_api.h"
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_stats.h"
@@ -229,25 +229,18 @@ tapi_cfg_stats_net_stats_get(const char          *ta,
     return 0;
 }
 
-
-
-#define TAPI_CFG_IF_STATS_MAX_LINE_LEN     4096
-
 /* See description in tapi_cfg_stats.h */
 te_errno
 tapi_cfg_stats_if_stats_print(const char          *ta,
                               const char          *ifname,
                               tapi_cfg_if_stats   *stats)
 {
-    char *buf = TE_ALLOC(TAPI_CFG_IF_STATS_MAX_LINE_LEN);
+    te_string buf = TE_STRING_INIT;
 
     if (stats == NULL)
-    {
-        free(buf);
         return TE_OS_RC(TE_TAPI, EINVAL);
-    }
 
-    snprintf(buf, TAPI_CFG_IF_STATS_MAX_LINE_LEN,
+    te_string_append(&buf,
              "Network statistics for interface %s on Test Agent %s:"
              "\n  in_octets : " U64_FMT
              "\n  in_ucast_pkts : " U64_FMT
@@ -274,30 +267,25 @@ tapi_cfg_stats_if_stats_print(const char          *ta,
              stats->out_discards,
              stats->out_errors);
 
-    RING("%s", buf);
+    RING("%s", te_string_value(&buf));
 
-    free(buf);
+    te_string_free(&buf);
 
     return 0;
 }
 
-
-#define TAPI_CFG_NET_STATS_MAX_LINE_LEN     4096
 
 /* See description in tapi_cfg_stats.h */
 te_errno
 tapi_cfg_stats_net_stats_print(const char          *ta,
                                tapi_cfg_net_stats  *stats)
 {
-    char *buf = TE_ALLOC(TAPI_CFG_NET_STATS_MAX_LINE_LEN);
+    te_string buf = TE_STRING_INIT;
 
     if (stats == NULL)
-    {
-        free(buf);
         return TE_OS_RC(TE_TAPI, EINVAL);
-    }
 
-    snprintf(buf, TAPI_CFG_NET_STATS_MAX_LINE_LEN,
+    te_string_append(&buf,
              "Network statistics for Test Agent %s:"
              "\nIPv4:"
              "\n  in_recvs : " U64_FMT
@@ -392,9 +380,9 @@ tapi_cfg_stats_net_stats_print(const char          *ta,
              stats->icmp.out_addr_masks,
              stats->icmp.out_addr_mask_reps);
 
-    RING("%s", buf);
+    RING("%s", te_string_value(&buf));
 
-    free(buf);
+    te_string_free(&buf);
 
     return 0;
 }
