@@ -741,12 +741,19 @@ te_sockaddr2str_buf(const struct sockaddr *sa,
     {
         return TE_OS_RC(TE_TOOL_EXT, errno);
     }
-    te_string_append(&str, "%s:%hu", addr_buf, ntohs(port));
 
-    if (sa->sa_family == AF_INET6 &&
-        IN6_IS_ADDR_LINKLOCAL(&SIN6(sa)->sin6_addr))
+    if (sa->sa_family == AF_INET6)
     {
-        te_string_append(&str, "<%u>", (unsigned)(SIN6(sa)->sin6_scope_id));
+        te_string_append(&str, "[%s", addr_buf);
+
+        if (IN6_IS_ADDR_LINKLOCAL(&SIN6(sa)->sin6_addr))
+            te_string_append(&str, "%%%u", (unsigned)(SIN6(sa)->sin6_scope_id));
+
+        te_string_append(&str, "]:%hu", ntohs(port));
+    }
+    else
+    {
+        te_string_append(&str, "%s:%hu", addr_buf, ntohs(port));
     }
 
     return 0;
