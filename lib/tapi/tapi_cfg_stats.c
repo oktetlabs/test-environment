@@ -231,36 +231,33 @@ tapi_cfg_stats_net_stats_get(const char          *ta,
 
 static void
 tapi_cfg_stats_if_stats_print_with_descr_va(const tapi_cfg_if_stats *stats,
+                                            bool print_zeros,
                                             const char *descr_fmt, va_list ap)
 {
     te_string buf = TE_STRING_INIT;
 
     te_string_append_va(&buf, descr_fmt, ap);
 
-    te_string_append(&buf,
-             "\n  in_octets : " U64_FMT
-             "\n  in_ucast_pkts : " U64_FMT
-             "\n  in_nucast_pkts : " U64_FMT
-             "\n  in_discards : " U64_FMT
-             "\n  in_errors : " U64_FMT
-             "\n  in_unknown_protos : " U64_FMT
-             "\n  out_octets : " U64_FMT
-             "\n  out_ucast_pkts : " U64_FMT
-             "\n  out_nucast_pkts : " U64_FMT
-             "\n  out_discards : " U64_FMT
-             "\n  out_errors : " U64_FMT
-             "\n",
-             stats->in_octets,
-             stats->in_ucast_pkts,
-             stats->in_nucast_pkts,
-             stats->in_discards,
-             stats->in_errors,
-             stats->in_unknown_protos,
-             stats->out_octets,
-             stats->out_ucast_pkts,
-             stats->out_nucast_pkts,
-             stats->out_discards,
-             stats->out_errors);
+#define PRINT_STAT(_name) \
+    do {                                                    \
+        if (print_zeros || stats->_name != 0)                \
+            te_string_append(&buf, "\n  %s : " U64_FMT,     \
+                             #_name, stats->_name);         \
+    } while (0)
+
+    PRINT_STAT(in_octets);
+    PRINT_STAT(in_ucast_pkts);
+    PRINT_STAT(in_nucast_pkts);
+    PRINT_STAT(in_discards);
+    PRINT_STAT(in_errors);
+    PRINT_STAT(in_unknown_protos);
+    PRINT_STAT(out_octets);
+    PRINT_STAT(out_ucast_pkts);
+    PRINT_STAT(out_nucast_pkts);
+    PRINT_STAT(out_discards);
+    PRINT_STAT(out_errors);
+
+#undef PRINT_STAT
 
     RING("%s", te_string_value(&buf));
 
@@ -274,7 +271,7 @@ tapi_cfg_stats_if_stats_print_with_descr(const tapi_cfg_if_stats *stats,
     va_list ap;
 
     va_start(ap, descr_fmt);
-    tapi_cfg_stats_if_stats_print_with_descr_va(stats, descr_fmt, ap);
+    tapi_cfg_stats_if_stats_print_with_descr_va(stats, true, descr_fmt, ap);
     va_end(ap);
 }
 
@@ -328,7 +325,7 @@ tapi_cfg_stats_if_stats_print_diff(const tapi_cfg_if_stats *stats,
     }
 
     va_start(ap, descr_fmt);
-    tapi_cfg_stats_if_stats_print_with_descr_va(diff, descr_fmt, ap);
+    tapi_cfg_stats_if_stats_print_with_descr_va(diff, false, descr_fmt, ap);
     va_end(ap);
 
     return 0;
@@ -336,104 +333,79 @@ tapi_cfg_stats_if_stats_print_diff(const tapi_cfg_if_stats *stats,
 
 static void
 tapi_cfg_stats_net_stats_print_with_descr_va(const tapi_cfg_net_stats *stats,
+                                             bool print_zeros,
                                              const char *descr_fmt, va_list ap)
 {
     te_string buf = TE_STRING_INIT;
 
     te_string_append_va(&buf, descr_fmt, ap);
 
-    te_string_append(&buf,
-             "\nIPv4:"
-             "\n  in_recvs : " U64_FMT
-             "\n  in_hdr_errs : " U64_FMT
-             "\n  in_addr_errs : " U64_FMT
-             "\n  forw_dgrams : " U64_FMT
-             "\n  in_unknown_protos : " U64_FMT
-             "\n  in_discards : " U64_FMT
-             "\n  in_delivers : " U64_FMT
-             "\n  out_requests : " U64_FMT
-             "\n  out_discards : " U64_FMT
-             "\n  out_no_routes : " U64_FMT
-             "\n  reasm_timeout : " U64_FMT
-             "\n  reasm_reqds : " U64_FMT
-             "\n  reasm_oks : " U64_FMT
-             "\n  reasm_fails : " U64_FMT
-             "\n  frag_oks : " U64_FMT
-             "\n  frag_fails : " U64_FMT
-             "\n  frag_creates : " U64_FMT
-             "\nICMP:"
-             "\n  in_msgs : " U64_FMT
-             "\n  in_errs : " U64_FMT
-             "\n  in_dest_unreachs : " U64_FMT
-             "\n  in_time_excds : " U64_FMT
-             "\n  in_parm_probs : " U64_FMT
-             "\n  in_src_quenchs : " U64_FMT
-             "\n  in_redirects : " U64_FMT
-             "\n  in_echos : " U64_FMT
-             "\n  in_echo_reps : " U64_FMT
-             "\n  in_timestamps : " U64_FMT
-             "\n  in_timestamp_reps : " U64_FMT
-             "\n  in_addr_masks : " U64_FMT
-             "\n  in_addr_mask_reps : " U64_FMT
-             "\n  out_msgs : " U64_FMT
-             "\n  out_errs : " U64_FMT
-             "\n  out_dest_unreachs : " U64_FMT
-             "\n  out_time_excds : " U64_FMT
-             "\n  out_parm_probs : " U64_FMT
-             "\n  out_src_quenchs : " U64_FMT
-             "\n  out_redirects : " U64_FMT
-             "\n  out_echos : " U64_FMT
-             "\n  out_echo_reps : " U64_FMT
-             "\n  out_timestamps : " U64_FMT
-             "\n  out_timestamp_reps : " U64_FMT
-             "\n  out_addr_masks : " U64_FMT
-             "\n  out_addr_mask_reps : " U64_FMT
-             "\n",
-             stats->ipv4.in_recvs,
-             stats->ipv4.in_hdr_errs,
-             stats->ipv4.in_addr_errs,
-             stats->ipv4.forw_dgrams,
-             stats->ipv4.in_unknown_protos,
-             stats->ipv4.in_discards,
-             stats->ipv4.in_delivers,
-             stats->ipv4.out_requests,
-             stats->ipv4.out_discards,
-             stats->ipv4.out_no_routes,
-             stats->ipv4.reasm_timeout,
-             stats->ipv4.reasm_reqds,
-             stats->ipv4.reasm_oks,
-             stats->ipv4.reasm_fails,
-             stats->ipv4.frag_oks,
-             stats->ipv4.frag_fails,
-             stats->ipv4.frag_creates,
+    te_string_append(&buf, "\nIPv4:");
 
-             stats->icmp.in_msgs,
-             stats->icmp.in_errs,
-             stats->icmp.in_dest_unreachs,
-             stats->icmp.in_time_excds,
-             stats->icmp.in_parm_probs,
-             stats->icmp.in_src_quenchs,
-             stats->icmp.in_redirects,
-             stats->icmp.in_echos,
-             stats->icmp.in_echo_reps,
-             stats->icmp.in_timestamps,
-             stats->icmp.in_timestamp_reps,
-             stats->icmp.in_addr_masks,
-             stats->icmp.in_addr_mask_reps,
+#define PRINT_STAT(_name) \
+    do {                                                    \
+        if (print_zeros || stats->ipv4._name != 0)           \
+            te_string_append(&buf, "\n  %s : " U64_FMT,     \
+                             #_name, stats->ipv4._name);    \
+    } while (0)
 
-             stats->icmp.out_msgs,
-             stats->icmp.out_errs,
-             stats->icmp.out_dest_unreachs,
-             stats->icmp.out_time_excds,
-             stats->icmp.out_parm_probs,
-             stats->icmp.out_src_quenchs,
-             stats->icmp.out_redirects,
-             stats->icmp.out_echos,
-             stats->icmp.out_echo_reps,
-             stats->icmp.out_timestamps,
-             stats->icmp.out_timestamp_reps,
-             stats->icmp.out_addr_masks,
-             stats->icmp.out_addr_mask_reps);
+    PRINT_STAT(in_recvs);
+    PRINT_STAT(in_hdr_errs);
+    PRINT_STAT(in_addr_errs);
+    PRINT_STAT(forw_dgrams);
+    PRINT_STAT(in_unknown_protos);
+    PRINT_STAT(in_discards);
+    PRINT_STAT(in_delivers);
+    PRINT_STAT(out_requests);
+    PRINT_STAT(out_discards);
+    PRINT_STAT(out_no_routes);
+    PRINT_STAT(reasm_timeout);
+    PRINT_STAT(reasm_reqds);
+    PRINT_STAT(reasm_oks);
+    PRINT_STAT(reasm_fails);
+    PRINT_STAT(frag_oks);
+    PRINT_STAT(frag_fails);
+    PRINT_STAT(frag_creates);
+
+#undef PRINT_STAT
+
+    te_string_append(&buf, "\nICMP:");
+
+#define PRINT_STAT(_name) \
+    do {                                                    \
+        if (print_zeros || stats->icmp._name != 0)           \
+            te_string_append(&buf, "\n  %s : " U64_FMT,     \
+                             #_name, stats->icmp._name);    \
+    } while (0)
+
+    PRINT_STAT(in_msgs);
+    PRINT_STAT(in_errs);
+    PRINT_STAT(in_dest_unreachs);
+    PRINT_STAT(in_time_excds);
+    PRINT_STAT(in_parm_probs);
+    PRINT_STAT(in_src_quenchs);
+    PRINT_STAT(in_redirects);
+    PRINT_STAT(in_echos);
+    PRINT_STAT(in_echo_reps);
+    PRINT_STAT(in_timestamps);
+    PRINT_STAT(in_timestamp_reps);
+    PRINT_STAT(in_addr_masks);
+    PRINT_STAT(in_addr_mask_reps);
+    PRINT_STAT(out_msgs);
+    PRINT_STAT(out_errs);
+    PRINT_STAT(out_dest_unreachs);
+    PRINT_STAT(out_time_excds);
+    PRINT_STAT(out_parm_probs);
+    PRINT_STAT(out_src_quenchs);
+    PRINT_STAT(out_redirects);
+    PRINT_STAT(out_echos);
+    PRINT_STAT(out_echo_reps);
+    PRINT_STAT(out_timestamps);
+    PRINT_STAT(out_timestamp_reps);
+    PRINT_STAT(out_addr_masks);
+    PRINT_STAT(out_addr_mask_reps);
+
+#undef PRINT_STAT
 
     RING("%s", te_string_value(&buf));
 
@@ -447,7 +419,7 @@ tapi_cfg_stats_net_stats_print_with_descr(const tapi_cfg_net_stats *stats,
     va_list ap;
 
     va_start(ap, descr_fmt);
-    tapi_cfg_stats_net_stats_print_with_descr_va(stats, descr_fmt, ap);
+    tapi_cfg_stats_net_stats_print_with_descr_va(stats, true, descr_fmt, ap);
     va_end(ap);
 }
 
@@ -499,7 +471,7 @@ tapi_cfg_stats_net_stats_print_diff(const tapi_cfg_net_stats *stats,
     }
 
     va_start(ap, descr_fmt);
-    tapi_cfg_stats_net_stats_print_with_descr_va(diff, descr_fmt, ap);
+    tapi_cfg_stats_net_stats_print_with_descr_va(diff, false, descr_fmt, ap);
     va_end(ap);
 
     return 0;
