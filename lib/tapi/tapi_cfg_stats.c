@@ -229,19 +229,18 @@ tapi_cfg_stats_net_stats_get(const char          *ta,
     return 0;
 }
 
-/* See description in tapi_cfg_stats.h */
-te_errno
-tapi_cfg_stats_if_stats_print(const char          *ta,
-                              const char          *ifname,
-                              tapi_cfg_if_stats   *stats)
+static void
+tapi_cfg_stats_if_stats_print_with_descr(const tapi_cfg_if_stats *stats,
+                                         const char *descr_fmt, ...)
 {
     te_string buf = TE_STRING_INIT;
+    va_list ap;
 
-    if (stats == NULL)
-        return TE_OS_RC(TE_TAPI, EINVAL);
+    va_start(ap, descr_fmt);
+    te_string_append_va(&buf, descr_fmt, ap);
+    va_end(ap);
 
     te_string_append(&buf,
-             "Network statistics for interface %s on Test Agent %s:"
              "\n  in_octets : " U64_FMT
              "\n  in_ucast_pkts : " U64_FMT
              "\n  in_nucast_pkts : " U64_FMT
@@ -254,7 +253,6 @@ tapi_cfg_stats_if_stats_print(const char          *ta,
              "\n  out_discards : " U64_FMT
              "\n  out_errors : " U64_FMT
              "\n",
-             ifname, ta,
              stats->in_octets,
              stats->in_ucast_pkts,
              stats->in_nucast_pkts,
@@ -270,23 +268,36 @@ tapi_cfg_stats_if_stats_print(const char          *ta,
     RING("%s", te_string_value(&buf));
 
     te_string_free(&buf);
+}
+
+/* See description in tapi_cfg_stats.h */
+te_errno
+tapi_cfg_stats_if_stats_print(const char          *ta,
+                              const char          *ifname,
+                              tapi_cfg_if_stats   *stats)
+{
+    if (stats == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    tapi_cfg_stats_if_stats_print_with_descr(stats,
+        "Network statistics for interface %s on Test Agent %s:", ifname, ta);
 
     return 0;
 }
 
 
-/* See description in tapi_cfg_stats.h */
-te_errno
-tapi_cfg_stats_net_stats_print(const char          *ta,
-                               tapi_cfg_net_stats  *stats)
+static void
+tapi_cfg_stats_net_stats_print_with_descr(const tapi_cfg_net_stats *stats,
+                                          const char *descr_fmt, ...)
 {
     te_string buf = TE_STRING_INIT;
+    va_list ap;
 
-    if (stats == NULL)
-        return TE_OS_RC(TE_TAPI, EINVAL);
+    va_start(ap, descr_fmt);
+    te_string_append_va(&buf, descr_fmt, ap);
+    va_end(ap);
 
     te_string_append(&buf,
-             "Network statistics for Test Agent %s:"
              "\nIPv4:"
              "\n  in_recvs : " U64_FMT
              "\n  in_hdr_errs : " U64_FMT
@@ -333,7 +344,6 @@ tapi_cfg_stats_net_stats_print(const char          *ta,
              "\n  out_addr_masks : " U64_FMT
              "\n  out_addr_mask_reps : " U64_FMT
              "\n",
-             ta,
              stats->ipv4.in_recvs,
              stats->ipv4.in_hdr_errs,
              stats->ipv4.in_addr_errs,
@@ -383,6 +393,17 @@ tapi_cfg_stats_net_stats_print(const char          *ta,
     RING("%s", te_string_value(&buf));
 
     te_string_free(&buf);
+}
+
+/* See description in tapi_cfg_stats.h */
+te_errno
+tapi_cfg_stats_net_stats_print(const char *ta, tapi_cfg_net_stats *stats)
+{
+    if (stats == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    tapi_cfg_stats_net_stats_print_with_descr(stats,
+        "Network statistics for Test Agent %s:", ta);
 
     return 0;
 }
