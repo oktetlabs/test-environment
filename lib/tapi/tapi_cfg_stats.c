@@ -8,7 +8,7 @@
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
-#define TE_LGR_USER     "TAPI CFG VTund"
+#define TE_LGR_USER     "TAPI CFG stats"
 
 #include "te_config.h"
 
