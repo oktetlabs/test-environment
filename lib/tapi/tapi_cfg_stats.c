@@ -230,15 +230,12 @@ tapi_cfg_stats_net_stats_get(const char          *ta,
 }
 
 static void
-tapi_cfg_stats_if_stats_print_with_descr(const tapi_cfg_if_stats *stats,
-                                         const char *descr_fmt, ...)
+tapi_cfg_stats_if_stats_print_with_descr_va(const tapi_cfg_if_stats *stats,
+                                            const char *descr_fmt, va_list ap)
 {
     te_string buf = TE_STRING_INIT;
-    va_list ap;
 
-    va_start(ap, descr_fmt);
     te_string_append_va(&buf, descr_fmt, ap);
-    va_end(ap);
 
     te_string_append(&buf,
              "\n  in_octets : " U64_FMT
@@ -270,6 +267,17 @@ tapi_cfg_stats_if_stats_print_with_descr(const tapi_cfg_if_stats *stats,
     te_string_free(&buf);
 }
 
+static void
+tapi_cfg_stats_if_stats_print_with_descr(const tapi_cfg_if_stats *stats,
+                                          const char *descr_fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, descr_fmt);
+    tapi_cfg_stats_if_stats_print_with_descr_va(stats, descr_fmt, ap);
+    va_end(ap);
+}
+
 /* See description in tapi_cfg_stats.h */
 te_errno
 tapi_cfg_stats_if_stats_print(const char          *ta,
@@ -284,6 +292,48 @@ tapi_cfg_stats_if_stats_print(const char          *ta,
 
     return 0;
 }
+
+static void
+tapi_cfg_if_stats_diff(tapi_cfg_if_stats *diff,
+                       const tapi_cfg_if_stats *stats,
+                       const tapi_cfg_if_stats *prev)
+{
+    /* It is a bit dirty, but I have no time to restructure stats to be array */
+    const size_t n_stats = sizeof(*diff) / sizeof(uint64_t);
+    const uint64_t *stats_u64 = (const uint64_t *)stats;
+    const uint64_t *prev_u64 = (const uint64_t *)prev;
+    uint64_t *diff_u64 = (uint64_t *)diff;
+    size_t i;
+
+    for (i = 0; i < n_stats; ++i)
+        diff_u64[i] = stats_u64[i] - prev_u64[i];
+}
+
+te_errno
+tapi_cfg_stats_if_stats_print_diff(const tapi_cfg_if_stats *stats,
+                                   const tapi_cfg_if_stats *prev,
+                                   const char *descr_fmt, ...)
+{
+    const tapi_cfg_if_stats *diff = stats;
+    tapi_cfg_if_stats diff_buf;
+    va_list ap;
+
+    if (stats == NULL || descr_fmt == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    if (prev != NULL)
+    {
+        tapi_cfg_if_stats_diff(&diff_buf, stats, prev);
+        diff = &diff_buf;
+    }
+
+    va_start(ap, descr_fmt);
+    tapi_cfg_stats_if_stats_print_with_descr_va(diff, descr_fmt, ap);
+    va_end(ap);
+
+    return 0;
+}
+
 
 
 static void

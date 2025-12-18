@@ -132,6 +132,21 @@ tapi_cfg_stats_if_stats_print(const char          *ta,
                               tapi_cfg_if_stats   *stats);
 
 /**
+ * Print IfTable statistics difference with provided description.
+ *
+ * @param stats         Interface statistics.
+ * @param prev          Previous interface statistics or @c NULL.
+ * @param descr_fmt     Description format string with arguments.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_stats_if_stats_print_diff(
+                    const tapi_cfg_if_stats *stats,
+                    const tapi_cfg_if_stats *prev,
+                    const char *descr_fmt, ...)
+                    TE_LIKE_PRINTF(3, 4);
+
+/**
  * Get /proc/net/snmp like statistics for the host,
  * where Test Agent is running.
  *
