@@ -618,6 +618,20 @@ extern te_errno tapi_ndn_gso_pkts_udp_len_edit(asn_value        **pkts,
                                                tapi_ndn_level_t   level);
 
 /**
+ * Convert ASN.1 packet template to a traffic pattern.
+ *
+ * @param tmpl     ASN.1 packet template
+ * @param ptrn_out Location for the resulting pattern
+ *
+ * @return Status code.
+ *
+ * @note Current implementation is extremely simple and assumes template
+ *       is dumb and fully compatible with pattern capabilities.
+ */
+extern te_errno tapi_ndn_tmpl_to_ptrn(asn_value     *tmpl,
+                                      asn_value    **ptrn_out);
+
+/**
  * Convert ASN.1 raw packets to a multi-unit traffic pattern.
  *
  * @param pkts     The array of ASN.1 raw packets

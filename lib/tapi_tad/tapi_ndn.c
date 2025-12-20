@@ -2424,6 +2424,90 @@ out:
 
 /* See the description in 'tapi_ndn.h' */
 te_errno
+tapi_ndn_tmpl_to_ptrn(asn_value *tmpl, asn_value **ptrn_out)
+{
+    asn_value *ptrn;
+    asn_value *ptrn_unit;
+    asn_value *pdus;
+    asn_value *payload;
+    asn_value *pdus_copy;
+    asn_value *payload_copy;
+    te_errno rc = 0;
+
+    if (tmpl == NULL || ptrn_out == NULL)
+        return TE_RC(TE_TAPI, TE_EWRONGPTR);
+
+    ptrn = asn_init_value(ndn_traffic_pattern);
+    if (ptrn == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    ptrn_unit = asn_init_value(ndn_traffic_pattern_unit);
+    if (ptrn_unit == NULL)
+    {
+         rc = TE_ENOMEM;
+         goto out;
+    }
+
+    rc = asn_insert_indexed(ptrn, ptrn_unit, -1, "");
+    if (rc != 0)
+    {
+        asn_free_value(ptrn_unit);
+        goto out;
+    }
+
+    rc = asn_get_subvalue(tmpl, &pdus, "pdus");
+    if (rc != 0)
+        goto out;
+
+    rc = asn_get_subvalue(tmpl, &payload, "payload");
+    if (rc != 0)
+        goto out;
+
+    pdus_copy = asn_copy_value(pdus);
+    if (pdus_copy == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    payload_copy = asn_copy_value(payload);
+    if (payload_copy == NULL)
+    {
+        asn_free_value(pdus_copy);
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    rc = asn_put_child_value_by_label(ptrn_unit, pdus_copy, "pdus");
+    if (rc != 0)
+    {
+        asn_free_value(pdus_copy);
+        asn_free_value(payload_copy);
+        goto out;
+    }
+
+    rc = asn_put_child_value_by_label(ptrn_unit, payload_copy,
+                                      "payload");
+    if (rc != 0)
+    {
+        asn_free_value(payload_copy);
+        goto out;
+    }
+
+    *ptrn_out = ptrn;
+
+out:
+    if (rc != 0 && ptrn != NULL)
+        asn_free_value(ptrn);
+
+    return TE_RC(TE_TAPI, rc);
+}
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
 tapi_ndn_pkts_to_ptrn(asn_value    **pkts,
                       unsigned int   nb_pkts,
                       asn_value    **ptrn_out)
