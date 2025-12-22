@@ -975,32 +975,36 @@ module_param_set(unsigned int gid, const char *oid, const char *value,
     te_errno rc;
     te_kernel_module *module = mod_find(module_name);
     te_kernel_module_param *param;
+    bool loaded = mod_loaded(module_name);
     bool found = false;
 
     if (module == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if (!mod_loaded(module_name))
+    if (loaded)
     {
-        ERROR("Cannot change the parameters of the not loaded module");
-        return TE_RC(TE_TA_UNIX, TE_EPERM);
-    }
-
-    if (module_is_exclusive_locked(module_name))
-    {
-        char name[TE_MODULE_NAME_LEN];
-        te_string path = TE_STRING_INIT_STATIC(PATH_MAX);
-
-        rc = mod_name_underscorify(module_name, name, sizeof(name));
-        if (rc != 0)
-            return rc;
-
-        te_string_append(&path, SYS_MODULE"/%s/parameters/%s",
-                         name, param_name);
-
-        if (access(path.ptr, W_OK) == 0)
+        if (module_is_exclusive_locked(module_name))
         {
-            rc = write_sys_value(value, path.ptr);
+            char name[TE_MODULE_NAME_LEN];
+            te_string path = TE_STRING_INIT_STATIC(PATH_MAX);
+
+            rc = mod_name_underscorify(module_name, name, sizeof(name));
+            if (rc != 0)
+                return rc;
+
+            te_string_append(&path, SYS_MODULE"/%s/parameters/%s",
+                             name, param_name);
+
+            if (access(path.ptr, W_OK) == 0)
+            {
+                rc = write_sys_value(value, path.ptr);
+                if (rc != 0)
+                    return rc;
+            }
+        }
+        else
+        {
+            rc = verify_loaded_module_param(module, param_name, value);
             if (rc != 0)
                 return rc;
         }
@@ -1017,12 +1021,15 @@ module_param_set(unsigned int gid, const char *oid, const char *value,
     }
 
     if (!found)
+    {
+        /* The parameter must be added before if module is not loaded yet */
+        if (!loaded)
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
         module_param_create(module, param_name, value);
+    }
 
-     if (!module_is_exclusive_locked(module_name))
-        rc = verify_loaded_module_param(module, param_name, value);
-
-    return rc;
+    return 0;
 #else
     UNUSED(value);
     UNUSED(module_name);
