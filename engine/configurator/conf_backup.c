@@ -579,6 +579,10 @@ add_or_set(cfg_instance *inst, bool local, bool *has_deps,
         {
             return 0;
         }
+
+        if (inst->obj->access == CFG_READ_ONLY)
+            return TE_EACCES;
+
         if (inst->obj->dependants != NULL)
             *has_deps = true;
 
@@ -604,7 +608,7 @@ add_or_set(cfg_instance *inst, bool local, bool *has_deps,
 
         return rc;
     }
-    else
+    else if (inst->obj->access == CFG_READ_CREATE)
     {
         cfg_add_msg *msg = (cfg_add_msg *)calloc(sizeof(*msg) +
                                                  CFG_MAX_INST_VALUE +
@@ -635,6 +639,10 @@ add_or_set(cfg_instance *inst, bool local, bool *has_deps,
             *change_made = true;
 
         return rc;
+    }
+    else
+    {
+        return TE_EACCES;
     }
 }
 
@@ -738,6 +746,7 @@ restore_entry_aux(cfg_instance *inst, bool local,
             break;
 
         case TE_ENOENT:
+        case TE_EACCES:
             /* do nothing */
             *need_retry = true;
             break;
