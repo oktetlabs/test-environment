@@ -556,6 +556,10 @@
     - oid: "/agent/interface/coalesce/queues"
       access: read_only
       type: none
+      depends:
+        - oid: "/agent/interface/channels/combined/current"
+        - oid: "/agent/interface/channels/rx/current"
+        - oid: "/agent/interface/channels/tx/current"
       d: |
          Interrupt coalescing parameters for network interface queues
          Name: none

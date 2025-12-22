@@ -22,6 +22,10 @@
     - oid: "/agent/interface/rss/rx_queues"
       access: read_only
       type: int32
+      depends:
+        - oid: "/agent/interface/channels/combined/current"
+        - oid: "/agent/interface/channels/rx/current"
+        - oid: "/agent/interface/channels/tx/current"
       d: |
          Number of available RX rings/queues
          Name: none
