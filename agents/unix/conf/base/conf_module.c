@@ -46,6 +46,7 @@
 #include "conf_common.h"
 #include "unix_internal.h"
 #include "logger_api.h"
+#include "te_alloc.h"
 #include "te_str.h"
 #include "te_string.h"
 
@@ -774,21 +775,17 @@ module_version_get(unsigned int gid, const char *oid, char *value,
 #endif
 }
 
-static te_errno
+static void
 module_param_create(te_kernel_module *module, const char *name,
                     const char *value)
 {
     te_kernel_module_param *param;
 
-    param = calloc(1, sizeof(te_kernel_module_param));
-    if (param == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    param = TE_ALLOC(sizeof(te_kernel_module_param));
 
     TE_SPRINTF(param->name, "%s", name);
     TE_SPRINTF(param->value, "%s", value);
     LIST_INSERT_HEAD(&module->params, param, list);
-
-    return 0;
 }
 
 static te_errno
@@ -1020,11 +1017,7 @@ module_param_set(unsigned int gid, const char *oid, const char *value,
     }
 
     if (!found)
-    {
-        rc = module_param_create(module, param_name, value);
-        if (rc != 0)
-            return TE_RC(TE_TA_UNIX, rc);
-    }
+        module_param_create(module, param_name, value);
 
      if (!module_is_exclusive_locked(module_name))
         rc = verify_loaded_module_param(module, param_name, value);
@@ -1045,7 +1038,6 @@ module_param_add(unsigned int gid, const char *oid,
                  const char *param_name,...)
 {
     te_kernel_module *module = mod_find(mod_name);
-    te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1075,11 +1067,9 @@ module_param_add(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
     }
 
-    rc = module_param_create(module, param_name, param_value);
-    if (rc != 0)
-        ERROR("Failed to create module parameter: %r", rc);
+    module_param_create(module, param_name, param_value);
 
-    return TE_RC(TE_TA_UNIX, rc);
+    return 0;
 }
 
 static te_errno
