@@ -253,6 +253,6 @@ ta_unix_conf_ntpd_init(void)
     if (ntpd_apply_action(ACT_STATUS, &ntpd_status) == 0)
         return rcf_pch_add_node("/agent", &node_ntpd);
 
-    ERROR("NTP daemon is not under control");
+    WARN("NTP daemon is not under control");
     return 0;
 }
