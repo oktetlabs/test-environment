@@ -1297,7 +1297,15 @@ eth_channels_set(unsigned int  *gid,
     rc = eth_feature_ioctl_send(iface, &channels);
     if (rc != 0)
     {
-        ERROR("%s(): ioctl failed: %r", __FUNCTION__, rc);
+        /*
+         * Not all values make sense in set, but dump everything to have
+         * it in log.
+         */
+        ERROR("%s(): ioctl max_rx=%u max_tx=%u max_other=%u max_combined=%u rx_count=%u tx_count=%u other_count=%u combined_count=%u failed: %r",
+              __FUNCTION__, channels.max_rx, channels.max_tx,
+              channels.max_other, channels.max_combined, channels.rx_count,
+              channels.tx_count, channels.other_count,
+              channels.combined_count, rc);
         goto exit;
     }
 
