@@ -204,7 +204,8 @@ extern "C" {
      * management logs).                                            \
      */                                                             \
     te_test_id = test_get_test_id(argc, argv);                      \
-    if (te_test_id == TE_LOG_ID_UNDEFINED)                          \
+    if ((te_test_id == TE_LOG_ID_UNDEFINED) &&                      \
+        !test_is_cmd_monitor(argc, argv))                           \
         return EXIT_FAILURE;                                        \
     TEST_STEP("Test start");                                        \
     /*                                                              \
@@ -1341,6 +1342,18 @@ extern int test_get_int_param(int argc, char **argv,
  * @return TE test ID
  */
 extern unsigned int test_get_test_id(int argc, char **argv);
+
+/**
+ * Dedicated function to check that te_test_name starts with tester_monitor
+ * that means that this test is a test based command monitor.
+ *
+ * @param argc        Count of arguments.
+ * @param argv        List of arguments.
+ *
+ * @retval @c false This test is a normal test.
+ * @retval @c true  This test is a test based command monitor.
+ */
+extern bool test_is_cmd_monitor(int argc, char **argv);
 
 /**
  * Return parameters of type 'uint'
