@@ -252,6 +252,10 @@ tapi_bpf_rxq_stats_reset(const char *ta, unsigned int bpf_id)
     unsigned int count = 0;
     unsigned int i;
 
+    rc = cfg_find_fmt(NULL, "/agent:%s/bpf:%u/map:%s", ta, bpf_id, "params");
+    if (rc != 0)
+        return rc;
+
     /*
      * Here list of keys is obtained to avoid trying to remove
      * already not existing parameters.
