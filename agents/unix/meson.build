@@ -118,6 +118,21 @@ if cc.has_member(t, m, prefix: '#include <net/if_arp.h>')
                 m.to_upper().underscorify() ]
 endif
 
+t = 'struct hwtstamp_config'
+if cc.has_type(t, prefix: '#include <linux/net_tstamp.h>')
+    c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]
+endif
+
+t = 'HWTSTAMP_FILTER_NTP_ALL'
+if cc.has_header_symbol('linux/net_tstamp.h', t)
+    c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]
+endif
+
+t = 'HWTSTAMP_TX_ONESTEP_P2P'
+if cc.has_header_symbol('linux/net_tstamp.h', t)
+    c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]
+endif
+
 #
 # Berkeley Socket API is provided by:
 #  - -lc on Linux, FreeBSD (5, 6), NetBSD (1.6, 2.0);

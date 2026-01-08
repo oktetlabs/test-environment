@@ -68,7 +68,7 @@
 #include <dirent.h>
 #endif
 
-#ifdef _NET_TIMESTAMPING_H
+#if HAVE_LINUX_NET_TSTAMP_H
 #include <linux/net_tstamp.h>
 #endif
 
@@ -159,6 +159,7 @@ typedef struct pam_message const pam_message_t;
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
+#include "te_enum.h"
 #include "te_queue.h"
 #include "te_ethernet.h"
 #include "te_sockaddr.h"
@@ -536,6 +537,15 @@ static te_errno iface_port_id_get(unsigned int, const char *, char *,
                                   const char *);
 static te_errno iface_port_name_get(unsigned int, const char *, char *,
                                     const char *);
+
+static te_errno iface_hwtstamp_tx_type_get(unsigned int, const char *, char *,
+                                           const char *);
+static te_errno iface_hwtstamp_tx_type_set(unsigned int, const char *,
+                                           const char *, const char *);
+static te_errno iface_hwtstamp_rx_filter_get(unsigned int, const char *, char *,
+                                             const char *);
+static te_errno iface_hwtstamp_rx_filter_set(unsigned int, const char *,
+                                             const char *, const char *);
 
 static te_errno switchdev_name_get(unsigned int, const char *, char *,
                                    const char *);
@@ -980,8 +990,21 @@ RCF_PCH_CFG_NODE_RO(node_iface_switch_id, "switch_id",
                     NULL, &node_iface_port_id,
                     iface_switch_id_get);
 
+RCF_PCH_CFG_NODE_RW(node_iface_hwtstamp_rx_filter, "rx_filter",
+                    NULL, NULL,
+                    iface_hwtstamp_rx_filter_get,
+                    iface_hwtstamp_rx_filter_set);
+
+RCF_PCH_CFG_NODE_RW(node_iface_hwtstamp_tx_type, "tx_type",
+                    NULL, &node_iface_hwtstamp_rx_filter,
+                    iface_hwtstamp_tx_type_get,
+                    iface_hwtstamp_tx_type_set);
+
+RCF_PCH_CFG_NODE_NA(node_iface_hwtstamp, "hwtstamp",
+                    &node_iface_hwtstamp_tx_type, &node_iface_switch_id);
+
 RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
-                            &node_iface_switch_id, &node_arp_ignore_all,
+                            &node_iface_hwtstamp, &node_arp_ignore_all,
                             NULL, NULL, interface_list, NULL);
 
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_switchdev_name, "switchdev_name",
@@ -3848,6 +3871,225 @@ iface_port_name_get(unsigned int gid, const char *oid, char *value,
     return iface_get_property_netconf(ifname, value, IF_PROP_PORT_NAME);
 #else
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+#ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
+const te_enum_map hwtstamp_tx_type_map[] = {
+    {.name = "OFF",          .value = HWTSTAMP_TX_OFF},
+    {.name = "ON",           .value = HWTSTAMP_TX_ON},
+    {.name = "ONESTEP_SYNC", .value = HWTSTAMP_TX_ONESTEP_SYNC},
+#ifdef HAVE_HWTSTAMP_TX_ONESTEP_P2P
+    {.name = "ONESTEP_P2P",  .value = HWTSTAMP_TX_ONESTEP_P2P},
+#endif
+    TE_ENUM_MAP_END
+};
+
+const te_enum_map hwtstamp_rx_filter_map[] = {
+    {.name = "NONE",                .value = HWTSTAMP_FILTER_NONE},
+    {.name = "ALL",                 .value = HWTSTAMP_FILTER_ALL},
+    {.name = "SOME",                .value = HWTSTAMP_FILTER_SOME},
+    {.name = "PTP_V1_L4_EVENT",     .value = HWTSTAMP_FILTER_PTP_V1_L4_EVENT},
+    {.name = "PTP_V1_L4_SYNC",      .value = HWTSTAMP_FILTER_PTP_V1_L4_SYNC},
+    {.name = "PTP_V1_L4_DELAY_REQ", .value = HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ},
+    {.name = "PTP_V2_L4_EVENT",     .value = HWTSTAMP_FILTER_PTP_V2_L4_EVENT},
+    {.name = "PTP_V2_L4_SYNC",      .value = HWTSTAMP_FILTER_PTP_V2_L4_SYNC},
+    {.name = "PTP_V2_L4_DELAY_REQ", .value = HWTSTAMP_FILTER_PTP_V2_L4_DELAY_REQ},
+    {.name = "PTP_V2_L2_EVENT",     .value = HWTSTAMP_FILTER_PTP_V2_L2_EVENT},
+    {.name = "PTP_V2_L2_SYNC",      .value = HWTSTAMP_FILTER_PTP_V2_L2_SYNC},
+    {.name = "PTP_V2_L2_DELAY_REQ", .value = HWTSTAMP_FILTER_PTP_V2_L2_DELAY_REQ},
+    {.name = "PTP_V2_EVENT",        .value = HWTSTAMP_FILTER_PTP_V2_EVENT},
+    {.name = "PTP_V2_SYNC",         .value = HWTSTAMP_FILTER_PTP_V2_SYNC},
+    {.name = "PTP_V2_DELAY_REQ",    .value = HWTSTAMP_FILTER_PTP_V2_DELAY_REQ},
+#ifdef HAVE_HWTSTAMP_FILTER_NTP_ALL
+    {.name = "NTP_ALL",             .value = HWTSTAMP_FILTER_NTP_ALL},
+#endif
+    TE_ENUM_MAP_END
+};
+
+static te_errno
+iface_hwtstamp_get_cfg(const char *ifname, struct hwtstamp_config *cfg)
+{
+    struct ifreq ifr;
+
+    memset(&ifr, 0, sizeof(ifr));
+    memset(cfg, 0, sizeof(*cfg));
+
+    te_strlcpy(ifr.ifr_name, ifname, IFNAMSIZ);
+    ifr.ifr_data = (void *)cfg;
+
+    if (ioctl(cfg_socket, SIOCGHWTSTAMP, &ifr) != 0)
+    {
+        /* Drivers may return EINVAL when an interface is down. */
+        if (errno == EOPNOTSUPP || errno == EINVAL)
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    return 0;
+}
+
+static te_errno
+iface_hwtstamp_set_cfg(const char *ifname, struct hwtstamp_config *cfg)
+{
+    struct ifreq ifr;
+
+    memset(&ifr, 0, sizeof(ifr));
+
+    te_strlcpy(ifr.ifr_name, ifname, IFNAMSIZ);
+    ifr.ifr_data = (void *)cfg;
+
+    if (ioctl(cfg_socket, SIOCSHWTSTAMP, &ifr) != 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    return 0;
+}
+#endif
+
+static te_errno
+iface_hwtstamp_tx_type_get(unsigned int gid, const char *oid, char *value,
+                           const char *ifname)
+{
+#ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
+    struct hwtstamp_config cfg;
+#endif
+    const char *val;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
+    rc = iface_hwtstamp_get_cfg(ifname, &cfg);
+    if (rc != 0)
+        return rc;
+
+    val = te_enum_map_from_any_value(hwtstamp_tx_type_map, cfg.tx_type,
+                                     "UNKNOWN");
+    sprintf(value, "%s", val);
+
+    return 0;
+#else
+    UNUSED(value);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+static te_errno
+iface_hwtstamp_tx_type_set(unsigned int gid, const char *oid,
+                           const char *value, const char *ifname)
+{
+#ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
+    struct hwtstamp_config cfg;
+#endif
+    te_errno rc;
+    int val;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
+    val = te_enum_map_from_str(hwtstamp_tx_type_map, value, INT_MIN);
+    if (val == INT_MIN)
+        return TE_RC(TE_TA_UNIX, EINVAL);
+
+    rc = iface_hwtstamp_get_cfg(ifname, &cfg);
+    if (rc != 0)
+        return rc;
+
+    /*
+     * Do not propagate flags returned by SIOCGHWTSTAMP.
+     * Only userspace-supported hwtstamp flags may be set in SIOCSHWTSTAMP.
+     */
+    cfg.flags = 0;
+    cfg.tx_type = val;
+
+    return iface_hwtstamp_set_cfg(ifname, &cfg);
+#else
+    UNUSED(value);
+
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+}
+
+static te_errno
+iface_hwtstamp_rx_filter_get(unsigned int gid, const char *oid, char *value,
+                             const char *ifname)
+{
+#ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
+    struct hwtstamp_config cfg;
+#endif
+    const char *val;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
+    rc = iface_hwtstamp_get_cfg(ifname, &cfg);
+    if (rc != 0)
+        return rc;
+
+    val = te_enum_map_from_any_value(hwtstamp_rx_filter_map, cfg.tx_type,
+                                     "UNKNOWN");
+    sprintf(value, "%s", val);
+
+    return 0;
+#else
+    UNUSED(value);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+static te_errno
+iface_hwtstamp_rx_filter_set(unsigned int gid, const char *oid,
+                             const char *value, const char *ifname)
+{
+#ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
+    struct hwtstamp_config cfg;
+#endif
+    te_errno rc;
+    int val;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
+    val = te_enum_map_from_str(hwtstamp_rx_filter_map, value, INT_MIN);
+    if (val == INT_MIN)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    rc = iface_hwtstamp_get_cfg(ifname, &cfg);
+    if (rc != 0)
+        return rc;
+
+    /*
+     * Do not propagate flags returned by SIOCGHWTSTAMP.
+     * Only userspace-supported hwtstamp flags may be set in SIOCSHWTSTAMP.
+     */
+    cfg.flags = 0;
+    cfg.rx_filter = val;
+
+    return iface_hwtstamp_set_cfg(ifname, &cfg);
+#else
+    UNUSED(value);
+
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif
 }
 

@@ -236,6 +236,56 @@
          Value: 0 (link down) or 1 (link up)
          Limit: 1
 
+    - oid: "/agent/interface/hwtstamp"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/interface/status"
+      d: |
+         Hardware timestamping configuration.
+         Name:  empty
+         Value: none
+
+    - oid: "/agent/interface/hwtstamp/tx_type"
+      access: read_write
+      type: string
+      d: |
+         HW transmit timestamping mode.
+         Name:  empty
+         Value: String representation of HW transmit timestamping mode.
+                "OFF" - No outgoing packet will need hardware time stamping.
+                "ON" - Enables hardware time stamping for outgoing packets.
+                "ONESTEP_SYNC" - The same as ON but also enables time stamp
+                                 insertion directly into Sync packets.
+                "ONESTEP_P2P" - The same as ONESTEP_SYNC but also enables time
+                                stamp insertion directly into PDelay_Resp packets.
+                "UNKNOWN" - return value: unknown transmit timestamping mode.
+
+    - oid: "/agent/interface/hwtstamp/rx_filter"
+      access: read_write
+      type: string
+      d: |
+         HW receive timestamping filter.
+         Name:  empty
+         Value: String representation of HW receive timestamping filter.
+                "NONE" - Time stamp no incoming packet at all.
+                "ALL" - Time stamp any incoming packet.
+                "SOME" - return value: time stamp all packets requested plus some others.
+                "PTP_V1_L4_EVENT" - PTP v1, UDP, any kind of event packet.
+                "PTP_V1_L4_SYNC" - PTP v1, UDP, Sync packet.
+                "PTP_V1_L4_DELAY_REQ" - PTP v1, UDP, Delay_req packet.
+                "PTP_V2_L4_EVENT" - PTP v2, UDP, any kind of event packet.
+                "PTP_V2_L4_SYNC" - PTP v2, UDP, Sync packet.
+                "PTP_V2_L4_DELAY_REQ" - PTP v2, UDP, Delay_req packet.
+                "PTP_V2_L2_EVENT" - 802.AS1, Ethernet, any kind of event packet.
+                "PTP_V2_L2_SYNC" - 802.AS1, Ethernet, Sync packet.
+                "PTP_V2_L2_DELAY_REQ" - 802.AS1, Ethernet, Delay_req packet.
+                "PTP_V2_EVENT" - PTP v2/802.AS1, any layer, any kind of event packet.
+                "PTP_V2_SYNC" - PTP v2/802.AS1, any layer, Sync packet.
+                "PTP_V2_DELAY_REQ" - PTP v2/802.AS1, any layer, Delay_req packet.
+                "NTP_ALL" - NTP, UDP, all versions and packet modes.
+                "UNKNOWN" - return value: unknown receive timestamping filter.
+
     - oid: "/agent/interface/promisc"
       access: read_write
       type: int32
