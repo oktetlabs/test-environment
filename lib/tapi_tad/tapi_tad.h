@@ -285,7 +285,49 @@ extern te_errno tapi_tad_trrecv_get(const char              *ta_name,
                                     tapi_tad_trrecv_cb_data *cb_data,
                                     unsigned int            *num);
 
+/**
+ * Wait for a certain amount of packets to be received and execute
+ * specified callback for each of them.
+ *
+ * The key goal of the function is to avoid waiting for extra time when
+ * everything required is received, but let the network and driver to
+ * do its job (which takes some time and we're ready to wait for it).
+ * It allows to speed up tests execution because it avoids unnecessary
+ * waiting when everything is received.
+ *
+ * @param ta_name           Test Agent name
+ * @param session           TA session or @c 0
+ * @param handle            CSAP handle
+ * @param nb_pkts           Target number of packets to be received
+ * @param timeout_max_ms    Timeout to wait for target number of packets
+ * @param cb_data           Struct with user-specified data for catching
+ *                          packets
+ *
+ * @return status code
+ *
+ * @note The function returns success even if target number of packets is
+ *       not received or more packets is received. Caller is responsible
+ *       for checking the number of received expected (returned by
+ *       tapi_tad_trrecv_stop()) and, if applicable, unexpected (returned
+ *       by tapi_tad_csap_get_no_match_pkts()) packets.
+ */
+extern te_errno tapi_tad_trrecv_wait_pkts_exec_cb(
+                    const char              *ta_name,
+                    int                      session,
+                    csap_handle_t            handle,
+                    unsigned int             nb_pkts,
+                    unsigned int             timeout_max_ms,
+                    tapi_tad_trrecv_cb_data *cb_data);
 
+/**
+ * Wrapper for tapi_tad_trrecv_wait_pkts_exec_cb() with unspecified
+ * per-packet callback data.
+ */
+extern te_errno tapi_tad_trrecv_wait_pkts(const char    *ta_name,
+                                          int            session,
+                                          csap_handle_t  handle,
+                                          unsigned int   nb_pkts,
+                                          unsigned int   timeout_max_ms);
 
 /**
  * Insert arithmetical progression iterator argument into Traffic-Template

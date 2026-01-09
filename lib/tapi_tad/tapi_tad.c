@@ -1,12 +1,11 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2026 OKTET Labs Ltd. All rights reserved. */
+/* (c) Copyright 2016 - 2022 Xilinx, Inc. All rights reserved. */
 /** @file
  * @brief Test API
  *
  * Implementation of Test API for Traffic Application Domain
  * features.
- *
- *
- * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER     "TAPI TAD"
@@ -486,6 +485,72 @@ tapi_tad_trrecv_get(const char              *ta_name,
                              cb_data, num);
 }
 
+/* Description in tapi_tad.h */
+te_errno
+tapi_tad_trrecv_wait_pkts_exec_cb(const char              *ta_name,
+                                  int                      session,
+                                  csap_handle_t            handle,
+                                  unsigned int             nb_pkts,
+                                  unsigned int             timeout_max_ms,
+                                  tapi_tad_trrecv_cb_data *cb_data)
+{
+    unsigned int nb_pkts_rx_total = 0;
+    unsigned int msleep_total = 0;
+    unsigned int msleep_now = 0;
+
+    while (true)
+    {
+        unsigned int nb_pkts_rx;
+        te_errno rc;
+
+        rc = tapi_tad_trrecv_get(ta_name, session, handle, cb_data,
+                                 &nb_pkts_rx);
+        if (rc != 0)
+            return rc;
+
+        nb_pkts_rx_total += nb_pkts_rx;
+
+        if (nb_pkts_rx_total >= nb_pkts)
+            return 0;
+
+        if (msleep_total >= timeout_max_ms)
+            break;
+
+        /*
+         * Start from 1 ms sleep.
+         * Double sleep interval if no packets received, otherwise drop
+         * back to 1 ms.
+         */
+        if (nb_pkts_rx > 0 || msleep_now == 0)
+            msleep_now = 1;
+        else
+            msleep_now *= 2;
+
+        msleep_now = MIN(msleep_now, timeout_max_ms - msleep_total);
+
+        MSLEEP(msleep_now);
+        msleep_total += msleep_now;
+    }
+
+    /*
+     * Not everything is received.
+     * Tests must (and all existing tests do) check actual number of
+     * received packets vs required.
+     */
+    return 0;
+}
+
+/* Description in tapi_tad.h */
+te_errno
+tapi_tad_trrecv_wait_pkts(const char     *ta_name,
+                          int             session,
+                          csap_handle_t   handle,
+                          unsigned int    nb_pkts,
+                          unsigned int    timeout_max_ms)
+{
+    return tapi_tad_trrecv_wait_pkts_exec_cb(ta_name, session, handle,
+                                             nb_pkts, timeout_max_ms, NULL);
+}
 
 /* Description in tapi_tad.h */
 int
