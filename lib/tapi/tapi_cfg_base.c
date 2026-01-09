@@ -1481,6 +1481,27 @@ tapi_cfg_base_if_down_up(const char *ta, const char *ifname)
 
 /* See description in tapi_cfg_base.h */
 te_errno
+tapi_cfg_base_if_disable_rx_hwtstamp(const char *agent, const char *interface)
+{
+    const char *disable = "NONE";
+    te_errno rc;
+
+    rc = cfg_set_instance_fmt(CFG_VAL(STRING, disable),
+                              "/agent:%s/interface:%s/hwtstamp:/rx_filter:",
+                              agent, interface);
+    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_EOPNOTSUPP &&
+        TE_RC_GET_ERROR(rc) != TE_ENOENT)
+    {
+        ERROR("%s(): failed to disable HW Rx timestamping: %r",
+              __FUNCTION__, rc);
+        return rc;
+    }
+
+    return 0;
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
 tapi_cfg_base_if_await_link_up(const char *ta, const char *iface,
                                unsigned int nb_attempts,
                                unsigned int wait_int_ms,

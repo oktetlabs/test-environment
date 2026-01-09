@@ -1112,6 +1112,20 @@ extern te_errno tapi_cfg_base_if_set_mtu_leastwise(const char   *ta,
 extern te_errno tapi_cfg_base_if_down_up(const char *agent,
                                          const char *interface);
 
+/**
+ * Disable HW Rx timestamping on a given interface.
+ *
+ * @param agent     Agent name.
+ * @param interface Interface name.
+ *
+ * @note No error is returned if an interface does not support
+ *       HW timestamping.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_base_if_disable_rx_hwtstamp(const char *agent,
+                                                     const char *interface);
+
 /** Storage for getting loadavg stats */
 typedef struct tapi_cfg_base_loadavg {
     double min1;    /**< Load average for the last 1 min*/
