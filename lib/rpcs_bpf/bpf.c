@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
-/* Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. */
+/* Copyright (C) 2023-2026 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief RPCs for BPF
  *
@@ -24,7 +24,7 @@
 
 #include <bpf/bpf.h>
 
-#if HAVE_XDP_XSK_H || HAVE_BPF_XSK_H
+#if HAVE_AF_XDP
 
 #if HAVE_XDP_XSK_H
 #include <xdp/xsk.h>
@@ -766,7 +766,7 @@ TARPC_FUNC_STANDALONE(xsk_send_simple, {},
     MAKE_CALL(out->retval = ta_xsk_send_simple(in, out));
 })
 
-#endif /* if HAVE_XDP_XSK_H || HAVE_BPF_XSK_H */
+#endif /* HAVE_AF_XDP */
 
 /*
  * Call bpf_obj_get(). Can be used to obtain FD of a map
