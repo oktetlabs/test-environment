@@ -47,13 +47,6 @@
 #define NULL ((void *)0)
 #endif
 
-/**
- * Legacy TE boolean type.
- *
- * @deprecated Use normal ISO C @c bool.
- */
-typedef bool te_bool;
-
 #ifndef FALSE
 /**
  * @deprecated Use ISO C @c false.
@@ -65,6 +58,32 @@ typedef bool te_bool;
  */
 #define TRUE  true
 #endif
+
+/**
+ * A special-purpose equivalent of a boolean type.
+ *
+ * The main rationale for the existence of this type is
+ * that in ISO C23 the result of using @c bool together
+ * with macro operators @c # and @c ## is unspecified,
+ * i.e. it may come out either as @c bool or @c _Bool
+ * (see ISO/IEC 9899:2023 6.4.1.3).
+ *
+ * The type is ensured to be bitwise compatible with
+ * the standard @c bool type.
+ *
+ * @since 1.36.0:
+ *        Before that version @c te_bool was the boolean
+ *        type of choice in TE. Then it was phased out
+ *        in favour of the standard ISO C type.
+ *
+ * @since 1.59.0:
+ *        The type should only be used when the name
+ *        matters, basically only in conjunction with
+ *        macro stringification and concatenation
+ *        operators. The use in other contexts is still
+ *        deprecated,
+ */
+typedef bool te_bool;
 
 /** Ternary (tree-valued, trivalent) logic base type */
 typedef enum te_bool3 {
