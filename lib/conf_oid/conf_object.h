@@ -130,7 +130,7 @@ typedef struct te_conf_obj {
 
 /** @name Declaration of common data types */
 /** @{ */
-extern te_conf_obj_methods te_conf_obj_methods__Bool;
+extern te_conf_obj_methods te_conf_obj_methods_te_bool;
 extern te_conf_obj_methods te_conf_obj_methods_uint8_t;
 extern te_conf_obj_methods te_conf_obj_methods_uint32_t;
 extern te_conf_obj_methods te_conf_obj_methods_sockaddr;

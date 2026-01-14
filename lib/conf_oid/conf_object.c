@@ -31,7 +31,7 @@ static te_errno
 te_bool_to_str(te_string *str, const char *name,
                const void *arg)
 {
-    bool value = *(bool *)arg;
+    te_bool value = *(te_bool *)arg;
 
     te_string_append(str, "%s=%s", name, (value ? "true" : "false"));
     return 0;
@@ -53,9 +53,9 @@ te_bool_from_str(const char *value, void *arg,
     UNUSED(options);
 
     if (strcmp(value, "true") == 0)
-        *(bool *)arg = true;
+        *(te_bool *)arg = true;
     else if (strcmp(value, "false") == 0)
-        *(bool *)arg = false;
+        *(te_bool *)arg = false;
     else
         return TE_EINVAL;
 
@@ -75,7 +75,7 @@ te_bool_from_str(const char *value, void *arg,
 static int
 te_bool_compare(const void *a, const void *b)
 {
-    return (!!(*(bool *)a) == !!(*(bool *)b));
+    return (!!(*(te_bool *)a) == !!(*(te_bool *)b));
 }
 
 /**
@@ -257,7 +257,7 @@ str_compare(const void *a, const void *b)
     return strcmp((const char*)a, (const char*)b) == 0;
 }
 
-te_conf_obj_methods te_conf_obj_methods__Bool = {
+te_conf_obj_methods te_conf_obj_methods_te_bool = {
     .to_str   = te_bool_to_str,
     .from_str = te_bool_from_str,
     .compare  = te_bool_compare,
