@@ -302,6 +302,8 @@ extern te_errno tapi_tad_trrecv_get(const char              *ta_name,
  * @param timeout_max_ms    Timeout to wait for target number of packets
  * @param cb_data           Struct with user-specified data for catching
  *                          packets
+ * @param[out] num          Number of actually received packets by this
+ *                          function
  *
  * @return status code
  *
@@ -310,6 +312,19 @@ extern te_errno tapi_tad_trrecv_get(const char              *ta_name,
  *       for checking the number of received expected (returned by
  *       tapi_tad_trrecv_stop()) and, if applicable, unexpected (returned
  *       by tapi_tad_csap_get_no_match_pkts()) packets.
+ */
+extern te_errno tapi_tad_trrecv_wait_pkts_exec_cb_get_num(
+                                    const char              *ta_name,
+                                    int                      session,
+                                    csap_handle_t            handle,
+                                    unsigned int             nb_pkts,
+                                    unsigned int             timeout_max_ms,
+                                    tapi_tad_trrecv_cb_data *cb_data,
+                                    unsigned int            *num);
+
+/**
+ * Wrapper for tapi_tad_trrecv_wait_pkts_exec_cb_get_num() with unspecified
+ * storage for amount of received packets.
  */
 extern te_errno tapi_tad_trrecv_wait_pkts_exec_cb(
                     const char              *ta_name,
@@ -320,8 +335,20 @@ extern te_errno tapi_tad_trrecv_wait_pkts_exec_cb(
                     tapi_tad_trrecv_cb_data *cb_data);
 
 /**
- * Wrapper for tapi_tad_trrecv_wait_pkts_exec_cb() with unspecified
+ * Wrapper for tapi_tad_trrecv_wait_pkts_exec_cb_get_num() with unspecified
  * per-packet callback data.
+ */
+extern te_errno tapi_tad_trrecv_wait_pkts_get_num(
+                                    const char     *ta_name,
+                                    int             session,
+                                    csap_handle_t   handle,
+                                    unsigned int    nb_pkts,
+                                    unsigned int    timeout_max_ms,
+                                    unsigned int   *num);
+
+/**
+ * Wrapper for tapi_tad_trrecv_wait_pkts_get_num() with unspecified
+ * storage for amount of received packets.
  */
 extern te_errno tapi_tad_trrecv_wait_pkts(const char    *ta_name,
                                           int            session,

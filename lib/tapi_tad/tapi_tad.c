@@ -487,12 +487,14 @@ tapi_tad_trrecv_get(const char              *ta_name,
 
 /* Description in tapi_tad.h */
 te_errno
-tapi_tad_trrecv_wait_pkts_exec_cb(const char              *ta_name,
-                                  int                      session,
-                                  csap_handle_t            handle,
-                                  unsigned int             nb_pkts,
-                                  unsigned int             timeout_max_ms,
-                                  tapi_tad_trrecv_cb_data *cb_data)
+tapi_tad_trrecv_wait_pkts_exec_cb_get_num(
+                                    const char              *ta_name,
+                                    int                      session,
+                                    csap_handle_t            handle,
+                                    unsigned int             nb_pkts,
+                                    unsigned int             timeout_max_ms,
+                                    tapi_tad_trrecv_cb_data *cb_data,
+                                    unsigned int            *num)
 {
     unsigned int nb_pkts_rx_total = 0;
     unsigned int msleep_total = 0;
@@ -511,7 +513,11 @@ tapi_tad_trrecv_wait_pkts_exec_cb(const char              *ta_name,
         nb_pkts_rx_total += nb_pkts_rx;
 
         if (nb_pkts_rx_total >= nb_pkts)
+        {
+            if (num != NULL)
+                *num = nb_pkts_rx_total;
             return 0;
+        }
 
         if (msleep_total >= timeout_max_ms)
             break;
@@ -537,7 +543,37 @@ tapi_tad_trrecv_wait_pkts_exec_cb(const char              *ta_name,
      * Tests must (and all existing tests do) check actual number of
      * received packets vs required.
      */
+    if (num != NULL)
+        *num = nb_pkts_rx_total;
     return 0;
+}
+
+/* Description in tapi_tad.h */
+te_errno
+tapi_tad_trrecv_wait_pkts_exec_cb(const char              *ta_name,
+                                  int                      session,
+                                  csap_handle_t            handle,
+                                  unsigned int             nb_pkts,
+                                  unsigned int             timeout_max_ms,
+                                  tapi_tad_trrecv_cb_data *cb_data)
+{
+    return tapi_tad_trrecv_wait_pkts_exec_cb_get_num(ta_name, session, handle,
+                                                     nb_pkts, timeout_max_ms,
+                                                     cb_data, NULL);
+}
+
+/* Description in tapi_tad.h */
+te_errno
+tapi_tad_trrecv_wait_pkts_get_num(const char     *ta_name,
+                                  int             session,
+                                  csap_handle_t   handle,
+                                  unsigned int    nb_pkts,
+                                  unsigned int    timeout_max_ms,
+                                  unsigned int   *num)
+{
+    return tapi_tad_trrecv_wait_pkts_exec_cb_get_num(ta_name, session, handle,
+                                                     nb_pkts, timeout_max_ms,
+                                                     NULL, num);
 }
 
 /* Description in tapi_tad.h */
@@ -548,7 +584,7 @@ tapi_tad_trrecv_wait_pkts(const char     *ta_name,
                           unsigned int    nb_pkts,
                           unsigned int    timeout_max_ms)
 {
-    return tapi_tad_trrecv_wait_pkts_exec_cb(ta_name, session, handle,
+    return tapi_tad_trrecv_wait_pkts_get_num(ta_name, session, handle,
                                              nb_pkts, timeout_max_ms, NULL);
 }
 
