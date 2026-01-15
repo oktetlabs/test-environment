@@ -113,6 +113,7 @@ main(int argc, char **argv)
     bool lookbehind;
     bool wait_before_receive;
     bool ascii;
+    bool file_created = false;
     static const char *expected[] = {
         [0] = NEEDLE,
         [1] = NEEDLE_1,
@@ -166,6 +167,7 @@ main(int argc, char **argv)
     TEST_STEP("Create the data file");
     make_chunks(pco_iut->ta, rfile.ptr, minlen, maxlen, n_false_starts,
                 num_matches, ascii);
+    file_created = true;
 
     TEST_STEP("Start the job");
     CHECK_RC(tapi_job_start(sed_job));
@@ -202,6 +204,8 @@ main(int argc, char **argv)
     TEST_SUCCESS;
 
 cleanup:
+    if (file_created)
+        CLEANUP_CHECK_RC(tapi_file_ta_unlink_fmt(pco_iut->ta, rfile.ptr));
     CLEANUP_CHECK_RC(tapi_job_destroy(sed_job, -1));
     tapi_job_factory_destroy(factory);
     te_string_free(&buffer.data);
