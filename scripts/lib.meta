@@ -122,6 +122,101 @@ te_meta_set_type() {
 }
 
 ##########################################################################
+# Get the best branch name for a commit.
+# Priority: current branch > main > master > non-user/* > first containing
+# Arguments:
+#   Commit hash.
+# Output:
+#   Branch name (short) or empty string.
+##########################################################################
+te_meta_get_best_git_branch() {
+    local commit="$1"
+    local current_branch
+    local branches
+    local branch
+
+    # If on a branch (not detached HEAD), return it
+    current_branch="$(git symbolic-ref --short HEAD 2>/dev/null)"
+    if [[ -n "${current_branch}" ]] ; then
+        echo "${current_branch}"
+        return 0
+    fi
+
+    # Detached HEAD: find branches pointing exactly at this commit
+    # Go out in case of old git: there is no '--points-at' option in it
+    branches="$(git for-each-ref --points-at="${commit}" \
+        --format='%(refname:short)' refs/heads/ 2>/dev/null)" || return 0
+
+    # If none point exactly here, find branches containing this commit
+    if [[ -z "${branches}" ]] ; then
+        branches="$(git branch --contains "${commit}" \
+            --format='%(refname:short)' 2>/dev/null | grep -v detached)"
+    fi
+
+    [[ -z "${branches}" ]] && return 0
+
+    # Priority: main > master > non-user/* > first
+    for pref in main master ; do
+        if echo "${branches}" | grep -qxF "${pref}" ; then
+            echo "${pref}"
+            return 0
+        fi
+    done
+
+    # First non-user/* branch
+    branch="$(echo "${branches}" | grep -v '^user/' | head -n1)"
+    if [[ -n "${branch}" ]] ; then
+        echo "${branch}"
+        return 0
+    fi
+
+    echo "${branches}" | head -n1
+}
+
+##########################################################################
+# Get tag(s) for commit.
+# Arguments:
+#   Commit hash.
+#   Mode: "first" (default), "all", "checked-out"
+# Output:
+#   Tag name(s) or empty string.
+##########################################################################
+te_meta_git_get_tags() {
+    local commit="$1"
+    local mode="${2:-first}"
+    local tags
+
+    # Get all tags pointing exactly at this commit
+    # Go out in case of old git: there is no '--points-at' option in it
+    tags="$(git for-each-ref --points-at="${commit}" \
+        --format='%(refname:short)' refs/tags/ 2>/dev/null)" || return 0
+
+    tags="$(echo "$tags" | sort)"
+
+    [[ -z "${tags}" ]] && return 0
+
+    case "${mode}" in
+        all)
+            echo "${tags//$'\n'/,}"
+            ;;
+        checked-out)
+            # Prefer the tag used in "git checkout <tag>"
+            checked_out_tag="$(git status | grep detached | \
+                             sed 's/.* \([^ ]*\)$/\1/')"
+            if [[ -n "${checked_out_tag}" ]] && \
+               echo "${tags}" | grep -qxF "${checked_out_tag}" ; then
+                echo "${checked_out_tag}"
+            else
+                echo "${tags}" | head -n1
+            fi
+            ;;
+        *)
+            echo "${tags}" | head -n1
+            ;;
+    esac
+}
+
+##########################################################################
 # Set meta variables storing information about git repository.
 # Arguments:
 #   Path to git repository.
@@ -153,7 +248,7 @@ te_meta_set_git() {
     git_url="$(git config --get remote.origin.url)"
     git_rev="$(git rev-parse HEAD)"
 
-    git_branch="$(git rev-parse --abbrev-ref HEAD)"
+    git_branch="$(te_meta_get_best_git_branch "${git_rev}")"
     if [[ -z "${git_branch}" ]] ; then
         # Jenkins checks out specific revision, so that repository is
         # in "detached HEAD" state and current branch name is not known.
@@ -161,6 +256,10 @@ te_meta_set_git() {
         local env_name="JENKINS_${prefix}_BRANCH"
         git_branch="${!env_name}"
     fi
+
+    # Get tag (first one if many) and list of all tags for the commit
+    git_tag="$(te_meta_git_get_tags "${git_rev}" "checked-out")"
+    git_tags="$(te_meta_git_get_tags "${git_rev}" "all")"
 
     git_diff="$(git diff --stat)"
     if [[ -n "${git_diff}" ]] ; then
@@ -172,6 +271,13 @@ te_meta_set_git() {
     te_meta_set_type "${prefix}_BRANCH" "branch"
     te_meta_set "${prefix}_REV" "${git_rev}"
     te_meta_set_type "${prefix}_REV" "revision"
+    if [[ -n "${git_tag}" ]] ; then
+        te_meta_set "${prefix}_TAG" "${git_tag}"
+        te_meta_set_type "${prefix}_TAG" "tag"
+    fi
+    if [[ "${git_tags/,/}" != "${git_tags}" ]] ; then
+        te_meta_set "${prefix}_TAGS" "${git_tags}"
+    fi
 
     if [[ -n "${rev_prefix}" ]] ; then
         te_meta_set "${rev_prefix}_REV" "${git_rev}"
