@@ -43,10 +43,6 @@
 #define TE_COPYRIGHT \
 "Copyright (C) 2004-2025 OKTET Labs Ltd. All rights reserved.\n"
 
-#ifndef NULL
-#define NULL ((void *)0)
-#endif
-
 #ifndef FALSE
 /**
  * @deprecated Use ISO C @c false.
@@ -368,13 +364,6 @@ typedef enum te_bool3 {
         (_p2) = tmp;        \
     } while (0)
 
-
-/** Useful for debugging */
-#if 0 /* BUG here */
-#define malloc(_x)   (((_x) < 0x04000000) ? (malloc)(_x) : \
-                                            (({assert(0);}), NULL))
-#endif
-
 /** Prefix for tester user name */
 #define TE_USER_PREFIX  "te"
 
@@ -396,9 +385,6 @@ extern "C" {
 static inline int
 rand_range(int min, int max)
 {
-#if 0
-    return min + (rand() % (max - min + 1));
-#else
     /*
      * FIXME: Too simple code above is subject to replacement
      *
@@ -449,7 +435,6 @@ rand_range(int min, int max)
 #else
     (int)(min + (((double)max - min) + 1) * rand() / (RAND_MAX + 1.0));
 #endif
-#endif /* if 0 */
 }
 #endif
 
