@@ -702,6 +702,9 @@ tapi_reuse_eal(tapi_env         *env,
         const char *bus_name = NULL;
         const char *dev_name = ps_if->iface->if_info.if_name;
         const char *da_empty = "";
+        int retry_delay_ms = 20;
+        int max_retries = 5;
+        int retry = 0;
 
         if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_PCI_FN)
         {
@@ -737,7 +740,26 @@ tapi_reuse_eal(tapi_env         *env,
         }
 
         da_generic = (da_generic == NULL) ? da_empty : da_generic;
-        rc = rpc_rte_eal_hotplug_add(rpcs, bus_name, dev_name, da_generic);
+
+        /*
+         * rte_eal_hotplug_add() may fail with EPERM when PCI device reset via
+         * VFIO returns EAGAIN (device or VFIO group is temporarily busy).
+         * Since this condition is not propagated via errno, retry the hotplug
+         * operation after a short delay to avoid possible failures caused
+         * by reset races.
+         */
+        do {
+            if (retry != 0)
+            {
+                te_motivated_msleep(retry_delay_ms,
+                                    "Wait before new try for EAL hotplug");
+            }
+
+            RPC_AWAIT_ERROR(rpcs);
+            rc = rpc_rte_eal_hotplug_add(rpcs, bus_name, dev_name, da_generic);
+            rc = -rc;
+        } while (TE_RC_GET_ERROR(rc) == TE_EPERM && retry++ < max_retries);
+
         if (rc != 0)
             goto out;
     }
