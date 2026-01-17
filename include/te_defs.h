@@ -1,11 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2004-2026 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief Test Environment common definitions
  *
  * Common useful definition
- *
- *
- * Copyright (C) 2004-2025 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_DEFS_H__
@@ -41,7 +39,7 @@
 
 /** Test Environment copyright to be used in applications output */
 #define TE_COPYRIGHT \
-"Copyright (C) 2004-2025 OKTET Labs Ltd. All rights reserved.\n"
+    "Copyright (C) 2004-2026 OKTET Labs Ltd. All rights reserved.\n"
 
 #ifndef FALSE
 /**
