@@ -1216,6 +1216,7 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
         }
         else
         {
+            void *tmp;
             if (ipcsc == NULL)
             {
                 ipcsc = ipc_int_client_by_addr(ipcs, &sa, sa_len);
@@ -1227,7 +1228,9 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
                 *p_ipcsc = ipcsc;
             }
 
-            SWAP_PTRS(ipcsc->dgram.buffer, ipcs->dgram.buffer);
+            tmp = ipcsc->dgram.buffer;
+            ipcsc->dgram.buffer = ipcs->dgram.buffer;
+            ipcs->dgram.buffer = tmp;
             ipcsc->dgram.frag_size = r;
 
             KTRC("Got datagram from net for client %s\n",

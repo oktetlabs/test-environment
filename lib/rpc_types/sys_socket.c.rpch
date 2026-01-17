@@ -2025,7 +2025,7 @@ sockaddr_to_te_af(const struct sockaddr *addr, tarpc_sa **rpc_sa)
 {
     struct sockaddr *res;
 
-    res = TE_ALLOC(TE_OFFSET_OF(struct sockaddr, sa_data) +
+    res = TE_ALLOC(offsetof(struct sockaddr, sa_data) +
                    sizeof(tarpc_sa));
     if (res == NULL)
         return NULL;
@@ -2228,7 +2228,7 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
         assert(rpc->raw.raw_len == 0);
     }
 
-    if (len < (socklen_t)(TE_OFFSET_OF(struct sockaddr, sa_family) +
+    if (len < (socklen_t)(offsetof(struct sockaddr, sa_family) +
                           sizeof(sa->sa_family)))
     {
         ERROR("%s(): Address is too short (%u), it does not contain "

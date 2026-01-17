@@ -87,9 +87,6 @@ typedef enum te_bool3 {
     TE_BOOL3_TRUE = 1,
 } te_bool3;
 
-
-#define C_ASSERT(x)
-
 /** Exit from application because of caught SIGINT signal */
 #define TE_EXIT_SIGINT      0x2
 /** Exit with big problems  */
@@ -270,13 +267,6 @@ typedef enum te_bool3 {
     } while (0)
 
 /**
- * Offset of the field in structure.
- *
- * @deprecated Use standard C `offsetof`
- */
-#define TE_OFFSET_OF(_s, _f)    (offsetof(_s, _f))
-
-/**
  * Size of a @p field in a structure @p type.
  *
  * A complement to a C standard `offsetof`.
@@ -347,20 +337,6 @@ typedef enum te_bool3 {
  * @param _typeobj  type or object
  */
 #define TE_BITSIZE(_typeobj) (sizeof(_typeobj) * CHAR_BIT)
-
-/**
- * Swap two pointers.
- *
- * @param _p1       one pointer
- * @param _p2       another pointer
- */
-#define SWAP_PTRS(_p1, _p2) \
-    do {                    \
-        void *tmp = (_p1);  \
-                            \
-        (_p1) = (_p2);      \
-        (_p2) = tmp;        \
-    } while (0)
 
 /** Prefix for tester user name */
 #define TE_USER_PREFIX  "te"
@@ -503,21 +479,6 @@ te_make_tmp_file(char *tmp_name)
     return 0;
 }
 #endif
-
-/**
- * Check if a pointer is @c NULL. It's to avoid warnings in macros.
- *
- * @param ptr   A pointer
- *
- * @return @c true if @p ptr is not NULL
- */
-static inline bool
-ptr_is_not_null(const void *ptr)
-{
-    if (ptr != NULL)
-        return true;
-    return false;
-}
 
 #ifdef __GNUC__
 /**
