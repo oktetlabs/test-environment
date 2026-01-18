@@ -273,7 +273,7 @@ te_meta_set_git() {
     te_meta_set_type "${prefix}_REV" "revision"
     if [[ -n "${git_tag}" ]] ; then
         te_meta_set "${prefix}_TAG" "${git_tag}"
-        te_meta_set_type "${prefix}_TAG" "tag"
+        te_meta_set_type "${prefix}_TAG" "vcs-tag"
     fi
     if [[ "${git_tags/,/}" != "${git_tags}" ]] ; then
         te_meta_set "${prefix}_TAGS" "${git_tags}"
