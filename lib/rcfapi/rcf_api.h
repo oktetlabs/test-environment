@@ -1198,6 +1198,38 @@ extern te_errno rcf_foreach_ta(rcf_ta_cb *cb, void *cookie);
  */
 extern te_errno rcf_get_dead_agents(te_vec *dead_agents);
 
+/**
+ * Register RCF client to receive TA events.
+ *
+ * @param pid   Process ID for this RCF client
+ * @param tid   Thread ID for this RCF client
+ *
+ * @return Status code
+ */
+extern te_errno rcf_ta_events_subscribe(unsigned int pid, unsigned int tid);
+
+/**
+ * Unregister RCF client to receive TA events.
+ *
+ * @param pid   Process ID for this RCF client
+ * @param tid   Thread ID for this RCF client
+ *
+ * @return Status code
+ */
+extern te_errno rcf_ta_events_unsubscribe(unsigned int pid, unsigned int tid);
+
+/**
+ * Trigger TA event
+ *
+ * @param ta        Agent from which we want to receive TA events
+ * @param event     The name of event to trigger
+ * @param value     Event payload to trigger
+ *
+ * @return          Status code
+ */
+extern te_errno rcf_ta_events_trigger_event(const char *ta, const char *event,
+                                            const char *value);
+
 /**@} <!-- END rcfapi_base --> */
 
 #ifdef __cplusplus
