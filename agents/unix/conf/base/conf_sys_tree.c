@@ -755,6 +755,16 @@ register_sys_opts(const char *father, const char *path)
         if (de->d_type == DT_DIR)
             continue;
 
+        /*
+         * Do not add retrans_time and base_reachable_time: they are
+         * deprecated and accessing it from TE generates warning.
+         * Use *_ms analogue instead.
+         */
+        if (strcmp(path, "/proc/sys/net/ipv6/neigh/default/") == 0 &&
+            (strcmp(de->d_name, "retrans_time") == 0 ||
+             strcmp(de->d_name, "base_reachable_time") == 0))
+            continue;
+
         len = strlen(de->d_name);
         if (len >= RCF_MAX_NAME)
         {
