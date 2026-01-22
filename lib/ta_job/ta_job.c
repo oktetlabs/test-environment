@@ -1967,6 +1967,10 @@ move_or_copy_message_to_buffer(const message_t *msg, ta_job_buffer_t *buffer,
     {
         buffer->data = msg->data;
     }
+    else if (msg->size == 0)
+    {
+        buffer->data = NULL;
+    }
     else
     {
         buffer->data = TE_ALLOC(msg->size);
