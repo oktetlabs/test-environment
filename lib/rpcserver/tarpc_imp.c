@@ -11378,11 +11378,12 @@ namespace_id2str(tarpc_namespace_id2str_in *in,
     if (buf == NULL)
         return TE_RC(TE_RPC, TE_ENOENT);
 
-    const int str_len = strlen(buf);
-    out->str.str_val = TE_ALLOC(str_len);
-
-    out->str.str_len = str_len;
-    memcpy(out->str.str_val, buf, str_len);
+    /*
+     * Name of namespace could be an empty line, so do not use TE_ALLOC here,
+     * because it complains about zero lenght.
+     */
+    out->str.str_val = TE_STRDUP(buf);
+    out->str.str_len = strlen(buf);
     return 0;
 }
 
