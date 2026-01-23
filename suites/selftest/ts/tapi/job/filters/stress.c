@@ -205,7 +205,7 @@ main(int argc, char **argv)
 
 cleanup:
     if (file_created)
-        CLEANUP_CHECK_RC(tapi_file_ta_unlink_fmt(pco_iut->ta, rfile.ptr));
+        CLEANUP_CHECK_RC(tapi_file_ta_unlink_fmt(pco_iut->ta, "%s", rfile.ptr));
     CLEANUP_CHECK_RC(tapi_job_destroy(sed_job, -1));
     tapi_job_factory_destroy(factory);
     te_string_free(&buffer.data);
