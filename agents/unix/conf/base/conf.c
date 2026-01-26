@@ -3920,8 +3920,11 @@ iface_hwtstamp_get_cfg(const char *ifname, struct hwtstamp_config *cfg)
 
     if (ioctl(cfg_socket, SIOCGHWTSTAMP, &ifr) != 0)
     {
-        /* Drivers may return EINVAL when an interface is down. */
-        if (errno == EOPNOTSUPP || errno == EINVAL)
+        /*
+         * Drivers may return EINVAL when an interface is down.
+         * ENODEV is expected when a Linux kernel doesn't support PTP.
+         */
+        if (errno == EOPNOTSUPP || errno == EINVAL || errno == ENODEV)
             return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
         return TE_OS_RC(TE_TA_UNIX, errno);
