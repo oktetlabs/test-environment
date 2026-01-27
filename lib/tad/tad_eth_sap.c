@@ -766,8 +766,12 @@ tad_eth_sap_pkt_vlan_tag_valid(uint16_t    tp_vlan_tci,
 #endif /* USE_PF_PACKET */
 
 #ifdef WITH_PACKET_MMAP_RX_RING
+#ifndef ETH_SAP_PKT_RX_RING_NB_FRAMES_MIN
 #define ETH_SAP_PKT_RX_RING_NB_FRAMES_MIN   256
+#endif
+#ifndef ETH_SAP_PKT_RX_RING_NB_FRAMES_MAX
 #define ETH_SAP_PKT_RX_RING_NB_FRAMES_MAX   4096
+#endif
 #define ETH_SAP_PKT_RX_RING_FRAME_LEN \
     te_round_up_pow2(TPACKET2_HDRLEN + ETHER_HDR_LEN + TAD_VLAN_TAG_LEN + \
                      UINT16_MAX + ETHER_CRC_LEN)

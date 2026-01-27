@@ -123,6 +123,12 @@ if get_variable('opt-tad-packet_mmap_rx_ring'.underscorify())
         error('Cannot find sys/mman.h header')
     endif
     c_args += [ '-DWITH_PACKET_MMAP_RX_RING' ]
+
+    min_nb = get_variable('opt-tad-packet_mmap_rx_ring_nb_frames_min'.underscorify())
+    max_nb = get_variable('opt-tad-packet_mmap_rx_ring_nb_frames_max'.underscorify())
+
+    c_args += ['-DETH_SAP_PKT_RX_RING_NB_FRAMES_MIN=@0@'.format(min_nb)]
+    c_args += ['-DETH_SAP_PKT_RX_RING_NB_FRAMES_MAX=@0@'.format(max_nb)]
 endif
 
 te_libs += [
