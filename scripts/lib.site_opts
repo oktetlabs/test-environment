@@ -1,0 +1,117 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2026 OKTET Labs Ltd. All rights reserved.
+#
+# Generic interface for adding site-specific options.
+#
+# ss_opts_* functions should be called via call_if_defined (see
+# scripts/lib), so that absence of this optional API does not break
+# testing.
+#
+
+###########################################################################
+# Initialize internal state for this API.
+# Globals:
+#   ss_opts_map
+#   ss_opts_prefix
+# Arguments:
+#   Path to file with site specific options.
+#     site-specific option file should define SS_OPTS variable which
+#     should be an array with options as a keys and function for these
+#     options as a values, also all of these functions should also be
+#     defined in this file. Also, for each function 'func_name' helper
+#     function 'func_name_info' could be added to get info for about this
+#     function and option correspondent to it.
+#   Prefix for options
+#     This prefix will be added to each of the option from SS_OPTS. This
+#     argument could be omitted
+###########################################################################
+ss_opts_init() {
+    source "$1"
+    for key in "${!SS_OPTS[@]}"; do
+        ss_opts_map[$key]="${SS_OPTS[$key]}"
+    done
+
+    ss_opts_prefix="$2"
+}
+
+###########################################################################
+# Print help for options configuring this API.
+# Globals:
+#   ss_opts_map
+#   ss_opts_prefix
+# Outputs:
+#   Description of command line options related to this API.
+###########################################################################
+ss_opts_print_help() {
+    if (( ${#ss_opts_map[@]} > 0 )); then
+        printf "Specific options:\n"
+    fi
+    for opt in "${!ss_opts_map[@]}"; do
+        local func_info="${ss_opts_map[$opt]}_info"
+        local opt_pref="${opt/--/--${ss_opts_prefix}-}"
+
+        local description="$(call_if_defined "${func_info}")"
+        printf "  %s\n" "$opt_pref"
+        if [[ -n "${description}" ]] ; then
+            printf "                            %s\n" "$description"
+        fi
+    done
+}
+
+###########################################################################
+# Get option without prefix
+# Globals:
+#   ss_opts_prefix
+# Arguments:
+#   Option string
+# Outputs:
+#   Option string without prefix (but with '--' at the beginning). Function
+#   returns empty line if prefix is not empty line and there is no such
+#   prefix at the beginning of option string.
+###########################################################################
+ss_opts_strip_prefix() {
+    local opt_wo_pref="$1"
+    if [[ -n "$ss_opts_prefix" ]] ; then
+        opt_wo_pref="${1/--${ss_opts_prefix}-/--}"
+        if [[ $opt_wo_pref == $1 ]] ; then
+            echo ""
+            return
+        fi
+    fi
+    echo "${opt_wo_pref}"
+}
+
+###########################################################################
+# Check presence of option
+# Globals:
+#   ss_opts_map
+# Arguments:
+#   Option string
+# Returns:
+#   0 on success, nonzero otherwise
+###########################################################################
+ss_opts_check_opt() {
+    local opt_wo_pref="$(ss_opts_strip_prefix "$1")"
+    if [[ -z "${opt_wo_pref}" || -z "${ss_opts_map[$opt_wo_pref]}" ]]; then
+        return 1
+    fi
+    return 0
+}
+
+###########################################################################
+# Call function correspondent to option
+# Globals:
+#   ss_opts_map
+# Arguments:
+#   Option string
+###########################################################################
+ss_opts_call_opt() {
+    local opt_wo_pref="$(ss_opts_strip_prefix "$1")"
+    if [[ -n "${opt_wo_pref}" && -n "${ss_opts_map[$opt_wo_pref]}" ]]; then
+        call_if_defined "${ss_opts_map[$opt_wo_pref]}"
+    fi
+}
+
+# Global variables for storing site-specific options
+ss_opts_prefix=
+declare -gA ss_opts_map
