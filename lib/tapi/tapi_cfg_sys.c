@@ -19,6 +19,7 @@
 #include "tapi_host_ns.h"
 #include "tapi_cfg_sys.h"
 #include "te_string.h"
+#include "te_enum.h"
 
 /**
  * Check whether a given object requires an instance name.
@@ -454,6 +455,214 @@ tapi_cfg_sys_ns_set_str(const char *ta, const char *val, char **old_val,
     va_start(ap, fmt);
     rc = tapi_cfg_sys_ns_set_va(ta, CFG_VAL(STRING, val), old_val, fmt, ap);
     va_end(ap);
+
+    return rc;
+}
+
+/* Mapping of IP-related sysctl subtrees to their string representations. */
+static const te_enum_map ip_net_subtree_map[] = {
+    { "conf",  TAPI_CFG_SYS_IP_SUBTREE_CONF },
+    { "neigh", TAPI_CFG_SYS_IP_SUBTREE_NEIGH },
+    TE_ENUM_MAP_END
+};
+
+/* Mapping of sysctl instance kinds to their string representations. */
+static const te_enum_map ip_instance_kind_map[] = {
+    { "all",     TAPI_CFG_SYS_IP_INST_ALL },
+    { "default", TAPI_CFG_SYS_IP_INST_DEFAULT },
+    TE_ENUM_MAP_END
+};
+
+/* Convert address family to the string representation of IP protocol. */
+static const char *
+af2str(int af, bool only_suffix)
+{
+    switch (af)
+    {
+       case AF_INET:
+           return only_suffix ? "" : "ipv4";
+
+       case AF_INET6:
+           return only_suffix ? "6" : "ipv6";
+
+       default:
+           TE_FATAL_ERROR("Unsupported address family: %d", af);
+    }
+}
+
+/* Build resource name for an IP sysctl subtree. */
+static char *
+tapi_cfg_sys_ip_rsrc_name(int af, tapi_cfg_sys_ip_net_subtree subtree,
+                          tapi_cfg_sys_ip_instance_kind inst)
+{
+    const char *suffix = af2str(af, true);
+    const char *name;
+    const char *sub;
+
+    sub = te_enum_map_from_any_value(ip_net_subtree_map, subtree, NULL);
+    name = te_enum_map_from_any_value(ip_instance_kind_map, inst, NULL);
+
+    if (sub == NULL || name == NULL)
+        return NULL;
+
+    return te_string_fmt("%s%s_%s", sub, suffix, name);
+}
+
+/* Build OID for an IP-related sysctl subtree. */
+static char *
+tapi_cfg_sys_ip_oid(const char *ta, int af,
+                    tapi_cfg_sys_ip_net_subtree subtree,
+                    tapi_cfg_sys_ip_instance_kind inst)
+{
+    const char *ver = af2str(af, false);
+    const char *name;
+    const char *sub;
+
+    sub = te_enum_map_from_any_value(ip_net_subtree_map, subtree, NULL);
+    name = te_enum_map_from_any_value(ip_instance_kind_map, inst, NULL);
+
+    if (ta == NULL || sub == NULL || name == NULL)
+        return NULL;
+
+    return te_string_fmt("/agent:%s/sys:/net:/%s:/%s:%s", ta, ver, sub, name);
+}
+
+/* Create or reuse a Configurator resource and bind it to a given OID. */
+static te_errno
+tapi_cfg_sys_rsrc_grab_oid(const char *ta, const char *rsrc_name,
+                          const char *oid, cs_rsrc_lock_type lock_type)
+{
+    static const int grab_timeout_ms = 3000;
+    char *old_oid = NULL;
+    bool set_oid = true;
+    int actual_shared;
+    bool shared;
+    te_errno rc;
+
+    if (ta == NULL || rsrc_name == NULL || oid == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    switch (lock_type)
+    {
+       case CS_RSRC_LOCK_TYPE_EXCLUSIVE:
+           shared = false;
+           break;
+
+       case CS_RSRC_LOCK_TYPE_SHARED:
+           shared = true;
+           break;
+
+       default:
+           ERROR("Unsupported resource lock type");
+           return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = cfg_get_instance_string_fmt(&old_oid,
+                                     "/agent:%s/rsrc:%s", ta, rsrc_name);
+    if (rc == 0)
+    {
+        if (old_oid == NULL)
+            return TE_RC(TE_TAPI, TE_EFAULT);
+
+        if (*old_oid != '\0' && strcmp(old_oid, oid) != 0)
+        {
+            ERROR("Resource '/agent:%s/rsrc:%s' points to '%s' instead of '%s'",
+                  ta, rsrc_name, old_oid, oid);
+            free(old_oid);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+        set_oid = (*old_oid == '\0');
+        free(old_oid);
+    }
+    else
+    {
+        rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, ""),
+                                  "/agent:%s/rsrc:%s", ta, rsrc_name);
+        if (rc != 0)
+            return rc;
+    }
+
+    /*
+     * Bind the resource to the OID before requesting lock mode,
+     * so that the resource subsystem can acquire the lock.
+     */
+    if (set_oid)
+    {
+        rc = cfg_set_instance_fmt(CFG_VAL(STRING, oid),
+                                  "/agent:%s/rsrc:%s", ta, rsrc_name);
+        if (rc != 0)
+            return rc;
+    }
+
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, 1),
+                              "/agent:%s/rsrc:%s/fallback_shared:",
+                              ta, rsrc_name);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, grab_timeout_ms),
+                              "/agent:%s/rsrc:%s/acquire_attempts_timeout:",
+                              ta, rsrc_name);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_set_instance_fmt(CFG_VAL(INT32, shared ? 1 : 0),
+                              "/agent:%s/rsrc:%s/shared:",
+                              ta, rsrc_name);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_get_instance_int_fmt(&actual_shared,
+                                  "/agent:%s/rsrc:%s/shared:",
+                                  ta, rsrc_name);
+    if (rc != 0)
+        return rc;
+
+    if ((actual_shared != 0) != shared)
+    {
+        ERROR("Failed to acquire %s lock for '%s' on %s (oid=%s): got %s",
+              shared ? "shared" : "exclusive",
+              rsrc_name, ta, oid,
+              (actual_shared != 0) ? "shared" : "exclusive");
+        return TE_RC(TE_TAPI, TE_EBUSY);
+    }
+
+    return 0;
+}
+
+/* See description in tapi_cfg_sys.h */
+te_errno
+tapi_cfg_sys_ip_grab(const char *ta, int af,
+                     tapi_cfg_sys_ip_net_subtree subtree,
+                     tapi_cfg_sys_ip_instance_kind inst,
+                     cs_rsrc_lock_type lock_type)
+{
+    char *rsrc_name = NULL;
+    te_errno rc;
+    char *oid = NULL;
+
+    if (ta == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    rsrc_name = tapi_cfg_sys_ip_rsrc_name(af, subtree, inst);
+    oid = tapi_cfg_sys_ip_oid(ta, af, subtree, inst);
+    if (rsrc_name == NULL || oid == NULL)
+    {
+        rc = TE_RC(TE_TAPI, TE_EINVAL);
+        goto out;
+    }
+
+    rc = tapi_cfg_sys_rsrc_grab_oid(ta, rsrc_name, oid, lock_type);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to grab sys resource '%s' on %s (oid=%s): %r",
+              __FUNCTION__, rsrc_name, ta, oid, rc);
+        goto out;
+    }
+
+out:
+    free(rsrc_name);
+    free(oid);
 
     return rc;
 }

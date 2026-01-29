@@ -54,4 +54,10 @@ cs_neigh_entry_state2str(cs_neigh_entry_state state)
     }
 }
 
+/** Resource lock type. */
+typedef enum {
+    CS_RSRC_LOCK_TYPE_EXCLUSIVE,  /**< Exclusive lock. */
+    CS_RSRC_LOCK_TYPE_SHARED,     /**< Shared lock. */
+} cs_rsrc_lock_type;
+
 #endif /* !__TE_CS_COMMON_H__ */

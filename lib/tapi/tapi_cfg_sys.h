@@ -229,6 +229,42 @@ extern te_errno tapi_cfg_sys_ns_set_str(const char *ta, const char *val,
                                         char **old_val, const char *fmt, ...)
                                         TE_LIKE_PRINTF(4, 5);
 
+/** Sysctl subtrees under /net/ipv4 and /net/ipv6. */
+typedef enum tapi_cfg_sys_ip_net_subtree {
+    /** Interface-related network settings. */
+    TAPI_CFG_SYS_IP_SUBTREE_CONF,
+    /** Neighbor and address resolution settings. */
+    TAPI_CFG_SYS_IP_SUBTREE_NEIGH,
+} tapi_cfg_sys_ip_net_subtree;
+
+/** Specific instance inside a sysctl subtree. */
+typedef enum tapi_cfg_sys_ip_instance_kind {
+    /** Settings applied to all interfaces. */
+    TAPI_CFG_SYS_IP_INST_ALL,
+    /** Default settings for newly created interfaces. */
+    TAPI_CFG_SYS_IP_INST_DEFAULT,
+} tapi_cfg_sys_ip_instance_kind;
+
+/**
+ * Acquire a Configurator resource associated with an IP-related
+ * sysctl subtree.
+ *
+ * The resource is managed by the Configurator framework and is released
+ * automatically during configuration cleanup.
+ *
+ * @param ta        Test agent name.
+ * @param af        Address family.
+ * @param subtree   Sysctl subtree.
+ * @param inst      Target instance.
+ * @param shared    Lock type.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_sys_ip_grab(const char *ta, int af,
+                                     tapi_cfg_sys_ip_net_subtree subtree,
+                                     tapi_cfg_sys_ip_instance_kind inst,
+                                     cs_rsrc_lock_type lock_type);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
