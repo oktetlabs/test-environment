@@ -73,8 +73,40 @@ RCF_PCH_CFG_NODE_NA(node_fs, "fs", NULL, NULL);
 
 RCF_PCH_CFG_NODE_NA(node_debug, "debug", NULL, NULL);
 
-static te_errno register_sys_opts(const char *father, const char *path);
+static te_errno register_sys_opts(const char *father, const char *path,
+                                  rcf_ch_cfg_set set);
 static te_errno unregister_sys_opts(const char *father);
+
+static te_errno sys_opt_set(unsigned int gid, const char *oid,
+                            const char *value);
+
+static te_errno sys_net_ifdir_require_exclusive(const char *oid,
+                                                const char *prefix);
+
+/**
+ * Define sysctl set handler for net/ipv{4,6}/{conf,neigh}.
+ *
+ * The handler rejects writes unless a corresponding resource is locked
+ * exclusively (see sys_net_ifdir_require_exclusive()).
+ */
+#define SYS_OPT_IP_IFDIR_SET(_proto, _dir) \
+static te_errno                                                             \
+sys_opt_set_##_proto##_##_dir(unsigned int gid, const char *oid,            \
+                            const char *value)                              \
+{                                                                           \
+    te_errno rc;                                                            \
+                                                                            \
+    rc = sys_net_ifdir_require_exclusive(oid, #_proto ":/" #_dir);          \
+    if (rc != 0)                                                            \
+        return rc;                                                          \
+                                                                            \
+    return sys_opt_set(gid, oid, value);                                    \
+}
+
+SYS_OPT_IP_IFDIR_SET(ipv4, conf)
+SYS_OPT_IP_IFDIR_SET(ipv4, neigh)
+SYS_OPT_IP_IFDIR_SET(ipv6, conf)
+SYS_OPT_IP_IFDIR_SET(ipv6, neigh)
 
 /**
  * Create a tree of objects corresponding to directories and files in
@@ -89,45 +121,54 @@ ta_unix_conf_sys_tree_init(void)
     CHECK_NZ_RETURN(rcf_pch_add_node("/agent/sys/", &node_net));
 
     CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/core",
-                                      "/proc/sys/net/core/"));
+                                      "/proc/sys/net/core/",
+                                      (rcf_ch_cfg_set)sys_opt_set));
     CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/netfilter",
-                                      "/proc/sys/net/netfilter/"));
+                                      "/proc/sys/net/netfilter/",
+                                      (rcf_ch_cfg_set)sys_opt_set));
     CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/ipv4",
-                                      "/proc/sys/net/ipv4/"));
-    CHECK_NZ_RETURN(register_sys_opts(
-                              "/agent/sys/net/ipv4/conf",
-                              "/proc/sys/net/ipv4/conf/default/"));
-    CHECK_NZ_RETURN(register_sys_opts(
-                              "/agent/sys/net/ipv4/neigh",
-                              "/proc/sys/net/ipv4/neigh/default/"));
+                                      "/proc/sys/net/ipv4/",
+                                      (rcf_ch_cfg_set)sys_opt_set));
+    CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/ipv4/conf",
+                                      "/proc/sys/net/ipv4/conf/default/",
+                                      (rcf_ch_cfg_set)sys_opt_set_ipv4_conf));
+    CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/ipv4/neigh",
+                                     "/proc/sys/net/ipv4/neigh/default/",
+                                      (rcf_ch_cfg_set)sys_opt_set_ipv4_neigh));
     CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/ipv4/route",
-                                      "/proc/sys/net/ipv4/route/"));
+                                      "/proc/sys/net/ipv4/route/",
+                                      (rcf_ch_cfg_set)sys_opt_set));
 
     CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/ipv6",
-                                      "/proc/sys/net/ipv6/"));
+                                      "/proc/sys/net/ipv6/",
+                                      (rcf_ch_cfg_set)sys_opt_set));
     CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/ipv6/conf",
-                                      "/proc/sys/net/ipv6/conf/default/"));
+                                      "/proc/sys/net/ipv6/conf/default/",
+                                      (rcf_ch_cfg_set)sys_opt_set_ipv6_conf));
     CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/ipv6/neigh",
-                                      "/proc/sys/net/ipv6/neigh/default/"));
+                                      "/proc/sys/net/ipv6/neigh/default/",
+                                      (rcf_ch_cfg_set)sys_opt_set_ipv6_neigh));
     CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/ipv6/route",
-                                      "/proc/sys/net/ipv6/route/"));
+                                      "/proc/sys/net/ipv6/route/",
+                                      (rcf_ch_cfg_set)sys_opt_set));
     CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/ipv6/icmp",
-                                      "/proc/sys/net/ipv6/icmp/"));
+                                      "/proc/sys/net/ipv6/icmp/",
+                                      (rcf_ch_cfg_set)sys_opt_set));
 
     CHECK_NZ_RETURN(rcf_pch_add_node("/agent/sys/", &node_vm));
-    CHECK_NZ_RETURN(register_sys_opts(
-                              "/agent/sys/vm",
-                              "/proc/sys/vm/"));
+    CHECK_NZ_RETURN(register_sys_opts("/agent/sys/vm",
+                                      "/proc/sys/vm/",
+                                      (rcf_ch_cfg_set)sys_opt_set));
 
     CHECK_NZ_RETURN(rcf_pch_add_node("/agent/sys/", &node_fs));
-    CHECK_NZ_RETURN(register_sys_opts(
-                              "/agent/sys/fs",
-                              "/proc/sys/fs/"));
+    CHECK_NZ_RETURN(register_sys_opts("/agent/sys/fs",
+                                      "/proc/sys/fs/",
+                                      (rcf_ch_cfg_set)sys_opt_set));
 
     CHECK_NZ_RETURN(rcf_pch_add_node("/agent/sys/", &node_debug));
-    CHECK_NZ_RETURN(register_sys_opts(
-                              "/agent/sys/debug",
-                              "/proc/sys/debug/"));
+    CHECK_NZ_RETURN(register_sys_opts("/agent/sys/debug",
+                                      "/proc/sys/debug/",
+                                      (rcf_ch_cfg_set)sys_opt_set));
 
     CHECK_NZ_RETURN(rcf_pch_rsrc_info("/agent/sys/net/ipv4/conf",
                                       rcf_pch_rsrc_grab_dummy,
@@ -191,13 +232,13 @@ sys_if_list_include_callback(const char *dir_name, void *data)
 
     UNUSED(data);
 
-    grabbed = rcf_pch_rsrc_accessible("/agent:%s/interface:%s",
-                                      ta_name, dir_name);
+    grabbed = rcf_pch_rsrc_accessible_may_share("/agent:%s/interface:%s",
+                                                ta_name, dir_name);
     if (!grabbed)
     {
-        grabbed = rcf_pch_rsrc_accessible(
-                          "/agent:%s/sys:/net:/%s:%s",
-                          ta_name, prefix, dir_name);
+        grabbed = rcf_pch_rsrc_accessible_may_share(
+                      "/agent:%s/sys:/net:/%s:%s",
+                      ta_name, prefix, dir_name);
     }
 
     return grabbed;
@@ -603,6 +644,109 @@ sys_opt_get(unsigned int gid, const char *oid, char *value)
     return 0;
 }
 
+/*
+ * Extract the name part from sysctl OID for subtrees:
+ *   /agent:<ta>/sys:/net:/<prefix>:<name>/...
+ *
+ * where <prefix> is, for example, "ipv4:/conf" or "ipv6:/neigh".
+ *
+ * @param oid       Leaf OID passed to set handler.
+ * @param prefix    Prefix string ("ipv4:/conf", "ipv6:/neigh", etc).
+ * @param name      String with the name part.
+ *
+ * @return Status code.
+ */
+static te_errno
+sys_net_ifdir_get_name(const char *oid, const char *prefix, te_string *name)
+{
+    te_string ptrn = TE_STRING_INIT;
+    const char *start;
+    const char *end;
+    te_errno rc = 0;
+
+    if (oid == NULL || prefix == NULL || name == NULL)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    /* Build pattern: "/sys:/net:/<prefix>:" */
+    te_string_append(&ptrn, "/sys:/net:/%s:", prefix);
+
+    start = strstr(oid, ptrn.ptr);
+    if (start == NULL)
+    {
+        rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        goto out;
+    }
+
+    start += ptrn.len;
+    end = strchr(start, '/');
+    if (end == NULL || end == start)
+    {
+        rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        goto out;
+    }
+
+    te_string_reset(name);
+    te_string_append_buf(name, start, (size_t)(end - start));
+
+out:
+    te_string_free(&ptrn);
+    return rc;
+}
+
+/*
+ * Require exclusive lock for sysctl writes under net/ipv{4,6}/{conf,neigh}.
+ *
+ * Allowed locking schemes (exclusive only):
+ *  - /agent:<ta>/interface:<name>
+ *  - /agent:<ta>/sys:/net:/<prefix>:<name>
+ *
+ * @param oid       Leaf OID passed to set handler.
+ * @param prefix    Prefix string.
+ *
+ * @return Status code.
+ */
+static te_errno
+sys_net_ifdir_require_exclusive(const char *oid, const char *prefix)
+{
+    te_string name = TE_STRING_INIT;
+    te_string rsrc = TE_STRING_INIT;
+    te_errno rc;
+    bool grabbed;
+
+    rc = sys_net_ifdir_get_name(oid, prefix, &name);
+    if (rc != 0)
+        goto out;
+
+    /* Check exclusive lock of interface:<name>. */
+    te_string_append(&rsrc, "/agent:%s/interface:%s", ta_name, name.ptr);
+    grabbed = rcf_pch_rsrc_accessible("%s", rsrc.ptr);
+
+    /* Check exclusive lock of sys:/net:/<prefix>:<name>. */
+    if (!grabbed)
+    {
+        te_string_reset(&rsrc);
+        te_string_append(&rsrc, "/agent:%s/sys:/net:/%s:%s",
+                         ta_name, prefix, name.ptr);
+        grabbed = rcf_pch_rsrc_accessible("%s", rsrc.ptr);
+    }
+
+    if (!grabbed)
+    {
+        ERROR("%s(): sysctl write requires exclusive lock on "
+              "interface:%s or sys:/net:/%s:%s",
+              __FUNCTION__, name.ptr, prefix, name.ptr);
+        rc = TE_RC(TE_TA_UNIX, TE_EPERM);
+        goto out;
+    }
+
+    rc = 0;
+
+out:
+    te_string_free(&name);
+    te_string_free(&rsrc);
+    return rc;
+}
+
 /**
  * Set value of a configuration object instance corresponding to a file
  * under /proc/sys/.
@@ -718,11 +862,12 @@ sys_opt_set(unsigned int gid, const char *oid, const char *value)
  *
  * @param father          OID of father object.
  * @param path            Path to a directory in /proc/sys/.
+ * @param set             Set handler to be used for registered leaf nodes.
  *
  * @return Status code.
  */
 static te_errno
-register_sys_opts(const char *father, const char *path)
+register_sys_opts(const char *father, const char *path, rcf_ch_cfg_set set)
 {
     rcf_pch_cfg_object   *obj = NULL;
     struct dirent       **namelist = NULL;
@@ -783,7 +928,7 @@ register_sys_opts(const char *father, const char *path)
         memcpy(obj->sub_id, de->d_name, len + 1);
 
         obj->get = (rcf_ch_cfg_get)sys_opt_get;
-        obj->set = (rcf_ch_cfg_set)sys_opt_set;
+        obj->set = set;
         obj->list = (rcf_ch_cfg_list)sys_opt_list;
 
         rc = rcf_pch_add_node(father, obj);
