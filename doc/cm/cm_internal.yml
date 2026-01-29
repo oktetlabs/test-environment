@@ -24,6 +24,7 @@
     - oid: "/agent/rsrc/shared"
       access: read_write
       type: int32
+      volatile: true
       d: |
          Resource grabbing mode
          Name: None
