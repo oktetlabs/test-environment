@@ -2372,6 +2372,13 @@ enable_conf_ipv6_default(const char *agent)
         return rc;
     }
 
+    /*
+     * FIXME: The Configurator cannot acquire an exclusive lock during
+     *        dynamic history backup because the lock type is a volatile
+     *        object. This causes an EPERM failure when restoring the
+     *        default value of conf:default/disable_ipv6.
+     */
+#if 0
     rc = tapi_cfg_sys_ip_grab(agent, AF_INET6, TAPI_CFG_SYS_IP_SUBTREE_CONF,
                               TAPI_CFG_SYS_IP_INST_DEFAULT,
                               CS_RSRC_LOCK_TYPE_SHARED);
@@ -2381,6 +2388,7 @@ enable_conf_ipv6_default(const char *agent)
               agent, rc);
         return rc;
     }
+#endif
 
     return 0;
 }
