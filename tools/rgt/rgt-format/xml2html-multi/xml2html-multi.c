@@ -853,7 +853,10 @@ print_mi_meas_param_vals_array(FILE *fd, te_rgt_mi_meas_param *param)
 
                 for (i = 0; i < value->values_num; i++)
                 {
-                    fprintf(fd, "%f * %.9f", value->values[i], multiplier_value);
+                    if (multiplier_value == 1.0)
+                        fprintf(fd, "%f", value->values[i]);
+                    else
+                        fprintf(fd, "%f * %.9f", value->values[i], multiplier_value);
 
                     if (i != value->values_num - 1)
                         fprintf(fd, ", ");
@@ -861,7 +864,10 @@ print_mi_meas_param_vals_array(FILE *fd, te_rgt_mi_meas_param *param)
             }
             else
             {
-                fprintf(fd, "%f * %.9f", value->value, multiplier_value);
+                if (multiplier_value == 1.0)
+                    fprintf(fd, "%f", value->value);
+                else
+                    fprintf(fd, "%f * %.9f", value->value, multiplier_value);
             }
             first_val = false;
         }
