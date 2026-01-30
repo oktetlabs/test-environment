@@ -366,6 +366,17 @@ extern void te_json_add_array_str(te_json_ctx_t *ctx, bool skip_null,
                                   size_t n_strs, const char *strs[n_strs]);
 
 /**
+ * Serialize an array of floats.
+ *
+ * @param ctx           JSON context.
+ * @param n_vals        Number of elements in @p strs.
+ * @param vals          Array of strings.
+ * @param precision     Floating-point precision (unlimited if negative).
+ */
+extern void te_json_add_array_float(te_json_ctx_t *ctx, size_t n_vals,
+                                    const double vals[n_vals], int precision);
+
+/**
  * Serialize a list of kv_pairs as a JSON object.
  *
  * @param ctx  JSON context
