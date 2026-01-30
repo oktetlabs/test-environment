@@ -738,6 +738,38 @@ RGT_DEF_FUNC(proc_log_msg_start)
 }
 
 /**
+ * Print a single measurement value.
+ *
+ * @param fd            File where to print.
+ * @param value         Value to print.
+ * @param multiplier    Value multiplier.
+ * @param base_units    Value base units.
+ * @param prefix        Prefix string (may be @c NULL).
+ */
+static void
+print_mi_meas_value_impl(FILE *fd, te_optional_double_t value,
+                         const char *multiplier, const char *base_units,
+                         const char *prefix)
+{
+    fprintf(fd, "<li>");
+    if (prefix != NULL)
+        fprintf(fd, "%s: ", prefix);
+
+    if (value.defined)
+        fprintf(fd, "%f", value.value);
+    else
+        fprintf(fd, "[failed to obtain]");
+
+    if (multiplier != NULL && *multiplier != '\0' &&
+        strcmp(multiplier, "1") != 0)
+        fprintf(fd, " * %s", multiplier);
+    if (base_units != NULL && *base_units != '\0')
+        fprintf(fd, " %s", base_units);
+
+    fprintf(fd, "</li>\n");
+}
+
+/**
  * Print a measurement value.
  *
  * @param fd      File where to print.
@@ -750,22 +782,28 @@ print_mi_meas_value(FILE *fd, te_rgt_mi_meas_value *value, const char *prefix)
     if (!(value->defined))
         return;
 
-    fprintf(fd, "<li>");
-    if (prefix != NULL)
-        fprintf(fd, "%s: ", prefix);
+    if (!value->specified)
+        print_mi_meas_value_impl(fd, TE_OPTIONAL_DOUBLE_UNDEF, value->multiplier,
+                                 value->base_units, prefix);
 
-    if (value->specified)
-        fprintf(fd, "%f", value->value);
+
+    if (value->values_num > 0)
+    {
+        size_t i;
+
+        for (i = 0; i < value->values_num; i++)
+        {
+            print_mi_meas_value_impl(fd,
+                                     TE_OPTIONAL_DOUBLE_VAL(value->values[i]),
+                                     value->multiplier, value->base_units,
+                                     prefix);
+        }
+    }
     else
-        fprintf(fd, "[failed to obtain]");
-
-    if (value->multiplier != NULL && *(value->multiplier) != '\0' &&
-        strcmp(value->multiplier, "1") != 0)
-        fprintf(fd, " * %s", value->multiplier);
-    if (value->base_units != NULL && *(value->base_units) != '\0')
-        fprintf(fd, " %s", value->base_units);
-
-    fprintf(fd, "</li>\n");
+    {
+        print_mi_meas_value_impl(fd, TE_OPTIONAL_DOUBLE_VAL(value->value),
+                                 value->multiplier, value->base_units, prefix);
+    }
 }
 
 /**
@@ -809,7 +847,22 @@ print_mi_meas_param_vals_array(FILE *fd, te_rgt_mi_meas_param *param)
                 }
             }
 
-            fprintf(fd, "%f * %.9f", value->value, multiplier_value);
+            if (value->values_num > 0)
+            {
+                size_t i;
+
+                for (i = 0; i < value->values_num; i++)
+                {
+                    fprintf(fd, "%f * %.9f", value->values[i], multiplier_value);
+
+                    if (i != value->values_num - 1)
+                        fprintf(fd, ", ");
+                }
+            }
+            else
+            {
+                fprintf(fd, "%f * %.9f", value->value, multiplier_value);
+            }
             first_val = false;
         }
     }
@@ -1006,6 +1059,8 @@ log_mi_measurement(FILE *fd, te_rgt_mi *mi, unsigned int linum)
 
         if (param->values_num > 0)
         {
+            size_t total_values = 0;
+
             if (param->in_graph)
             {
                 fprintf(fd, "<script>var param_%u_%zu = [",
@@ -1018,23 +1073,31 @@ log_mi_measurement(FILE *fd, te_rgt_mi *mi, unsigned int linum)
 
             FPRINTF_HEADER(3, fd, "Values:");
 
+            for (j = 0; j < param->values_num; j++)
+            {
+                if (param->values[j].values_num > 0)
+                    total_values += param->values[j].values_num;
+                else
+                    total_values += 1;
+            }
+
             fprintf(fd, "<span class=\"%s_link\" "
                     "onclick=\"show_hide_list(this, "
                     "'meas_param_list_%u_%zu', 'Hide %zu values', "
                     "'Show %zu values');\">%s %zu values"
                     "</span>\n",
-                    (param->values_num > max_showed_vals ?
+                    (total_values > max_showed_vals ?
                         "show" : "hide"),
-                    linum, i, param->values_num, param->values_num,
-                    (param->values_num > max_showed_vals ?
+                    linum, i, total_values, total_values,
+                    (total_values > max_showed_vals ?
                         "Show" : "Hide"),
-                    param->values_num);
+                    total_values);
 
             fprintf(fd, "<ul id=\"meas_param_list_%u_%zu\" "
                     "style=\"display:%s; list-style-type:none;\">\n",
                     linum, i,
-                    (param->values_num > max_showed_vals ?
-                                            "none" : "block"));
+                    (total_values > max_showed_vals ?
+                                       "none" : "block"));
             for (j = 0; j < param->values_num; j++)
             {
                 print_mi_meas_value(fd, &param->values[j], NULL);
