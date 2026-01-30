@@ -36,6 +36,8 @@ typedef struct te_mi_meas_value {
     TAILQ_ENTRY(te_mi_meas_value) next;
     te_mi_meas_aggr aggr;
     double val;
+    size_t n_vals;
+    double *vals;
     te_mi_meas_multiplier multiplier;
     const char *base_units;
 } te_mi_meas_value;
@@ -157,6 +159,7 @@ static const te_enum_map mi_type_names[] = {
 
 static const te_enum_map meas_aggr_names[] = {
     {.value = TE_MI_MEAS_AGGR_SINGLE, .name = "single"},
+    {.value = TE_MI_MEAS_AGGR_SERIES, .name = "series"},
     {.value = TE_MI_MEAS_AGGR_MIN, .name = "min"},
     {.value = TE_MI_MEAS_AGGR_MAX, .name = "max"},
     {.value = TE_MI_MEAS_AGGR_MEAN, .name = "mean"},
@@ -306,8 +309,16 @@ te_mi_meas_value_str_append(const te_mi_meas_value *value, te_mi_meas_type type,
     te_json_start_object(ctx);
     te_json_add_key_enum(ctx, meas_aggr_names, "aggr", value->aggr);
 
-    te_json_add_key(ctx, "value");
-    te_json_add_float(ctx, value->val, 6);
+    if (value->vals != NULL)
+    {
+        te_json_add_key(ctx, "values");
+        te_json_add_array_float(ctx, value->n_vals, value->vals, 6);
+    }
+    else
+    {
+        te_json_add_key(ctx, "value");
+        te_json_add_float(ctx, value->val, 6);
+    }
 
     te_json_add_key_str(ctx, "base_units",
                         value->base_units != NULL ? value->base_units :
@@ -525,6 +536,28 @@ te_mi_meas_value_add(te_mi_meas_value_h *values, te_mi_meas_aggr aggr,
 
     result->aggr = aggr;
     result->val = val;
+    result->multiplier = multiplier;
+    result->base_units = base_units;
+    TAILQ_INSERT_TAIL(values, result, next);
+
+    return result;
+}
+
+static te_mi_meas_value *
+te_mi_meas_values_add(te_mi_meas_value_h *values, te_mi_meas_aggr aggr,
+                      size_t n_vals, const double *vals,
+                      te_mi_meas_multiplier multiplier, const char *base_units)
+{
+    te_mi_meas_value *result;
+
+    result = TE_ALLOC(sizeof(*result));
+
+    result->aggr = aggr;
+
+    result->n_vals = n_vals;
+    result->vals = calloc(n_vals, sizeof(double));
+    memcpy(result->vals, vals, n_vals * sizeof(double));
+
     result->multiplier = multiplier;
     result->base_units = base_units;
     TAILQ_INSERT_TAIL(values, result, next);
@@ -1145,6 +1178,7 @@ te_mi_logger_reset(te_mi_logger *logger)
     {
         while ((meas_value = TAILQ_FIRST(&meas->values)) != NULL)
         {
+            free(meas_value->vals);
             TAILQ_REMOVE(&meas->values, meas_value, next);
             free(meas_value);
         }
@@ -1349,6 +1383,71 @@ te_mi_logger_add_meas_units(te_mi_logger *logger, te_errno *retval,
         meas = te_mi_meas_impl_add(&logger->meas_q, type, name);
 
     te_mi_meas_value_add(&meas->values, aggr, val, multiplier, base_units);
+
+out:
+    te_mi_set_logger_error(logger, retval, rc);
+}
+
+void
+te_mi_logger_add_meas_series(te_mi_logger *logger, te_errno *retval,
+                             te_mi_meas_type type, const char *name,
+                             te_mi_meas_aggr aggr, size_t n_vals,
+                             const double *vals,
+                             te_mi_meas_multiplier multiplier,
+                             const char *base_units)
+{
+    te_mi_meas_impl *meas;
+    te_errno rc = 0;
+
+    if (logger == NULL)
+    {
+        ERROR("Failed to add measurement with invalid args");
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    if (aggr != TE_MI_MEAS_AGGR_SERIES)
+    {
+        ERROR("Logging measurement series supports TE_MI_MEAS_AGGR_SERIES aggregation only");
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    if (name != NULL && strcmp(name, TE_MI_GRAPH_AUTO_SEQNO) == 0)
+    {
+        ERROR("Name '%s' is reserved for MI graphs",
+              TE_MI_GRAPH_AUTO_SEQNO);
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    if (!te_mi_meas_type_valid(type))
+    {
+        ERROR("Invalid measurement type");
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    if (!te_mi_meas_aggr_is_specified(aggr))
+    {
+        ERROR("Invalid measurement aggregation");
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    if (!te_mi_meas_multiplier_valid(multiplier))
+    {
+        ERROR("Invalid measurement multiplier");
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    meas = te_mi_meas_impl_find(&logger->meas_q, type, name);
+    if (meas == NULL)
+        meas = te_mi_meas_impl_add(&logger->meas_q, type, name);
+
+    te_mi_meas_values_add(&meas->values, aggr, n_vals, vals, multiplier,
+                          base_units);
 
 out:
     te_mi_set_logger_error(logger, retval, rc);
