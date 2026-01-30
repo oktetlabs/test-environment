@@ -115,11 +115,14 @@ static void
 te_rgt_mi_meas_clean(te_rgt_mi_meas *meas)
 {
     size_t i;
+    size_t j;
 
     if (meas->params != NULL)
     {
         for (i = 0; i < meas->params_num; i++)
         {
+            for (j = 0; j < meas->params[i].values_num; j++)
+                free(meas->params[i].values[j].values);
             free(meas->params[i].values);
         }
 
@@ -600,7 +603,6 @@ te_rgt_parse_mi_meas_message(te_rgt_mi *mi)
             bool no_stats;
 
             te_rgt_mi_meas_param *param = &meas->params[param_id];
-            te_rgt_mi_meas_value value = TE_RGT_MI_MEAS_VALUE_INIT;
             size_t value_id = 0;
 
             result = json_array_get(results, i);
@@ -624,7 +626,9 @@ te_rgt_parse_mi_meas_message(te_rgt_mi *mi)
             for (j = 0; j < param->values_num; j++)
             {
                 json_t *entry;
+                json_t *values;
                 const char *aggr;
+                te_rgt_mi_meas_value value = TE_RGT_MI_MEAS_VALUE_INIT;
 
                 entry = json_array_get(entries, j);
                 if (entry == NULL || !json_is_object(entry))
@@ -635,9 +639,29 @@ te_rgt_parse_mi_meas_message(te_rgt_mi *mi)
                     continue;
 
                 value.defined = true;
-                if (json_object_get_number(entry, "value",
-                                           &value.value) == 0)
+
+                values = json_object_get(entry, "values");
+                if (json_is_array(values))
+                {
+                    size_t index;
+                    json_t *val;
+
+                    value.values_num = json_array_size(values);
+                    value.values = calloc(value.values_num, sizeof(double));
+
+                    json_array_foreach(values, index, val)
+                    {
+                        if (json_is_number(val))
+                            value.values[index] = json_number_value(val);
+                    }
+
                     value.specified = true;
+                }
+                else if (json_object_get_number(entry, "value",
+                                           &value.value) == 0)
+                {
+                    value.specified = true;
+                }
 
                 value.multiplier = json_object_get_string(entry,
                                                           "multiplier");
@@ -679,7 +703,7 @@ te_rgt_parse_mi_meas_message(te_rgt_mi *mi)
                 }
                 else
                 {
-                    if (strcmp(aggr, "single") == 0)
+                    if (strcmp(aggr, "single") == 0 || strcmp(aggr, "series") == 0)
                     {
                         param->values[value_id] = value;
                         value_id++;

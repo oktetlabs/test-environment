@@ -38,12 +38,14 @@ typedef struct te_rgt_mi_meas_value {
     bool specified;          /**< If @c true, the numeric value was
                                      specified */
     double value;               /**< Value of "value" field */
+    size_t values_num;          /**< Length of "values" array" */
+    double *values;             /**< Values of "values" array */
     const char *multiplier;     /**< Value of "multiplier" field */
     const char *base_units;     /**< Value of "base_units" field */
 } te_rgt_mi_meas_value;
 
 /** Initializer for te_rgt_mi_meas_value structure */
-#define TE_RGT_MI_MEAS_VALUE_INIT { false, false, 0, NULL, NULL }
+#define TE_RGT_MI_MEAS_VALUE_INIT { false, false, 0, 0, NULL, NULL, NULL }
 
 /** Description of measured parameter */
 typedef struct te_rgt_mi_meas_param {

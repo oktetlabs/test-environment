@@ -582,27 +582,60 @@ RGT_DEF_FUNC(proc_log_msg_start)
  * @param prefix  Prefix string (may be @c NULL).
  */
 static void
-print_mi_meas_value(gen_ctx_user_t *ctx, te_rgt_mi_meas_value *value,
-                    const char *prefix)
+print_mi_meas_value_impl(gen_ctx_user_t *ctx, te_optional_double_t value,
+                    const char *multiplier, const char *base_units, const char *prefix)
 {
-    if (!(value->defined))
-        return;
-
     if (prefix != NULL)
         fprintf_log(ctx, "%15s: ", prefix);
 
-    if (value->specified)
-        fprintf_log(ctx, "%f", value->value);
+    if (value.defined)
+        fprintf_log(ctx, "%f", value.value);
     else
         fprintf_log(ctx, "[failed to obtain]");
 
-    if (value->multiplier != NULL && *(value->multiplier) != '\0' &&
-        strcmp(value->multiplier, "1") != 0)
-        fprintf_log(ctx, " * %s", value->multiplier);
-    if (value->base_units != NULL && *(value->base_units) != '\0')
-        fprintf_log(ctx, " %s", value->base_units);
+    if (multiplier != NULL && *multiplier != '\0' &&
+        strcmp(multiplier, "1") != 0)
+        fprintf_log(ctx, " * %s", multiplier);
+    if (base_units != NULL && *base_units != '\0')
+        fprintf_log(ctx, " %s", base_units);
 
     fprintf_log(ctx, "\n");
+}
+
+/**
+ * Print a measurement value.
+ *
+ * @param ctx     Logging context.
+ * @param value   Value to print.
+ * @param prefix  Prefix string (may be @c NULL).
+ */
+static void
+print_mi_meas_value(gen_ctx_user_t *ctx, te_rgt_mi_meas_value *value,
+                    const char *prefix)
+{
+    if (!value->defined)
+        return;
+
+    if (!value->specified)
+        print_mi_meas_value_impl(ctx, TE_OPTIONAL_DOUBLE_UNDEF, value->multiplier,
+                                 value->base_units, prefix);
+
+
+    if (value->values_num > 0)
+    {
+        size_t i;
+
+        for (i = 0; i < value->values_num; i++)
+            print_mi_meas_value_impl(ctx,
+                                     TE_OPTIONAL_DOUBLE_VAL(value->values[i]),
+                                     value->multiplier, value->base_units,
+                                     prefix);
+    }
+    else
+    {
+        print_mi_meas_value_impl(ctx, TE_OPTIONAL_DOUBLE_VAL(value->value),
+                                 value->multiplier, value->base_units, prefix);
+    }
 }
 
 /**
