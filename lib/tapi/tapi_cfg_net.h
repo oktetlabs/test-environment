@@ -392,6 +392,13 @@ typedef struct tapi_cfg_net_assigned {
 
 
 /**
+ * Enable IPv6 support on each node in network configuration.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_net_enable_ipv6_support(void);
+
+/**
  * Check all configuration networks that MTU values on the ends
  * of each network does not differ
  *

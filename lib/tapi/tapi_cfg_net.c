@@ -43,6 +43,7 @@
 #include "tapi_cfg_iptables.h"
 #include "tapi_cfg_net.h"
 #include "tapi_cfg_rcf.h"
+#include "tapi_cfg_sys.h"
 #include "tapi_host_ns.h"
 #include "tapi_namespaces.h"
 
@@ -2324,6 +2325,117 @@ tapi_cfg_net_all_assign_ip(unsigned int af)
     tapi_cfg_net_free_nets(&nets);
 
     return rc;
+}
+
+static te_errno
+enable_conf_ipv6_default(const char *agent)
+{
+    te_errno rc;
+    int val;
+
+    rc = tapi_cfg_sys_ip_grab(agent, AF_INET6, TAPI_CFG_SYS_IP_SUBTREE_CONF,
+                              TAPI_CFG_SYS_IP_INST_DEFAULT,
+                              CS_RSRC_LOCK_TYPE_SHARED);
+    if (rc != 0)
+    {
+        ERROR("%s: failed to grab shared IPv6 default sys conf: %r",
+              agent, rc);
+        return rc;
+    }
+
+    rc = tapi_cfg_sys_get_int(agent, &val,
+                              "net/ipv6/conf/default/disable_ipv6");
+    if (rc != 0)
+    {
+        ERROR("%s: failed to request default IPv6 state: %r", agent, rc);
+        return rc;
+    }
+
+    if (val == 0)
+        return 0;
+
+    rc = tapi_cfg_sys_ip_grab(agent, AF_INET6, TAPI_CFG_SYS_IP_SUBTREE_CONF,
+                              TAPI_CFG_SYS_IP_INST_DEFAULT,
+                              CS_RSRC_LOCK_TYPE_EXCLUSIVE);
+    if (rc != 0)
+    {
+        ERROR("%s: failed to grab exclusive IPv6 default sys conf: %r",
+              agent, rc);
+        return rc;
+    }
+
+    rc = tapi_cfg_sys_set_int(agent, 0, NULL,
+                              "net/ipv6/conf/default/disable_ipv6");
+    if (rc != 0)
+    {
+        ERROR("%s: failed to enable IPv6 by default: %r", agent, rc);
+        return rc;
+    }
+
+    rc = tapi_cfg_sys_ip_grab(agent, AF_INET6, TAPI_CFG_SYS_IP_SUBTREE_CONF,
+                              TAPI_CFG_SYS_IP_INST_DEFAULT,
+                              CS_RSRC_LOCK_TYPE_SHARED);
+    if (rc != 0)
+    {
+        ERROR("%s: failed to reset IPv6 default sys conf lock to shared: %r",
+              agent, rc);
+        return rc;
+    }
+
+    return 0;
+}
+
+/**
+ *
+ * Callback to enable IPv6 support on both the network interface of a
+ * network node and the default IPv6 configuration on an agent.
+ */
+static tapi_cfg_net_node_cb enable_net_node_ipv6_support;
+static te_errno
+enable_net_node_ipv6_support(cfg_net_t *net, cfg_net_node_t *node,
+                             const char *oid_str, cfg_oid *oid,
+                             void *cookie)
+{
+    const char *agent = CFG_OID_GET_INST_NAME(oid, 1);
+    const char *iface = CFG_OID_GET_INST_NAME(oid, 2);
+    te_errno rc;
+    int val;
+
+    UNUSED(oid_str);
+    UNUSED(cookie);
+    UNUSED(node);
+    UNUSED(net);
+
+    rc = tapi_cfg_sys_set_int(agent, 0, NULL,
+                              "net/ipv6/conf/%s/disable_ipv6", iface);
+    if (rc != 0)
+    {
+        ERROR("%s: failed to enable IPv6 for %s: %r", agent, iface, rc);
+        return rc;
+    }
+
+    rc = tapi_cfg_sys_get_int(agent, &val, "net/ipv6/conf/%s/disable_ipv6",
+                              iface);
+    if (rc != 0)
+    {
+        ERROR("%s: failed to read IPv6 state for %s: %r", agent, iface, rc);
+        return rc;
+    }
+
+    if (val != 0)
+    {
+        ERROR("%s: IPv6 remains disabled for %s", agent, iface);
+        return TE_RC(TE_TAPI, TE_EFAIL);
+    }
+
+    return enable_conf_ipv6_default(agent);
+}
+
+/* See description in tapi_cfg_net.h */
+te_errno
+tapi_cfg_net_enable_ipv6_support(void)
+{
+    return tapi_cfg_net_foreach_node(enable_net_node_ipv6_support, NULL);
 }
 
 /* See description in tapi_cfg_net.h */
