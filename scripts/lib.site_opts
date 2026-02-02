@@ -48,7 +48,7 @@ ss_opts_print_help() {
     fi
     for opt in "${!ss_opts_map[@]}"; do
         local func_info="${ss_opts_map[$opt]}_info"
-        local opt_pref="${opt/--/--${ss_opts_prefix}-}"
+        local opt_pref="--${ss_opts_prefix}${ss_opts_prefix:+-}${opt}"
 
         local description="$(call_if_defined "${func_info}")"
         printf "  %s\n" "$opt_pref"
@@ -72,15 +72,15 @@ ss_opts_print_help() {
 #   prefix at the beginning of option string.
 ###########################################################################
 ss_opts_strip_prefix() {
-    local opt_wo_pref="$1"
+    local opt_wo_pref="${1}"
     if [[ -n "$ss_opts_prefix" ]] ; then
-        opt_wo_pref="${1/--${ss_opts_prefix}-/--}"
+        opt_wo_pref="${1/--${ss_opts_prefix}-/}"
         if [[ $opt_wo_pref == $1 ]] ; then
             echo ""
             return
         fi
     fi
-    echo "${opt_wo_pref}"
+    echo "${opt_wo_pref/--/}"
 }
 
 ###########################################################################
