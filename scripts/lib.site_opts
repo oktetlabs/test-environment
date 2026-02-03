@@ -123,7 +123,6 @@ ss_opts_call_opt() {
     local opt_wo_pref="$(ss_opts_strip_prefix "$1")"
     local opt_val="${opt_wo_pref#*=}"
     opt_wo_pref="${opt_wo_pref%=*}"
-    echo "opt_wo_pref: ${opt_wo_pref} opt_val:${opt_val}"
     if [[ -n "${opt_wo_pref}" && -n "${ss_opts_map[$opt_wo_pref]}" ]]; then
         call_if_defined "${ss_opts_map[$opt_wo_pref]}" "${opt_val}"
     fi
