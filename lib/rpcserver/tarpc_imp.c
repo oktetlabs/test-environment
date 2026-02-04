@@ -3743,11 +3743,11 @@ TARPC_FUNC(siginterrupt, {},
 /*-------------- sigaction() --------------------------------*/
 
 /** Return opaque value of sa_restorer field of @p sa. */
-static uint64_t
+static uintptr_t
 get_sa_restorer(struct sigaction *sa)
 {
 #if HAVE_STRUCT_SIGACTION_SA_RESTORER
-    return (uint64_t)sa->sa_restorer;
+    return (uintptr_t)sa->sa_restorer;
 #else
     UNUSED(sa);
     return 0;
@@ -3756,7 +3756,7 @@ get_sa_restorer(struct sigaction *sa)
 
 /** Set opaque value @p restorer to sa_restorer field of @p sa. */
 static void
-set_sa_restorer(struct sigaction *sa, uint64_t restorer)
+set_sa_restorer(struct sigaction *sa, uintptr_t restorer)
 {
 #if HAVE_STRUCT_SIGACTION_SA_RESTORER
     sa->sa_restorer = (void *)restorer;
@@ -3818,7 +3818,7 @@ TARPC_FUNC(sigaction,
             goto finish;
         }
 
-        set_sa_restorer(&act, in_act->restorer);
+        set_sa_restorer(&act, (uintptr_t)in_act->restorer);
     }
 
     if (out->oldact.oldact_len != 0)
@@ -3852,7 +3852,7 @@ TARPC_FUNC(sigaction,
             goto finish;
         }
 
-        set_sa_restorer(&oldact, out_oldact->restorer);
+        set_sa_restorer(&oldact, (uintptr_t)out_oldact->restorer);
     }
 
     MAKE_CALL(out->retval = func(signum, p_act, p_oldact));
@@ -3877,7 +3877,7 @@ TARPC_FUNC(sigaction,
         out_oldact->handler = handler2name((oldact.sa_flags & SA_SIGINFO) ?
                                            (void *)oldact.sa_sigaction :
                                            (void *)oldact.sa_handler);
-        out_oldact->restorer = get_sa_restorer(&oldact);
+        out_oldact->restorer = (uint64_t)get_sa_restorer(&oldact);
     }
 
     finish:
