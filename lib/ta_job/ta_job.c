@@ -294,7 +294,7 @@ regexp_data_create(char *pattern, unsigned int extract,
     int max_lookbehind;
     int error;
     te_errno rc = 0;
-    unsigned long int erroffset;
+    PCRE2_SIZE erroffset;
     bool utf8;
     uint32_t newline;
 
@@ -307,7 +307,7 @@ regexp_data_create(char *pattern, unsigned int extract,
         unsigned char buf[256];
 
         pcre2_get_error_message(error, buf, sizeof(buf));
-        ERROR("PCRE2 compilation of pattern %s, failed at offset %lu: %s",
+        ERROR("PCRE2 compilation of pattern %s, failed at offset %zu: %s",
               pattern, erroffset, (const char *)buf);
         rc = TE_EINVAL;
         goto out;
@@ -1014,7 +1014,7 @@ filter_regexp_exec(ta_job_manager_t *manager, filter_t *filter,
 {
     int start_offset;
     bool first_exec;
-    unsigned long int *ovector;
+    PCRE2_SIZE *ovector;
     int rc;
     te_errno te_rc = 0;
     regexp_data_t *regexp = filter->regexp_data;
