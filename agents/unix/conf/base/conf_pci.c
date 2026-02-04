@@ -3172,7 +3172,7 @@ param_value_set(unsigned int gid, const char *oid, const char *value,
              param->type == NETCONF_NLA_U64 ||
              param->type == NETCONF_NLA_FLAG)
     {
-        rc = te_strtoul(value, 10, &uint_val);
+        rc = te_str_to_uint64(value, 10, &uint_val);
         if (rc != 0)
         {
             ERROR("%s(): invalid value '%s'", __FUNCTION__, value);
