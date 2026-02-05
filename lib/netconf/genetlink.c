@@ -154,8 +154,12 @@ netconf_gn_get_family(netconf_handle nh, const char *family_name,
     if (os_rc < 0)
     {
         rc = te_rc_os2te(errno);
-        ERROR("%s(): failed to obtain generic netlink family ID for "
-              "'%s', rc=%r", __FUNCTION__, family_name, rc);
+        /* Stay silent if the netlink family is not supported. */
+        if (rc != TE_ENOENT)
+        {
+            ERROR("%s(): failed to obtain generic netlink family ID for '%s', rc=%r",
+                  __FUNCTION__, family_name, rc);
+        }
         return rc;
     }
 
