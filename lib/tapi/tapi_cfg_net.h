@@ -406,6 +406,15 @@ extern te_errno tapi_cfg_net_enable_ipv6_support(void);
  */
 extern te_errno tapi_cfg_net_all_check_mtu(void);
 
+/**
+ * Use already configured IP addresses on specified configuration network.
+ *
+ * @param af            Address family
+ * @param net           Configuration network
+ *
+ * @return Status code.
+ */
+extern int tapi_cfg_net_use_configured_ip(unsigned int af, cfg_net_t *net);
 
 /**
  * Assign IP subnet to specified configuration network.
@@ -436,6 +445,15 @@ extern int tapi_cfg_net_assign_ip(unsigned int af, cfg_net_t *net,
  */
 extern te_errno tapi_cfg_net_unassign_ip(unsigned int af, cfg_net_t *net,
                                          tapi_cfg_net_assigned *assigned);
+
+/**
+ * Use already configured IP addresses for all configuration networks.
+ *
+ * @param af            Address family.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_net_all_use_configured_ip(unsigned int af);
 
 /**
  * Assign IP subnets for all configuration network.
