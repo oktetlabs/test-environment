@@ -1053,6 +1053,23 @@
          Name: none
          Value: any value means that reset is requested
 
+    - oid: "/agent/interface/xstats"
+      access: read_only
+      type: none
+      d: |
+         Network interface extended statistics
+         Name: none
+         Value: none
+
+    - oid: "/agent/interface/xstats/xstat"
+      access: read_only
+      type: uint64
+      volatile: true
+      d: |
+         Network interface certain extended statistic
+         Name:  Name of statistic
+         Value: Value of statistic
+
     - oid: "/agent/loadavg"
       access: read_only
       type: none

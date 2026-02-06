@@ -447,6 +447,23 @@ extern te_errno ta_ethtool_get_string_idx(unsigned int gid,
                                           const char *target,
                                           unsigned int *idx);
 
+/**
+ * Get set of statistics names and values.
+ *
+ * @param gid         Request group ID
+ * @param if_name     Interface name
+ * @param stat_names  Where to save pointer to filled ta_ethtool_strings
+ *                    with statistics names (caller should not release it).
+ * @param stat_values Where to save pointer to filled array of statistics
+ *                    values (caller should not release it)
+ *
+ * @return Status code.
+ */
+extern te_errno ta_ethtool_get_strings_stats(unsigned int gid,
+                                       const char *if_name,
+                                       const ta_ethtool_strings **stat_names,
+                                       const uint64_t **stat_values);
+
 #ifdef ETHTOOL_GRSSH
 
 /** Data associated with ETHTOOL_GRSSH/ETHTOOL_SRSSH */

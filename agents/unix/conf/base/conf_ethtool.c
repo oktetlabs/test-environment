@@ -1002,6 +1002,76 @@ ta_ethtool_get_string_idx(unsigned int gid, const char *if_name,
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
+/* see description in conf_ethtool.h */
+te_errno
+ta_ethtool_get_strings_stats(unsigned int gid, const char *if_name,
+                             const ta_ethtool_strings **stat_names,
+                             const uint64_t **stat_values)
+{
+    struct ethtool_stats *stats = NULL;
+    te_string obj_name = TE_STRING_INIT_STATIC(MAX_OBJ_NAME_LEN);
+    ta_cfg_obj_t *obj;
+    uint64_t *result;
+    size_t req_size;
+    te_errno rc;
+    size_t stats_num;
+
+    rc = ta_ethtool_get_strings(gid, if_name, ETH_SS_STATS, stat_names);
+    if (rc != 0)
+        return rc;
+    stats_num = (*stat_names)->num;
+
+    te_string_append(&obj_name, "%s.%u", if_name, ETHTOOL_GSTATS);
+
+    obj = ta_obj_find(TA_OBJ_TYPE_IF_XSTATS, te_string_value(&obj_name),
+                      gid);
+    if (obj != NULL)
+    {
+        *stat_values = obj->user_data;
+        return 0;
+    }
+
+    req_size = sizeof(struct ethtool_stats) +
+                            sizeof(uint64_t) * stats_num;
+
+    stats = TE_ALLOC(req_size);
+
+    stats->cmd = ETHTOOL_GSTATS;
+    stats->n_stats = stats_num;
+
+    rc = call_ethtool_ioctl(if_name, ETHTOOL_GSTATS, stats);
+    if (rc != 0)
+    {
+        free(stats);
+        return rc;
+    }
+    if (stats->n_stats != stats_num)
+    {
+        ERROR("%s(): amount of stats is different for "
+              "ETHTOOL_GSTATS(%d) and ETH_SS_STATS(%zu)",
+              __FUNCTION__, stats->n_stats, stats_num);
+        free(stats);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    req_size = sizeof(uint64_t) * stats_num;
+    result = TE_ALLOC(req_size);
+
+    memcpy(result, stats->data, stats_num * sizeof(uint64_t));
+    free(stats);
+
+    rc = ta_obj_add(TA_OBJ_TYPE_IF_XSTATS, te_string_value(&obj_name),
+                    "", gid, result, &free, &obj);
+    if (rc != 0)
+    {
+        free(result);
+        return rc;
+    }
+
+    *stat_values = result;
+    return rc;
+}
+
 #ifdef ETHTOOL_GRSSH
 
 static te_errno

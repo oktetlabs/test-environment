@@ -317,6 +317,12 @@ extern void ta_cfg_obj_log(const ta_cfg_obj_t *obj);
 #define TA_OBJ_TYPE_IF_STRINGS "if_strings"
 
 /**
+ * Name for the object type containing set of statistic values related
+ * to network interface.
+ */
+#define TA_OBJ_TYPE_IF_XSTATS "if_xstats"
+
+/**
  * Name for the object type containing RSS hash key and indirection
  * table.
  */
