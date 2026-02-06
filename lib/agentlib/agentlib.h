@@ -17,6 +17,7 @@
 #endif
 
 #include "tq_string.h"
+#include "te_string.h"
 
 /**
  * Get parent device name of VLAN interface.
@@ -371,5 +372,17 @@ extern te_errno agent_key_generate(agent_key_manager manager,
                                    unsigned bitsize,
                                    const char *user,
                                    const char *private_key_file);
+
+/**
+ * Add output of command on TA to te_string string.
+ *
+ * @param[in,out] str    String to add output.
+ * @param[in]     cmd    Command format string.
+ * @param[in]     ...    Format string arguments.
+ *
+ * @return Status code.
+ */
+extern te_errno ta_read_cmd_fmt(te_string *str, const char *cmd, ...)
+                                TE_LIKE_PRINTF(2, 3);
 
 #endif /* __TE_AGENTLIB_H__ */
