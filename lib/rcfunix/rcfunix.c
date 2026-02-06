@@ -1249,8 +1249,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     /*
      * Add directory with agent to the PATH
      */
-    te_string_append(&cmd, "PATH=%s${PATH}:%s ",
-                     ta->is_local ? "" : "\\", ta->run_dir);
+    te_string_append(&cmd, "PATH=%s:%s${PATH} ",
+                     ta->run_dir, ta->is_local ? "" : "\\");
 
     /*
      * Add agent working directory to the LD_LIBRARY_PATH
