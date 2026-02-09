@@ -1254,8 +1254,8 @@ extern te_errno tapi_cfg_alloc_af_net_addr_pair(int af,
  * Add a new user on TA with given name.
  *
  * @note User name will be TE_USER_PREFIX + base_username.
- *       User will be created in a new group named after the user and having
- *       gid = uid.
+ *       User will be created in a new group named after the user.
+ *       If base_username is numeric it will be also gid = uid.
  *
  * @param agent          Agent on which to create a new user.
  * @param base_username  User name.
@@ -1274,6 +1274,32 @@ extern te_errno tapi_cfg_add_new_user_by_name(const char *agent,
  * @param uid         User ID.
  */
 extern te_errno tapi_cfg_add_new_user(const char *agent, int uid);
+
+/**
+ * Get user uid by user name.
+ *
+ * @param[in]  agent          Agent on which to create a new user.
+ * @param[in]  base_username  User name.
+ * @param[out] uid            UID
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_get_user_uid_by_name(const char *agent,
+                                              const char *base_username,
+                                              uint32_t *uid);
+
+/**
+ * Get user gid by user name.
+ *
+ * @param[in]  agent          Agent on which to create a new user.
+ * @param[in]  base_username  User name.
+ * @param[out] gid            GID
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_get_user_gid_by_name(const char *agent,
+                                              const char *base_username,
+                                              uint32_t *gid);
 
 /**
  * Add a user on TA if no such user already exists with given name.

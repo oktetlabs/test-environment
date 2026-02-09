@@ -704,6 +704,12 @@ static te_errno agent_lib_bin_dir_get(unsigned int, const char *, char *,
 static te_errno nameserver_get(unsigned int, const char *, char *,
                                const char *, ...);
 
+static te_errno user_gid_get(unsigned int, const char *, char *,
+                             const char *);
+
+static te_errno user_uid_get(unsigned int, const char *, char *,
+                             const char *);
+
 static te_errno user_list(unsigned int, const char *,
                           const char *, char **);
 static te_errno user_add(unsigned int, const char *, const char *,
@@ -1040,8 +1046,14 @@ RCF_PCH_CFG_NODE_RO(node_uname_version, "version", NULL, &node_uname_release,
 RCF_PCH_CFG_NODE_RO(node_uname, "uname", &node_uname_version, &node_env,
                     uname_get);
 
+RCF_PCH_CFG_NODE_RO(node_user_gid, "gid", NULL, NULL,
+                    user_gid_get);
+
+RCF_PCH_CFG_NODE_RO(node_user_uid, "uid", NULL, &node_user_gid,
+                    user_uid_get);
+
 RCF_PCH_CFG_NODE_COLLECTION(node_user, "user",
-                            NULL, &node_uname,
+                            &node_user_uid, &node_uname,
                             user_add, user_del,
                             user_list, NULL);
 
@@ -8469,6 +8481,94 @@ set_change_passwd(char const *user, char const *passwd)
     return rc;
 }
 #endif /* TA_USE_PAM */
+
+/**
+ * Get tester user gid.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         Location for the value (OUT)
+ * @param user          user name: TE_USER_PREFIX<user_name_prefix_free>;
+ *                      if <user_name_prefix_free> is numeric then
+ *                      it should coincide with user gid
+ *
+ * @return              Status code
+ */
+static te_errno
+user_gid_get(unsigned int gid, const char *oid, char *value,
+             const char *user)
+{
+#if TA_USE_PAM || defined(__linux__)
+    struct passwd *pw;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if !TA_USE_PAM && !defined(__linux__)
+    UNUSED(user);
+    ERROR("user_gid_get failed (no user management facilities available)");
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#else
+    if (strncmp(user, TE_USER_PREFIX, strlen(TE_USER_PREFIX)) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    pw = getpwnam(user);
+    if (pw == NULL)
+    {
+        ERROR("User %s is not found", user);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+
+    sprintf(value, "%ju", (uintmax_t)pw->pw_gid);
+
+    return 0;
+#endif
+}
+
+/**
+ * Get tester user uid.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         Location for the value (OUT)
+ * @param user          user name: TE_USER_PREFIX<user_name_prefix_free>;
+ *                      if <user_name_prefix_free> is numeric then
+ *                      it should coincide with user uid
+ *
+ * @return              Status code
+ */
+static te_errno
+user_uid_get(unsigned int gid, const char *oid, char *value,
+             const char *user)
+{
+#if TA_USE_PAM || defined(__linux__)
+    struct passwd *pw;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if !TA_USE_PAM && !defined(__linux__)
+    UNUSED(user);
+    ERROR("user_uid_get failed (no user management facilities available)");
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#else
+    if (strncmp(user, TE_USER_PREFIX, strlen(TE_USER_PREFIX)) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    pw = getpwnam(user);
+    if (pw == NULL)
+    {
+        ERROR("User %s is not found", user);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+
+    sprintf(value, "%ju", (uintmax_t)pw->pw_uid);
+
+    return 0;
+#endif
+}
 
 /**
  * Add tester user.

@@ -2850,6 +2850,40 @@ tapi_cfg_add_new_user_by_name(const char *agent,
 
 /* See description in tapi_cfg.h */
 te_errno
+tapi_cfg_get_user_uid_by_name(const char *agent,
+                              const char *base_username, uint32_t *uid)
+{
+    te_errno rc;
+
+    if ((rc = cfg_get_uint32(uid, "/agent:%s/user:%s%s/uid:", agent,
+                             TE_USER_PREFIX, base_username)) != 0)
+    {
+        ERROR("%s(): Failed (%r) to get uid for user with name %s%s",
+              __FUNCTION__, rc, TE_USER_PREFIX, base_username);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg.h */
+te_errno
+tapi_cfg_get_user_gid_by_name(const char *agent,
+                              const char *base_username, uint32_t *gid)
+{
+    te_errno rc;
+
+    if ((rc = cfg_get_uint32(gid, "/agent:%s/user:%s%s/gid:", agent,
+                             TE_USER_PREFIX, base_username)) != 0)
+    {
+        ERROR("%s(): Failed (%r) to get gid for user with name %s",
+              __FUNCTION__, rc, TE_USER_PREFIX, base_username);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg.h */
+te_errno
 tapi_cfg_add_new_user(const char *agent, int uid)
 {
     te_string base_username = TE_STRING_INIT_STATIC(1024);

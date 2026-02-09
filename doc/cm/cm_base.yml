@@ -1849,8 +1849,24 @@
       type: none
       d: |
          Tester user.
-         Name: te_tester_<uid>
+         Name: TE_USER_PREFIX<base_username>
+         If <base_username> is numeric then it should coincide
+         with <uid> and <gid>
          Password is the same as user name.
+
+    - oid: "/agent/user/uid"
+      access: read_only
+      type: uint32
+      d: |
+         Tester uid.
+         Name: empty
+
+    - oid: "/agent/user/gid"
+      access: read_only
+      type: uint32
+      d: |
+         Tester gid.
+         Name: empty
 
     - oid: "/agent/rlimits"
       access: read_only
