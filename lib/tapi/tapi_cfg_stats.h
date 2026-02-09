@@ -27,6 +27,12 @@ extern "C" {
 #endif
 
 /**
+ * Maximum lenght for extended statistics name. It is similair to
+ * ETH_GSTRING_LEN.
+ */
+#define TAPI_CFG_MAX_XSTAT_NAME 32
+
+/**
  * @defgroup tapi_conf_stats Network statistics access
  * @ingroup tapi_conf
  * @{
@@ -46,6 +52,15 @@ typedef struct tapi_cfg_if_stats {
     uint64_t      out_errors;
 } tapi_cfg_if_stats;
 
+typedef struct tapi_cfg_if_xstat {
+    char          name[TAPI_CFG_MAX_XSTAT_NAME];
+    uint64_t      value;
+} tapi_cfg_if_xstat;
+
+typedef struct tapi_cfg_if_xstats {
+    size_t num; /**< Number of statistics */
+    tapi_cfg_if_xstat *xstats;
+} tapi_cfg_if_xstats;
 
 typedef struct tapi_cfg_net_stats_ipv4{
     uint64_t      in_recvs;
@@ -145,6 +160,48 @@ extern te_errno tapi_cfg_stats_if_stats_print_diff(
                     const tapi_cfg_if_stats *prev,
                     const char *descr_fmt, ...)
                     TE_LIKE_PRINTF(3, 4);
+
+/**
+ * Get ethtool statistics for the certain network interface.
+ *
+ * @param ta            Test Agent to gather statistics on
+ * @param ifname        Network interface to gather statistics of
+ * @param xstats        Resulted interface extended statistics structure
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_stats_if_xstats_get(const char         *ta,
+                                             const char         *ifname,
+                                             tapi_cfg_if_xstats *stats);
+
+/**
+ * Print ethtool statistics difference with provided description.
+ *
+ * @param stats         Interface statistics from ethtool.
+ * @param prev          Previous interface statistics from ethtool or @c NULL.
+ * @param descr_fmt     Description format string with arguments.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_stats_if_xstats_print_diff(
+                    const tapi_cfg_if_xstats *stats,
+                    const tapi_cfg_if_xstats *prev,
+                    const char *descr_fmt, ...)
+                    TE_LIKE_PRINTF(3, 4);
+
+/**
+ * Print ethtool statistics for the certain network interface.
+ *
+ * @param ta            Test Agent to gather statistics on
+ * @param ifname        Network interface to gather statistics of
+ * @param stats         Gathered extended interface statistics structure
+ *                      to print
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_stats_if_xstats_print(const char          *ta,
+                                               const char          *ifname,
+                                               tapi_cfg_if_xstats  *xstats);
 
 /**
  * Get /proc/net/snmp like statistics for the host,

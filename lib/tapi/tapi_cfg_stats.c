@@ -18,6 +18,8 @@
 #endif
 
 #include "te_defs.h"
+#include "te_alloc.h"
+#include "te_str.h"
 #include "te_string.h"
 #include "logger_api.h"
 #include "tapi_cfg_base.h"
@@ -46,6 +48,13 @@
 #define _U64_FMT " " U64_FMT
 #define _I64_FMT " " I64_FMT
 
+struct tapi_cfg_if_xstat_diff {
+    char          name[TAPI_CFG_MAX_XSTAT_NAME];
+    bool          old;
+    bool          new;
+    uint64_t      old_value;
+    uint64_t      new_value;
+};
 
 /* See description in tapi_cfg_stats.h */
 te_errno
@@ -114,6 +123,113 @@ tapi_cfg_stats_if_stats_get(const char          *ta,
     return 0;
 }
 
+/* See description in tapi_cfg_stats.h */
+te_errno
+tapi_cfg_stats_if_xstats_get(const char         *ta,
+                             const char         *ifname,
+                             tapi_cfg_if_xstats *xstats)
+{
+    te_errno            rc;
+    unsigned int        n_xstats;
+    cfg_handle         *xstats_handles;
+    size_t              req_size;
+    tapi_cfg_if_xstat  *result;
+    unsigned int        i;
+
+    VERB("%s(ta=%s, ifname=%s, xstats=%x) started",
+         __FUNCTION__, ta, ifname, xstats);
+
+    if (xstats == NULL || ifname == NULL || ta == NULL)
+    {
+        ERROR("%s(): ta, ifname or xstats is NULL!", __FUNCTION__);
+        return TE_OS_RC(TE_TAPI, EINVAL);
+    }
+
+    VERB("%s(): xstats=%x", __FUNCTION__, xstats);
+
+    /*
+     * Synchronize configuration trees and get assigned interfaces
+     */
+
+    VERB("Try to sync xstats");
+
+    rc = cfg_synchronize_fmt(true, "/agent:%s/interface:%s/xstats:",
+                             ta, ifname);
+    if (rc != 0)
+        return rc;
+
+    VERB("Get xstats counters");
+    rc = cfg_find_pattern_fmt(&n_xstats, &xstats_handles,
+                              "/agent:%s/interface:%s/xstats:/xstat:*",
+                              ta, ifname);
+
+    if ((rc != 0 && TE_RC_GET_ERROR(rc) == TE_ENOENT) ||
+        (rc == 0 && n_xstats == 0))
+    {
+        xstats->num = 0;
+        return 0;
+    }
+    if (rc != 0)
+    {
+        ERROR("cfg_find_pattern_fmt(/agent/interface/xstats/xstat) failed %r",
+              rc);
+        return rc;
+    }
+
+    req_size = sizeof(tapi_cfg_if_xstat) * n_xstats;
+    result = TE_ALLOC(req_size);
+
+    for (i = 0; i < n_xstats; i++)
+    {
+        uint64_t  xstat_val;
+        char     *xstat_oid = NULL;
+        char     *xstat_name;
+
+        /* Get net OID as string */
+        rc = cfg_get_oid_str(xstats_handles[i], &xstat_oid);
+        if (rc != 0)
+        {
+            ERROR("%s(): cfg_get_oid_str() failed %r", __FUNCTION__, rc);
+            break;
+        }
+
+        rc = cfg_get_uint64(&xstat_val, xstat_oid);
+        if (rc != 0)
+        {
+            ERROR("%s(): failed to get value for %s", __FUNCTION__, xstat_oid);
+            free(xstat_oid);
+            break;
+        }
+
+        xstat_name = cfg_oid_str_get_inst_name(xstat_oid, -1);
+        if (xstat_name == NULL)
+        {
+            ERROR("%s(): Failed to get the last instance name from OID '%s'",
+                  __FUNCTION__, xstat_oid);
+            free(xstat_oid);
+            rc = TE_RC(TE_TAPI, TE_EFAULT);
+            break;
+        }
+
+        te_strlcpy(result[i].name, xstat_name, TAPI_CFG_MAX_XSTAT_NAME);
+        result[i].value = xstat_val;
+        free(xstat_oid);
+        free(xstat_name);
+    }
+
+    free(xstats_handles);
+    if (rc != 0)
+    {
+        free(result);
+    }
+    else
+    {
+        xstats->xstats = result;
+        xstats->num = n_xstats;
+    }
+
+    return rc;
+}
 
 /* See description in tapi_cfg_stats.h */
 te_errno
@@ -291,6 +407,85 @@ tapi_cfg_stats_if_stats_print(const char          *ta,
 }
 
 static void
+tapi_cfg_stats_if_xstats_print_with_descr(const tapi_cfg_if_xstats *xstats,
+                                          const char *descr_fmt, ...)
+{
+    int i;
+    va_list ap;
+    te_string buf = TE_STRING_INIT;
+
+    va_start(ap, descr_fmt);
+    te_string_append_va(&buf, descr_fmt, ap);
+    va_end(ap);
+
+    for (i = 0; i < xstats->num; i++)
+    {
+        tapi_cfg_if_xstat xstat = xstats->xstats[i];
+        te_string_append(&buf, "\n  %s : " U64_FMT,
+                         xstat.name, xstat.value);
+    }
+
+    RING("%s", te_string_value(&buf));
+
+    te_string_free(&buf);
+}
+
+static void
+tapi_cfg_stats_if_xstats_print_diff_va(struct tapi_cfg_if_xstat_diff *diff,
+                                       size_t diff_num, const char *descr_fmt,
+                                       va_list ap)
+{
+    int i;
+    te_string buf = TE_STRING_INIT;
+
+    te_string_append_va(&buf, descr_fmt, ap);
+
+    for (i = 0; i < diff_num; i++)
+    {
+        if (diff[i].new && diff[i].old)
+        {
+            uint64_t diff_val;
+
+            diff_val = diff[i].new_value - diff[i].old_value;
+            if (diff_val != 0)
+                te_string_append(&buf, "\n  %s : " U64_FMT,
+                                 diff[i].name, diff_val);
+        }
+        else if (diff[i].old)
+        {
+            te_string_append(&buf, "\n  %s : " U64_FMT "(old only)",
+                                 diff[i].name, diff[i].old_value);
+        }
+        else if (diff[i].new)
+        {
+            te_string_append(&buf, "\n  %s : " U64_FMT "(new only)",
+                                 diff[i].name, diff[i].new_value);
+        }
+
+    }
+
+    RING("%s", te_string_value(&buf));
+
+    te_string_free(&buf);
+}
+
+/* See description in tapi_cfg_stats.h */
+te_errno
+tapi_cfg_stats_if_xstats_print(const char          *ta,
+                               const char          *ifname,
+                               tapi_cfg_if_xstats  *xstats)
+{
+    if (xstats == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    tapi_cfg_stats_if_xstats_print_with_descr(xstats,
+        "Network extended statistics for interface %s on Test Agent %s:",
+        ifname, ta);
+
+    return 0;
+}
+
+static void
 tapi_cfg_if_stats_diff(tapi_cfg_if_stats *diff,
                        const tapi_cfg_if_stats *stats,
                        const tapi_cfg_if_stats *prev)
@@ -328,6 +523,94 @@ tapi_cfg_stats_if_stats_print_diff(const tapi_cfg_if_stats *stats,
     tapi_cfg_stats_if_stats_print_with_descr_va(diff, false, descr_fmt, ap);
     va_end(ap);
 
+    return 0;
+}
+
+static tapi_cfg_if_xstat *
+tapi_cfg_if_xstat_find_by_name(const char *xstat_name,
+                               const tapi_cfg_if_xstats *xstats)
+{
+    size_t i;
+
+    if (xstats == NULL)
+        return NULL;
+
+    for (i = 0; i < xstats->num; i++)
+    {
+        if (strcmp(xstats->xstats[i].name, xstat_name) == 0)
+            return &(xstats->xstats[i]);
+    }
+    return NULL;
+}
+
+static size_t
+tapi_cfg_if_xstats_diff(const tapi_cfg_if_xstats *new_xstats,
+                        const tapi_cfg_if_xstats *old_xstats,
+                        struct tapi_cfg_if_xstat_diff *diff)
+{
+    const tapi_cfg_if_xstat *xstat;
+    size_t i;
+    size_t cnt = 0;
+
+    for (i = 0; new_xstats != NULL && i < new_xstats->num; i++)
+    {
+        const tapi_cfg_if_xstat *new_i = &(new_xstats->xstats[i]);
+
+        te_strlcpy(diff[cnt].name, new_i->name, TAPI_CFG_MAX_XSTAT_NAME);
+        diff[cnt].new = true;
+        diff[cnt].new_value = new_i->value;
+        xstat = tapi_cfg_if_xstat_find_by_name(new_i->name, old_xstats);
+        if (xstat != NULL)
+        {
+            diff[cnt].old = true;
+            diff[cnt].old_value = xstat->value;
+        }
+        else
+        {
+            diff[cnt].old = false;
+        }
+        cnt++;
+    }
+
+    for (i = 0; old_xstats != NULL && i < old_xstats->num; i++)
+    {
+        const tapi_cfg_if_xstat *old_i = &(old_xstats->xstats[i]);
+
+        xstat = tapi_cfg_if_xstat_find_by_name(old_i->name, new_xstats);
+        if (xstat != NULL)
+            continue;
+        te_strlcpy(diff[cnt].name, old_i->name, TAPI_CFG_MAX_XSTAT_NAME);
+        diff[cnt].old = true;
+        diff[cnt].old_value = old_i->value;
+        diff[cnt].new = false;
+        cnt++;
+    }
+    return cnt;
+}
+
+te_errno
+tapi_cfg_stats_if_xstats_print_diff(const tapi_cfg_if_xstats *stats,
+                                   const tapi_cfg_if_xstats *prev,
+                                   const char *descr_fmt, ...)
+{
+    struct tapi_cfg_if_xstat_diff *diff;
+    va_list ap;
+    size_t diff_num;
+    size_t diff_max_len;
+
+    if (stats == NULL || descr_fmt == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    diff_max_len = stats->num;
+    diff_max_len += (prev == NULL) ? 0 : prev->num;
+    diff = TE_ALLOC(diff_max_len * sizeof(struct tapi_cfg_if_xstat_diff));
+    diff_num = tapi_cfg_if_xstats_diff(stats, prev, diff);
+
+    va_start(ap, descr_fmt);
+    tapi_cfg_stats_if_xstats_print_diff_va(diff, diff_num, descr_fmt, ap);
+    va_end(ap);
+
+    free(diff);
     return 0;
 }
 

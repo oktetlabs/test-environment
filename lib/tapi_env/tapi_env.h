@@ -448,6 +448,7 @@ typedef struct tapi_env_if {
                                             request via TE_ENV_SNIFF_ON */
 
     te_vec  stats;  /**< Network interface statistics */
+    te_vec  xstats; /**< Network interface ethtool statistics */
 
 } tapi_env_if;
 

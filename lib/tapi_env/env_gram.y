@@ -74,6 +74,12 @@ create_net(void)
     return p;
 }
 
+static void
+destroy_xstats(const void *item)
+{
+    free(((struct tapi_cfg_if_xstats *)item)->xstats);
+}
+
 static tapi_env_if *
 create_host_if(void)
 {
@@ -91,6 +97,8 @@ create_host_if(void)
     iface->net = curr_net;
     iface->host = host;
     iface->stats = TE_VEC_INIT(struct tapi_cfg_if_stats);
+    iface->xstats = TE_VEC_INIT_DESTROY(struct tapi_cfg_if_xstats,
+                                        destroy_xstats);
 
     return iface;
 }
