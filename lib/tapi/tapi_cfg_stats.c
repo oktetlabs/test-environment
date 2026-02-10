@@ -193,7 +193,7 @@ tapi_cfg_stats_if_xstats_get(const char         *ta,
             break;
         }
 
-        rc = cfg_get_uint64(&xstat_val, xstat_oid);
+        rc = cfg_get_uint64(&xstat_val, "%s", xstat_oid);
         if (rc != 0)
         {
             ERROR("%s(): failed to get value for %s", __FUNCTION__, xstat_oid);
