@@ -2140,12 +2140,13 @@ cmd_monitor_get_prop(xmlNodePtr *node, char **value, char *name)
  * Get command monitor descriptions from <command_monitor> nodes
  *
  * @param node    The first <command_monitor> node
+ * @param cfg     Tester configuration context
  * @param ritem   run_item where to store command monitor descriptions
  *
  * @return 0 on success, error code on failure
  */
 static te_errno
-monitors_process(xmlNodePtr *node, run_item *ritem)
+monitors_process(xmlNodePtr *node, tester_cfg *cfg, run_item *ritem)
 {
     te_errno rc = 0;
     xmlNodePtr p;
@@ -2174,11 +2175,19 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
                     return rc;
                 }
             }
-            if (xmlStrcmp(p->name,
-                          CONST_CHAR2XML("ta")) == 0)
+            else if (xmlStrcmp(p->name,
+                               CONST_CHAR2XML("ta")) == 0)
             {
                 if ((rc = cmd_monitor_get_prop(&p, &monitor->ta,
                                                "ta")) != 0)
+                {
+                    free_cmd_monitor(monitor);
+                    return rc;
+                }
+
+                rc = cmd_monitor_set_type(monitor, TESTER_CMD_MONITOR_TA,
+                                          "ta node");
+                if (rc != 0)
                 {
                     free_cmd_monitor(monitor);
                     return rc;
@@ -2214,6 +2223,32 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
                         (atoi(run_monitor) == 0 ? false : true);
                 free(run_monitor);
             }
+            else if (xmlStrcmp(p->name, CONST_CHAR2XML("script")) == 0)
+            {
+                xmlChar *name;
+
+                assert(monitor->command == NULL);
+
+                name = xmlGetProp(p, CONST_CHAR2XML("name"));
+                if (name == NULL)
+                {
+                    free_cmd_monitor(monitor);
+                    return TE_RC(TE_TESTER, TE_ENOENT);
+                }
+
+                monitor->command = name_to_path(cfg, XML2CHAR(name), false);
+                xmlFree(name);
+
+                rc = cmd_monitor_set_type(monitor, TESTER_CMD_MONITOR_TEST,
+                                          "script node");
+                if (rc != 0)
+                {
+                    free_cmd_monitor(monitor);
+                    return rc;
+                }
+
+                p = xmlNodeNext(p);
+            }
             else
             {
                 ERROR("%s(): unexpected node name '%s' encountered",
@@ -2227,12 +2262,21 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
         snprintf(monitor->name, TESTER_CMD_MONITOR_NAME_LEN,
                  "tester_monitor%d", tester_monitor_id);
 
-        if (monitor->ta == NULL)
+        if (monitor->type == TESTER_CMD_MONITOR_NONE)
         {
             char *ta = getenv("TE_IUT_TA_NAME");
 
             if (ta != NULL)
+            {
                 monitor->ta = strdup(ta);
+                rc = cmd_monitor_set_type(monitor, TESTER_CMD_MONITOR_TA,
+                                          "TE_IUT_TA_NAME env variable");
+                if (rc != 0)
+                {
+                    free_cmd_monitor(monitor);
+                    return rc;
+                }
+            }
         }
 
         TAILQ_INSERT_TAIL(&ritem->cmd_monitors, monitor, links);
@@ -2287,7 +2331,7 @@ get_session(xmlNodePtr node, tester_cfg *cfg, const test_session *parent,
             return rc;
     }
 
-    monitors_process(&node, ritem);
+    monitors_process(&node, cfg, ritem);
 
     /* Get information about variables */
     while (node != NULL)
@@ -2599,7 +2643,7 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
         return TE_RC(TE_TESTER, TE_EINVAL);
     }
 
-    if (node != NULL && monitors_process(&node, p) != 0)
+    if (node != NULL && monitors_process(&node, cfg, p) != 0)
     {
         ERROR("Failed to process <command_monitor> nodes");
         return TE_RC(TE_TESTER, TE_EINVAL);

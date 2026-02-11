@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2024 ARK NETWORKS LLC. All rights reserved. -->
+<test name="monitors" type="package">
+    <objective>Test Suite for different type of command monitors</objective>
+    <notes/>
+    <iter result="PASSED">
+        <notes/>
+        <test name="trivial" type="script">
+            <objective>Auxiliary test to validate test command monitor</objective>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+    </iter>
+</test>

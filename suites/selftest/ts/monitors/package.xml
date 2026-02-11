@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2024-2024 ARK NETWORKS LLC. All rights reserved. -->
+<package version="1.0">
+    <description>Test Suite for different type of command monitors</description>
+
+    <author mailto="Oleg.Sadakov@arknetworks.am"/>
+
+    <session>
+        <run name="test_trivial">
+            <session>
+                <objective>Run 2 trivial tests with test command monitor in parallel</objective>
+                <command_monitor>
+                    <script name="test_mon"/>
+                </command_monitor>
+                <run name="trivial">
+                    <script name="trivial"/>
+                </run>
+                <run name="trivial">
+                    <script name="trivial"/>
+                </run>
+            </session>
+        </run>
+
+        <run name="test_prologue_epoligue">
+            <session>
+                <objective>Run test command monitor with prologue and epilogue</objective>
+                <command_monitor>
+                    <script name="test_mon"/>
+                </command_monitor>
+                <prologue>
+                    <script name="trivial"/>
+                </prologue>
+                <epilogue>
+                    <script name="trivial"/>
+                </epilogue>
+                <run name="trivial">
+                    <script name="trivial"/>
+                </run>
+            </session>
+        </run>
+    </session>
+</package>
