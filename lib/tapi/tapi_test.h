@@ -1624,6 +1624,23 @@ extern te_optional_double_t test_get_opt_value_unit_param(int argc,
                                                           const char *name);
 
 /**
+ * Get optional boolean value of type #te_bool3 from arguments.
+ *
+ * @note Allows to specify "missing" value by providing literal @c - .
+ * This literal is replaced with #TE_BOOL3_UNKNOWN.
+ *
+ * @param argc       count of arguments
+ * @param argv       list of arguments
+ * @param name       name of parameter
+ *
+ * @return optional boolean value
+ *
+ * @sa te_bool3
+ */
+extern te_bool3 test_get_opt_bool3_param(int argc, char **argv,
+                                         const char *name);
+
+/**
  * Same as test_get_value_bin_unit_param() but the return type is optional.
  *
  * @param argc       count of arguments
@@ -1758,6 +1775,32 @@ extern te_optional_uintmax_t test_get_opt_value_bin_unit_param(
  */
 #define TEST_GET_OPT_VALUE_BIN_UNIT_PARAM(var_name_) \
     (var_name_) = TEST_OPT_VALUE_BIN_UNIT_PARAM(var_name_)
+
+/**
+ * The macro to return optional parameter of type #te_bool3.
+ *
+ * @note Allows to specify "missing" value by providing literal @c - .
+ * This literal is replaced with #TE_BOOL3_UNKNOWN.
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ *
+ * @return te_bool3 value
+ */
+#define TEST_OPT_BOOL3_PARAM(var_name_)                                        \
+    test_get_opt_bool3_param(argc, argv, #var_name_)
+
+/**
+ * The macro to get optional parameter of type #te_bool3.
+ *
+ * @note Allows to specify "missing" value by providing literal @c - .
+ * This literal is replaced with #TE_BOOL3_UNKNOWN.
+ *
+ * @param var_name_  variable with the same name as the name of
+ *                   the desired parameter
+ */
+#define TEST_GET_OPT_BOOL3_PARAM(var_name_)                                    \
+    (var_name_) = TEST_OPT_BOOL3_PARAM(var_name_)
 
 /**@}*/
 
