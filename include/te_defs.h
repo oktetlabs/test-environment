@@ -339,7 +339,7 @@ typedef enum te_bool3 {
 #define TE_BITSIZE(_typeobj) (sizeof(_typeobj) * CHAR_BIT)
 
 /** Prefix for tester user name */
-#define TE_USER_PREFIX  "te"
+#define TE_USER_PREFIX  "te_tester_"
 
 #ifdef __cplusplus
 extern "C" {

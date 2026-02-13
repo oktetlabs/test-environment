@@ -704,6 +704,12 @@ static te_errno agent_lib_bin_dir_get(unsigned int, const char *, char *,
 static te_errno nameserver_get(unsigned int, const char *, char *,
                                const char *, ...);
 
+static te_errno user_gid_get(unsigned int, const char *, char *,
+                             const char *);
+
+static te_errno user_uid_get(unsigned int, const char *, char *,
+                             const char *);
+
 static te_errno user_list(unsigned int, const char *,
                           const char *, char **);
 static te_errno user_add(unsigned int, const char *, const char *,
@@ -1040,8 +1046,14 @@ RCF_PCH_CFG_NODE_RO(node_uname_version, "version", NULL, &node_uname_release,
 RCF_PCH_CFG_NODE_RO(node_uname, "uname", &node_uname_version, &node_env,
                     uname_get);
 
+RCF_PCH_CFG_NODE_RO(node_user_gid, "gid", NULL, NULL,
+                    user_gid_get);
+
+RCF_PCH_CFG_NODE_RO(node_user_uid, "uid", NULL, &node_user_gid,
+                    user_uid_get);
+
 RCF_PCH_CFG_NODE_COLLECTION(node_user, "user",
-                            NULL, &node_uname,
+                            &node_user_uid, &node_uname,
                             user_add, user_del,
                             user_list, NULL);
 
@@ -8290,16 +8302,15 @@ user_list(unsigned int gid, const char *oid,
         char *tmp = strstr(trash, TE_USER_PREFIX);
         char *tmp1;
 
-        unsigned int uid;
-
         if (tmp == NULL)
             continue;
 
         tmp += strlen(TE_USER_PREFIX);
-        uid = strtol(tmp, &tmp1, 10);
-        if (tmp1 == tmp || *tmp1 != ':')
+        tmp1 = strchr(tmp, ':');
+        if (tmp1 == NULL)
             continue;
-        s += sprintf(s, TE_USER_PREFIX "%u", uid);
+        *tmp1 = '\0';
+        s += sprintf(s, TE_USER_PREFIX "%s", tmp);
     }
     fclose(f);
 
@@ -8472,12 +8483,102 @@ set_change_passwd(char const *user, char const *passwd)
 #endif /* TA_USE_PAM */
 
 /**
+ * Get tester user gid.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         Location for the value (OUT)
+ * @param user          user name: TE_USER_PREFIX<user_name_prefix_free>;
+ *                      if <user_name_prefix_free> is numeric then
+ *                      it should coincide with user gid
+ *
+ * @return              Status code
+ */
+static te_errno
+user_gid_get(unsigned int gid, const char *oid, char *value,
+             const char *user)
+{
+#if TA_USE_PAM || defined(__linux__)
+    struct passwd *pw;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if !TA_USE_PAM && !defined(__linux__)
+    UNUSED(user);
+    ERROR("user_gid_get failed (no user management facilities available)");
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#else
+    if (strncmp(user, TE_USER_PREFIX, strlen(TE_USER_PREFIX)) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    pw = getpwnam(user);
+    if (pw == NULL)
+    {
+        ERROR("User %s is not found", user);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+
+    sprintf(value, "%ju", (uintmax_t)pw->pw_gid);
+
+    return 0;
+#endif
+}
+
+/**
+ * Get tester user uid.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         Location for the value (OUT)
+ * @param user          user name: TE_USER_PREFIX<user_name_prefix_free>;
+ *                      if <user_name_prefix_free> is numeric then
+ *                      it should coincide with user uid
+ *
+ * @return              Status code
+ */
+static te_errno
+user_uid_get(unsigned int gid, const char *oid, char *value,
+             const char *user)
+{
+#if TA_USE_PAM || defined(__linux__)
+    struct passwd *pw;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if !TA_USE_PAM && !defined(__linux__)
+    UNUSED(user);
+    ERROR("user_uid_get failed (no user management facilities available)");
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#else
+    if (strncmp(user, TE_USER_PREFIX, strlen(TE_USER_PREFIX)) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    pw = getpwnam(user);
+    if (pw == NULL)
+    {
+        ERROR("User %s is not found", user);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+
+    sprintf(value, "%ju", (uintmax_t)pw->pw_uid);
+
+    return 0;
+#endif
+}
+
+/**
  * Add tester user.
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instance identifier (unused)
  * @param value         value string (unused)
- * @param user          user name: te_tester_<uid>
+ * @param user          user name: TE_USER_PREFIX<base_username>;
+ *                      if <base_username> is numeric then it should coincide
+ *                      with <uid> and <gid>.
  *
  * @return              Status code
  */
@@ -8490,8 +8591,11 @@ user_add(unsigned int gid, const char *oid, const char *value,
     char *tmp1;
 
     unsigned int uid;
+    unsigned int user_gid;
 
-    te_errno     rc;
+    te_errno rc;
+    te_bool user_is_num = TRUE;
+    FILE *f = NULL;
 #endif
 
     UNUSED(gid);
@@ -8511,26 +8615,79 @@ user_add(unsigned int gid, const char *oid, const char *value,
 
     tmp = (char *)user + strlen(TE_USER_PREFIX);
     uid = strtol(tmp, &tmp1, 10);
-    if (tmp == tmp1 || *tmp1 != 0)
+    if (tmp == tmp1)
+        user_is_num = FALSE;
+    else if (*tmp1 != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    /*
-     * We manually add group to be independent from system settings
-     * (one group for all users / each user with its group)
-     * "-f" is used in order not to fail if such group already exists (bug 11813)
-     */
-    sprintf(buf, "/usr/sbin/groupadd -f -g %u %s ", uid, user);
-    if ((rc = ta_system(buf)) != 0)
+    if (user_is_num)
     {
-        ERROR("\"%s\" command failed with %d", buf, rc);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        /*
+         * We manually add group to be independent from system settings
+         * (one group for all users / each user with its group)
+         * "-f" is used in order not to fail if such group already exists (bug 11813)
+         */
+        sprintf(buf, "/usr/sbin/groupadd -f -g %u %s ", uid, user);
+        if ((rc = ta_system(buf)) != 0)
+        {
+            ERROR("\"%s\" command failed with %d", buf, rc);
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+        sprintf(buf, "/usr/sbin/useradd -d /tmp/%s -g %u -u %u -m %s ",
+                user, uid, uid, user);
+        if ((rc = ta_system(buf)) != 0)
+        {
+            ERROR("\"%s\" command failed with %d", buf, rc);
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
     }
-    sprintf(buf, "/usr/sbin/useradd -d /tmp/%s -g %u -u %u -m %s ",
-            user, uid, uid, user);
-    if ((rc = ta_system(buf)) != 0)
+    else
     {
-        ERROR("\"%s\" command failed with %d", buf, rc);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        te_bool group_is_found = FALSE;
+
+        sprintf(buf, "/usr/sbin/groupadd -f %s ", user);
+        if ((rc = ta_system(buf)) != 0)
+        {
+            ERROR("\"%s\" command failed with %d", buf, rc);
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+        if ((f = fopen("/etc/group", "r")) == NULL)
+        {
+            ERROR("%s(): Failed to open /etc/group for reading: %s",
+                  __FUNCTION__, strerror(errno));
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        while (fgets(trash, sizeof(trash), f) != NULL)
+        {
+            char name[128];
+            int gid_tmp;
+
+            if (sscanf(trash, "%127[^:]:%*[^:]:%d:", name, &gid_tmp) == 2)
+            {
+                if (strcmp(name, user) == 0)
+                {
+                    group_is_found = TRUE;
+                    user_gid = gid_tmp;
+                    break;
+                }
+            }
+
+        }
+        fclose(f);
+        if (!group_is_found)
+        {
+            ERROR("Added group %s is not found in /etc/group", user);
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+
+        sprintf(buf, "/usr/sbin/useradd -d /tmp/%s -g %d -m %s ",
+                user, user_gid, user);
+        if ((rc = ta_system(buf)) != 0)
+        {
+            ERROR("\"%s\" command failed with %d", buf, rc);
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
     }
 
 #if 0
