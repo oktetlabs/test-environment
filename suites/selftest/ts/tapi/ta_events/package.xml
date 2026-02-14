@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2024-2024 ARK NETWORKS LLC. All rights reserved. -->
+<package version="1.0">
+
+    <description>Test Suite to test TAPI TA events implementation</description>
+
+    <author mailto="Oleg.Sadakov@arknetworks.am"/>
+
+    <session track_conf="silent">
+        <run>
+            <script name="sample"/>
+        </run>
+        <run>
+            <script name="trigger"/>
+            <arg name="ta_wait" list="">
+                <value>Agt_A</value>
+                <value>Agt_A</value>
+            </arg>
+            <arg name="ta_trigger" list="">
+                <value>Agt_A</value>
+                <value>Agt_B</value>
+            </arg>
+        </run>
+    </session>
+</package>

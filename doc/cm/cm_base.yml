@@ -1911,3 +1911,11 @@
          Maximum value of RLIMIT_MEMLOCK. Note: if less than current value
          is set, current value is adjusted too.
          Name: empty
+
+    - oid: "/agent/ta_events"
+      access: read_create
+      type: string
+      d: |
+         List of TA events that someone is subscribed to.
+         Name: Unique TA events ID (RCF client + TA events handle)
+         Value: Comma separated list of interesting TA event names

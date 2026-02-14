@@ -126,6 +126,175 @@ static int write_str(char *s, size_t len);
 static void rcf_ta_check_done(usrreq *req);
 static void send_all_pending_commands(ta *agent);
 
+/** RCF client to receive TA events */
+typedef struct ta_events_client {
+    int     refcnt; /**< Number of active TA events patterns for this client */
+    char   *name;   /**< Unique name for this client (${pid}_${tid}) */
+    usrreq *req;    /**< User request to send TA events */
+} ta_events_client;
+
+/** Full set of RCF clients to receive TA events */
+static te_vec ta_events_clients = TE_VEC_INIT(ta_events_client);
+
+/**
+ * Get unused RCF client from @ref ta_events_clients vector
+ *
+ * @retval @c NULL   If there is no unused RCF clients
+ * @retval other     Pointer to unused RCF client
+ */
+static ta_events_client*
+ta_events_get_unused_client(void)
+{
+    ta_events_client *client;
+
+    TE_VEC_FOREACH (&ta_events_clients, client)
+    {
+        if (client->refcnt == 0)
+            return client;
+    }
+
+    return NULL;
+}
+
+/**
+ * Find RCF client from @ref ta_events_clients vector by unique @ref name
+ *
+ * @param name       Required RCF client name
+ *
+ * @retval @c NULL   If there is no RCF clients with this name
+ * @retval other     Pointer to required RCF client
+ */
+static ta_events_client*
+ta_events_find_client_by_name(const char* name)
+{
+    ta_events_client *client;
+
+    TE_VEC_FOREACH (&ta_events_clients, client)
+    {
+        if (client->refcnt > 0 && strcmp(client->name, name) == 0)
+            return client;
+    }
+
+    return NULL;
+}
+
+/**
+ * Register RCF client to receive TA events
+ *
+ * @param req        User request with information about RCF client
+ *
+ * @return Status code
+ */
+static te_errno
+ta_events_subscribe_client(usrreq *req)
+{
+    rcf_msg          *msg = req->message;
+    ta_events_client *client;
+
+    client = ta_events_find_client_by_name(msg->value);
+    if (client == NULL)
+    {
+        client = ta_events_get_unused_client();
+        if (client == NULL)
+        {
+            size_t size = te_vec_size(&ta_events_clients);
+
+            CHECK_NZ_RETURN(TE_VEC_APPEND(&ta_events_clients,
+                                          (ta_events_client){.refcnt = 0}));
+            client = te_vec_get(&ta_events_clients, size);
+        }
+
+        *client = (ta_events_client){
+            .name = TE_STRDUP(msg->value),
+            .refcnt = 0,
+            .req = rcf_alloc_usrreq(),
+        };
+        client->req->user = req->user;
+    }
+
+    client->refcnt++;
+
+    return 0;
+}
+
+/**
+ * Unregister RCF client to receive TA events
+ *
+ * @param req        User request with information about RCF client
+ *
+ * @return Status code
+ */
+static te_errno
+ta_events_unsubscribe_client(usrreq *req)
+{
+    rcf_msg          *msg = req->message;
+    ta_events_client *client = ta_events_find_client_by_name(msg->value);
+
+    if (client == NULL || client->refcnt <= 0)
+    {
+        ERROR("Failed to unsubscribe TA events RCF client with name: '%s'",
+              msg->value);
+        return TE_RC(TE_RCF, TE_EINVAL);
+    }
+
+    client->refcnt--;
+
+    if (client->refcnt == 0)
+        rcf_free_usrreq(client->req);
+
+    return 0;
+}
+
+/**
+ * Process TA events reply
+ *
+ * @param buf        List of RCF clients + TA name and value
+ * @param error        User request with information about RCF client
+ *
+ * @return Status code
+ */
+static bool
+ta_events_req_process_reply(char *buf, int error)
+{
+    char *name;
+    char *rest = buf;
+    char *clients = strtok_r(rest, " ", &rest);
+    char *event = rest;
+
+    assert(error == 0);
+
+    if (rest[0] == '\0')
+    {
+        ERROR("No RCF clients to send TA event: buf = '%s'", buf);
+        return false;
+    }
+
+    rest = clients;
+    while ((name = strtok_r(rest, ",", &rest)) != NULL)
+    {
+        ta_events_client *client = ta_events_find_client_by_name(name);
+        rcf_msg          *msg;
+
+        if (client == NULL)
+        {
+            WARN("No RCF client (%s) to send TA event: '%s'", name, event);
+            continue;
+        }
+
+        msg = client->req->message;
+        msg->sid = RCF_TA_EVENTS_SID;
+        msg->opcode = RCFOP_TA_EVENTS;
+        msg->intparm = RCF_TA_EVENTS_TYPE_EVENT;
+        msg->flags = INTERMEDIATE_ANSWER;
+        msg->data_len = 0;
+        strcpy(msg->value, event);
+
+        rcf_answer_user_request(client->req);
+    }
+
+    return true;
+}
+
 /*
  * Release memory allocated for Test Agents structures.
  */
@@ -870,12 +1039,7 @@ rcf_answer_user_request(usrreq *req)
     }
     if (!(req->message->flags & INTERMEDIATE_ANSWER))
     {
-        free(req->message);
-        if (req->prev != NULL)
-            (req->prev)->next = req->next;
-        if (req->next != NULL)
-            (req->next)->prev = req->prev;
-        free(req);
+        rcf_free_usrreq(req);
     }
     else
     {
@@ -1343,6 +1507,25 @@ process_reply(ta *agent)
     ptr += strlen("SID ");
     READ_INT(sid);
 
+    if (sid == RCF_TA_EVENTS_SID)
+    {
+        char *delim = strchr(ptr, ' ');
+
+        if (delim != NULL &&
+            strcmp_start(TE_PROTO_TA_EVENTS_EVENT " ", delim + 1) == 0)
+        {
+            READ_INT(error);
+
+            ptr += strlen(TE_PROTO_TA_EVENTS_EVENT " ");
+            if (!ta_events_req_process_reply(ptr, error))
+            {
+                ERROR("BAD PROTO: %s, %d", __FILE__, __LINE__);
+                goto bad_protocol;
+            }
+            return;
+        }
+    }
+
     if ((req = rcf_find_user_request(&(agent->sent), sid)) == NULL)
     {
         ERROR("Can't find user request with SID %d", sid);
@@ -1422,6 +1605,11 @@ process_reply(ta *agent)
             case RCFOP_CSAP_DESTROY:
             case RCFOP_KILL:
             case RCFOP_TRPOLL_CANCEL:
+                break;
+
+            case RCFOP_TA_EVENTS:
+                assert(strcmp(ptr, TE_PROTO_TA_EVENTS_TRIGGER_EVENT) == 0);
+                msg->intparm = RCF_TA_EVENTS_TYPE_TRIGGER_EVENT;
                 break;
 
             case RCFOP_CONFGET:
@@ -2133,6 +2321,22 @@ rcf_send_cmd(ta *agent, usrreq *req)
             req->timeout = RCF_CMD_TIMEOUT;
             break;
 
+        case RCFOP_TA_EVENTS:
+            switch (msg->intparm)
+            {
+            case RCF_TA_EVENTS_TYPE_TRIGGER_EVENT:
+                PUT("%s %s %s", TE_PROTO_TA_EVENTS,
+                    TE_PROTO_TA_EVENTS_TRIGGER_EVENT, msg->value);
+                break;
+            default:
+                ERROR("Incorrect TA events type: %d", msg->intparm);
+                msg->error = TE_RC(TE_RCF, TE_EINVAL);
+                rcf_answer_user_request(req);
+                return -1;
+            }
+            req->timeout = RCF_CMD_TIMEOUT;
+            break;
+
         default:
             ERROR("Unhandled case value %d", msg->opcode);
             msg->error = TE_RC(TE_RCF, TE_EINVAL);
@@ -2159,6 +2363,18 @@ rcf_alloc_usrreq(void)
     req->message = TE_ALLOC(sizeof(rcf_msg));
 
     return req;
+}
+
+/* See description in rcf.h */
+void
+rcf_free_usrreq(usrreq * req)
+{
+    free(req->message);
+    if (req->prev != NULL)
+        (req->prev)->next = req->next;
+    if (req->next != NULL)
+        (req->next)->prev = req->prev;
+    free(req);
 }
 
 
@@ -2711,6 +2927,26 @@ process_user_request(usrreq *req)
             rcf_answer_user_request(req);
             return;
 
+        case RCFOP_TA_EVENTS:
+            switch (msg->intparm)
+            {
+            case RCF_TA_EVENTS_TYPE_SUBSCRIBE:
+                msg = req->message;
+                msg->data_len = 0;
+                msg->error = ta_events_subscribe_client(req);
+                rcf_answer_user_request(req);
+                return;
+            case RCF_TA_EVENTS_TYPE_UNSUBSCRIBE:
+                msg = req->message;
+                msg->data_len = 0;
+                msg->error = ta_events_unsubscribe_client(req);
+                rcf_answer_user_request(req);
+                return;
+            default:
+                break;
+            }
+            break;
+
         default:
             /* The rest of commands are processed below */
             break;
@@ -3099,8 +3335,7 @@ main(int argc, const char *argv[])
             if (rc != 0)
             {
                 ERROR("Failed to receive user request: errno %r", rc);
-                free(req->message);
-                free(req);
+                rcf_free_usrreq(req);
                 continue;
             }
 
@@ -3110,8 +3345,7 @@ main(int argc, const char *argv[])
                       "data_len field does not match to IPC "
                       "message size: %d != %d + %d",
                       len, req->message->data_len, sizeof(rcf_msg));
-                free(req->message);
-                free(req);
+                rcf_free_usrreq(req);
                 continue;
             }
 

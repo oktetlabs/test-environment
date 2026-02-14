@@ -53,6 +53,7 @@
 #include "rcf_pch.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch_ta_cfg.h"
+#include "rcf_pch_ta_events.h"
 #include "logger_ta.h"
 
 /** Include static array with string representation of types */
@@ -374,6 +375,7 @@ get_opcode(char **ptr, rcf_op_t *opcode)
     TRY_CMD(KILL);
     TRY_CMD(GET_SNIFFERS);
     TRY_CMD(GET_SNIF_DUMP);
+    TRY_CMD(TA_EVENTS);
 
 #undef TRY_CMD
 
@@ -449,6 +451,38 @@ rcf_pch_attach_vfork(void)
     conn = pch_vfork_saved_conn;
 }
 
+/**
+ * Generate TA event with @ref name and @rev value
+ *
+ * @param sid       Session ID
+ * @param name      Name of TA event to generate
+ * @param value     Value of TA event
+ *
+ * @return Status code
+ */
+static int
+rcf_pch_ta_events_generate(int sid, const char *name, const char *value)
+{
+    int       rc;
+    char      buf[RCF_MAX_LEN];
+    te_string reply = TE_STRING_EXT_BUF_INIT(buf, sizeof(buf));
+
+    te_string_append(&reply, "SID %d 0 %s ", sid, TE_PROTO_TA_EVENTS_EVENT);
+
+    if (rcf_pch_ta_events_collect_rcf_clients(name, &reply) == 0)
+    {
+        ERROR("No RCF clients to receive TA event: '%s'", name);
+        return 0;
+    }
+
+    te_string_append(&reply, " %s %s", name, value);
+
+    RCF_CH_LOCK;
+    rc = rcf_comm_agent_reply(conn, buf, strlen(buf) + 1);
+    RCF_CH_UNLOCK;
+
+    return rc;
+}
 
 /**
  * Start Portable Command Handler.
@@ -1305,6 +1339,25 @@ rcf_pch_run(const char *confstr, const char *info)
                 else
                     SEND_ANSWER("%d", rcf_ch_kill_thread(pid));
 
+                break;
+            }
+
+            case RCFOP_TA_EVENTS:
+            {
+                char *type;
+                char *name;
+
+                if (*ptr == 0 || transform_str(&ptr, &type) != 0)
+                    goto bad_protocol;
+
+                if (strcmp(TE_PROTO_TA_EVENTS_TRIGGER_EVENT, type) != 0)
+                    goto bad_protocol;
+
+                if (*ptr == 0 || transform_str(&ptr, &name) != 0)
+                    goto bad_protocol;
+
+                rcf_pch_ta_events_generate(sid, name, ptr);
+                SEND_ANSWER("0 %s", TE_PROTO_TA_EVENTS_TRIGGER_EVENT);
                 break;
             }
 
