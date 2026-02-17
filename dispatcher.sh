@@ -253,7 +253,7 @@ TE_PUBLISH_SCRIPT=
 # File passed with --logger-meta-file option
 LOGGER_META_FILE=
 
-TE_TESTER_SCRIPTS=
+declare -a TE_TESTER_SCRIPTS
 export TE_TA_LIST_FILE=ta.list
 
 usage()
@@ -662,7 +662,7 @@ process_opts()
 
             --tester-script=* )
                 process_script_opt $1 tester-script
-                TE_TESTER_SCRIPTS="${TE_TESTER_SCRIPTS} ${script_file}"
+                TE_TESTER_SCRIPTS+=("${script_file}")
                 ;;
 
 
@@ -1412,7 +1412,7 @@ else
     CS_OK=yes
 fi
 
-for i in ${TE_TESTER_SCRIPTS} ; do
+for i in "${TE_TESTER_SCRIPTS[@]}" ; do
     script_opts=
     run_script $i
 done
