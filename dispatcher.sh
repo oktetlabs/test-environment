@@ -60,6 +60,22 @@ TESTER_RC=0
 TESTER_INTR_RC=2
 
 #####################################################
+# Perform post-run operations: finalize metadata and
+# call user-specified scripts.
+#####################################################
+exit_handler() {
+    if [[ "${TE_RUN_META}" = "yes" ]] ; then
+        finish_metadata trap
+    fi
+
+    for i in "${TE_FINISH_SCRIPTS[@]}" ; do
+        script_opts=
+        run_script $i
+    done
+}
+trap "exit_handler" EXIT
+
+#####################################################
 # Finish metadata file.
 # Arguments:
 #   Status (0 - success, nonzero - failure; if the
@@ -140,8 +156,6 @@ if [[ "${TE_RUN_META}" = "yes" ]] ; then
     fi
 
     te_meta_export
-
-    trap "finish_metadata trap" EXIT
 fi
 
 # Parse options
@@ -254,6 +268,7 @@ TE_PUBLISH_SCRIPT=
 LOGGER_META_FILE=
 
 declare -a TE_TESTER_SCRIPTS
+declare -a TE_FINISH_SCRIPTS
 export TE_TA_LIST_FILE=ta.list
 
 usage()
@@ -292,6 +307,8 @@ Generic options:
                                 included as source.
   --tester-script=<filename>    Name of the file with shell script to be
                                 included as source before starting Tester.
+  --finish-script=<filename>    Name of the file with shell script to be
+                                included as source right before exiting.
 
   --live-log                    Run RGT in live mode.
 
@@ -665,6 +682,10 @@ process_opts()
                 TE_TESTER_SCRIPTS+=("${script_file}")
                 ;;
 
+            --finish-script=* )
+                process_script_opt $1 finish-script
+                TE_FINISH_SCRIPTS+=("${script_file}")
+                ;;
 
             -q) QUIET=yes ;;
             -n) BUILDER= ; TESTER_OPTS="${TESTER_OPTS} --nobuild"
