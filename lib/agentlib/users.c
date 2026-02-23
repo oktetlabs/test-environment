@@ -378,6 +378,70 @@ ta_user_list(char **list)
 
 /* See description in agentlib.h */
 te_errno
+ta_user_gid_uid_get(gid_t *gid, uid_t *uid, const char *user)
+{
+    struct passwd pwd;
+    struct passwd *pwd_result;
+    long pwd_bufsize;
+    char *pwd_buf;
+    int getpwnam_res;
+    bool user_is_num;
+    gid_t gid_temp;
+    uid_t uid_temp;
+
+    if (gid == NULL)
+        gid = &gid_temp;
+
+    if (uid == NULL)
+        uid = &uid_temp;
+
+    if (ta_te_username_is_numeric(user, &user_is_num) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    pwd_bufsize= sysconf(_SC_GETPW_R_SIZE_MAX);
+    if (pwd_bufsize == -1)
+        pwd_bufsize = DEFAULT_GETPW_R_SIZE_MAX;
+
+    pwd_buf =  TE_ALLOC(pwd_bufsize);
+
+    while ((getpwnam_res = getpwnam_r(user, &pwd, pwd_buf, pwd_bufsize,
+                                      &pwd_result)) == ERANGE)
+    {
+        pwd_bufsize *= 2;
+        TE_REALLOC(pwd_buf, pwd_bufsize);
+    }
+    if (getpwnam_res != 0)
+    {
+        ERROR("User %s is not found using getpwnam_r(): %s", user,
+              strerror(getpwnam_res));
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+
+    *gid = pwd.pw_gid;
+    *uid = pwd.pw_uid;
+
+    free(pwd_buf);
+
+    if (user_is_num)
+    {
+        const char *id_str;
+        unsigned int id_from_username;
+
+        id_str = te_str_strip_prefix(user, TE_USER_PREFIX);
+        if (te_strtoui(id_str, 10, &id_from_username) != 0 ||
+            *gid != (gid_t)id_from_username ||
+            *uid != (uid_t)id_from_username)
+        {
+            WARN("User %s unexpectedly has GID=%u, UID=%u", user,
+                 (unsigned int)*gid, (unsigned int)*uid);
+        }
+    }
+
+    return 0;
+}
+
+/* See description in agentlib.h */
+te_errno
 ta_user_add(const char *user)
 {
     const char *uid_str;

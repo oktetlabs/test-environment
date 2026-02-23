@@ -400,6 +400,18 @@ te_errno ta_te_username_is_numeric(const char *username, bool *is_num);
 extern te_errno ta_user_list(char **list);
 
 /**
+ * Get TA user GID and UID.
+ *
+ * @param[out] gid      User GID. May be @c NULL.
+ * @param[out] uid      User UID. May be @c NULL.
+ * @param[in]  user     Username. It is checked by
+ *                      @b ta_te_username_is_numeric().
+ *
+ * @return              Status code
+ */
+extern te_errno ta_user_gid_uid_get(gid_t *gid, uid_t *uid, const char *user);
+
+/**
  * Add user on TA.
  *
  * @param user          Username. It is checked by

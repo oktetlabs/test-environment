@@ -673,6 +673,12 @@ static te_errno agent_lib_bin_dir_get(unsigned int, const char *, char *,
 static te_errno nameserver_get(unsigned int, const char *, char *,
                                const char *, ...);
 
+static te_errno user_gid_get(unsigned int, const char *, char *,
+                             const char *);
+
+static te_errno user_uid_get(unsigned int, const char *, char *,
+                             const char *);
+
 static te_errno user_list(unsigned int, const char *,
                           const char *, char **);
 static te_errno user_add(unsigned int, const char *, const char *,
@@ -1009,8 +1015,14 @@ RCF_PCH_CFG_NODE_RO(node_uname_version, "version", NULL, &node_uname_release,
 RCF_PCH_CFG_NODE_RO(node_uname, "uname", &node_uname_version, &node_env,
                     uname_get);
 
+RCF_PCH_CFG_NODE_RO(node_user_gid, "gid", NULL, NULL,
+                    user_gid_get);
+
+RCF_PCH_CFG_NODE_RO(node_user_uid, "uid", NULL, &node_user_gid,
+                    user_uid_get);
+
 RCF_PCH_CFG_NODE_COLLECTION(node_user, "user",
-                            NULL, &node_uname,
+                            &node_user_uid, &node_uname,
                             user_add, user_del,
                             user_list, NULL);
 
@@ -8212,6 +8224,66 @@ user_list(unsigned int gid, const char *oid,
 
     return ta_user_list(list);
 }
+
+#define UINT_MAX_LENGTH 11
+/**
+ * Get TA user GID.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         Location for the value (OUT)
+ * @param user          Username. It is checked by
+ *                      @b ta_te_username_is_numeric().
+ *
+ * @return              Status code
+ */
+static te_errno
+user_gid_get(unsigned int gid, const char *oid, char *value,
+             const char *user)
+{
+    gid_t user_gid;
+    te_errno rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = ta_user_gid_uid_get(&user_gid, NULL, user);
+
+    if (rc == 0)
+        TE_SNPRINTF(value,  UINT_MAX_LENGTH, "%u", (unsigned int)user_gid);
+
+    return rc;
+}
+
+/**
+ * Get TA user UID.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         Location for the value (OUT)
+ * @param user          Username. It is checked by
+ *                      @b ta_te_username_is_numeric().
+ *
+ * @return              Status code
+ */
+static te_errno
+user_uid_get(unsigned int gid, const char *oid, char *value,
+             const char *user)
+{
+    uid_t user_uid;
+    te_errno rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = ta_user_gid_uid_get(NULL, &user_uid, user);
+
+    if (rc == 0)
+        TE_SNPRINTF(value, UINT_MAX_LENGTH, "%u", (unsigned int)user_uid);
+
+    return rc;
+}
+#undef UINT_MAX_LENGTH
 
 /**
  * Add tester user.
