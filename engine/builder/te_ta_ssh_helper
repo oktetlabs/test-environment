@@ -478,5 +478,9 @@ function te_ta_process_cmd() {
 
     te_ta_ssh_args "${ta}" && ssh_args=("${TE_SSH_ARGS[@]}")
 
-    ${ssh_args:+ssh "${ssh_args[@]}"} "/bin/bash -c 'set -e; cd /tmp; $cmd'"
+    if [[ -z ${ssh_args[@]} ]]; then
+        /bin/bash -c "set -e; cd /tmp; $cmd"
+    else
+        ssh "${ssh_args[@]}" "/bin/bash -c 'set -e; cd /tmp; $cmd'"
+    fi
 }
