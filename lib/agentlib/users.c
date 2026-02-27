@@ -157,13 +157,27 @@ ta_te_username_is_numeric(const char *username, bool *is_num)
     if (tmp == NULL || *tmp == '\0')
         return TE_RC(TE_TAPI, TE_EINVAL);
 
-    for (; *tmp != '\0'; tmp++)
+    for (*is_num = true; *tmp != '\0'; tmp++)
     {
         if (!isdigit(*tmp))
-            return TE_RC(TE_TAPI, TE_EINVAL);
+        {
+            *is_num = false;
+            break;
+        }
     }
 
-    *is_num = true;
+    if (*is_num)
+        return 0;
+
+    tmp = te_str_strip_prefix(tmp, TE_USER_NONNUM_AFFIX);
+    if (tmp == NULL || *tmp == '\0')
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    for (; *tmp != '\0'; tmp++)
+    {
+        if (!isalnum(*tmp) && *tmp != '_')
+            return TE_RC(TE_TAPI, TE_EINVAL);
+    }
 
     return 0;
 }
@@ -375,50 +389,144 @@ ta_user_add(const char *user)
     pid_t pid;
 
     te_errno     rc;
+    bool user_is_num;
+
+    if (ta_te_username_is_numeric(user, &user_is_num) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     if (user_exists(user))
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    if (ta_te_username_is_numeric(user, NULL) != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    if (user_is_num)
+    {
+        uid_str = te_str_strip_prefix(user, TE_USER_PREFIX);
 
-    uid_str = user + strlen(TE_USER_PREFIX);
+        /*
+         * We manually add group to be independent from system settings
+         * (one group for all users / each user with its group)
+         * "-f" is used in order not to fail if such group already exists (bug 11813)
+         */
+        argv = (char * const[]){"/usr/sbin/groupadd",
+                                "-f",
+                                "-g", TE_CONST_PTR_CAST(char, uid_str),
+                                TE_CONST_PTR_CAST(char, user),
+                                NULL};
+        pid = te_exec_child("/usr/sbin/groupadd", argv, NULL, -1,
+                            TE_EXEC_CHILD_DEV_NULL_FD,
+                            TE_EXEC_CHILD_DEV_NULL_FD,
+                            TE_EXEC_CHILD_DEV_NULL_FD,
+                            NULL);
+        rc = check_pid(pid, "/usr/sbin/groupadd", true);
+        if (rc != 0)
+            return rc;
 
-    /*
-     * We manually add group to be independent from system settings
-     * (one group for all users / each user with its group)
-     * "-f" is used in order not to fail if such group already exists (bug 11813)
-     */
-    argv = (char * const[]){"/usr/sbin/groupadd",
-                            "-f",
-                            "-g", TE_CONST_PTR_CAST(char, uid_str),
-                            TE_CONST_PTR_CAST(char, user),
-                            NULL};
-    pid = te_exec_child("/usr/sbin/groupadd", argv, NULL, -1,
-                        TE_EXEC_CHILD_DEV_NULL_FD,
-                        TE_EXEC_CHILD_DEV_NULL_FD,
-                        TE_EXEC_CHILD_DEV_NULL_FD,
-                        NULL);
-    rc = check_pid(pid, "/usr/sbin/groupadd", true);
-    if (rc != 0)
-        return rc;
+        TE_SPRINTF(homedir, "/tmp/%s", user);
+        argv = (char *const[]){"/usr/sbin/useradd",
+                               "-d", homedir,
+                               "-g", TE_CONST_PTR_CAST(char, uid_str),
+                               "-u", TE_CONST_PTR_CAST(char, uid_str),
+                               "-m",
+                               TE_CONST_PTR_CAST(char, user),
+                               NULL};
+        pid = te_exec_child("/usr/sbin/useradd", argv, NULL, -1,
+                            TE_EXEC_CHILD_DEV_NULL_FD,
+                            TE_EXEC_CHILD_DEV_NULL_FD,
+                            TE_EXEC_CHILD_DEV_NULL_FD,
+                            NULL);
+        rc = check_pid(pid, "/usr/sbin/useradd", true);
+        if (rc != 0)
+            return rc;
+    }
+    else
+    {
+#if ADDUSER_IS_DEBIAN_LIKE
+        TE_SPRINTF(homedir, "/tmp/%s", user);
 
-    TE_SPRINTF(homedir, "/tmp/%s", user);
-    argv = (char *const[]){"/usr/sbin/useradd",
-                           "-d", homedir,
-                           "-g", TE_CONST_PTR_CAST(char, uid_str),
-                           "-u", TE_CONST_PTR_CAST(char, uid_str),
-                           "-m",
-                           TE_CONST_PTR_CAST(char, user),
-                           NULL};
-    pid = te_exec_child("/usr/sbin/useradd", argv, NULL, -1,
-                        TE_EXEC_CHILD_DEV_NULL_FD,
-                        TE_EXEC_CHILD_DEV_NULL_FD,
-                        TE_EXEC_CHILD_DEV_NULL_FD,
-                        NULL);
-    rc = check_pid(pid, "/usr/sbin/useradd", true);
-    if (rc != 0)
-        return rc;
+        argv = (char *const[]){"/usr/sbin/adduser",
+                               "--home", homedir,
+                               "--disabled-password",
+                               "--gecos", "\"\"",
+                               TE_CONST_PTR_CAST(char, user),
+                               NULL};
+        pid = te_exec_child("/usr/sbin/adduser", argv, NULL, -1,
+                            TE_EXEC_CHILD_DEV_NULL_FD,
+                            TE_EXEC_CHILD_DEV_NULL_FD,
+                            TE_EXEC_CHILD_DEV_NULL_FD,
+                            NULL);
+
+        rc = check_pid(pid, "/usr/sbin/useradd", true);
+        if (rc != 0)
+            return rc;
+#else
+        struct group gr;
+        struct group *gr_result = NULL;
+        int getgrnam_res;
+        char *gr_buf = NULL;
+        size_t gr_bufsize;
+#define MAX_USER_GID_LEN 16
+        char gid_str[MAX_USER_GID_LEN];
+#undef MAX_USER_GID_LEN
+
+        argv = (char *const[]){"/usr/sbin/groupadd",
+                                "-f",
+                                TE_CONST_PTR_CAST(char, user),
+                                NULL};
+        pid = te_exec_child("/usr/sbin/groupadd", argv, NULL, -1,
+                            TE_EXEC_CHILD_DEV_NULL_FD,
+                            TE_EXEC_CHILD_DEV_NULL_FD,
+                            TE_EXEC_CHILD_DEV_NULL_FD,
+                            NULL);
+
+        rc = check_pid(pid, "/usr/sbin/groupadd", true);
+        if (rc != 0)
+            return rc;
+
+        gr_bufsize = sysconf(_SC_GETGR_R_SIZE_MAX);
+        if (gr_bufsize == -1)
+#define DEFAULT_GETGR_R_SIZE_MAX 1024
+            gr_bufsize = DEFAULT_GETGR_R_SIZE_MAX;
+#undef DEFAULT_GETGR_R_SIZE_MAX
+
+        gr_buf =  TE_ALLOC(gr_bufsize);
+        getgrnam_res = getgrnam_r(user, &gr, gr_buf, gr_bufsize, &gr_result);
+        while (getgrnam_res != 0)
+        {
+            gr_bufsize *= 2;
+            TE_REALLOC(gr_buf, gr_bufsize);
+            getgrnam_res = getgrnam_r(user, &gr, gr_buf, gr_bufsize, &gr_result);
+        }
+
+        if (gr_result == NULL)
+        {
+            ERROR("Failed to get info of group %s using getgrnam_r()", user);
+            free(gr_buf);
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+        else
+        {
+            TE_SPRINTF(gid_str, "%u", (unsigned int)gr.gr_gid);
+        }
+        free(gr_buf);
+
+        TE_SPRINTF(homedir, "/tmp/%s", user);
+
+        argv = (char *const[]){"/usr/sbin/useradd",
+                               "-d", homedir,
+                               "-g", gid_str,
+                               "-m",
+                               TE_CONST_PTR_CAST(char, user),
+                               NULL};
+        pid = te_exec_child("/usr/sbin/useradd", argv, NULL, -1,
+                            TE_EXEC_CHILD_DEV_NULL_FD,
+                            TE_EXEC_CHILD_DEV_NULL_FD,
+                            TE_EXEC_CHILD_DEV_NULL_FD,
+                            NULL);
+
+        rc = check_pid(pid, "/usr/sbin/useradd", true);
+        if (rc != 0)
+            return rc;
+#endif
+    }
 
 #if TA_USE_PAM
     /** Set (change) password for just added user */
@@ -452,6 +560,9 @@ ta_user_del(const char *user)
     te_errno rc = 0;
     pid_t pid;
     char * const *argv;
+
+    if (ta_te_username_is_numeric(user, NULL) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     if (!user_exists(user))
         return TE_RC(TE_TA_UNIX, TE_EEXIST);

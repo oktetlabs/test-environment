@@ -45,6 +45,23 @@ if cc.has_type('off64_t', prefix: '#define _GNU_SOURCE\n#include <unistd.h>')
     conf.set('HAVE_OFF64_T', 1)
 endif
 
+adduser = find_program('adduser', required: false)
+
+adduser_is_debian_like = false
+
+if adduser.found()
+    result = run_command(adduser, '--system', '--help', check: false)
+    if result.returncode() == 0
+        adduser_is_debian_like = true
+    endif
+endif
+
+if adduser_is_debian_like
+    conf.set('ADDUSER_IS_DEBIAN_LIKE', 1)
+else
+    conf.set('ADDUSER_IS_DEBIAN_LIKE', 0)
+endif
+
 agentlib_config_h = configure_file(input: 'agentlib_config.h.meson',
                                    output: 'agentlib_config.h',
                                    configuration: conf)

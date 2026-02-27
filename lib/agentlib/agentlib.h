@@ -406,6 +406,7 @@ extern te_errno ta_user_list(char **list);
  *                      @b ta_te_username_is_numeric().
  *                      If user is numeric, then the number will be
  *                      the UID and GID.
+ *                      Otherwise, UID and GID are assigned automatically.
  *
  * @return              Status code
  */

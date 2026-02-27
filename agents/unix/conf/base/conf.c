@@ -8219,7 +8219,11 @@ user_list(unsigned int gid, const char *oid,
  * @param gid           group identifier (unused)
  * @param oid           full object instance identifier (unused)
  * @param value         value string (unused)
- * @param user          user name: te_tester_<uid>
+ * @param user          Username. It is checked by
+ *                      @b ta_te_username_is_numeric().
+ *                      If user is numeric, then the number will be
+ *                      the UID and GID.
+ *                      Otherwise, UID and GID are assigned automatically.
  *
  * @return              Status code
  */
@@ -8239,7 +8243,8 @@ user_add(unsigned int gid, const char *oid, const char *value,
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instance identifier (unused)
- * @param user          user name
+ * @param user          Username. It is checked by
+ *                      @b ta_te_username_is_numeric().
  *
  * @return              Status code
  */
