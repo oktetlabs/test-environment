@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <signal.h>
+#include <grp.h>
 #include <pwd.h>
 
 #ifdef HAVE_PTHREAD_H
@@ -41,6 +42,8 @@
 #include "logger_api.h"
 #include "logger_ta.h"
 #include "logger_ta_lock.h"
+
+#define DEFAULT_GETPW_R_SIZE_MAX 16384
 
 /* PAM (Pluggable Authentication Modules) support */
 #if defined(HAVE_SECURITY_PAM_APPL_H) && defined(HAVE_LIBPAM)
@@ -74,6 +77,8 @@ typedef struct pam_message const pam_message_t;
 #define TA_USE_PAM  0
 
 #endif /* HAVE_SECURITY_PAM_APPL_H && HAVE_LIBPAM */
+
+static pthread_mutex_t pwent_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /**
  * Check, if user with the specified name exists.
@@ -134,6 +139,31 @@ check_pid(pid_t pid, const char *cmdline, bool check_result)
         ERROR("%s killed by signal %d", cmdline,
               WTERMSIG(status));
     }
+
+    return 0;
+}
+
+/* See description in agentlib.h */
+te_errno
+ta_te_username_is_numeric(const char *username, bool *is_num)
+{
+    const char *tmp;
+    bool is_numeric = false;
+
+    if (is_num == NULL)
+        is_num = &is_numeric;
+
+    tmp = te_str_strip_prefix(username, TE_USER_PREFIX);
+    if (tmp == NULL || *tmp == '\0')
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    for (; *tmp != '\0'; tmp++)
+    {
+        if (!isdigit(*tmp))
+            return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    *is_num = true;
 
     return 0;
 }
@@ -273,41 +303,61 @@ set_change_passwd(char const *user, char const *passwd)
 te_errno
 ta_user_list(char **list)
 {
-    FILE *f;
-    char buf[4096];
-    char trash[128];
-    char *s = buf;
+    struct passwd pwd;
+    struct passwd *pwd_result;
+    long pwd_bufsize;
+    char *pwd_buf;
+    int getpwent_res;
+    te_string str = TE_STRING_INIT;
 
-    if ((f = fopen("/etc/passwd", "r")) == NULL)
+    pwd_bufsize= sysconf(_SC_GETPW_R_SIZE_MAX);
+    if (pwd_bufsize == -1)
+        pwd_bufsize = DEFAULT_GETPW_R_SIZE_MAX;
+
+    pwd_buf =  TE_ALLOC(pwd_bufsize);
+
+    pthread_mutex_lock(&pwent_mutex);
+
+    setpwent();
+
+    while (1)
     {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+        while ((getpwent_res = getpwent_r(&pwd, pwd_buf, pwd_bufsize,
+                                          &pwd_result)) == ERANGE)
+        {
+            pwd_bufsize *= 2;
+            TE_REALLOC(pwd_buf, pwd_bufsize);
+        }
 
-        ERROR("Failed to open file /etc/passwd; errno %r", rc);
-        return rc;
-    }
+        if (pwd_result == NULL)
+        {
+            /* sometimes getpwent_r() finishes with ENOENT */
+            if (getpwent_res == 0 || getpwent_res == ENOENT)
+            {
+                break;
+            }
+            else
+            {
+                ERROR("Failed to get info using getpwent_r(): %s",
+                      strerror(getpwent_res));
+                break;
+            }
+        }
 
-    buf[0] = 0;
-
-    while (fgets(trash, sizeof(trash), f) != NULL)
-    {
-        char *tmp = strstr(trash, TE_USER_PREFIX);
-        char *tmp1;
-
-        unsigned int uid;
-
-        if (tmp == NULL)
+        if (ta_te_username_is_numeric(pwd.pw_name, NULL) != 0)
             continue;
 
-        tmp += strlen(TE_USER_PREFIX);
-        uid = strtol(tmp, &tmp1, 10);
-        if (tmp1 == tmp || *tmp1 != ':')
-            continue;
-        s += sprintf(s, TE_USER_PREFIX "%u", uid);
-    }
-    fclose(f);
+        if (str.len != 0)
+            te_string_append(&str, " ");
 
-    if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        te_string_append(&str, pwd.pw_name);
+    }
+
+    endpwent();
+    pthread_mutex_unlock(&pwent_mutex);
+
+    free(pwd_buf);
+    *list = str.ptr;
 
     return 0;
 }
@@ -316,62 +366,65 @@ ta_user_list(char **list)
 te_errno
 ta_user_add(const char *user)
 {
+    const char *uid_str;
+    char * const *argv;
     char buf[4096];
-#if TA_USE_PAM || defined(__linux__)
-    char *tmp;
-    char *tmp1;
-
-    unsigned int uid;
+#define MAX_HOMEDIR_LEN 256
+    char homedir[MAX_HOMEDIR_LEN];
+#undef MAX_HOMEDIR_LEN
+    pid_t pid;
 
     te_errno     rc;
-#endif
 
-#if !TA_USE_PAM && !defined(__linux__)
-    UNUSED(user);
-    ERROR("user_add failed (no user management facilities available)");
-    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
-#else
     if (user_exists(user))
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    if (strncmp(user, TE_USER_PREFIX, strlen(TE_USER_PREFIX)) != 0)
+    if (ta_te_username_is_numeric(user, NULL) != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    tmp = (char *)user + strlen(TE_USER_PREFIX);
-    uid = strtol(tmp, &tmp1, 10);
-    if (tmp == tmp1 || *tmp1 != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    uid_str = user + strlen(TE_USER_PREFIX);
 
     /*
      * We manually add group to be independent from system settings
      * (one group for all users / each user with its group)
      * "-f" is used in order not to fail if such group already exists (bug 11813)
      */
-    sprintf(buf, "/usr/sbin/groupadd -f -g %u %s ", uid, user);
-    if ((rc = ta_system(buf)) != 0)
-    {
-        ERROR("\"%s\" command failed with %d", buf, rc);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
-    sprintf(buf, "/usr/sbin/useradd -d /tmp/%s -g %u -u %u -m %s ",
-            user, uid, uid, user);
-    if ((rc = ta_system(buf)) != 0)
-    {
-        ERROR("\"%s\" command failed with %d", buf, rc);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
+    argv = (char * const[]){"/usr/sbin/groupadd",
+                            "-f",
+                            "-g", TE_CONST_PTR_CAST(char, uid_str),
+                            TE_CONST_PTR_CAST(char, user),
+                            NULL};
+    pid = te_exec_child("/usr/sbin/groupadd", argv, NULL, -1,
+                        TE_EXEC_CHILD_DEV_NULL_FD,
+                        TE_EXEC_CHILD_DEV_NULL_FD,
+                        TE_EXEC_CHILD_DEV_NULL_FD,
+                        NULL);
+    rc = check_pid(pid, "/usr/sbin/groupadd", true);
+    if (rc != 0)
+        return rc;
 
-#if 0
-    /* Fedora has very aggressive nscd cache */
-    /* https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=134323 */
-    ta_system("/usr/sbin/nscd -i group && /usr/sbin/nscd -i passwd");
-#endif
+    TE_SPRINTF(homedir, "/tmp/%s", user);
+    argv = (char *const[]){"/usr/sbin/useradd",
+                           "-d", homedir,
+                           "-g", TE_CONST_PTR_CAST(char, uid_str),
+                           "-u", TE_CONST_PTR_CAST(char, uid_str),
+                           "-m",
+                           TE_CONST_PTR_CAST(char, user),
+                           NULL};
+    pid = te_exec_child("/usr/sbin/useradd", argv, NULL, -1,
+                        TE_EXEC_CHILD_DEV_NULL_FD,
+                        TE_EXEC_CHILD_DEV_NULL_FD,
+                        TE_EXEC_CHILD_DEV_NULL_FD,
+                        NULL);
+    rc = check_pid(pid, "/usr/sbin/useradd", true);
+    if (rc != 0)
+        return rc;
 
 #if TA_USE_PAM
     /** Set (change) password for just added user */
     if (set_change_passwd(user, user) != 0)
 #else
-    sprintf(buf, "echo %s:%s | /usr/sbin/chpasswd", user, user);
+    TE_SPRINTF(buf, "echo %s:%s | /usr/sbin/chpasswd", user, user);
     if ((rc = ta_system(buf)) != 0)
 #endif
     {
@@ -379,13 +432,6 @@ ta_user_add(const char *user)
         ta_user_del(user);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
-
-#if 0
-    /* Fedora has very aggressive nscd cache */
-    /* https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=134323 */
-    ta_system("/usr/sbin/nscd -i group && /usr/sbin/nscd -i passwd");
-#endif
-
 
     TE_SPRINTF(buf, "/tmp/%s/.ssh/id_ed25519", user);
     rc = agent_key_generate(AGENT_KEY_MANAGER_SSH, "ed25519", 1024, user, buf);
@@ -397,37 +443,54 @@ ta_user_add(const char *user)
     }
 
     return 0;
-#endif /* !TA_USE_PAM */
 }
 
 /* See description in agentlib.h */
 te_errno
 ta_user_del(const char *user)
 {
-    char buf[4096];
-    te_errno rc;
+    te_errno rc = 0;
+    pid_t pid;
+    char * const *argv;
 
     if (!user_exists(user))
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    sprintf(buf, "/usr/bin/killall -u %s", user);
-    ta_system(buf); /* Ignore rc */
-    sprintf(buf, "/usr/sbin/userdel -r %s", user);
-    if ((rc = ta_system(buf)) != 0)
-    {
-        ERROR("\"%s\" command failed with %d", buf, rc);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
-    sprintf(buf, "/usr/sbin/groupdel %s", user);
-    if ((rc = ta_system(buf)) != 0)
-    {
-        /* Yes, we ignore rc, as group may be deleted by userdel */
-        VERB("\"%s\" command failed with %d", buf, rc);
-    }
+    argv = (char * const[]){"/usr/bin/killall",
+                            "-u", TE_CONST_PTR_CAST(char, user),
+                            NULL};
+    pid = te_exec_child("/usr/bin/killall", argv, NULL, -1,
+                        TE_EXEC_CHILD_DEV_NULL_FD,
+                        TE_EXEC_CHILD_DEV_NULL_FD,
+                        TE_EXEC_CHILD_DEV_NULL_FD,
+                        NULL);
+    /* Ignore result */
+    rc = check_pid(pid, "/usr/bin/killall", false);
+    if (rc != 0)
+        return rc;
 
-    /* Fedora has very aggressive nscd cache */
-    /* https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=134323 */
-    ta_system("/usr/sbin/nscd -i group && /usr/sbin/nscd -i passwd");
+    argv = (char * const[]){"/usr/sbin/userdel",
+                            "-r", TE_CONST_PTR_CAST(char, user),
+                            NULL};
+    pid = te_exec_child("/usr/sbin/userdel", argv, NULL, -1,
+                        TE_EXEC_CHILD_DEV_NULL_FD,
+                        TE_EXEC_CHILD_DEV_NULL_FD,
+                        TE_EXEC_CHILD_DEV_NULL_FD,
+                        NULL);
+    rc = check_pid(pid, "/usr/sbin/userdel", true);
+    if (rc != 0)
+        return rc;
 
-    return 0;
+    argv = (char * const[]){"/usr/sbin/groupdel",
+                            TE_CONST_PTR_CAST(char, user),
+                            NULL};
+    pid = te_exec_child("/usr/sbin/groupdel", argv, NULL, -1,
+                        TE_EXEC_CHILD_DEV_NULL_FD,
+                        TE_EXEC_CHILD_DEV_NULL_FD,
+                        TE_EXEC_CHILD_DEV_NULL_FD,
+                        NULL);
+    /* we ignore result, as group may be deleted by userdel */
+    rc = check_pid(pid, "/usr/sbin/groupdel", false);
+
+    return rc;
 }
