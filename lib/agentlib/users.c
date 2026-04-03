@@ -88,6 +88,56 @@ user_exists(const char *user)
     return getpwnam(user) != NULL ? true : false;
 }
 
+/**
+ * Check PID returned by @b te_exec_child().
+ *
+ * @param pid           pid
+ * @param cmdline       commandline
+ * @param check_result  Should we check the result
+ *
+ * @return              Status code
+ */
+static te_errno
+check_pid(pid_t pid, const char *cmdline, bool check_result)
+{
+    te_errno rc = 0;
+    int status;
+
+    if (pid < 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+
+        ERROR("Cannot start %s: %r", cmdline, rc);
+        return rc;
+    }
+
+    if (ta_waitpid(pid, &status, 0) < 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+
+        ERROR("Error waiting for %s: %r", cmdline, rc);
+        return rc;
+    }
+
+    if (WIFEXITED(status))
+    {
+        if (check_result && WEXITSTATUS(status) != 0)
+        {
+            ERROR("%s terminated abnormally with status = %d",
+                  cmdline, WEXITSTATUS(status));
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+    }
+    else
+    {
+        assert(WIFSIGNALED(status));
+        ERROR("%s killed by signal %d", cmdline,
+              WTERMSIG(status));
+    }
+
+    return 0;
+}
+
 #if TA_USE_PAM
 /**
  * Callback function provided by user and called from within PAM library.
