@@ -93,6 +93,9 @@
                 <arg name="opt_unit_val_param" />
                 <arg name="opt_bin_unit_none_param" />
                 <arg name="opt_bin_unit_val_param" />
+                <arg name="opt_bool_none_param" />
+                <arg name="opt_bool_false_param" />
+                <arg name="opt_bool_true_param" />
                 <arg name="good_result" />
                 <arg name="good_result_noprefix" />
                 <arg name="good_int_result" />
