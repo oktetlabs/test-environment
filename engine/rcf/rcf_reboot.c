@@ -8,6 +8,7 @@
 #include "te_config.h"
 
 #include "rcf.h"
+#include "te_alloc.h"
 #include "te_str.h"
 
 #include "logger_api.h"
@@ -302,7 +303,6 @@ static te_errno
 waiting_state_cold_reboot_handler(ta *agent)
 {
     ta     *power_ta;
-    rcf_msg *tmp;
     usrreq *req;
     size_t  param_len;
 
@@ -339,15 +339,8 @@ waiting_state_cold_reboot_handler(ta *agent)
     }
 
     param_len = strlen(agent->cold_reboot_param) + 1;
-    if ((tmp = realloc(req->message, sizeof(rcf_msg) + param_len)) == NULL)
-    {
-        ERROR("%s(): failed to re-allocate memory", __FUNCTION__);
-        free(req->message);
-        free(req);
-        return TE_ENOMEM;
-    }
+    TE_REALLOC(req->message, sizeof(rcf_msg) + param_len);
 
-    req->message = (rcf_msg *)tmp;
     req->user = NULL;
     req->timeout = RCF_CMD_TIMEOUT;
     strcpy(req->message->ta, power_ta->name);

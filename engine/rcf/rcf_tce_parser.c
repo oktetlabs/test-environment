@@ -11,6 +11,7 @@
 #include <string.h>
 #include <yaml.h>
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_errno.h"
 #include "logger_api.h"
@@ -19,12 +20,7 @@
 static rcf_tce_comp_conf_t *
 tce_comp_conf_alloc(void)
 {
-    rcf_tce_comp_conf_t *conf;
-
-    if ((conf = calloc(1, sizeof(*conf))) == NULL)
-        TE_FATAL_ERROR("TCE: failed to allocate 'ta_comp'");
-
-    return conf;
+    return TE_ALLOC(sizeof(rcf_tce_comp_conf_t));
 }
 
 static rcf_tce_type_conf_t *
@@ -32,8 +28,7 @@ tce_type_conf_alloc(void)
 {
     rcf_tce_type_conf_t *conf;
 
-    if ((conf = calloc(1, sizeof(*conf))) == NULL)
-        TE_FATAL_ERROR("TCE: failed to allocate 'ta_type'");
+    conf = TE_ALLOC(sizeof(*conf));
 
     SLIST_INIT(&conf->comp);
 
@@ -45,8 +40,7 @@ tce_conf_alloc(void)
 {
     rcf_tce_conf_t *conf;
 
-    if ((conf = calloc(1, sizeof(*conf))) == NULL)
-        TE_FATAL_ERROR("TCE: failed to allocate 'tce_conf'");
+    conf = TE_ALLOC(sizeof(*conf));
 
     SLIST_INIT(&conf->types);
 

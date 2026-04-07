@@ -3085,13 +3085,7 @@ main(int argc, const char *argv[])
                 size_t n = len;
 
                 len += sizeof(rcf_msg);
-                if ((req->message =
-                         (rcf_msg *)realloc(req->message, len)) == NULL)
-                {
-                    ERROR("Cannot allocate memory for user request");
-                    free(req);
-                    continue;
-                }
+                TE_REALLOC(req->message, len);
                 rc = ipc_receive_message(server, req->message + 1,
                                          &n, &(req->user));
             }
