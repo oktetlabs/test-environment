@@ -27,6 +27,7 @@
 #error popt library (development version) is required for Logger
 #endif
 
+#include "te_alloc.h"
 #include "te_str.h"
 #include "te_raw_log.h"
 #include "te_log_fmt.h"
@@ -330,12 +331,7 @@ te_handler(void)
     int                         finished_timeout = TA_FINISH_CHECK_PERIOD;
 
     buf_len = LGR_MSG_BUF_MIN;
-    buf = malloc(buf_len);
-    if (buf == NULL)
-    {
-        ERROR("%s(): malloc() failed", __FUNCTION__);
-        return NULL;
-    }
+    buf = TE_ALLOC(buf_len);
 
     while (true) /* Forever loop */
     {
@@ -368,13 +364,7 @@ te_handler(void)
             } while (buf_len < total);
 
             /* Reallocate the buffer */
-            buf = realloc(buf, buf_len);
-            if (buf == NULL)
-            {
-                ERROR("%s(): realloc(p, %u) failed",
-                      __FUNCTION__, buf_len);
-                break;
-            }
+            TE_REALLOC(buf, buf_len);
 
             /* Receive the rest of the message */
             len = buf_len - received;
@@ -419,13 +409,7 @@ te_handler(void)
                      ml > pl && ml - pl < RCF_MAX_NAME &&
                      strncmp(msg, LGR_SRV_FOR_TA_PREFIX, pl) == 0)
             {
-                ta_inst *inst = calloc(1, sizeof(*inst));
-
-                if (inst == NULL)
-                {
-                    ERROR("No Memory");
-                    continue;
-                }
+                ta_inst *inst = TE_ALLOC(sizeof(*inst));
 
                 inst->thread_run = false;
                 memcpy(inst->agent, msg + pl, ml - pl);
@@ -464,7 +448,7 @@ te_handler(void)
                              strlen(LGR_SRV_SNIFFER_MARK)) == 0)
             {
                 data_len = ml - strlen(LGR_SRV_SNIFFER_MARK) + 1;
-                arg_str = malloc(data_len);
+                arg_str = TE_ALLOC(data_len);
                 snprintf(arg_str, data_len, "%s",
                          msg + strlen(LGR_SRV_SNIFFER_MARK));
                 arg_str[data_len - 1] = '\0';
@@ -1319,12 +1303,7 @@ main(int argc, const char *argv[])
         do {
             ++scale;
             names_len = LGR_TANAMES_LEN * scale;
-            ta_names = (char *)realloc(ta_names, names_len * sizeof(char));
-            if (ta_names == NULL)
-            {
-                ERROR("Memory allocation failure");
-                goto join_te_srv;
-            }
+            TE_REALLOC(ta_names, names_len * sizeof(char));
             memset(ta_names, 0, names_len * sizeof(char));
             res = rcf_get_ta_list(ta_names, &names_len);
 
@@ -1344,8 +1323,7 @@ main(int argc, const char *argv[])
             char       *aux_str;
             size_t      tmp_len;
 
-            ta_el = (struct ta_inst *)malloc(sizeof(struct ta_inst));
-            memset(ta_el, 0, sizeof(struct ta_inst));
+            ta_el = TE_ALLOC(sizeof(struct ta_inst));
             ta_el->thread_run = false;
             aux_str = ta_names + str_len;
             tmp_len = strlen(aux_str) + 1;

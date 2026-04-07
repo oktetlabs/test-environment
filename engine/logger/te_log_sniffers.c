@@ -38,16 +38,13 @@
 
 #include <sys/sendfile.h>
 
+#include "te_alloc.h"
 #include "te_raw_log.h"
 #include "te_str.h"
 #include "logger_int.h"
 #include "logger_internal.h"
 #include "logger_ten.h"
 #include "te_sleep.h"
-
-#define SNIFFER_MALLOC(ptr, size)       \
-    if ((ptr = malloc(size)) == NULL)   \
-        assert(0);
 
 #define SNIF_MIN_LIST_SIZE 1024
 #define SNIF_MAX_PATH_LENGTH RCF_MAX_PATH
@@ -375,7 +372,7 @@ sniffer_parse_list_buf(char *buf, size_t len, snifidl_h_t *sniflist_head,
 
     while (clen < len)
     {
-        SNIFFER_MALLOC(snif, sizeof(snif_id_l));
+        snif = TE_ALLOC(sizeof(snif_id_l));
 
         SNIF_SK_SPS(buf, clen);
         ptr = strchr(buf, ' ');
@@ -420,7 +417,7 @@ sniffer_parse_list_buf(char *buf, size_t len, snifidl_h_t *sniflist_head,
                 WRONG_SNIF_ID("Couldn't make capture file name.");
 
             SLIST_INIT(&snif->flist_h);
-            SNIFFER_MALLOC(lfile, sizeof(file_list_s));
+            lfile = TE_ALLOC(sizeof(file_list_s));
             strcpy(lfile->name, snif->res_fname);
             snif->first_launch = true;
             SLIST_INSERT_HEAD(&snif->flist_h, lfile, ent_l_f);
@@ -537,7 +534,7 @@ sniffer_save_info(const char *agent, snif_id_l *snif, int fd_o)
 
     len = strlen(agent) + strlen(snif->id.ifname) +
           strlen(snif->id.snifname) + 5;
-    SNIFFER_MALLOC(mark.message, len);
+    mark.message = TE_ALLOC(len);
     res = snprintf(mark.message, len, "%s;%s;%s", agent, snif->id.ifname,
                    snif->id.snifname);
 
@@ -745,7 +742,7 @@ sniffer_check_capture_space(snif_id_l *snif, const char *fname,
         int sysrc;
 
         snif->cap_file_ind++;
-        SNIFFER_MALLOC(f, sizeof(file_list_s));
+        f = TE_ALLOC(sizeof(file_list_s));
         res = sniffer_make_file_name(agent, snif);
         if (res != 0)
             return false;
@@ -979,7 +976,7 @@ sniffer_add_new_mark(char *ta_name, snif_id_l *sniff, char *message,
 {
     snif_mark_l     *mark;
 
-    SNIFFER_MALLOC(mark, sizeof(snif_mark_l));
+    mark = TE_ALLOC(sizeof(snif_mark_l));
     if (strlen(message) > 0)
         mark->message = strdup(message);
     else
@@ -1058,7 +1055,7 @@ sniffer_ins_mark_all(char *mark_data)
     }
 
     SLIST_INIT(&new_sniflist_h);
-    SNIFFER_MALLOC(snif_buf, snif_len);
+    snif_buf = TE_ALLOC(snif_len);
 
     rc = rcf_ta_get_sniffers(ta_name, NULL, &snif_buf, &snif_len, true);
     if ((snif_len != 0) && (rc == 0))
@@ -1110,7 +1107,7 @@ sniffer_mark_handler(char *mark_data_in)
         return;
     }
 
-    SNIFFER_MALLOC(mark, sizeof(snif_mark_l));
+    mark = TE_ALLOC(sizeof(snif_mark_l));
     mark->message = NULL;
 
     ptr = strchr(mark_data, ' ');
@@ -1140,7 +1137,7 @@ sniffer_mark_handler(char *mark_data_in)
     mark->h.caplen = strlen(mark->message) + SNIF_MARK_PSIZE;
     mark->h.len = mark->h.caplen;
 
-    SNIFFER_MALLOC(snif_buf, snif_len);
+    snif_buf = TE_ALLOC(snif_len);
     rc = rcf_ta_get_sniffers(mark->agent, snif_id_str, &snif_buf,
                              &snif_len, true);
     if (snif_len == 0)
@@ -1210,7 +1207,7 @@ sniffers_handler(char *agent)
     }
     polling_period = snifp_sets.period * 1000;
 
-    SNIFFER_MALLOC(snif_ta, sizeof(snif_ta_l));
+    snif_ta = TE_ALLOC(sizeof(snif_ta_l));
 
     te_strlcpy(snif_ta->agent, agent, RCF_MAX_NAME);
     SLIST_INIT(&snif_ta->snif_hl);
@@ -1218,7 +1215,7 @@ sniffers_handler(char *agent)
     SLIST_INSERT_HEAD(&snif_ta_h, snif_ta, ent_l_ta);
     pthread_mutex_unlock(&te_log_sniffer_mutex);
 
-    SNIFFER_MALLOC(snif_buf, snif_len);
+    snif_buf = TE_ALLOC(snif_len);
 
     while (1)
     {

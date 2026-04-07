@@ -40,6 +40,7 @@
 #include <fcntl.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "rcf_api.h"
@@ -88,7 +89,7 @@ main(void)
             free(ta_names);
         ++scale;
         names_len = LGR_TANAMES_LEN * scale;
-        ta_names = (char *)calloc(names_len * sizeof(char), 1);
+        ta_names = TE_ALLOC(names_len * sizeof(char));
         res = rcf_get_ta_list(ta_names, &names_len);
         if (res == 0)
             break;    /* on success list_len - used space real value */
