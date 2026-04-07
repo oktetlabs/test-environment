@@ -12,6 +12,7 @@
 #include "config.h"
 #endif
 
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "te_defs.h"
 #include "te_queue.h"
@@ -89,9 +90,7 @@ file_list_put(char *name)
 {
     struct file_list_s *file;
 
-    file = malloc(sizeof(struct file_list_s));
-    if (file == NULL)
-        return -1;
+    file = TE_ALLOC(sizeof(struct file_list_s));
     file->name = name;
 
     if (SIMPLEQ_EMPTY(&head_file_list))
@@ -184,12 +183,7 @@ make_file_name(void)
     char   *file_name;
     int     res;
 
-    file_name = malloc(SNIF_MAX_NAME + 1);
-    if (file_name == NULL)
-    {
-        fprintf(stderr, "make_file_name: malloc\n");
-        return NULL;
-    }
+    file_name = TE_ALLOC(SNIF_MAX_NAME + 1);
 
     if (dumpinfo.template_file_name != NULL)
     {
@@ -244,12 +238,7 @@ read_conf_file(char *conf_file_name)
         goto cleanup_rf;
     }
 
-    expression = malloc(size + 1);
-    if (expression == NULL)
-    {
-        fprintf(stderr, "read_conf_file: malloc\n");
-        goto cleanup_rf;
-    }
+    expression = TE_ALLOC(size + 1);
 
     res = fread(expression, size, 1, f);
     if (res != 1)

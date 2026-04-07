@@ -18,6 +18,7 @@
 
 #undef ERROR
 
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "te_defs.h"
 #include "logger_api.h"
@@ -557,7 +558,7 @@ static void add_static_neigh(MIB_IPNETROW *to_add)
   pneigh_st_entry* p;
   pneigh_st_entry new_entry;
 
-  new_entry = (pneigh_st_entry) malloc(sizeof(neigh_st_entry));
+  new_entry = TE_ALLOC(sizeof(neigh_st_entry));
   p = &gl_st_list_head;
 
   while(*p != NULL){
@@ -904,21 +905,12 @@ efport2ifindex(void)
     }
     //RING("SFCResolve: guid1='%s', guid2='%s'", guid1[0], guid2[0]);
 
-    if ((iftable = (PIP_INTERFACE_INFO)malloc(sizeof(*iftable))) == NULL)
-        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
+    iftable = TE_ALLOC(sizeof(*iftable));
 
     if (GetInterfaceInfo(iftable, &size) == ERROR_INSUFFICIENT_BUFFER)
     {
-        PIP_INTERFACE_INFO new_table =
-            (PIP_INTERFACE_INFO)realloc(iftable, size);
+        TE_REALLOC(iftable, size);
 
-        if (new_table == NULL)
-        {
-            free(iftable);
-            return TE_RC(TE_TA_WIN32, TE_ENOMEM);
-        }
-
-        iftable = new_table;
     }
     else
     {
@@ -971,7 +963,7 @@ efport2ifindex(void)
     free(iftable);
 
     GetAdaptersInfo(NULL, &size);
-    adapters = (PIP_ADAPTER_INFO)malloc(size);
+    adapters = TE_ALLOC(size);
 
     if ((rc = GetAdaptersInfo(adapters, &size)) != NO_ERROR)
     {
@@ -1221,19 +1213,11 @@ ifindex2ifname(DWORD ifindex)
     do {                                                                \
         DWORD size = 0, rc;                                             \
                                                                         \
-        if ((table = (_type *)malloc(sizeof(_type))) == NULL)           \
-            return TE_RC(TE_TA_WIN32, TE_ENOMEM);                       \
+        table = TE_ALLOC(sizeof(_type));                                \
                                                                         \
         if ((rc = _func(table, &size, 0)) == ERROR_INSUFFICIENT_BUFFER) \
         {                                                               \
-            _type *new_table = (_type *)realloc(table, size);           \
-                                                                        \
-            if (new_table == NULL)                                      \
-            {                                                           \
-                free(table);                                            \
-                return TE_RC(TE_TA_WIN32, TE_ENOMEM);                   \
-            }                                                           \
-            table = new_table;                                          \
+            TE_REALLOC(table, size);                                    \
         }                                                               \
         else if (rc == NO_ERROR)                                        \
         {                                                               \
@@ -1399,7 +1383,6 @@ rcf_ch_conf_fini()
  *
  * @return status code
  * @retval 0            success
- * @retval TE_ENOMEM       cannot allocate memory
  */
 static te_errno
 interface_list(unsigned int gid, const char *oid,
@@ -1417,22 +1400,14 @@ interface_list(unsigned int gid, const char *oid,
 
     efport2ifindex();
 
-    ifinfo = (IP_ADAPTER_INFO *)malloc(sizeof(IP_ADAPTER_INFO));
+    ifinfo = TE_ALLOC(sizeof(IP_ADAPTER_INFO));
     size = sizeof(IP_ADAPTER_INFO);
-    if (ifinfo == NULL)
-    {
-      return TE_RC(TE_TA_WIN32, TE_ENOMEM);
-    }
 
     rc = GetAdaptersInfo(ifinfo, &size);
     if (rc == ERROR_BUFFER_OVERFLOW)
     {
       free(ifinfo);
-      ifinfo = (IP_ADAPTER_INFO *)malloc(size);
-      if (ifinfo == NULL)
-      {
-        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
-      }
+      ifinfo = TE_ALLOC(size);
     }
     else if (rc != ERROR_SUCCESS)
     {
@@ -1491,10 +1466,10 @@ ifindex2frname(DWORD ifindex)
     }
 #endif
 
-    iftable = (MIB_IFTABLE *)malloc(sizeof(MIB_IFTABLE));
+    iftable = TE_ALLOC(sizeof(MIB_IFTABLE));
 
     retval = GetIfTable(iftable, &size, 0);
-    iftable = (MIB_IFTABLE *)realloc(iftable, size);
+    TE_REALLOC(iftable, size);
     retval = GetIfTable(iftable, &size, 0);
 
 
@@ -1528,10 +1503,10 @@ frname2ifindex(const char *ifname)
     MIB_IFTABLE *iftable;
     DWORD ifindex = -1;
 
-    iftable = (MIB_IFTABLE *)malloc(sizeof(MIB_IFTABLE));
+    iftable = TE_ALLOC(sizeof(MIB_IFTABLE));
 
     retval = GetIfTable(iftable, &size, 0);
-    iftable = (MIB_IFTABLE *)realloc(iftable, size);
+    TE_REALLOC(iftable, size);
     retval = GetIfTable(iftable, &size, 0);
 
     for (i = 0; i < iftable->dwNumEntries; i++)
@@ -1788,7 +1763,7 @@ net_addr_del_dhcp(unsigned int dwIndex)
   int   rc;
 
   GetInterfaceInfo(NULL, &size);
-  table = (PIP_INTERFACE_INFO)malloc(size);
+  table = TE_ALLOC(size);
 
   if ((rc = GetInterfaceInfo(table, &size)) != NO_ERROR)
   {
@@ -1807,7 +1782,7 @@ net_addr_del_dhcp(unsigned int dwIndex)
            ERROR("IpReleaseAddress() failed; error %d, adapterid = %d\n",
                  rc,  table->Adapter[i].Index);
            free(table);
-           return TE_RC(TE_TA_WIN32, TE_EWIN);;
+           return TE_RC(TE_TA_WIN32, TE_EWIN);
         }
        free(table);
        return 0;
@@ -1847,7 +1822,7 @@ net_addr_del(unsigned int gid, const char *oid,
     GET_IF_ENTRY;
 
     GetAdaptersInfo(NULL, &size);
-    table = (PIP_ADAPTER_INFO)malloc(size);
+    table = TE_ALLOC(size);
 
     if ((rc = GetAdaptersInfo(table, &size)) != NO_ERROR)
     {
@@ -3572,8 +3547,7 @@ net_snmp_ipv4_stats_##_counter_##_get(unsigned int gid_,        \
                                                                 \
     UNUSED(gid_);                                               \
     UNUSED(oid_);                                               \
-    if ((table = malloc(sizeof(MIB_IPSTATS))) == NULL   )       \
-        return TE_RC(TE_TA_WIN32, TE_ENOMEM);                   \
+    table = TE_ALLOC(sizeof(MIB_IPSTATS));                      \
                                                                 \
     if ((rc = GetIpStatistics(table)) != NO_ERROR)              \
     {                                                           \
@@ -3623,8 +3597,7 @@ net_snmp_icmp_stats_ ## _counter_ ## _get(unsigned int gid_,    \
                                                                 \
     UNUSED(gid_);                                               \
     UNUSED(oid_);                                               \
-    if ((table = malloc(sizeof(MIB_ICMP))) == NULL   )          \
-        return TE_RC(TE_TA_WIN32, TE_ENOMEM);                   \
+    table = TE_ALLOC(sizeof(MIB_ICMP));                         \
                                                                 \
     if ((rc = GetIcmpStatistics(table)) != NO_ERROR)            \
     {                                                           \
@@ -3908,8 +3881,8 @@ mcast_link_addr_list(unsigned int gid, const char *oid,
     int rc;
     DWORD bytes_returned = 0;
     unsigned int i;
-    unsigned char *buf = malloc(1024 * sizeof(unsigned char));
-    unsigned char *ret = malloc(1024 * sizeof(unsigned char));
+    unsigned char *buf = TE_ALLOC(1024 * sizeof(unsigned char));
+    unsigned char *ret = TE_ALLOC(1024 * sizeof(unsigned char));
 
     UNUSED(gid);
     UNUSED(oid);
@@ -4817,7 +4790,7 @@ vlans_list(unsigned int gid, const char *oid,
             return 0;
         }
                            /* max digits in VLAN id + space */
-        b = *list = malloc(count * 6  + 1);
+        b = *list = TE_ALLOC(count * 6  + 1);
 
         for (i = 0; i < count; i++)
         {
@@ -4849,9 +4822,7 @@ vlans_list(unsigned int gid, const char *oid,
             return 0;
         }
                            /* max digits in VLAN id + space */
-        b = *list = malloc(n_2_1_vlans * 6 + 1);
-        if (*list == NULL)
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        b = *list = TE_ALLOC(n_2_1_vlans * 6 + 1);
 
         for (i = 0; i < n_2_1_vlans; i++)
             b += sprintf(b, "%d ", vlans_2_1_buffer[i]);

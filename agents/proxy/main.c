@@ -300,10 +300,9 @@ void *
 thread_mutex_create(void)
 {
     static pthread_mutex_t init = PTHREAD_MUTEX_INITIALIZER;
-    pthread_mutex_t *mutex = (pthread_mutex_t *)calloc(1, sizeof(*mutex));
+    pthread_mutex_t *mutex = TE_ALLOC(sizeof(*mutex));
 
-    if (mutex != NULL)
-        *mutex = init;
+    *mutex = init;
 
     return mutex;
 }

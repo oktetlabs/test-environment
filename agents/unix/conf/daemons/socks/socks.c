@@ -13,6 +13,7 @@
 #endif
 
 #include "conf_daemons_internal.h"
+#include "te_alloc.h"
 #include "te_string.h"
 #include "te_sockaddr.h"
 #include "rcf_pch.h"
@@ -187,9 +188,7 @@ socks_server_create(const char *name)
 {
     te_socks_server *instance;
 
-    instance = calloc(1, sizeof(te_socks_server));
-    if (instance == NULL)
-        return NULL;
+    instance = TE_ALLOC(sizeof(te_socks_server));
 
     instance->name = strdup(name);
     if (instance->name == NULL)
@@ -920,9 +919,7 @@ socks_proto_add(unsigned int gid, const char *oid, const char *value,
     if ((p = te_socks_proto_find(instance, proto_name)) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    if ((p = calloc(1, sizeof(te_socks_proto))) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
+    p = TE_ALLOC(sizeof(te_socks_proto));
     if ((p->name = strdup(proto_name)) == NULL)
     {
         free(p);
@@ -1068,9 +1065,7 @@ socks_interface_add(unsigned int gid, const char *oid, const char *value,
     if ((iface = te_socks_interface_find(instance, interface_name)) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    if ((iface = calloc(1, sizeof(te_socks_interface))) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
+    iface = TE_ALLOC(sizeof(te_socks_interface));
     if ((iface->name = strdup(interface_name)) == NULL)
     {
         free(iface);
@@ -1400,9 +1395,7 @@ socks_cipher_add(unsigned int gid, const char *oid, const char *value,
     if ((c = te_socks_cipher_find(instance, cipher_name)) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    if ((c = calloc(1, sizeof(te_socks_cipher))) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
+    c = TE_ALLOC(sizeof(te_socks_cipher));
     if ((c->name = strdup(cipher_name)) == NULL)
     {
         free(c);
@@ -1535,9 +1528,7 @@ socks_user_add(unsigned int gid, const char *oid, const char *value,
     if ((u = te_socks_user_find(instance, name)) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    if ((u = calloc(1, sizeof(te_socks_user))) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
+    u = TE_ALLOC(sizeof(te_socks_user));
     if ((u->name = strdup(name)) == NULL)
     {
         free(u);

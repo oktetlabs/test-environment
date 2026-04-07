@@ -156,6 +156,7 @@ typedef struct pam_message const pam_message_t;
 
 #endif /* HAVE_SECURITY_PAM_APPL_H && HAVE_LIBPAM */
 
+#include "te_alloc.h"
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
@@ -2370,9 +2371,7 @@ get_ifconf_to_buf(void **buf, void **p_req, size_t *p_len)
         ifnum.lifn_flags = conf.lifc_flags = 0;
         CFG_IOCTL(cfg_socket, SIOCGLIFNUM, &ifnum);
 
-        *buf = calloc(ifnum.lifn_count + 1, sizeof(struct lifreq));
-        if (*buf == NULL)
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        *buf = TE_ALLOC((ifnum.lifn_count + 1) * sizeof(struct lifreq));
 
         conf.lifc_len = sizeof(struct lifreq) * (ifnum.lifn_count + 1);
         conf.lifc_buf = (caddr_t)*buf;
@@ -2386,9 +2385,7 @@ get_ifconf_to_buf(void **buf, void **p_req, size_t *p_len)
     {
         struct ifconf   conf;
 
-        *buf = calloc(32, sizeof(struct ifreq));
-        if (*buf == NULL)
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        *buf = TE_ALLOC(32 * sizeof(struct ifreq));
 
         conf.ifc_len = sizeof(struct ifreq) * 32;
         conf.ifc_buf = (caddr_t)*buf;
@@ -2853,7 +2850,6 @@ vlan_ifname_get(unsigned int gid, const char *oid, char *value,
  *
  * @return              Status code
  * @retval 0            success
- * @retval TE_ENOMEM       cannot allocate memory
  */
 static te_errno
 vlans_list(unsigned int gid, const char *oid,
@@ -2888,9 +2884,7 @@ vlans_list(unsigned int gid, const char *oid,
         return 0;
     }
 
-    b = *list = malloc(n_vlans * 5 /* max digits in VLAN id + space */ + 1);
-    if (*list == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    b = *list = TE_ALLOC(n_vlans * 5 /* max digits in VLAN id + space */ + 1);
 
     for (i = 0; i < n_vlans; i++)
         b += sprintf(b, "%d ", vlans_buffer[i]);
@@ -3298,7 +3292,6 @@ switchdev_name_list(unsigned int gid, const char *oid,
  *
  * @return              Status code
  * @retval 0            success
- * @retval TE_ENOMEM       cannot allocate memory
  */
 static te_errno
 interface_list(unsigned int gid, const char *oid,
@@ -4197,7 +4190,7 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
          p != NULL && strcmp(p->ifname, ifname) != 0; p = p->next);
     if (p == NULL)
     {
-        p = (ifs_list_el *)malloc(sizeof(ifs_list_el));
+        p = TE_ALLOC(sizeof(ifs_list_el));
         strcpy(p->ifname, ifname);
         p->mcast_addresses = NULL;
         p->next = interface_stream_list;
@@ -4208,7 +4201,7 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
          q != NULL && strcmp(q->value, addr) != 0; q = q->next);
     if (q == NULL)
     {
-        q = (mma_list_el *)malloc(sizeof(mma_list_el));
+        q = TE_ALLOC(sizeof(mma_list_el));
         /* Against setting too long value for MAC address */
         te_strlcpy(q->value, addr, sizeof(q->value));
         q->next = p->mcast_addresses;
@@ -4314,7 +4307,7 @@ mcast_link_addr_list(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(ifname);
 
-    s = (char *)malloc(MMAC_ADDR_BUF_SIZE);
+    s = TE_ALLOC(MMAC_ADDR_BUF_SIZE);
     *s = '\0';
     for (p = interface_stream_list;
          (p != NULL) && (strcmp(p->ifname, ifname)) != 0; p = p->next);
@@ -4324,7 +4317,7 @@ mcast_link_addr_list(unsigned int gid, const char *oid,
         {
             if (sp >= MMAC_ADDR_BUF_SIZE - ETHER_ADDR_LEN * 3)
             {
-                s = realloc(s, (++buf_segs) * MMAC_ADDR_BUF_SIZE);
+                TE_REALLOC(s, (++buf_segs) * MMAC_ADDR_BUF_SIZE);
             }
             sp += sprintf(&s[sp], "%s ", tmp->value);
         }
@@ -4348,7 +4341,7 @@ mcast_link_addr_list(unsigned int gid, const char *oid,
     if ((fd = fopen("/proc/net/dev_mcast", "r")) == NULL)
         return TE_OS_RC(TE_TA_UNIX, errno);
 
-    s = (char *)malloc(MMAC_ADDR_BUF_SIZE);
+    s = TE_ALLOC(MMAC_ADDR_BUF_SIZE);
     *s = '\0';
 
     while (fscanf(fd, "%*d %s %*d %*d %s\n", ifn, addrstr) > 0)
@@ -4372,7 +4365,7 @@ mcast_link_addr_list(unsigned int gid, const char *oid,
             {
                 if (sp >= MMAC_ADDR_BUF_SIZE - MCAST_LINK_ADDR_LEN_MAX)
                 {
-                    s = realloc(s, (++buf_segs) * MMAC_ADDR_BUF_SIZE);
+                    TE_REALLOC(s, (++buf_segs) * MMAC_ADDR_BUF_SIZE);
                 }
                 strncpy(&s[sp], &addrstr[i * 2], 2);
                 sp += 2;
@@ -4974,7 +4967,6 @@ net_addr_del(unsigned int gid, const char *oid,
  * @return              Status code:
  * @retval 0                success
  * @retval TE_ENOENT        no such instance
- * @retval TE_ENOMEM        cannot allocate memory
  */
 static te_errno
 net_addr_list(unsigned int gid, const char *oid,
@@ -5028,13 +5020,7 @@ net_addr_list(unsigned int gid, const char *oid,
         return 0;
     }
 
-    if ((*list = malloc(len)) == NULL)
-    {
-        netconf_list_free(nlist);
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
-
-    memset(*list, 0, len);
+    *list = TE_ALLOC(len);
 
     cur_ptr = *list;
     for (t = nlist->head; t != NULL; t = t->next)
@@ -5107,12 +5093,7 @@ net_addr_list_ifreq_cb(struct my_ifreq *ifr, void *opaque)
     while (data->buf_len - data->buf_off <= str_addrlen + 1)
     {
         data->buf_len += ADDR_LIST_BULK;
-        data->buf = realloc(data->buf, data->buf_len);
-        if (data->buf == NULL)
-        {
-            ERROR("realloc() failed");
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        }
+        TE_REALLOC(data->buf, data->buf_len);
     }
 
     if (inet_ntop(SA(&ifr->my_ifr_addr)->sa_family, net_addr,
@@ -5159,13 +5140,7 @@ net_addr_list(unsigned int gid, const char *oid,
 
     cb_data.ifname = ifname;
     cb_data.buf_len = ADDR_LIST_BULK;
-    cb_data.buf = malloc(cb_data.buf_len);
-    if (cb_data.buf == NULL)
-    {
-        free(ifconf_buf);
-        ERROR("calloc() failed");
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
+    cb_data.buf = TE_ALLOC(cb_data.buf_len);
     cb_data.buf[0] = '\0';
     cb_data.buf_off = 0;
 
@@ -7683,19 +7658,12 @@ ta_unix_conf_neigh_list(const char *ifname, bool is_static,
         return 0;
     }
 
-    if ((*list = malloc(len)) == NULL)
-    {
-        netconf_list_free(nlist);
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
-
+    *list = TE_ALLOC(len);
     if (len == 0)
     {
         *list = NULL;
         return 0;
     }
-
-    memset(*list, 0, len);
 
     cur_ptr = *list;
     for (t = nlist->head; t != NULL; t = t->next)
@@ -8266,7 +8234,6 @@ uname_machine_get(unsigned int gid, const char *oid, char *value)
  *
  * @return              Status code:
  * @retval 0                success
- * @retval TE_ENOMEM        cannot allocate memory
  */
 static te_errno
 user_list(unsigned int gid, const char *oid,
@@ -8347,8 +8314,7 @@ static int
 conv_fun(int num_msg, pam_message_t **msg, pam_response_t **resp,
          void *data)
 {
-    /* Try to allocate responses array to be returned */
-    struct pam_response *resp_array = calloc(num_msg, sizeof(*resp));
+    struct pam_response *resp_array = TE_ALLOC(num_msg * sizeof(*resp));
     appdata_t           *appdata    = data;
 
     int      i;
@@ -8356,48 +8322,31 @@ conv_fun(int num_msg, pam_message_t **msg, pam_response_t **resp,
                                                        *  length + 1
                                                        */
 
-    /** If responses array is allocated successfully */
-    if (resp_array != NULL)
+    for (i = 0; i < num_msg; i++) /* Process each message */
     {
-        for (i = 0; i < num_msg; i++) /* Process each message */
-        {
-            /** PAM prompts for password */
-            if (msg[i]->msg_style == PAM_PROMPT_ECHO_ON ||
+        /** PAM prompts for password */
+        if (msg[i]->msg_style == PAM_PROMPT_ECHO_ON ||
                 msg[i]->msg_style == PAM_PROMPT_ECHO_OFF)
-            {
-                /** Allocate memory for password and supply it to PAM */
-                if ((resp_array[i].resp = malloc(full_len)) != NULL)
-                    memcpy(resp_array[i].resp, appdata->passwd, full_len);
-                else
-                {
-                   /* Rollback allocation already
-                    * been done at the moment
-                    */
-                    while (i-- > 0)
-                        free(resp_array[i].resp);
-
-                    free(resp_array);
-                    return PAM_BUF_ERR;
-                }
-            }
-            else
-                /** PAM assumes user should read this error message */
-                if (msg[i]->msg_style == PAM_ERROR_MSG)
-                {
-                    WARN("%s", msg[i]->msg);
-
-                   /* Save message in order to have opportunity
-                    * to display it later by main execution flow
-                    * (set_change_passwd) in case of a real error
-                    */
-                    strcpy(appdata->err_msg, msg[i]->msg);
-                }
+        {
+            /** Allocate memory for password and supply it to PAM */
+            resp_array[i].resp = TE_ALLOC(full_len);
+            memcpy(resp_array[i].resp, appdata->passwd, full_len);
         }
+        else
+            /** PAM assumes user should read this error message */
+            if (msg[i]->msg_style == PAM_ERROR_MSG)
+            {
+                WARN("%s", msg[i]->msg);
 
-        *resp = resp_array; /* Assign responses array pointer for PAM */
+                /* Save message in order to have opportunity
+                 * to display it later by main execution flow
+                 * (set_change_passwd) in case of a real error
+                 */
+                strcpy(appdata->err_msg, msg[i]->msg);
+            }
     }
-    else
-        return PAM_BUF_ERR;
+
+    *resp = resp_array; /* Assign responses array pointer for PAM */
 
     return PAM_SUCCESS;
 }
@@ -8956,7 +8905,7 @@ xen_rmfr(char const *dir)
 {
     /* FIXME: Non "ta_system" implementation is needed*/
     char const* const cmd = "rm -fr ";
-    char *const cmdline = malloc(strlen(cmd) + strlen(dir) + 1);
+    char *const cmdline = TE_ALLOC(strlen(cmd) + strlen(dir) + 1);
 
     strcpy(cmdline, cmd);
     strcat(cmdline, dir);
@@ -10757,8 +10706,7 @@ xen_interface_list(unsigned int gid, char const *oid,
         return 0;
     }
 
-    if ((ptr = malloc(len)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    ptr = TE_ALLOC(len);
 
     if (list != NULL)
         *(*list = ptr) = '\0';
@@ -11230,8 +11178,7 @@ dom_u_list(unsigned int gid, char const *oid,
         return 0;
     }
 
-    if ((ptr = malloc(len)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    ptr = TE_ALLOC(len);
 
     if (list != NULL)
         *(*list = ptr) = '\0';
@@ -12070,8 +12017,7 @@ dom_u_bridge_list(unsigned int gid, char const *oid,
         return 0;
     }
 
-    if ((ptr = malloc(len)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    ptr = TE_ALLOC(len);
 
     if (list != NULL)
         *(*list = ptr) = '\0';

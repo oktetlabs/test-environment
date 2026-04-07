@@ -20,6 +20,7 @@
 #include <pthread.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_serial_parser.h"
 #include "te_kernel_log.h"
 #include "te_alloc.h"
@@ -352,8 +353,7 @@ parsers_list(unsigned int gid, const char *oid, const char *sub_id,
         if (list_len + strlen(parser->name) + 1 >= list_size)
         {
             list_size *= 2;
-            if ((*list = realloc(*list, list_size)) == NULL)
-                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+            TE_REALLOC(*list, list_size);
         }
 
         list_len += sprintf(*list + list_len, "%s ", parser->name);
@@ -618,8 +618,7 @@ parser_event_list(unsigned int gid, const char *oid, const char *sub_id,
         if (list_len + strlen(event->name) + 1 >= list_size)
         {
             list_size *= 2;
-            if ((*list = realloc(*list, list_size)) == NULL)
-                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+            TE_REALLOC(*list, list_size);
         }
 
         list_len += sprintf(*list + list_len, "%s ", event->name);
@@ -815,8 +814,7 @@ parser_pattern_list(unsigned int gid, const char *oid,
         if (list_len + strlen(pat->name) + 1 >= list_size)
         {
             list_size *= 2;
-            if ((*list = realloc(*list, list_size)) == NULL)
-                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+            TE_REALLOC(*list, list_size);
         }
 
         list_len += sprintf(*list + list_len, "%s ", pat->name);

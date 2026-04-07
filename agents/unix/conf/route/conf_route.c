@@ -39,6 +39,7 @@
 #include <arpa/inet.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
@@ -334,9 +335,7 @@ route_load_attrs(ta_cfg_obj_t *obj)
             return TE_EFAIL;
         }
 
-        hops = calloc(1, sizeof(*hops));
-        if (hops == NULL)
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        hops = TE_ALLOC(sizeof(*hops));
 
         TAILQ_INIT(hops);
         TAILQ_CONCAT(hops, &rt_info->nexthops, links);
@@ -879,9 +878,7 @@ route_nexthop_add(unsigned int gid, const char *oid,
     }
     else
     {
-        hops = calloc(1, sizeof(*hops));
-        if (hops == NULL)
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        hops = TE_ALLOC(sizeof(*hops));
         TAILQ_INIT(hops);
 
         route_obj->user_data = hops;
@@ -899,9 +896,7 @@ route_nexthop_add(unsigned int gid, const char *oid,
             break;
     }
 
-    nh = calloc(1, sizeof(*nh));
-    if (nh == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    nh = TE_ALLOC(sizeof(*nh));
 
     nh->weight = 1;
     nh->id = id;

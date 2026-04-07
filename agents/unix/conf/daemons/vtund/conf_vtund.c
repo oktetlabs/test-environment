@@ -15,6 +15,7 @@
 
 #ifdef WITH_VTUND
 
+#include "te_alloc.h"
 #include "te_queue.h"
 #include "conf_daemons_internal.h"
 
@@ -333,9 +334,7 @@ vtund_server_session_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EPERM);
     }
 
-    p = calloc(1, sizeof(*p));
-    if (p == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    p = TE_ALLOC(sizeof(*p));
 
     TAILQ_INSERT_TAIL(&server->sessions, p, links);
 
@@ -624,9 +623,7 @@ vtund_server_add(unsigned int gid, const char *oid, const char *value,
     if (vtund_server_find(gid, oid, vtund, port) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    p = calloc(1, sizeof(*p));
-    if (p == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    p = TE_ALLOC(sizeof(*p));
     TAILQ_INIT(&p->sessions);
 
     SLIST_INSERT_HEAD(&servers, p, links);
@@ -1016,9 +1013,7 @@ vtund_client_add(unsigned int gid, const char *oid, const char *value,
     if (vtund_client_find(gid, oid, vtund, client) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    p = calloc(1, sizeof(*p));
-    if (p == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    p = TE_ALLOC(sizeof(*p));
     SLIST_INSERT_HEAD(&clients, p, links);
 
     p->cfg_file = strdup(VTUND_TMP_FILE_TEMPLATE);

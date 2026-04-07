@@ -619,9 +619,7 @@ update_poe_ports(unsigned int gid)
         {
             free(poe_ports);
             n_poe_ports = poe_global_data.number_of_ports;
-            poe_ports = (poe_port *)malloc(sizeof(poe_port) * n_poe_ports);
-            if (poe_ports == NULL)
-                return TE_RC(TE_TA_SWITCH_CTL, TE_ENOMEM);
+            poe_ports = TE_ALLOC(sizeof(poe_port) * n_poe_ports);
         }
 
         rc = poe_port_read_table(poe_ports, error_string);
@@ -762,13 +760,15 @@ get_number_of_ports(unsigned int gid, const char *oid, char *value)
  *
  * @return Status code
  * @retval 0           - success
- * @retval TE_ENOMEM   - cannot allocate memory
  */
 static te_errno
 list_ports(unsigned int gid, const char *oid,
            const char *sub_id, char **list)
 {
     size_t str_len;
+    int ret;
+    char *s;
+    unsigned int i;
 
     UNUSED(oid);
     UNUSED(sub_id);
@@ -781,34 +781,23 @@ list_ports(unsigned int gid, const char *oid,
      * sufficient for each port number.
      */
     str_len = (3 + 1) * poe_global_data.number_of_ports * sizeof(char);
-    *list = (char *)malloc(str_len);
-    if (*list == NULL)
-    {
-        ERROR("Failed to allocate %u octets", str_len);
-        return TE_RC(TE_TA_SWITCH_CTL, TE_ENOMEM);
-    }
-    else
-    {
-        int             ret;
-        char           *s;
-        unsigned int    i;
+    *list = TE_ALLOC(str_len);
 
-        for (i = 0, s = *list;
-             i < poe_global_data.number_of_ports;
-             ++i, s += ret, str_len -= ret)
+    for (i = 0, s = *list;
+         i < poe_global_data.number_of_ports;
+         ++i, s += ret, str_len -= ret)
+    {
+        ret = snprintf(s, str_len, "%u ", poe_ports[i].id);
+        if ((size_t)ret >= str_len)
         {
-            ret = snprintf(s, str_len, "%u ", poe_ports[i].id);
-            if ((size_t)ret >= str_len)
-            {
-                free(*list);
-                ERROR("Too small buffer allocated");
-                return TE_RC(TE_TA_SWITCH_CTL, TE_ESMALLBUF);
-            }
+            free(*list);
+            ERROR("Too small buffer allocated");
+            return TE_RC(TE_TA_SWITCH_CTL, TE_ESMALLBUF);
         }
-        VERB("number_of_ports = %d\nPort list = %s",
-                   poe_global_data.number_of_ports, *list);
-        return 0;
     }
+    VERB("number_of_ports = %d\nPort list = %s",
+          poe_global_data.number_of_ports, *list);
+    return 0;
 }
 
 
@@ -1949,7 +1938,6 @@ arl_del_entry(unsigned int gid, const char *oid,
  *
  * @return Status code
  * @retval 0        - success
- * @retval TE_ENOMEM   - cannot allocate memory
  */
 static te_errno
 arl_list(unsigned int gid, const char *oid, const char *sub_id,
@@ -1975,8 +1963,7 @@ arl_list(unsigned int gid, const char *oid, const char *sub_id,
     {
         str_len += (2 + 4 + 6 * 3 + strlen(arl_table[i].vlan) + 1);
     }
-    if ((*list = (char *)malloc(str_len)) == NULL)
-        return TE_RC(TE_TA_SWITCH_CTL, TE_ENOMEM);
+    *list = TE_ALLOC(str_len);
 
     (*list)[0] = '\0';
 
@@ -3156,7 +3143,6 @@ stp_del_port(unsigned int gid, const char *oid,
  *
  * @return Status code
  * @retval 0        - success
- * @retval TE_ENOMEM   - cannot allocate memory
  */
 static te_errno
 stp_port_list(unsigned int gid, const char *oid,
@@ -3176,10 +3162,7 @@ stp_port_list(unsigned int gid, const char *oid,
 
     mem_len = (stp_port_table_num + num_local_entries) * strlen("50 ") + 1;
 
-    if ((*list = (char *)malloc(mem_len)) == NULL)
-    {
-        return TE_RC(TE_TA_SWITCH_CTL, TE_ENOMEM);
-    }
+    *list = TE_ALLOC(mem_len);
 
     for (**list = '\0', cur_len = 0, i = 0; i < stp_port_table_num; i++)
     {
@@ -3512,11 +3495,7 @@ vlan_list(int gid, char *oid, const char *sub_id, char **list)
     F_VERB("VLAN table contains %d entries", num);
 
     len = num * VID_STR_MAX + 1;
-    if ((*list = (char *)calloc(1, len)) == NULL)
-    {
-        free_vlan_table(table, num);
-        return TE_RC(TE_TA_SWITCH_CTL, TE_ENOMEM);
-    }
+    *list = TE_ALLOC(len);
 
     tmp = *list;
     for (i = 0; i < num && tmp <= (*list + len); i++)
@@ -3569,12 +3548,7 @@ vlan_port_add(int gid, char *oid, char *value, char *vid, char *p)
     if ((rc = find_vlan(vid, &vlan)) != 0)
         return TE_RC(TE_TA_SWITCH_CTL, rc);
 
-    if ((ports = (poe_pid *)malloc((vlan.num_ports + 1) *
-                                   sizeof(poe_pid))) == NULL)
-    {
-        free(vlan.ports);
-        return TE_RC(TE_TA_SWITCH_CTL, TE_ENOMEM);
-    }
+    ports = TE_ALLOC((vlan.num_ports + 1) * sizeof(poe_pid));
 
     for (i = 0; i < vlan.num_ports; i++)
     {
@@ -3688,12 +3662,7 @@ vlan_port_list(int gid, char *oid, const char *sub_id,
     if ((rc = find_vlan(vid, &vlan)) != 0)
         return TE_RC(TE_TA_SWITCH_CTL, rc);
 
-    *list = (char *)calloc(1, vlan.num_ports * VLAN_PORT_STR_MAX + 1);
-    if (*list == NULL)
-    {
-        free(vlan.ports);
-        return TE_RC(TE_TA_SWITCH_CTL, TE_ENOMEM);
-    }
+    *list = TE_ALLOC(vlan.num_ports * VLAN_PORT_STR_MAX + 1);
 
     tmp = *list;
     for (i = 0; i < vlan.num_ports; i++)

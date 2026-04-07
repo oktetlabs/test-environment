@@ -18,6 +18,7 @@
 #include <pthread.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_shell_cmd.h"
 #include "te_sleep.h"
 
@@ -280,12 +281,7 @@ ds_create_backup(const char *dir, const char *name, int *index)
     TE_SPRINTF(buf, TE_TMP_PATH"%s"TE_TMP_BKP_SUFFIX, filename);
 
     /* Addition memory for pid */
-    ds[i].backup = malloc(strlen(buf) + 16);
-    if (ds[i].backup == NULL)
-    {
-        free(ds[i].config_file);
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
+    ds[i].backup = TE_ALLOC(strlen(buf) + 16);
     strcpy(ds[i].backup, buf);
 
     if ((rc = copy_or_rename(ds[i].config_file, ds[i].backup)) != 0)

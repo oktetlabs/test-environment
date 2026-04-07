@@ -10,6 +10,7 @@
 #include <ifaddrs.h>
 #include "conf_daemons_internal.h"
 #include "rcf_pch.h"
+#include "te_alloc.h"
 #include "te_queue.h"
 #include "te_string.h"
 #include "te_shell_cmd.h"
@@ -1232,9 +1233,10 @@ l2tp_pppopt_alloc(te_l2tp_option **pppfile_opt)
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
 
-    tmp = (te_l2tp_option *)calloc(1, sizeof(te_l2tp_option));
     if (pppfile_opt == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    tmp = TE_ALLOC(sizeof(te_l2tp_option));
     tmp->name = strdup(PPP_OPTIONS);
     tmp->value = strdup(ppp_fname);
     tmp->type = L2TP_OPTION_TYPE_L2TP;
@@ -1305,9 +1307,7 @@ l2tp_lns_section_add(unsigned int gid, const char *oid, const char *value,
     if (lns_name == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    l2tp_section = calloc(1, sizeof(*l2tp_section));
-    if (l2tp_section == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    l2tp_section = TE_ALLOC(sizeof(*l2tp_section));
 
     l2tp_section->secname = strdup(lns_name);
     if (l2tp_section->secname == NULL)
@@ -1362,9 +1362,7 @@ l2tp_lns_opt_set_routine(const char *lns_name, const char *option_name,
     }
     else
     {
-        option = (te_l2tp_option *)calloc(1, sizeof(te_l2tp_option));
-        if (option == NULL)
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        option = TE_ALLOC(sizeof(te_l2tp_option));
         option->name = strdup(option_name);
         option->value = strdup(value);
         option->type = opt_type;
@@ -1900,16 +1898,11 @@ l2tp_lns_bit_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX,  TE_EEXIST);
     }
 
-    l2tp_option = (te_l2tp_option *)calloc(1, sizeof(te_l2tp_option));
-    if (l2tp_option != NULL)
-    {
+    l2tp_option = TE_ALLOC(sizeof(te_l2tp_option));
+    l2tp_option->name = strdup(buf_bit);
+    l2tp_option->value = strdup(strcmp(value, "1") == 0 ? "yes" : "no");
+    l2tp_option->type = L2TP_OPTION_TYPE_L2TP;
 
-        l2tp_option->name = strdup(buf_bit);
-        l2tp_option->value = strdup(strcmp(value, "1") == 0 ? "yes" : "no");
-        l2tp_option->type = L2TP_OPTION_TYPE_L2TP;
-    }
-    else
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     SLIST_INSERT_HEAD(&l2tp_section->l2tp_option, l2tp_option, list);
     l2tp->changed = true;
 
@@ -2248,9 +2241,7 @@ l2tp_lns_range_add_routine(const char *lns_name, const char *option_name,
 
     if ((l2tp_option = l2tp_find_option(l2tp, lns_name, option_name)) == NULL)
     {
-        l2tp_option = (te_l2tp_option *)calloc(1, sizeof(te_l2tp_option));
-        if (l2tp_option == NULL)
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        l2tp_option = TE_ALLOC(sizeof(te_l2tp_option));
         l2tp_option->name = strdup(option_name);
         l2tp_option->value = NULL;
         l2tp_option->type = L2TP_OPTION_TYPE_L2TP;
@@ -2261,9 +2252,7 @@ l2tp_lns_range_add_routine(const char *lns_name, const char *option_name,
     {
         return TE_RC(TE_TA_UNIX,  TE_EEXIST);
     }
-    l2tp_range = (te_l2tp_ipv4_range *)calloc(1, sizeof(te_l2tp_ipv4_range));
-    if (l2tp_range == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    l2tp_range = TE_ALLOC(sizeof(te_l2tp_ipv4_range));
     hyphen = strchr(range, '-');
     if (hyphen != NULL)
     {
@@ -2682,9 +2671,7 @@ l2tp_lns_pppopt_add(unsigned int gid, const char *oid, const char *value,
     {
         return TE_RC(TE_TA_UNIX,  TE_EEXIST);
     }
-    l2tp_option = (te_l2tp_option *)calloc(1, sizeof(te_l2tp_option));
-    if (l2tp_option == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    l2tp_option = TE_ALLOC(sizeof(te_l2tp_option));
 
     l2tp_option->name = strdup(option);
     l2tp_option->value = NULL;
@@ -2807,9 +2794,7 @@ l2tp_lns_client_add(unsigned int gid, const char *oid, const char *value,
     if (client != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    client = calloc(1, sizeof(*client));
-    if (client == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    client = TE_ALLOC(sizeof(*client));
     client->name = strdup(client_name);
     client->secret = strdup("*");
     client->sipv4 = strdup("*");
@@ -2929,9 +2914,7 @@ l2tp_lns_auth_add(unsigned int gid, const char *oid, const char *value,
     if (auth_type == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    auth = calloc(1, sizeof(*auth));
-    if (auth == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    auth = TE_ALLOC(sizeof(*auth));
 
     auth->name = strdup(auth_type);
     if (auth->name == NULL)
@@ -3409,12 +3392,7 @@ te_l2tp_clients_add(te_l2tp_server *l2tp)
 
             if (te_l2tp_check_accessory(l2tp, cip))
             {
-                client = calloc(1, sizeof(*client));
-                if (client == NULL)
-                {
-                    rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                    break;
-                }
+                client = TE_ALLOC(sizeof(*client));
                 client->cname = strdup(cip);
                 if (client->cname == NULL)
                 {

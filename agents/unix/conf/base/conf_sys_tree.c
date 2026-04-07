@@ -30,6 +30,7 @@
 #include <unistd.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
@@ -917,13 +918,7 @@ register_sys_opts(const char *father, const char *path, rcf_ch_cfg_set set)
             continue;
         }
 
-        obj = calloc(1, sizeof(*obj));
-        if (obj == NULL)
-        {
-            ERROR("%s: out of memory", __FUNCTION__);
-            rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-            goto cleanup;
-        }
+        obj = TE_ALLOC(sizeof(*obj));
 
         memcpy(obj->sub_id, de->d_name, len + 1);
 

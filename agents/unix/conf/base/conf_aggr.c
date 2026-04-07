@@ -632,7 +632,7 @@ aggregation_add(unsigned int gid, const char *oid, char *value,
     }
 
     /* Do the real job */
-    a = calloc(sizeof(aggregation), 1);
+    a = TE_ALLOC(sizeof(aggregation));
     a->type = type;
     a->mode = mode;
     a->name = TE_STRDUP(aggr_name);

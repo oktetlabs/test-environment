@@ -45,6 +45,7 @@
 #include <sys/sendfile.h>
 #include <ftw.h>
 
+#include "te_alloc.h"
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
@@ -89,10 +90,6 @@
 
 /* Size of a PCAP file header. */
 #define SNIF_PCAP_HSIZE 24
-
-#define SNIFFER_MALLOC(ptr, size)       \
-    if ((ptr = malloc(size)) == NULL)   \
-        assert(0);
 
 static te_errno sniffer_add(unsigned int gid, const char *oid, char *ssn,
                             const char *ifname, const char *snifname);
@@ -736,7 +733,7 @@ sniffer_get_capture_fname(sniffer_t *snif, int *fnum, char **wp_fname,
     if (fname != NULL)
     {
         *wp_fname = fname;
-        SNIFFER_MALLOC(resname, RCF_MAX_PATH);
+        resname = TE_ALLOC(RCF_MAX_PATH);
         res = snprintf(resname, RCF_MAX_PATH, "%s/%s", snif->path, fname);
         if (res > RCF_MAX_PATH)
         {
@@ -862,8 +859,7 @@ sniffer_get_list_buf(char **buf, bool sync)
     size_t               mem_size   = 1024;
     unsigned long long   offset     = 0;
 
-    SNIFFER_MALLOC(*buf, mem_size);
-    memset(*buf, 0, mem_size);
+    *buf = TE_ALLOC(mem_size);
 
     clen = 0;
     SLIST_FOREACH_SAFE(sniff, &snifferl_h, ent_l, sniff_aux)
@@ -885,8 +881,7 @@ sniffer_get_list_buf(char **buf, bool sync)
             if (str_len > mem_size - clen)
             {
                 mem_size = mem_size * 2;
-                if ((*buf = realloc(*buf, mem_size)) == NULL)
-                    assert(0);
+                TE_REALLOC(*buf, mem_size);
                 memset(*buf + clen, 0, mem_size/2);
                 str_len = snprintf(*buf + clen, mem_size - clen, "%s %s %u %llu",
                                    sniff->id.snifname, sniff->id.ifname,
@@ -1148,8 +1143,8 @@ make_argv_str(sniffer_t *sniff, int *s_argc)
         goto cleanup_m_argv;                                    \
     *s_argc += 1;
 
-    SNIFFER_MALLOC(int_buff, intb_len);
-    SNIFFER_MALLOC(s_argv, SNIFFER_MAX_ARGS_N * sizeof(char*));
+    int_buff = TE_ALLOC(intb_len);
+    s_argv = TE_ALLOC(SNIFFER_MAX_ARGS_N * sizeof(char*));
 
     *s_argc = 0;
     PUSH_ARG(SNIFFER_EXEC);
@@ -1302,7 +1297,7 @@ sniffer_add_clone(sniffer_t *sniff)
 {
     sniffer_t *new_sniff = NULL;
 
-    SNIFFER_MALLOC(new_sniff, sizeof(sniffer_t));
+    new_sniff = TE_ALLOC(sizeof(sniffer_t));
     memcpy(new_sniff, sniff, sizeof(sniffer_t));
     if (sniff->curr_file_name != NULL)
         new_sniff->curr_file_name = strdup(sniff->curr_file_name);
@@ -1488,8 +1483,7 @@ sniffers_list(unsigned int gid, const char *oid, const char *sub_id,
     size_t      list_len  = 0;
 
     list_size = SNIFFER_LIST_SIZE;
-    if ((*list = (char *)calloc(1, list_size)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    *list = TE_ALLOC(list_size);
     list_len = 0;
 
     SLIST_FOREACH(sniff, &snifferl_h, ent_l)
@@ -1500,8 +1494,7 @@ sniffers_list(unsigned int gid, const char *oid, const char *sub_id,
         if (list_len + strlen(sniff->id.snifname) + 1 >= list_size)
         {
             list_size *= 2;
-            if ((*list = realloc(*list, list_size)) == NULL)
-                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+            TE_REALLOC(*list, list_size);
         }
 
         list_len += sprintf(*list + list_len, "%s ", sniff->id.snifname);
@@ -1572,7 +1565,7 @@ sniffer_add(unsigned int gid, const char *oid, char *ssn,
     sniffer_t *sniff;
     bool backup = false;
 
-    SNIFFER_MALLOC(sniff, sizeof(sniffer_t));
+    sniff = TE_ALLOC(sizeof(sniffer_t));
     sniff->id.snifname      = strdup(snifname);
     sniff->id.ifname        = strdup(ifname);
     sniff->id.ssn           = atoi(ssn);
@@ -1819,7 +1812,7 @@ rcf_ch_get_sniffers(struct rcf_comm_connection *handle, char *cbuf,
     /* Mark processing. */
     else if (sniffer_get_curr_offset(sniff_id_str, NULL, &offset) == 0)
     {
-        SNIFFER_MALLOC(abuf, RCF_MAX_ID);
+        abuf = TE_ALLOC(RCF_MAX_ID);
         alen = snprintf(abuf, RCF_MAX_ID, "%s %llu", sniff_id_str, offset) + 1;
         if (alen > RCF_MAX_ID)
         {

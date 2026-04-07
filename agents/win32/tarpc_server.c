@@ -9,6 +9,7 @@
 
 #include "tarpc_server.h"
 
+#include "te_alloc.h"
 #include "te_sockaddr.h"
 
 LPFN_CONNECTEX            pf_connect_ex;
@@ -605,12 +606,7 @@ TARPC_FUNC(wsa_accept,
         unsigned int i;
 
         /* FIXME: memory allocated here is lost */
-        if ((cond = calloc(in->cond.cond_len + 1,
-                           sizeof(accept_cond))) == NULL)
-        {
-            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
-            goto finish;
-        }
+        cond = TE_ALLOC((in->cond.cond_len + 1) * sizeof(accept_cond));
         for (i = 0; i < in->cond.cond_len; i++)
         {
             cond[i].port = in->cond.cond_val[i].port;
@@ -632,9 +628,6 @@ TARPC_FUNC(wsa_accept,
     sockaddr_output_h2rpc(addr, addrlen,
                           out->len.len_len == 0 ? 0 : *(out->len.len_val),
                           &(out->addr));
-
-    finish:
-    ;
 }
 )
 
@@ -717,15 +710,10 @@ TARPC_FUNC(transmit_packets, {},
         overlapped = &tmp;
     }
 
-    transmit_buffers = (TRANSMIT_PACKETS_ELEMENT *)
-                       calloc(in->packet_array.packet_array_len,
-                              sizeof(TRANSMIT_PACKETS_ELEMENT));
-    memset(transmit_buffers, 0,
-           in->packet_array.packet_array_len *
-           sizeof(TRANSMIT_PACKETS_ELEMENT));
-
-    overlapped->buffers = calloc(in->packet_array.packet_array_len,
-                                 sizeof(WSABUF));
+    transmit_buffers = TE_ALLOC(in->packet_array.packet_array_len *
+                                sizeof(TRANSMIT_PACKETS_ELEMENT));
+    overlapped->buffers = TE_ALLOC(in->packet_array.packet_array_len *
+                                   sizeof(WSABUF));
 
     for (i = 0; i < in->packet_array.packet_array_len; i++)
     {
@@ -797,11 +785,7 @@ TARPC_FUNC(transmit_file, {},
     if (overlapped != NULL)
     {
         rpc_overlapped_free_memory(overlapped);
-        if ((overlapped->buffers = calloc(2, sizeof(WSABUF))) == NULL)
-        {
-            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
-            goto finish;
-        }
+        overlapped->buffers = TE_ALLOC(2 * sizeof(WSABUF));
         overlapped->buffers[0].buf = in->head.head_val;
         in->head.head_val = NULL;
         overlapped->buffers[0].len = in->head.head_len;
@@ -840,11 +824,7 @@ TARPC_FUNC(transmitfile_tabufs, {},
     if (overlapped != NULL)
     {
         rpc_overlapped_free_memory(overlapped);
-        if ((overlapped->buffers = calloc(2, sizeof(WSABUF))) == NULL)
-        {
-            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
-            goto finish;
-        }
+        overlapped->buffers = TE_ALLOC(2 * sizeof(WSABUF));
         overlapped->buffers[0].buf = rcf_pch_mem_get(in->head);
         overlapped->buffers[0].len = in->head_len;
         overlapped->buffers[1].buf = rcf_pch_mem_get(in->tail);
@@ -992,13 +972,7 @@ vm_trasher_thread(void *arg)
     GlobalMemoryStatus(&ms);
 
     len = ms.dwTotalPhys / 2 * 3; /* 1.5 RAM */
-    buf = malloc(len);
-    if (buf == NULL)
-    {
-        INFO("vm_trasher_thread() could not allocate "
-             "%u bytes, errno = %d", len, errno);
-        return (void *)-1;
-    }
+    buf = TE_ALLOC(len);
 
     /* Make dirty each page of buffer */
     for (pos = 0; pos < len; pos += 4096)
@@ -1641,15 +1615,10 @@ _fd_set_new_1_svc(tarpc_fd_set_new_in *in, tarpc_fd_set_new_out *out,
     memset(out, 0, sizeof(*out));
 
     errno = 0;
-    if ((set = (fd_set *)malloc(sizeof(fd_set))) == NULL)
-    {
-        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
-    }
-    else
-    {
-        out->common._errno = RPC_ERRNO;
-        out->retval = rcf_pch_mem_alloc(set);
-    }
+    set = TE_ALLOC(sizeof(fd_set));
+
+    out->common._errno = RPC_ERRNO;
+    out->retval = rcf_pch_mem_alloc(set);
 
     return true;
 }
@@ -2161,13 +2130,10 @@ TARPC_FUNC(ioctl,
 static tarpc_hostent *
 hostent_h2rpc(struct hostent *he)
 {
-    tarpc_hostent *rpc_he = (tarpc_hostent *)calloc(1, sizeof(*rpc_he));
+    tarpc_hostent *rpc_he = TE_ALLOC(sizeof(*rpc_he);
 
     unsigned int i;
     unsigned int k;
-
-    if (rpc_he == NULL)
-        return NULL;
 
     if (he->h_name != NULL)
     {
@@ -2182,11 +2148,7 @@ hostent_h2rpc(struct hostent *he)
 
         for (i = 1, ptr = he->h_aliases; *ptr != NULL; ptr++, i++);
 
-        if ((rpc_he->h_aliases.h_aliases_val =
-             (tarpc_h_alias *)calloc(i, sizeof(tarpc_h_alias))) == NULL)
-        {
-            goto release;
-        }
+        rpc_he->h_aliases.h_aliases_val = TE_ALLOC(i * sizeof(tarpc_h_alias));
         rpc_he->h_aliases.h_aliases_len = i;
 
         for (k = 0; k < i - 1; k++)
@@ -2210,20 +2172,13 @@ hostent_h2rpc(struct hostent *he)
 
         for (i = 1, ptr = he->h_addr_list; *ptr != NULL; ptr++, i++);
 
-        if ((rpc_he->h_addr_list.h_addr_list_val =
-             (tarpc_h_addr *)calloc(i, sizeof(tarpc_h_addr))) == NULL)
-        {
-            goto release;
-        }
+        rpc_he->h_addr_list.h_addr_list_val = TE_ALLOC(i * sizeof(tarpc_h_addr));
         rpc_he->h_addr_list.h_addr_list_len = i;
 
         for (k = 0; k < i - 1; k++)
         {
-            if ((rpc_he->h_addr_list.h_addr_list_val[i].val.val_val =
-                 malloc(rpc_he->h_length)) == NULL)
-            {
-                goto release;
-            }
+            rpc_he->h_addr_list.h_addr_list_val[i].val.val_val =
+                 TE_ALLOC(rpc_he->h_length);
             rpc_he->h_addr_list.h_addr_list_val[i].val.val_len =
                 rpc_he->h_length;
             memcpy(rpc_he->h_addr_list.h_addr_list_val[i].val.val_val,
@@ -2396,12 +2351,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
     uint64_t control = 0;
 #endif
 
-    if ((buf = malloc(in->size_max)) == NULL)
-    {
-        ERROR("Out of memory");
-        return -1;
-    }
-
+    buf = TE_ALLOC(in->size_max);
     if (in->size_min > in->size_max || in->delay_min > in->delay_max)
     {
         ERROR("Incorrect size of delay parameters");
@@ -2515,11 +2465,7 @@ simple_receiver(tarpc_simple_receiver_in *in,
 
     RING("%s() started", __FUNCTION__);
 
-    if ((buf = malloc(MAX_PKT)) == NULL)
-    {
-        ERROR("Out of memory");
-        return -1;
-    }
+    buf = TE_ALLOC(MAX_PKT);
 
     for (start = now = time(NULL);
          (in->time2run != 0) ?
@@ -3205,22 +3151,15 @@ TARPC_FUNC(create_overlapped, {},
     rpc_overlapped *tmp;
 
     UNUSED(list);
-    if ((tmp = (rpc_overlapped *)calloc(1, sizeof(rpc_overlapped))) == NULL)
-    {
-        out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
-    }
-    else
-    {
-        tmp->overlapped.hEvent = IN_HEVENT;
-        tmp->overlapped.Offset = in->offset;
-        tmp->overlapped.OffsetHigh = in->offset_high;
-        tmp->cookie1 = in->cookie1;
-        tmp->cookie2 = in->cookie2;
-        out->common._errno = 0;
-        out->retval = rcf_pch_mem_alloc(tmp);
-        RING("Overlapped structure %x (index %d) is allocated", tmp,
-             out->retval);
-    }
+    tmp = TE_ALLOC(sizeof(rpc_overlapped));
+    tmp->overlapped.hEvent = IN_HEVENT;
+    tmp->overlapped.Offset = in->offset;
+    tmp->overlapped.OffsetHigh = in->offset_high;
+    tmp->cookie1 = in->cookie1;
+    tmp->cookie2 = in->cookie2;
+    out->common._errno = 0;
+    out->retval = rcf_pch_mem_alloc(tmp);
+    RING("Overlapped structure %x (index %d) is allocated", tmp, out->retval);
 }
 )
 
@@ -3733,8 +3672,7 @@ wsa_recv_msg_control_in(struct tarpc_msghdr *rpc_msg, WSAMSG *msg)
     rpc_msg->msg_control.msg_control_val = NULL;
     rpc_msg->msg_control.msg_control_len = 0;
     msg->Control.len = len;
-    if ((msg->Control.buf = calloc(1, rlen)) == NULL)
-        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
+    msg->Control.buf = TE_ALLOC(rlen);
 
     WSA_CMSG_FIRSTHDR(msg)->cmsg_len = WSA_CMSG_LEN(data_len);
     return 0;
@@ -3761,11 +3699,7 @@ wsa_recv_msg_control_out(struct tarpc_msghdr *rpc_msg, WSAMSG *msg)
          c != NULL;
          i++, c = WSA_CMSG_NXTHDR(msg, c));
 
-    rpc_c = rpc_msg->msg_control.msg_control_val =
-        calloc(1, sizeof(*rpc_c) * i);
-
-    if (rpc_msg->msg_control.msg_control_val == NULL)
-        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
+    rpc_c = rpc_msg->msg_control.msg_control_val = TE_ALLOC(sizeof(*rpc_c) * i);
 
     /* Fill the array */
     for (i = 0, c = WSA_CMSG_FIRSTHDR(msg);
@@ -3780,16 +3714,7 @@ wsa_recv_msg_control_out(struct tarpc_msghdr *rpc_msg, WSAMSG *msg)
         if ((rpc_c->data.data_len =
              c->cmsg_len - (data - (char *)c)) > 0)
         {
-            rpc_c->data.data_val = malloc(rpc_c->data.data_len);
-            if (rpc_c->data.data_val == NULL)
-            {
-                for (i--, rpc_c--; i >= 0; i--, rpc_c--)
-                    free(rpc_c->data.data_val);
-                free(rpc_msg->msg_control.msg_control_val);
-                rpc_msg->msg_control.msg_control_val = NULL;
-
-                return TE_RC(TE_TA_WIN32, TE_ENOMEM);
-            }
+            rpc_c->data.data_val = TE_ALLOC(rpc_c->data.data_len);
             memcpy(rpc_c->data.data_val, data, rpc_c->data.data_len);
         }
     }
@@ -4191,15 +4116,9 @@ TARPC_FUNC(malloc, {},
 
     UNUSED(list);
 
-    buf = malloc(in->size);
+    buf = TE_ALLOC(in->size);
 
-    if (buf == NULL)
-    {
-        out->common._errno = RPC_ENOMEM;
-        out->retval = 0;
-    }
-    else
-        out->retval = rcf_pch_mem_alloc(buf);
+    out->retval = rcf_pch_mem_alloc(buf);
 }
 )
 
@@ -4225,14 +4144,9 @@ TARPC_FUNC(free, {},
  */
 TARPC_FUNC(memalign, {},
 {
-    void *buf;
+    void *buf = TE_ALLOC(in->size);
 
-    buf = malloc(in->size);
-
-    if (buf == NULL)
-        out->common._errno = TE_RC(TE_TA_UNIX, errno);
-    else
-        out->retval = rcf_pch_mem_alloc(buf);
+    out->retval = rcf_pch_mem_alloc(buf);
 }
 )
 
@@ -4282,18 +4196,10 @@ get_buf(tarpc_ptr src_buf_base, size_t src_offset,
 
     if (src_buf != NULL && *len != 0)
     {
-        char *buf = malloc(*len);
+        char *buf = TE_ALLOC(*len);
 
-        if (buf == NULL)
-        {
-            len = 0;
-            errno = ENOMEM;
-        }
-        else
-        {
-            memcpy(buf, src_buf + src_offset, *len);
-            *dst_buf = buf;
-        }
+        memcpy(buf, src_buf + src_offset, *len);
+        *dst_buf = buf;
     }
     else if (*len != 0)
     {
@@ -4356,16 +4262,15 @@ TARPC_FUNC(alloc_wsabuf, {},
 
     UNUSED(list);
 
-    wsabuf = malloc(sizeof(WSABUF));
-    if ((wsabuf != NULL) && (in->len != 0))
-        buf = calloc(1, in->len);
+    wsabuf = TE_ALLOC(sizeof(WSABUF));
+    if (in->len != 0)
+        buf = TE_ALLOC(in->len);
     else
         buf = NULL;
 
-    if ((wsabuf == NULL) || ((buf == NULL) && (in->len != 0)))
+    if ((buf == NULL) && (in->len != 0))
     {
-        if (wsabuf != NULL)
-            free(wsabuf);
+        free(wsabuf);
         if (buf != NULL)
             free(buf);
         out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
@@ -4485,7 +4390,7 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
             res->type = WSA_IOCTL_SAA;
 
             sal = (SOCKET_ADDRESS_LIST *)buf;
-            tsa = (tarpc_sa *)calloc(sal->iAddressCount, sizeof(tarpc_sa));
+            tsa = TE_ALLOC(sal->iAddressCount * sizeof(tarpc_sa));
 
             for (i = 0; i < sal->iAddressCount; i++)
             {
@@ -4534,13 +4439,7 @@ convert_wsa_ioctl_result(DWORD code, char *buf, wsa_ioctl_request *res)
             if (qos->ProviderSpecific.len != 0)
             {
                tqos->provider_specific_buf.provider_specific_buf_val =
-                   malloc(qos->ProviderSpecific.len);
-               if (tqos->provider_specific_buf.provider_specific_buf_val ==
-                   NULL)
-               {
-                   ERROR("Failed to allocate memory for ProviderSpecific");
-                   return -1;
-               }
+                   TE_ALLOC(qos->ProviderSpecific.len);
                memcpy(tqos->provider_specific_buf.provider_specific_buf_val,
                    qos->ProviderSpecific.buf, qos->ProviderSpecific.len);
                tqos->provider_specific_buf.provider_specific_buf_len =
@@ -4581,11 +4480,7 @@ TARPC_FUNC(wsa_ioctl,
     /* Prepare output buffer */
     if (out->outbuf.outbuf_val != NULL)
     {
-        if ((outbuf = malloc(in->outbuf_len + 1)) == NULL)
-        {
-            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
-            goto finish;
-        }
+        outbuf = TE_ALLOC(in->outbuf_len + 1);
         INIT_CHECKED_ARG(outbuf, in->outbuf_len + 1, in->outbuf_len);
     }
 
@@ -4596,13 +4491,7 @@ TARPC_FUNC(wsa_ioctl,
 
         if (outbuf != NULL)
         {
-            overlapped->buffers = malloc(sizeof(WSABUF));
-            if (overlapped->buffers == NULL)
-            {
-                out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);
-                free(outbuf);
-                goto finish;
-            }
+            overlapped->buffers = TE_ALLOC(sizeof(WSABUF));
             overlapped->buffers[0].buf = outbuf;
             overlapped->buffers[0].len = in->outbuf_len + 1;
         }
@@ -4629,7 +4518,7 @@ TARPC_FUNC(wsa_ioctl,
 
             inbuf_len = sizeof(uint32_t) + req->wsa_ioctl_request_u.
                         req_saa.req_saa_len * sizeof(SOCKET_ADDRESS);
-            inbuf = malloc(inbuf_len);
+            inbuf = TE_ALLOC(inbuf_len);
             sal = (SOCKET_ADDRESS_LIST *)inbuf;
             sal->iAddressCount = req->wsa_ioctl_request_u.req_saa.
                                  req_saa_len;
@@ -4638,8 +4527,7 @@ TARPC_FUNC(wsa_ioctl,
 
             for (i = 0; i < sal->iAddressCount; i++, p++, q++)
             {
-                p->lpSockaddr = (LPSOCKADDR)
-                                malloc(sizeof(struct sockaddr_storage));
+                p->lpSockaddr = TE_ALLOC(sizeof(struct sockaddr_storage));
                 sockaddr_rpc2h(q, SA(p->lpSockaddr),
                                sizeof(struct sockaddr_storage),
                                NULL, NULL);

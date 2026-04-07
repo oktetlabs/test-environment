@@ -52,6 +52,7 @@
 #include <aio.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "te_errno.h"
@@ -212,13 +213,7 @@ store_pid(pid_t pid)
     if (i == tasks_len)
     {
         tasks_len += 32;
-        tasks = realloc(tasks, tasks_len * sizeof(pid_t));
-        if (tasks == NULL)
-        {
-            ERROR("%s(): realloc() failed", __FUNCTION__);
-            tasks_len = tasks_index = 0;
-            return;
-        }
+        TE_REALLOC(tasks, tasks_len * sizeof(pid_t));
     }
     tasks[tasks_index++] = pid;
 }
@@ -440,12 +435,7 @@ rcf_ch_file(struct rcf_comm_connection *handle,
 
     if (rcf_file_is_special(filename))
     {
-        if ((auxbuf = malloc(AUX_BUFFER_LEN)) == NULL)
-        {
-            ERROR("Impossible allocate buffer");
-            rc = TE_RC(TE_RCF_PCH, TE_ENOMEM);
-            goto reject;
-        }
+        auxbuf = TE_ALLOC(AUX_BUFFER_LEN);
 
         VERB("file operation in special directory");
         if (op != RCFOP_FGET)
@@ -1446,10 +1436,9 @@ thread_mutex_create(void)
 {
     static pthread_mutex_t init = PTHREAD_MUTEX_INITIALIZER;
 
-    pthread_mutex_t *mutex = (pthread_mutex_t *)calloc(1, sizeof(*mutex));
+    pthread_mutex_t *mutex = TE_ALLOC(sizeof(*mutex));
 
-    if (mutex != NULL)
-        *mutex = init;
+    *mutex = init;
 
     return (void *)mutex;
 }

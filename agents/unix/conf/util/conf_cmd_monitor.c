@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_queue.h"
 #include "te_errno.h"
@@ -77,7 +78,7 @@ cmd_monitor_add(unsigned int gid, const char *oid, char *value, char *name)
               name);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    monitor = calloc(1, sizeof(*monitor));
+    monitor = TE_ALLOC(sizeof(*monitor));
 
     monitor->enable = false;
     monitor->name = strdup(name);
@@ -216,8 +217,7 @@ cmd_monitors_list(unsigned int gid, const char *oid, const char *sub_id,
         if (list_len + strlen(monitor->name) + 2 >= list_size)
         {
             list_size = (list_size + strlen(monitor->name) + 2) * 2;
-            if ((*list = realloc(*list, list_size)) == NULL)
-                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+            TE_REALLOC(*list, list_size);
         }
 
         list_len += sprintf(*list + list_len, "%s ", monitor->name);

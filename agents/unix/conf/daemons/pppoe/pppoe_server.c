@@ -669,7 +669,7 @@ pppoe_server_option_add(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
     }
 
-    opt = (te_pppoe_option *)calloc(1, sizeof(te_pppoe_option));
+    opt = TE_ALLOC(sizeof(te_pppoe_option));
     opt->name = strdup(option);
     opt->value = strdup(value);
     SLIST_INSERT_HEAD(&pppoe->options, opt, list);
@@ -749,11 +749,7 @@ pppoe_server_option_list(unsigned int gid, const char *oid,
     ENTRY("List pppoe server options");
 
     list_size = PPPOE_SERVER_LIST_SIZE;
-    if ((*list = (char *)calloc(1, list_size)) == NULL)
-    {
-        EXIT("Failed to list pppoe server options");
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
+    *list = TE_ALLOC(list_size);
     list_len = 0;
 
     SLIST_FOREACH(opt, &pppoe->options, list)
@@ -761,11 +757,7 @@ pppoe_server_option_list(unsigned int gid, const char *oid,
         if (list_len + strlen(opt->name) + 1 >= list_size)
         {
             list_size *= 2;
-            if ((*list = realloc(*list, list_size)) == NULL)
-            {
-                EXIT("Failed to list pppoe server options");
-                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-            }
+            TE_REALLOC(*list, list_size);
         }
 
         list_len += sprintf(*list + list_len, "%s ", opt->name);
@@ -830,7 +822,7 @@ pppoe_server_ifs_add(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
     }
 
-    iface = (te_pppoe_if *)calloc(1, sizeof(te_pppoe_if));
+    iface = TE_ALLOC(sizeof(te_pppoe_if));
     iface->ifname = strdup(ifname);
     SLIST_INSERT_HEAD(&pppoe->ifs, iface, list);
     pppoe->changed = true;
@@ -914,11 +906,7 @@ pppoe_server_ifs_list(unsigned int gid, const char *oid,
     ENTRY("List pppoe server interfaces");
 
     list_size = PPPOE_SERVER_LIST_SIZE;
-    if ((*list = (char *)calloc(1, list_size)) == NULL)
-    {
-        EXIT("Failed to list pppoe server interfaces");
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
+    *list = TE_ALLOC(list_size);
     list_len = 0;
 
     SLIST_FOREACH(iface, &pppoe->ifs, list)
@@ -926,11 +914,7 @@ pppoe_server_ifs_list(unsigned int gid, const char *oid,
         if (list_len + strlen(iface->ifname) + 1 >= list_size)
         {
             list_size *= 2;
-            if ((*list = realloc(*list, list_size)) == NULL)
-            {
-                EXIT("Failed to list pppoe server interfaces");
-                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-            }
+            TE_REALLOC(*list, list_size);
         }
 
         list_len += sprintf(*list + list_len, "%s ", iface->ifname);

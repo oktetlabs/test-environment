@@ -128,9 +128,7 @@ pppoe_client_create(const char *if_name, const char *name,
 
     if (*p_grp == NULL)
     {
-        *p_grp = malloc(sizeof(**p_grp));
-        if (*p_grp == NULL)
-            return TE_ENOMEM;
+        *p_grp = TE_ALLOC(sizeof(**p_grp));
 
         (*p_grp)->next = NULL;
         (*p_grp)->if_name = strdup(if_name);
@@ -146,9 +144,7 @@ pppoe_client_create(const char *if_name, const char *name,
         p_clnt = &(*p_clnt)->next;
     }
 
-    *p_clnt = malloc(sizeof(**p_clnt));
-    if (*p_clnt == NULL)
-        return TE_ENOMEM;
+    *p_clnt = TE_ALLOC(sizeof(**p_clnt));
 
     (*p_clnt)->next = NULL;
     (*p_clnt)->grp = (*p_grp);
@@ -242,9 +238,7 @@ pppoe_list(unsigned int gid, const char *oid, const char *sub_id,
     while (clnt != NULL)
     {
         name_len = strlen(clnt->name);
-        buf = realloc(buf, buf_len + name_len + 2);
-        if (buf == NULL)
-            return TE_ENOMEM;
+        TE_REALLOC(buf, buf_len + name_len + 2);
 
         snprintf(buf + buf_len, name_len + 2, "%s ", clnt->name);
         buf_len += (name_len + 1);

@@ -188,14 +188,7 @@ ta_unix_conf_get_mib(unsigned int mib_level, unsigned int mib_name,
              (int)hdr->level, (int)hdr->name, (unsigned)hdr->len);
 
         if (*buflen < used + hdr->len)
-        {
-            *buf = realloc(*buf, used + hdr->len);
-            if (*buf == NULL)
-            {
-                rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                goto exit;
-            }
-        }
+            TE_REALLOC(*buf, used + hdr->len);
 
         data.maxlen = hdr->len;
         data.buf    = (char *)(*buf) + used;

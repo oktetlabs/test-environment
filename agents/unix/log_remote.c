@@ -34,6 +34,7 @@
 #include <time.h>
 #include <string.h>
 
+#include "te_alloc.h"
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "te_errno.h"
@@ -218,15 +219,7 @@ log_remote(void *ready, int argc, char *argv[])
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
 
-    if ((buffer = malloc(LOG_REMOTE_MAX_LEN + 1)) == NULL)
-    {
-        int rc = errno;
-
-        ERROR("%s: malloc failed at line %d: %d", __FUNCTION__,
-              __LINE__, rc);
-        sem_post(ready);
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
+    buffer = TE_ALLOC(LOG_REMOTE_MAX_LEN + 1);
 
     sem_post(ready);
 

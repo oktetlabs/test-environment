@@ -972,13 +972,7 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
         goto cleanup;
     }
 
-    rt_buf = calloc(1, rt_buflen);
-    if (rt_buf == NULL)
-    {
-        rc = TE_OS_RC(TE_TA_UNIX, errno);
-        assert(rc != 0);
-        goto cleanup;
-    }
+    rt_buf = TE_ALLOC(rt_buflen);
 
     rtm = (struct rt_msghdr *)rt_buf;
     rc = ta_rt_info_to_rt_msghdr(TA_CFG_OBJ_GET, rt_info, rtm, rt_buflen);

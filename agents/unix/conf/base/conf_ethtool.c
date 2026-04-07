@@ -745,12 +745,7 @@ get_ethtool_value(const char *if_name, unsigned int gid,
     }
     else
     {
-        *ptr_out = calloc(val_size, 1);
-        if (*ptr_out == NULL)
-        {
-            ERROR("%s(): not enough memory", __FUNCTION__);
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        }
+        *ptr_out = TE_ALLOC(val_size);
 
         if (cmd == TA_ETHTOOL_LINKSETTINGS)
         {

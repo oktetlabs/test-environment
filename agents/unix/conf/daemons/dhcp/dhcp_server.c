@@ -28,6 +28,8 @@
 
 #include <libgen.h>
 
+#include "te_alloc.h"
+
 /*** Defines ***/
 /**
  * Define it to use DHCP server native configuration:
@@ -125,9 +127,7 @@ ds_##_gh##_add(unsigned int gid, const char *oid, const char *value,    \
     if ((gh = find_##_gh(name)) != NULL)                                \
         return TE_RC(TE_TA_UNIX, TE_EEXIST);                            \
                                                                         \
-    if ((gh = (_gh *)calloc(1, sizeof(_gh))) == NULL)                   \
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);                            \
-                                                                        \
+    gh = TE_ALLOC(sizeof(_gh));                                         \
     if ((gh->name = strdup(name)) == NULL)                              \
     {                                                                   \
         free(gh);                                                       \
@@ -305,8 +305,8 @@ ds_##_ghs##_option_add(unsigned int gid, const char *oid,       \
     if (find_option(ghs->options, optname) != NULL)             \
         return TE_RC(TE_TA_UNIX, TE_EEXIST);                    \
                                                                 \
-    if ((opt = (te_dhcp_option *)calloc(sizeof(*opt), 1))       \
-        == NULL || (opt->name = strdup(optname)) == NULL ||     \
+    opt =  TE_ALLOC(sizeof(*opt));                              \
+    if ((opt->name = strdup(optname)) == NULL ||                \
         (opt->value = strdup(value)) == NULL)                   \
     {                                                           \
         FREE_OPTION(opt);                                       \
@@ -1823,9 +1823,7 @@ ds_subnet_add(unsigned int gid, const char *oid, const char *value,
     if (value == end || *end != '\0')
         return TE_RC(TE_TA_UNIX, TE_EFMT);
 
-    if ((s = calloc(1, sizeof(*s))) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
+    s = TE_ALLOC(sizeof(*s));
     if ((s->subnet = strdup(subnet)) == NULL)
     {
         free(s);
@@ -1940,12 +1938,7 @@ ds_lease_list(unsigned int gid, const char *oid,
     if ((f = fopen("/var/lib/dhcp/dhcpd.leases", "r")) == NULL)
         return TE_OS_RC(TE_TA_UNIX, errno);
 
-    if ((*list = (char *)malloc(ADDR_LIST_BULK)) == NULL)
-    {
-        fclose(f);
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
-
+    *list = TE_ALLOC(ADDR_LIST_BULK);
     **list = 0;
 
     while (fgets(buf, sizeof(buf), f) != NULL)
@@ -1960,16 +1953,8 @@ ds_lease_list(unsigned int gid, const char *oid,
 
         if (strlen(*list) + strlen(name) >= len)
         {
-            char *tmp;
-
             len += ADDR_LIST_BULK;
-            if ((tmp = (char *)realloc(*list, len)) == NULL)
-            {
-                free(*list);
-                fclose(f);
-                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-            }
-            *list = tmp;
+            TE_REALLOC(*list, len);
         }
         strcat(*list, name);
     }
@@ -2014,8 +1999,8 @@ ds_sp_opt_add(unsigned int gid, const char *oid,
     if (find_space_option(sp->options, optname) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    if ((opt = (te_dhcp_space_opt *)calloc(sizeof(*opt), 1))
-        == NULL || (opt->name = strdup(optname)) == NULL)
+    opt = TE_ALLOC(sizeof(*opt));
+    if ((opt->name = strdup(optname)) == NULL)
     {
         free(opt);
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);

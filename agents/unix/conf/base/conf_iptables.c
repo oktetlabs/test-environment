@@ -22,6 +22,7 @@
 #include <linux/version.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "logger_api.h"
 #include "te_defs.h"
@@ -660,12 +661,7 @@ iptables_chain_list(unsigned int  gid, const char *oid,
     }
 
     list_size = IPTABLES_CMD_BUF_SIZE;
-    *list     = (char *) calloc(1, list_size);
-    if (*list == NULL)
-    {
-        rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        goto cleanup;
-    }
+    *list     = TE_ALLOC(list_size);
     list_len = 0;
 
     while (fgets(buf, sizeof(buf), fp) != NULL)
@@ -676,11 +672,7 @@ iptables_chain_list(unsigned int  gid, const char *oid,
         if (list_len + strlen(buf) + 1 >= list_size)
         {
             list_size *= 2;
-            if ((*list = realloc(*list, list_size)) == NULL)
-            {
-                rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                goto cleanup;
-            }
+            TE_REALLOC(*list, list_size);
         }
 
         list_len += sprintf(*list + list_len, "%s ", buf);

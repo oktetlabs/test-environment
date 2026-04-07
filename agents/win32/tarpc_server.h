@@ -26,6 +26,7 @@ struct timezone {
 #undef   ERROR
 #define _SYS_SOCKET_H
 #define _NETINET_IN_H
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "tarpc.h"
 #include "rcf_rpc_defs.h"
@@ -498,21 +499,14 @@ iovec2overlapped(rpc_overlapped *overlapped, int vector_len,
         return 0;
     }
 
-    if ((overlapped->buffers =
-            (WSABUF *)calloc(vector_len, sizeof(WSABUF))) == NULL)
-    {
-        return TE_ENOMEM;
-    }
+    overlapped->buffers = TE_ALLOC(vector_len * sizeof(WSABUF));
 
     for (; overlapped->bufnum < vector_len; overlapped->bufnum++)
     {
-        if (vector[overlapped->bufnum].iov_len != 0 &&
-            (overlapped->buffers[overlapped->bufnum].buf =
-             calloc(vector[overlapped->bufnum].iov_len, 1)) == NULL)
-        {
-            rpc_overlapped_free_memory(overlapped);
-            return TE_ENOMEM;
-        }
+        if (vector[overlapped->bufnum].iov_len != 0)
+            overlapped->buffers[overlapped->bufnum].buf =
+                TE_ALLOC(vector[overlapped->bufnum].iov_len);
+
         overlapped->buffers[overlapped->bufnum].len =
             vector[overlapped->bufnum].iov_len;
         if (vector[overlapped->bufnum].iov_base.iov_base_val != NULL)
@@ -540,13 +534,7 @@ overlapped2iovec(rpc_overlapped *overlapped, int *vector_len,
         return 0;
     }
 
-    *vector_val = (struct tarpc_iovec *)
-        malloc(sizeof(struct tarpc_iovec) * overlapped->bufnum);
-    if (*vector_val == NULL)
-    {
-        rpc_overlapped_free_memory(overlapped);
-        return TE_ENOMEM;
-    }
+    *vector_val = TE_ALLOC(sizeof(struct tarpc_iovec) * overlapped->bufnum);
     *vector_len = overlapped->bufnum;
     for (i = 0; i < overlapped->bufnum; i++)
     {
@@ -631,19 +619,9 @@ init_checked_arg(checked_arg **list, char *real_arg, int len,
     if (real_arg == NULL || len <= len_visible)
         return;
 
-    if ((arg = malloc(sizeof(*arg))) == NULL)
-    {
-        ERROR("No enough memory for 'checked_arg'");
-        return;
-    }
+    arg = TE_ALLOC(sizeof(*arg));
+    arg->control = TE_ALLOC(len - len_visible);
 
-    if ((arg->control = malloc(len - len_visible)) == NULL)
-    {
-        ERROR("No enough memory for %u bytes",
-              (unsigned)(len - len_visible));
-        free(arg);
-        return;
-    }
     memcpy(arg->control, real_arg + len_visible, len - len_visible);
     arg->real_arg = real_arg;
     arg->len = len;
@@ -828,12 +806,7 @@ _##_func##_1_svc(tarpc_##_func##_in *in, tarpc_##_func##_out *out,      \
     {                                                                   \
         uint32_t _tid;                                                  \
                                                                         \
-        if ((arg = malloc(sizeof(*arg))) == NULL)                       \
-        {                                                               \
-            out->common._errno = TE_RC(TE_TA_WIN32, TE_ENOMEM);         \
-            return true;                                                \
-        }                                                               \
-                                                                        \
+        arg = TE_ALLOC(sizeof(*arg));                                   \
         arg->in = *in;                                                  \
         arg->out = *out;                                                \
         arg->done = false;                                              \

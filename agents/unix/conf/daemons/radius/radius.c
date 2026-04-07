@@ -73,20 +73,14 @@ static char *expand_rp (const char *value, radius_parameter *top);
  * @param value     Value of node (may be NULL)
  * @param parent    Node that should be a parent of created node
  *
- * @return Pointer to the new node (or NULL if creation failed)
+ * @return Pointer to the new node
  */
 static radius_parameter *
 make_rp(enum radius_parameters kind,
         const char *name,
         const char *value, radius_parameter *parent)
 {
-    radius_parameter *parm = (radius_parameter *)malloc(sizeof(*parm));
-
-    if (parm == NULL)
-    {
-        ERROR("%s(): not enough memory", __FUNCTION__);
-        return NULL;
-    }
+    radius_parameter *parm = TE_ALLOC(sizeof(*parm));
 
     parm->deleted = false;
     parm->modified = false;
@@ -477,12 +471,12 @@ find_rp (radius_parameter *base, const char *name, bool create,
     {
         iter = make_rp(*next == '\0' ? RP_ATTRIBUTE : RP_SECTION,
                        NULL, NULL, base);
-        iter->name = malloc(name_length + 1);
+        iter->name = TE_ALLOC(name_length + 1);
         memcpy(iter->name, name, name_length);
         iter->name[name_length] = '\0';
         if (value != NULL)
         {
-            iter->value = malloc(value_length + 1);
+            iter->value = TE_ALLOC(value_length + 1);
             memcpy(iter->value, value, value_length);
             iter->value[value_length] = '\0';
         }
@@ -578,17 +572,10 @@ expand_rp(const char *value, radius_parameter *top)
             if (diff_len > 0)
             {
                 size_t  next_ofs = next - new_val;
-                char   *p;
 
                 value_len += diff_len;
                 diff_len = new_ptr - new_val;
-                if ((p = (char *)realloc(new_val, value_len)) == NULL)
-                {
-                    ERROR("%s(): failed to allocate memory", __FUNCTION__);
-                    free(new_val);
-                    return NULL;
-                }
-                new_val = p;
+                TE_REALLOC(new_val, value_len);
                 new_ptr = new_val + diff_len;
                 next = new_val + next_ofs;
             }
@@ -761,11 +748,7 @@ make_radius_user(const char *name)
         ERROR("%s(): NULL argument", __FUNCTION__);
         return NULL;
     }
-    if ((user = (radius_user *)calloc(1, sizeof(*user))) == NULL)
-    {
-        ERROR("%s(): not enough memory", __FUNCTION__);
-        return NULL;
-    }
+    user = TE_ALLOC(sizeof(*user));
     user->reject = false;
     if ((user->name = strdup(name)) == NULL)
     {
@@ -890,11 +873,7 @@ radius_parse_attr_value_pair(const char **string, char **attr, char **value)
         ERROR("%s(): attribute has no value in '%s'", __FUNCTION__, start);
         return TE_EINVAL;
     }
-    if ((*attr = (char *)calloc(p - start + 1, 1)) == NULL)
-    {
-        ERROR("%s(): failed to allocate memory", __FUNCTION__);
-        return TE_ENOMEM;
-    }
+    *attr = TE_ALLOC(p - start + 1);
     memcpy(*attr, start, p - start);
 
     /* Attribute value */
@@ -918,13 +897,7 @@ radius_parse_attr_value_pair(const char **string, char **attr, char **value)
         return TE_EINVAL;
     }
 
-    if ((*value = (char *)calloc(len + 1, 1)) == NULL)
-    {
-        ERROR("%s(): failed to allocate memory", __FUNCTION__);
-        free(*attr);
-        *attr = NULL;
-        return TE_ENOMEM;
-    }
+    *value = TE_ALLOC(len + 1);
     memcpy(*value, start, len);
 
     *string = next_pair;
@@ -951,7 +924,6 @@ radius_set_attr_array(radius_attr_array *attr_array, const char *attr_string)
     {
         char        *name;
         char        *value;
-        radius_attr *p;
         te_errno     rc;
 
         if ((rc = radius_parse_attr_value_pair(&attr_string, &name,
@@ -961,14 +933,7 @@ radius_set_attr_array(radius_attr_array *attr_array, const char *attr_string)
         if (attr_string == NULL)
             break;
 
-        p = (radius_attr *)realloc(attrs,
-                                   (n_attrs + 1) * sizeof(radius_attr));
-        if (p == NULL)
-        {
-            ERROR("%s(): failed to allocate memory", __FUNCTION__);
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        }
-        attrs = p;
+        TE_REALLOC(attrs, (n_attrs + 1) * sizeof(radius_attr));
 
         attrs[n_attrs].name = name;
         attrs[n_attrs].value = value;
@@ -1469,11 +1434,7 @@ ds_radius_user_list(unsigned int gid, const char *oid,
     for (user = radius_users; user != NULL; user = user->next)
         size += strlen(user->name) + 1;
 
-    if ((*list = (char *)malloc(size + 1)) == NULL)
-    {
-        ERROR("%s(): failed to allocate memory", __FUNCTION__);
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
+    *list = TE_ALLOC(size + 1);
     for (user = radius_users, iter = *list; user != NULL; user = user->next)
     {
         size = strlen(user->name);
@@ -1580,7 +1541,7 @@ ds_radius_client_list(unsigned int gid, const char *oid,
     VERB("obtaining client list");
     find_rp(radius_conf, "client", false, false, client_count, &size);
     VERB("allocation %d bytes for list of clients", size);
-    c_iter = *list = malloc(size + 1);
+    c_iter = *list = TE_ALLOC(size + 1);
     find_rp(radius_conf, "client", false, false, client_list, &c_iter);
     *c_iter = '\0';
     VERB("client list is '%s'", *list);

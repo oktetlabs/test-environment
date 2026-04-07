@@ -13,6 +13,7 @@
 #endif
 
 #include "conf_daemons_internal.h"
+#include "te_alloc.h"
 #include "te_str.h"
 #include "te_string.h"
 #include "te_sockaddr.h"
@@ -257,9 +258,7 @@ openvpn_server_create(const char *name)
 {
     te_openvpn_server *instance;
 
-    instance = calloc(1, sizeof(te_openvpn_server));
-    if (instance == NULL)
-        return NULL;
+    instance = TE_ALLOC(sizeof(te_openvpn_server));
 
     instance->name = strdup(name);
     if (instance->name == NULL)
@@ -699,9 +698,7 @@ openvpn_##_gh##_add(unsigned int gid, const char *oid, const char *value,   \
     if ((gh = find_##_gh(instance, name)) != NULL)                          \
         return TE_RC(TE_TA_UNIX, TE_EEXIST);                                \
                                                                             \
-    if ((gh = calloc(1, sizeof(_gh))) == NULL)                              \
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);                                \
-                                                                            \
+    gh = TE_ALLOC(sizeof(_gh));                                             \
     if ((gh->name = strdup(name)) == NULL)                                  \
     {                                                                       \
         free(gh);                                                           \
@@ -799,9 +796,7 @@ openvpn_option_add(unsigned int gid, const char *oid,
     if (find_option(instance, optname) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    if ((opt = calloc(1, sizeof(*opt))) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
+    opt = TE_ALLOC(sizeof(*opt));
     opt->name = strdup(optname);
     opt->value = strdup(value);
 

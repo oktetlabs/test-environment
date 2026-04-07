@@ -58,6 +58,7 @@
 #include <arpa/inet.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
@@ -305,14 +306,7 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
 
             LIST_FOREACH(nc_nh, &route->hops, links)
             {
-                ta_nh = calloc(1, sizeof(*ta_nh));
-                if (ta_nh == NULL)
-                {
-                    ERROR("%s(): out of memory", __FUNCTION__);
-                    result = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                    goto cleanup;
-                }
-
+                ta_nh = TE_ALLOC(sizeof(*ta_nh));
                 ta_nh->id = nh_id;
                 nh_id++;
 
@@ -515,13 +509,7 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
 
         TAILQ_FOREACH(ta_nh, &rt_info->nexthops, links)
         {
-            nc_nh = calloc(1, sizeof(*nc_nh));
-            if (nc_nh == NULL)
-            {
-                ERROR("%s(): out of memory", __FUNCTION__);
-                rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                goto cleanup;
-            }
+            nc_nh = TE_ALLOC(sizeof(*nc_nh));
 
             if (nc_nh_aux == NULL)
                 LIST_INSERT_HEAD(&route.hops, nc_nh, links);

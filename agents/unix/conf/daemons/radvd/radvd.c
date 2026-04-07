@@ -17,6 +17,8 @@
 #include "conf_daemons_internal.h"
 #include "radvd.h"
 
+#include "te_alloc.h"
+
 /*** Common variables ***/
 #define COMMAND_BUFLEN  1024
 static char cmd_buf[COMMAND_BUFLEN];
@@ -492,13 +494,11 @@ new_option(const char *optname)
 {
     te_radvd_option *option;
 
-    if ((option = calloc(1, sizeof(option))) != NULL)
+    option = TE_ALLOC(sizeof(*option));
+    if ((option->name = strdup(optname)) == NULL)
     {
-        if ((option->name = strdup(optname)) == NULL)
-        {
-            free(option);
-            option = NULL;
-        }
+        free(option);
+        option = NULL;
     }
 
     return option;
@@ -527,13 +527,11 @@ new_ip6_addr(const char *name)
 {
     te_radvd_ip6_addr *addr;
 
-    if ((addr = calloc(1, sizeof(*addr))) != NULL)
+    addr = TE_ALLOC(sizeof(*addr));
+    if ((addr->name = strdup(name)) == NULL)
     {
-        if ((addr->name = strdup(name)) == NULL)
-        {
-            free(addr);
-            return NULL;
-        }
+        free(addr);
+        return NULL;
     }
 
     return addr;
@@ -627,35 +625,26 @@ new_subnet(const char *name)
     te_radvd_subnet    *subnet;
     te_radvd_ip6_addr  *addr;
 
-    if ((subnet = calloc(1, sizeof(*subnet))) != NULL)
+    subnet = TE_ALLOC(sizeof(*subnet));
+    if ((subnet->name = strdup(name)) == NULL)
     {
-        if ((subnet->name = strdup(name)) == NULL)
-        {
-            free(subnet);
-            return NULL;
-        }
-
-        TAILQ_INIT(&subnet->options);
-        TAILQ_INIT(&subnet->addrs);
-
-        /* Trick. See above */
-        if ((addr = calloc(1, sizeof(*addr))) == NULL)
-        {
-            free(subnet->name);
-            free(subnet);
-            return NULL;
-        }
-
-        if ((addr->name = strdup(name)) == NULL)
-        {
-            free(addr);
-            free(subnet->name);
-            free(subnet);
-            return NULL;
-        }
-        TAILQ_INSERT_TAIL(&subnet->addrs, addr, links);
-        /* */
+        free(subnet);
+        return NULL;
     }
+
+    TAILQ_INIT(&subnet->options);
+    TAILQ_INIT(&subnet->addrs);
+
+    /* Trick. See above */
+    addr = TE_ALLOC(sizeof(*addr));
+    if ((addr->name = strdup(name)) == NULL)
+    {
+        free(addr);
+        free(subnet->name);
+        free(subnet);
+        return NULL;
+    }
+    TAILQ_INSERT_TAIL(&subnet->addrs, addr, links);
 
     return subnet;
 }
@@ -1172,9 +1161,7 @@ ds_interface_add(unsigned int gid, const char *oid,
 
     FIND_RADVD_IF(false);
 
-    if ((radvd_if = calloc(1, sizeof(*radvd_if))) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
+    radvd_if = TE_ALLOC(sizeof(*radvd_if));
     if ((radvd_if->name = strdup(ifname)) == NULL)
     {
         free(radvd_if);

@@ -345,17 +345,7 @@ scan_pci_bus(size_t *n_devices)
         return NULL;
     }
 
-    result = calloc(rc, sizeof(*result));
-    if (result == NULL)
-    {
-        ERROR("Out of memory");
-        for (i = 0; i < rc; i++)
-            free(names[i]);
-        free(names);
-
-        *n_devices = 0;
-        return NULL;
-    }
+    result = TE_ALLOC(rc * sizeof(*result));
 
     for (i = 0; i < rc; i++)
     {
@@ -498,9 +488,7 @@ make_vendor_list(pci_device *devs, size_t n_devs)
     pci_vendors *vendor_list;
     unsigned i;
 
-    vendor_list = calloc(1, sizeof(*vendor_list));
-    if (vendor_list == NULL)
-        return vendor_list;
+    vendor_list = TE_ALLOC(sizeof(*vendor_list));
     LIST_INIT(vendor_list);
 
     for (i = 0; i < n_devs; i++)
@@ -510,12 +498,7 @@ make_vendor_list(pci_device *devs, size_t n_devs)
 
         if (vendor == NULL)
         {
-            vendor = calloc(1, sizeof(*vendor));
-            if (vendor == NULL)
-            {
-                free_vendor_list(vendor_list);
-                return NULL;
-            }
+            vendor = TE_ALLOC(sizeof(*vendor));
 
             vendor->id = devs[i].vendor_id;
             LIST_INIT(&vendor->vendor_devices);
@@ -526,12 +509,7 @@ make_vendor_list(pci_device *devs, size_t n_devs)
                                            devs[i].device_id);
         if (vendor_device == NULL)
         {
-            vendor_device = calloc(1, sizeof(*vendor_device));
-            if (vendor_device == NULL)
-            {
-                free_vendor_list(vendor_list);
-                return NULL;
-            }
+            vendor_device = TE_ALLOC(sizeof(*vendor_device));
 
             vendor_device->id = devs[i].device_id;
             TAILQ_INIT(&vendor_device->devices);
@@ -2266,13 +2244,7 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
 
     te_string_append(&buf, "%s", "/net");
 
-    net_list = calloc(1, RCF_MAX_VAL);
-    if (net_list == NULL)
-    {
-        te_string_free(&buf);
-        ERROR("Out of memory");
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
+    net_list = TE_ALLOC(RCF_MAX_VAL);
 
     rc = get_dir_list(buf.ptr, net_list, RCF_MAX_VAL, true, NULL, NULL,
                       alphasort);

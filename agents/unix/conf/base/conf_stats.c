@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
@@ -181,11 +182,7 @@ dev_stats_get(const char *devname, if_stats *stats)
 
 #define STATS_NET_DEV_PROC_LINE_LEN 1024
 
-    buf = (char *)malloc(STATS_NET_DEV_PROC_LINE_LEN);
-    if (buf == NULL)
-    {
-        return TE_OS_RC(TE_TA_UNIX, ENOMEM);
-    }
+    buf = TE_ALLOC(STATS_NET_DEV_PROC_LINE_LEN);
 
     VERB("Try to open /proc/net/dev file");
 
@@ -340,11 +337,7 @@ net_stats_get(net_stats *stats)
 
 #if __linux__
 
-    buf = (char *)calloc(MAX_PROC_NET_SNMP_SIZE, 1);
-    if (buf == NULL)
-    {
-        return TE_OS_RC(TE_TA_UNIX, ENOMEM);
-    }
+    buf = TE_ALLOC(MAX_PROC_NET_SNMP_SIZE);
 
     VERB("Try to open /proc/net/snmp file");
 

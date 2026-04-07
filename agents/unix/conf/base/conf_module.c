@@ -1427,9 +1427,7 @@ module_add(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EPERM);
     }
 
-    module = calloc(1, sizeof(te_kernel_module));
-    if (module == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    module = TE_ALLOC(sizeof(te_kernel_module));
     TE_SPRINTF(module->name, "%s", mod_name);
     module->filename = NULL;
     module->filename_load_dependencies = false;

@@ -11,6 +11,7 @@
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include "te_alloc.h"
 #include "te_string.h"
 
 #ifdef ENABLE_8021X
@@ -688,8 +689,7 @@ supp_create(const char *ifname)
     supplicant   *ns;
     unsigned int  i;
 
-    if ((ns = calloc(1, sizeof(supplicant))) == NULL)
-        return NULL;
+    ns = TE_ALLOC(sizeof(supplicant));
 
     if ((ns->ifname = strdup(ifname)) == NULL)
     {

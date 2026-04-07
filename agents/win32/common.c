@@ -15,6 +15,7 @@ INCLUDE(iphlpapi.h)
 #include <w32api/iphlpapi.h>
 #include <stdio.h>
 #endif
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_stdint.h"
@@ -194,12 +195,10 @@ get_addr_by_ifindex(int if_index, struct in_addr *addr)
 
     DWORD size = 0, rc;
 
-    if ((table = (MIB_IPADDRTABLE *)malloc(sizeof(MIB_IPADDRTABLE)))
-            == NULL)
-        return TE_RC(TE_TA_WIN32, TE_ENOMEM);
+    table = TE_ALLOC(sizeof(MIB_IPADDRTABLE));
     if ((rc = GetIpAddrTable(table, &size, 0)) != 0)
     {
-        table = realloc(table, size);
+        TE_REALLOC(table, size);
         rc = GetIpAddrTable(table, &size, 0);
         if (rc != 0)
         {
