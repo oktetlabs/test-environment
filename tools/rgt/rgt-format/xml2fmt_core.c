@@ -865,18 +865,7 @@ rgt_parse_file(rgt_gen_ctx_t *gen_ctx)
 
     assert((buf_len % BUF_BLOCK_LEN) == 0);
 
-    while ((buf = malloc(buf_len)) == NULL && buf_len != 0)
-    {
-        buf_len -= BUF_BLOCK_LEN;
-    }
-    if (buf_len == 0)
-    {
-        fprintf(stderr, "Cannot allocate enough memory\n");
-        XML_ParserFree(p);
-        fclose(fd);
-        return 1;
-    }
-    assert(buf != NULL);
+    buf = TE_ALLOC(buf_len);
 
     XML_SetUserData(p, gen_ctx);
     XML_SetElementHandler(p, rgt_log_start_element, rgt_log_end_element);

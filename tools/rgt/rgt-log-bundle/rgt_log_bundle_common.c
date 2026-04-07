@@ -9,6 +9,8 @@
  * Copyright (C) 2016-2022 OKTET Labs Ltd. All rights reserved.
  */
 
+#include "te_config.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <popt.h>
@@ -20,7 +22,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "te_config.h"
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "logger_api.h"
 #include "te_errno.h"
@@ -126,7 +128,7 @@ rgt_load_caps_idx(const char *split_log_path,
         RGT_ERROR_JUMP;
     }
 
-    CHECK_OS_NOT_NULL(idx = calloc(1, len));
+    idx = TE_ALLOC(len);
 
     if (fread(idx, len, 1, f) != 1)
     {

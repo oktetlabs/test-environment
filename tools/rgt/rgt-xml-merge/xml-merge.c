@@ -18,6 +18,8 @@
 #include <errno.h>
 
 #include <libxml/parserInternals.h>
+
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_queue.h"
 
@@ -29,11 +31,6 @@
 
 /** Size of memory chunk to read and process */
 #define RGT_CHUNK_SIZE 256
-
-/** Malloc macro */
-#define RGT_XML_MALLOC(_ptr, _size)       \
-    if ((_ptr = malloc(_size)) == NULL)   \
-        assert(0);
 
 /** The list of possible states in XML processing state machine */
 typedef enum rgt_merge_state_t {
@@ -169,7 +166,7 @@ rgt_save_tag(const char *tag, const char **atts, rgt_file_ctx *ctx)
 
     if (ctx->last_tag != NULL)
         free(ctx->last_tag);
-    RGT_XML_MALLOC(ctx->last_tag, RGT_MSG_SIZE);
+    ctx->last_tag = TE_ALLOC(RGT_MSG_SIZE);
     size = RGT_MSG_SIZE;
 
     clen = snprintf(ctx->last_tag, size, "<%s", tag);
@@ -189,7 +186,7 @@ rgt_save_tag(const char *tag, const char **atts, rgt_file_ctx *ctx)
             if (clen + res > size)
             {
                 size *= 2;
-                ctx->last_tag = realloc(ctx->last_tag, size);
+                TE_REALLOC(ctx->last_tag, size);
                 i--;
             }
             else
@@ -199,7 +196,7 @@ rgt_save_tag(const char *tag, const char **atts, rgt_file_ctx *ctx)
     if (clen == size)
     {
         size += 2;
-        ctx->last_tag = realloc(ctx->last_tag, size);
+        TE_REALLOC(ctx->last_tag, size);
     }
     snprintf(ctx->last_tag + clen, size - clen, ">");
 }
@@ -483,7 +480,7 @@ rgt_add_input_file(const char *fname, bool main_stream)
     int             res;
     int             rc                  = -1;
 
-    RGT_XML_MALLOC(new_ctx, sizeof(rgt_file_ctx));
+    new_ctx = TE_ALLOC(sizeof(rgt_file_ctx));
     new_ctx->ts[0] = 0;
     new_ctx->ts[1] = 0;
     new_ctx->last_tag = NULL;

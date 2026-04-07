@@ -17,6 +17,7 @@
 #include <getopt.h>
 #include <arpa/inet.h>
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_raw_log.h"
 
@@ -157,7 +158,7 @@ run(const char *input_name, const char *output_name)
     }
 
     /* Set input buffer */
-    input_buf = malloc(INPUT_BUF_SIZE);
+    input_buf = TE_ALLOC(INPUT_BUF_SIZE);
     setvbuf(input, input_buf, _IOFBF, INPUT_BUF_SIZE);
 
     /* Open output */
@@ -172,7 +173,7 @@ run(const char *input_name, const char *output_name)
     }
 
     /* Set output buffer */
-    output_buf = malloc(OUTPUT_BUF_SIZE);
+    output_buf = TE_ALLOC(OUTPUT_BUF_SIZE);
     setvbuf(output, output_buf, _IOFBF, OUTPUT_BUF_SIZE);
 
     /* Read and verify log file version */

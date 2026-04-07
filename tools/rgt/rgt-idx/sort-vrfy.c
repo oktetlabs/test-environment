@@ -26,6 +26,7 @@
 #endif
 #include <fcntl.h>
 
+#include "te_alloc.h"
 #include "te_defs.h"
 
 #include "common.h"
@@ -53,7 +54,7 @@ run(const char *input_name)
     }
 
     /* Set input buffer */
-    input_buf = malloc(BUF_SIZE);
+    input_buf = TE_ALLOC(BUF_SIZE);
     setvbuf(input, input_buf, _IOFBF, BUF_SIZE);
 
     while (fread(&e, sizeof(e), 1, input) == 1)

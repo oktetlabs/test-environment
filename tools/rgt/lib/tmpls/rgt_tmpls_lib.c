@@ -19,6 +19,7 @@
 #include <stdarg.h>
 #include <libgen.h>
 #include <unistd.h>
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "te_string.h"
 #include "te_str.h"
@@ -315,11 +316,10 @@ rgt_check_string_len(const char *str)
 
     tagl = strlen(tag);
 
-    if (len > max_len)
-        buf = malloc(len + len/max_len * tagl + 1);
-    else
+    if (len <= max_len)
         return NULL;
-    assert(buf != NULL);
+
+    buf = TE_ALLOC(len + len/max_len * tagl + 1);
 
     offt = 0;
     while (len - clen > max_len)
@@ -622,9 +622,8 @@ rgt_tmpls_parse(const char **files, const char *prefix,
          * Allocate memory under the template and plus one byte
          * for the trailing '\0' character
          */
-        tmpls[i].raw_ptr = (char *)malloc((fsize = ftell(fd)) + 1);
-        if (tmpls[i].raw_ptr == NULL ||
-            (tmpls[i].fname = strdup(tmpl_path)) == NULL)
+        tmpls[i].raw_ptr = TE_ALLOC((fsize = ftell(fd)) + 1);
+        if ((tmpls[i].fname = strdup(tmpl_path)) == NULL)
         {
             fprintf(stderr, "Not enough memory\n");
             fclose(fd);
@@ -657,17 +656,9 @@ rgt_tmpls_parse(const char **files, const char *prefix,
             if (var_ptr != cur_ptr && *cur_ptr != '\0')
             {
                 /* Create constant string block */
-                p_tmp = (char *)tmpls[i].blocks;
-                tmpls[i].blocks = (rgt_blk_t *)realloc(tmpls[i].blocks,
-                            sizeof(rgt_blk_t) * (tmpls[i].n_blocks + 1));
-                if (tmpls[i].blocks == NULL)
-                {
-                    fprintf(stderr, "Not enough memory\n");
-                    if (p_tmp != NULL)
-                        free(p_tmp);
-                    rgt_tmpls_free(tmpls, tmpl_num);
-                    return 1;
-                }
+                TE_REALLOC(tmpls[i].blocks,
+                           sizeof(rgt_blk_t) * (tmpls[i].n_blocks + 1));
+
                 tmpls[i].blocks[tmpls[i].n_blocks].type = RGT_BLK_TYPE_CSTR;
                 tmpls[i].blocks[tmpls[i].n_blocks].start_data = cur_ptr;
                 tmpls[i].n_blocks++;
@@ -736,17 +727,9 @@ rgt_tmpls_parse(const char **files, const char *prefix,
                     }
                 }
 
-                p_tmp = (char *)tmpls[i].blocks;
-                tmpls[i].blocks = (rgt_blk_t *)realloc(tmpls[i].blocks,
-                            sizeof(rgt_blk_t) * (tmpls[i].n_blocks + 1));
-                if (tmpls[i].blocks == NULL)
-                {
-                    fprintf(stderr, "Not enough memory\n");
-                    if (p_tmp != NULL)
-                        free(p_tmp);
-                    rgt_tmpls_free(tmpls, tmpl_num);
-                    return 1;
-                }
+                TE_REALLOC(tmpls[i].blocks,
+                           sizeof(rgt_blk_t) * (tmpls[i].n_blocks + 1));
+
                 tmpls[i].blocks[tmpls[i].n_blocks].type = RGT_BLK_TYPE_VAR;
                 tmpls[i].blocks[tmpls[i].n_blocks].var.name = var_ptr;
                 tmpls[i].blocks[tmpls[i].n_blocks].var.fmt_str = fmt_ptr;

@@ -5,12 +5,14 @@
  * Copyright (C) 2016-2022 OKTET Labs Ltd. All rights reserved.
  */
 
+#include "te_config.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
 
-#include "te_config.h"
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "logger_api.h"
 #include "logger_file.h"
@@ -57,7 +59,7 @@ load_caps_idx(const char *split_log_path)
 
     CHECK_RC(rgt_load_caps_idx(split_log_path, &caps_idx, &caps_num,
                                &f_sniff_heads));
-    CHECK_OS_NOT_NULL(caps_files = calloc(caps_num, sizeof(FILE *)));
+    caps_files = TE_ALLOC(caps_num * sizeof(FILE *));
 
     RGT_ERROR_SECTION;
 
@@ -111,7 +113,7 @@ process_sniff_frag(const char *fpath, const char *sniff_path,
                                caps_idx[file_id].len));
         }
 
-        CHECK_OS_NOT_NULL(data = calloc(1, len));
+        data = TE_ALLOC(len);
         CHECK_FREAD(data, len, 1, f);
         CHECK_FWRITE(data, len, 1, caps_files[file_id]);
         free(data);

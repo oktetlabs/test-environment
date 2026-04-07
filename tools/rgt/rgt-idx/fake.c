@@ -17,6 +17,7 @@
 #include <getopt.h>
 #include <arpa/inet.h>
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_raw_log.h"
 
@@ -175,7 +176,7 @@ run(const char *output_name, uint64_t length,
     }
 
     /* Set output buffer */
-    output_buf = malloc(OUTPUT_BUF_SIZE);
+    output_buf = TE_ALLOC(OUTPUT_BUF_SIZE);
     setvbuf(output, output_buf, _IOFBF, OUTPUT_BUF_SIZE);
 
     /*

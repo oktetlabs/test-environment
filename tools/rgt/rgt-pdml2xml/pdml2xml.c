@@ -14,6 +14,8 @@
 #include <unistd.h>
 
 #include <libxml/parserInternals.h>
+
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_queue.h"
 
@@ -25,16 +27,6 @@
 
 /** Size of memory chunk to read and process */
 #define RGT_CHUNK_SIZE 256
-
-/** Malloc macro */
-#define RGT_XML_MALLOC(_ptr, _size)       \
-    if ((_ptr = malloc(_size)) == NULL)   \
-        assert(0);
-
-/** REALLOC macro */
-#define RGT_XML_REALLOC(_ptr, _size)       \
-    if ((_ptr = realloc(_ptr, _size)) == NULL)   \
-        assert(0);
 
 /** The list of possible states in XML processing state machine */
 typedef enum rgt_log_state_t {
@@ -171,7 +163,7 @@ rgt_get_msg_ts(const char **atts, rgt_user_ctx *ctx)
         if (pbuff.offset + _res >= pbuff.size) \
         { \
             pbuff.size = pbuff.size << 1; \
-            RGT_XML_REALLOC(pbuff.p, pbuff.size); \
+            TE_REALLOC(pbuff.p, pbuff.size); \
         } \
         else \
         { \
@@ -243,8 +235,7 @@ rgt_data_decoding(const char *hex_data)
 
     if (len < 2)
         return NULL;
-    RGT_XML_MALLOC(str, len / 3 + 2);
-    memset(str, 0, len / 3 + 2);
+    str = TE_ALLOC(len / 3 + 2);
     p = str;
     while (offt < len)
     {
@@ -400,7 +391,7 @@ rgt_log_characters(void *in_ctx, const xmlChar *ch, int len)
         {
             pbuff.size = pbuff.size << 2;
             if ((unsigned)len < SIZE)
-                RGT_XML_REALLOC(pbuff.p, pbuff.size);
+                TE_REALLOC(pbuff.p, pbuff.size);
         }
         memcpy(CURR, ch, len);
         pbuff.offset += len;
@@ -677,7 +668,7 @@ main(int argc, char **argv)
     if (argc != 3)
         usage();
 
-    RGT_XML_MALLOC(pbuff.p, RGT_BASE_PACKET_SIZE);
+    pbuff.p = TE_ALLOC(RGT_BASE_PACKET_SIZE);
     pbuff.size = RGT_BASE_PACKET_SIZE;
     pbuff.offset = 0;
 

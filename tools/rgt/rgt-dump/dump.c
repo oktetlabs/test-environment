@@ -20,6 +20,7 @@
 #include <getopt.h>
 #include <arpa/inet.h>
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_raw_log.h"
 
@@ -55,7 +56,6 @@ bool
 scrap_grow(size_t size)
 {
     size_t  new_scrap_size  = scrap_size;
-    void   *new_scrap_buf;
 
     if (size <= scrap_size)
         return true;
@@ -66,11 +66,8 @@ scrap_grow(size_t size)
     while (new_scrap_size < size)
         new_scrap_size += new_scrap_size / 2;
 
-    new_scrap_buf = realloc(scrap_buf, new_scrap_size);
-    if (new_scrap_buf == NULL)
-        return false;
+    TE_REALLOC(scrap_buf, new_scrap_size);
 
-    scrap_buf = new_scrap_buf;
     scrap_size = new_scrap_size;
 
     return true;
@@ -142,19 +139,13 @@ message_valid(const message *m)
 }
 
 
-static bool
+static void
 message_init(message *m)
 {
     memset(m, 0, sizeof(*m));
 
-    m->arg_list     = malloc(sizeof(*m->arg_list) *
-                             MESSAGE_ARG_LIST_MIN_SIZE);
-    if (m->arg_list == NULL)
-        return false;
-
-    m->arg_size     = MESSAGE_ARG_LIST_MIN_SIZE;
-
-    return true;
+    m->arg_list = TE_ALLOC(sizeof(*m->arg_list) * MESSAGE_ARG_LIST_MIN_SIZE);
+    m->arg_size = MESSAGE_ARG_LIST_MIN_SIZE;
 }
 
 
@@ -186,9 +177,8 @@ message_arg_list_clear(message *m)
 
     if (m->arg_size > MESSAGE_ARG_LIST_THRES_SIZE)
     {
-        m->arg_list = realloc(m->arg_list,
-                              sizeof(*m->arg_list) *
-                              MESSAGE_ARG_LIST_THRES_SIZE);
+        TE_REALLOC(m->arg_list,
+                   sizeof(*m->arg_list) * MESSAGE_ARG_LIST_THRES_SIZE);
         m->arg_size = MESSAGE_ARG_LIST_THRES_SIZE;
     }
 }
@@ -202,15 +192,11 @@ message_arg_list_adda(message *m, uint8_t *buf, te_log_nfl len)
 
     if (m->arg_num >= m->arg_size)
     {
-        message_fld    *new_arg_list;
         size_t          new_arg_size;
 
         new_arg_size = m->arg_size + m->arg_size / 2;
-        new_arg_list = realloc(m->arg_list,
-                               new_arg_size * sizeof(*new_arg_list));
-        if (new_arg_list == NULL)
-            return false;
-        m->arg_list = new_arg_list;
+        TE_REALLOC(m->arg_list, new_arg_size * sizeof(*(m->arg_list)));
+
         m->arg_size = new_arg_size;
     }
 
@@ -334,9 +320,7 @@ read_message(FILE *input, message *m)
             buf = NULL;
         else
         {
-            buf = malloc(len);
-            if (buf == NULL)
-                return READ_MESSAGE_RC_ERR;
+            buf = TE_ALLOC(len);
             if (fread(buf, len, 1, input) != 1)
             {
                 free(buf);
@@ -592,11 +576,7 @@ run(const char *input_name, const char *output_name)
     message             m;
 
     /* Initialize message structure */
-    if (!message_init(&m))
-    {
-        ERROR("Failed to initialize a message: %s", strerror(errno));
-        return result;
-    }
+    message_init(&m);
 
     /* Open input */
     if (input_name[0] == '-' && input_name[1] == '\0')
@@ -610,7 +590,7 @@ run(const char *input_name, const char *output_name)
     }
 
     /* Set input buffer */
-    input_buf = malloc(INPUT_BUF_SIZE);
+    input_buf = TE_ALLOC(INPUT_BUF_SIZE);
     setvbuf(input, input_buf, _IOFBF, INPUT_BUF_SIZE);
 
     /* Open output */
@@ -625,7 +605,7 @@ run(const char *input_name, const char *output_name)
     }
 
     /* Set output buffer */
-    output_buf = malloc(OUTPUT_BUF_SIZE);
+    output_buf = TE_ALLOC(OUTPUT_BUF_SIZE);
     setvbuf(output, output_buf, _IOFBF, OUTPUT_BUF_SIZE);
 
     /* Read and verify log file version */

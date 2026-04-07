@@ -5,6 +5,8 @@
  * Copyright (C) 2016-2022 OKTET Labs Ltd. All rights reserved.
  */
 
+#include "te_config.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -30,7 +32,7 @@ struct pcap_file_header {
 };
 #endif
 
-#include "te_config.h"
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "logger_api.h"
 #include "logger_file.h"
@@ -194,16 +196,9 @@ get_node_info(int node_id)
     while (nodes_count <= (unsigned)node_id)
     {
         unsigned int   i = nodes_count;
-        void          *p;
 
         nodes_count = (nodes_count + 1) * 2;
-        p = realloc(nodes_info, nodes_count * sizeof(node_info));
-        if (p == NULL)
-        {
-            ERROR("%s(): not enough memory", __FUNCTION__);
-            return NULL;
-        }
-        nodes_info = (node_info *)p;
+        TE_REALLOC(nodes_info, nodes_count * sizeof(node_info));
 
         for ( ; i < nodes_count; i++)
         {
@@ -315,17 +310,8 @@ depth_levels_up_to_depth(unsigned int depth)
 
     while (depth_levels <= depth)
     {
-        void *p;
-
         depth_levels = (depth_levels + 1) * 2;
-        p = realloc(depth_seq, depth_levels * sizeof(unsigned int));
-        if (p == NULL)
-        {
-            ERROR("%s(): not enough memory for depth_seq array",
-                  __FUNCTION__);
-            return -1;
-        }
-        depth_seq = (unsigned int *)p;
+        TE_REALLOC(depth_seq, depth_levels * sizeof(unsigned int));
     }
 
     for ( ; i < depth_levels; i++)
@@ -557,7 +543,7 @@ get_next_pcap(rgt_pcap_file *pfile, te_pcap_pkthdr *hdr,
     pfile->pkt_offset = ftello(pfile->f) - sizeof(te_pcap_pkthdr);
 
     len = get_pcap_data_len(pfile);
-    CHECK_OS_NOT_NULL(buf = calloc(1, len));
+    buf = TE_ALLOC(len);
 
     CHECK_FREAD(buf, 1, len, pfile->f);
 
@@ -828,7 +814,6 @@ process_pcap_files(const char *sniff_dir, const char *dst_path,
     te_string fpath = TE_STRING_INIT_STATIC(PATH_MAX);
     rgt_pcap_file *caps = NULL;
 
-    void *p;
     int caps_num = 0;
     int caps_max = 10;
     int i;
@@ -839,7 +824,7 @@ process_pcap_files(const char *sniff_dir, const char *dst_path,
 
     RGT_ERROR_INIT;
 
-    CHECK_OS_NOT_NULL(caps = calloc(caps_max, sizeof(*caps)));
+    caps = TE_ALLOC(caps_max * sizeof(*caps));
 
     CHECK_FOPEN_FMT(f_caps_heads, "w", "%s/sniff_heads", dst_path);
     CHECK_FOPEN_FMT(f_caps_idx, "w", "%s/sniff_heads_idx", dst_path);
@@ -861,9 +846,7 @@ process_pcap_files(const char *sniff_dir, const char *dst_path,
             if (caps_max == caps_num)
             {
                 caps_max *= 2;
-                CHECK_OS_NOT_NULL(p = realloc(caps,
-                                              caps_max * sizeof(*caps)));
-                caps = (rgt_pcap_file *)p;
+                TE_REALLOC(caps, caps_max * sizeof(*caps));
             }
 
             memset(&caps[caps_num], 0, sizeof(rgt_pcap_file));

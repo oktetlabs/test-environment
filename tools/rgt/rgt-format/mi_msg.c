@@ -318,9 +318,7 @@ get_child_keys(json_t *obj, const char *field,
     if (*num == 0)
         return 0;
 
-    *kvs = calloc(*num, sizeof(**kvs));
-    if (*kvs == NULL)
-        return TE_ENOMEM;
+    *kvs = TE_ALLOC(*num * sizeof(**kvs));
 
     json_object_foreach(keys, key, key_value)
     {
@@ -523,9 +521,7 @@ get_views(json_t *obj, te_rgt_mi *mi)
         return 0;
     }
 
-    views_aux = calloc(num_aux, sizeof(*views_aux));
-    if (views_aux == NULL)
-        return TE_ENOMEM;
+    views_aux = TE_ALLOC(num_aux * sizeof(*views_aux));
 
     for (i = 0; i < num_aux; i++)
     {
@@ -595,13 +591,7 @@ te_rgt_parse_mi_meas_message(te_rgt_mi *mi)
         json_array_size(results) > 0)
     {
         meas->params_num = json_array_size(results);
-        meas->params = calloc(meas->params_num,
-                              sizeof(te_rgt_mi_meas_param));
-        if (meas->params == NULL)
-        {
-            mi->rc = TE_ENOMEM;
-            goto cleanup;
-        }
+        meas->params = TE_ALLOC(meas->params_num * sizeof(te_rgt_mi_meas_param));
 
         param_id = 0;
         for (i = 0; i < meas->params_num; i++)
@@ -628,13 +618,8 @@ te_rgt_parse_mi_meas_message(te_rgt_mi *mi)
                 continue;
 
             param->values_num = json_array_size(entries);
-            param->values = calloc(param->values_num,
-                                   sizeof(te_rgt_mi_meas_value));
-            if (param->values == NULL)
-            {
-                mi->rc = TE_ENOMEM;
-                goto cleanup;
-            }
+            param->values = TE_ALLOC(param->values_num *
+                                     sizeof(te_rgt_mi_meas_value));
 
             for (j = 0; j < param->values_num; j++)
             {

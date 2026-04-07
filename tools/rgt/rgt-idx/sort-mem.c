@@ -23,6 +23,7 @@
 #endif
 #include <fcntl.h>
 
+#include "te_alloc.h"
 #include "te_defs.h"
 
 #include "common.h"
@@ -33,16 +34,13 @@ bool
 read_whole_fd(int fd, void **pbuf, size_t *psize)
 {
     void       *buf;
-    void       *new_buf;
     size_t      alloc;
     size_t      size;
     ssize_t     rc;
 
     size = 0;
     alloc = MIN_BUF_SIZE;
-    buf = malloc(alloc);
-    if (buf == NULL)
-        return false;
+    buf = TE_ALLOC(alloc);
 
     while (true)
     {
@@ -59,18 +57,19 @@ read_whole_fd(int fd, void **pbuf, size_t *psize)
         if (size >= alloc)
         {
             alloc += alloc/2;
-            new_buf = realloc(buf, alloc);
-            if (new_buf == NULL)
-            {
-                free(buf);
-                return false;
-            }
-            buf = new_buf;
+            TE_REALLOC(buf, alloc);
         }
     }
 
-    if (size < alloc)
-        buf = realloc(buf, size);
+    if (size == 0)
+    {
+        free(buf);
+        buf = NULL;
+    }
+    else if (size < alloc)
+    {
+        TE_REALLOC(buf, size);
+    }
 
     *pbuf = buf;
     *psize = size;
@@ -219,9 +218,7 @@ run(const char *input_name, const char *output_name)
     if (size % sizeof(*list) != 0)
         ERROR_CLEANUP("Invalid input length");
 
-    merge_list = malloc(size);
-    if (merge_list == NULL)
-        ERROR_CLEANUP("Failed allocating memory for merge list");
+    merge_list = TE_ALLOC(size);
     merge_sort(list, size/sizeof(*list));
     free(merge_list);
     merge_list = NULL;

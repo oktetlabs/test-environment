@@ -5,6 +5,6 @@ rgt_pdml2xml = executable(
     'rgt-pdml2xml',
     'pdml2xml.c',
     include_directories: inc,
-    dependencies: [dep_libxml2],
+    dependencies: [dep_libxml2, dep_lib_tools],
     install: true
 )

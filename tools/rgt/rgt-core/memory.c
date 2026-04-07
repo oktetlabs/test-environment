@@ -6,6 +6,8 @@
 
 #include "memory.h"
 
+#include "te_alloc.h"
+
 /**
  * Pointer to an obstack that is used for allocation of log_msg data
  * structure.
@@ -39,8 +41,7 @@ obstack_initialize(void)
     struct obstack *obstk;
 
     /* Allocate a new obstack */
-    if ((obstk = (struct obstack *)malloc(sizeof(struct obstack))) == NULL)
-        return NULL;
+    obstk = TE_ALLOC(sizeof(struct obstack));
 
     obstack_alloc_failed_handler = &internal_obstack_alloc_failed;
     obstack_init(obstk);
@@ -182,12 +183,7 @@ alloc_log_msg_ptr(void)
 {
     log_msg_ptr *msg_ptr;
 
-    msg_ptr = (log_msg_ptr *)calloc(1, sizeof(log_msg_ptr));
-    if (msg_ptr == NULL)
-    {
-        fprintf(stderr, "%s\n", "Out of memory");
-        THROW_EXCEPTION;
-    }
+    msg_ptr = TE_ALLOC(sizeof(log_msg_ptr));
 
     return msg_ptr;
 }

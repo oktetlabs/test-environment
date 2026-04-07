@@ -27,6 +27,7 @@
 #include "junit_mode.h"
 #include "memory.h"
 
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "tq_string.h"
 
@@ -128,12 +129,7 @@ junit_process_pkg_start(node_info_t *node, ctrl_msg_data *data)
     fprintf(rgt_ctx.out_fd, "<testsuite name=\"%s\" time=\"%.3f\">\n",
             node->descr.name, time_val);
 
-    tqe_str = calloc(1, sizeof(*tqe_str));
-    if (tqe_str == NULL)
-    {
-        fputs("Out of memory\n", stderr);
-        return -1;
-    }
+    tqe_str = TE_ALLOC(sizeof(*tqe_str));
 
     tqe_str->v = strdup(node->descr.name);
     if (tqe_str->v == NULL)

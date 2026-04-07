@@ -37,6 +37,8 @@
 #include <sys/types.h>
 #endif
 
+#include "te_alloc.h"
+
 /* Define to 1 to enable rgt duration filter */
 #define TE_RGT_USE_DURATION_FILTER 0
 
@@ -462,14 +464,8 @@ flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
     if (par_node->more_branches == true)
     {
         /* Create new branch */
-        par_node->branches = realloc(par_node->branches, sizeof(branch_info) *
-                                                    (par_node->n_branches + 1));
-        if (par_node->branches == NULL)
-        {
-            *err_code = ENOMEM;
-            TRACE("No memory available");
-            return NULL;
-        }
+        TE_REALLOC(par_node->branches,
+                   sizeof(branch_info) * (par_node->n_branches + 1));
         par_node->n_branches++;
         par_node->n_active_branches++;
 

@@ -5,6 +5,6 @@ rgt_xml_merge = executable(
     'rgt-xml-merge',
     'xml-merge.c',
     include_directories: inc,
-    dependencies: [dep_libxml2],
+    dependencies: [dep_libxml2, dep_lib_tools],
     install: true,
 )
