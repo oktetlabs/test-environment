@@ -421,13 +421,8 @@ name_to_path(tester_cfg *cfg, const char *name, bool is_package,
             ERROR("Invalid path to the parent Test Package file");
             return NULL;
         }
-        path = malloc((base_name_end - cfg->cur_pkg->path) + 1 +
-                      name_or_execute_len + package_add + 1);
-        if (path == NULL)
-        {
-            ERROR("malloc() failed");
-            return NULL;
-        }
+        path = TE_ALLOC((base_name_end - cfg->cur_pkg->path) + 1 +
+                        name_or_execute_len + package_add + 1);
         /* Copy base path with the last '/' */
         memcpy(path, cfg->cur_pkg->path,
                (base_name_end - cfg->cur_pkg->path) + 1);
@@ -465,13 +460,8 @@ name_to_path(tester_cfg *cfg, const char *name, bool is_package,
                 return NULL;
             }
 
-            path = malloc(strlen(base) + strlen("/") + name_or_execute_len +
-                          strlen("/package.xml") + 1);
-            if (path == NULL)
-            {
-                ERROR("malloc() failed");
-                return NULL;
-            }
+            path = TE_ALLOC(strlen(base) + strlen("/") + name_or_execute_len +
+                            strlen("/package.xml") + 1);
             /* Copy base path and /suites/ */
             strcpy(path, base);
             strcat(path, "/");
@@ -480,12 +470,7 @@ name_to_path(tester_cfg *cfg, const char *name, bool is_package,
         }
         else
         {
-            path = malloc(strlen(base_path) + strlen("/package.xml") + 1);
-            if (path == NULL)
-            {
-                ERROR("malloc() failed");
-                return NULL;
-            }
+            path = TE_ALLOC(strlen(base_path) + strlen("/package.xml") + 1);
             /* Copy base path */
             strcpy(path, base_path);
         }
@@ -2214,7 +2199,7 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
                       CONST_CHAR2XML("command_monitor")) != 0)
             break;
 
-        monitor = calloc(1, sizeof(*monitor));
+        monitor = TE_ALLOC(sizeof(*monitor));
         p = xmlNodeChildren(*node);
         while (p != NULL)
         {

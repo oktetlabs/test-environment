@@ -1155,12 +1155,8 @@ persons_info_to_string(const persons_info *persons)
                 /* We are going to extend buffer */
                 rest += total;
                 total <<= 1;
-                res = realloc(res, total);
-                if (res == NULL)
-                {
-                    ERROR("%s(): Memory allocation failure", __FUNCTION__);
-                    return NULL;
-                }
+                TE_REALLOC(res, total);
+
                 /* Locate current pointer */
                 s = res + strlen(res);
                 /* Print the last item again */

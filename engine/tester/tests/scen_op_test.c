@@ -135,7 +135,7 @@ parse_flags(const char *buf)
             while (ptr[len - 1] == ' ')
                 len--;
 
-            flag_names[flag_no] = (char *)malloc(len + 1);
+            flag_names[flag_no] = TE_ALLOC(len + 1);
             memcpy(flag_names[flag_no], ptr, len);
             flag_names[flag_no][len] = '\0';
 

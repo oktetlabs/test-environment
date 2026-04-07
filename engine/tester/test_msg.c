@@ -152,33 +152,27 @@ receive_and_process_message(struct ipc_server *ipcs,
     else
     {
         /* TODO - Correct allocation and usage below */
-        str = malloc(len);
-        if (str == NULL)
+        str = TE_ALLOC(len);
+
+        rc = ipc_receive_message(ipcs, str, &len, &client);
+        if (rc != 0)
         {
-            ERROR("Failed to allocate memory for message body - skip");
+            ERROR("Failed to receive message body: %r - skip", rc);
         }
         else
         {
-            rc = ipc_receive_message(ipcs, str, &len, &client);
+            register_message(results, hdr.id, hdr.type, str);
+
+            /*
+             * Send confirmation that test message
+             * has been processed
+             */
+            rc = ipc_send_answer(ipcs, client, NULL, 0);
             if (rc != 0)
             {
-                ERROR("Failed to receive message body: %r - skip", rc);
-            }
-            else
-            {
-                register_message(results, hdr.id, hdr.type, str);
-
-                /*
-                 * Send confirmation that test message
-                 * has been processed
-                 */
-                rc = ipc_send_answer(ipcs, client, NULL, 0);
-                if (rc != 0)
-                {
-                    ERROR("Failed to send test message processing "
-                          "confirmation: %r - test %u will hang on",
-                          rc, (unsigned)(hdr.id));
-                }
+                ERROR("Failed to send test message processing "
+                        "confirmation: %r - test %u will hang on",
+                        rc, (unsigned)(hdr.id));
             }
         }
     }

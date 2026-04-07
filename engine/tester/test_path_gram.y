@@ -72,14 +72,7 @@ test_path_error(const char *str)
 static te_errno
 test_path_new_item(char *name)
 {
-    item = calloc(1, sizeof(*item));
-    if (item == NULL)
-    {
-        free(name);
-        return TE_ENOMEM;
-    }
-
-    memset(item, 0, sizeof(*item));
+    item = TE_ALLOC(sizeof(*item));
 
     TAILQ_INIT(&item->args);
 
@@ -114,12 +107,7 @@ test_path_new_arg(char *name)
     }
     assert(item != NULL);
 
-    item_arg = calloc(1, sizeof(*item_arg));
-    if (item_arg == NULL)
-    {
-        free(name);
-        return TE_ENOMEM;
-    }
+    item_arg = TE_ALLOC(sizeof(*item_arg));
 
     TAILQ_INIT(&item_arg->values);
 
@@ -154,13 +142,7 @@ test_path_new_arg_value(char *value)
     }
     assert(item_arg != NULL);
 
-    p = calloc(1, sizeof(*p));
-    if (p == NULL)
-    {
-        free(value);
-        return TE_ENOMEM;
-    }
-
+    p = TE_ALLOC(sizeof(*p));
     p->v = value;
 
     TAILQ_INSERT_TAIL(&item_arg->values, p, links);
