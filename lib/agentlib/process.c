@@ -57,6 +57,9 @@ typedef struct ta_children_dead {
 /** Length of pre-allocated list for dead children records. */
 #define TA_CHILDREN_DEAD_MAX 128
 
+/** Length of buffer to read from file. */
+#define FREAD_BUF_LEN 1024
+
 /** Head of the list with children statuses. */
 static ta_children_dead ta_children_dead_heap[TA_CHILDREN_DEAD_MAX];
 
@@ -623,3 +626,54 @@ run_vfork_hooks(enum vfork_hook_phase phase)
     }
 }
 
+/* See the description in agentlib.h */
+te_errno
+ta_read_cmd_fmt(te_string *str, const char *cmd, ...)
+{
+    FILE *f = NULL;
+    char buf[FREAD_BUF_LEN];
+    size_t sys_rc;
+    te_errno rc;
+    pid_t cmd_pid;
+    va_list ap;
+
+    va_start(ap, cmd);
+    rc = ta_popen_r_fmt(&cmd_pid, &f, cmd, ap);
+    va_end(ap);
+    if (rc != 0)
+    {
+        ERROR("%s(): ta_popen_r_fmt() failed with rc=%r", __FUNCTION__, rc);
+        goto cleanup;
+    }
+    while (!feof(f))
+    {
+        sys_rc = fread(buf, 1, FREAD_BUF_LEN - 1, f);
+        if (ferror(f) != 0)
+        {
+            ERROR("%s(): failed to read pipe with output of '%s'",
+                  __FUNCTION__, cmd);
+            rc = TE_RC(TE_TAPI, TE_EFAIL);
+            goto cleanup;
+        }
+        buf[sys_rc] = '\0';
+
+        te_string_append(str, "%s", buf);
+    }
+
+cleanup:
+
+    if (f != NULL)
+    {
+        te_errno rc2;
+
+        rc2 = ta_pclose_r(cmd_pid, f);
+        if (rc2 != 0)
+        {
+            ERROR("ta_pclose_r() failed, %r", rc);
+            if (rc == 0)
+                rc = rc2;
+        }
+    }
+
+    return rc;
+}
