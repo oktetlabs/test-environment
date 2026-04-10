@@ -379,13 +379,7 @@ cfg_create_dep(cfg_object *master, cfg_object *obj, bool object_wide)
 
     VERB("Creating a dependency %s to %s", obj->oid, master->oid);
 
-    newdep = calloc(1, sizeof(*newdep));
-    if (newdep == NULL)
-    {
-        ERROR("%s(): calloc() failed", __FUNCTION__);
-        return;
-    }
-
+    newdep = TE_ALLOC(sizeof(*newdep));
     newdep->next = obj->depends_on;
     newdep->depends = master;
     newdep->object_wide = object_wide;
@@ -400,13 +394,7 @@ cfg_create_dep(cfg_object *master, cfg_object *obj, bool object_wide)
      * Now we add the object to the dependants list of its master, keeping
      * the list in lexicographic order
      */
-    newdep = calloc(1, sizeof(*newdep));
-    if (newdep == NULL)
-    {
-        ERROR("%s(): calloc() failed", __FUNCTION__);
-        return;
-    }
-
+    newdep = TE_ALLOC(sizeof(*newdep));
     newdep->depends = obj;
     newdep->object_wide = object_wide;
 
@@ -455,12 +443,7 @@ int
 cfg_db_init(void)
 {
     cfg_db_destroy();
-    if ((cfg_all_obj = (cfg_object **)calloc(CFG_OBJ_NUM,
-                                             sizeof(void *))) == NULL)
-    {
-        ERROR("Out of memory");
-        return TE_ENOMEM;
-    }
+    cfg_all_obj = TE_ALLOC(CFG_OBJ_NUM * sizeof(void *));
     cfg_all_obj_size = CFG_OBJ_NUM;
     cfg_all_obj[CFG_OBJ_HANDLE_ROOT] = &cfg_obj_root;
     cfg_all_obj[CFG_OBJ_HANDLE_AGENT] = &cfg_obj_agent;
@@ -477,14 +460,7 @@ cfg_db_init(void)
     cfg_obj_agent_rsrc.brother = NULL;
     cfg_obj_conf_delay.brother = NULL;
 
-    if ((cfg_all_inst = (cfg_instance **)calloc(CFG_INST_NUM,
-                                                sizeof(void *))) == NULL)
-    {
-        free(cfg_all_obj);
-        cfg_all_obj = NULL;
-        ERROR("Out of memory");
-        return TE_ENOMEM;
-    }
+    cfg_all_inst = TE_ALLOC(CFG_INST_NUM * sizeof(void *));
     cfg_all_inst_size = CFG_INST_NUM;
     cfg_all_inst[0] = &cfg_inst_root;
     cfg_inst_root.son = NULL;
@@ -657,29 +633,16 @@ cfg_process_msg_register(cfg_register_msg *msg)
 
     if (i == cfg_all_obj_size)
     {
-        void *tmp = realloc(cfg_all_obj,
-                      sizeof(void *) * (cfg_all_obj_size + CFG_OBJ_NUM));
+        TE_REALLOC(cfg_all_obj,
+                   sizeof(void *) * (cfg_all_obj_size + CFG_OBJ_NUM));
 
-        if (tmp == NULL)
-        {
-            cfg_free_oid(oid);
-            msg->rc = TE_ENOMEM;
-            return;
-        }
-        memset(tmp + sizeof(void *) * cfg_all_obj_size, 0,
+        memset((void *)cfg_all_obj + sizeof(void *) * cfg_all_obj_size, 0,
                sizeof(void *) * CFG_OBJ_NUM);
 
-        cfg_all_obj = (cfg_object **)tmp;
         cfg_all_obj_size += CFG_OBJ_NUM;
     }
 
-    if ((cfg_all_obj[i] =
-             (cfg_object *)calloc(sizeof(cfg_object), 1)) == NULL)
-    {
-        cfg_free_oid(oid);
-        msg->rc = TE_ENOMEM;
-        return;
-    }
+    cfg_all_obj[i] = TE_ALLOC(sizeof(cfg_object));
     if ((cfg_all_obj[i]->oid = strdup(msg->oid)) == NULL)
     {
         cfg_all_obj[i] = NULL;
@@ -1007,7 +970,7 @@ cfg_process_msg_add_dependency(cfg_add_dependency_msg *msg)
         cfg_orphan *orph;
 
         VERB("Creating an orphaned object %s <- %s", msg->oid, obj->oid);
-        orph         = calloc(1, sizeof(*orph));
+        orph         = TE_ALLOC(sizeof(*orph));
         orph->object = obj;
         orph->object_wide = msg->object_wide;
         orph->master = cfg_convert_oid_str(msg->oid);
@@ -1171,27 +1134,15 @@ cfg_process_msg_pattern(cfg_pattern_msg *msg)
             num_max += ALLOC_STEP;                                  \
             if (tmp == msg)                                         \
             {                                                       \
-                tmp = (cfg_pattern_msg *)malloc(sizeof(*msg) +      \
-                    num_max * sizeof(cfg_handle));                  \
-                if (tmp == NULL)                                    \
-                {                                                   \
-                    msg->rc = TE_RC(TE_CS, TE_ENOMEM);              \
-                    return msg;                                     \
-                }                                                   \
+                tmp = TE_ALLOC(sizeof(*msg) +                       \
+                               num_max * sizeof(cfg_handle));       \
                 memcpy(tmp, msg, sizeof(*msg) +                     \
                     (num_max - ALLOC_STEP) * sizeof(cfg_handle));   \
             }                                                       \
             else                                                    \
             {                                                       \
-                void *tmp1 = realloc(tmp,                           \
+                TE_REALLOC(tmp,                                     \
                     sizeof(*msg) + num_max * sizeof(cfg_handle));   \
-                if (tmp1 == NULL)                                   \
-                {                                                   \
-                    free(tmp);                                      \
-                    msg->rc = TE_RC(TE_CS, TE_ENOMEM);              \
-                    return msg;                                     \
-                }                                                   \
-                tmp = (cfg_pattern_msg *)tmp1;                      \
             }                                                       \
         }                                                           \
         tmp->handles[num] = _handle;                                \
@@ -1243,7 +1194,6 @@ cfg_db_find_pattern(const char *pattern,
                     cfg_handle **p_matches)
 {
     cfg_handle  *matches = NULL;
-    cfg_handle  *result_matches = NULL;
     int         nof_matches = 0;
     cfg_oid     *idsplit = NULL;
 
@@ -1279,9 +1229,7 @@ cfg_db_find_pattern(const char *pattern,
 
     if (inst)
     {
-        matches = calloc(cfg_all_inst_size, sizeof(cfg_handle));
-        if (matches == NULL)
-            RETERR(TE_ENOMEM);
+        matches = TE_ALLOC(cfg_all_inst_size * sizeof(cfg_handle));
 
         for (i = 0; i < cfg_all_inst_size; i++)
         {
@@ -1326,9 +1274,7 @@ cfg_db_find_pattern(const char *pattern,
     }
     else
     {
-        matches = calloc(cfg_all_obj_size, sizeof(cfg_handle));
-        if (matches == NULL)
-            RETERR(TE_ENOMEM);
+        matches = TE_ALLOC(cfg_all_obj_size * sizeof(cfg_handle));
 
         for (i = 0; i < cfg_all_obj_size; i++)
         {
@@ -1372,17 +1318,10 @@ cfg_db_find_pattern(const char *pattern,
 
     cfg_free_oid(idsplit);
 
-    result_matches = realloc(matches, nof_matches * sizeof(cfg_handle));
-    if (result_matches == NULL)
-    {
-        if (nof_matches != 0)
-        {
-            free(matches);
-            return TE_RC(TE_CS, TE_ENOMEM);
-        }
-    }
+    if (nof_matches != 0)
+        TE_REALLOC(matches, nof_matches * sizeof(cfg_handle));
 
-    *p_matches = result_matches;
+    *p_matches = matches;
     *p_nmatches = nof_matches;
     return 0;
 #undef RETERR
@@ -1433,29 +1372,15 @@ cfg_add_with_obj_and_parent(cfg_instance *par_inst, cfg_object *obj,
 
     if (i == cfg_all_inst_size)
     {
-        void *tmp = realloc(cfg_all_inst,
-            sizeof(void *) * (cfg_all_inst_size + CFG_INST_NUM));
-
-        if (tmp == NULL)
-        {
-            free(oid_s);
-            return TE_ENOMEM;
-        }
-
-        memset(tmp + sizeof(void *) * cfg_all_inst_size, 0,
+        TE_REALLOC(cfg_all_inst,
+                   sizeof(void *) * (cfg_all_inst_size + CFG_INST_NUM));
+        memset((void *)cfg_all_inst + sizeof(void *) * cfg_all_inst_size, 0,
              sizeof(void *) * CFG_INST_NUM);
 
-        cfg_all_inst = (cfg_instance **)tmp;
         cfg_all_inst_size += CFG_INST_NUM;
     }
 
-    cfg_all_inst[i] = (cfg_instance *)calloc(sizeof(cfg_instance), 1);
-    if (cfg_all_inst[i] == NULL)
-    {
-        free(oid_s);
-        return TE_ENOMEM;
-    }
-
+    cfg_all_inst[i] = TE_ALLOC(sizeof(cfg_instance));
     cfg_all_inst[i]->oid = oid_s;
     if (obj->type != CVT_NONE)
     {
@@ -1696,25 +1621,16 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
 
     if (i == cfg_all_inst_size)
     {
-        void *tmp = realloc(cfg_all_inst,
-            sizeof(void *) * (cfg_all_inst_size + CFG_INST_NUM));
+        TE_REALLOC(cfg_all_inst,
+                   sizeof(void *) * (cfg_all_inst_size + CFG_INST_NUM));
 
-        if (tmp == NULL)
-            RET(TE_ENOMEM);
-
-        memset(tmp + sizeof(void *) * cfg_all_inst_size, 0,
+        memset((void *)cfg_all_inst + sizeof(void *) * cfg_all_inst_size, 0,
                sizeof(void *) * CFG_INST_NUM);
 
-        cfg_all_inst = (cfg_instance **)tmp;
         cfg_all_inst_size += CFG_INST_NUM;
     }
 
-    inst = cfg_all_inst[i] =
-        (cfg_instance *)calloc(sizeof(cfg_instance), 1);
-
-    if (cfg_all_inst[i] == NULL)
-        RET(TE_ENOMEM);
-
+    inst = cfg_all_inst[i] = TE_ALLOC(sizeof(cfg_instance));
     if ((inst->oid = strdup(oid_s)) == NULL)
     {
         free(inst);

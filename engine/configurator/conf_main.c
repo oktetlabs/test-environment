@@ -3040,12 +3040,7 @@ main(int argc, char **argv)
         goto exit;
     }
 
-    if ((filename = (char *)malloc(strlen(tmp_dir) +
-                                   strlen("/te_cfg_tmp.xml") + 1)) == NULL)
-    {
-        ERROR("No enough memory");
-        goto exit;
-    }
+    filename = TE_ALLOC(strlen(tmp_dir) + strlen("/te_cfg_tmp.xml") + 1);
     sprintf(filename, "%s/te_cfg_tmp.xml", tmp_dir);
 
     if ((rc = cfg_db_init()) != 0)

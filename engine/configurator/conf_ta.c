@@ -43,20 +43,12 @@ ta_list_get(ta_list_t *ta_list)
     const char *ta;
     int         rc;
 
-    if (cfg_get_buf == NULL &&
-        (cfg_get_buf = (char *)malloc(cfg_get_buf_len)) == NULL)
-    {
-        ERROR("Out of memory");
-        return TE_ENOMEM;
-    }
+    if (cfg_get_buf == NULL)
+        cfg_get_buf = TE_ALLOC(cfg_get_buf_len);
 
     for (ta_list->list_size = TA_LIST_SIZE;;)
     {
-        if ((ta_list->list = calloc(ta_list->list_size, 1)) == NULL)
-        {
-            ERROR("Out of memory");
-            return TE_ENOMEM;
-        }
+        ta_list->list = TE_ALLOC(ta_list->list_size);
 
         rc = rcf_get_ta_list(ta_list->list, &ta_list->list_size);
         if (rc == 0)
@@ -108,13 +100,11 @@ cfg_ta_add_agent_instances()
             rc = TE_ETOOMANY;
             i--;
         }
-        else if (
-            (cfg_all_inst[i] =
-                 (cfg_instance *)calloc(sizeof(cfg_instance), 1)) == NULL ||
-            (cfg_all_inst[i]->oid = (char *)malloc(strlen(CFG_TA_PREFIX) +
-                                                   strlen(ta) + 1)) == NULL)
+        else
         {
-            rc = TE_ENOMEM;
+            cfg_all_inst[i] = TE_ALLOC(sizeof(cfg_instance));
+            cfg_all_inst[i]->oid = TE_ALLOC(strlen(CFG_TA_PREFIX) +
+                                            strlen(ta) + 1);
         }
 
         if (rc != 0)
@@ -228,12 +218,7 @@ sync_ta_instance(const char *ta, const char *oid)
         {
             cfg_get_buf_len <<= 1;
 
-            cfg_get_buf = (char *)realloc(cfg_get_buf, cfg_get_buf_len);
-            if (cfg_get_buf == NULL)
-            {
-                ERROR("Memory allocation failure");
-                return TE_ENOMEM;
-            }
+            TE_REALLOC(cfg_get_buf, cfg_get_buf_len);
         }
         else if (TE_RC_GET_ERROR(rc) == TE_ENOENT || rc == 0 ||
                  (TE_RC_GET_ERROR(rc) == TE_ENOENT && obj->vol))
@@ -428,11 +413,7 @@ sync_ta_subtree(const char *ta, const char *oid)
         RING("Synchronize TA '%s' subtree '%s'", ta, oid);
 
     /* Take all instances from the TA */
-    if ((wildcard_oid = malloc(strlen(oid) + sizeof("/..."))) == NULL)
-    {
-        ERROR("Out of memory");
-        return TE_ENOMEM;
-    }
+    wildcard_oid = TE_ALLOC(strlen(oid) + sizeof("/..."));
     sprintf(wildcard_oid, "%s/...", oid);
 
     rc = rcf_ta_cfg_group(ta, 0, true);
@@ -452,14 +433,7 @@ sync_ta_subtree(const char *ta, const char *oid)
         {
             cfg_get_buf_len <<= 1;
 
-            cfg_get_buf = (char *)realloc(cfg_get_buf, cfg_get_buf_len);
-            if (cfg_get_buf == NULL)
-            {
-                ERROR("Memory allocation failure");
-                rcf_ta_cfg_group(ta, 0, false);
-                free(wildcard_oid);
-                return TE_ENOMEM;
-            }
+            TE_REALLOC(cfg_get_buf, cfg_get_buf_len);
         }
         else if (rc == 0)
             break;
@@ -486,14 +460,7 @@ sync_ta_subtree(const char *ta, const char *oid)
     {
         cfg_get_buf_len <<= 1;
 
-        cfg_get_buf = (char *)realloc(cfg_get_buf, cfg_get_buf_len);
-        if (cfg_get_buf == NULL)
-        {
-            ERROR("Memory allocation failure");
-            rcf_ta_cfg_group(ta, 0, false);
-            free(handles);
-            return TE_ENOMEM;
-        }
+        TE_REALLOC(cfg_get_buf, cfg_get_buf_len);
     }
 
     limit = cfg_get_buf + strlen(cfg_get_buf);

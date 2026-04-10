@@ -494,14 +494,8 @@ rcf_emulate(void* param)
 
         if (FD_ISSET(server_fd, &set))
         {
-            if ((req = (usrreq *)calloc(sizeof(usrreq), 1)) == NULL)
-                goto error;
-
-            if ((msg = (rcf_msg *)malloc(RCF_MAX_LEN)) == NULL)
-            {
-                free(req);
-                goto error;
-            }
+            req = TE_ALLOC(sizeof(usrreq));
+            msg = TE_ALLOC(RCF_MAX_LEN);
 
             req->message = msg;
             len = RCF_MAX_LEN;
@@ -528,7 +522,6 @@ rcf_emulate(void* param)
     if (req != NULL && req->message->opcode == RCFOP_SHUTDOWN)
         answer_user_request(req);
 
-error:
     if (server != NULL)
         ipc_close_server(server);
 
@@ -547,10 +540,8 @@ error:
 int
 rcfrh_ta_list_default(char **ta_list)
 {
-    char *agents = calloc(MAX_AGENTS_NUMBER * AGENT_NAME_MAX_LENGTH + 1, 1);
+    char *agents = TE_ALLOC(MAX_AGENTS_NUMBER * AGENT_NAME_MAX_LENGTH + 1);
 
-    if (agents == NULL)
-        return TE_ENOMEM;
     rcfrh_agents_list(agents, MAX_AGENTS_NUMBER * AGENT_NAME_MAX_LENGTH + 1);
 
     *ta_list = agents;
@@ -740,9 +731,7 @@ rcfrh_configuration_create(void)
     if (i == MAX_CONF_NUMBER)
         return -TE_ENOMEM;
 
-    handler_conf[i] = (request_handler *)calloc(sizeof(request_handler), 1);
-    if (handler_conf[i] == NULL)
-        return -TE_ENOMEM;
+    handler_conf[i] = TE_ALLOC(sizeof(request_handler));
 
     return i;
 }
@@ -811,9 +800,7 @@ rcfrh_agent_add(char *agents_name, agent_type type)
     if (i == MAX_AGENTS_NUMBER)
         return TE_ENOBUFS;
 
-    agt = calloc(sizeof(agent_t), 1);
-    if (agt == NULL)
-        return TE_ENOMEM;
+    agt = TE_ALLOC(sizeof(agent_t));
 
     strcpy(agt->name, agents_name);
     agt->type = type;

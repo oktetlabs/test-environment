@@ -61,7 +61,7 @@ cfg_register_dependency(xmlNodePtr node, const char *dependant)
             return TE_EINVAL;
         }
         len = sizeof(*msg) + strlen((char *)oid) + 1;
-        msg = calloc(1, len);
+        msg = TE_ALLOC(len);
         msg->type = CFG_ADD_DEPENDENCY;
         msg->len = len;
         msg->rc = 0;
@@ -129,13 +129,7 @@ register_objects(xmlNodePtr *node, bool reg)
         len = sizeof(cfg_register_msg) + strlen((char *)oid) + 1 +
               (def_val == NULL ? 0 : strlen((char *)def_val) + 1);
 
-        if ((msg = (cfg_register_msg *)calloc(1, len)) == NULL)
-        {
-            xmlFree(oid);
-            xmlFree(def_val);
-            return TE_ENOMEM;
-        }
-
+        msg = TE_ALLOC(len);
         msg->type = CFG_REGISTER;
         msg->len = len;
         msg->rc = 0;
@@ -331,9 +325,7 @@ parse_instances(xmlNodePtr node, cfg_instance **list,
                            "instance %s", cur->name);
         }
 
-        if ((tmp = (cfg_instance *)calloc(sizeof(*tmp), 1)) == NULL)
-            RETERR(TE_ENOMEM, "No enough memory");
-
+        tmp = TE_ALLOC(sizeof(*tmp));
         tmp->oid = (char *)oid;
 
         if ((tmp->obj = cfg_get_object((char *)oid)) == NULL)
@@ -487,13 +479,7 @@ remove_excessive(cfg_instance *list, bool *has_deps, const te_vec *subtrees)
     uint64_t n_deletable;
     uint64_t i;
 
-    uint32_t *sorted = malloc(sizeof(*sorted) * cfg_all_inst_size);
-
-    if (sorted == NULL)
-    {
-        ERROR("%s(): not enough memory", __FUNCTION__);
-        return TE_RC(TE_CS, TE_ENOMEM);
-    }
+    uint32_t *sorted = TE_ALLOC(sizeof(*sorted) * cfg_all_inst_size);
 
     for (i = 0, n_deletable = 0; i < cfg_all_inst_size; i++)
     {
@@ -586,12 +572,8 @@ add_or_set(cfg_instance *inst, bool local, bool *has_deps,
         if (inst->obj->dependants != NULL)
             *has_deps = true;
 
-        msg = (cfg_set_msg *)calloc(sizeof(*msg) +
-                                    CFG_MAX_INST_VALUE, 1);
+        msg = TE_ALLOC(sizeof(*msg) + CFG_MAX_INST_VALUE);
         p_msg = (cfg_msg *)msg;
-
-        if (msg == NULL)
-            return TE_ENOMEM;
 
         msg->type = CFG_SET;
         msg->len = sizeof(*msg);
@@ -610,14 +592,10 @@ add_or_set(cfg_instance *inst, bool local, bool *has_deps,
     }
     else if (inst->obj->access == CFG_READ_CREATE)
     {
-        cfg_add_msg *msg = (cfg_add_msg *)calloc(sizeof(*msg) +
-                                                 CFG_MAX_INST_VALUE +
-                                                 strlen(inst->oid) + 1, 1);
+        cfg_add_msg *msg = TE_ALLOC(sizeof(*msg) + CFG_MAX_INST_VALUE +
+                                    strlen(inst->oid) + 1);
         cfg_val_type t;
         int          rc;
-
-        if (msg == NULL)
-            return TE_ENOMEM;
 
         if (inst->obj->dependants != NULL)
             *has_deps = true;
@@ -811,13 +789,7 @@ restore_entry(cfg_instance *inst, bool *need_retry,
         return 0;
 
     size = sizeof(*msg) + strlen(inst->oid) + 1;
-    msg = calloc(size, 1);
-    if (msg == NULL)
-    {
-        ERROR("%s(): failed to allocate commit message", __FUNCTION__);
-        return TE_ENOMEM;
-    }
-
+    msg = TE_ALLOC(size);
     msg->type = CFG_COMMIT;
     msg->len = size;
     strcpy(msg->oid, inst->oid);
@@ -905,13 +877,7 @@ fill_children(cfg_instance *list, unsigned int list_size)
     int prev_level = -1;
     cfg_instance *parent = NULL;
 
-    refs = calloc(list_size, sizeof(cfg_instance *));
-    if (refs == NULL)
-    {
-        ERROR("%s(): failed to allocate memory for instance pointers array",
-              __FUNCTION__);
-        return TE_ENOMEM;
-    }
+    refs = TE_ALLOC(list_size * sizeof(cfg_instance *));
 
     for (ref = list, i = 0; ref != NULL; ref = ref->bkp_next, i++)
     {
@@ -1162,11 +1128,7 @@ cfg_backup_restore_ta(char *ta)
             continue;
         }
 
-        if ((tmp = (cfg_instance *)calloc(sizeof(*tmp), 1)) == NULL)
-        {
-            free_instances(list);
-            return TE_ENOMEM;
-        }
+        tmp = TE_ALLOC(sizeof(*tmp));
         if ((tmp->oid = strdup(inst->oid)) == NULL)
         {
             free_instances(list);

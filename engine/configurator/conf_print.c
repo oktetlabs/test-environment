@@ -13,6 +13,7 @@
 #endif
 
 #include "conf_defs.h"
+#include "te_alloc.h"
 #include "te_log_fmt.h"
 
 /* Minimal buffer size to be allocated */
@@ -390,11 +391,8 @@ bufprintf(char **p_buf, int *p_offset, size_t *p_sz,
     int     n;
     va_list ap;
 
-    if (buf == NULL && (buf = (char *)malloc(sz)) == NULL)
-    {
-        ERROR("Can't allocate ini buffer\n");
-        return NULL;
-    }
+    if (buf == NULL)
+        buf = TE_ALLOC(sz);
 
     va_start(ap, format);
     n = vsnprintf(buf + offset, sz - offset, format, ap);
@@ -407,12 +405,7 @@ bufprintf(char **p_buf, int *p_offset, size_t *p_sz,
             (sz * grow_coeff < grow_min) ? grow_min : sz * grow_coeff;
          }
 
-        buf = (char *)realloc(buf, sz);
-        if (buf == NULL)
-        {
-            ERROR("realloc() failed\n");
-            return NULL;
-        }
+        TE_REALLOC(buf, sz);
         va_start(ap, format);
         n = vsnprintf(buf + offset, sz - offset, format, ap);
         va_end(ap);

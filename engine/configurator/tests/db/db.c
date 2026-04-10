@@ -352,10 +352,7 @@ db_add_object(char *oid)
         return -TE_ENOMEM;
     }
 
-    obj = calloc(sizeof(object), 1);
-    if (obj == NULL)
-        return -TE_ENOMEM;
-
+    obj = TE_ALLOC(sizeof(object));
     obj->sn = i;
     strcpy(obj->id, oid);
 
@@ -384,10 +381,7 @@ db_add_instance(char *oid, char *value)
         return -TE_ENOMEM;
     }
 
-    inst = calloc(sizeof(instance), 1);
-    if (inst == NULL)
-        return -TE_ENOMEM;
-
+    inst = TE_ALLOC(sizeof(instance));
     inst->sn = i;
     strcpy(inst->id, oid);
     strcpy(inst->val, value);
@@ -501,14 +495,10 @@ int
 db_get_obj(const char *oid, char **answer)
 {
     int   i;
-    char *tmp = NULL;
 
-    char *ans = calloc(BASE_ANSWER_SIZE, 1);
+    char *ans = TE_ALLOC(BASE_ANSWER_SIZE);
     int   ans_len = 0;
     int   ans_buffer_len = BASE_ANSWER_SIZE;
-
-    if (ans == NULL)
-        return TE_ENOMEM;
 
     for (i = 0; i < MAX_OBJECT_NUMBER; i++)
     {
@@ -518,12 +508,7 @@ db_get_obj(const char *oid, char **answer)
             ans_len += strlen(object_list[i]->id + 1);
             if (ans_len > ans_buffer_len)
             {
-                tmp = realloc(ans, ans_buffer_len + BASE_ANSWER_SIZE);
-                if (tmp == NULL)
-                {
-                    ans_len -= strlen(object_list[i]->id + 1);
-                    return TE_ENOMEM;
-                }
+                TE_REALLOC(ans, ans_buffer_len + BASE_ANSWER_SIZE);
                 ans_buffer_len += BASE_ANSWER_SIZE;
             }
             if (*ans != 0)
@@ -542,14 +527,10 @@ int
 db_get_inst(const char *oid, char **answer)
 {
     int   i;
-    char *tmp = NULL;
 
-    char *ans = calloc(BASE_ANSWER_SIZE, 1);
+    char *ans = TE_ALLOC(BASE_ANSWER_SIZE);
     int   ans_len = 0;
     int   ans_buffer_len = BASE_ANSWER_SIZE;
-
-    if (ans == NULL)
-        return TE_ENOMEM;
 
     for (i = 0; i < MAX_INSTANCE_NUMBER; i++)
     {
@@ -560,13 +541,7 @@ db_get_inst(const char *oid, char **answer)
                        strlen(instance_list[i]->val) + 1;
             if (ans_len > ans_buffer_len)
             {
-                tmp = realloc(ans, ans_buffer_len + BASE_ANSWER_SIZE);
-                if (tmp == NULL)
-                {
-                    ans_len -= strlen(instance_list[i]->id + 1) +
-                               strlen(instance_list[i]->val);
-                    return TE_ENOMEM;
-                }
+                TE_REALLOC(ans, ans_buffer_len + BASE_ANSWER_SIZE);
                 ans_buffer_len += BASE_ANSWER_SIZE;
             }
             if (*ans != 0)
@@ -601,12 +576,7 @@ db_get(const char *oid, char **answer, int *length)
             if (tmp == NULL)
                 return TE_ENOMEM;
 
-            ans = calloc(BASE_ANSWER_SIZE, 1);
-            if (ans == NULL)
-            {
-                free(tmp);
-                return TE_ENOMEM;
-            }
+            ans = TE_ALLOC(BASE_ANSWER_SIZE);
 
             c = strrchr(tmp, '/');
             if (c == NULL)
@@ -718,11 +688,8 @@ db_init(char *db_file_name)
     if (db_file_name != NULL)
     {
         FILE *file_db;
-        char *buf = calloc(MAX_NAME_LENGTH, 1);
-        char *val = calloc(MAX_NAME_LENGTH, 1);
-
-        if (buf == NULL || val == NULL)
-            return TE_ENOMEM;
+        char *buf = TE_ALLOC(MAX_NAME_LENGTH);
+        char *val = TE_ALLOC(MAX_NAME_LENGTH);
 
         file_db = fopen(db_file_name, "r");
         if (file_db == NULL)

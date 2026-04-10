@@ -27,7 +27,7 @@
 #include <stdarg.h>
 #endif
 
-
+#include "te_alloc.h"
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
@@ -79,15 +79,10 @@
     do {                                                                      \
         int pid;                                                              \
         int rc;                                                               \
-        char *te_call = calloc(PATH_MAX, 1);                                  \
-        char *file_name = calloc(PATH_MAX, 1);                                \
+        char *te_call = TE_ALLOC(PATH_MAX);                                   \
+        char *file_name = TE_ALLOC(PATH_MAX);                                 \
                                                                               \
         sleep(3);                                                             \
-        if (te_call == NULL || file_name == NULL)                             \
-        {                                                                     \
-            printf("Failed to allocate buffer\n");                            \
-            goto cleanup;                                                     \
-        }                                                                     \
         strcpy(file_name, srcdir);                                            \
         strcat(file_name, "/suites/");                                        \
         strcat(file_name, conf_file_);                                        \
@@ -115,14 +110,9 @@
     do {                                                                     \
         int pid;                                                             \
         int rc;                                                              \
-        char *te_call = calloc(PATH_MAX, 1);                                 \
-        char *file_name = calloc(PATH_MAX, 1);                               \
+        char *te_call = TE_ALLOC(PATH_MAX);                                  \
+        char *file_name = TE_ALLOC(PATH_MAX);                                \
                                                                              \
-        if (te_call == NULL || file_name == NULL)                            \
-        {                                                                    \
-            printf("Failed to allocate buffer\n");                           \
-            goto cleanup;                                                    \
-        }                                                                    \
         strcpy(file_name, srcdir);                                           \
         file_name = strcat(file_name, "/suites/");                           \
         file_name = strcat(file_name, log_file_);                            \
@@ -155,9 +145,7 @@
  */
 #define EXPORT_ENV \
     do {                                                                    \
-        char *env = calloc(PATH_MAX, 1);                                    \
-                                                                            \
-        memset(env, 0, sizeof(env));                                        \
+        char *env = TE_ALLOC(PATH_MAX);                                     \
                                                                             \
         strcat(env, te_install);                                            \
         strcat(env, "/lib/");                                               \
@@ -187,13 +175,8 @@
  */
 #define STOP_LOGGER \
     do {                                                                     \
-        char *te_call = calloc(PATH_MAX, 1);                                 \
+        char *te_call = TE_ALLOC(PATH_MAX);                                  \
                                                                              \
-        if (te_call == NULL)                                                 \
-        {                                                                    \
-            printf("Failed to shut down the logger\n");                      \
-        }                                                                    \
-        memset(te_call, 0, PATH_MAX);                                        \
         strcat(te_call, "../../../logger/te_log_shutdown");                  \
         VERB("Shutting down the Logger");                                    \
         system(te_call); \
@@ -204,13 +187,8 @@
  */
 #define STOP_CONFIGURATOR \
     do {                                                                     \
-        char *te_call = calloc(PATH_MAX, 1);                                 \
+        char *te_call = TE_ALLOC(PATH_MAX);                                  \
                                                                              \
-        if (te_call == NULL)                                                 \
-        {                                                                    \
-            printf("Failed to shut down the configurator\n");                \
-        }                                                                    \
-        memset(te_call, 0, PATH_MAX);                                        \
         strcat(te_call, "../../te_cs_shutdown");                              \
                                                                              \
         VERB("Shutting down the Configurator");                              \
