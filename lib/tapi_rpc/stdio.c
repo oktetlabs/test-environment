@@ -31,7 +31,7 @@
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_stdio.h"
 #include "tapi_rpc_signal.h"
-
+#include "tapi_mem.h"
 
 rpc_file_p
 rpc_fopen(rcf_rpc_server *rpcs,
@@ -282,8 +282,8 @@ static int
 rpc_read_all(rcf_rpc_server *rpcs, int fd, char **pbuf, size_t *bytes)
 {
     char   *buf = NULL;
-    int     buflen = RPC_READ_ALL_BUF_CHUNK;
-    int     offset = 0;
+    size_t  buflen = RPC_READ_ALL_BUF_CHUNK;
+    size_t  offset = 0;
     int     rc = 0;
 
     if (rpcs == NULL)
@@ -291,36 +291,31 @@ rpc_read_all(rcf_rpc_server *rpcs, int fd, char **pbuf, size_t *bytes)
         ERROR("%s(): Invalid parameters", __FUNCTION__);
         rc = -1;
     }
-    else if ((buf = calloc(1, buflen)) == NULL)
+    else
     {
-        ERROR("Out of memory");
-        rc = -1;
-    }
-    else while (true)
-    {
-        int used;
+        buf = tapi_calloc(1, buflen);
 
-        if ((used = rpc_read(rpcs, fd,
-                              buf + offset, buflen - offset)) < 0)
+        while (true)
         {
-            ERROR("Cannot read from file descriptor: rpc_read failed");
-            rc = -1;
-            break;
-        }
-        if (used == 0)
-            break;
+            int used;
 
-        offset += used;
-        if (offset == buflen)
-        {
-            buflen = buflen * 2;
-            if ((buf = realloc(buf, buflen)) == NULL)
+            if ((used = rpc_read(rpcs, fd,
+                            buf + offset, buflen - offset)) < 0)
             {
-                ERROR("Out of memory");
+                ERROR("Cannot read from file descriptor: rpc_read failed");
                 rc = -1;
                 break;
             }
-            memset(buf + offset, 0, buflen - offset);
+            if (used == 0)
+                break;
+
+            offset += (size_t)used;
+            if (offset == buflen)
+            {
+                buflen = buflen * 2;
+                buf = tapi_realloc(buf, buflen);
+                memset(buf + offset, 0, buflen - offset);
+            }
         }
     }
 
@@ -395,11 +390,7 @@ rpc_read_all2(rcf_rpc_server *rpcs, int fd[2], char *buf[2],
             if (bytes[i] == buflen[i])
             {
                 buflen[i] = buflen[i] * 2;
-                if ((buf[i] = realloc(buf[i], buflen[i])) == NULL)
-                {
-                    ERROR("Out of memory");
-                    return -1;
-                }
+                buf[i] = tapi_realloc(buf[i], buflen[i]);
                 memset(buf[i] + bytes[i], 0, buflen[i] - bytes[i]);
             }
         }
