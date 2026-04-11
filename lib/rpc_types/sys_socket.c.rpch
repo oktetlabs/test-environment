@@ -2384,8 +2384,7 @@ finish:
     if (rlen > len)
     {
         /* Add trailer raw bytes */
-        rpc->raw.raw_val = malloc(rlen - len);
-        assert(rpc->raw.raw_val != NULL);
+        rpc->raw.raw_val = TE_ALLOC(rlen - len);
         rpc->raw.raw_len = rlen - len;
         memcpy(rpc->raw.raw_val, (uint8_t *)sa + len, rlen - len);
     }
@@ -3302,9 +3301,7 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
 
                 if (ecmd == NULL)
                 {
-                    ecmd = calloc(sizeof(struct ethtool_cmd), 1);
-                    if (ecmd == NULL)
-                        return TE_ENOMEM;
+                    ecmd = TE_ALLOC(sizeof(struct ethtool_cmd));
                     *edata_p = (caddr_t)ecmd;
                 }
 
@@ -3351,10 +3348,8 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
 
                 if (eaddr == NULL)
                 {
-                    eaddr = calloc(sizeof(struct ethtool_perm_addr) +
-                                   sizeof(rpc_eaddr->data), 1);
-                    if (eaddr == NULL)
-                        return TE_ENOMEM;
+                    eaddr = TE_ALLOC(sizeof(struct ethtool_perm_addr) +
+                                     sizeof(rpc_eaddr->data));
                     *edata_p = (caddr_t)eaddr;
                 }
 
@@ -3374,9 +3369,7 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
 
                 if (evalue == NULL)
                 {
-                    evalue = calloc(sizeof(struct ethtool_value), 1);
-                    if (evalue == NULL)
-                        return TE_ENOMEM;
+                    evalue = TE_ALLOC(sizeof(struct ethtool_value));
                     *edata_p = (caddr_t)evalue;
                 }
 
@@ -3401,10 +3394,7 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
 
                 if (ts_info == NULL)
                 {
-                    ts_info = calloc(1, sizeof(struct ethtool_ts_info));
-                    if (ts_info == NULL)
-                        return TE_ENOMEM;
-
+                    ts_info = TE_ALLOC(sizeof(struct ethtool_ts_info));
                     *edata_p = (caddr_t)ts_info;
                 }
 
@@ -3550,9 +3540,7 @@ hwtstamp_config_data_rpc2h(tarpc_hwtstamp_config *rpc_hwdata,
                         *(struct hwtstamp_config **)hwdata_p;
     if (hw_cfg == NULL)
     {
-        hw_cfg = calloc(sizeof(struct hwtstamp_config ), 1);
-        if (hw_cfg == NULL)
-            return;
+        hw_cfg = TE_ALLOC(sizeof(struct hwtstamp_config ));
         *hwdata_p = (caddr_t)hw_cfg;
     }
     COPY_FIELD(hw_cfg, rpc_hwdata, flags);
@@ -3935,12 +3923,6 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
              sockopt_rpc2str(rpc_type));
 
     rpc_cmsg->data.data_val = TE_ALLOC(len);
-    if (rpc_cmsg->data.data_val == NULL)
-    {
-        ERROR("%s(): failed to allocate memory for "
-              "TARPC representation", __FUNCTION__);
-        return TE_ENOMEM;
-    }
     memcpy(rpc_cmsg->data.data_val, data, len);
     rpc_cmsg->data.data_len = len;
 
@@ -4427,16 +4409,8 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
             goto fail;
         }
 
-        *rpc_cmsg = calloc(1, sizeof(**rpc_cmsg) * i);
+        *rpc_cmsg = TE_ALLOC(sizeof(**rpc_cmsg) * i);
         *rpc_cmsg_count = i;
-
-        if (i > 0 && *rpc_cmsg == NULL)
-        {
-            ERROR("%s(): out of memory when processing "
-                  "control message", __FUNCTION__);
-            *rpc_cmsg_count = 0;
-            return TE_ENOMEM;
-        }
 
         rpc_cmsg_aux = *rpc_cmsg;
         for (i = 0, c = CMSG_FIRSTHDR(&msg);
@@ -4476,23 +4450,9 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
     {
         if (real_len < cmsg_len)
         {
-            *tail = calloc(1, cmsg_len - real_len);
-            if (*tail == NULL)
-            {
-                *tail_len = 0;
-                free(*rpc_cmsg);
-                *rpc_cmsg = NULL;
-                *rpc_cmsg_count = 0;
-
-                ERROR("%s(): out of memory when processing "
-                      "remained data in control buffer", __FUNCTION__);
-                return TE_ENOMEM;
-            }
-            else
-            {
-                *tail_len = cmsg_len - real_len;
-                memcpy(*tail, cmsg_buf + real_len, *tail_len);
-            }
+            *tail = TE_ALLOC(cmsg_len - real_len);
+            *tail_len = cmsg_len - real_len;
+            memcpy(*tail, cmsg_buf + real_len, *tail_len);
         }
         else
         {
