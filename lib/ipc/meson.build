@@ -8,9 +8,11 @@ server_sources = [
     'server.c',
 ]
 te_lib_ipcserver = library('ipcserver', server_sources, install: install_lib,
+                           dependencies: [dep_lib_tools],
                            include_directories: includes)
 dep_lib_ipcserver = declare_dependency(link_with: te_lib_ipcserver,
-                                      include_directories: includes)
+                                       dependencies: [dep_lib_tools],
+                                       include_directories: includes)
 
 headers += files(
     'ipc_client.h',
@@ -21,3 +23,6 @@ sources += files(
     'ipc_common.c',
     'portmap_common.c',
 )
+te_libs += [
+    'tools',
+]

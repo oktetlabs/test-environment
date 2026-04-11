@@ -47,6 +47,7 @@
 #endif
 #endif /* !TE_IPC_AF_UNIX */
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_errno.h"
 #include "ipc_client.h"
@@ -246,12 +247,7 @@ get_pool_item_by_name(struct ipc_client *ipcc, const char *name)
     }
 
     /* Not found. Allocate new */
-    (*parent) = calloc(1, sizeof(struct ipc_client_server));
-    if (*parent == NULL)
-    {
-        perror("get_pool_item_by_name(): calloc() failed");
-        return NULL;
-    }
+    (*parent) = TE_ALLOC(sizeof(struct ipc_client_server));
 
 #ifdef TE_IPC_AF_UNIX
     (*parent)->sa.sun_family = AF_UNIX;
@@ -267,12 +263,7 @@ get_pool_item_by_name(struct ipc_client *ipcc, const char *name)
     }
     else
     {
-        (*parent)->dgram.buffer = calloc(1, IPC_SEGMENT_SIZE);
-        if ((*parent)->dgram.buffer == NULL)
-        {
-            free(*parent);
-            return NULL;
-        }
+        (*parent)->dgram.buffer = TE_ALLOC(IPC_SEGMENT_SIZE);
     }
 
     return (*parent);
@@ -457,9 +448,7 @@ get_datagram(struct ipc_client *ipcc,
                 ipc_remember_datagram(&ipcc->dgram.datagrams,
                                       pool_item->dgram.buffer, r,
                                       &sa, sa_len);
-                pool_item->dgram.buffer = calloc(1, IPC_SEGMENT_SIZE);
-                if (pool_item->dgram.buffer == NULL)
-                    return NULL;
+                pool_item->dgram.buffer = TE_ALLOC(IPC_SEGMENT_SIZE);
             }
             else
             {
@@ -642,14 +631,7 @@ ipc_init_client(const char *name, bool conn,
 #endif /* TE_IPC_AF_UNIX */
     }
 
-    ipcc = calloc(1, sizeof(struct ipc_client));
-    if (ipcc == NULL)
-    {
-        rc = errno;
-        if (s >= 0)
-            close(s);
-        return TE_RC(TE_IPC, rc);
-    }
+    ipcc = TE_ALLOC(sizeof(struct ipc_client));
     strcpy(ipcc->name, name);
     ipcc->pool = NULL;
     ipcc->conn = conn;
@@ -657,14 +639,7 @@ ipc_init_client(const char *name, bool conn,
     if (!conn)
     {
         ipcc->dgram.socket = s;
-        ipcc->dgram.tmp_buffer = calloc(1, IPC_SEGMENT_SIZE);
-        if (ipcc->dgram.tmp_buffer == NULL)
-        {
-            rc = errno;
-            free(ipcc);
-            close(s);
-            return TE_OS_RC(TE_IPC, rc);
-        }
+        ipcc->dgram.tmp_buffer = TE_ALLOC(IPC_SEGMENT_SIZE);
 
         TAILQ_INIT(&ipcc->dgram.datagrams);
 
@@ -676,12 +651,7 @@ ipc_init_client(const char *name, bool conn,
     {
         if (IPC_TCP_CLIENT_BUFFER_SIZE != 0)
         {
-            ipcc->stream.out_buffer = calloc(1, IPC_TCP_CLIENT_BUFFER_SIZE);
-            if (ipcc->stream.out_buffer == NULL)
-            {
-                free(ipcc);
-                return TE_OS_RC(TE_IPC, errno);
-            }
+            ipcc->stream.out_buffer = TE_ALLOC(IPC_TCP_CLIENT_BUFFER_SIZE);
         }
         else
         {

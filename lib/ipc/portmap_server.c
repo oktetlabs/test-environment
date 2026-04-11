@@ -58,8 +58,8 @@ ipc_kill(void)
 #include <rpc/pmap_clnt.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_errno.h"
-
 
 #if 0
 /** Turn pmap debug ON */
@@ -187,7 +187,7 @@ ipc_pmap_cycle(int s)
                     {
                         struct ipc_pmap_node *next = ipc_pool;
 
-                        ipc_pool = calloc(1, sizeof(*ipc_pool));
+                        ipc_pool = TE_ALLOC(sizeof(*ipc_pool));
                         memcpy(ipc_pool->name, cmd.server_name,
                                UNIX_PATH_MAX);
                         ipc_pool->port = cmd.server_port;

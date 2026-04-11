@@ -51,6 +51,7 @@
 #endif
 #endif
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_queue.h"
@@ -215,13 +216,7 @@ ipc_register_server(const char *name, bool conn,
         return TE_RC(TE_IPC, TE_E2BIG);
     }
 
-    ipcs = calloc(1, sizeof(*ipcs));
-    if (ipcs == NULL)
-    {
-        rc = errno;
-        perror("ipc_register_server(): calloc() error");
-        return TE_OS_RC(TE_IPC, rc);
-    }
+    ipcs = TE_ALLOC(sizeof(*ipcs));
     ipcs->conn = conn;
 
     strcpy(ipcs->name, name);
@@ -312,15 +307,7 @@ ipc_register_server(const char *name, bool conn,
     {
         if (IPC_TCP_SERVER_BUFFER_SIZE != 0)
         {
-            ipcs->stream.out_buffer = calloc(1, IPC_TCP_SERVER_BUFFER_SIZE);
-            if (ipcs->stream.out_buffer == NULL)
-            {
-                rc = errno;
-                perror("ipc_register_server(): calloc() error");
-                close(ipcs->socket);
-                free(ipcs);
-                return TE_OS_RC(TE_IPC, rc);
-            }
+            ipcs->stream.out_buffer = TE_ALLOC(IPC_TCP_SERVER_BUFFER_SIZE);
         }
         ipcs->recv = ipc_stream_receive_message;
         ipcs->send = ipc_stream_send_answer;
@@ -329,15 +316,7 @@ ipc_register_server(const char *name, bool conn,
     {
         TAILQ_INIT(&ipcs->dgram.datagrams);
 
-        ipcs->dgram.buffer = calloc(1, IPC_SEGMENT_SIZE);
-        if (ipcs->dgram.buffer == NULL)
-        {
-            rc = errno;
-            perror("ipc_register_server(): calloc() error");
-            close(ipcs->socket);
-            free(ipcs);
-            return TE_OS_RC(TE_IPC, rc);
-        }
+        ipcs->dgram.buffer = TE_ALLOC(IPC_SEGMENT_SIZE);
         ipcs->recv = ipc_dgram_receive_message;
         ipcs->send = ipc_dgram_send_answer;
     }
@@ -897,8 +876,7 @@ ipc_stream_receive_message(struct ipc_server *ipcs,
 
             /* New connection requested. Accept it */
 
-            client = calloc(1, sizeof(*client));
-            assert(client != NULL);
+            client = TE_ALLOC(sizeof(*client));
 
 #ifdef TE_IPC_AF_UNIX
             client->sa_len = sizeof(client->sa);
@@ -1047,7 +1025,7 @@ ipc_pmap_unregister_server(const char *server_name, uint16_t port)
  * @param sa_len    - length of the address
  * @param p_ipcsc   - location for pointer to IPC server client structure
  *
- * @return Status code.
+ * @return Pointer to the IPC server client structure (never returns @c NULL)
  */
 static struct ipc_server_client *
 ipc_int_client_by_addr(struct ipc_server *ipcs,
@@ -1064,22 +1042,11 @@ ipc_int_client_by_addr(struct ipc_server *ipcs,
     if (ipcsc == NULL)
     {
         /* Not found. Allocate new. */
-        ipcsc = calloc(1, sizeof(*ipcsc));
-        if (ipcsc != NULL)
-        {
-            ipcsc->sa     = *sa_ptr;
-            ipcsc->sa_len = sa_len;
-            ipcsc->dgram.buffer = calloc(1, IPC_SEGMENT_SIZE);
-            if (ipcsc->dgram.buffer == NULL)
-            {
-                free(ipcsc);
-                ipcsc = NULL;
-            }
-            else
-            {
-                LIST_INSERT_HEAD(&ipcs->clients, ipcsc, links);
-            }
-        }
+        ipcsc = TE_ALLOC( sizeof(*ipcsc));
+        ipcsc->sa     = *sa_ptr;
+        ipcsc->sa_len = sa_len;
+        ipcsc->dgram.buffer = TE_ALLOC(IPC_SEGMENT_SIZE);
+        LIST_INSERT_HEAD(&ipcs->clients, ipcsc, links);
     }
 
     return ipcsc;
@@ -1116,11 +1083,6 @@ ipc_int_get_datagram_from_pool(struct ipc_server *ipcs,
             if (ipcsc == NULL)
             {
                 ipcsc = ipc_int_client_by_addr(ipcs, &p->sa, p->sa_len);
-                if (ipcsc == NULL)
-                {
-                    fprintf(stderr, "Memory allocation failure\n");
-                    return TE_RC(TE_IPC, TE_ENOMEM);
-                }
             }
 
             free(ipcsc->dgram.buffer);
@@ -1208,11 +1170,7 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
                 return TE_RC(TE_IPC, rc2);
             }
             /* IPC server buffer was owned by previous routine */
-            ipcs->dgram.buffer = calloc(1, IPC_SEGMENT_SIZE);
-            if (ipcs->dgram.buffer == NULL)
-            {
-                return TE_RC(TE_IPC, TE_ENOMEM);
-            }
+            ipcs->dgram.buffer = TE_ALLOC(IPC_SEGMENT_SIZE);
         }
         else
         {
@@ -1220,11 +1178,6 @@ ipc_int_get_datagram(struct ipc_server *ipcs,
             if (ipcsc == NULL)
             {
                 ipcsc = ipc_int_client_by_addr(ipcs, &sa, sa_len);
-                if (ipcsc == NULL)
-                {
-                    fprintf(stderr, "Memory allocation failure\n");
-                    return TE_RC(TE_IPC, TE_ENOMEM);
-                }
                 *p_ipcsc = ipcsc;
             }
 

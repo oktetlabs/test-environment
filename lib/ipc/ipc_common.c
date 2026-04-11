@@ -17,6 +17,7 @@
 #include <assert.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_errno.h"
 
 #include "ipc_internal.h"
@@ -36,9 +37,7 @@ ipc_remember_datagram(struct ipc_datagrams *p_pool, void *data, size_t len,
     assert(len <= IPC_SEGMENT_SIZE);
     assert(addr != NULL);
 
-    p = calloc(1, sizeof(*p));
-    if (p == NULL)
-        return TE_RC(TE_IPC, TE_ENOMEM);
+    p = TE_ALLOC( sizeof(*p));
 
     p->buffer = data;
     p->octets = len;
