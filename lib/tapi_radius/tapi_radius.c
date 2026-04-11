@@ -11,6 +11,7 @@
 #include "te_config.h"
 
 #include "tapi_radius.h"
+#include "tapi_mem.h"
 #include "tapi_udp.h"
 #include "logger_api.h"
 #include "te_errno.h"
@@ -199,12 +200,7 @@ tapi_radius_attr_list_push(tapi_radius_attr_list_t *list,
 {
     tapi_radius_attr_t *p;
 
-    p = realloc(list->attr, (list->len + 1) * sizeof(list->attr[0]));
-    if (p == NULL)
-    {
-        ERROR("%s: failed to allocate memory for attribute", __FUNCTION__);
-        return TE_ENOMEM;
-    }
+    p = tapi_realloc(list->attr, (list->len + 1) * sizeof(list->attr[0]));
     memcpy(&p[list->len], attr, sizeof(p[list->len]));
     list->attr = p;
     list->len++;
@@ -253,15 +249,8 @@ tapi_radius_attr_list_push_value(tapi_radius_attr_list_t *list,
         case TAPI_RADIUS_TYPE_TEXT:     /* (char *) */
             {
                 const char *s = va_arg(va, char *);
-                attr.string = strdup(s);
-                if (attr.string == NULL)
-                {
-                    ERROR("%s: failed to allocate memory for attribute '%s'",
-                          __FUNCTION__, name);
-                    rc = TE_ENOMEM;
-                }
-                else
-                    attr.len = strlen(s);
+                attr.string = tapi_strdup(s);
+                attr.len = strlen(s);
             }
             break;
         default:
@@ -364,13 +353,7 @@ tapi_radius_attr_list_to_string(const tapi_radius_attr_list_t *list,
                 continue;
         }
         attr_strlen += strlen(info->name) + strlen(value) + 2;
-        s = realloc(result, len + attr_strlen);
-        if (s == NULL)
-        {
-            ERROR("%s: failed to allocate memory", __FUNCTION__);
-            free(result);
-            return TE_ENOMEM;
-        }
+        s = tapi_realloc(result, len + attr_strlen);
         result = s;
         if (len > 0)
             strcat(result, ",");
@@ -443,13 +426,7 @@ tapi_radius_attr_init(tapi_radius_attr_t *attr,
 
         case TAPI_RADIUS_TYPE_TEXT:
         case TAPI_RADIUS_TYPE_STRING:
-            attr->string = calloc(data_len + 1, sizeof(char));
-            if (attr->string == NULL)
-            {
-                ERROR("%s: failed to allocate memory for attribute %u",
-                      __FUNCTION__, attr_type);
-                return TE_ENOMEM;
-            }
+            attr->string = tapi_calloc(data_len + 1, sizeof(char));
             memcpy(attr->string, data, data_len);
             attr->len = data_len;
             break;
@@ -470,12 +447,7 @@ tapi_radius_attr_copy(tapi_radius_attr_t *dst,
     memcpy(dst, src, sizeof(*dst));
     if (TAPI_RADIUS_TYPE_IS_DYNAMIC(src->datatype))
     {
-        dst->string = calloc(1, src->len + 1);
-        if (dst->string == NULL)
-        {
-            ERROR("%s: failed to allocate memory", __FUNCTION__);
-            return TE_ENOMEM;
-        }
+        dst->string = tapi_calloc(1, src->len + 1);
         memcpy(dst->string, src->string, src->len);
     }
     return 0;
@@ -582,13 +554,7 @@ tapi_radius_parse_packet(const uint8_t *data, size_t data_len,
             case TAPI_RADIUS_TYPE_TEXT:
             case TAPI_RADIUS_TYPE_STRING:
             case TAPI_RADIUS_TYPE_UNKNOWN:
-                attr.string = calloc(attr.len + 1, sizeof(char));
-                if (attr.string == NULL)
-                {
-                    ERROR("%s: failed to allocate memory for attribute %u",
-                          __FUNCTION__, attr.type);
-                    return TE_ENOMEM;
-                }
+                attr.string = tapi_calloc(attr.len + 1, sizeof(char));
                 memcpy(attr.string, p, attr.len);
                 break;
 
@@ -647,12 +613,7 @@ tapi_radius_trrecv_cb_data(radius_callback  user_callback,
     tapi_radius_pkt_handler_data   *cb_data;
     tapi_tad_trrecv_cb_data        *res;
 
-    cb_data = (tapi_radius_pkt_handler_data *)calloc(1, sizeof(*cb_data));
-    if (cb_data == NULL)
-    {
-        ERROR("%s(): failed to allocate memory", __FUNCTION__);
-        return NULL;
-    }
+    cb_data = tapi_calloc(1, sizeof(*cb_data));
     cb_data->callback = user_callback;
     cb_data->user_data = user_data;
 
