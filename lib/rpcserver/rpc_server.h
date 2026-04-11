@@ -138,6 +138,7 @@
 #define TE_ERRNO_LOG_UNKNOWN_OS_ERRNO
 
 #include <stddef.h>
+#include "te_alloc.h"
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "te_errno.h"
@@ -449,11 +450,8 @@ extern te_errno tarpc_check_args(checked_arg_list *list);
 #define PREPARE_ADDR_GEN_IS_LOCAL_COPY_false(_name)                 \
     if (_name != NULL)                                              \
     {                                                               \
-        _name ## _dup = calloc(1, _name ## len);                    \
-        if (_name ## _dup == NULL)                                  \
-            out->common._errno = TE_ENOMEM;                         \
-        else                                                        \
-            memcpy(_name ## _dup, _name, _name ## len);             \
+        _name ## _dup = TE_ALLOC(_name ## len);                     \
+        memcpy(_name ## _dup, _name, _name ## len);                 \
     }
 #define PREPARE_ADDR_GEN_IS_LOCAL_COPY_true(_name)
 
