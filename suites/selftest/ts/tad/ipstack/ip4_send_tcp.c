@@ -54,6 +54,7 @@
 #include "ndn_ipstack.h"
 #include "tapi_ndn.h"
 #include "tapi_env.h"
+#include "tapi_mem.h"
 #include "tapi_rpcsock_macros.h"
 #include "tapi_test.h"
 #include "tapi_rpc_params.h"
@@ -113,13 +114,13 @@ main(int argc, char *argv[])
         TEST_FAIL("Invalid payload_len parameter %d", payload_len);
 
     /* Prepate fake ip address. */
-    fake_tst_addr = (struct sockaddr *)malloc(sizeof(struct sockaddr));
+    fake_tst_addr = tapi_malloc(sizeof(struct sockaddr));
     memcpy(fake_tst_addr, tst_addr, sizeof(struct sockaddr));
     *((uint8_t *)&(((struct sockaddr_in *)(fake_tst_addr))->sin_addr.s_addr) +
         3) = rand_range(50, 100);
 
     /* Prepare fake mac address. */
-    fake_tst_mac = malloc(sizeof(uint8_t) * 6);
+    fake_tst_mac = tapi_malloc(sizeof(uint8_t) * 6);
     memcpy(fake_tst_mac, te_sockaddr_get_netaddr(tst_mac), sizeof(uint8_t) * 6);
     do {
         *(fake_tst_mac + rand_range(3,5)) = rand_range(1, 255);
@@ -150,7 +151,7 @@ main(int argc, char *argv[])
 
     /* Prepare send and receive buffers. */
     send_buf = te_make_buf_by_len(payload_len);
-    recv_buf = malloc(payload_len);
+    recv_buf = tapi_malloc(payload_len);
 
     /* Prepare data to send. */
     CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(&template, false,

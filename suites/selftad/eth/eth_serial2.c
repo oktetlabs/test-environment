@@ -22,7 +22,7 @@
 #include "tapi_eth.h"
 #include "tapi_tad.h"
 #include "tapi_test.h"
-
+#include "tapi_mem.h"
 
 /* The number of packets to be processed */
 #define PKTS_TO_PROCESS                10
@@ -95,12 +95,9 @@ int main()
 
     {
         size_t len = 100, agt_a_len;
-        agent_a = malloc (100);
-        if (agent_a == NULL)
-        {
-            fprintf(stderr, "malloc failed \n");
-            return 1;
-        }
+
+        agent_a = tapi_malloc(100);
+
         if ((rc = rcf_get_ta_list(agent_a, &len)) != 0)
         {
             fprintf(stderr, "rcf_get_ta_list failed %x\n", rc);

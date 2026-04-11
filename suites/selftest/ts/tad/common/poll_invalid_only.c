@@ -35,7 +35,7 @@
 #include "te_config.h"
 
 #include "tapi_test.h"
-
+#include "tapi_mem.h"
 
 int
 main(int argc, char *argv[])
@@ -56,7 +56,7 @@ main(int argc, char *argv[])
     if (n_csaps == 0)
         TEST_FAIL("Invalid number of CSAPs as parameter");
 
-    CHECK_NOT_NULL(csaps = calloc(n_csaps, sizeof(*csaps)));
+    csaps = tapi_calloc(n_csaps, sizeof(*csaps));
 
     for (i = 0; i < n_csaps; ++i)
     {

@@ -11,6 +11,8 @@
 
 #include "rpc_suite.h"
 
+#include "tapi_mem.h"
+
 #define CLIENTS_NUM      32
 #define BUF_SIZE1        100123
 #define BUF_SIZE2        100543
@@ -107,8 +109,8 @@ server_thread(void *arg)
     void             *retval = (void *)-1;
     int               i;
 
-    sendbuf = malloc(BUF_SIZE2);
-    recvbuf = malloc(BUF_SIZE1);
+    sendbuf = tapi_malloc(BUF_SIZE2);
+    recvbuf = tapi_malloc(BUF_SIZE1);
     memset(sendbuf, PATTERN2, BUF_SIZE2);
     memset(recvbuf, 0, BUF_SIZE1);
 
@@ -151,8 +153,8 @@ client_thread(void *arg)
     void             *retval = (void *)-1;
     int               i;
 
-    sendbuf = malloc(BUF_SIZE1);
-    recvbuf = malloc(BUF_SIZE2);
+    sendbuf = tapi_malloc(BUF_SIZE1);
+    recvbuf = tapi_malloc(BUF_SIZE2);
     memset(sendbuf, PATTERN1, BUF_SIZE1);
     memset(recvbuf, 0, BUF_SIZE2);
 
@@ -217,8 +219,7 @@ main(int argc, char *argv[])
     for (i = 0; i < CLIENTS_NUM; i++)
     {
         /* Create an address */
-        tst_addrs[i] =
-            (struct sockaddr *)malloc(sizeof(struct sockaddr_storage));
+        tst_addrs[i] = tapi_malloc(sizeof(struct sockaddr_storage));
         memcpy(tst_addrs[i], tst_addr, sizeof(struct sockaddr));
         if (i > 0)
             SET_FREE_PORT(pco_tst, tst_addrs[i]);
@@ -234,20 +235,17 @@ main(int argc, char *argv[])
     rpc_bind(pco_iut, iut_sl, iut_addr);
     rpc_listen(pco_iut, iut_sl, 64);
 
-    pco_iut_st =
-        (rcf_rpc_server **)calloc(CLIENTS_NUM, sizeof(rcf_rpc_server *));
+    pco_iut_st = tapi_calloc(CLIENTS_NUM, sizeof(rcf_rpc_server *));
+    pco_tst_ct = tapi_calloc(CLIENTS_NUM, sizeof(rcf_rpc_server *));
 
-    pco_tst_ct =
-        (rcf_rpc_server **)calloc(CLIENTS_NUM, sizeof(rcf_rpc_server *));
+    st_name = tapi_calloc(CLIENTS_NUM, sizeof(char *));
+    ct_name = tapi_calloc(CLIENTS_NUM, sizeof(char *));
 
-    st_name = (char **)calloc(CLIENTS_NUM, sizeof(char *));
-    ct_name = (char **)calloc(CLIENTS_NUM, sizeof(char *));
+    st_args = tapi_calloc(CLIENTS_NUM, sizeof(wt_arg_s));
+    ct_args = tapi_calloc(CLIENTS_NUM, sizeof(wt_arg_s));
 
-    st_args = (wt_arg_s *)calloc(CLIENTS_NUM, sizeof(wt_arg_s));
-    ct_args = (wt_arg_s *)calloc(CLIENTS_NUM, sizeof(wt_arg_s));
-
-    st_ids = (pthread_t *)calloc(CLIENTS_NUM, sizeof(pthread_t));
-    ct_ids = (pthread_t *)calloc(CLIENTS_NUM, sizeof(pthread_t));
+    st_ids = tapi_calloc(CLIENTS_NUM, sizeof(pthread_t));
+    ct_ids = tapi_calloc(CLIENTS_NUM, sizeof(pthread_t));
 
     for (i = 0; i < CLIENTS_NUM; i++)
     {
@@ -256,7 +254,7 @@ main(int argc, char *argv[])
 
         iut_s[i] = rpc_accept(pco_iut, iut_sl, NULL, NULL);
 
-        st_name[i] = (char *)malloc(RCF_MAX_NAME);
+        st_name[i] = tapi_malloc(RCF_MAX_NAME);
         sprintf(st_name[i], "%s_%d", pco_iut->name, i);
         if (rcf_rpc_server_thread_create(pco_iut, st_name[i],
                                          &pco_iut_st[i]) != 0)
@@ -269,7 +267,7 @@ main(int argc, char *argv[])
         st_args[i].rs = pco_iut_st[i];
         st_args[i].sock = iut_s[i];
 
-        ct_name[i] = (char *)malloc(RCF_MAX_NAME);
+        ct_name[i] = tapi_malloc(RCF_MAX_NAME);
         sprintf(ct_name[i], "%s_%d", pco_tst->name, i);
         if (rcf_rpc_server_thread_create(pco_tst, ct_name[i],
                                          &pco_tst_ct[i]) != 0)

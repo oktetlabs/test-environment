@@ -19,6 +19,7 @@
 #define TEST_END_SPECIFIC       TEST_END_ENV
 
 #include "te_config.h"
+
 #include "tapi_test.h"
 #include "tapi_env.h"
 
@@ -28,6 +29,7 @@
 #include "tapi_rpcsock_macros.h"
 #include "tapi_rpc_client_server.h"
 #include "tapi_sniffer.h"
+#include "tapi_mem.h"
 
 int
 main(int argc, char *argv[])
@@ -57,11 +59,11 @@ main(int argc, char *argv[])
     TEST_GET_ADDR(pco_clnt, clnt_addr);
 
     buffer_len = strlen(str) + 2;
-    send_buffer = malloc(buffer_len);
+    send_buffer = tapi_malloc(buffer_len);
     memcpy(send_buffer + 1, str, strlen(str));
     send_buffer[0] = 0;
 
-    recv_buffer = malloc(buffer_len);
+    recv_buffer = tapi_malloc(buffer_len);
 
     if (rcf_get_ta_list(ta, &len) != 0)
         TEST_FAIL("rcf_get_ta_list() failed");
