@@ -124,7 +124,7 @@ asn_impl_pt_charstring(const char *text, const asn_type *type,
     if (!text || !parsed || !syms_parsed)
         return TE_EWRONGPTR;
 
-    pb = buffer = malloc(TEXT_BLOCK);
+    pb = buffer = TE_ALLOC(TEXT_BLOCK);
     while (isspace(*pt))
         pt++;
 
@@ -141,7 +141,7 @@ asn_impl_pt_charstring(const char *text, const asn_type *type,
         while (total + l > num_blocks * TEXT_BLOCK)
         {
             num_blocks++;
-            buffer = realloc(buffer, num_blocks * TEXT_BLOCK);
+            TE_REALLOC(buffer, num_blocks * TEXT_BLOCK);
             pb = buffer + total;
         }
         memcpy(pb, pt, l);
@@ -218,8 +218,7 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
     if (octstr_len == 0)
         octstr_len = (strchr(text + 1, '\'') - text + 1)/2;
 
-    buffer = malloc(octstr_len);
-
+    buffer = TE_ALLOC(octstr_len);
 
     while (*pt != '\'')
     {
@@ -536,20 +535,10 @@ asn_impl_pt_objid(const char *text, const asn_type *type,
         /* Allocate memory under the set of sub IDs when required */
         if (parsed_ints_len <= cur_index)
         {
-            int *mem_ptr;
-
 #define OID_LEN_BLOCK 40
-            mem_ptr = (int *)realloc(parsed_ints,
-                                     (parsed_ints_len += OID_LEN_BLOCK) *
-                                     sizeof(int));
+            parsed_ints_len += OID_LEN_BLOCK;
+            TE_REALLOC(parsed_ints, parsed_ints_len * sizeof(int));
 #undef OID_LEN_BLOCK
-
-            if (mem_ptr == NULL)
-            {
-                free(parsed_ints);
-                return TE_ENOMEM;
-            }
-            parsed_ints = mem_ptr;
         }
 
         parsed_ints[cur_index] = strtol(pt, &endptr, 10);
@@ -1735,13 +1724,7 @@ asn_save_to_file(const asn_value *value, const char *filename)
     if (fp == NULL)
         return errno;
 
-    buffer = malloc(len + 11);
-    if (buffer == NULL)
-    {
-        /* We need to close files - this comment is for "konst" */
-        fclose(fp);
-        return TE_ENOMEM;
-    }
+    buffer = TE_ALLOC(len + 11);
     memset(buffer, 0, len + 11);
 
     asn_sprint_value(value, buffer, len + 10, 0);

@@ -16,6 +16,7 @@
 
 #include <stdarg.h>
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_printf.h"
@@ -62,9 +63,7 @@ asn_strdup(const char* src)
     else
     {
         int   len = strlen(src);
-        char *res = malloc(len + 1);
-
-        if (res == NULL) return NULL;
+        char *res = TE_ALLOC(len + 1);
 
         strcpy(res, src);
         return res;
@@ -142,11 +141,7 @@ asn_init_value(const asn_type * type)
 
     if (type == NULL) return NULL;
 
-    new_value = malloc(sizeof(asn_value));
-    if (new_value == NULL)
-        return NULL;
-
-    memset(new_value, 0, sizeof(asn_value));
+    new_value = TE_ALLOC(sizeof(asn_value));
 
     new_value->asn_type = type;
     new_value->syntax   = type->syntax;
@@ -166,12 +161,10 @@ asn_init_value(const asn_type * type)
         case SET:
             {
                 size_t  sz = arr_len * sizeof(asn_value *);
-                void   *ptr = malloc(sz);
+                void   *ptr = TE_ALLOC(sz);
 
                 new_value->len = arr_len;
                 new_value->data.array = ptr;
-
-                memset(ptr, 0, sz);
             }
             break;
         case UINTEGER:
@@ -242,14 +235,7 @@ asn_assign_value(asn_value *dst, const asn_value *src)
             free(dst->data.array);
         }
 
-        arr = dst->data.array = malloc(len * sizeof(asn_value *));
-
-        if (arr==NULL)
-        {
-            ERROR("%s(): Failed to allocate memory for arr, len=%d",
-                 __FUNCTION__, len);
-            return ENOMEM;
-        }
+        arr = dst->data.array = TE_ALLOC(len * sizeof(asn_value *));
 
         for (i = 0; i < len; i++, arr++)
         {
@@ -291,9 +277,7 @@ asn_assign_value(asn_value *dst, const asn_value *src)
             return 0;
         }
 
-        if ((dst->data.other = malloc (len))==NULL)
-            return ENOMEM;
-
+        dst->data.other = TE_ALLOC(len);
         memcpy (dst->data.other, src->data.other, len);
     }
     else /* value is stored in data.integer */
@@ -341,8 +325,7 @@ asn_copy_value(const asn_value *value)
 
     if (!value) { /* ERROR! */ return NULL; }
 
-    new_value = malloc (sizeof (asn_value));
-    if (!new_value) { /* ERROR! */ return NULL; }
+    new_value = TE_ALLOC(sizeof (asn_value));
 
     new_value->asn_type = value->asn_type;
     new_value->syntax   = value->syntax;
@@ -361,15 +344,9 @@ asn_copy_value(const asn_value *value)
     {
         int i;
         asn_value *src_elem;
-        asn_value **arr = new_value->data.array =
-            malloc(len * sizeof(asn_value *));
+        asn_value **arr;
 
-        if (arr==NULL)
-        { /* ERROR! */
-            if (new_value->name) free(new_value->name);
-            free(new_value);
-            return NULL;
-        }
+        arr = new_value->data.array = TE_ALLOC(len * sizeof(asn_value *));
 
         for (i = 0; i < len; i++, arr++)
         {
@@ -401,12 +378,7 @@ asn_copy_value(const asn_value *value)
             return new_value;
         }
 
-        if ((new_value->data.other = malloc (len))==NULL)
-        { /* ERROR! */
-            if (new_value->name) free(new_value->name);
-            free(new_value);
-            return NULL;
-        }
+        new_value->data.other = TE_ALLOC(len);
         memcpy (new_value->data.other, value->data.other, len);
     }
     else /* value is stored in data.integer */
@@ -479,7 +451,6 @@ asn_find_child_choice_values(const asn_value   *container,
     {
         asn_value        *child;
         asn_value        *child_choice_value;
-        asn_child_desc_t *items_new;
 
         err = asn_get_indexed(container, &child, i, "");
         if (err != 0)
@@ -500,14 +471,8 @@ asn_find_child_choice_values(const asn_value   *container,
                 continue;
             }
 
-            items_new = realloc(items, (nb_items + 1) * sizeof(*items));
-            if (items_new == NULL)
-            {
-                free(items);
-                return TE_ENOMEM;
-            }
+            TE_REALLOC(items, (nb_items + 1) * sizeof(*items));
 
-            items = items_new;
             items[nb_items].value = child_choice_value;
             items[nb_items].index = i;
 
@@ -1198,11 +1163,7 @@ asn_put_child_by_index(asn_value *container, asn_value *new_value,
                     return TE_EASNWRONGLABEL;
 
                 new_len = leaf_type_index + 1;
-                if ((container->data.array =
-                      realloc(container->data.array,
-                              new_len * sizeof(asn_value *)))
-                     == NULL)
-                    return TE_ENOMEM;
+                TE_REALLOC(container->data.array, new_len * sizeof(asn_value *));
 
                 memset((void *)(container->data.array + container->len),
                        0, sizeof(asn_value *) * (new_len - container->len));
@@ -1219,9 +1180,8 @@ asn_put_child_by_index(asn_value *container, asn_value *new_value,
                 for (; i < container->len; i++)
                     container->data.array[i] = container->data.array[i+1];
 
-                container->data.array =
-                    realloc(container->data.array,
-                            container->len * sizeof(asn_value *));
+                TE_REALLOC(container->data.array,
+                           container->len * sizeof(asn_value *));
 
                 return 0;
             }
@@ -1618,7 +1578,7 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
         }
         else
         {
-            char *str = value->data.other = malloc(d_len + 1);
+            char *str = value->data.other = TE_ALLOC(d_len + 1);
             strncpy(str, data, d_len);
             str[d_len] = '\0';
             value->len = d_len + 1; /* quantity of ALL used octets */
@@ -1648,8 +1608,6 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
         }
         else
         {
-            void * val = malloc(m_len);
-
             if (value->asn_type->len > 0 &&
                 value->asn_type->len != d_len)
             {
@@ -1657,9 +1615,9 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
             }
 
             if (value->data.other)
-                free (value->data.other);
-            value->data.other = val;
-            memcpy(val,  data, m_len);
+                free(value->data.other);
+            value->data.other = TE_ALLOC(m_len);
+            memcpy(value->data.other, data, m_len);
             value->len = d_len;
         }
         if (value->syntax == OCT_STRING)
@@ -1856,7 +1814,7 @@ asn_impl_write_value_field(asn_value *container,
         }
         else
         {
-            char *str = container->data.other = malloc(d_len + 1);
+            char *str = container->data.other = TE_ALLOC(d_len + 1);
             strncpy(str, data, d_len);
             str[d_len] = '\0';
             container->len = d_len + 1; /* quantity of ALL used octets */
@@ -1886,7 +1844,7 @@ asn_impl_write_value_field(asn_value *container,
         }
         else
         {
-            void * val = malloc(m_len);
+            void *val = TE_ALLOC(m_len);
 
             if (container->asn_type->len > 0 &&
                 container->asn_type->len != d_len)
@@ -2657,12 +2615,8 @@ asn_insert_indexed(asn_value *container, asn_value *elem_value,
         return TE_EASNWRONGTYPE;
 
     {
-        asn_value **arr = malloc(new_len * sizeof(asn_value *));
-
+        asn_value **arr = TE_ALLOC(new_len * sizeof(asn_value *));
         unsigned int i;
-
-        if (arr == NULL)
-            return TE_ENOMEM;
 
         for (i = 0; i < (unsigned)index; i++)
             arr[i] = value->data.array[i];
@@ -2720,10 +2674,7 @@ asn_remove_indexed(asn_value * container, int index, const char *subval_labels)
         unsigned int i;
 
         if (value->len > 1)
-        {
-            arr = malloc((value->len - 1) * sizeof(asn_value *));
-            if (arr == NULL) return TE_ENOMEM;
-        }
+            arr = TE_ALLOC((value->len - 1) * sizeof(asn_value *));
 
         value->len --;
 
@@ -2986,7 +2937,7 @@ asn_get_choice(const asn_value *container, const char *subval_labels,
 
     if (len)
     {
-        char *corrected_labels = malloc(len + sizeof(suffix));
+        char *corrected_labels = TE_ALLOC(len + sizeof(suffix));
         memcpy(corrected_labels, subval_labels, len);
         memcpy(corrected_labels + len, suffix, sizeof(suffix));
 
@@ -3080,7 +3031,7 @@ asn_get_syntax(const asn_value *value, const char *subval_labels)
     len = strlen (subval_labels);
     if (len)
     {
-        char *corrected_labels = malloc (len + sizeof(suffix));
+        char *corrected_labels = TE_ALLOC (len + sizeof(suffix));
 
         memcpy (corrected_labels, subval_labels, len);
         memcpy (corrected_labels + len, suffix, sizeof(suffix));
@@ -3263,11 +3214,8 @@ asn_impl_get_label_by_index(asn_value *value, unsigned int index,
     }
     else /* Indexed entries */
     {
-        name = malloc(BUF_SIZE * sizeof(char));
-        if (name == NULL)
-        {
-            return -1;
-        }
+        name = TE_ALLOC(BUF_SIZE * sizeof(char));
+
         snprintf(name, BUF_SIZE, "%d", index);
         if (strlen(name) >= label_len)
         {
@@ -3304,12 +3252,9 @@ asn_impl_walk_depth(asn_value *container, bool only_leafs, char *path,
 
     if (container->syntax & COMPOUND)
     {
-        subpath = malloc(PATH_SIZE * sizeof(char));
-        valuename = malloc(PATH_SIZE * sizeof(char));
-        if (subpath == NULL || valuename == NULL)
-        {
-            return TE_ENOMEM;
-        }
+        subpath = TE_ALLOC(PATH_SIZE * sizeof(char));
+        valuename = TE_ALLOC(PATH_SIZE * sizeof(char));
+
         for (i = 0; i < container->len; i++)
         {
             if ((sv = container->data.array[i]) != NULL)
@@ -3410,21 +3355,8 @@ asn_search_to_asn_value(const char *search_str,
 
 
     search_len = strlen(search_str);
-    asn_text_val = malloc(2 * search_len);
-    if (asn_text_val == NULL)
-    {
-        ERROR("%s(): Failed to allocate memory for ASN.1 text value",
-              __FUNCTION__);
-        return TE_ENOMEM;
-    }
-    label = malloc(search_len);
-    if (label == NULL)
-    {
-        free(asn_text_val);
-        ERROR("%s(): Failed to allocate memory for ASN.1 value label",
-              __FUNCTION__);
-        return TE_ENOMEM;
-    }
+    asn_text_val = TE_ALLOC(2 * search_len);
+    label = TE_ALLOC(search_len);
 
     state = SRCHASN_START;
     p = search_str;
@@ -3593,7 +3525,7 @@ asn_path_from_extended(asn_value *node, const char *ext_path,
     else
     {
         prefix_len = search_start - ext_path - 1;
-        path = malloc((prefix_len + 1) * sizeof(char));
+        path = TE_ALLOC((prefix_len + 1) * sizeof(char));
         strncpy(path, ext_path, prefix_len);
         path[prefix_len] = '\0';
         rc = asn_get_descendent(node, &container, path);
@@ -3637,13 +3569,8 @@ asn_path_from_extended(asn_value *node, const char *ext_path,
         ERROR("%s(): Failed to find end of search expression");
         return TE_EFAULT;
     }
-    buf = malloc(search_end - search_start + 2);
-    if (buf == NULL)
-    {
-        ERROR("%s(): Failed to allocate memory for search expression",
-              __FUNCTION__);
-        return TE_ENOMEM;
-    }
+
+    buf = TE_ALLOC(search_end - search_start + 2);
 
     strncpy(buf, search_start, search_end - search_start + 1);
     buf[search_end - search_start + 1] = '\0';
@@ -3726,7 +3653,7 @@ asn_path_from_extended(asn_value *node, const char *ext_path,
      * Calculate necessary buffer length for ASN.1 path and check
      * asn_path_len
      */
-    path = malloc(20 * sizeof(char));
+    path = TE_ALLOC(20 * sizeof(char));
     snprintf(path, 20, "%d", i);
     if ((prefix_len +
          strlen(path) +
@@ -3741,15 +3668,7 @@ asn_path_from_extended(asn_value *node, const char *ext_path,
     }
 
     /* Create temporary path */
-    temp_asn_path = malloc(asn_path_len);
-    if (temp_asn_path == NULL)
-    {
-        free(path);
-        ERROR("%s(): Failed to allocate memory for expanded path",
-              __FUNCTION__);
-        rc = TE_ENOBUFS;
-        goto cleanup;
-    }
+    temp_asn_path = TE_ALLOC(asn_path_len);
     strncpy(temp_asn_path, ext_path, prefix_len);
     temp_asn_path[prefix_len] = '\0';
     if (prefix_len != 0)
@@ -3814,11 +3733,8 @@ asn_insert_value_extended_path(asn_value *root_node,
 
     /* Get expanded path and autoinsert everything */
     expanded_len = strlen(ext_path);
-    expanded_path = malloc(expanded_len);
-    if (expanded_path == NULL)
-    {
-        return TE_ENOMEM;
-    }
+    expanded_path = TE_ALLOC(expanded_len);
+
     rc = asn_path_from_extended(root_node, ext_path, expanded_path,
                                 expanded_len, true);
     if (rc != 0)
@@ -3946,26 +3862,20 @@ asn_impl_compare_values(asn_value *a, asn_value *b)
 #endif
 
     len_a = len_b = 100;
-    text_a = malloc(len_a * sizeof(char));
-    text_b = malloc(len_b * sizeof(char));
-    if (text_a == NULL || text_b == NULL)
-    {
-        RING("ASNCOMPARE: Failed to allocate %d "
-             "and %d bytes of memory", len_a, len_b);
-        return TE_ENOMEM;
-    }
+    text_a = TE_ALLOC(len_a * sizeof(char));
+    text_b = TE_ALLOC(len_b * sizeof(char));
 
     req_a = asn_sprint_value(a, text_a, len_a, 0);
     req_b = asn_sprint_value(b, text_b, len_b, 0);
 
     if (req_a != len_a)
     {
-        text_a = realloc(text_a, req_a + 1);
+        TE_REALLOC(text_a, req_a + 1);
         len_a = req_a + 1;
     }
     if (req_b != len_b)
     {
-        text_b = realloc(text_b, req_b + 1);
+        TE_REALLOC(text_b, req_b + 1);
         len_b = req_b + 1;
     }
     req_a = asn_sprint_value(a, text_a, len_a, 0);
