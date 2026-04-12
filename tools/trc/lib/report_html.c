@@ -1724,14 +1724,7 @@ escape_test_path(const char *path)
         if (path[i] == '/')
             l += 2;
 
-    p = calloc(l + 1, sizeof(char));
-
-    if (p == NULL)
-    {
-        ERROR("%s(): cannot allocate memory for string",
-              __FUNCTION__);
-        return NULL;
-    }
+    p = TE_ALLOC((l + 1) * sizeof(char));
 
     l = 0;
     for (i = 0; i < strlen(path); i++)
@@ -1812,9 +1805,7 @@ trc_report_key_add(trc_keys *keys,
         trc_report_key_entry *key_aux = NULL;
         trc_report_key_entry *prev_key = NULL;
 
-        if ((key = calloc(1, sizeof(trc_report_key_entry))) == NULL)
-            return NULL;
-
+        key = TE_ALLOC(sizeof(trc_report_key_entry));
         key->name = strdup(key_name);
         TAILQ_INIT(&key->tests);
 
@@ -1834,8 +1825,7 @@ trc_report_key_add(trc_keys *keys,
             TAILQ_INSERT_HEAD(keys, key, links);
     }
 
-    if ((key_iter = calloc(1, sizeof(trc_report_key_iter_entry))) == NULL)
-        return NULL;
+    key_iter = TE_ALLOC(sizeof(trc_report_key_iter_entry));
     key_iter->iter = iter_entry;
 
     key_path = trc_report_key_test_path(test_path, key_name);
@@ -1855,12 +1845,7 @@ trc_report_key_add(trc_keys *keys,
     }
 
     /* Create new key iteration entry, if not found */
-    if ((key_test = calloc(1, sizeof(trc_report_key_test_entry))) == NULL)
-    {
-        ERROR("Failed to allocate structure to store iteration key");
-        free(key_path);
-        return NULL;
-    }
+    key_test = TE_ALLOC(sizeof(trc_report_key_test_entry));
     key_test->name = strdup(test_name);
     key_test->path = strdup(test_path);
     key_test->key_path = key_path;
@@ -1973,10 +1958,9 @@ trc_report_keys_add(trc_keys *keys,
 trc_keys *
 trc_keys_alloc(void)
 {
-    trc_keys *keys = calloc(1, sizeof(trc_keys));
+    trc_keys *keys = TE_ALLOC(sizeof(trc_keys));
 
-    if (keys != NULL)
-        TAILQ_INIT(keys);
+    TAILQ_INIT(keys);
 
     return keys;
 }
@@ -3723,11 +3707,7 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
             if ((~flags & trc_report_key_type_to_flags(keys_type)) != 0)
                 continue;
 
-            if ((keys = trc_keys_alloc()) == NULL)
-            {
-                rc = te_rc_os2te(errno);
-                goto cleanup;
-            }
+            keys = trc_keys_alloc();
 
             rc = trc_report_keys_collect(keys, gctx,
                      (flags & (~TRC_REPORT_KEYS_MASK)) |
@@ -3800,11 +3780,7 @@ trc_report_to_perl(trc_report_ctx *gctx, const char *filename)
         fprintf(f, "  '%s',\n", tag->v);
     fprintf(f, ");\n");
 
-    if ((keys = trc_keys_alloc()) == NULL)
-    {
-        rc = te_rc_os2te(errno);
-        goto cleanup;
-    }
+    keys = trc_keys_alloc();
 
     rc = trc_report_keys_collect(keys, gctx,
                                  TRC_REPORT_KEYS_EXPECTED);
@@ -3833,11 +3809,7 @@ trc_report_to_perl(trc_report_ctx *gctx, const char *filename)
     fprintf(f, ");\n");
 
     trc_keys_free(keys);
-    if ((keys = trc_keys_alloc()) == NULL)
-    {
-        rc = te_rc_os2te(errno);
-        goto cleanup;
-    }
+    keys = trc_keys_alloc();
 
     rc = trc_report_keys_collect(keys, gctx,
                                  TRC_REPORT_KEYS_UNEXPECTED);
@@ -3868,7 +3840,7 @@ trc_report_to_perl(trc_report_ctx *gctx, const char *filename)
             if (found == 0)
             {
                 fprintf(f, "  '%s',\n", key_test->path);
-                tqe_str = calloc(1, sizeof(*tqe_str));
+                tqe_str = TE_ALLOC(sizeof(*tqe_str));
                 tqe_str->v = strdup(key_test->path);
                 TAILQ_INSERT_TAIL(&unexp_tests, tqe_str, links);
             }

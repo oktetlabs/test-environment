@@ -20,6 +20,7 @@
 #include <unistd.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "logger_api.h"
 
@@ -852,20 +853,14 @@ static const char * trc_diff_graph_js_end =
 tqh_strings *
 trc_diff_tags_copy(tqh_strings *tags)
 {
-    tqh_strings *new_tags = calloc(1, sizeof(tqh_strings));
+    tqh_strings *new_tags = TE_ALLOC(sizeof(tqh_strings));
     tqe_string  *new_tag;
     tqe_string  *tag;
-
-    if (new_tags == NULL)
-        return NULL;
 
     TAILQ_INIT(new_tags);
     TAILQ_FOREACH(tag, tags, links)
     {
-        new_tag = calloc(1, sizeof(tqe_string));
-        if (new_tag == NULL)
-            return NULL;
-
+        new_tag = TE_ALLOC(sizeof(tqe_string));
         new_tag->v = strdup(tag->v);
         TAILQ_INSERT_TAIL(new_tags, new_tag, links);
     }

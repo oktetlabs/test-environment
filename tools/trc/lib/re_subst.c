@@ -130,8 +130,7 @@ trc_re_key_namespace_create(trc_re_namespaces *namespaces, const char *name)
         return namespace;
     }
 
-    if ((namespace = calloc(1, sizeof(trc_re_namespace))) == NULL)
-        return NULL;
+    namespace = TE_ALLOC(sizeof(trc_re_namespace));
 
     if (name != NULL)
         namespace->name = strdup(name);
@@ -157,10 +156,7 @@ trc_re_subst_parse(trc_re_subst *p)
 
     while (*s != '\0')
     {
-        m = malloc(sizeof(*m));
-        if (m == NULL)
-            return TE_ENOMEM;
-
+        m = TE_ALLOC(sizeof(*m));
         m->match = false;
 
         if (s[0] == '\\')
@@ -583,8 +579,7 @@ trc_re_key_substs_buf(const char *name, const char *key)
     if (buf_size++ <= 0)
         return NULL;
 
-    if ((buf = calloc(1, buf_size)) == NULL)
-        return NULL;
+    buf = TE_ALLOC(buf_size);
 
     trc_re_substs_exec_buf_start(substs, key, buf, buf_size);
 

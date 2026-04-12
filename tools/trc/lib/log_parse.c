@@ -55,14 +55,8 @@ trc_log_parse_stack_push(trc_log_parse_ctx *ctx,
                                 bool value)
 {
     if (ctx->stack_pos == ctx->stack_size)
-    {
-        ctx->stack_info = realloc(ctx->stack_info, ++(ctx->stack_size));
-        if (ctx->stack_info == NULL)
-        {
-            ERROR("%s(): realloc() failed", __FUNCTION__);
-            return TE_ENOMEM;
-        }
-    }
+        TE_REALLOC(ctx->stack_info, ++(ctx->stack_size));
+
     ctx->stack_info[ctx->stack_pos++] = value;
     return 0;
 }
@@ -681,17 +675,10 @@ trc_log_parse_characters(void *user_data, const xmlChar *ch, int len)
     }
 
     init_len = (ctx->str != NULL) ? strlen(ctx->str) : 0;
-    ctx->str = realloc(ctx->str, init_len + len + 1);
-    if (ctx->str == NULL)
-    {
-        ERROR("Memory allocation failure");
-        ctx->rc = TE_ENOMEM;
-    }
-    else
-    {
-        memcpy(ctx->str + init_len, ch, len);
-        ctx->str[init_len + len] = '\0';
-    }
+    TE_REALLOC(ctx->str, init_len + len + 1);
+
+    memcpy(ctx->str + init_len, ch, len);
+    ctx->str[init_len + len] = '\0';
 }
 
 /**

@@ -702,7 +702,7 @@ trc_update_process_cmd_line_opts(int argc, char **argv, bool main_call)
 
             case TRC_UPDATE_OPT_LOG:
 
-                tqe_str = malloc(sizeof(tqe_string));
+                tqe_str = TE_ALLOC(sizeof(tqe_string));
                 tqe_str->v = poptGetOptArg(optCon);
 
                 if (TAILQ_EMPTY(&ctx.tags_logs))
@@ -1296,14 +1296,7 @@ perl_prepare()
             flen = ftell(f);
             fseek(f, 0, SEEK_SET);
 
-            script_text = calloc(flen, sizeof(*script_text));
-            if (script_text == NULL)
-            {
-                printf("Out of memory allocating space "
-                       "for perl script\n");
-                exit(1);
-            }
-
+            script_text = TE_ALLOC(flen * sizeof(*script_text));
             if (fread(script_text, sizeof(*script_text), flen, f) != flen)
             {
                 printf("Failed to read a script from %s\n", perl_script);

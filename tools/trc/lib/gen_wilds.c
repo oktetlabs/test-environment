@@ -20,6 +20,8 @@
 #include <string.h>
 #include <math.h>
 #include "gen_wilds.h"
+
+#include "te_alloc.h"
 #include "te_defs.h"
 
 /** Cell of table structure used by DLX algorithm */
@@ -54,7 +56,7 @@ gen_dlx(problem *p)
     int i;
     int j;
 
-    h = calloc(1, sizeof(*h));
+    h = TE_ALLOC(sizeof(*h));
 
     h->U = NULL;
     h->D = NULL;
@@ -64,7 +66,7 @@ gen_dlx(problem *p)
 
     for (i = p->elm_num - 1; i >= 0; i--)
     {
-        c = calloc(1, sizeof(*c));
+        c = TE_ALLOC(sizeof(*c));
         c->U = c->D = c;
         c->L = h;
         c->R = h->R;
@@ -81,7 +83,7 @@ gen_dlx(problem *p)
         prev_e = NULL;
         for (j = 0; j < p->sets[i].num; j++)
         {
-            e = calloc(1, sizeof(*e));
+            e = TE_ALLOC(sizeof(*e));
             e->set_id = i;
             e->elm_id = p->sets[i].els[j];
 
@@ -301,7 +303,7 @@ dlx(dlx_cell *h, int k)
              * previously - update information about the best solution
              */
             free(O_min);
-            O_min = calloc(N, sizeof(*O_min));
+            O_min = TE_ALLOC(N * sizeof(*O_min));
             memcpy(O_min, O, N * sizeof(*O_min));
             N_min = k;
         }
@@ -373,8 +375,8 @@ greedy(problem *prb)
     int *avail;
     int  n_avail = prb->set_num;
 
-    avail = calloc(prb->set_num, sizeof(*avail));
-    O_min = calloc(prb->set_num, sizeof(*O_min));
+    avail = TE_ALLOC(prb->set_num * sizeof(*avail));
+    O_min = TE_ALLOC(prb->set_num * sizeof(*O_min));
     N_min = 0;
 
     while (n_avail > 0)
@@ -438,9 +440,9 @@ greedy_set_cov(problem *prb)
     int  n_avail = prb->set_num;
     int  *elms_cov;
 
-    avail = calloc(prb->set_num, sizeof(*avail));
-    elms_cov = calloc(prb->elm_num, sizeof(*elms_cov));
-    O_min = calloc(prb->set_num, sizeof(*O_min));
+    avail = TE_ALLOC(prb->set_num * sizeof(*avail));
+    elms_cov = TE_ALLOC(prb->elm_num * sizeof(*elms_cov));
+    O_min = TE_ALLOC(prb->set_num * sizeof(*O_min));
     N_min = 0;
 
     for (i = 0; i < prb->elm_num; i++)
@@ -522,12 +524,12 @@ get_fss_solution(problem *p, alg_type at)
     {
         dlx_instance = gen_dlx(p);
         N = n + m;
-        O = calloc(n + m, sizeof(*O));
+        O = TE_ALLOC((n + m) * sizeof(*O));
         O_min = NULL;
         N_min = 0;
         solutions_found = 0;
         gettimeofday(&tv_before, NULL);
-        time_to_stop = calloc(1, sizeof(*time_to_stop));
+        time_to_stop = TE_ALLOC(sizeof(*time_to_stop));
         time_to_stop->tv_sec = tv_before.tv_sec + 1;
         time_to_stop->tv_usec = tv_before.tv_usec;
         dlx(dlx_instance, 0);
@@ -553,7 +555,7 @@ get_fss_solution(problem *p, alg_type at)
 
     if (at == ALG_EXACT_COV_DLX || at == ALG_EXACT_COV_BOTH)
     {
-        sol_dlx = calloc(N_min, sizeof(*sol_dlx));
+        sol_dlx = TE_ALLOC(N_min * sizeof(*sol_dlx));
         memcpy(sol_dlx, O_min, N_min * sizeof(*sol_dlx));
         sol_dlx_n = N_min;
     }

@@ -617,8 +617,7 @@ trc_update_fill_iters_user_data(trc_test_iters *iters,
                 if (args_n == args_max)
                 {
                     args_max *= 2;
-                    args = realloc(args, args_max *
-                                          sizeof(trc_report_argument));
+                    TE_REALLOC(args, args_max * sizeof(trc_report_argument));
                 }
             }
 
@@ -4650,10 +4649,9 @@ trc_update_gen_args_group_fss(te_trc_db *db,
                         if (test_entry->sets_cnt >=
                                             test_entry->sets_max)
                         {
-                            test_entry->sets =
-                                realloc(test_entry->sets,
-                                        ((test_entry->sets_max + 1) * 2) *
-                                        sizeof(trc_update_args_group));
+                            TE_REALLOC(test_entry->sets,
+                                       ((test_entry->sets_max + 1) * 2) *
+                                       sizeof(trc_update_args_group));
                             test_entry->sets_max =
                                         (test_entry->sets_max + 1) * 2;
                         }
@@ -4679,10 +4677,8 @@ trc_update_gen_args_group_fss(te_trc_db *db,
                                 if (iter_data2->nums_cnt >=
                                             iter_data2->nums_max)
                                 {
-                                    iter_data2->set_nums =
-                                             realloc(
-                                                iter_data2->set_nums,
-                                                ((iter_data2->nums_max +
+                                    TE_REALLOC(iter_data2->set_nums,
+                                               ((iter_data2->nums_max +
                                                  1) * 2) * sizeof(int));
 
                                     iter_data2->nums_max += 1;
@@ -4816,15 +4812,14 @@ trc_update_gen_test_wilds_fss(te_trc_db *db,
         trc_update_args_groups_free(&args_groups);
     }
 
-    wild_prbs = calloc(ids_count, sizeof(*wild_prbs));
+    wild_prbs = TE_ALLOC(ids_count * sizeof(*wild_prbs));
 
     for (res_id = 1; res_id <= (int)ids_count; res_id++)
     {
         p_id = res_id - 1;
         wild_prbs[p_id].set_max = 10;
         wild_prbs[p_id].set_num = 0;
-        wild_prbs[p_id].sets = calloc(wild_prbs[p_id].set_max,
-                                   sizeof(set));
+        wild_prbs[p_id].sets = TE_ALLOC(wild_prbs[p_id].set_max * sizeof(set));
         k = 0;
 
         TAILQ_FOREACH(iter, &test_entry->test->iters.head, links)
@@ -4849,15 +4844,12 @@ trc_update_gen_test_wilds_fss(te_trc_db *db,
                                         wild_prbs[p_id].set_max)
                     {
                         wild_prbs[p_id].set_max *= 2;
-                        wild_prbs[p_id].sets =
-                            realloc(wild_prbs[p_id].sets,
-                                    sizeof(set) *
-                                            wild_prbs[p_id].set_max);
+                        TE_REALLOC(wild_prbs[p_id].sets,
+                                   sizeof(set) * wild_prbs[p_id].set_max);
                     }
 
                     set_num = wild_prbs[p_id].set_num;
-                    wild_prbs[p_id].sets[set_num].els =
-                                                calloc(1, sizeof(int));
+                    wild_prbs[p_id].sets[set_num].els = TE_ALLOC(sizeof(int));
                     wild_prbs[p_id].sets[set_num].els[0] = k - 1;
                     wild_prbs[p_id].sets[set_num].max = 1;
                     wild_prbs[p_id].sets[set_num].num = 1;
@@ -4871,10 +4863,8 @@ trc_update_gen_test_wilds_fss(te_trc_db *db,
                     if (l == wild_prbs[p_id].sets[j].max)
                     {
                         wild_prbs[p_id].sets[j].max *= 2;
-                        wild_prbs[p_id].sets[j].els =
-                           realloc(wild_prbs[p_id].sets[j].els,
-                                   sizeof(int) *
-                                    wild_prbs[p_id].sets[j].max);
+                        TE_REALLOC(wild_prbs[p_id].sets[j].els,
+                                   sizeof(int) * wild_prbs[p_id].sets[j].max);
                     }
 
                     wild_prbs[p_id].sets[j].els[l] = k - 1;
