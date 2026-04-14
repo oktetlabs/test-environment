@@ -665,16 +665,7 @@ tapi_cfg_net_get_nodes_values(const char *net_name,
                 (strncmp(val + str_len, ta_name, strlen(ta_name)) == 0 &&
                  *(val + str_len + strlen(ta_name)) == '/'))
             {
-                char **tmp_ptr = ret_array;
-
-                if ((ret_array = (char **)realloc(ret_array,
-                           sizeof(char *) * (ret_array_len + 1))) == NULL)
-                {
-                    rc = TE_ENOMEM;
-                    free(val);
-                    ret_array = tmp_ptr;
-                    THROW_EXCEPTION("Not enough memory");
-                }
+                TE_REALLOC(ret_array, sizeof(char *) * (ret_array_len + 1));
                 ret_array[ret_array_len - 1] = val;
                 ret_array[ret_array_len] = NULL;
                 ret_array_len++;

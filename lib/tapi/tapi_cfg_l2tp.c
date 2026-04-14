@@ -181,7 +181,6 @@ tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
     unsigned int         i;
     cfg_handle          *handle;
     cfg_val_type         type = CVT_ADDRESS;
-    struct sockaddr    **connected_mem;
     int                  ret_val;
 
     ret_val = cfg_find_pattern_fmt(&ins_num, &handle,
@@ -199,14 +198,9 @@ tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
         ret_val = cfg_get_instance(handle[i], &type, &ip_client);
         if (ret_val != 0)
             return ret_val;
-        connected_mem = (struct sockaddr **)realloc(*connected,
-                         (i + 1) * sizeof(struct sockaddr *));
-        if (connected_mem != NULL)
-        {
-            connected_mem[i] = ip_client;
-            *connected = connected_mem;
-        }
-
+        *connected = tapi_realloc(*connected,
+                                  (i + 1) * sizeof(struct sockaddr *));
+        (*connected)[i] = ip_client;
     }
     return 0;
 }

@@ -357,14 +357,9 @@ tapi_sniffer_mark(const char *ta, tapi_sniffer_id *id,
             /* Double size of the buffer */
             buf_len = buf_len << 1;
         } while (buf_len < nfl);
-        /* Reallocate the buffer */
-        mess = realloc(mess, buf_len);
-        if (mess == NULL)
-        {
-            ERROR("%s(): realloc(p, %u) failed",
-                  __FUNCTION__, buf_len);
-            return TE_RC(TE_TAPI, TE_EINVAL);
-        }
+
+        TE_REALLOC(mess, buf_len);
+
         if (id != NULL)
             nfl = snprintf(mess + sizeof(te_log_nfl),
                            buf_len - sizeof(te_log_nfl),
