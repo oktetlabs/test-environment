@@ -33,6 +33,7 @@
 #include "tapi_tad.h"
 #include "tapi_ndn.h"
 #include "tapi_flow.h"
+#include "tapi_mem.h"
 #include "logger_api.h"
 
 #include "tapi_test.h"
@@ -759,14 +760,13 @@ tapi_flow_preprocess_quotes(const char *param)
 
         if (strlen(value) > 2 + strlen(link) + unused)
         {
+            ptrdiff_t dst_offset = dst - buf;
+
             buf_size += strlen(value) - strlen(link) - unused;
             unused = 0;
 
-            if ((buf = realloc(buf, buf_size)) == NULL)
-            {
-                ERROR("Failed to allocate memory for preprocessed flow");
-                return NULL;
-            }
+            buf = tapi_realloc(buf, buf_size);
+            dst = buf + dst_offset;
         }
         else
         {
@@ -823,14 +823,13 @@ tapi_flow_preprocess_links(const char *param)
         VERB("Link: %s = %s", link, value);
         if (strlen(value) > strlen(link) + unused)
         {
+            ptrdiff_t dst_offset = dst - buf;
+
             buf_size += strlen(value) - strlen(link) - unused;
             unused = 0;
 
-            if ((buf = realloc(buf, buf_size)) == NULL)
-            {
-                ERROR("Failed to allocate memory for preprocessed flow");
-                return NULL;
-            }
+            buf = tapi_realloc(buf, buf_size);
+            dst = buf + dst_offset;
         }
         else
         {

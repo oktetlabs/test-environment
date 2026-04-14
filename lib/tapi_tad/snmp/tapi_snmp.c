@@ -43,6 +43,7 @@
 #include "rcf_api.h"
 
 #include "tapi_snmp.h"
+#include "tapi_mem.h"
 #include "conf_api.h"
 #include "logger_api.h"
 #include "log_bufs.h"
@@ -166,18 +167,8 @@ tapi_snmp_print_oct_str(const void *data, size_t len)
     req_len = 3 * len; /* two characters per byte and one for space & '\0'*/
     while (buf_len[buf_cur] < req_len)
     {
-        char *ptr = buf[buf_cur];
-
         buf_len[buf_cur] += TAPI_SNMP_OCT_STR_BUF_SIZE;
-        if ((buf[buf_cur] = realloc(ptr, buf_len[buf_cur])) == NULL)
-        {
-            ERROR("%s:%s:%d: Cannot allocate memory",
-                  __FILE__, __FUNCTION__, __LINE__);
-
-            buf_len[buf_cur] -= TAPI_SNMP_OCT_STR_BUF_SIZE;
-            buf[buf_cur] = ptr;
-            return "<TE_ENOMEM>";
-        }
+        buf[buf_cur] = tapi_realloc(buf[buf_cur], buf_len[buf_cur]);
     }
 
     for (i = 0; i < len; i++)

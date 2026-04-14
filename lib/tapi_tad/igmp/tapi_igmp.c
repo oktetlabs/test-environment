@@ -18,6 +18,7 @@
 #include "ndn_ipstack.h"
 #include "ndn_igmp.h"
 #include "tapi_igmp.h"
+#include "tapi_mem.h"
 
 #include "tapi_test.h"
 
@@ -811,7 +812,6 @@ tapi_igmp3_src_list_free(tapi_igmp3_src_list_t *src_list)
 te_errno
 tapi_igmp3_src_list_add(tapi_igmp3_src_list_t *src_list, in_addr_t addr)
 {
-    in_addr_t *tmp_list;
     int        tmp_size;
 
     if ((src_list == NULL) ||
@@ -827,11 +827,8 @@ tapi_igmp3_src_list_add(tapi_igmp3_src_list_t *src_list, in_addr_t addr)
         tmp_size = src_list->src_no_max * 2;
         assert(src_list->src_no < tmp_size);
 
-        tmp_list = (in_addr_t *)realloc(src_list->src_addr,
-                                        sizeof(in_addr_t *) * tmp_size);
-        if (tmp_list == NULL)
-            return TE_RC(TE_TAPI, TE_ENOMEM);
-        src_list->src_addr = tmp_list;
+        src_list->src_addr = tapi_realloc(src_list->src_addr,
+                                          sizeof(in_addr_t *) * tmp_size);
         src_list->src_no_max = tmp_size;
     }
 
@@ -1064,7 +1061,6 @@ te_errno
 tapi_igmp3_group_list_add(tapi_igmp3_group_list_t *group_list,
                           tapi_igmp3_group_record_t *group_record)
 {
-    tapi_igmp3_group_record_t **tmp_records;
     int                         tmp_size;
 
     if ((group_list == NULL) ||
@@ -1080,11 +1076,8 @@ tapi_igmp3_group_list_add(tapi_igmp3_group_list_t *group_list,
         tmp_size = group_list->groups_no_max * 2;
         assert(group_list->groups_no < tmp_size);
 
-        tmp_records = realloc(group_list->groups,
+        group_list->groups = tapi_realloc(group_list->groups,
                               tmp_size * sizeof(tapi_igmp3_group_record_t *));
-        if (tmp_records == NULL)
-            return TE_RC(TE_TAPI, TE_ENOMEM);
-        group_list->groups = tmp_records;
         group_list->groups_no_max = tmp_size;
     }
 

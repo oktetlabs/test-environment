@@ -41,7 +41,7 @@
 
 #include "tapi_ndn.h"
 #include "tapi_tcp.h"
-
+#include "tapi_mem.h"
 
 /* See the description in tapi_ndn.h */
 te_errno
@@ -919,7 +919,6 @@ tapi_tad_generate_pattern_unit(asn_value      *pdus,
     asn_child_desc_t  *udp_pdus = NULL;
     unsigned int       nb_udp_pdus;
     size_t             seg_len = 0;
-    asn_value        **pattern_units_new = *pattern_units;
     unsigned int       i;
 
     if (pdus == NULL || payload_data == NULL || data_offset == NULL ||
@@ -1052,15 +1051,9 @@ tapi_tad_generate_pattern_unit(asn_value      *pdus,
             goto out;
     }
 
-    pattern_units_new = realloc(*pattern_units, (*n_pattern_units + 1) *
-                                 sizeof(**pattern_units));
-    if (pattern_units_new == NULL)
-    {
-        err = TE_ENOMEM;
-        goto out;
-    }
+    *pattern_units = tapi_realloc(*pattern_units, (*n_pattern_units + 1) *
+                                  sizeof(**pattern_units));
 
-    *pattern_units = pattern_units_new;
     (*pattern_units)[*n_pattern_units] = pattern_unit;
     (*n_pattern_units)++;
 

@@ -38,6 +38,7 @@
 #include "tapi_eth.h"
 #include "tapi_tad.h"
 #include "tapi_ndn.h"
+#include "tapi_mem.h"
 
 #include "tapi_test.h"
 
@@ -178,7 +179,6 @@ static void
 arp_frame_callback(const tapi_arp_frame_t *arp_frame, void *userdata)
 {
     arp_frame_cb_info_t *info = (arp_frame_cb_info_t *)userdata;
-    tapi_arp_frame_t    *tmp_ptr = info->frames;
 
     assert((arp_frame->data == NULL && arp_frame->data_len == 0) ||
            (arp_frame->data != NULL && arp_frame->data_len != 0));
@@ -191,16 +191,8 @@ arp_frame_callback(const tapi_arp_frame_t *arp_frame, void *userdata)
      * from the function.
      */
     info->num++;
-    info->frames =
-        (tapi_arp_frame_t *)realloc(info->frames,
-                                    sizeof(tapi_arp_frame_t) * info->num);
-    if (info->frames == NULL)
-    {
-        info->frames = tmp_ptr;
-        info->num--;
-        info->rc = TE_ENOMEM;
-        return;
-    }
+    info->frames = tapi_realloc(info->frames,
+                                sizeof(tapi_arp_frame_t) * info->num);
     memcpy(&info->frames[info->num - 1], arp_frame, sizeof(*arp_frame));
     if (arp_frame->data != NULL)
     {

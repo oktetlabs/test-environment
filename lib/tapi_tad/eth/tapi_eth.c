@@ -34,6 +34,7 @@
 #include "tapi_tad.h"
 #include "tapi_ndn.h"
 #include "tapi_eth.h"
+#include "tapi_mem.h"
 
 #include "tapi_test.h"
 
@@ -459,7 +460,6 @@ static void
 tapi_eth_store_packet_cb(asn_value *packet, void *user_data)
 {
     struct tapi_eth_packet_storage *csap_sniff_storage = user_data;
-    asn_value                     **packets_captured;
     unsigned int                    n_packets_captured;
 
     if (csap_sniff_storage->err != 0)
@@ -467,17 +467,11 @@ tapi_eth_store_packet_cb(asn_value *packet, void *user_data)
 
     n_packets_captured = csap_sniff_storage->n_packets_captured;
 
-    packets_captured = realloc(csap_sniff_storage->packets_captured,
-                               (n_packets_captured + 1) *
-                               sizeof(*packets_captured));
-    if (packets_captured == NULL)
-    {
-        csap_sniff_storage->err = TE_ENOMEM;
-        return;
-    }
+    csap_sniff_storage->packets_captured = tapi_realloc(
+            csap_sniff_storage->packets_captured,
+            (n_packets_captured + 1) * sizeof(asn_value *));
 
-    csap_sniff_storage->packets_captured = packets_captured;
-    packets_captured[n_packets_captured] = packet;
+    csap_sniff_storage->packets_captured[n_packets_captured] = packet;
     csap_sniff_storage->n_packets_captured++;
 }
 
