@@ -12,7 +12,7 @@
 
 #include "tapi_storage_client.h"
 #include "tapi_storage_client_ftp.h"
-
+#include "tapi_mem.h"
 
 /* See description in tapi_storage_client.h. */
 te_errno
@@ -135,19 +135,10 @@ tapi_storage_client_mput(tapi_storage_client   *client,
         if (remote_pathname_len <
             strlen(remote_file) + strlen(basename) + 1 + 1) /* +'/'+'\0' */
         {
-            char *p;
-
             remote_pathname_len =
                 strlen(remote_file) + strlen(basename) + 1 + 1;
-            p = realloc(remote_pathname, remote_pathname_len);
-            if (p == NULL)
-            {
-                ERROR("%s:%d: Failed to allocate memory",
-                      __FUNCTION__, __LINE__);
-                rc = TE_RC(TE_TAPI, TE_ENOMEM);
-                break;
-            }
-            remote_pathname = p;
+            remote_pathname = tapi_realloc(remote_pathname,
+                                           remote_pathname_len);
         }
         strcpy(remote_pathname, remote_file);
         strcat(remote_pathname, "/");
