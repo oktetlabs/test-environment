@@ -70,6 +70,10 @@
         <run>
             <package name="trc"/>
         </run>
+
+        <run>
+            <package name="monitors"/>
+        </run>
     </session>
 
 </package>
