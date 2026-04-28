@@ -43,6 +43,7 @@ typedef struct tapi_gtest_opts {
 
     const char *dev_name;          /**< RDMA device name for GTest */
     tapi_job_opt_uint_t verbs_mtu; /**< MTU for RDMA QP */
+    tapi_job_opt_uint_t compl_wait_mult; /**< Complition timeout multiplier */
 } tapi_gtest_opts;
 
 /** GTest handler */
@@ -53,21 +54,25 @@ typedef struct tapi_gtest {
     tapi_gtest_opts opts;   /**< Options for Gtest binary */
 
     tapi_gtest_impl impl;   /**< Internal implementation struct */
+
+    te_vec args;         /**< Arguments that are used when running the tool. */
 } tapi_gtest;
 
 /** Defaults for implementation for GTest handler */
-#define TAPI_GTEST_DEFAULTS (tapi_gtest)       \
-{                                              \
-    .bin = NULL,                               \
-    .group = NULL,                             \
-    .name = NULL,                              \
-    .opts.dev_name = NULL,                     \
-    .opts.run_disabled = false,                \
-    .opts.ipv4_only = false,                   \
-    .opts.no_col = true,                       \
-    .opts.verbs_mtu = TAPI_JOB_OPT_UINT_UNDEF, \
-    .opts.rand_seed = TAPI_JOB_OPT_UINT_UNDEF, \
-    .impl = TAPI_GTEST_IMPL_DEFAULTS,          \
+#define TAPI_GTEST_DEFAULTS (tapi_gtest)             \
+{                                                    \
+    .bin = NULL,                                     \
+    .group = NULL,                                   \
+    .name = NULL,                                    \
+    .opts.dev_name = NULL,                           \
+    .opts.run_disabled = false,                      \
+    .opts.ipv4_only = false,                         \
+    .opts.no_col = true,                             \
+    .opts.compl_wait_mult = TAPI_JOB_OPT_UINT_UNDEF, \
+    .opts.verbs_mtu = TAPI_JOB_OPT_UINT_UNDEF,       \
+    .opts.rand_seed = TAPI_JOB_OPT_UINT_UNDEF,       \
+    .impl = TAPI_GTEST_IMPL_DEFAULTS,                \
+    .args = {TE_DBUF_INIT(0), 0, NULL},              \
 }
 
 /** A way for read gtest option from test arguments */
@@ -76,6 +81,7 @@ typedef struct tapi_gtest {
     .bin = TEST_STRING_PARAM(_gtest##_bin),                               \
     .group = TEST_STRING_PARAM(_gtest##_group),                           \
     .name = TEST_STRING_PARAM(_gtest##_name),                             \
+    .opts.compl_wait_mult = TAPI_JOB_OPT_UINT_UNDEF,                      \
     .opts.verbs_mtu = TAPI_JOB_OPT_UINT_UNDEF,                            \
     .opts.rand_seed = TE_OPTIONAL_UINT_VAL(TEST_INT_PARAM(te_rand_seed)), \
     .opts.ipv4_only = false,                                              \
@@ -83,6 +89,7 @@ typedef struct tapi_gtest {
     .opts.no_col = true,                                                  \
     .opts.dev_name = NULL,                                                \
     .impl = TAPI_GTEST_IMPL_DEFAULTS,                                     \
+    .args = TE_VEC_INIT(char *),                                          \
 }
 
 /** A way for read gtest option from test arguments */
@@ -135,6 +142,19 @@ extern te_errno tapi_gtest_wait(tapi_gtest *gtest, int timeout_ms);
  * @return Status code
  */
 extern te_errno tapi_gtest_fini(tapi_gtest *gtest);
+
+/**
+ * Get CMD in string representation that will be used to run gtest app.
+ *
+ * @param[in]  gtest        GTest handler
+ * @param[out] cmd          Resulting command line.
+ *
+ * @note It is expected that @p cmd is allocated.
+ *       Can be called only after @b tapi_gtest_init().
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_gtest_get_cmd_str(tapi_gtest *gtest, te_string *cmd);
 
 #ifdef __cplusplus
 } /* extern "C" */

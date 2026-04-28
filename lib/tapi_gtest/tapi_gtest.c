@@ -33,7 +33,9 @@ gtest_build_argv(tapi_gtest *gtest, te_vec *argv)
         TAPI_JOB_OPT_UINT_T("--gtest_random_seed=", true, NULL,
                             tapi_gtest_opts, rand_seed),
         TAPI_JOB_OPT_UINT_T("--verbs_mtu=", true, NULL,
-                            tapi_gtest_opts, verbs_mtu)
+                            tapi_gtest_opts, verbs_mtu),
+        TAPI_JOB_OPT_UINT_T("--completion_wait_multiplier=", true, NULL,
+                            tapi_gtest_opts, compl_wait_mult)
     );
 
     rc = tapi_job_opt_build_args(gtest->bin, opts_binds, opts, argv);
@@ -48,7 +50,6 @@ te_errno
 tapi_gtest_init(tapi_gtest *gtest, tapi_job_factory_t *factory)
 {
     te_errno rc;
-    te_vec gtest_argv = TE_VEC_INIT(const char *);
     tapi_job_simple_desc_t desc;
     te_string buf = TE_STRING_INIT;
 
@@ -78,16 +79,14 @@ tapi_gtest_init(tapi_gtest *gtest, tapi_job_factory_t *factory)
 
     te_string_append(&buf, "%s.%s", gtest->group, gtest->name);
     gtest->opts.gtest_filter = buf.ptr;
-    if ((rc = gtest_build_argv(gtest, &gtest_argv)) != 0)
-    {
-        te_string_free(&buf);
+    gtest->args = TE_VEC_INIT(const char *);
+    rc = gtest_build_argv(gtest, &gtest->args);
+    if (rc != 0)
         return rc;
-    }
 
-    desc.argv = (const char **) gtest_argv.data.ptr;
+    desc.argv = (const char **) gtest->args.data.ptr;
     rc = tapi_job_simple_create(factory, &desc);
 
-    te_vec_deep_free(&gtest_argv);
     return rc;
 }
 
@@ -117,7 +116,17 @@ tapi_gtest_wait(tapi_gtest *gtest, int timeout_ms)
     assert(gtest->group != NULL);
     assert(gtest->impl.job != NULL);
 
-    if ((rc = tapi_job_wait(gtest->impl.job, timeout_ms, &status)) != 0)
+    rc = tapi_job_wait(gtest->impl.job, timeout_ms, &status);
+    if (TE_RC_GET_ERROR(rc) == TE_EINPROGRESS)
+    {
+        rc = tapi_job_kill(gtest->impl.job, SIGTERM);
+
+        if (rc == 0)
+            /* Wait 2 ms after killing process */
+            rc = tapi_job_wait(gtest->impl.job, 2, &status);
+    }
+
+    if (rc != 0)
         return rc;
 
     if (status.value == 0 && status.type == TAPI_JOB_STATUS_EXITED)
@@ -169,6 +178,7 @@ tapi_gtest_fini(tapi_gtest *gtest)
     te_errno rc;
     const int term_timeout_ms = -1;
 
+    te_vec_deep_free(&gtest->args);
     if (gtest == NULL || gtest->impl.job == NULL)
         return 0;
 
@@ -176,4 +186,18 @@ tapi_gtest_fini(tapi_gtest *gtest)
         return rc;
 
     return tapi_job_destroy(gtest->impl.job, term_timeout_ms);
+}
+
+te_errno
+tapi_gtest_get_cmd_str(tapi_gtest *gtest, te_string *cmd)
+{
+    te_errno rc = 0;
+
+    if (cmd == NULL)
+        return TE_EINVAL;
+
+    te_string_reset(cmd);
+    rc = te_string_join_vec(cmd, &(gtest->args), " ");
+
+    return rc;
 }
