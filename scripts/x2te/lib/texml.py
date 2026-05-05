@@ -82,14 +82,14 @@ class PackageXML(TEXML):
 
         return TEXML.addnext_unique(self.session, arg, eq_node)
 
-    def add_run_script(self, script, name=None, template=None, args=None):
+    def add_run_script(self, script, name=None, template=None, args=None, reqs=None):
         run_attr = dict()
         attr = dict(name=script)
         if name:
             run_attr["name"] = name
         if template:
             run_attr["template"] = template
-        return self._add_run("script", run_attr, attr, args)
+        return self._add_run("script", run_attr, attr, args, reqs)
 
     def add_run_package(self, name=None, src=None, args=None):
         attr = dict()
@@ -99,7 +99,7 @@ class PackageXML(TEXML):
             attr["name"] = name
         return self._add_run("package", dict(), attr, args)
 
-    def _add_run(self, run_type, run_attr=None, attr=None, args=None):
+    def _add_run(self, run_type, run_attr=None, attr=None, args=None, reqs=None):
         if run_attr is None:
             run_attr = dict()
         if attr is None:
@@ -112,13 +112,17 @@ class PackageXML(TEXML):
             return node.attrib == run_attr and type_node.attrib == attr
 
         run = etree.Element("run", attrib=run_attr)
-        etree.SubElement(run, run_type, attrib=attr)
+        script = etree.SubElement(run, run_type, attrib=attr)
         if isinstance(args, list):
             for name, value in args:
                 if value:
                     etree.SubElement(run, "arg", name=name, value=value)
                 else:
                     etree.SubElement(run, "arg", name=name)
+
+        if isinstance(reqs, list):
+            for req in reqs:
+                etree.SubElement(script, "req", id=req)
 
         return TEXML.addnext_unique(self.session, run, eq_node)
 
