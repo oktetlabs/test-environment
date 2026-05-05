@@ -1251,6 +1251,23 @@ extern te_errno tapi_cfg_alloc_af_net_addr_pair(int af,
                                                 int *prefix);
 
 /**
+ * Add a new user on TA with given username.
+ *
+ * @note Username will be checked by @b ta_te_username_is_numeric().
+ *       If user is numeric, then the number will be
+ *       the UID and GID.
+ *       Otherwise UID and GID are assigned automatically.
+ *       User will be created in a new group named after the user.
+ *
+ * @param agent          Agent on which to create a new user.
+ * @param username       Username.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_add_new_user_by_name(const char *agent,
+                                              const char *username);
+
+/**
  * Add a new user on TA.
  *
  * @note User name will be TE_USER_PREFIX + uid, TA requires this format.
@@ -1259,9 +1276,31 @@ extern te_errno tapi_cfg_alloc_af_net_addr_pair(int af,
  *
  * @param agent       Agent on which to create a new user.
  * @param uid         User ID.
+ *
+ * @return Status code.
  */
 extern te_errno tapi_cfg_add_new_user(const char *agent, int uid);
 
+/**
+ * Add a user on TA if no such user already exists with given name.
+ *
+ * @p added is set to @c true if a user has been added and to @c false
+ * if it existed already, so that the caller might decide whether it
+ * should call tapi_cfg_del_user_by_name().
+ *
+ * Refer to tapi_cfg_add_new_user_by_name() for details concerning user
+ * creation.
+ *
+ * @param[in]  agent          Agent on which to create a new user.
+ * @param[in]  username       Username.
+ * @param[out] added          A flag to set if user has been created
+ *                            (may be @c NULL).
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_add_user_by_name_if_needed(const char *agent,
+                                                    const char *username,
+                                                    bool *added);
 
 /**
  * Add a user on TA if no such user already exists.
@@ -1283,12 +1322,51 @@ extern te_errno tapi_cfg_add_user_if_needed(const char *agent, int uid,
                                             bool *added);
 
 /**
+ * Remove a user previously added by tapi_cfg_add_new_user_by_name().
+ *
+ * @param agent          Agent on which to remove a user.
+ * @param username       Username.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_del_user_by_name(const char *agent,
+                                          const char *username);
+
+/**
  * Remove a user previously added by tapi_cfg_add_new_user().
  *
  * @param agent       Agent on which to remove a user.
  * @param uid         User ID.
+ *
+ * @return Status code.
  */
 extern te_errno tapi_cfg_del_user(const char *agent, int uid);
+
+/**
+ * Get UID of user on TA.
+ *
+ * @param[in]  agent          Test agent name.
+ * @param[in]  username       User name.
+ * @param[out] uid            UID.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_get_user_uid_by_name(const char *agent,
+                                              const char *username,
+                                              uint32_t *uid);
+
+/**
+ * Get GID of user on TA.
+ *
+ * @param[in]  agent          Test agent name.
+ * @param[in]  username       User name.
+ * @param[out] gid            GID.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_get_user_gid_by_name(const char *agent,
+                                              const char *username,
+                                              uint32_t *gid);
 
 #ifdef __cplusplus
 } /* extern "C" */

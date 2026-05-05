@@ -1878,9 +1878,27 @@
       access: read_create
       type: none
       d: |
-         Tester user.
-         Name: te_tester_<uid>
-         Password is the same as user name.
+         Test agent user.
+         Name: TE_USER_PREFIX<base_username>
+         If <base_username> is numeric, then the values of /agent/user/uid
+         and /agent/user/gid will always be equal to it.
+         Otherwise, <base_username> follows the pattern
+         TE_USER_NONNUM_AFFIX<name_with_numbers_and_letters_and_underscore>.
+         Password is the same as username.
+
+    - oid: "/agent/user/uid"
+      access: read_only
+      type: uint32
+      d: |
+         Test agent user uid.
+         Name: empty
+
+    - oid: "/agent/user/gid"
+      access: read_only
+      type: uint32
+      d: |
+         Test agent user gid.
+         Name: empty
 
     - oid: "/agent/rlimits"
       access: read_only

@@ -2832,29 +2832,46 @@ tapi_cfg_alloc_net_addr_pair(struct sockaddr **addr1, struct sockaddr **addr2,
 
 /* See description in tapi_cfg.h */
 te_errno
+tapi_cfg_add_new_user_by_name(const char *agent,
+                              const char *username)
+{
+    te_errno rc;
+
+    if ((rc = cfg_add_instance_fmt(NULL, CVT_NONE, NULL, "/agent:%s/user:%s",
+                                   agent, username)) != 0)
+    {
+        ERROR("%s(): Failed (%r) to add user with name %s",
+              __FUNCTION__, rc, username);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg.h */
+te_errno
 tapi_cfg_add_new_user(const char *agent, int uid)
 {
     te_string user_name = TE_STRING_INIT_STATIC(1024);
 
     te_string_append(&user_name, "%s%d", TE_USER_PREFIX, uid);
 
-    return cfg_add_instance_fmt(NULL, CVT_NONE, NULL,
-                                "/agent:%s/user:%s", agent,
-                                user_name.ptr);
+    return tapi_cfg_add_new_user_by_name(agent, user_name.ptr);
 }
 
+/* See description in tapi_cfg.h */
 te_errno
-tapi_cfg_add_user_if_needed(const char *agent, int uid, bool *added)
+tapi_cfg_add_user_by_name_if_needed(const char *agent,
+                                    const char *username,
+                                    bool *added)
 {
     te_errno rc;
 
     if (added != NULL)
         *added = false;
-    if (cfg_find_fmt(NULL, "/agent:%s/user:%s%d", agent,
-                     TE_USER_PREFIX, uid) == 0)
+    if (cfg_find_fmt(NULL, "/agent:%s/user:%s", agent, username) == 0)
         return 0;
 
-    rc = tapi_cfg_add_new_user(agent, uid);
+    rc = tapi_cfg_add_new_user_by_name(agent, username);
     if (rc == 0)
     {
         if (added != NULL)
@@ -2864,6 +2881,24 @@ tapi_cfg_add_user_if_needed(const char *agent, int uid, bool *added)
     return rc;
 }
 
+/* See description in tapi_cfg.h */
+te_errno
+tapi_cfg_add_user_if_needed(const char *agent, int uid, bool *added)
+{
+    te_string username = TE_STRING_INIT_STATIC(1024);
+
+    te_string_append(&username, "%d", uid);
+
+    return tapi_cfg_add_user_by_name_if_needed(agent, username.ptr, added);
+}
+
+/* See description in tapi_cfg.h */
+te_errno
+tapi_cfg_del_user_by_name(const char *agent,
+                          const char *username)
+{
+    return cfg_del_instance_fmt(false, "/agent:%s/user:%s", agent, username);
+}
 
 /* See description in tapi_cfg.h */
 te_errno
@@ -2873,6 +2908,39 @@ tapi_cfg_del_user(const char *agent, int uid)
 
     te_string_append(&user_name, "%s%d", TE_USER_PREFIX, uid);
 
-    return cfg_del_instance_fmt(false, "/agent:%s/user:%s", agent,
-                                user_name.ptr);
+    return tapi_cfg_del_user_by_name(agent, user_name.ptr);
+}
+
+/* See description in tapi_cfg.h */
+te_errno
+tapi_cfg_get_user_uid_by_name(const char *agent,
+                              const char *username, uint32_t *uid)
+{
+    te_errno rc;
+
+    if ((rc = cfg_get_uint32(uid, "/agent:%s/user:%s/uid:", agent,
+                             username)) != 0)
+    {
+        ERROR("%s(): Failed (%r) to get UID for user with name %s",
+              __FUNCTION__, rc, username);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg.h */
+te_errno
+tapi_cfg_get_user_gid_by_name(const char *agent,
+                              const char *username, uint32_t *gid)
+{
+    te_errno rc;
+
+    if ((rc = cfg_get_uint32(gid, "/agent:%s/user:%s/gid:", agent,
+                             username)) != 0)
+    {
+        ERROR("%s(): Failed (%r) to get GID for user with name %s",
+              __FUNCTION__, rc, username);
+    }
+
+    return rc;
 }

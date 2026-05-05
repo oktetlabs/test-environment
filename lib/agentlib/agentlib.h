@@ -372,4 +372,65 @@ extern te_errno agent_key_generate(agent_key_manager manager,
                                    const char *user,
                                    const char *private_key_file);
 
+/**
+ * Check if TE username is correct. That means it is either numeric,
+ * i.e., TE_USER_PREFIX + <some_number> or non-numeric, i.e.,
+ * TE_USER_PREFIX + TE_USER_NONNUM_AFFIX + base_username.
+ * Where base_username contains only letters, numbers and underscores.
+ *
+ * @param[in]  username    username
+ * @param[out] is_num      if username is numeric,
+ *                         i.e., TE_USER_PREFIX<some_number>
+ *
+ * @return Status code:
+ * @retval 0               username is correct
+ * @retval TE_EINVAL       username is not correct
+ */
+te_errno ta_te_username_is_numeric(const char *username, bool *is_num);
+
+/**
+ * Get list of usernames that pass @b ta_te_username_is_numeric()
+ * separated by spaces.
+ *
+ * @param list          location for the list pointer
+ *
+ * @return Status code.
+ */
+extern te_errno ta_user_list(char **list);
+
+/**
+ * Get TA user GID and UID.
+ *
+ * @param[out] gid      User GID. May be @c NULL.
+ * @param[out] uid      User UID. May be @c NULL.
+ * @param[in]  user     Username. It is checked by
+ *                      @b ta_te_username_is_numeric().
+ *
+ * @return              Status code
+ */
+extern te_errno ta_user_gid_uid_get(gid_t *gid, uid_t *uid, const char *user);
+
+/**
+ * Add user on TA.
+ *
+ * @param user          Username. It is checked by
+ *                      @b ta_te_username_is_numeric().
+ *                      If user is numeric, then the number will be
+ *                      the UID and GID.
+ *                      Otherwise, UID and GID are assigned automatically.
+ *
+ * @return              Status code
+ */
+extern te_errno ta_user_add(const char *user);
+
+/**
+ * Delete user on TA created by @b ta_user_add().
+ *
+ * @param user          Username. It is checked by
+ *                      @b ta_te_username_is_numeric().
+ *
+ * @return              Status code
+ */
+extern te_errno ta_user_del(const char *user);
+
 #endif /* __TE_AGENTLIB_H__ */

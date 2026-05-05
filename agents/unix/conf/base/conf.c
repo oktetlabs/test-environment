@@ -123,39 +123,6 @@
 #include <pwd.h>
 #endif
 
-/* PAM (Pluggable Authentication Modules) support */
-#if defined(HAVE_SECURITY_PAM_APPL_H) && defined(HAVE_LIBPAM)
-#include <security/pam_appl.h>
-
-#define TA_USE_PAM  1
-
-/** Data passed between 'set_change_passwd' and 'conv_fun' callback fun */
-typedef struct {
-    char const *passwd;                    /**< Password string pointer */
-    char        err_msg[PAM_MAX_MSG_SIZE]; /**< Error message storage   */
-
-} appdata_t;
-
-typedef struct pam_response pam_response_t;
-
-/** Avoid slight differences between UNIX'es over typedef */
-#if defined __linux__
-#define PAM_FLAGS 0
-typedef struct pam_message const pam_message_t;
-#elif defined __sun__
-#define PAM_FLAGS (PAM_NO_AUTHTOK_CHECK | PAM_SILENT)
-typedef struct pam_message pam_message_t;
-#elif defined __FreeBSD__ || defined __NetBSD__
-#define PAM_FLAGS PAM_SILENT
-typedef struct pam_message const pam_message_t;
-#endif
-
-#else
-
-#define TA_USE_PAM  0
-
-#endif /* HAVE_SECURITY_PAM_APPL_H && HAVE_LIBPAM */
-
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
@@ -183,6 +150,7 @@ typedef struct pam_message const pam_message_t;
 #include "te_string.h"
 
 #include "conf_daemons.h"
+#include "agentlib.h"
 
 #if defined(__linux__)
 #include <linux/sockios.h>
@@ -705,6 +673,12 @@ static te_errno agent_lib_bin_dir_get(unsigned int, const char *, char *,
 static te_errno nameserver_get(unsigned int, const char *, char *,
                                const char *, ...);
 
+static te_errno user_gid_get(unsigned int, const char *, char *,
+                             const char *);
+
+static te_errno user_uid_get(unsigned int, const char *, char *,
+                             const char *);
+
 static te_errno user_list(unsigned int, const char *,
                           const char *, char **);
 static te_errno user_add(unsigned int, const char *, const char *,
@@ -1041,8 +1015,14 @@ RCF_PCH_CFG_NODE_RO(node_uname_version, "version", NULL, &node_uname_release,
 RCF_PCH_CFG_NODE_RO(node_uname, "uname", &node_uname_version, &node_env,
                     uname_get);
 
+RCF_PCH_CFG_NODE_RO(node_user_gid, "gid", NULL, NULL,
+                    user_gid_get);
+
+RCF_PCH_CFG_NODE_RO(node_user_uid, "uid", NULL, &node_user_gid,
+                    user_uid_get);
+
 RCF_PCH_CFG_NODE_COLLECTION(node_user, "user",
-                            NULL, &node_uname,
+                            &node_user_uid, &node_uname,
                             user_add, user_del,
                             user_list, NULL);
 
@@ -8272,208 +8252,72 @@ static te_errno
 user_list(unsigned int gid, const char *oid,
           const char *sub_id, char **list)
 {
-    FILE *f;
-    char *s = buf;
-
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(sub_id);
 
-    if ((f = fopen("/etc/passwd", "r")) == NULL)
-    {
-        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-
-        ERROR("Failed to open file /etc/passwd; errno %r", rc);
-        return rc;
-    }
-
-    buf[0] = 0;
-
-    while (fgets(trash, sizeof(trash), f) != NULL)
-    {
-        char *tmp = strstr(trash, TE_USER_PREFIX);
-        char *tmp1;
-
-        unsigned int uid;
-
-        if (tmp == NULL)
-            continue;
-
-        tmp += strlen(TE_USER_PREFIX);
-        uid = strtol(tmp, &tmp1, 10);
-        if (tmp1 == tmp || *tmp1 != ':')
-            continue;
-        s += sprintf(s, TE_USER_PREFIX "%u", uid);
-    }
-    fclose(f);
-
-    if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    return 0;
+    return ta_user_list(list);
 }
 
+#define UINT_MAX_LENGTH 11
 /**
- * Check, if user with the specified name exists.
+ * Get TA user GID.
  *
- * @param user          user name
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         Location for the value (OUT)
+ * @param user          Username. It is checked by
+ *                      @b ta_te_username_is_numeric().
  *
- * @return              @c true if user exists, @c false if does not
+ * @return              Status code
  */
-static bool
-user_exists(const char *user)
+static te_errno
+user_gid_get(unsigned int gid, const char *oid, char *value,
+             const char *user)
 {
-    return getpwnam(user) != NULL ? true : false;
-}
+    gid_t user_gid;
+    te_errno rc = 0;
 
-#if TA_USE_PAM
-/**
- * Callback function provided by user and called from within PAM library.
- *
- * @param num_msg       number of messages
- * @param msg           array of 'num_msg' pointers to messages
- * @param resp          address of pointer to returned array of responses
- * @param data          pointer passed to PAM library pam_start function
- *
- * @return              Return code (PAM_SUCCESS on success,
- *                      PAM_BUF_ERR when it is insufficient memory)
- *
- * @sa                  PAM library expects that response array
- *                      itself and each its .resp member are allocated
- *                      by malloc (calloc, realloc).
- *                      PAM library is responsible for freeing them.
- */
-static int
-conv_fun(int num_msg, pam_message_t **msg, pam_response_t **resp,
-         void *data)
-{
-    /* Try to allocate responses array to be returned */
-    struct pam_response *resp_array = calloc(num_msg, sizeof(*resp));
-    appdata_t           *appdata    = data;
+    UNUSED(gid);
+    UNUSED(oid);
 
-    int      i;
-    unsigned full_len = strlen(appdata->passwd) + 1; /**< Password
-                                                       *  length + 1
-                                                       */
+    rc = ta_user_gid_uid_get(&user_gid, NULL, user);
 
-    /** If responses array is allocated successfully */
-    if (resp_array != NULL)
-    {
-        for (i = 0; i < num_msg; i++) /* Process each message */
-        {
-            /** PAM prompts for password */
-            if (msg[i]->msg_style == PAM_PROMPT_ECHO_ON ||
-                msg[i]->msg_style == PAM_PROMPT_ECHO_OFF)
-            {
-                /** Allocate memory for password and supply it to PAM */
-                if ((resp_array[i].resp = malloc(full_len)) != NULL)
-                    memcpy(resp_array[i].resp, appdata->passwd, full_len);
-                else
-                {
-                   /* Rollback allocation already
-                    * been done at the moment
-                    */
-                    while (i-- > 0)
-                        free(resp_array[i].resp);
-
-                    free(resp_array);
-                    return PAM_BUF_ERR;
-                }
-            }
-            else
-                /** PAM assumes user should read this error message */
-                if (msg[i]->msg_style == PAM_ERROR_MSG)
-                {
-                    WARN("%s", msg[i]->msg);
-
-                   /* Save message in order to have opportunity
-                    * to display it later by main execution flow
-                    * (set_change_passwd) in case of a real error
-                    */
-                    strcpy(appdata->err_msg, msg[i]->msg);
-                }
-        }
-
-        *resp = resp_array; /* Assign responses array pointer for PAM */
-    }
-    else
-        return PAM_BUF_ERR;
-
-    return PAM_SUCCESS;
-}
-
-/**
- * Set (change) user password over PAM (i. e. portably across UNIX'es).
- *
- * @param user          user name
- * @param passwd        user password
- *
- * @return              Return code (0 on success, -1 on error)
- */
-static int
-set_change_passwd(char const *user, char const *passwd)
-{
-    pam_handle_t       *handle;
-    appdata_t           appdata;  /**< Data passed to callback and back */
-    struct pam_conv     conv;     /**< Callback structure */
-
-    int pam_rc;
-    int rc = -1;
-
-    appdata.passwd     = passwd;
-    appdata.err_msg[0] = '\0';
-
-    conv.conv        = &conv_fun; /**< callback function */
-    conv.appdata_ptr = &appdata;  /**< data been passed to callback fun */
-
-    /** Check user existence */
-    if(getpwnam(user) != NULL)
-    {
-        /** Initialize PAM library */
-        if ((pam_rc = pam_start("passwd", user, &conv, &handle))
-            == PAM_SUCCESS)
-        {
-            uid_t euid = geteuid(); /**< Save current effective user id */
-
-            if (euid == 0 || setuid(0) == 0)     /**< Get 'root' */
-            {
-                /** Try to set/change password */
-                if ((pam_rc = pam_chauthtok(handle, PAM_FLAGS))
-                    == PAM_SUCCESS)
-                    rc = 0;
-                else
-                {
-                    ERROR("pam_chauthtok, user: '%s', passwd: '%s': %s",
-                          user, passwd, pam_strerror(handle, pam_rc));
-
-                   /* If callback function received error message string
-                    * then type it too
-                    */
-                    if (appdata.err_msg[0])
-                        ERROR("%s", appdata.err_msg);
-                }
-
-                if (euid != 0)
-                    setuid(euid);   /* Restore saved previously user id */
-            }
-            else
-                ERROR("setuid: %s", strerror(errno));
-
-            /** Terminate PAM library */
-            if ((pam_rc = pam_end(handle, pam_rc)) != PAM_SUCCESS)
-                ERROR("pam_end: %s", pam_strerror(handle, pam_rc));
-        }
-        else
-            ERROR("pam_start, user: '%s', passwd: '%s': %s", user, passwd,
-                 pam_strerror(handle, pam_rc));
-    }
-    else
-        ERROR("getpwnam, user '%s': %s",
-              user, errno ? strerror(errno) : "User does not exist");
+    if (rc == 0)
+        TE_SNPRINTF(value,  UINT_MAX_LENGTH, "%u", (unsigned int)user_gid);
 
     return rc;
 }
-#endif /* TA_USE_PAM */
+
+/**
+ * Get TA user UID.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         Location for the value (OUT)
+ * @param user          Username. It is checked by
+ *                      @b ta_te_username_is_numeric().
+ *
+ * @return              Status code
+ */
+static te_errno
+user_uid_get(unsigned int gid, const char *oid, char *value,
+             const char *user)
+{
+    uid_t user_uid;
+    te_errno rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = ta_user_gid_uid_get(NULL, &user_uid, user);
+
+    if (rc == 0)
+        TE_SNPRINTF(value, UINT_MAX_LENGTH, "%u", (unsigned int)user_uid);
+
+    return rc;
+}
+#undef UINT_MAX_LENGTH
 
 /**
  * Add tester user.
@@ -8481,7 +8325,11 @@ set_change_passwd(char const *user, char const *passwd)
  * @param gid           group identifier (unused)
  * @param oid           full object instance identifier (unused)
  * @param value         value string (unused)
- * @param user          user name: te_tester_<uid>
+ * @param user          Username. It is checked by
+ *                      @b ta_te_username_is_numeric().
+ *                      If user is numeric, then the number will be
+ *                      the UID and GID.
+ *                      Otherwise, UID and GID are assigned automatically.
  *
  * @return              Status code
  */
@@ -8489,91 +8337,11 @@ static te_errno
 user_add(unsigned int gid, const char *oid, const char *value,
          const char *user)
 {
-#if TA_USE_PAM || defined(__linux__)
-    char *tmp;
-    char *tmp1;
-
-    unsigned int uid;
-
-    te_errno     rc;
-#endif
-
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
 
-#if !TA_USE_PAM && !defined(__linux__)
-    UNUSED(user);
-    ERROR("user_add failed (no user management facilities available)");
-    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
-#else
-    if (user_exists(user))
-        return TE_RC(TE_TA_UNIX, TE_EEXIST);
-
-    if (strncmp(user, TE_USER_PREFIX, strlen(TE_USER_PREFIX)) != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    tmp = (char *)user + strlen(TE_USER_PREFIX);
-    uid = strtol(tmp, &tmp1, 10);
-    if (tmp == tmp1 || *tmp1 != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    /*
-     * We manually add group to be independent from system settings
-     * (one group for all users / each user with its group)
-     * "-f" is used in order not to fail if such group already exists (bug 11813)
-     */
-    sprintf(buf, "/usr/sbin/groupadd -f -g %u %s ", uid, user);
-    if ((rc = ta_system(buf)) != 0)
-    {
-        ERROR("\"%s\" command failed with %d", buf, rc);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
-    sprintf(buf, "/usr/sbin/useradd -d /tmp/%s -g %u -u %u -m %s ",
-            user, uid, uid, user);
-    if ((rc = ta_system(buf)) != 0)
-    {
-        ERROR("\"%s\" command failed with %d", buf, rc);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
-
-#if 0
-    /* Fedora has very aggressive nscd cache */
-    /* https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=134323 */
-    ta_system("/usr/sbin/nscd -i group && /usr/sbin/nscd -i passwd");
-#endif
-
-#if TA_USE_PAM
-    /** Set (change) password for just added user */
-    if (set_change_passwd(user, user) != 0)
-#else
-    sprintf(buf, "echo %s:%s | /usr/sbin/chpasswd", user, user);
-    if ((rc = ta_system(buf)) != 0)
-#endif
-    {
-        ERROR("change_passwd failed");
-        user_del(gid, oid, user);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
-
-#if 0
-    /* Fedora has very aggressive nscd cache */
-    /* https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=134323 */
-    ta_system("/usr/sbin/nscd -i group && /usr/sbin/nscd -i passwd");
-#endif
-
-
-    TE_SPRINTF(buf, "/tmp/%s/.ssh/id_ed25519", user);
-    rc = agent_key_generate(AGENT_KEY_MANAGER_SSH, "ed25519", 1024, user, buf);
-    if (rc != 0)
-    {
-        ERROR("Cannot create ssh key: %r", rc);
-        user_del(gid, oid, user);
-        return rc;
-    }
-
-    return 0;
-#endif /* !TA_USE_PAM */
+    return ta_user_add(user);
 }
 
 /**
@@ -8581,41 +8349,18 @@ user_add(unsigned int gid, const char *oid, const char *value,
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instance identifier (unused)
- * @param user          user name
+ * @param user          Username. It is checked by
+ *                      @b ta_te_username_is_numeric().
  *
  * @return              Status code
  */
 static te_errno
 user_del(unsigned int gid, const char *oid, const char *user)
 {
-    te_errno rc;
-
     UNUSED(gid);
     UNUSED(oid);
 
-    if (!user_exists(user))
-        return TE_RC(TE_TA_UNIX, TE_EEXIST);
-
-    sprintf(buf, "/usr/bin/killall -u %s", user);
-    ta_system(buf); /* Ignore rc */
-    sprintf(buf, "/usr/sbin/userdel -r %s", user);
-    if ((rc = ta_system(buf)) != 0)
-    {
-        ERROR("\"%s\" command failed with %d", buf, rc);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
-    sprintf(buf, "/usr/sbin/groupdel %s", user);
-    if ((rc = ta_system(buf)) != 0)
-    {
-        /* Yes, we ignore rc, as group may be deleted by userdel */
-        VERB("\"%s\" command failed with %d", buf, rc);
-    }
-
-    /* Fedora has very aggressive nscd cache */
-    /* https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=134323 */
-    ta_system("/usr/sbin/nscd -i group && /usr/sbin/nscd -i passwd");
-
-    return 0;
+    return ta_user_del(user);
 }
 
 /* XEN stuff implementation */
