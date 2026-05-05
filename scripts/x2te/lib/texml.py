@@ -82,11 +82,13 @@ class PackageXML(TEXML):
 
         return TEXML.addnext_unique(self.session, arg, eq_node)
 
-    def add_run_script(self, script, name=None, args=None):
+    def add_run_script(self, script, name=None, template=None, args=None):
         run_attr = dict()
         attr = dict(name=script)
         if name:
             run_attr["name"] = name
+        if template:
+            run_attr["template"] = template
         return self._add_run("script", run_attr, attr, args)
 
     def add_run_package(self, name=None, src=None, args=None):

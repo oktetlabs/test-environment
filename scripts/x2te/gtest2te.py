@@ -121,7 +121,7 @@ def generate_pkg(args, gtest_tests):
                 (GTestDef.group_arg_name, None),
                 (GTestDef.name_arg_name, test["name"]),
             ]
-            pkg.add_run_script(args.script_name, test["name"], test_args)
+            pkg.add_run_script(args.script_name, test["name"], args=test_args)
 
         pkg.add_session_arg(GTestDef.bin_arg_name)
         pkg.add_session_arg(GTestDef.group_arg_name, parent)
