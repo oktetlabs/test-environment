@@ -806,33 +806,35 @@ static int
 rgt_parse_file(rgt_gen_ctx_t *gen_ctx)
 {
     xmlParserCtxtPtr ctxt;
-    int              ret    = 0;
+    xmlDocPtr doc = NULL;
+    int ret = 0;
 
-    ctxt = xmlCreateFileParserCtxt(gen_ctx->xml_fname);
+#if LIBXML_VERSION >= 21100
+    ctxt = xmlNewSAXParserCtxt(&sax_handler, gen_ctx);
+#else
+    ctxt = xmlNewParserCtxt();
+    if (ctxt != NULL && ctxt->sax != NULL)
+        *(ctxt->sax) = sax_handler;
+#endif
+
     if (ctxt == NULL)
         return 1;
+    if (ctxt->sax == NULL)
+    {
+        xmlFreeParserCtxt(ctxt);
+        return 1;
+    }
 
-    /* Option to process and escape the <, >, ", ', & symbols. */
-    xmlCtxtUseOptions(ctxt, XML_PARSE_OLDSAX);
+    ctxt->userData = (void *)gen_ctx;
 
-    if (ctxt->sax != (xmlSAXHandlerPtr) &xmlDefaultSAXHandler)
-        xmlFree(ctxt->sax);
-    ctxt->sax = &sax_handler;
-    if (gen_ctx != NULL)
-        ctxt->userData = (void *)gen_ctx;
+    doc = xmlCtxtReadFile(ctxt, gen_ctx->xml_fname, NULL, XML_PARSE_OLDSAX);
+    if (doc != NULL)
+        xmlFreeDoc(doc);
 
-    xmlParseDocument(ctxt);
     if (ctxt->wellFormed)
         ret = 0;
     else
         ret = ctxt->errNo != 0 ? ctxt->errNo : 1;
-
-    ctxt->sax = NULL;
-    if (ctxt->myDoc != NULL)
-    {
-        xmlFreeDoc(ctxt->myDoc);
-        ctxt->myDoc = NULL;
-    }
 
     xmlFreeParserCtxt(ctxt);
     xmlCleanupParser();

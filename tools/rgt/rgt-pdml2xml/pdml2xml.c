@@ -632,31 +632,35 @@ static void
 rgt_parse_pdml_file(const char *fname)
 {
     xmlParserCtxtPtr xml_ctxt;
-    rgt_user_ctx     user_ctx;
+    rgt_user_ctx user_ctx;
+    xmlDocPtr doc = NULL;
 
     memset(&user_ctx, 0, sizeof(user_ctx));
     user_ctx.state = RGT_LOG_STATE_BASE;
 
-    xml_ctxt = xmlCreateFileParserCtxt(fname);
+#if LIBXML_VERSION >= 21100
+    xml_ctxt = xmlNewSAXParserCtxt(&sax_handler, &user_ctx);
+#else
+    xml_ctxt = xmlNewParserCtxt();
+    if (xml_ctxt != NULL && xml_ctxt->sax != NULL)
+        *(xml_ctxt->sax) = sax_handler;
+#endif
+
     if (xml_ctxt == NULL)
         return;
+    if (xml_ctxt->sax == NULL)
+    {
+        xmlFreeParserCtxt(xml_ctxt);
+        return;
+    }
 
-    /* Option to process and escape the <, >, ", ', & symbols. */
-    xmlCtxtUseOptions(xml_ctxt, XML_PARSE_OLDSAX);
-
-    if (xml_ctxt->sax != (xmlSAXHandlerPtr) &xmlDefaultSAXHandler)
-        xmlFree(xml_ctxt->sax);
-    xml_ctxt->sax = &sax_handler;
     xml_ctxt->userData = (void *)&user_ctx;
 
-    xmlParseDocument(xml_ctxt);
-
-    xml_ctxt->sax = NULL;
-    if (xml_ctxt->myDoc != NULL)
-    {
-        xmlFreeDoc(xml_ctxt->myDoc);
-        xml_ctxt->myDoc = NULL;
-    }
+    doc = xmlCtxtReadFile(xml_ctxt, fname, NULL, XML_PARSE_OLDSAX);
+    if (doc != NULL)
+        xmlFreeDoc(doc);
+    else if (xml_ctxt->wellFormed == 0)
+        fprintf(stderr, "Cannot parse PDML file '%s'\n", fname);
 
     xmlFreeParserCtxt(xml_ctxt);
     xmlCleanupParser();

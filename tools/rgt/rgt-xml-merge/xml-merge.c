@@ -668,7 +668,6 @@ main(int argc, char **argv)
     rgt_parse_xml_files();
 
     xmlCleanupParser();
-    xmlMemoryDump();
     fclose(res_fd);
     return 0;
 }

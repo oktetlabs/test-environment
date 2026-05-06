@@ -1258,6 +1258,23 @@ trc_log_parse_problem(void *user_data, const char *msg, ...)
     va_end(ap);
 }
 
+/* Read callback for parsing XML from stdin with xmlCtxtReadIO(). */
+static int
+trc_log_parse_stdin_read(void *context, char *buffer, int len)
+{
+    FILE *stream = context;
+    size_t bytes;
+
+    if (len <= 0)
+        return 0;
+
+    bytes = fread(buffer, 1, len, stream);
+    if (bytes == 0 && ferror(stream))
+        return -1;
+
+    return (int)bytes;
+}
+
 /**
  * The structure specifies all types callback routines that
  * should be called.
@@ -1312,9 +1329,41 @@ static xmlSAXHandler sax_handler = {
 te_errno
 trc_log_parse_process_log(trc_log_parse_ctx *ctx)
 {
-    te_errno rc;
+    xmlParserCtxtPtr xml_ctxt = NULL;
+    xmlDocPtr doc = NULL;
+    te_errno rc = 0;
 
-    if (xmlSAXUserParseFile(&sax_handler, ctx, ctx->log) != 0)
+#if LIBXML_VERSION >= 21100
+    xml_ctxt = xmlNewSAXParserCtxt(&sax_handler, ctx);
+#else
+    xml_ctxt = xmlNewParserCtxt();
+    if (xml_ctxt != NULL && xml_ctxt->sax != NULL)
+        *(xml_ctxt->sax) = sax_handler;
+#endif
+
+    if (xml_ctxt == NULL)
+    {
+        ERROR("Cannot create XML parser context");
+        return TE_EFMT;
+    }
+    if (xml_ctxt->sax == NULL)
+    {
+        ERROR("Invalid XML parser context");
+        xmlFreeParserCtxt(xml_ctxt);
+        return TE_EFMT;
+    }
+
+    xml_ctxt->userData = ctx;
+
+    if (strcmp(ctx->log, "-") == 0)
+        doc = xmlCtxtReadIO(xml_ctxt, trc_log_parse_stdin_read, NULL, stdin,
+                            "stdin.xml", NULL, XML_PARSE_OLDSAX);
+    else
+        doc = xmlCtxtReadFile(xml_ctxt, ctx->log, NULL, XML_PARSE_OLDSAX);
+    if (doc != NULL)
+        xmlFreeDoc(doc);
+
+    if (xml_ctxt->wellFormed == 0)
     {
         ERROR("Cannot parse XML document with TE log '%s'", ctx->log);
         rc = TE_EFMT;
@@ -1324,6 +1373,8 @@ trc_log_parse_process_log(trc_log_parse_ctx *ctx)
         ERROR("Processing of the XML document with TE log '%s' "
               "failed: %r", ctx->log, rc);
     }
+
+    xmlFreeParserCtxt(xml_ctxt);
 
     return rc;
 }
