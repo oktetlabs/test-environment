@@ -744,7 +744,7 @@ RCF_PCH_CFG_NODE_COLLECTION(node_netns, "net", &node_interface, NULL,
 static te_errno
 netns_rsrc_grab(const char *obj)
 {
-    char *ns_name = strrchr(obj, ':');
+    const char *ns_name = strrchr(obj, ':');
 
     if (ns_name == NULL)
     {
@@ -766,7 +766,7 @@ netns_rsrc_grab(const char *obj)
 static te_errno
 netns_rsrc_release(const char *obj)
 {
-    char *ns_name = strrchr(obj, ':');
+    const char *ns_name = strrchr(obj, ':');
 
     if (ns_name == NULL)
     {

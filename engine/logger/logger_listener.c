@@ -67,8 +67,8 @@ listener_conf_add(const char *confstr)
     size_t             i;
     size_t             ret;
     size_t             len;
-    char              *delim;
-    char              *runid;
+    const char        *delim;
+    const char        *runid;
     log_listener_conf *conf;
 
     if (listener_confs_num >= LOG_MAX_LISTENERS)

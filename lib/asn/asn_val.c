@@ -3479,8 +3479,8 @@ asn_path_from_extended(asn_value *node, const char *ext_path,
                        char *asn_path, unsigned int asn_path_len,
                        bool auto_insert)
 {
-    char *search_start = NULL;
-    char *search_end = NULL;
+    const char *search_start = NULL;
+    const char *search_end = NULL;
     asn_value *container = NULL; /* Container to be searched */
     const asn_type *cont_type = NULL; /* Type of container */
     asn_syntax cont_syntax; /* Syntax of container */

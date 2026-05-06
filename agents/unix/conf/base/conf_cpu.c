@@ -871,7 +871,7 @@ add_index_name(const char *pattern, const char *pathname, void *data)
     cache_location *location = data;
     cpu_item_list *root = location->root;
     const char *name = location->name;
-    char *index_name = strrchr(pathname, '/') + 1;
+    const char *index_name = strrchr(pathname, '/') + 1;
     cache_item *cache = NULL;
     te_errno rc = 0;
 

@@ -156,7 +156,7 @@ get_level_mask(const char *level_str)
 {
     const char   *end_ptr;
     const char   *ptr = level_str;
-    char         *tmp;
+    const char   *tmp;
     uint32_t      len;
     te_log_level  val = 0;
     te_log_level  prev_val;

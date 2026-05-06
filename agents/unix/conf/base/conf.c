@@ -182,6 +182,7 @@ typedef struct pam_message const pam_message_t;
 #include "conf_common.h"
 #include "te_shell_cmd.h"
 #include "te_string.h"
+#include "te_alloc.h"
 
 #include "conf_daemons.h"
 
@@ -1258,8 +1259,8 @@ static te_errno
 interface_grab(const char *name)
 {
 #ifndef DISABLE_NETWORKMANAGER_CHECK
-    te_errno  rc;
-    char     *ifname;
+    const char *ifname;
+    te_errno rc;
 
     /* Get resource instance name */
     ifname = strrchr(name, ':');
@@ -3176,7 +3177,7 @@ switchdev_name_get(unsigned int gid, const char *oid, char *value,
     if (id == NULL || *id == '\0')
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    char *sep = strchr(id, ':');
+    const char *sep = strchr(id, ':');
     if (sep == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
@@ -5781,7 +5782,8 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
 int
 link_addr_a2n(uint8_t *lladdr, int len, const char *str)
 {
-    const char *arg = str;
+    char       *buf = TE_STRDUP(str);
+    char       *arg = buf;
     int         i;
 
     for (i = 0; i < len; i++)
@@ -5796,18 +5798,15 @@ link_addr_a2n(uint8_t *lladdr, int len, const char *str)
         {
             ERROR("%s: \"%s\" is invalid lladdr",
                   __FUNCTION__, arg);
-            if (cp != NULL)
-                *cp = ':';
+            free(buf);
             return -1;
         }
-
-        if (cp != NULL)
-            *cp = ':';
 
         if (temp > 255)
         {
             ERROR("%s:\"%s\" is invalid lladdr",
                   __FUNCTION__, arg);
+            free(buf);
             return -1;
         }
 
@@ -5816,8 +5815,10 @@ link_addr_a2n(uint8_t *lladdr, int len, const char *str)
         if (cp == NULL)
             break;
 
-        arg = ++cp;
+        arg = cp + 1;
     }
+
+    free(buf);
     return i + 1;
 }
 

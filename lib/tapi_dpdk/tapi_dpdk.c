@@ -201,7 +201,7 @@ test_arg2testpmd_arg(const char *test_arg)
             result.ptr[i] = '-';
     }
 
-    chop = strchr(te_string_value(&result), TAPI_DPDK_TESTPMD_ARG_NMAE_CHOP);
+    chop = strchr(result.ptr, TAPI_DPDK_TESTPMD_ARG_NMAE_CHOP);
     if (chop != NULL)
         *chop = '\0';
 

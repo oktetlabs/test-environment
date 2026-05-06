@@ -1353,8 +1353,8 @@ ds_dhcpserver_save_conf(void)
 static bool
 check_dhcpd_pid(const char *pid_filename)
 {
-    int     rc = 0;
-    char   *name;
+    const char *name;
+    int rc = 0;
 
     sprintf(buf, "cat %s 2>/dev/null 1>/dev/null", pid_filename);
 
@@ -1365,7 +1365,7 @@ check_dhcpd_pid(const char *pid_filename)
     }
 
     if ((name = strrchr(dhcp_server_exec, '/')) == NULL)
-        name = (char *)dhcp_server_exec;
+        name = dhcp_server_exec;
     else
         name++;
 

@@ -2231,7 +2231,7 @@ l2tp_lns_range_add_routine(const char *lns_name, const char *option_name,
                            const char *range)
 {
     char                 buf_ip[INET_ADDRSTRLEN] = "/0";
-    char                *hyphen;
+    const char          *hyphen;
 
     te_l2tp_option      *l2tp_option;
     te_l2tp_ipv4_range  *l2tp_range;

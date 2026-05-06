@@ -2010,7 +2010,7 @@ trc_keys_free(trc_keys *keys)
 char *trc_keys_filename(const char *filename)
 {
     char *keys_filename;
-    char *suffix = strstr(filename, TRC_REPORT_KEYS_FILENAME_EXTENSION);
+    const char *suffix = strstr(filename, TRC_REPORT_KEYS_FILENAME_EXTENSION);
     char *prefix = strndup(filename, (suffix == NULL) ? strlen(filename) :
                            (unsigned)(suffix - filename));
     if (prefix == NULL)

@@ -392,7 +392,7 @@ main(int argc, const char *argv[])
     const char *ta_dir = NULL;
     const char *core_dir = NULL;
 
-    char *p = NULL;
+    const char *p = NULL;
     char host_name[HOST_NAME_MAX];
     te_string out_str = TE_STRING_INIT;
     te_string log_str = TE_STRING_INIT;

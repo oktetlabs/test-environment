@@ -813,7 +813,7 @@ iptables_rules_set(unsigned int  gid, const char *oid,
     FILE *fp = NULL;
     int   in_fd;
     char  buf[IPTABLES_CMD_BUF_SIZE];
-    char *p = NULL;
+    const char *p = NULL;
     pid_t pid;
     int   status;
 

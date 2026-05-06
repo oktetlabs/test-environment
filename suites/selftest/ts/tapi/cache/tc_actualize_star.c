@@ -26,7 +26,7 @@ cb_common(const char *method, const char *oid, void *opaque)
     opaque_t   *op = opaque;
     int         i;
     cfg_handle  handle;
-    char       *name;
+    const char *name;
 
     assert(oid != NULL);
 

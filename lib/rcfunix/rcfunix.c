@@ -451,7 +451,7 @@ rcfunix_ta_sudo(unix_ta *ta)
 static unsigned int
 rcfunix_ta_type_prefix_len(const char *ta_type)
 {
-    char *s = strchr(ta_type, '_');
+    const char *s = strchr(ta_type, '_');
 
     if (s != NULL)
     {
@@ -1514,6 +1514,7 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
     char        buf[16];
     char       *tmp;
     size_t      len = 16;
+    const char *host_sep;
     const char *host;
     int         tries = 3;
     int         sleep_sec = 1;
@@ -1552,10 +1553,10 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
     }
 
     host = rcfunix_connect_to(ta, false);
+    host_sep = strchr(host, '@');
 
-    tmp = strchr(host, '@');
-    if (tmp != NULL)
-        host = tmp + 1;
+    if (host_sep != NULL)
+        host = host_sep + 1;
 
     VERB("Connecting to TA '%s'", ta->ta_name);
 

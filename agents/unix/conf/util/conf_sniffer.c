@@ -596,7 +596,8 @@ static te_errno
 sniffer_parse_sniff_id(const char* buf, sniffer_id *id)
 {
     unsigned     strl;
-    char        *ptr;
+    const char  *ptr;
+    char        *endptr;
 
 /**
  * Skip spaces in the command.
@@ -633,8 +634,8 @@ sniffer_parse_sniff_id(const char* buf, sniffer_id *id)
     buf = ptr;
 
     SNIF_SK_SPS(buf);
-    id->ssn = strtoll(buf, &ptr, 10);
-    if (buf == ptr)
+    id->ssn = strtoll(buf, &endptr, 10);
+    if (buf == endptr)
     {
         WARN("Wrong sniffer SSN in the sniffer id.");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);

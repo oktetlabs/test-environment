@@ -541,7 +541,7 @@ open_data_connection(tapi_storage_client *client)
     tapi_storage_client_ftp_context *ftp_context = client->context;
     te_dbuf   *cmdbuf_r = &ftp_context->cmdbuf_r;
     te_errno   rc;
-    char      *str;
+    const char *str;
     in_addr_t  addr;
     in_port_t  port;
     uint8_t   *octet;
@@ -835,11 +835,11 @@ static te_errno
 ftp_pwd(tapi_storage_client *client, tapi_local_file *directory)
 {
     tapi_storage_client_ftp_context *ftp_context = client->context;
-    te_dbuf  *cmdbuf_r = &ftp_context->cmdbuf_r;
-    te_errno  rc;
-    char     *path_begin;
-    char     *path_end;
-    ssize_t   path_len;     /* Pathname string length including '\0'. */
+    te_dbuf *cmdbuf_r = &ftp_context->cmdbuf_r;
+    const char *path_begin;
+    const char *path_end;
+    ssize_t path_len;     /* Pathname string length including '\0'. */
+    te_errno rc;
 
     assert(directory != NULL);
     rc = send_command(client, FTP_CMD_PWD_FMT);
