@@ -91,7 +91,7 @@ tester_interactive_open_prompt(const tester_cfgs *cfgs,
 
             if (argc < 2)
             {
-                printf(INVALID_SYNTAX_ERROR);
+                printf("%s", INVALID_SYNTAX_ERROR);
                 continue;
             }
             for (i = 1; i < argc; i++)
@@ -127,7 +127,7 @@ tester_interactive_open_prompt(const tester_cfgs *cfgs,
         }
         else
         {
-            printf(INVALID_SYNTAX_ERROR);
+            printf("%s", INVALID_SYNTAX_ERROR);
             continue;
         }
     }

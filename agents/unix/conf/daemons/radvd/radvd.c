@@ -323,10 +323,10 @@ te_radvd_option2str(char *str, te_radvd_option *option)
     switch (type = te_radvd_optcode2opttype(option->code))
     {
         case OPTTYPE_BOOLEAN:
-            sprintf(str, (option->boolean) ? "on" : "off");
+            sprintf(str, "%s", (option->boolean) ? "on" : "off");
             break;
         case OPTTYPE_PREFERENCE:
-            sprintf(str, preference_optval2str(option->preference));
+            sprintf(str, "%s", preference_optval2str(option->preference));
             break;
         case OPTTYPE_INTEGER:
             if (option->integer == -1)
