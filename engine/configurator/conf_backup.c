@@ -9,6 +9,8 @@
 
 #include "conf_defs.h"
 #include "te_alloc.h"
+#define TE_EXPAND_XML 1
+#include "te_expand.h"
 
 /**
  * Parses all object dependencies in the configuration file.
@@ -178,7 +180,8 @@ register_objects(xmlNodePtr *node, bool reg)
             xmlFree(attr);
         }
 
-        if ((attr = xmlGetProp(cur, (const xmlChar *)"volatile")) != NULL)
+        if ((attr = (xmlChar *)xmlGetProp_exp(cur, (const xmlChar *)"volatile"))
+                != NULL)
         {
             if (strcmp((char *)attr, "true") == 0)
                 msg->vol = true;

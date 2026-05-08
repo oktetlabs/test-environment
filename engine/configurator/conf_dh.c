@@ -693,7 +693,7 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                     attr = NULL;
                 }
 
-                attr = (char *)xmlGetProp(tmp, (const xmlChar *)"volatile");
+                attr = xmlGetProp_exp(tmp, (const xmlChar *)"volatile");
                 if (attr != NULL)
                 {
                     if (strcmp(attr, "true") == 0)
