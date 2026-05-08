@@ -1525,6 +1525,7 @@
     - oid: "/agent/route"
       access: read_create
       type: address
+      volatile: ${TE_VOLATILE_ROUTES:-false}
       depends:
         - oid: "/agent/interface"
         - oid: "/agent/interface/status"
