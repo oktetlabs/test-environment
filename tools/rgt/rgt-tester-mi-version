@@ -14,6 +14,7 @@ rgt-tester-mi-version log.raw test_end
 
 import argparse
 import json
+import pathlib
 import subprocess
 import sys
 
@@ -25,7 +26,8 @@ parser.add_argument('mi_type')
 
 args = parser.parse_args()
 
-proc = subprocess.Popen(['rgt-conv', '--no-cntrl-msg', '--mode=mi',
+bindir = pathlib.Path(__file__).parent.resolve()
+proc = subprocess.Popen([f'{bindir}/rgt-conv', '--no-cntrl-msg', '--mode=mi',
                          '--stop-at-entity=Tester', args.raw_log,
                          '/dev/stdout'], stdout=subprocess.PIPE)
 rc = proc.wait()

@@ -138,7 +138,7 @@ elif [[ "${req_path}" =~ bublik[.]xml$ ||
             err_cleanup "Failed to create XML log for Bublik"
         fi
     else
-        test_end_ver=$(rgt-tester-mi-version "${raw_log}" test_end)
+        test_end_ver=$("${bindir}/rgt-tester-mi-version" "${raw_log}" test_end)
 
         if [[ "${test_end_ver}" -ge 2 ]] ; then
             "${bindir}"/rgt-proc-raw-log --mi-ts \
