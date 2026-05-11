@@ -259,7 +259,7 @@ main(int argc, char *argv[])
         if (rcf_rpc_server_thread_create(pco_iut, st_name[i],
                                          &pco_iut_st[i]) != 0)
         {
-            TEST_FAIL("ST %dth rcf_rpc_server_thread_create() failed");
+            TEST_FAIL("ST %dth rcf_rpc_server_thread_create() failed", i);
         }
 
         /* "server" threads arguments */
