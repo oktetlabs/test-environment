@@ -120,8 +120,10 @@ def main():
 
             if 'start_ts' not in top:
                 top['start_ts'] = formatted_ts
+                top['start_ts_utc'] = ts
 
             top['end_ts'] = formatted_ts
+            top['end_ts_utc'] = ts
 
             mi_type = mi['type']
 
@@ -147,6 +149,7 @@ def main():
                 obj = {}
                 obj['iters'] = []
                 obj['start_ts'] = formatted_ts
+                obj['start_ts_utc'] = ts
 
                 parse_test_start(obj, msg)
 
@@ -163,6 +166,7 @@ def main():
                 obj = objs.pop()
 
                 obj['end_ts'] = formatted_ts
+                obj['end_ts_utc'] = ts
 
                 msg = mi['msg']
                 parse_test_end(obj, msg)
@@ -184,6 +188,7 @@ def main():
     while len(objs) > 1:
         obj = objs.pop()
         obj['end_ts'] = top['end_ts']
+        obj['end_ts_utc'] = top['end_ts_utc']
         obj['obtained'] = {
             'result': {
                 'status': 'INCOMPLETE'
