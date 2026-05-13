@@ -590,7 +590,6 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
     }
     else
     {
-        int found = 0;
         int match_result = 0;
 
         trc_test_iter *iter = NULL;
@@ -632,7 +631,6 @@ trc_db_walker_step_iter(te_trc_db_walker *walker, unsigned int n_args,
             if (match_result != ITER_NO_MATCH)
             {
                 iter = walker->iter;
-                found++;
 
                 if (match_result == ITER_WILD_MATCH)
                 {

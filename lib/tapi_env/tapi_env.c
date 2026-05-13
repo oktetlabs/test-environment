@@ -844,16 +844,15 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
     te_errno        rc = 0;
     tapi_env_net   *env_net;
     cfg_val_type    val_type;
-    unsigned int    i;
     char           *net_oid;
     unsigned int    n_ip_nets;
     cfg_handle     *ip_nets;
     char           *ip_net_oid;
 
 
-    for (env_net = SLIST_FIRST(nets), i = 0;
+    for (env_net = SLIST_FIRST(nets);
          env_net != NULL;
-         env_net = SLIST_NEXT(env_net, links), ++i)
+         env_net = SLIST_NEXT(env_net, links))
     {
         env_net->cfg_net = cfg_nets->nets + env_net->i_net;
 

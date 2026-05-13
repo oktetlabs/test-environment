@@ -455,9 +455,6 @@ find_device_by_id(unsigned vendor_id, unsigned device_id, unsigned devno)
 static void
 free_vendor_list(pci_vendors *list)
 {
-    static int callnum = 0;
-    callnum++;
-
     while (!LIST_EMPTY(list))
     {
         pci_vendor *vendor = LIST_FIRST(list);
@@ -626,9 +623,6 @@ update_device_list(void)
     size_t n_devs;
     pci_device *devs = scan_pci_bus(&n_devs);
     pci_vendors *vendors;
-
-    static int callnum = 0;
-    callnum++;
 
     if (devs == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENODEV);

@@ -41,7 +41,6 @@ tad_bps_pkt_frag_init(const tad_bps_pkt_frag *descr,
 {
     te_errno        rc;
     unsigned int    i;
-    unsigned int    offset;
 
     if (descr == NULL || bps == NULL)
     {
@@ -55,7 +54,7 @@ tad_bps_pkt_frag_init(const tad_bps_pkt_frag *descr,
     bps->tx_def = TE_ALLOC(fields * sizeof(bps->tx_def[0]));
     bps->rx_def = TE_ALLOC(fields * sizeof(bps->rx_def[0]));
 
-    for (offset = 0, i = 0; i < fields;  offset += descr[i].len, ++i)
+    for (i = 0; i < fields; ++i)
     {
         /* FIXME: init should be used here */
         tad_data_unit_clear(bps->tx_def + i);

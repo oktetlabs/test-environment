@@ -123,7 +123,6 @@ static inline void
 rgt_check_curr_stream(void)
 {
     rgt_file_ctx *ctx;
-    int           i     = 0;
 
     curr_stream = SLIST_FIRST(&rgt_flist_h);
     if (curr_stream == NULL)
@@ -145,7 +144,6 @@ rgt_check_curr_stream(void)
         {
             prev_stream = ctx;
         }
-        i++;
     }
 }
 
