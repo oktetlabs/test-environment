@@ -1100,6 +1100,16 @@
          Name: CPU ID
          Value: Interrupt counter
 
+    - oid: "/agent/interface/irq/smp_affinity"
+      access: read_write
+      depends:
+        - oid: "/agent/interface/irq/smp_affinity_list"
+      type: uint64
+      d: |
+         Interrupt affinity mask
+         Name: none
+         Value: Bitmask
+
     - oid: "/agent/loadavg"
       access: read_only
       type: none

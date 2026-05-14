@@ -32,6 +32,7 @@ struct ta_irq_obj {
     unsigned int  irq_num;
     char          name[MAX_IRQ_NAME_LEN];
     te_vec        irq_per_cpu;
+    uint64_t      smp_affinity;
 };
 
 static void
@@ -359,7 +360,35 @@ ta_irq_fill_objs(unsigned int gid, const char *if_name)
         unsigned int irq_val;
         struct ta_irq_per_cpu *irq_per_cpu;
         bool removed_irq = false;
+        FILE *affinity_file;
+        char *affinity_path;
 
+        /* Check affinity mask */
+        affinity_path = te_string_fmt("/proc/irq/%u/smp_affinity",
+                                      irq_obj->irq_num);
+        affinity_file = fopen(affinity_path, "r");
+        free(affinity_path);
+        if (affinity_file == NULL)
+        {
+            rc = TE_OS_RC(TE_TA_UNIX, errno);
+            ERROR("Failed to open IRQ %u affinity mask", irq_obj->irq_num);
+            goto cleanup;
+        }
+        if (fgets(line, sizeof(line), affinity_file) == NULL)
+        {
+            rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+            ERROR("Failed to read IRQ %u affinity mask", irq_obj->irq_num);
+            fclose(affinity_file);
+            goto cleanup;
+        }
+        fclose(affinity_file);
+        if (sscanf(line, "%" TE_PRINTF_64 "x", &irq_obj->smp_affinity) != 1)
+        {
+            ERROR("Failed to parse IRQ %u affinity mask", irq_obj->irq_num);
+            goto cleanup;
+        }
+
+        /* Gather interrupt counters */
         while (true)
         {
             if (fgets(line, sizeof(line), f) == NULL)
@@ -496,6 +525,62 @@ get_irq_obj(unsigned int gid, const char *if_name, const char *irq_num_str,
 }
 
 static te_errno
+irq_smp_affinity_get(unsigned int gid, const char *oid, char *value,
+                     const char *if_name, const char *irq_num)
+{
+    te_errno rc;
+    struct ta_irq_obj *irq_obj;
+
+    UNUSED(oid);
+
+    rc = get_irq_obj(gid, if_name, irq_num, &irq_obj);
+    if (rc != 0)
+        return rc;
+
+    snprintf(value, RCF_MAX_VAL, "%"PRIu64, irq_obj->smp_affinity);
+    return 0;
+}
+
+static te_errno
+irq_smp_affinity_set(unsigned int gid, const char *oid, const char *value,
+                     const char *if_name, const char *irq_num)
+{
+    te_errno rc;
+    char *path;
+    FILE *f;
+    struct ta_irq_obj *irq_obj;
+
+    UNUSED(oid);
+
+    path = te_string_fmt("/proc/irq/%s/smp_affinity", irq_num);
+    f = fopen(path, "w");
+    free(path);
+    if (f == NULL)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("Failed to open IRQ %s affinity mask for writing: %r",
+              irq_num, rc);
+        return rc;
+    }
+
+    rc = get_irq_obj(gid, if_name, irq_num, &irq_obj);
+    if (rc != 0)
+        return rc;
+
+    rc = te_str_to_uint64(value, 10, &irq_obj->smp_affinity);
+    if (rc != 0)
+        return rc;
+
+    if (fprintf(f, "%"PRIx64"\n", irq_obj->smp_affinity) < 0)
+    {
+        rc = te_rc_os2te(errno);
+        ERROR("Failed to write IRQ %s affinity mask: %r", irq_num, rc);
+    }
+    fclose(f);
+    return rc;
+}
+
+static te_errno
 irq_cpu_get(unsigned int gid, const char *oid, char *value,
             const char *if_name, const char *irq_num,
             const char *cpu_num_str)
@@ -622,8 +707,15 @@ irq_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
     return 0;
 }
 
+static rcf_pch_cfg_object node_irq_smp_affinity = {
+    .sub_id = "smp_affinity",
+    .get = (rcf_ch_cfg_get)irq_smp_affinity_get,
+    .set = (rcf_ch_cfg_set)irq_smp_affinity_set,
+};
+
 static rcf_pch_cfg_object node_irq_cpu = {
     .sub_id = "cpu",
+    .brother = &node_irq_smp_affinity,
     .get = (rcf_ch_cfg_get)irq_cpu_get,
     .list = (rcf_ch_cfg_list)irq_cpu_list,
 };
