@@ -661,6 +661,30 @@ typedef struct te_optional_double_t {
 #define TE_OPTIONAL_DOUBLE_UNDEF \
     (te_optional_double_t){ .defined = false }
 
+/** Boolean which can be left undefined */
+typedef struct te_optional_bool_t {
+    bool value;   /**< Value */
+    bool defined; /**< If @c true, value is defined */
+} te_optional_bool_t;
+
+/**
+ * Defined value for te_optional_bool_t.
+ *
+ * @param _x        Value to set.
+ */
+#define TE_OPTIONAL_BOOL_VAL(_x)                                             \
+    (te_optional_bool_t)                                                  \
+    {                                                                        \
+        .value = (_x), .defined = true                                       \
+    }
+
+/** Undefined value for te_optional_bool_t. */
+#define TE_OPTIONAL_BOOL_UNDEF                                               \
+    (te_optional_bool_t)                                                     \
+    {                                                                        \
+        .defined = false                                                     \
+    }
+
 /**@}*/
 
 #ifdef __cplusplus
