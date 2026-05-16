@@ -92,10 +92,11 @@
       "type": "object",
       "properties": {
         "aggr": {
-          "description": "Statistical aggregation (except single), see 'meas_aggr_names'",
+          "description": "Statistical aggregation (except single and series), see 'meas_aggr_names'",
           "type": "string",
           "enum": [
             "single",
+            "series",
             "min",
             "max",
             "mean",

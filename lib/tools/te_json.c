@@ -245,6 +245,18 @@ te_json_add_array_str(te_json_ctx_t *ctx, bool skip_null,
 }
 
 void
+te_json_add_array_float(te_json_ctx_t *ctx, size_t n_vals,
+                        const double vals[n_vals], int precision)
+{
+    size_t i;
+
+    te_json_start_array(ctx);
+    for (i = 0; i < n_vals; i++)
+        te_json_add_float(ctx, vals[i], precision);
+    te_json_end(ctx);
+}
+
+void
 te_json_add_kvpair(te_json_ctx_t *ctx, const te_kvpair_h *head)
 {
     te_kvpair *p;
