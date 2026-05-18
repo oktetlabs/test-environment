@@ -246,6 +246,7 @@ function process_tar_file()
             | grep -v "<"
     fi
 
+    echo "Successfully published the logs here: ${destdir}"
     return 0
 }
 
