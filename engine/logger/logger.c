@@ -1109,7 +1109,7 @@ sniffer_polling_sets_cli_init(void)
     if (tmp != NULL)
         snifp_sets.ofill = atoi(tmp) == 0 ? ROTATION : TAIL_DROP;
 
-    tmp = getenv("TE_SNIFF_LOG_PER");
+    tmp = getenv("TE_SNIFF_LOG_PERIOD");
     if (tmp != NULL)
         snifp_sets.period = (unsigned)atoi(tmp);
 }

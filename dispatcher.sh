@@ -754,7 +754,7 @@ process_opts()
                 export TE_SNIFF_LOG_FSIZE ;;
             --sniff-log-ofill-drop*) TE_SNIFF_LOG_OFILL=1
                 export TE_SNIFF_LOG_OFILL ;;
-            --sniff-log-period=*) TE_SNIFF_LOG_PERIOD="${1#--sniff-period=}"
+            --sniff-log-period=*) TE_SNIFF_LOG_PERIOD="${1#--sniff-log-period=}"
                 export TE_SNIFF_LOG_PERIOD ;;
 
             --sniff-not-feed-conf*)
