@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
-/* Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. */
+/* Copyright (C) 2023-2026 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief RPC types for BPF-related calls
  *
@@ -54,6 +54,8 @@ RPCBITMAP2STR(xsk_libxdp_flags, XSK_LIBXDP_FLAGS_MAPPING_LIST)
  * and improve performance.
  */
 #define RPC_XDP_BIND_USE_NEED_WAKEUP (1 << 3)
+/** Enable split packet support (multi-buffer, scatter-gather) */
+#define RPC_XDP_BIND_USE_SG (1 << 4)
 
 /**@} */
 
@@ -65,7 +67,8 @@ RPCBITMAP2STR(xsk_libxdp_flags, XSK_LIBXDP_FLAGS_MAPPING_LIST)
     RPC_BIT_MAP_ENTRY(XDP_BIND_SHARED_UMEM), \
     RPC_BIT_MAP_ENTRY(XDP_BIND_COPY), \
     RPC_BIT_MAP_ENTRY(XDP_BIND_ZEROCOPY), \
-    RPC_BIT_MAP_ENTRY(XDP_BIND_USE_NEED_WAKEUP)
+    RPC_BIT_MAP_ENTRY(XDP_BIND_USE_NEED_WAKEUP), \
+    RPC_BIT_MAP_ENTRY(XDP_BIND_USE_SG)
 
 /**
  * xdp_bind_flags_rpc2str()

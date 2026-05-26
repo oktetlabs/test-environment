@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
-/* Copyright (C) 2023 OKTET Labs Ltd. All rights reserved. */
+/* Copyright (C) 2023-2026 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief TAPI RPC for BPF
  *
@@ -123,7 +123,9 @@ extern ssize_t rpc_xsk_rx_fill_simple(rcf_rpc_server *rpcs, rpc_ptr umem,
  *
  * @note This function is meant to be used with rpc_xsk_rx_fill_simple().
  *       After reading data from frame buffer, the buffer is again added
- *       to FILL ring so that it can be reused.
+ *       to FILL ring so that it can be reused. If a packet is delivered
+ *       via multiple descriptors (XDP_PKT_CONTD), data from all segments
+ *       is returned as a single contiguous buffer.
  *
  * @param rpcs        RPC server
  * @param sock        RPC pointer to socket structure on TA
@@ -136,13 +138,15 @@ extern ssize_t rpc_xsk_receive_simple(rcf_rpc_server *rpcs, rpc_ptr sock,
                                       void *buf, size_t len);
 
 /**
- * Send a single packet from AF_XDP socket.
+ * Send a packet from AF_XDP socket.
  *
  * @note This function chooses for sending one of frame buffers
  *       not added to FILL ring by rpc_xsk_rx_fill_simple().
  *       After adding packet buffer to TX ring, it waits until
  *       completion can be read from COMPLETION ring, and marks
- *       frame buffer as free for future use.
+ *       frame buffer as free for future use. If packet length
+ *       exceeds UMEM frame size, it is automatically split into
+ *       multiple descriptors.
  *
  * @param rpcs        RPC server
  * @param sock        RPC pointer to socket structure on TA

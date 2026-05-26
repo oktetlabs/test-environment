@@ -328,7 +328,7 @@ xsk_libxdp_flags_rpc2h(uint32_t flags, struct xsk_socket_config *config)
 }
 
 /* Convert XDP bind flags to native value */
-static void
+static int
 xdp_bind_flags_rpc2h(uint32_t flags, struct xsk_socket_config *config)
 {
     config->bind_flags = 0;
@@ -352,6 +352,20 @@ xdp_bind_flags_rpc2h(uint32_t flags, struct xsk_socket_config *config)
     if (flags & RPC_XDP_BIND_USE_NEED_WAKEUP)
         config->bind_flags |= XDP_USE_NEED_WAKEUP;
 #endif
+
+#ifdef XDP_USE_SG
+    if (flags & RPC_XDP_BIND_USE_SG)
+        config->bind_flags |= XDP_USE_SG;
+#else
+    if (flags & RPC_XDP_BIND_USE_SG)
+    {
+        te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP),
+                         "XDP_USE_SG is not supported by local headers/libxdp");
+        return -1;
+    }
+#endif
+
+    return 0;
 }
 
 /* Call xsk_socket__create() */
@@ -398,7 +412,9 @@ ta_xsk_socket__create(tarpc_xsk_socket__create_in *in,
         sock->config.tx_size = conf->tx_size;
         xsk_libxdp_flags_rpc2h(conf->libxdp_flags, &sock->config);
         sock->config.xdp_flags = conf->xdp_flags;
-        xdp_bind_flags_rpc2h(conf->bind_flags, &sock->config);
+        rc = xdp_bind_flags_rpc2h(conf->bind_flags, &sock->config);
+        if (rc != 0)
+            goto finish;
 
         cfg_ptr = &sock->config;
     }
@@ -599,6 +615,16 @@ TARPC_FUNC_STANDALONE(xsk_rx_fill_simple, {},
     MAKE_CALL(out->retval = ta_xsk_rx_fill_simple(in, out));
 })
 
+static bool
+xsk_rx_desc_is_contd(const struct xdp_desc *rx_desc)
+{
+#ifdef XDP_PKT_CONTD
+    return ((rx_desc->options & XDP_PKT_CONTD) != 0);
+#else
+    return false;
+#endif
+}
+
 /* Read a packet from Rx queue */
 static ssize_t
 ta_xsk_receive_simple(tarpc_xsk_receive_simple_in *in,
@@ -606,12 +632,18 @@ ta_xsk_receive_simple(tarpc_xsk_receive_simple_in *in,
 {
     static rpc_ptr_id_namespace ns_sock = RPC_PTR_ID_NS_INVALID;
     ta_xsk_socket *sock = NULL;
+    bool pkt_finished = false;
+    size_t data_off = 0;
+    size_t segs_num = 0;
+    size_t pkt_len = 0;
+    uint32_t fill_idx;
     uint32_t idx;
     size_t count;
+    size_t i;
+    int rc;
 
     const struct xdp_desc *rx_desc = NULL;
     uint64_t addr;
-    uint32_t len;
     uint8_t *pkt;
     uint8_t *buf;
 
@@ -620,43 +652,88 @@ ta_xsk_receive_simple(tarpc_xsk_receive_simple_in *in,
 
     RCF_PCH_MEM_INDEX_TO_PTR_RPC(sock, in->socket_ptr, ns_sock, -1);
 
-    count = xsk_ring_cons__peek(&sock->rx, 1, &idx);
+    count = xsk_ring_cons__peek(&sock->rx,
+                                (sock->config.rx_size == 0 ?
+                                 1 : sock->config.rx_size),
+                                &idx);
     if (count == 0)
         return 0;
 
-    rx_desc = xsk_ring_cons__rx_desc(&sock->rx, idx);
+    for (i = 0; i < count; i++)
+    {
+        rx_desc = xsk_ring_cons__rx_desc(&sock->rx, idx + i);
 
-    addr = xsk_umem__add_offset_to_addr(rx_desc->addr);
-    len = rx_desc->len;
-    pkt = xsk_umem__get_data(sock->umem->buf, addr);
+        if (pkt_len + rx_desc->len < pkt_len)
+        {
+            te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EOVERFLOW),
+                             "packet length overflows size_t");
+            xsk_ring_cons__cancel(&sock->rx, count);
+            return -1;
+        }
 
-    xsk_ring_cons__release(&sock->rx, 1);
+        pkt_len += rx_desc->len;
+        segs_num++;
 
-    buf = TE_ALLOC(len);
+        if (!xsk_rx_desc_is_contd(rx_desc))
+        {
+            pkt_finished = true;
+            break;
+        }
+    }
 
-    memcpy(buf, pkt, len);
-    out->data.data_val = buf;
-    out->data.data_len = len;
+    if (!pkt_finished)
+    {
+        te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EAGAIN),
+                         "incomplete multi-segment packet in RX batch");
+        xsk_ring_cons__cancel(&sock->rx, count);
+        return -1;
+    }
+
+    if (count > segs_num)
+        xsk_ring_cons__cancel(&sock->rx, count - segs_num);
+
+    buf = TE_ALLOC(pkt_len);
+
+    for (i = 0; i < segs_num; i++)
+    {
+        rx_desc = xsk_ring_cons__rx_desc(&sock->rx, idx + i);
+        addr = xsk_umem__add_offset_to_addr(rx_desc->addr);
+        pkt = xsk_umem__get_data(sock->umem->buf, addr);
+
+        memcpy(buf + data_off, pkt, rx_desc->len);
+        data_off += rx_desc->len;
+    }
 
     /*
      * Submitting buffer back to FILL ring of UMEM, so that it can be
      * reused for receiving other packets.
      */
 
-    count = xsk_ring_prod__reserve(&sock->umem_rings->fill, 1, &idx);
-    if (count < 1)
+    rc = xsk_ring_prod__reserve(&sock->umem_rings->fill, segs_num, &fill_idx);
+    if (rc != (int)segs_num)
     {
         te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOBUFS),
                          "xsk_ring_prod__reserve() did not reserve "
                          "requested number of descriptors");
+        xsk_ring_cons__cancel(&sock->rx, segs_num);
+        free(buf);
         return -1;
     }
 
-    *xsk_ring_prod__fill_addr(&sock->umem_rings->fill, idx) =
-        xsk_umem__extract_addr(rx_desc->addr);
-    xsk_ring_prod__submit(&sock->umem_rings->fill, 1);
+    for (i = 0; i < segs_num; i++)
+    {
+        rx_desc = xsk_ring_cons__rx_desc(&sock->rx, idx + i);
+        *xsk_ring_prod__fill_addr(&sock->umem_rings->fill, fill_idx + i) =
+            xsk_umem__extract_addr(rx_desc->addr);
+    }
 
-    return len;
+    xsk_ring_prod__submit(&sock->umem_rings->fill, segs_num);
+    xsk_ring_cons__release(&sock->rx, segs_num);
+
+    out->data.data_val = buf;
+    out->data.data_len = pkt_len;
+
+    return pkt_len;
 }
 
 TARPC_FUNC_STANDALONE(xsk_receive_simple, {},
@@ -672,13 +749,25 @@ ta_xsk_send_simple(tarpc_xsk_send_simple_in *in,
     static rpc_ptr_id_namespace ns_sock = RPC_PTR_ID_NS_INVALID;
     ta_xsk_socket *sock = NULL;
     ta_xsk_umem *umem = NULL;
-
-    uint8_t *buf;
-    uint64_t umem_addr;
+    size_t popped_num = 0;
+    size_t data_off = 0;
+    uint64_t *umem_addrs;
+    bool *comp_seen;
     uint64_t comp_addr;
+    size_t frame_size;
+    size_t segs_num;
+    size_t seg_len;
+    uint32_t j;
+    size_t i;
 
     struct xdp_desc *tx_desc;
+    uint32_t completed = 0;
+    bool submitted = false;
+    int retval = -1;
+    uint8_t *buf;
     uint32_t idx;
+    bool found;
+    uint32_t comp_idx;
     int rc;
 
     UNUSED(out);
@@ -688,32 +777,65 @@ ta_xsk_send_simple(tarpc_xsk_send_simple_in *in,
     RCF_PCH_MEM_INDEX_TO_PTR_RPC(sock, in->socket_ptr, ns_sock, -1);
 
     umem = sock->umem;
-    if (umem->stack_count == 0)
+    frame_size = umem->config.frame_size;
+    if (frame_size == 0)
+    {
+        te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EINVAL),
+                         "zero UMEM frame size");
+        return -1;
+    }
+
+    segs_num = (in->data.data_len == 0 ? 1 :
+                ((in->data.data_len + frame_size - 1) / frame_size));
+
+#ifndef XDP_PKT_CONTD
+    if (segs_num > 1)
+    {
+        te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP),
+                         "multi-segment TX is not supported by local headers/libxdp");
+        return -1;
+    }
+#endif
+
+    if (umem->stack_count < segs_num)
     {
         te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOBUFS),
                          "no free frames left in UMEM");
         return -1;
     }
 
-    rc = xsk_ring_prod__reserve(&sock->tx, 1, &idx);
-    if (rc != 1)
+    umem_addrs = TE_ALLOC(segs_num * sizeof(*umem_addrs));
+    comp_seen = TE_ALLOC(segs_num * sizeof(*comp_seen));
+    memset(comp_seen, 0, segs_num * sizeof(*comp_seen));
+
+    rc = xsk_ring_prod__reserve(&sock->tx, segs_num, &idx);
+    if (rc != (int)segs_num)
     {
         te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOBUFS),
-                         "xsk_ring_prod__reserve() cannot reserve TX "
-                         "descriptor");
-        return -1;
+                         "xsk_ring_prod__reserve() cannot reserve TX descriptors");
+        goto finish;
     }
 
-    tx_desc = xsk_ring_prod__tx_desc(&sock->tx, idx);
+    for (i = 0; i < segs_num; i++)
+    {
+        seg_len = MIN(frame_size, in->data.data_len - data_off);
+        umem_addrs[i] = umem->frames_stack[--umem->stack_count];
+        popped_num++;
+        buf = (uint8_t *)(umem->buf) + umem_addrs[i];
+        if (seg_len > 0)
+            memcpy(buf, in->data.data_val + data_off, seg_len);
+        data_off += seg_len;
 
-    umem_addr = umem->frames_stack[--umem->stack_count];
-    buf = (uint8_t *)(umem->buf) + umem_addr;
-    memcpy(buf, in->data.data_val, in->data.data_len);
+        tx_desc = xsk_ring_prod__tx_desc(&sock->tx, idx + i);
+        tx_desc->addr = umem_addrs[i];
+        tx_desc->len = seg_len;
+#ifdef XDP_PKT_CONTD
+        tx_desc->options = ((i + 1 < segs_num) ? XDP_PKT_CONTD : 0);
+#endif
+    }
 
-    tx_desc->addr = umem_addr;
-    tx_desc->len = in->data.data_len;
-
-    xsk_ring_prod__submit(&sock->tx, 1);
+    xsk_ring_prod__submit(&sock->tx, segs_num);
+    submitted = true;
 
     /*
      * Call sendto() to let kernel know that something should be sent
@@ -732,33 +854,67 @@ ta_xsk_send_simple(tarpc_xsk_send_simple_in *in,
         {
             te_rpc_error_set(TE_OS_RC(TE_TA_UNIX, errno),
                              "sendto() failed with unexpected errno");
-            return -1;
+            goto finish;
         }
     }
 
-    while (true)
+    while (completed < segs_num)
     {
-        rc = xsk_ring_cons__peek(&sock->umem_rings->comp, 1, &idx);
+        rc = xsk_ring_cons__peek(&sock->umem_rings->comp, segs_num - completed,
+                                 &comp_idx);
         if (rc > 0)
-            break;
+        {
+            for (j = 0; j < (uint32_t)rc; j++)
+            {
+                comp_addr =
+                    *xsk_ring_cons__comp_addr(&sock->umem_rings->comp,
+                                              comp_idx + j);
+                found = false;
 
-        usleep(1);
+                for (i = 0; i < segs_num; i++)
+                {
+                    if (!comp_seen[i] && umem_addrs[i] == comp_addr)
+                    {
+                        comp_seen[i] = true;
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    xsk_ring_cons__release(&sock->umem_rings->comp, rc);
+                    te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EFAIL),
+                                     "completion ring contains unknown UMEM address");
+                    goto finish;
+                }
+            }
+
+            completed += rc;
+            xsk_ring_cons__release(&sock->umem_rings->comp, rc);
+        }
+        else
+        {
+            usleep(1);
+        }
     }
 
-    comp_addr = *xsk_ring_cons__comp_addr(&sock->umem_rings->comp, idx);
-    xsk_ring_cons__release(&sock->umem_rings->comp, 1);
+    for (i = 0; i < segs_num; i++)
+        umem->frames_stack[umem->stack_count++] = umem_addrs[i];
 
-    if (comp_addr != umem_addr)
+    retval = 0;
+
+finish:
+
+    if (!submitted)
     {
-        te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EFAIL),
-                         "UMEM address in obtained completion is not the "
-                         "one passed to Tx queue");
-        return -1;
+        for (i = 0; i < popped_num; i++)
+            umem->frames_stack[umem->stack_count++] = umem_addrs[i];
     }
 
-    umem->stack_count++;
-
-    return 0;
+    free(comp_seen);
+    free(umem_addrs);
+    return retval;
 }
 
 TARPC_FUNC_STANDALONE(xsk_send_simple, {},
