@@ -2790,7 +2790,7 @@ get_test_package(xmlNodePtr root, tester_cfg *cfg,
      */
     if (node != NULL)
     {
-        char *obj;
+        char *obj = NULL;
 
         rc = get_node_with_text_content(&node, "description", &obj);
         if (rc != 0)
@@ -2800,9 +2800,17 @@ get_test_package(xmlNodePtr root, tester_cfg *cfg,
             return rc;
         }
         if (pkg->objective == NULL)
-            pkg->objective = obj;
+        {
+            /*
+             * If obj is NULL then 'description' is present but it's empty
+             * string.
+             */
+            pkg->objective = (obj == NULL) ? TE_STRDUP("") : obj;
+        }
         else
+        {
             free(obj);
+        }
     }
 #ifndef XML_DOC_ASSUME_VALID
     if (pkg->objective == NULL)
