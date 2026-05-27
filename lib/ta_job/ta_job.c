@@ -979,13 +979,14 @@ match_callback(ta_job_manager_t *manager, filter_t *filter,
          * instead of the next one.
          */
 #if 0
-        LGR_MESSAGE(filter->log_level, log_user, "%.*s", log_size, buf);
+        TE_LOG(filter->log_level, TE_LGR_ENTITY, log_user, "%.*s", log_size,
+               buf);
 #else
         te_string message = TE_STRING_INIT;
 
         te_string_append(&message, "%.*s", log_size, buf);
 
-        LGR_MESSAGE(filter->log_level, log_user, "%s", message.ptr);
+        TE_LOG(filter->log_level, TE_LGR_ENTITY, log_user, "%s", message.ptr);
 
         te_string_free(&message);
 #endif
