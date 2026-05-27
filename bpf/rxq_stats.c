@@ -27,9 +27,8 @@ TE_BPF_MAP_DEF(params, BPF_MAP_TYPE_HASH, 1,
 TE_BPF_MAP_DEF(xsocks, BPF_MAP_TYPE_XSKMAP, MAX_QUEUES,
                __u32, __u32);
 
-SEC("prog")
-int
-rxq_stats(struct xdp_md *ctx)
+static __attribute__((always_inline)) int
+rxq_stats_handle(struct xdp_md *ctx)
 {
     te_xdp_frame frame = TE_XDP_FRAME_INIT(ctx);
 
@@ -66,4 +65,18 @@ rxq_stats(struct xdp_md *ctx)
     }
 
     return XDP_PASS;
+}
+
+SEC("prog")
+int
+rxq_stats(struct xdp_md *ctx)
+{
+    return rxq_stats_handle(ctx);
+}
+
+SEC("xdp.frags")
+int
+rxq_stats_frags(struct xdp_md *ctx)
+{
+    return rxq_stats_handle(ctx);
 }

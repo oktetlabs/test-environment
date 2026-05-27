@@ -19,16 +19,45 @@
 #include "tapi_bpf.h"
 #include "tapi_bpf_rxq_stats.h"
 
+/**
+ * Get BPF entrypoint name according to selected attach mode.
+ *
+ * @param attach_mode   Requested attach mode.
+ *
+ * @return Program entrypoint name or @c NULL for unsupported mode.
+ */
+static const char *
+rxq_stats_get_prog_name(tapi_bpf_rxq_stats_attach_mode attach_mode)
+{
+    switch (attach_mode)
+    {
+        case TAPI_BPF_RXQ_STATS_ATTACH_MODE_REGULAR:
+            return "rxq_stats";
+
+        case TAPI_BPF_RXQ_STATS_ATTACH_MODE_FRAGS:
+            return "rxq_stats_frags";
+
+        default:
+            return NULL;
+    }
+}
+
 /* See description in tapi_bpf_rxq_stats.h */
 te_errno
-tapi_bpf_rxq_stats_init(const char *ta, const char *if_name,
-                        const char *prog_dir,
-                        unsigned int *bpf_id)
+tapi_bpf_rxq_stats_init_mode(const char *ta, const char *if_name,
+                             const char *prog_dir,
+                             tapi_bpf_rxq_stats_attach_mode attach_mode,
+                             unsigned int *bpf_id)
 {
+    const char *prog_name = NULL;
     char *ta_dir = NULL;
     unsigned int id = 0;
     te_string prog_path = TE_STRING_INIT;
     te_errno rc;
+
+    prog_name = rxq_stats_get_prog_name(attach_mode);
+    if (prog_name == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
     if (prog_dir == NULL || *prog_dir != '/')
     {
@@ -56,7 +85,7 @@ tapi_bpf_rxq_stats_init(const char *ta, const char *if_name,
         *bpf_id = id;
 
     rc = tapi_bpf_prog_link(ta, if_name, id, TAPI_BPF_LINK_XDP,
-                            "rxq_stats");
+                            prog_name);
     if (rc != 0)
         goto finish;
 
@@ -70,6 +99,17 @@ finish:
     te_string_free(&prog_path);
 
     return rc;
+}
+
+/* See description in tapi_bpf_rxq_stats.h */
+te_errno
+tapi_bpf_rxq_stats_init(const char *ta, const char *if_name,
+                        const char *prog_dir,
+                        unsigned int *bpf_id)
+{
+    return tapi_bpf_rxq_stats_init_mode(
+                    ta, if_name, prog_dir,
+                    TAPI_BPF_RXQ_STATS_ATTACH_MODE_REGULAR, bpf_id);
 }
 
 /* See description in tapi_bpf_rxq_stats.h */
@@ -129,7 +169,8 @@ tapi_bpf_rxq_stats_get_id(const char *ta, const char *if_name,
     }
 
     prog_name = CFG_OID_GET_INST_NAME(prog_oid, 3);
-    if (strcmp(prog_name, "rxq_stats") != 0)
+    if (strcmp(prog_name, "rxq_stats") != 0 &&
+        strcmp(prog_name, "rxq_stats_frags") != 0)
     {
         ERROR("%s(): unexpected XDP program '%s' is linked to interface %s "
               "on agent %s", __FUNCTION__, prog_name, if_name, ta);

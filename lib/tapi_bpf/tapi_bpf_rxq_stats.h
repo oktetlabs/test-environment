@@ -35,8 +35,18 @@ typedef struct tapi_bpf_rxq_stats {
     uint64_t pkts; /**< Number of received packets */
 } tapi_bpf_rxq_stats;
 
+/** Modes to attach "rxq_stats" BPF program to XDP hook. */
+typedef enum tapi_bpf_rxq_stats_attach_mode {
+    /** Attach regular XDP program section ("prog"/"xdp"). */
+    TAPI_BPF_RXQ_STATS_ATTACH_MODE_REGULAR = 0,
+    /** Attach XDP fragments-aware section ("xdp.frags"). */
+    TAPI_BPF_RXQ_STATS_ATTACH_MODE_FRAGS,
+} tapi_bpf_rxq_stats_attach_mode;
+
 /**
  * Initialize "rxq_stats" BPF object, link it to an interface.
+ * This helper keeps backward-compatible default behavior
+ * (regular XDP attach mode).
  *
  * @param ta        Test Agent
  * @param if_name   Interface name
@@ -49,6 +59,25 @@ typedef struct tapi_bpf_rxq_stats {
 extern te_errno tapi_bpf_rxq_stats_init(const char *ta, const char *if_name,
                                         const char *prog_dir,
                                         unsigned int *bpf_id);
+
+/**
+ * Initialize "rxq_stats" BPF object, link it to an interface with explicit
+ * attach mode selection.
+ *
+ * @param ta            Test Agent.
+ * @param if_name       Interface name.
+ * @param prog_dir      Where rxq_stats object file is located (may be
+ *                      a path relative to TA directory).
+ * @param attach_mode   XDP attach mode.
+ * @param bpf_id        Where to save BPF object ID (may be @c NULL).
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_bpf_rxq_stats_init_mode(
+                                  const char *ta, const char *if_name,
+                                  const char *prog_dir,
+                                  tapi_bpf_rxq_stats_attach_mode attach_mode,
+                                  unsigned int *bpf_id);
 
 /**
  * Unlink "rxq_stats" program from interface, destroy BPF object.
