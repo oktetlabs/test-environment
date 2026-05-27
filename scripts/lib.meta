@@ -126,17 +126,21 @@ te_meta_set_type() {
 # Priority: current branch > main > master > non-user/* > first containing
 # Arguments:
 #   Commit hash.
+#   Skip or not HEAD checking at the beginning ('skip' for skipping, any
+#   other - do not skip).
 # Output:
 #   Branch name (short) or empty string.
 ##########################################################################
 te_meta_get_best_git_branch() {
     local commit="$1"
+    local skip_head_check="$2"
     local current_branch
     local branches
     local branch
 
     # If on a branch (not detached HEAD), return it
-    current_branch="$(git symbolic-ref --short HEAD 2>/dev/null)"
+    [[ "${skip_head_check}" == "skip" ]] \
+        || current_branch="$(git symbolic-ref --short HEAD 2>/dev/null)"
     if [[ -n "${current_branch}" ]] ; then
         echo "${current_branch}"
         return 0
