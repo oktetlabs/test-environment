@@ -1701,7 +1701,7 @@ test_params_hash(test_iter_arg *args, unsigned int n_args)
     unsigned int  k;
     unsigned char digest[EVP_MAX_MD_SIZE];
     char *hash_str = TE_ALLOC(sizeof(digest) * 2 + 1);
-    int  *sorted = TE_ALLOC(n_args * sizeof(int));
+    int  *sorted = (n_args > 0) ? TE_ALLOC(n_args * sizeof(int)) : NULL;
     char  buf[8192] = {0, };
     int   len = 0;
 
