@@ -961,7 +961,7 @@ match_callback(ta_job_manager_t *manager, filter_t *filter,
     int log_size = size > (size_t)INT_MAX ? INT_MAX : (int)size;
     te_errno rc;
 
-    if (!eos)
+    if (!eos && filter->log_level != 0)
     {
         char log_user[MAX_LOG_USER_SIZE];
 
