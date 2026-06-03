@@ -252,8 +252,8 @@ open_pci_attr(const char *name, const char *attr, FILE **result)
     return rc;
 }
 
-static unsigned int
-read_pci_hex_attr(const char *name, const char *attr)
+static te_errno
+read_pci_hex_attr(const char *name, const char *attr, unsigned int *value)
 {
     FILE *f;
     te_errno rc = open_pci_attr(name, attr, &f);
@@ -263,15 +263,18 @@ read_pci_hex_attr(const char *name, const char *attr)
     {
         WARN("Cannot open '%s' for PCI device '%s', rc=%x",
              attr, name, rc);
-        return 0;
+        return rc;
     }
     if (fscanf(f, "%x", &result) != 1)
     {
         ERROR("Cannot parse PCI '%s' hex attribute '%s' value: %s",
               name, attr, strerror(errno));
+        fclose(f);
+        return TE_RC(TE_TA_UNIX, te_rc_os2te(errno));
     }
     fclose(f);
-    return result;
+    *value = result;
+    return 0;
 }
 
 static te_errno
@@ -299,7 +302,8 @@ read_pci_int_attr(const char *name, const char *attr, int *result)
 static bool
 populate_pci_device(pci_device *dst, const char *name)
 {
-    int rc;
+    te_errno rc;
+    unsigned int value;
 
     rc = parse_pci_address(name, &dst->address);
     if (rc != 0)
@@ -308,23 +312,28 @@ populate_pci_device(pci_device *dst, const char *name)
         return false;
     }
 
-    dst->vendor_id = read_pci_hex_attr(name, "vendor");
-    if (dst->vendor_id == 0)
+    rc = read_pci_hex_attr(name, "vendor", &value);
+    if (rc != 0)
     {
         ERROR("Unknown vendor ID for '%s'", name);
         return false;
     }
+    dst->vendor_id = value;
 
-    dst->device_id = read_pci_hex_attr(name, "device");
-    if (dst->device_id == 0)
+    rc = read_pci_hex_attr(name, "device", &value);
+    if (rc != 0)
     {
         ERROR("Unknown device ID for '%s'", name);
         return false;
     }
+    dst->device_id = value;
 
-    dst->subsystem_vendor = read_pci_hex_attr(name, "subsystem_vendor");
-    dst->subsystem_device = read_pci_hex_attr(name, "subsystem_device");
-    dst->device_class = read_pci_hex_attr(name, "class");
+    rc = read_pci_hex_attr(name, "subsystem_vendor", &value);
+    dst->subsystem_vendor = rc == 0 ? value : 0;
+    rc = read_pci_hex_attr(name, "subsystem_device", &value);
+    dst->subsystem_device = rc == 0 ? value : 0;
+    rc = read_pci_hex_attr(name, "class", &value);
+    dst->device_class = rc == 0 ? value : 0;
 
     return true;
 }
