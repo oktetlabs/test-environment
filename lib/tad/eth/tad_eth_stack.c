@@ -191,3 +191,23 @@ tad_eth_rw_destroy_cb(csap_p csap)
 
     return rc;
 }
+
+/* See description tad_eth_impl.h */
+char *
+tad_eth_get_param_cb(csap_p csap, unsigned int layer, const char *param)
+{
+    tad_eth_rw_data *spec_data = csap_get_rw_data(csap);
+
+    UNUSED(layer);
+
+    if (spec_data == NULL || param == NULL)
+        return NULL;
+
+    if (strcmp(param, CSAP_PARAM_TP_PACKETS) == 0 ||
+        strcmp(param, CSAP_PARAM_TP_DROPS) == 0)
+    {
+        return tad_eth_sap_get_tp_param(&spec_data->sap, param);
+    }
+
+    return NULL;
+}

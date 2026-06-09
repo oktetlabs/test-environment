@@ -139,6 +139,18 @@ extern te_errno tad_eth_sap_recv(tad_eth_sap *sap, unsigned int timeout,
                                  tad_pkt *pkt, size_t *pkt_len);
 
 /**
+ * Get Ethernet service access point PF_PACKET statistics parameter.
+ *
+ * @param sap           SAP description structure.
+ * @param param         Supported parameter name.
+ *
+ * @return Allocated parameter value string, or @c NULL if parameter is not
+ *         supported or cannot be obtained. The caller must free returned
+ *         string.
+ */
+extern char *tad_eth_sap_get_tp_param(tad_eth_sap *sap, const char *param);
+
+/**
  * Close Ethernet service access point for receiving.
  *
  * @param sap           SAP description structure

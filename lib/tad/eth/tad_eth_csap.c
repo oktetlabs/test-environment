@@ -26,7 +26,7 @@ static csap_spt_type_t eth_csap_spt =
 
     .init_cb             = tad_eth_init_cb,
     .destroy_cb          = tad_eth_destroy_cb,
-    .get_param_cb        = NULL,
+    .get_param_cb        = tad_eth_get_param_cb,
 
     .confirm_tmpl_cb     = tad_eth_confirm_tmpl_cb,
     .generate_pkts_cb    = tad_eth_gen_bin_cb,

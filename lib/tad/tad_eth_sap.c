@@ -84,12 +84,22 @@
 
 #include "te_errno.h"
 #include "te_alloc.h"
+#include "te_printf.h"
 #include "te_str.h"
 #include "logger_api.h"
 #include "logger_ta_fast.h"
 
+#if defined(USE_PF_PACKET) && defined(PACKET_STATISTICS)
+#define TAD_ETH_SAP_HAVE_TP_STATS 1
+#endif
+
+#ifdef TAD_ETH_SAP_HAVE_TP_STATS
+#include <pthread.h>
+#endif
+
 #include "tad_csap_inst.h"
 #include "tad_utils.h"
+#include "tad_common.h"
 #include "tad_eth_sap.h"
 #include "te_ethernet.h"
 
@@ -136,6 +146,16 @@ typedef struct tad_eth_sap_data {
     pcap_t         *out;        /**< Output handle (for send) */
     char            errbuf[PCAP_ERRBUF_SIZE]; /**< Error buffer for pcap
                                                    calls error messages */
+#endif
+#ifdef TAD_ETH_SAP_HAVE_TP_STATS
+    /*
+     * PACKET_STATISTICS is reset-on-read. A CSAP parameter request may run
+     * in parallel with receive stop/close, so reading kernel counters and
+     * updating the accumulated snapshot must be done under the same lock.
+     */
+    pthread_mutex_t stats_lock; /**< Lock for PACKET_STATISTICS snapshot. */
+    uint64_t tp_packets; /**< Accumulated PACKET_STATISTICS packets. */
+    uint64_t tp_drops; /**< Accumulated PACKET_STATISTICS drops. */
 #endif
     unsigned int    send_mode;  /**< Send mode */
     unsigned int    recv_mode;  /**< Receive mode */
@@ -244,6 +264,169 @@ pkt_handl(u_char *ptr, const struct pcap_pkthdr *header,
     return;
 }
 #endif
+
+#ifdef TAD_ETH_SAP_HAVE_TP_STATS
+/* Caller must hold data->stats_lock. */
+static te_errno
+tad_eth_sap_update_stats(tad_eth_sap_data *data)
+{
+    struct tpacket_stats stats;
+    socklen_t optlen;
+
+    if (data == NULL)
+        return TE_RC(TE_TAD_PF_PACKET, TE_EINVAL);
+
+    if (data->in < 0)
+        return 0;
+
+    memset(&stats, 0, sizeof(stats));
+    optlen = sizeof(stats);
+    if (getsockopt(data->in, SOL_PACKET, PACKET_STATISTICS,
+                   &stats, &optlen) != 0)
+    {
+        return TE_OS_RC(TE_TAD_PF_PACKET, errno);
+    }
+
+    if (optlen != sizeof(stats))
+        return TE_RC(TE_TAD_PF_PACKET, TE_EPROTO);
+
+    data->tp_packets += stats.tp_packets;
+    data->tp_drops += stats.tp_drops;
+
+    return 0;
+}
+
+static te_errno
+tad_eth_sap_close_input_socket(tad_eth_sap_data *data, const char *caller)
+{
+    te_errno unlock_rc;
+    te_errno rc;
+
+    rc = pthread_mutex_lock(&data->stats_lock);
+    if (rc != 0)
+    {
+        rc = TE_OS_RC(TE_TAD_PF_PACKET, rc);
+        WARN("%s(): failed to lock PACKET_STATISTICS: %r", caller, rc);
+        return close_socket(&data->in);
+    }
+
+    rc = tad_eth_sap_update_stats(data);
+    if (rc != 0)
+        WARN("%s(): failed to update PACKET_STATISTICS: %r", caller, rc);
+
+    rc = close_socket(&data->in);
+
+    unlock_rc = pthread_mutex_unlock(&data->stats_lock);
+    if (unlock_rc != 0 && rc == 0)
+        rc = TE_OS_RC(TE_TAD_PF_PACKET, unlock_rc);
+
+    return rc;
+}
+#endif
+
+#if defined(USE_PF_PACKET) && !defined(TAD_ETH_SAP_HAVE_TP_STATS)
+static te_errno
+tad_eth_sap_close_input_socket(tad_eth_sap_data *data, const char *caller)
+{
+    UNUSED(caller);
+
+    return close_socket(&data->in);
+}
+#endif
+
+static te_errno
+tad_eth_sap_get_tp_stats(tad_eth_sap *sap, uint64_t *tp_packets,
+                         uint64_t *tp_drops)
+{
+#ifdef TAD_ETH_SAP_HAVE_TP_STATS
+    tad_eth_sap_data *data;
+    te_errno unlock_rc;
+    te_errno rc;
+
+    if (sap == NULL || sap->data == NULL)
+        return TE_RC(TE_TAD_PF_PACKET, TE_EINVAL);
+
+    data = sap->data;
+
+    rc = pthread_mutex_lock(&data->stats_lock);
+    if (rc != 0)
+        return TE_OS_RC(TE_TAD_PF_PACKET, rc);
+
+    rc = tad_eth_sap_update_stats(data);
+    if (rc == 0)
+    {
+        if (tp_packets != NULL)
+            *tp_packets = data->tp_packets;
+        if (tp_drops != NULL)
+            *tp_drops = data->tp_drops;
+    }
+
+    unlock_rc = pthread_mutex_unlock(&data->stats_lock);
+    if (unlock_rc)
+        TE_RC_UPDATE(rc, TE_OS_RC(TE_TAD_PF_PACKET, unlock_rc));
+
+    return rc;
+#else
+    UNUSED(sap);
+    UNUSED(tp_packets);
+    UNUSED(tp_drops);
+
+#ifdef USE_PF_PACKET
+    return TE_RC(TE_TAD_PF_PACKET, TE_EOPNOTSUPP);
+#else
+    return TE_RC(TE_TAD_BPF, TE_EOPNOTSUPP);
+#endif
+#endif
+}
+
+/* See the description in tad_eth_sap.h */
+char *
+tad_eth_sap_get_tp_param(tad_eth_sap *sap, const char *param)
+{
+#ifdef TAD_ETH_SAP_HAVE_TP_STATS
+    uint64_t tp_packets;
+    uint64_t tp_drops;
+    uint64_t value;
+    char *result = NULL;
+    te_errno rc;
+#else
+    UNUSED(sap);
+    UNUSED(param);
+#endif
+
+#ifdef TAD_ETH_SAP_HAVE_TP_STATS
+    if (param == NULL)
+        return NULL;
+
+    assert(strcmp(param, CSAP_PARAM_TP_PACKETS) == 0 ||
+           strcmp(param, CSAP_PARAM_TP_DROPS) == 0);
+#endif
+
+#ifdef TAD_ETH_SAP_HAVE_TP_STATS
+    rc = tad_eth_sap_get_tp_stats(sap, &tp_packets, &tp_drops);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to get PF_PACKET statistics: %r",
+              __FUNCTION__, rc);
+        return NULL;
+    }
+
+    if (strcmp(param, CSAP_PARAM_TP_PACKETS) == 0)
+        value = tp_packets;
+    else
+        value = tp_drops;
+
+    if (te_asprintf(&result, "%llu", (unsigned long long)value) < 0)
+    {
+        ERROR("%s(): te_asprintf() failed", __FUNCTION__);
+        return NULL;
+    }
+
+    return result;
+#else
+    return NULL;
+#endif
+}
 
 /* See the description in tad_eth_sap.h */
 te_errno
@@ -431,6 +614,18 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
 
 #ifndef __CYGWIN__
     te_strlcpy(sap->name, ifname, sizeof(sap->name));
+#endif
+
+#ifdef TAD_ETH_SAP_HAVE_TP_STATS
+    rc = pthread_mutex_init(&data->stats_lock, NULL);
+    if (rc != 0)
+    {
+        rc = TE_OS_RC(TE_TAD_PF_PACKET, rc);
+        ERROR("%s(): pthread_mutex_init() failed: %r", __FUNCTION__, rc);
+        sap->data = NULL;
+        free(data);
+        return rc;
+    }
 #endif
 
     return 0;
@@ -1763,6 +1958,10 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
         ERROR("socket(PF_PACKET, SOCK_RAW, 0) failed: %r", rc);
         return rc;
     }
+#ifdef TAD_ETH_SAP_HAVE_TP_STATS
+    data->tp_packets = 0;
+    data->tp_drops = 0;
+#endif
 
 #ifndef WITH_PACKET_MMAP_RX_RING
     use_packet_auxdata = 1;
@@ -2101,7 +2300,7 @@ tad_eth_sap_recv_close(tad_eth_sap *sap)
 #ifdef WITH_PACKET_MMAP_RX_RING
     tad_eth_sap_pkt_ring_release(sap, TAD_ETH_SAP_PKT_RING_RX);
 #endif /* WITH_PACKET_MMAP_RX_RING */
-    return close_socket(&data->in);
+    return tad_eth_sap_close_input_socket(data, __FUNCTION__);
 #else
     pcap_close(data->in);
     data->in = NULL;
@@ -2133,7 +2332,7 @@ tad_eth_sap_detach(tad_eth_sap *sap)
     if (data->in != -1)
     {
         WARN("Force close of input PF_PACKET socket on detach");
-        rc = close_socket(&data->in);
+        rc = tad_eth_sap_close_input_socket(data, __FUNCTION__);
         TE_RC_UPDATE(result, rc);
     }
     if (data->out != -1)
@@ -2152,6 +2351,16 @@ tad_eth_sap_detach(tad_eth_sap *sap)
     {
         WARN("Force close of output BPF on detach");
         pcap_close(data->out);
+    }
+#endif
+
+#ifdef TAD_ETH_SAP_HAVE_TP_STATS
+    rc = pthread_mutex_destroy(&data->stats_lock);
+    if (rc != 0)
+    {
+        rc = TE_OS_RC(TE_TAD_PF_PACKET, rc);
+        ERROR("%s(): pthread_mutex_destroy() failed: %r", __FUNCTION__, rc);
+        TE_RC_UPDATE(result, rc);
     }
 #endif
 

@@ -49,6 +49,8 @@
 #define CSAP_PARAM_FIRST_PACKET_TIME    "first_pkt_time"
 #define CSAP_PARAM_LAST_PACKET_TIME     "last_pkt_time"
 #define CSAP_PARAM_NO_MATCH_PKTS        "no_match_pkts"
+#define CSAP_PARAM_TP_PACKETS           "tp_packets"
+#define CSAP_PARAM_TP_DROPS             "tp_drops"
 
 /**
  * Type for CSAP handle, should have semantic unsigned integer,
