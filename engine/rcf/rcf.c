@@ -2440,6 +2440,16 @@ process_user_request(usrreq *req)
                 agent->flags = msg->flags | TA_DEAD;
 
                 rcf_ta_reboot_init_ctx(agent);
+                /*
+                 * There is no way to restrict reboot types for a
+                 * dynamically created TA, so allow all of them just
+                 * like for a <ta> entry without the reboot_types
+                 * attribute; rebootability itself is still guarded
+                 * by the RCF_TA_REBOOTABLE flag.
+                 */
+                agent->reboot_ctx.allowed_types = (TA_REBOOT_TYPE_AGENT |
+                                                   TA_REBOOT_TYPE_HOST |
+                                                   TA_REBOOT_TYPE_COLD);
 
                 if (resolve_ta_methods(agent, msg->file) != 0)
                 {
