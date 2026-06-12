@@ -1179,7 +1179,7 @@ tapi_job_send(tapi_job_channel_t *channel, const te_string *str)
     bool silent_pass = rpcs->silent_pass;
 
     rpcs->silent_pass = channel->silent_pass;
-    rc = rpc_job_send(rpcs, channel->id, str->ptr, str->size);
+    rc = rpc_job_send(rpcs, channel->id, str->ptr, str->len);
     rpcs->silent_pass = silent_pass;
 
     return rc;
