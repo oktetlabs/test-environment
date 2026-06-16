@@ -8,7 +8,13 @@
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
  */
 
-#define TE_LOG_LEVEL    0xff
+/*
+ * Keep INFO for the rare "Jump from ..." trace (logged only on an actual
+ * longjmp); the per-call set/remove traces below are VERB so they stay off
+ * by default.  Previously 0xff forced every level on, which flooded the log
+ * with a set/remove pair for every guarded call (heavy in pyte suites).
+ */
+#define TE_LOG_LEVEL    TE_LL_INFO
 #define TE_LGR_USER     "TAPI Jumps"
 
 #include "te_config.h"
@@ -172,7 +178,7 @@ tapi_jmp_push(const char *file, unsigned int lineno)
     p->file    = file;
     p->lineno  = lineno;
 
-    INFO("Set jump point %s:%u", file, lineno);
+    VERB("Set jump point %s:%u", file, lineno);
     return p;
 }
 
@@ -198,7 +204,7 @@ tapi_jmp_pop(const char *file, unsigned int lineno)
     }
     SLIST_REMOVE(&ctx->stack, p, tapi_jmp_point, links);
 
-    INFO("Remove jump point %s:%u at %s:%u",
+    VERB("Remove jump point %s:%u at %s:%u",
          p->file, p->lineno, file, lineno);
 
     free(p);
