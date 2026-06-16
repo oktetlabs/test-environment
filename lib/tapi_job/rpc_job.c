@@ -582,7 +582,7 @@ rpc_job_send(rcf_rpc_server *rpcs, unsigned int channel,
     rcf_rpc_call(rpcs, "job_send", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_send, out.retval);
 
-    TAPI_RPC_LOG(rpcs, job_send, "%u, %lu", "%r", in.channel,
+    TAPI_RPC_LOG(rpcs, job_send, "%u, %u", "%r", in.channel,
                  in.buf.buf_len, out.retval);
 
     RETVAL_TE_ERRNO(job_send, out.retval);
