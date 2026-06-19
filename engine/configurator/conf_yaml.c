@@ -192,6 +192,7 @@ typedef enum cs_yaml_node_attribute_type_e {
     CS_YAML_NODE_ATTRIBUTE_DESCRIPTION,
     CS_YAML_NODE_ATTRIBUTE_SUBSTITUTION,
     CS_YAML_NODE_ATTRIBUTE_UNIT,
+    CS_YAML_NODE_ATTRIBUTE_NAME,
     CS_YAML_NODE_ATTRIBUTE_UNKNOWN,
 } cs_yaml_node_attribute_type_t;
 
@@ -210,6 +211,7 @@ static struct {
     { "d",        CS_YAML_NODE_ATTRIBUTE_DESCRIPTION },
     { "substitution", CS_YAML_NODE_ATTRIBUTE_SUBSTITUTION },
     { "unit", CS_YAML_NODE_ATTRIBUTE_UNIT },
+    { "name", CS_YAML_NODE_ATTRIBUTE_NAME },
 };
 
 static cs_yaml_node_attribute_type_t
@@ -288,7 +290,8 @@ parse_config_yaml_cmd_add_dependency_attribute(yaml_node_t    *k,
             break;
 
         case CS_YAML_NODE_ATTRIBUTE_DESCRIPTION:
-            /* Ignore the description */
+        case CS_YAML_NODE_ATTRIBUTE_NAME:
+            /* Ignore the description and name annotations */
             break;
 
         default:
@@ -513,7 +516,8 @@ parse_config_yaml_cmd_add_target_attribute(yaml_document_t        *d,
             break;
 
         case CS_YAML_NODE_ATTRIBUTE_DESCRIPTION:
-            /* Ignore the description */
+        case CS_YAML_NODE_ATTRIBUTE_NAME:
+            /* Ignore the description and name annotations */
             break;
 
         case CS_YAML_NODE_ATTRIBUTE_SUBSTITUTION:
