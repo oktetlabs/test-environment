@@ -12,6 +12,7 @@
     - oid: "/agent/module"
       access: read_create
       type: none
+      name: name
       depends:
         - oid: "/agent/rsrc"
       d: |
@@ -92,6 +93,7 @@
     - oid: "/agent/module/parameter"
       access: read_create
       type: string
+      name: name
       depends:
         - oid: "/agent/module/loaded"
       d: |
@@ -102,6 +104,7 @@
     - oid: "/agent/module/driver"
       access: read_only
       type: none
+      name: name
       depends:
         - oid: "/agent/module/loaded"
       d: |
@@ -111,6 +114,7 @@
     - oid: "/agent/module/driver/device"
       access: read_only
       type: string
+      name: name
       volatile: true
       d: |
          Reference to a device of a given driver

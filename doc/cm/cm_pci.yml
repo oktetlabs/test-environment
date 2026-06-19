@@ -30,6 +30,7 @@
     - oid: "/agent/hardware/pci/device"
       access: read_only
       type: none
+      name: composite
       d: |
          A node for a specific PCI device.
 
@@ -95,6 +96,7 @@
     - oid: "/agent/hardware/pci/device/vpd"
       access: read_only
       type: string
+      name: tag
       d: |
          VPD tag. Since a set of VPD tags is open, we use a list of tags indexed
          by their two character-name (e.g. 'PN' or 'SN'), not a subtree with
@@ -106,6 +108,7 @@
     - oid: "/agent/hardware/pci/device/interrupt"
       access: read_only
       type: string
+      name: irq
       d: |
          Allocated device interrupts
 
@@ -139,6 +142,7 @@
     - oid: "/agent/hardware/pci/device/net"
       access: read_only
       type: string
+      name: composite
       depends:
         - oid: "/agent/hardware/pci/device/driver"
       d: |
@@ -152,6 +156,7 @@
     - oid: "/agent/hardware/pci/device/dev"
       access: read_only
       type: none
+      name: composite
       volatile: true
       depends:
         - oid: "/agent/hardware/pci/device/driver"
@@ -190,6 +195,7 @@
     - oid: "/agent/hardware/pci/device/sriov/vf"
       access: read_create
       type: string
+      name: ordinal
       depends:
         - oid: "/agent/hardware/pci/device/sriov/num_vfs"
       d: |
@@ -222,6 +228,7 @@
     - oid: "/agent/hardware/pci/device/param"
       access: read_only
       type: none
+      name: name
       d: |
          Device parameter
 
@@ -256,6 +263,7 @@
     - oid: "/agent/hardware/pci/device/param/value"
       access: read_write
       type: string
+      name: mode
       d: |
          Parameter value
 
@@ -284,6 +292,7 @@
     - oid: "/agent/hardware/pci/device/spdk_config"
       access: read_create
       type: none
+      name: id
       d: |
         SPDK configuration associated with a device.
 
@@ -437,6 +446,7 @@
     - oid: "/agent/hardware/pci/device/aer/uncorrectable_error"
       access: read_only
       type: int32
+      name: error
       d: |
          A specific uncorrectable error happened. This is a list of values
          indexed by an error name.
@@ -459,6 +469,7 @@
     - oid: "/agent/hardware/pci/device/aer/correctable_error"
       access: read_only
       type: int32
+      name: error
       d: |
          A specific correctable error happened.  This is a list of values
          indexed by an error name.
@@ -476,6 +487,7 @@
     - oid: "/agent/hardware/pci/vendor"
       access: read_only
       type: none
+      name: vendor_id
       d: |
          The list of PCI vendor IDs for installed devices.
          We do not want the agent exposes the whole PCI tree to tests
@@ -522,6 +534,7 @@
     - oid: "/agent/hardware/pci/vendor/device"
       access: read_only
       type: none
+      name: device_id
       depends:
         - oid: "/agent/hardware/pci/device/sriov/num_vfs"
       d: |
@@ -533,6 +546,7 @@
     - oid: "/agent/hardware/pci/vendor/device/instance"
       access: read_only
       type: string
+      name: ordinal
       d: |
          Reference to PCI devices with given vendor/device ID
 
