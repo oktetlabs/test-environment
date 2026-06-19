@@ -108,6 +108,7 @@
     - oid: "/agent/interface"
       access: read_only
       type: none
+      name: ifname
       depends:
         - oid: "/agent/rsrc"
         - oid: "/agent/interface/vlans"
@@ -154,6 +155,7 @@
     - oid: "/agent/interface/net_addr"
       access: read_create
       type: int32
+      name: address
       depends:
         - oid: "/agent/interface/link_addr"
         - oid: "/agent/interface/mtu"
@@ -176,6 +178,7 @@
     - oid: "/agent/interface/mcast_link_addr"
       access: read_create
       type: none
+      name: address
       volatile: true
       depends:
         - oid: "/agent/interface/net_addr"
@@ -332,6 +335,7 @@
     - oid: "/agent/interface/neigh_static"
       access: read_create
       type: address
+      name: address
       depends:
         - oid: "/agent/interface"
         - oid: "/agent/interface/status"
@@ -342,6 +346,7 @@
     - oid: "/agent/interface/neigh_dynamic"
       access: read_create
       type: address
+      name: address
       volatile: true
       depends:
         - oid: "/agent/interface"
@@ -368,6 +373,7 @@
     - oid: "/agent/interface/neigh_proxy"
       access: read_create
       type: none
+      name: address
       depends:
         - oid: "/agent/interface"
         - oid: "/agent/interface/status"
@@ -478,6 +484,7 @@
     - oid: "/agent/interface/vlans"
       access: read_create
       type: string
+      name: vid
       d: |
          Network interface VLANs
          Name: integer number, VLAN id
@@ -496,6 +503,7 @@
     - oid: "/agent/interface/macvlan"
       access: read_create
       type: string
+      name: ifname
       d: |
          Virtual interface based on link layer address (MAC)
          Name: interface name
@@ -509,6 +517,7 @@
     - oid: "/agent/interface/ipvlan"
       access: read_create
       type: string
+      name: ifname
       d: |
          Virtual IP VLAN interface
          Name: ipvlan interface name
@@ -565,6 +574,7 @@
     - oid: "/agent/interface/coalesce/global/param"
       access: read_write
       type: uint64
+      name: name
       d: |
          Name: Name of a field from ethtool_coalesce structure
          Value: See documentation of ethtool_coalesce structure
@@ -584,6 +594,7 @@
     - oid: "/agent/interface/coalesce/queues/queue"
       access: read_only
       type: none
+      name: index
       d: |
          Interrupt coalescing parameters for a specific queue
          Name: Queue number
@@ -592,6 +603,7 @@
     - oid: "/agent/interface/coalesce/queues/queue/param"
       access: read_write
       type: uint64
+      name: name
       d: |
          Name: Name of a field from ethtool_coalesce structure
          Value: See documentation of ethtool_coalesce structure
@@ -720,6 +732,7 @@
     - oid: "/agent/interface/phy/mode"
       access: read_write
       type: int32
+      name: name
       d: |
          Supported link mode
          Name: Link mode name
@@ -729,6 +742,7 @@
     - oid: "/agent/interface/phy/lp_advertised"
       access: read_only
       type: none
+      name: name
       volatile: true
       d: |
          Link mode advertised by link partner
@@ -803,6 +817,7 @@
     - oid: "/agent/interface/feature"
       access: read_write
       type: int32
+      name: name
       d: |
          Network interface features
          Name:  Feature name
@@ -829,6 +844,7 @@
     - oid: "/agent/interface/private/flag"
       access: read_write
       type: bool
+      name: name
       d: |
          Network interface private flag
          Name:  Flag name
@@ -1080,6 +1096,7 @@
     - oid: "/agent/interface/xstats/xstat"
       access: read_only
       type: uint64
+      name: name
       volatile: true
       d: |
          Network interface certain extended statistic

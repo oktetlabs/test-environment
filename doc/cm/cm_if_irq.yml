@@ -14,6 +14,7 @@
     - oid: "/agent/interface/irq"
       access: read_only
       type: none
+      name: name
       depends:
         - oid: "/agent/interface/status"
         - oid: "/agent/interface/channels/combined/current"
@@ -35,6 +36,7 @@
     - oid: "/agent/interface/irq/cpu"
       access: read_only
       type: uint64
+      name: name
       volatile: true
       d: |
          Interrupt counter per CPU
