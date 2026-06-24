@@ -182,7 +182,6 @@ typedef struct pam_message const pam_message_t;
 #include "conf_common.h"
 #include "te_shell_cmd.h"
 #include "te_string.h"
-#include "te_alloc.h"
 
 #include "conf_daemons.h"
 
