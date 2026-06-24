@@ -372,4 +372,33 @@ extern te_errno agent_key_generate(agent_key_manager manager,
                                    const char *user,
                                    const char *private_key_file);
 
+/**
+ * Get list of usernames created by TE on TA using @b ta_user_add().
+ *
+ * @param list          location for the list pointer
+ *
+ * @return              Status code:
+ * @retval 0                success
+ */
+extern te_errno ta_user_list(char **list);
+
+/**
+ * Add user on TA.
+ *
+ * @param user          Username. It is checked that it has a form
+ *                      TE_USER_PREFIX + <some_number>
+ *
+ * @return              Status code
+ */
+extern te_errno ta_user_add(const char *user);
+
+/**
+ * Delete user on TA created by @b ta_user_add().
+ *
+ * @param user          Username.
+ *
+ * @return              Status code
+ */
+extern te_errno ta_user_del(const char *user);
+
 #endif /* __TE_AGENTLIB_H__ */
