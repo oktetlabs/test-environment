@@ -22,6 +22,19 @@ extern "C" {
 #include "rcf_rpc.h"
 
 /**
+ * Check whether ntpd configuration subtree exists.
+ *
+ * @param rpcs RPC server.
+ *
+ * @return @c true if ntpd configuration subtree exists.
+ */
+static inline bool
+tapi_ntpd_is_available(rcf_rpc_server *rpcs)
+{
+    return cfg_find_fmt(NULL, "/agent:%s/ntpd:", rpcs->ta) == 0;
+}
+
+/**
  * Start ntpd daemon.
  *
  * @param rpcs RPC server
