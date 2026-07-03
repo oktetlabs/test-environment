@@ -40,6 +40,15 @@ typedef struct tapi_redis_benchmark_app {
     tapi_job_channel_t *filter_time;
     /** filter for test RPS */
     tapi_job_channel_t *filter_rps;
+    /** filters for CSV output rows (see tapi_redis_benchmark_opt::csv) */
+    tapi_job_channel_t *filter_csv_name;
+    tapi_job_channel_t *filter_csv_rps;
+    tapi_job_channel_t *filter_csv_avg;
+    tapi_job_channel_t *filter_csv_min;
+    tapi_job_channel_t *filter_csv_p50;
+    tapi_job_channel_t *filter_csv_p95;
+    tapi_job_channel_t *filter_csv_p99;
+    tapi_job_channel_t *filter_csv_max;
 } tapi_redis_benchmark_app;
 
 /** Specific redis-benchmark options. */
@@ -76,6 +85,21 @@ typedef struct tapi_redis_benchmark_opt {
     const char             *tests;
     /** Idle mode. */
     bool idle;
+    /**
+     * Run each test for the specified number of seconds
+     * (valkey-benchmark only).
+     */
+    tapi_job_opt_uint_t     duration;
+    /**
+     * Warmup time in seconds before measurement starts
+     * (valkey-benchmark only).
+     */
+    tapi_job_opt_uint_t     warmup;
+    /**
+     * Produce CSV output. Required for latency statistics: parse the
+     * results with tapi_redis_benchmark_get_report_csv() in this mode.
+     */
+    bool csv;
     /** Path to redis-benchmark exec (if @c NULL then "redis-benchmark"). */
     const char             *exec_path;
 } tapi_redis_benchmark_opt;
@@ -89,6 +113,16 @@ typedef struct tapi_redis_benchmark_stat {
     double rps;
     /** execution time */
     double time;
+    /**
+     * Latency statistics in milliseconds. Filled only by
+     * tapi_redis_benchmark_get_report_csv() (CSV mode); zero otherwise.
+     */
+    double avg_latency;  /**< average latency */
+    double min_latency;  /**< minimum latency */
+    double p50_latency;  /**< 50th percentile latency */
+    double p95_latency;  /**< 95th percentile latency */
+    double p99_latency;  /**< 99th percentile latency */
+    double max_latency;  /**< maximum latency */
 } tapi_redis_benchmark_stat;
 
 /** Test stat list entry. */
@@ -180,6 +214,23 @@ extern void tapi_redis_benchmark_destroy_report(
 extern te_errno tapi_redis_benchmark_get_report(
                     tapi_redis_benchmark_app *app,
                     tapi_redis_benchmark_report *report);
+
+/**
+ * Get redis-benchmark report from CSV output.
+ *
+ * Use when tapi_redis_benchmark_opt::csv was set: parses data rows of
+ * the form "test","rps","avg_latency_ms",... (valkey-benchmark >= 8
+ * CSV format with latency columns). tapi_redis_benchmark_stat::time
+ * is not present in CSV output and is set to @c 0.
+ *
+ * @param[in]  app     redis-benchmark app handle.
+ * @param[out] report  Statistics list head to fill in.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_redis_benchmark_get_report_csv(
+                                tapi_redis_benchmark_app *app,
+                                tapi_redis_benchmark_report *report);
 
 /**
  * Get redis-benchmark statistics for a test name.

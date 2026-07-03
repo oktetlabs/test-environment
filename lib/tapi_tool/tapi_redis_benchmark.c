@@ -19,6 +19,14 @@
  */
 static const char *redis_benchmark_path = "redis-benchmark";
 
+/**
+ * Regex matching one CSV data row with latency columns. The header row
+ * is skipped because its second field ("rps") is not numeric.
+ */
+#define REDIS_BENCHMARK_CSV_ROW_RE \
+    "\"([^\"]+)\",\"([0-9.]+)\",\"([0-9.]+)\",\"([0-9.]+)\"," \
+    "\"([0-9.]+)\",\"([0-9.]+)\",\"([0-9.]+)\",\"([0-9.]+)\""
+
 /* Supported redis-benchmark command line arguments. */
 static const tapi_job_opt_bind redis_benchmark_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_SOCKADDR_PTR("-h", false, tapi_redis_benchmark_opt, server),
@@ -38,7 +46,12 @@ static const tapi_job_opt_bind redis_benchmark_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_UINT_T("--threads", false, NULL, tapi_redis_benchmark_opt,
                         threads),
     TAPI_JOB_OPT_STRING("-t", false, tapi_redis_benchmark_opt, tests),
-    TAPI_JOB_OPT_BOOL("-I", tapi_redis_benchmark_opt, idle)
+    TAPI_JOB_OPT_BOOL("-I", tapi_redis_benchmark_opt, idle),
+    TAPI_JOB_OPT_UINT_T("--duration", false, NULL, tapi_redis_benchmark_opt,
+                        duration),
+    TAPI_JOB_OPT_UINT_T("--warmup", false, NULL, tapi_redis_benchmark_opt,
+                        warmup),
+    TAPI_JOB_OPT_BOOL("--csv", tapi_redis_benchmark_opt, csv)
 );
 
 /* Default values of redis-benchmark command line arguments. */
@@ -56,6 +69,9 @@ const tapi_redis_benchmark_opt tapi_redis_benchmark_default_opt = {
     .threads            = TAPI_JOB_OPT_UINT_UNDEF,
     .tests              = NULL,
     .idle               = false,
+    .duration           = TAPI_JOB_OPT_UINT_UNDEF,
+    .warmup             = TAPI_JOB_OPT_UINT_UNDEF,
+    .csv                = false,
     .exec_path          = NULL
 };
 
@@ -116,6 +132,62 @@ tapi_redis_benchmark_create(tapi_job_factory_t *factory,
                                     .re = "([0-9.]*) requests per second",
                                     .extract = 1,
                                     .filter_var = &new_app->filter_rps,
+                                },
+                                {
+                                    .use_stdout = true,
+                                    .readable = true,
+                                    .re = REDIS_BENCHMARK_CSV_ROW_RE,
+                                    .extract = 1,
+                                    .filter_var = &new_app->filter_csv_name,
+                                },
+                                {
+                                    .use_stdout = true,
+                                    .readable = true,
+                                    .re = REDIS_BENCHMARK_CSV_ROW_RE,
+                                    .extract = 2,
+                                    .filter_var = &new_app->filter_csv_rps,
+                                },
+                                {
+                                    .use_stdout = true,
+                                    .readable = true,
+                                    .re = REDIS_BENCHMARK_CSV_ROW_RE,
+                                    .extract = 3,
+                                    .filter_var = &new_app->filter_csv_avg,
+                                },
+                                {
+                                    .use_stdout = true,
+                                    .readable = true,
+                                    .re = REDIS_BENCHMARK_CSV_ROW_RE,
+                                    .extract = 4,
+                                    .filter_var = &new_app->filter_csv_min,
+                                },
+                                {
+                                    .use_stdout = true,
+                                    .readable = true,
+                                    .re = REDIS_BENCHMARK_CSV_ROW_RE,
+                                    .extract = 5,
+                                    .filter_var = &new_app->filter_csv_p50,
+                                },
+                                {
+                                    .use_stdout = true,
+                                    .readable = true,
+                                    .re = REDIS_BENCHMARK_CSV_ROW_RE,
+                                    .extract = 6,
+                                    .filter_var = &new_app->filter_csv_p95,
+                                },
+                                {
+                                    .use_stdout = true,
+                                    .readable = true,
+                                    .re = REDIS_BENCHMARK_CSV_ROW_RE,
+                                    .extract = 7,
+                                    .filter_var = &new_app->filter_csv_p99,
+                                },
+                                {
+                                    .use_stdout = true,
+                                    .readable = true,
+                                    .re = REDIS_BENCHMARK_CSV_ROW_RE,
+                                    .extract = 8,
+                                    .filter_var = &new_app->filter_csv_max,
                                 },
                                 {
                                     .use_stdout  = true,
@@ -330,6 +402,113 @@ cleanup:
     return rc;
 }
 
+/* Numeric CSV columns, in row order after the test name. */
+#define REDIS_BM_CSV_NUM_FIELDS 7
+
+/* See description in tapi_redis_benchmark.h */
+te_errno
+tapi_redis_benchmark_get_report_csv(tapi_redis_benchmark_app *app,
+                                    tapi_redis_benchmark_report *report)
+{
+    te_errno rc;
+    unsigned int i;
+    unsigned int f;
+    tapi_redis_benchmark_stat *stat;
+    tapi_redis_benchmark_stat *prev = NULL;
+    tapi_redis_benchmark_report result = SLIST_HEAD_INITIALIZER(result);
+
+    tapi_job_channel_t *num_channels[REDIS_BM_CSV_NUM_FIELDS];
+    tapi_job_buffer_t *buf_names = NULL;
+    tapi_job_buffer_t *num_bufs[REDIS_BM_CSV_NUM_FIELDS] = {};
+    unsigned int count_names = 0;
+    unsigned int num_counts[REDIS_BM_CSV_NUM_FIELDS] = {};
+
+    if (app == NULL || report == NULL)
+    {
+        ERROR("%s() arguments cannot be NULL", __func__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    num_channels[0] = app->filter_csv_rps;
+    num_channels[1] = app->filter_csv_avg;
+    num_channels[2] = app->filter_csv_min;
+    num_channels[3] = app->filter_csv_p50;
+    num_channels[4] = app->filter_csv_p95;
+    num_channels[5] = app->filter_csv_p99;
+    num_channels[6] = app->filter_csv_max;
+
+    rc = tapi_job_receive_many(TAPI_JOB_CHANNEL_SET(app->filter_csv_name),
+                               -1, &buf_names, &count_names);
+    for (f = 0; rc == 0 && f < REDIS_BM_CSV_NUM_FIELDS; f++)
+    {
+        rc = tapi_job_receive_many(TAPI_JOB_CHANNEL_SET(num_channels[f]),
+                                   -1, &num_bufs[f], &num_counts[f]);
+    }
+    if (rc != 0)
+    {
+        ERROR("tapi_job_receive_many() returned unexpected result: %r", rc);
+        goto cleanup;
+    }
+
+    for (f = 0; f < REDIS_BM_CSV_NUM_FIELDS; f++)
+    {
+        if (num_counts[f] != count_names)
+        {
+            ERROR("%s() the number of filtered items must match",
+                  __FUNCTION__);
+            rc = TE_RC(TE_TAPI, TE_ERANGE);
+            goto cleanup;
+        }
+    }
+
+    for (i = 0; i < count_names; i++)
+    {
+        double vals[REDIS_BM_CSV_NUM_FIELDS];
+
+        if (buf_names[i].eos)
+            break;
+
+        for (f = 0; rc == 0 && f < REDIS_BM_CSV_NUM_FIELDS; f++)
+            rc = te_strtod(num_bufs[f][i].data.ptr, &vals[f]);
+
+        if (rc != 0)
+        {
+            ERROR("%s() conversion failed with error: %r", __FUNCTION__, rc);
+            break;
+        }
+
+        stat = TE_ALLOC(sizeof(tapi_redis_benchmark_stat));
+        stat->test_name = strdup(buf_names[i].data.ptr);
+        stat->time = 0.0;
+        stat->rps = vals[0];
+        stat->avg_latency = vals[1];
+        stat->min_latency = vals[2];
+        stat->p50_latency = vals[3];
+        stat->p95_latency = vals[4];
+        stat->p99_latency = vals[5];
+        stat->max_latency = vals[6];
+
+        if (prev == NULL)
+            SLIST_INSERT_HEAD(&result, stat, next);
+        else
+            SLIST_INSERT_AFTER(prev, stat, next);
+
+        prev = stat;
+    }
+
+cleanup:
+    tapi_job_buffers_free(buf_names, count_names);
+    for (f = 0; f < REDIS_BM_CSV_NUM_FIELDS; f++)
+        tapi_job_buffers_free(num_bufs[f], num_counts[f]);
+
+    if (rc == 0)
+        *report = result;
+    else
+        tapi_redis_benchmark_destroy_report(&result);
+
+    return rc;
+}
+
 /* See description in tapi_redis_benchmark.h */
 tapi_redis_benchmark_stat *
 tapi_redis_benchmark_report_get_stat(tapi_redis_benchmark_report *report,
@@ -372,17 +551,47 @@ tapi_redis_benchmark_report_mi_log(te_mi_logger *logger,
 
     SLIST_FOREACH(iter, report, next)
     {
-        te_string_reset(&str);
-        te_string_append(&str, "Execution time for test %s", iter->test_name);
-        te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_LATENCY, str.ptr,
-                              TE_MI_MEAS_AGGR_SINGLE, iter->time,
-                              TE_MI_MEAS_MULTIPLIER_PLAIN);
+        if (iter->time > 0)
+        {
+            te_string_reset(&str);
+            te_string_append(&str, "Execution time for test %s", iter->test_name);
+            te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_LATENCY, str.ptr,
+                                  TE_MI_MEAS_AGGR_SINGLE, iter->time,
+                                  TE_MI_MEAS_MULTIPLIER_PLAIN);
+        }
 
         te_string_reset(&str);
         te_string_append(&str, "Requests per second in test %s", iter->test_name);
         te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_RPS, str.ptr,
                               TE_MI_MEAS_AGGR_SINGLE, iter->rps,
                               TE_MI_MEAS_MULTIPLIER_PLAIN);
+
+        if (iter->max_latency > 0)
+        {
+            struct {
+                const char *name;
+                double      val;
+            } lat[] = {
+                { "avg", iter->avg_latency },
+                { "min", iter->min_latency },
+                { "p50", iter->p50_latency },
+                { "p95", iter->p95_latency },
+                { "p99", iter->p99_latency },
+                { "max", iter->max_latency },
+            };
+            size_t j;
+
+            for (j = 0; j < TE_ARRAY_LEN(lat); j++)
+            {
+                te_string_reset(&str);
+                te_string_append(&str, "Latency %s in test %s",
+                                 lat[j].name, iter->test_name);
+                te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_LATENCY,
+                                      str.ptr, TE_MI_MEAS_AGGR_SINGLE,
+                                      lat[j].val,
+                                      TE_MI_MEAS_MULTIPLIER_MILLI);
+            }
+        }
     }
     te_string_free(&str);
 
