@@ -96,6 +96,20 @@ typedef struct tapi_redis_srv_opt {
     tapi_job_opt_uint_t     io_threads;
     /** Enable threading of reads and protocol parsing. */
     te_bool3                io_threads_do_reads;
+    /**
+     * Snapshotting schedule, e.g. "3600 1 300 100".
+     * Set to an empty string to disable saving to disk entirely
+     * (equivalent to `--save ""` on the command line).
+     *
+     * @note The empty-string disable is understood by valkey and
+     * redis >= 7; redis 6 silently ignores a zero-arg `save` line.
+     */
+    const char             *save;
+    /**
+     * List of CPUs the server process is pinned to, e.g. "1" or "0-2".
+     * Supported by redis >= 6 and valkey (server-cpulist directive).
+     */
+    const char             *server_cpulist;
     /** Path to redis-server exec (if @c NULL then "redis-server"). */
     const char             *exec_path;
 } tapi_redis_srv_opt;

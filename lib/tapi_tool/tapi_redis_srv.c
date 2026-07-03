@@ -79,7 +79,10 @@ static const tapi_job_opt_bind redis_srv_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_UINT_T("--io-threads ", true, NULL, tapi_redis_srv_opt,
                         io_threads),
     TAPI_JOB_OPT_ENUM_BOOL3("--io-threads-do-reads ", true, tapi_redis_srv_opt,
-                            io_threads_do_reads, tapi_redis_srv_yesno_map)
+                            io_threads_do_reads, tapi_redis_srv_yesno_map),
+    TAPI_JOB_OPT_STRING("--save ", true, tapi_redis_srv_opt, save),
+    TAPI_JOB_OPT_STRING("--server-cpulist ", true, tapi_redis_srv_opt,
+                        server_cpulist)
 );
 
 /** Redis-server configuration file default options. */
@@ -101,6 +104,8 @@ const tapi_redis_srv_opt tapi_redis_srv_default_opt = {
     .activerehashing                    = TE_BOOL3_UNKNOWN,
     .io_threads                         = TAPI_JOB_OPT_UINT_UNDEF,
     .io_threads_do_reads                = TE_BOOL3_UNKNOWN,
+    .save                               = NULL,
+    .server_cpulist                     = NULL,
     .exec_path                          = NULL
 };
 
