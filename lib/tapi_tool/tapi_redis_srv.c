@@ -80,7 +80,15 @@ static const tapi_job_opt_bind redis_srv_binds[] = TAPI_JOB_OPT_SET(
                         io_threads),
     TAPI_JOB_OPT_ENUM_BOOL3("--io-threads-do-reads ", true, tapi_redis_srv_opt,
                             io_threads_do_reads, tapi_redis_srv_yesno_map),
-    TAPI_JOB_OPT_STRING("--save ", true, tapi_redis_srv_opt, save),
+    /*
+     * Deliberately NOT prefix-concatenated: a single "--save " token with
+     * an empty value makes redis >= 7.0.1 / valkey argv processing treat
+     * the NEXT argv element as the save value (the "--save" compatibility
+     * special case in server.c does not match a token with a trailing
+     * space). Separate argv elements produce the documented CLI forms
+     * `--save ""` and `--save "3600 1"`.
+     */
+    TAPI_JOB_OPT_STRING("--save", false, tapi_redis_srv_opt, save),
     TAPI_JOB_OPT_STRING("--server-cpulist ", true, tapi_redis_srv_opt,
                         server_cpulist)
 );
