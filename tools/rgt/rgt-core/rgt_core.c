@@ -135,6 +135,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
         RGT_OPT_INCOMPLETE_LOG,
         RGT_OPT_TMPDIR,
         RGT_OPT_STOP_AT_ENTITY,
+        RGT_OPT_JUNIT_NO_WARN_ERR,
         RGT_OPT_VERBOSE,
         RGT_OPT_VERSION,
     };
@@ -175,6 +176,10 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
           RGT_OPT_STOP_AT_ENTITY,
           "Stop processing at the first message with a given entity.",
           "ENTITY" },
+
+        { "junit-no-warn-err", '\0', POPT_ARG_NONE, NULL,
+          RGT_OPT_JUNIT_NO_WARN_ERR,
+          "Exclude warnings and errors from JUnit report.", 0 },
 
         { NULL, 'V', POPT_ARG_NONE, NULL, RGT_OPT_VERBOSE,
           "Verbose trace.", NULL },
@@ -278,6 +283,10 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
                 if ((ctx->stop_at_entity = poptGetOptArg(optCon)) == NULL)
                     usage(optCon, 1, "Specify log entity", NULL);
 
+                break;
+
+            case RGT_OPT_JUNIT_NO_WARN_ERR:
+                ctx->junit_no_warn_err = true;
                 break;
 
             case RGT_OPT_VERBOSE:
@@ -596,6 +605,7 @@ rgt_ctx_set_defaults(rgt_gen_ctx_t *ctx)
     ctx->op_mode = RGT_OP_MODE_DEFAULT;
     ctx->op_mode_str = RGT_OP_MODE_DEFAULT_STR;
     ctx->stop_at_entity = NULL;
+    ctx->junit_no_warn_err = false;
     ctx->proc_cntrl_msg = true;
     ctx->mi_meta = false;
     ctx->proc_incomplete = false;

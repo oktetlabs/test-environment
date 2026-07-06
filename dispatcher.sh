@@ -333,6 +333,8 @@ Generic options:
   --log-txt-line-prefix         Add a prefix before every message line in text log.
   --log-junit=<filename>        Name of the file with logs in JUnit format
                                 to be generated.
+  --log-junit-no-warn-err       Exclude WARN and ERROR log messages from JUnit
+                                report.
 
   --no-builder                  Do not build TE and TA.
   --no-nuts-build               Do not build NUTs.
@@ -706,6 +708,7 @@ process_opts()
             --log-txt-detailed-packets) RGT_LOG_TXT_DETAILED_PACKETS=true ;;
             --log-txt-line-prefix) RGT_LOG_TXT_LINE_PREFIX=true ;;
             --log-junit=*)      RGT_LOG_JUNIT="${1#--log-junit=}" ;;
+            --log-junit-no-warn-err) RGT_LOG_JUNIT_NO_WARN_ERR=1 ;;
 
             --gdb-tester)   GDB_TESTER=yes ;;
 
@@ -1552,6 +1555,9 @@ if test -n "${RGT_LOG_TXT_DETAILED_PACKETS}" ; then
 fi
 if test -n "${RGT_LOG_JUNIT}" ; then
     RAW_PROC_OPTS+=("--junit=${RGT_LOG_JUNIT}")
+fi
+if test -n "${RGT_LOG_JUNIT_NO_WARN_ERR}" ; then
+    RAW_PROC_OPTS+=("--junit-no-warn-err")
 fi
 if test -z "${TE_SNIFF_LOG_CONV_DISABLE}" -a -d "${TE_SNIFF_LOG_DIR}" ; then
     RAW_PROC_OPTS+=("--sniff-log-dir=${TE_SNIFF_LOG_DIR}")

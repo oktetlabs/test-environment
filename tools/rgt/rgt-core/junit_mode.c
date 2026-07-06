@@ -29,6 +29,7 @@
 
 #include "te_alloc.h"
 #include "te_errno.h"
+#include "te_yaml.h"
 #include "tq_string.h"
 
 /**
@@ -246,7 +247,7 @@ junit_process_test_start(node_info_t *node, ctrl_msg_data *data)
 
     UNUSED(data);
 
-    if (ew_log_obstk == NULL)
+    if (ew_log_obstk == NULL && !rgt_ctx.junit_no_warn_err)
         ew_log_obstk = obstack_initialize();
 
     fputs("<testcase classname=\"", rgt_ctx.out_fd);

@@ -191,6 +191,11 @@ typedef struct rgt_gen_ctx {
     const char    *stop_at_entity;
 
     /**
+     * Exclude warning and error messages from JUnit report.
+     */
+    bool           junit_no_warn_err;
+
+    /**
      * Operation mode (live or postponed) influences on desirable
      * read behaviour that can be blocking or nonblocking.
      * This field keeps current rgt reading mode.

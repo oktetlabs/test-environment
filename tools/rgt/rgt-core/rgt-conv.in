@@ -57,6 +57,9 @@ Usage: $prog_name [OPTION...] [<Raw Log file> [<Output file>]]
   --incomplete-log         Do not shout on truncated log report, but complete
                            it automatically.
 
+  --junit-no-warn-err      Exclude warning and error messages from JUnit
+                           reports.
+
   -c FILE,                 Specify XML filter configuration file. If no file
   --cfg-filter=FILE        specified no filtering is applied.
 
@@ -188,6 +191,10 @@ do
         ;;
 
     --stop-at-entity*)
+        extra_flags="$extra_flags $1"
+        ;;
+
+    --junit-no-warn-err)
         extra_flags="$extra_flags $1"
         ;;
 

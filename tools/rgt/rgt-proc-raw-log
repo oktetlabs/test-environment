@@ -75,6 +75,8 @@ Usage: te_proc_raw_log.sh [<options>]
   --txt-line-prefix             Add a prefix before every message line in text log.
   --txt-no-prefix               Print only message bodies without any prefixes
                                 or headers in text log.
+  --junit-no-warn-err           Exclude WARN and ERROR log messages from JUnit
+                                report.
   --mi-ts                       Print timestamps before MI messages in MI log.
   --bundle=<filepath>           Where to save RAW log bundle (if needed).
   --html=<dirpath>              Where to save HTML logs (if needed).
@@ -177,6 +179,10 @@ function process_opts() {
 
             --mi-ts)
                 mi_ts=true
+                ;;
+
+            --junit-no-warn-err)
+                junit_no_warn_err=true
                 ;;
 
             --rgt-conv-*)
@@ -429,7 +435,13 @@ function main() {
     fi
 
     if [[ -n "${junit_path}" ]] ; then
-        "${BINDIR}"/rgt-conv -m junit -f "${raw_path}" -o "${junit_path}"
+        declare -a add_opts
+
+        if [[ "${junit_no_warn_err}" == "true" ]] ; then
+            add_opts+=("--junit-no-warn-err")
+        fi
+
+        "${BINDIR}"/rgt-conv -m junit -f "${raw_path}" -o "${junit_path}" "${add_opts[@]}"
     fi
 
     if [[ -n "${mi_path}" ]] ; then
