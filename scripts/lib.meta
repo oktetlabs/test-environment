@@ -249,7 +249,7 @@ te_meta_set_git() {
         return
     fi
 
-    git_url="$(git config --get remote.origin.url)"
+    git_url="$(git config --get remote.origin.url || true)"
     git_rev="$(git rev-parse HEAD)"
 
     git_branch="$(te_meta_get_best_git_branch "${git_rev}")"
