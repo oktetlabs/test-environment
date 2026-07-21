@@ -9,7 +9,7 @@ import os
 
 def on_builder_inited(app):
     css_file = 'override-doxyrest-sphinx_rtd_theme.css'
-    app.add_stylesheet(css_file)
+    app.add_css_file(css_file)
 
 
 def setup(app):

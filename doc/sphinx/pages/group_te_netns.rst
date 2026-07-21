@@ -53,13 +53,13 @@ Configurator tree
 
 The following configurator subtree can be used to create and destroy network namespaces, move network interfaces between namespaces.
 
-=============================  =======  ======================================================================================================
-Object ID                      Type     Description
-=============================  =======  ======================================================================================================
-/agent/namespace               RO none  Generic linux namespaces management subtree.
-/agent/namespace/net           RC none  Network namespaces list. This node can be used to create new network namespaces or grab existing ones.
+==============================  =======  ======================================================================================================
+Object ID                       Type     Description
+==============================  =======  ======================================================================================================
+/agent/namespace                RO none  Generic linux namespaces management subtree.
+/agent/namespace/net            RC none  Network namespaces list. This node can be used to create new network namespaces or grab existing ones.
 /agent/namespace/net/interface  RC none  Interfaces which are moved from the current agent namespace to the specified.
-=============================  =======  ======================================================================================================
+==============================  =======  ======================================================================================================
 
 XML code to register objects:
 

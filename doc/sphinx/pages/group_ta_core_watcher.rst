@@ -6,7 +6,7 @@
 .. _doxid-group__ta__core__watcher:
 
 Core watcher
-===========
+============
 
 .. toctree::
 	:hidden:
