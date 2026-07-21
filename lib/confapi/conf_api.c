@@ -1694,6 +1694,42 @@ cfg_get_instance_internal(cfg_handle handle, bool sync, cfg_val_type *type,
 
 /* See description in conf_api.h */
 te_errno
+cfg_get_instance_strval(cfg_handle handle, cfg_val_type *type, char **value)
+{
+    te_errno      rc;
+    cfg_val_type  msg_type;
+    cfg_inst_val  msg_value;
+    char         *str_value;
+
+    if (value == NULL)
+        return TE_RC(TE_CONF_API, TE_EINVAL);
+
+    rc = cfg_get_instance_internal(handle, false, &msg_type, &msg_value);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_types[msg_type].val2str(msg_value, &str_value);
+    cfg_types[msg_type].free(msg_value);
+    if (rc != 0)
+        return rc;
+
+    if (type != NULL)
+        *type = msg_type;
+    *value = str_value;
+    return 0;
+}
+
+/* See description in conf_api.h */
+te_errno
+cfg_get_instance_strval_fmt(cfg_val_type *type, char **value,
+                            const char *oid_fmt, ...)
+{
+    _CFG_HANDLE_BY_FMT;
+    return cfg_get_instance_strval(handle, type, value);
+}
+
+/* See description in conf_api.h */
+te_errno
 cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
 {
     va_list         list;

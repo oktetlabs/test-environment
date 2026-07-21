@@ -627,6 +627,27 @@ extern te_errno cfg_commit_fmt(const char *oid_fmt, ...)
                                TE_LIKE_PRINTF(1, 2);
 
 /**
+ * Obtain value of the object instance in string representation.
+ * Memory for strings is allocated by the routine using TE_ALLOC().
+ *
+ * @param[in]  handle   object instance handle
+ * @param[out] type     location for value type, may be NULL
+ * @param[out] value    location for the value
+ *
+ * @return Status code.
+ */
+extern te_errno cfg_get_instance_strval(cfg_handle handle, cfg_val_type *type,
+                                        char **value);
+
+/**
+ * The same function as cfg_get_instance_strval(), but OID may be format string.
+ */
+extern te_errno cfg_get_instance_strval_fmt(cfg_val_type *type, char **value,
+                                            const char *oid_fmt, ...)
+                                            TE_LIKE_PRINTF(3, 4);
+
+
+/**
  * Obtain value of the object instance. Memory for strings and
  * addresses is allocated by the routine using TE_ALLOC().
  *
