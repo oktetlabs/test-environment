@@ -24,7 +24,7 @@ TE has two types of documentation:
 1. Auto-generated Doxygen documentation is built using the
 
    ```sh
-   ./gen_doxygen
+   ./gen_docs
    ```
 
    script located in the top directory. Most versions of Doxygen are supported.
