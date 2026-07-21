@@ -1628,17 +1628,17 @@ cfg_commit_fmt(const char *oid_fmt, ...)
     return cfg_commit(oid);
 }
 
-/* See description in conf_api.h */
-te_errno
-cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
+static te_errno
+cfg_get_instance_internal(cfg_handle handle, bool sync, cfg_val_type *type,
+                          cfg_inst_val *value)
 {
+
     cfg_get_msg    *msg;
-    va_list         list;
-    cfg_inst_val    value;
+    cfg_inst_val    msg_value;
     size_t          len;
     te_errno        rc = 0;
 
-    if (handle == CFG_HANDLE_INVALID)
+    if (handle == CFG_HANDLE_INVALID || value == NULL)
     {
         return TE_RC(TE_CONF_API, TE_EINVAL);
     }
@@ -1657,9 +1657,14 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
 
     memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_get_msg *)cfgl_msg_buf;
-    rc = cfg_ipc_mk_get(msg, CFG_MSG_MAX, handle, false);
+    rc = cfg_ipc_mk_get(msg, CFG_MSG_MAX, handle, sync);
     if (rc != 0)
+    {
+#ifdef HAVE_PTHREAD_H
+        pthread_mutex_unlock(&cfgl_lock);
+#endif
         return rc;
+    }
 
     len = CFG_MSG_MAX;
 
@@ -1668,7 +1673,7 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
                                       msg, msg->len, msg, &len);
     if ((rc != 0) || ((rc = msg->rc) != 0) ||
         ((rc = cfg_types[msg->val_type].get_from_msg((cfg_msg *)msg,
-                                                     &value)) != 0))
+                                                     &msg_value)) != 0))
     {
 #ifdef HAVE_PTHREAD_H
         pthread_mutex_unlock(&cfgl_lock);
@@ -1676,11 +1681,36 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
         return TE_RC(TE_CONF_API, rc);
     }
 
-    if (type != NULL && *type != CVT_UNSPECIFIED && *type != msg->val_type)
-    {
+    if (type != NULL)
+        *type = msg->val_type;
+
 #ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&cfgl_lock);
+    pthread_mutex_unlock(&cfgl_lock);
 #endif
+
+    *value = msg_value;
+    return 0;
+}
+
+/* See description in conf_api.h */
+te_errno
+cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
+{
+    va_list         list;
+    cfg_val_type    msg_type;
+    cfg_inst_val    value;
+    te_errno        rc = 0;
+
+    rc = cfg_get_instance_internal(handle, false, &msg_type, &value);
+    if (rc != 0)
+        return rc;
+
+    if (type != NULL && *type != CVT_UNSPECIFIED && *type != msg_type)
+    {
+        if (msg_type == CVT_STRING)
+            free(value.val_str);
+        else if (msg_type == CVT_ADDRESS)
+            free(value.val_addr);
         return TE_RC(TE_CONF_API, TE_EBADTYPE);
     }
 
@@ -1696,7 +1726,7 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
             break;                                                         \
         }
 
-    switch (msg->val_type)
+    switch (msg_type)
     {
         CASE_INTEGER_TYPE(bool, CVT_BOOL, bool);
         CASE_INTEGER_TYPE(int8, CVT_INT8, int8_t);
@@ -1741,7 +1771,7 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
         default:
         {
             ERROR("Get Configurator instance of unknown type %u",
-                  msg->val_type);
+                  msg_type);
             rc = TE_RC(TE_CONF_API, TE_EINVAL);
             break;
         }
@@ -1751,12 +1781,8 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
 
     if ((type != NULL) && (*type == CVT_UNSPECIFIED))
     {
-        *type = msg->val_type;
+        *type = msg_type;
     }
-
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&cfgl_lock);
-#endif
 
     return rc;
 }
@@ -1856,58 +1882,22 @@ cfg_get_instance_str(cfg_val_type *p_type, void *val,
 te_errno
 cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
 {
-    cfg_get_msg *msg;
-
+    te_errno     rc;
+    cfg_val_type msg_type;
     va_list      list;
     cfg_inst_val value;
 
-    size_t  len;
-    int     ret_val = 0;
+    rc = cfg_get_instance_internal(handle, true, &msg_type, &value);
+    if (rc != 0)
+        return rc;
 
-    if (handle == CFG_HANDLE_INVALID)
+    if (type != NULL && *type != CVT_UNSPECIFIED && *type != msg_type)
     {
-        return TE_RC(TE_CONF_API, TE_EINVAL);
-    }
-
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_lock(&cfgl_lock);
-#endif
-    INIT_IPC;
-    if (cfgl_ipc_client == NULL)
-    {
-#ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&cfgl_lock);
-#endif
-        return TE_RC(TE_CONF_API, TE_EIPC);
-    }
-
-    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
-    msg = (cfg_get_msg *)cfgl_msg_buf;
-    ret_val = cfg_ipc_mk_get(msg, CFG_MSG_MAX, handle, true);
-    if (ret_val != 0)
-        return ret_val;
-
-    len = CFG_MSG_MAX;
-
-    ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
-                                           CONFIGURATOR_SERVER,
-                                           msg, msg->len, msg, &len);
-    if ((ret_val != 0) || ((ret_val = msg->rc) != 0) ||
-        ((ret_val = cfg_types[msg->val_type].get_from_msg((cfg_msg *)msg,
-                                                          &value)) != 0))
-    {
-#ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&cfgl_lock);
-#endif
-        return ret_val;
-    }
-
-    if (type != NULL && *type != CVT_UNSPECIFIED && *type != msg->val_type)
-    {
-#ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&cfgl_lock);
-#endif
-        return TE_EBADTYPE;
+        if (msg_type == CVT_STRING)
+            free(value.val_str);
+        else if (msg_type == CVT_ADDRESS)
+            free(value.val_addr);
+        return TE_RC(TE_CONF_API, TE_EBADTYPE);
     }
 
     va_start(list, type);
@@ -1921,7 +1911,7 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
             break;                                                          \
         }
 
-    switch (msg->val_type)
+    switch (msg_type)
     {
         CASE_INTEGER_TYPE(bool, CVT_BOOL, bool);
         CASE_INTEGER_TYPE(int8, CVT_INT8, int8_t);
@@ -1966,12 +1956,9 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
     va_end(list);
 
     if (type != NULL)
-        *type = msg->val_type;
+        *type = msg_type;
 
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&cfgl_lock);
-#endif
-    return ret_val;
+    return rc;
 }
 
 /* See description in conf_api.h */
