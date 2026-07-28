@@ -8,11 +8,13 @@
  *
  * TAPI to manage *memaslap*.
  *
- * Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2022-2026 OKTET Labs Ltd. All rights reserved.
  */
 
 #ifndef __TE_TAPI_MEMASLAP_H__
 #define __TE_TAPI_MEMASLAP_H__
+
+#include <stdint.h>
 
 #include "tapi_job_opt.h"
 #include "te_mi_log.h"
@@ -43,10 +45,30 @@ typedef struct tapi_memaslap_app {
     tapi_job_channel_t     *tps_filter;
     /** Net rate filter. */
     tapi_job_channel_t     *net_rate_filter;
+    /** Raw stdout filter used to parse detailed latency statistics. */
+    tapi_job_channel_t     *stdout_filter;
+    /** Availability of latency statistics. */
+    bool                    lat_stats_enabled;
 
     /** Name of temporary configuration file. */
     char *tmp_cfg_fn;
 } tapi_memaslap_app;
+
+/** memaslap per-category latency statistics (Get/Set/Total). */
+typedef struct tapi_memaslap_lat_stats {
+    /** Number of events the statistics were collected for. */
+    long long int events;
+    /** Minimum latency, usec. */
+    long long int min;
+    /** Maximum latency, usec. */
+    long long int max;
+    /** Average latency, usec. */
+    long long int avg;
+    /** Geometric mean latency, usec. */
+    double geo;
+    /** Latency standard deviation, usec. */
+    double std;
+} tapi_memaslap_lat_stats;
 
 /** memaslap information from the stdout. */
 typedef struct tapi_memaslap_report {
@@ -54,6 +76,29 @@ typedef struct tapi_memaslap_report {
     unsigned int            tps;
     /** The rate of network. It's always in Mibit/s. */
     double                  net_rate;
+
+    /** Availability of latency statistics. */
+    bool lat_stats_enabled;
+    /** Get requests latency statistics. */
+    tapi_memaslap_lat_stats get_stats;
+    /** Set requests latency statistics. */
+    tapi_memaslap_lat_stats set_stats;
+    /** Total (get + set) requests latency statistics. */
+    tapi_memaslap_lat_stats total_stats;
+
+    /** Total number of get commands issued. */
+    uint64_t                cmd_get;
+    /** Total number of set commands issued. */
+    uint64_t                cmd_set;
+    /** Total number of get cache misses. */
+    uint64_t                get_misses;
+    /** Total number of bytes written to the network. */
+    uint64_t                written_bytes;
+    /** Total number of bytes read from the network. */
+    uint64_t                read_bytes;
+    /** Total number of bytes allocated for objects. */
+    uint64_t                object_bytes;
+
     /** Command line used to start the memaslap job. */
     char                   *cmd;
 } tapi_memaslap_report;

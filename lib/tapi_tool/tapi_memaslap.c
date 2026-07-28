@@ -4,7 +4,7 @@
  *
  * TAPI to manage memaslap.
  *
- * Copyright (C) 2022-2022 OKTET Labs Ltd. All rights reserved.
+ * Copyright (C) 2022-2026 OKTET Labs Ltd. All rights reserved.
  */
 
 #define TE_LGR_USER "TAPI MEMASLAP"
@@ -208,6 +208,8 @@ tapi_memaslap_create(tapi_job_factory_t *factory,
     if (opt->memaslap_path != NULL)
         exec_path = opt->memaslap_path;
 
+    new_app->lat_stats_enabled = opt->stat_freq.defined;
+
     if (opt->cfg_opts != NULL)
     {
         rc = cfg_opts_check_lens(opt->cfg_opts);
@@ -291,6 +293,11 @@ tapi_memaslap_create(tapi_job_factory_t *factory,
                                             .re = "Net_rate:\\s*([0-9]+.[0-9]+)M",
                                             .extract = 1,
                                             .filter_var = &new_app->net_rate_filter,
+                                        },
+                                        {
+                                            .use_stdout = true,
+                                            .readable = true,
+                                            .filter_var = &new_app->stdout_filter,
                                         },
                                         {
                                             .use_stdout  = true,
@@ -455,6 +462,231 @@ read_filter(tapi_job_channel_t *filter, te_string *out)
 }
 
 /**
+ * Find the last occurrence of @p needle in @p haystack.
+ *
+ * @param[in] haystack String to search in.
+ * @param[in] needle   Substring to search for.
+ *
+ * @return Pointer to the last occurrence of @p needle in @p haystack,
+ *         or @c NULL if not found.
+ */
+static const char *
+strstr_last(const char *haystack, const char *needle)
+{
+    const char *found = NULL;
+    const char *p      = haystack;
+
+    while ((p = strstr(p, needle)) != NULL)
+    {
+        found = p;
+        p++;
+    }
+
+    return found;
+}
+
+/**
+ * Read all the data available from a filter (until end of stream) and
+ * put it into a single string. Useful for filters without a regexp
+ * that pass through the whole multiline output as-is.
+ *
+ * @param[in]  filter Filter to read from.
+ * @param[out] out    String to store the resulting data.
+ *
+ * @return Status code.
+ */
+static te_errno
+read_all_filter(tapi_job_channel_t *filter, te_string *out)
+{
+    te_errno rc;
+
+    while (true)
+    {
+        tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;
+
+        rc = tapi_job_receive(TAPI_JOB_CHANNEL_SET(filter), -1, &buf);
+        if (rc != 0)
+        {
+            ERROR("Failed to read data from filter: %r", rc);
+            te_string_free(&buf.data);
+            return rc;
+        }
+
+        /* Data may arrive together with eos, so append it first. */
+        if (!te_str_is_null_or_empty(buf.data.ptr))
+            te_string_append(out, "%s\n", te_string_value(&buf.data));
+
+        te_string_free(&buf.data);
+
+        if (buf.eos)
+            break;
+    }
+
+    return 0;
+}
+
+/**
+ * Parse one latency statistics section (Get/Set/Total Statistics)
+ * from memaslap stdout, e.g.:
+ *
+ * @code
+ * Get Statistics (6406766 events)
+ *    Min:        80
+ *    Max:     14464
+ *    Avg:       707
+ *    Geo:    662.86
+ *    Std:    272.92
+ * @endcode
+ *
+ * If the section occurs more than once (e.g. due to periodic
+ * @c --stat_freq dumps), the last (final, cumulative) occurrence
+ * is used.
+ *
+ * @param[in]  text    Full memaslap stdout text.
+ * @param[in]  section Section title to look for, e.g. "Get Statistics".
+ * @param[out] stats   Parsed latency statistics.
+ *
+ * @return Status code.
+ */
+static te_errno
+parse_lat_stats(const char *text, const char *section,
+                tapi_memaslap_lat_stats *stats)
+{
+    const char *p;
+    const char *val;
+
+    memset(stats, 0, sizeof(*stats));
+
+    p = strstr_last(text, section);
+    if (p == NULL)
+    {
+        ERROR("Failed to find '%s' section in memaslap output", section);
+        return TE_RC(TE_TAPI, TE_ENOENT);
+    }
+
+    val = strchr(p, '(');
+    if (val == NULL || sscanf(val, "(%lld events)", &stats->events) != 1)
+    {
+        ERROR("Failed to parse events count in '%s' section", section);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    val = strstr(p, "Min:");
+    if (val == NULL || sscanf(val, "Min: %lld", &stats->min) != 1)
+    {
+        ERROR("Failed to parse Min value in '%s' section", section);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    val = strstr(p, "Max:");
+    if (val == NULL || sscanf(val, "Max: %lld", &stats->max) != 1)
+    {
+        ERROR("Failed to parse Max value in '%s' section", section);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    val = strstr(p, "Avg:");
+    if (val == NULL || sscanf(val, "Avg: %lld", &stats->avg) != 1)
+    {
+        ERROR("Failed to parse Avg value in '%s' section", section);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    val = strstr(p, "Geo:");
+    if (val == NULL || sscanf(val, "Geo: %lf", &stats->geo) != 1)
+    {
+        ERROR("Failed to parse Geo value in '%s' section", section);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    val = strstr(p, "Std:");
+    if (val == NULL || sscanf(val, "Std: %lf", &stats->std) != 1)
+    {
+        ERROR("Failed to parse Std value in '%s' section", section);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    return 0;
+}
+
+/**
+ * Parse an unsigned 64-bit integer counter printed as "<label> <value>",
+ * e.g. "cmd_get: 6406994".
+ *
+ * @param[in]  text  Full memaslap stdout text.
+ * @param[in]  label Counter label including the trailing colon,
+ *                    e.g. "cmd_get:".
+ * @param[out] val   Parsed value.
+ *
+ * @return Status code.
+ */
+static te_errno
+parse_uint64_field(const char *text, const char *label, uint64_t *val)
+{
+    const char *p = strstr_last(text, label);
+
+    if (p == NULL || sscanf(p + strlen(label), "%" SCNu64, val) != 1)
+    {
+        ERROR("Failed to parse '%s' value in memaslap output", label);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    return 0;
+}
+
+/**
+ * Parse detailed latency and counters statistics from memaslap stdout.
+ *
+ * @param[in]  text   Full memaslap stdout text.
+ * @param[out] report Report to fill in.
+ *
+ * @return Status code.
+ */
+static te_errno
+tapi_memaslap_parse_stats(const char *text, tapi_memaslap_report *report)
+{
+    te_errno rc;
+
+    rc = parse_lat_stats(text, "Get Statistics", &report->get_stats);
+    if (rc != 0)
+        return rc;
+
+    rc = parse_lat_stats(text, "Set Statistics", &report->set_stats);
+    if (rc != 0)
+        return rc;
+
+    rc = parse_lat_stats(text, "Total Statistics", &report->total_stats);
+    if (rc != 0)
+        return rc;
+
+    rc = parse_uint64_field(text, "cmd_get:", &report->cmd_get);
+    if (rc != 0)
+        return rc;
+
+    rc = parse_uint64_field(text, "cmd_set:", &report->cmd_set);
+    if (rc != 0)
+        return rc;
+
+    rc = parse_uint64_field(text, "get_misses:", &report->get_misses);
+    if (rc != 0)
+        return rc;
+
+    rc = parse_uint64_field(text, "written_bytes:", &report->written_bytes);
+    if (rc != 0)
+        return rc;
+
+    rc = parse_uint64_field(text, "read_bytes:", &report->read_bytes);
+    if (rc != 0)
+        return rc;
+
+    rc = parse_uint64_field(text, "object_bytes:", &report->object_bytes);
+    if (rc != 0)
+        return rc;
+
+    return 0;
+}
+
+/**
  * Converts memaslap arguments into string for mi_logger.
  *
  * @param[in]  vec  Vector of memaslap argumets.
@@ -511,6 +743,7 @@ tapi_memaslap_get_report(tapi_memaslap_app *app,
     }
 
     memset(report, 0, sizeof(*report));
+    report->lat_stats_enabled = app->lat_stats_enabled;
 
     rc = read_filter(app->tps_filter, &buf);
     if (rc != 0)
@@ -542,6 +775,28 @@ tapi_memaslap_get_report(tapi_memaslap_app *app,
     /* Convert from MiB/s to Mibit/s */
     report->net_rate *= 8;
 
+    if (report->lat_stats_enabled)
+    {
+        te_string full = TE_STRING_INIT;
+
+        rc = read_all_filter(app->stdout_filter, &full);
+        if (rc != 0)
+        {
+            ERROR("Failed to read memaslap stdout for latency "
+                  "statistics parsing: %r", rc);
+            te_string_free(&full);
+            return rc;
+        }
+
+        rc = tapi_memaslap_parse_stats(te_string_value(&full), report);
+        te_string_free(&full);
+        if (rc != 0)
+        {
+            ERROR("tapi_memaslap_parse_stats returned unexpected error: %r", rc);
+            return rc;
+        }
+    }
+
     rc = tapi_memaslap_args2str(&app->cmd, &report->cmd);
     if (rc != 0)
     {
@@ -550,6 +805,31 @@ tapi_memaslap_get_report(tapi_memaslap_app *app,
     }
 
     return 0;
+}
+
+/**
+ * Add latency statistics for one category (Get/Set/Total) to MI logger.
+ *
+ * @param[in] logger MI logger.
+ * @param[in] name   Measurement name, e.g. "Get Latency".
+ * @param[in] stats  Latency statistics to log.
+ */
+static void
+tapi_memaslap_lat_stats_mi_log(te_mi_logger *logger, const char *name,
+                               const tapi_memaslap_lat_stats *stats)
+{
+    te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_LATENCY, name,
+                          TE_MI_MEAS_AGGR_MIN, stats->min,
+                          TE_MI_MEAS_MULTIPLIER_MICRO);
+    te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_LATENCY, name,
+                          TE_MI_MEAS_AGGR_MAX, stats->max,
+                          TE_MI_MEAS_MULTIPLIER_MICRO);
+    te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_LATENCY, name,
+                          TE_MI_MEAS_AGGR_MEAN, stats->avg,
+                          TE_MI_MEAS_MULTIPLIER_MICRO);
+    te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_LATENCY, name,
+                          TE_MI_MEAS_AGGR_STDEV, stats->std,
+                          TE_MI_MEAS_MULTIPLIER_MICRO);
 }
 
 /* See description in tapi_memaslap.h */
@@ -579,6 +859,17 @@ tapi_memaslap_report_mi_log(const tapi_memaslap_report *report)
     te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_THROUGHPUT, "Net_rate",
                           TE_MI_MEAS_AGGR_SINGLE, report->net_rate,
                           TE_MI_MEAS_MULTIPLIER_MEBI);
+
+    if (report->lat_stats_enabled)
+    {
+        tapi_memaslap_lat_stats_mi_log(logger, "Get Latency",
+                                       &report->get_stats);
+        tapi_memaslap_lat_stats_mi_log(logger, "Set Latency",
+                                       &report->set_stats);
+        tapi_memaslap_lat_stats_mi_log(logger, "Total Latency",
+                                       &report->total_stats);
+    }
+
     te_mi_logger_add_comment(logger, NULL, "command", "%s",
                              report->cmd);
 
