@@ -510,21 +510,33 @@ tapi_memaslap_get_report(tapi_memaslap_app *app,
         return TE_RC(TE_TAPI, rc);
     }
 
-    read_filter(app->tps_filter, &buf);
+    memset(report, 0, sizeof(*report));
+
+    rc = read_filter(app->tps_filter, &buf);
+    if (rc != 0)
+    {
+        ERROR("Failed to read data from app->tps_filter: %r", rc);
+        return rc;
+    }
     rc = te_strtoui(buf.ptr, 10, &report->tps);
     te_string_free(&buf);
     if (rc != 0)
     {
-        ERROR("Failed read data from app->tps_filter: %r", rc);
+        ERROR("Failed to convert TPS value '%s': %r", buf.ptr, rc);
         return rc;
     }
 
-    read_filter(app->net_rate_filter, &buf);
+    rc = read_filter(app->net_rate_filter, &buf);
+    if (rc != 0)
+    {
+        ERROR("Failed to read data from app->net_rate_filter: %r", rc);
+        return rc;
+    }
     rc = te_strtod(buf.ptr, &report->net_rate);
     te_string_free(&buf);
     if (rc != 0)
     {
-        ERROR("Failed read data from app->net_rate_filter: %r", rc);
+        ERROR("Failed to convert Net_rate value '%s': %r", buf.ptr, rc);
         return rc;
     }
     /* Convert from MiB/s to Mibit/s */
