@@ -1923,7 +1923,8 @@ rpc_rte_epoll_wait(rcf_rpc_server *rpcs,
 
     if (events != NULL && out.events.events_len != 0)
     {
-        memcpy(events, out.events.events_val, out.events.events_len);
+        memcpy(events, out.events.events_val,
+               out.events.events_len * sizeof(*events));
     }
 
     tlbp = te_log_buf_alloc();
