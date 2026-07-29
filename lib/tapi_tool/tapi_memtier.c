@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
-/* Copyright (C) 2022 OKTET Labs Ltd. All rights reserved. */
+/* Copyright (C) 2022-2026 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief TAPI to manage memtier_benchmark
  *
@@ -94,7 +94,10 @@ const tapi_memtier_opt tapi_memtier_default_opt = {
 };
 
 /* Initializer for tapi_memtier_op_stats */
-#define MEMTIER_STATS_INIT { .tps = 0.0, .net_rate = 0.0, .parsed = false }
+#define MEMTIER_STATS_INIT { .tps = 0.0, .hits = 0.0, .misses = 0.0, \
+                             .lat_avg = 0.0, .lat_p50 = 0.0, \
+                             .lat_p99 = 0.0, .lat_p99_9 = 0.0, \
+                             .net_rate = 0.0, .parsed = false }
 
 /* Initializer for report structure */
 const tapi_memtier_report tapi_memtier_default_report = {
@@ -279,12 +282,61 @@ tapi_memtier_destroy(tapi_memtier_app *app)
     return 0;
 }
 
+/*
+ * Parse the next whitespace-separated column from a statistics row and
+ * advance @p pos past it.
+ *
+ * memtier_benchmark uses "---" as a placeholder when a metric is not
+ * applicable (e.g. Hits/sec and Misses/sec for the "Sets" row) -- such
+ * columns are reported as 0.0.
+ */
+static te_errno
+parse_stats_token(char **pos, double *value)
+{
+    char *start;
+    char *s;
+    te_errno rc;
+
+    for (start = *pos; *start != '\0' && isspace(*start); start++);
+
+    if (*start == '\0')
+    {
+        ERROR("%s(): not enough columns in a statistics row",
+              __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    for (s = start; *s != '\0' && !isspace(*s); s++);
+
+    if (*s != '\0')
+        *s++ = '\0';
+
+    if (strcmp(start, "---") == 0)
+    {
+        *value = 0.0;
+    }
+    else
+    {
+        rc = te_strtod(start, value);
+        if (rc != 0)
+        {
+            ERROR("%s(): failed to parse '%s' as a number",
+                  __FUNCTION__, start);
+            return rc;
+        }
+    }
+
+    *pos = s;
+
+    return 0;
+}
+
 /* Parse a row of statistics table */
 static te_errno
 parse_stats(char *start, char *end, tapi_memtier_op_stats *stats)
 {
-    te_errno rc = 0;
-    char *s;
+    te_errno rc;
+    char *pos;
 
     if (start == NULL || end == NULL || stats == NULL)
     {
@@ -292,22 +344,45 @@ parse_stats(char *start, char *end, tapi_memtier_op_stats *stats)
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    for ( ; *start != '\0' && isspace(*start); start++);
-
-    for (s = start; *s != '\0' && !isspace(*s); s++);
-    *s = '\0';
-
-    rc = te_strtod(start, &stats->tps);
-    if (rc != 0)
-        return rc;
-
+    /*
+     * Trim trailing whitespace so the row becomes a properly
+     * NUL-terminated string bounded by @p end, without touching
+     * anything past it.
+     */
     for ( ; end != start && isspace(*end); end--)
         *end = '\0';
 
-    for (s = end; s != start && *s != '\0' && !isspace(*s); s--);
-    s++;
+    pos = start;
 
-    rc = te_strtod(s, &stats->net_rate);
+    rc = parse_stats_token(&pos, &stats->tps);
+    if (rc != 0)
+        return rc;
+
+    rc = parse_stats_token(&pos, &stats->hits);
+    if (rc != 0)
+        return rc;
+
+    rc = parse_stats_token(&pos, &stats->misses);
+    if (rc != 0)
+        return rc;
+
+    rc = parse_stats_token(&pos, &stats->lat_avg);
+    if (rc != 0)
+        return rc;
+
+    rc = parse_stats_token(&pos, &stats->lat_p50);
+    if (rc != 0)
+        return rc;
+
+    rc = parse_stats_token(&pos, &stats->lat_p99);
+    if (rc != 0)
+        return rc;
+
+    rc = parse_stats_token(&pos, &stats->lat_p99_9);
+    if (rc != 0)
+        return rc;
+
+    rc = parse_stats_token(&pos, &stats->net_rate);
     if (rc != 0)
         return rc;
 
@@ -416,6 +491,34 @@ op_stats_mi_log(te_mi_logger *logger,
                           te_string_value(&param_name),
                           TE_MI_MEAS_AGGR_SINGLE, stats->tps,
                           TE_MI_MEAS_MULTIPLIER_PLAIN);
+
+    te_string_reset(&param_name);
+    te_string_append(&param_name, "%s.Latency_avg", op_name);
+    te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_LATENCY,
+                          te_string_value(&param_name),
+                          TE_MI_MEAS_AGGR_SINGLE, TE_MS2US(stats->lat_avg),
+                          TE_MI_MEAS_MULTIPLIER_MICRO);
+
+    te_string_reset(&param_name);
+    te_string_append(&param_name, "%s.Latency_p50", op_name);
+    te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_LATENCY,
+                          te_string_value(&param_name),
+                          TE_MI_MEAS_AGGR_SINGLE, TE_MS2US(stats->lat_p50),
+                          TE_MI_MEAS_MULTIPLIER_MICRO);
+
+    te_string_reset(&param_name);
+    te_string_append(&param_name, "%s.Latency_p99", op_name);
+    te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_LATENCY,
+                          te_string_value(&param_name),
+                          TE_MI_MEAS_AGGR_SINGLE, TE_MS2US(stats->lat_p99),
+                          TE_MI_MEAS_MULTIPLIER_MICRO);
+
+    te_string_reset(&param_name);
+    te_string_append(&param_name, "%s.Latency_p99.9", op_name);
+    te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_LATENCY,
+                          te_string_value(&param_name),
+                          TE_MI_MEAS_AGGR_SINGLE, TE_MS2US(stats->lat_p99_9),
+                          TE_MI_MEAS_MULTIPLIER_MICRO);
 
     te_string_reset(&param_name);
     te_string_append(&param_name, "%s.Net_rate", op_name);

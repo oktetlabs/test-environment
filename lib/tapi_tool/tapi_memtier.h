@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
-/* Copyright (C) 2022 OKTET Labs Ltd. All rights reserved. */
+/* Copyright (C) 2022-2026 OKTET Labs Ltd. All rights reserved. */
 /** @file
  * @brief TAPI to manage memtier_benchmark
  *
@@ -39,6 +39,18 @@ typedef struct tapi_memtier_app {
 typedef struct tapi_memtier_op_stats {
     /** Throughput, operations/second */
     double tps;
+    /** Hits/sec */
+    double hits;
+    /** Misses/sec */
+    double misses;
+    /** Avg. Latency */
+    double lat_avg;
+    /** p50 Latency */
+    double lat_p50;
+    /** p99 Latency */
+    double lat_p99;
+    /** p99.9 Latency */
+    double lat_p99_9;
     /** The rate of network, Mbit/sec */
     double net_rate;
     /** Set to @c true if statistics were parsed */
