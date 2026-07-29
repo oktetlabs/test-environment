@@ -1259,6 +1259,97 @@ trc_update_cond_res_op(trc_update_ctx *ctx, check_res_cond cond_func,
 }
 
 /**
+ * Auxiliary function for processing queue of tests. Used to implement
+ * trc_update_exclude_unknown_exp_passed().
+ *
+ * @param ctx            TRC Update context.
+ * @param tests          Queue of tests.
+ *
+ * @return True if all the processed tests should be excluded.
+ */
+static bool trc_update_exclude_uep_tests(trc_update_ctx *ctx,
+                                         trc_tests *tests);
+
+/**
+ * Auxiliary function for processing queue of test iterations.
+ * Used to implement trc_update_exclude_unknown_exp_passed().
+ *
+ * @param ctx            TRC Update context.
+ * @param iters          Queue of iters.
+ *
+ * @return True if all the processed iterations should be excluded.
+ */
+static bool
+trc_update_exclude_uep_iters(trc_update_ctx *ctx,
+                             trc_test_iters *iters)
+{
+    trc_update_test_iter_data   *user_data;
+    trc_test_iter               *iter;
+
+    bool all_removed = true;
+    bool res;
+
+    TAILQ_FOREACH(iter, &iters->head, links)
+    {
+        res = trc_update_exclude_uep_tests(ctx, &iter->tests);
+        if (!res || iter->node != NULL)
+            all_removed = false;
+
+        user_data = trc_db_iter_get_user_data(iter, ctx->db_uid);
+        if (user_data == NULL)
+        {
+            all_removed = false;
+            continue;
+        }
+
+        if (!STAILQ_EMPTY(&user_data->new_results))
+            all_removed = false;
+    }
+
+    return all_removed && iters->node == NULL;
+}
+
+/* See the description above.  */
+static bool
+trc_update_exclude_uep_tests(trc_update_ctx *ctx,
+                             trc_tests *tests)
+{
+    trc_update_test_data    *user_data;
+    trc_test                *test;
+
+    bool all_removed = true;
+
+    TAILQ_FOREACH(test, &tests->head, links)
+    {
+        user_data = trc_db_test_get_user_data(test, ctx->db_uid);
+
+        if (trc_update_exclude_uep_iters(ctx, &test->iters) &&
+            test->node == NULL && user_data != NULL)
+            user_data->to_save = false;
+        else
+            all_removed = false;
+    }
+
+    return all_removed && tests->node == NULL;
+}
+
+/**
+ * Exclude from saved TRC XML unknown tests having expected
+ * passed results if unknown_exp_status is set to "passed_ok"
+ * for TRC DB.
+ *
+ * @param ctx            TRC Update context.
+ */
+static void
+trc_update_exclude_unknown_exp_passed(trc_update_ctx *ctx)
+{
+    if (ctx->db->unknown_exp_status != TRC_UNKNOWN_EXP_STATUS_PASSED_OK)
+        return;
+
+    trc_update_exclude_uep_tests(ctx, &ctx->db->tests);
+}
+
+/**
  * Get XML representation of TRC updating rule.
  *
  * @param rule      TRC updating rule
@@ -5798,6 +5889,9 @@ trc_update_process_logs(trc_update_ctx *gctx)
                                      &gctx->updated_tests,
                                      gctx->db_uid);
     }
+
+    if (!(gctx->flags & TRC_UPDATE_PROC_UNK_EXP))
+        trc_update_exclude_unknown_exp_passed(gctx);
 
     if (gctx->flags & TRC_UPDATE_NO_SKIP_ONLY)
         trc_update_cond_res_op(gctx, is_skip_only, RESULT_OP_CLEAR);

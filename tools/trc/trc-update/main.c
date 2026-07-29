@@ -141,6 +141,9 @@ enum {
     TRC_UPDATE_OPT_NO_INCOMPL,      /**< Do not consider INCOMPLETE results */
     TRC_UPDATE_OPT_NO_INT_ERR,      /**< Do not consider results with internal
                                          error */
+    TRC_UPDATE_OPT_PROC_UNK_EXP,    /**< Do not ignore passed unknown tests
+                                         when unknown_exp_status is set to
+                                         "passed_ok" for TRC DB */
     TRC_UPDATE_OPT_TAGS_LIST,       /**< Specify list of tags to be
                                          used for automatical generation
                                          of tag expression for a log */
@@ -514,6 +517,13 @@ trc_update_process_cmd_line_opts(int argc, char **argv, bool main_call)
        { "no-int-err", '\0', POPT_ARG_NONE, NULL,
           TRC_UPDATE_OPT_NO_INT_ERR,
           "Do not consider results with internal error",
+          NULL },
+
+       { "process-unknown-expected", '\0', POPT_ARG_NONE, NULL,
+          TRC_UPDATE_OPT_PROC_UNK_EXP,
+          "Process unknown tests with expected passed results "
+          "even when unknown_exp_status is set to 'passed_ok' "
+          "for TRC DB",
           NULL },
 
         { "gen-apply", '\0', POPT_ARG_NONE, NULL,
@@ -913,6 +923,10 @@ trc_update_process_cmd_line_opts(int argc, char **argv, bool main_call)
 
             case TRC_UPDATE_OPT_NO_INT_ERR:
                 ctx.flags |= TRC_UPDATE_NO_INT_ERR;
+                break;
+
+            case TRC_UPDATE_OPT_PROC_UNK_EXP:
+                ctx.flags |= TRC_UPDATE_PROC_UNK_EXP;
                 break;
 
             case TRC_UPDATE_OPT_NO_USE_IDS:

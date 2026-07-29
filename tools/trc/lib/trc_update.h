@@ -195,6 +195,12 @@ enum trc_update_log_parse_flags {
     TRC_UPDATE_TAGS_GATHER = (1LLU << 41),  /**< Gather tags from
                                                  logs and print
                                                  them */
+
+    /**
+     * Process unknown tests with expected passed results even when
+     * unknown_exp_status is set to 'passed_ok'.
+     */
+    TRC_UPDATE_PROC_UNK_EXP  = (1LLU << 42),
 };
 
 /** All rule type flags */
