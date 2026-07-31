@@ -45,6 +45,16 @@ link_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
     {
         switch (rta->rta_type)
         {
+            case IFLA_MIN_MTU:
+                link->min_mtu = netconf_get_rta_u32(rta);
+                link->min_mtu_set = true;
+                break;
+
+            case IFLA_MAX_MTU:
+                link->max_mtu = netconf_get_rta_u32(rta);
+                link->max_mtu_set = true;
+                break;
+
             case IFLA_ADDRESS:
                 link->address = netconf_dup_rta(rta);
                 link->addrlen = RTA_PAYLOAD(rta);

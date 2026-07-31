@@ -125,6 +125,10 @@ typedef struct netconf_link {
                                              attribute. */
     unsigned int        flags;          /**< Device flags */
     unsigned int        addrlen;        /**< Length of address field */
+    bool                min_mtu_set;    /**< Minimum allowed MTU is known. */
+    bool                max_mtu_set;    /**< Maximum allowed MTU is known. */
+    uint32_t            min_mtu;        /**< Minimum allowed MTU. */
+    uint32_t            max_mtu;        /**< Maximum allowed MTU. */
     uint8_t            *address;        /**< Interface hardware address */
     uint8_t            *broadcast;      /**< Broadcast address */
     char               *ifname;         /**< Device name as string */
