@@ -669,6 +669,10 @@ static te_errno arp_get(unsigned int, const char *, char *,
 static te_errno arp_set(unsigned int, const char *, const char *,
                         const char *);
 
+static te_errno min_mtu_get(unsigned int, const char *, char *,
+                            const char *);
+static te_errno max_mtu_get(unsigned int, const char *, char *,
+                            const char *);
 static te_errno mtu_get(unsigned int, const char *, char *,
                         const char *);
 static te_errno mtu_set(unsigned int, const char *, const char *,
@@ -947,7 +951,13 @@ RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_promisc,
 RCF_PCH_CFG_NODE_RO(node_oper_status, "oper_status", NULL,
                     &node_status, oper_status_get);
 
-RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_oper_status,
+RCF_PCH_CFG_NODE_RO(node_max_mtu, "max_mtu", NULL, &node_oper_status,
+                    max_mtu_get);
+
+RCF_PCH_CFG_NODE_RO(node_min_mtu, "min_mtu", NULL, &node_max_mtu,
+                    min_mtu_get);
+
+RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_min_mtu,
                     mtu_get, mtu_set);
 
 RCF_PCH_CFG_NODE_RW(node_arp, "arp", NULL, &node_mtu,
@@ -6076,6 +6086,117 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
 #endif
 }
 
+/**
+ * Get minimum allowed MTU of the interface.
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full object instance identifier (unused).
+ * @param value         Value location.
+ * @param ifname        Name of the interface (like "eth0").
+ *
+ * @return              Status code.
+ */
+static te_errno
+min_mtu_get(unsigned int gid, const char *oid, char *value,
+            const char *ifname)
+{
+    te_errno    rc;
+#ifdef USE_LIBNETCONF
+    netconf_list *links;
+    const netconf_node *node;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = CHECK_INTERFACE(ifname);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef USE_LIBNETCONF
+    links = netconf_link_dump(nh);
+    if (links == NULL)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+    for (node = links->head; node != NULL; node = node->next)
+    {
+        const netconf_link *link = &(node->data.link);
+
+        if (link->ifname != NULL && strcmp(link->ifname, ifname) == 0)
+        {
+            if (link->min_mtu_set)
+            {
+                te_snprintf(value, RCF_MAX_VAL, "%" TE_PRINTF_16 "u",
+                            link->min_mtu);
+                rc = 0;
+            }
+            break;
+        }
+    }
+    netconf_list_free(links);
+
+    return rc;
+#else
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+/**
+ * Get maximum allowed MTU of the interface.
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full object instance identifier (unused).
+ * @param value         Value location.
+ * @param ifname        Name of the interface (like "eth0").
+ *
+ * @return              Status code.
+ */
+static te_errno
+max_mtu_get(unsigned int gid, const char *oid, char *value,
+            const char *ifname)
+{
+    te_errno    rc;
+#ifdef USE_LIBNETCONF
+    netconf_list *links;
+    const netconf_node *node;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = CHECK_INTERFACE(ifname);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef USE_LIBNETCONF
+    links = netconf_link_dump(nh);
+    if (links == NULL)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+    for (node = links->head; node != NULL; node = node->next)
+    {
+        const netconf_link *link = &(node->data.link);
+
+        if (link->ifname != NULL && strcmp(link->ifname, ifname) == 0)
+        {
+            if (link->max_mtu_set)
+            {
+                te_snprintf(value, RCF_MAX_VAL, "%" TE_PRINTF_16 "u",
+                            link->max_mtu);
+                rc = 0;
+            }
+            break;
+        }
+    }
+    netconf_list_free(links);
+
+    return rc;
+#else
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
 
 /**
  * Get MTU of the interface.

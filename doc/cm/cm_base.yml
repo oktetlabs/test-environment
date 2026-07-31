@@ -200,6 +200,22 @@
          Name:  empty
          Limit: 1
 
+    - oid: "/agent/interface/min_mtu"
+      access: read_only
+      type: uint16
+      d: |
+         Minimum MTU setting available for the interface.
+         Name:  empty
+         Limit: 1
+
+    - oid: "/agent/interface/max_mtu"
+      access: read_only
+      type: uint16
+      d: |
+         Maximum MTU setting available for the interface.
+         Name:  empty
+         Limit: 1
+
     - oid: "/agent/interface/mtu"
       access: read_write
       type: int32
