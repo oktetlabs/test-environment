@@ -68,40 +68,19 @@ Pre-installed binary test suite has the following directory structure:
 	       +   ...
 	       +-- p2_testN
 
-.. code-block:: none
-
 A test suite consists of a set of packages each containing a number of test executables and package description file. For the details on the format of package.xml files refer to :ref:`Tester Package Description File <doxid-group__te__engine__tester_1te_engine_tester_conf_pkg>` section.
 
-Source based test suite additionally has build-specific files. As any other component of TE, a source based test suite is expected to be built with the help of :ref:`Builder <doxid-group__te__engine__builder>`. :ref:`Builder <doxid-group__te__engine__builder>` uses autotools in the backgroud, which means a top level package directory shall include:
-
-* configure script.
-
-And all directories shall include:
-
-* Makefile.in file;
-
-More often source based test suite will have base files of autotools:
-
-* Makefile.am;
-
-* configure.ac.
-
-And before running TE we there will be need to generate configure script and Makefile.in files with the following command:
-
-.. code-block:: none
-
-
-	autoreconf --install --force
-
-The directory structure of source-based test suite is following:
+A source based test suite additionally has build files. Like every other
+component of TE it is built through :ref:`Builder <doxid-group__te__engine__builder>`,
+which uses meson, so each directory that contains tests needs a ``meson.build``
+next to its ``package.xml``:
 
 .. code-block:: none
 
 
 	${TS_ROOT}
 	  +-- package.xml
-	  +-- configure.ac
-	  +-- Makefile.am
+	  +-- meson.build
 	  +-- prologue.c
 	  +-- epilogue.c
 	  +-- p1_test1.c
@@ -109,15 +88,20 @@ The directory structure of source-based test suite is following:
 	  +-- p1_testN.c
 	  +-- subpackage
 	       +-- package.xml
-	       +-- Makefile.am
+	       +-- meson.build
 	       +-- prologue.c
 	       +-- epilogue.c
 	       +-- p2_test1.c
 	       +   ...
 	       +-- p2_testN.c
 
-.. code-block:: none
+There is nothing to run by hand before the build: :ref:`Builder <doxid-group__te__engine__builder>`
+invokes meson itself when :ref:`Tester <doxid-group__te__engine__tester>` asks
+for the suite.
 
+.. note:: Some old suites in the tree still carry ``configure.ac`` and
+	``Makefile.am`` from the days when Builder used autotools. Do not copy
+	them for new work.
 
 
 
@@ -127,114 +111,177 @@ The directory structure of source-based test suite is following:
 Minimal Test Suite
 ~~~~~~~~~~~~~~~~~~
 
-Minimal test suite can be found under ${TE_BASE}/suites/minimal/suite directory.
+The smallest complete example lives in TE's own self-test suite, under
+``${TE_BASE}/suites/selftest``. It is built and run on every change to TE, so
+unlike a written-down example it cannot quietly stop working.
 
-The structure of minimal project is:
+Its layout is the one described above:
 
 .. code-block:: none
 
 
-	${TE_BASE}/suites/minimal
+	${TE_BASE}/suites/selftest
+	  +-- run.sh                 - entry point, wraps dispatcher.sh
 	  +-- conf
 	  |     +-- builder.conf
 	  |     +-- cs.conf
 	  |     +-- logger.conf
 	  |     +-- rcf.conf
 	  |     +-- tester.conf
-	  +-- suite
-	        +-- configure.ac
-	        +-- Makefile.am
-	        +-- package.xml
-	        +-- sample1.c
+	  +-- ts
+	        +-- meson.build      - suite level build file
+	        +-- package.xml      - root package
+	        +-- prologue.c
+	        +-- minimal          - the package we look at below
+	              +-- meson.build
+	              +-- package.xml
+	              +-- helloworld.c
+	              +-- ...
 
-:ref:`Tester <doxid-group__te__engine__tester>` configuration file (tester.conf) refers to suite sources and adds this suite for :ref:`Tester <doxid-group__te__engine__tester>` run:
+:ref:`Tester <doxid-group__te__engine__tester>` needs to be told where the suite
+sources are. That is what ``conf/tester.conf`` does:
 
-.. ref-code-block:: cpp
-
-This test suite has simplest package description file (package.xml):
-
-.. ref-code-block:: cpp
-
-Package description file specifies one test executable sample1 to run.
-
-To run this test suite do the following steps:
-
-#. under ${TE_BASE}/suites/minimal/suite run:
-
-   .. code-block:: none
+.. code-block:: xml
 
 
-   	autoreconf --install --force
+	<?xml version="1.0"?>
+	<tester_cfg version="1.0">
+	    <maintainer mailto="te-maint@oktetlabs.ru"/>
+	    <description>TE Self Tests</description>
+	    <syntax strip_indent="true"/>
 
-   This will generate configure script and Makefile.in file under ${TE_BASE}/suites/minimal/suite directory.
+	    <suite name="ts" src="${TE_TS_DIR}"/>
 
-#. export TS_BASE environment variable, because :ref:`Tester <doxid-group__te__engine__tester>` configuration file (tester.conf) uses it as the value of src attribute of suite TAG.
+	    <run>
+	        <package name="ts"/>
+	    </run>
+	</tester_cfg>
 
-   .. code-block:: none
+The ``src`` attribute points at the suite sources and the ``run`` section says
+which package to execute. Everything below that point is described by
+``package.xml`` files.
 
-
-   	export TS_BASE=${TE_BASE}/suites/minimal
-
-#. set TE_BUILD variable to specify allocation of build artifacts.
-
-   .. code-block:: none
-
-
-   	export TE_BUILD=${TS_BASE}/build
-
-   If this variable is not set, all generated files will be created in working directory.
-
-#. run TE:
-
-   .. code-block:: none
-
-
-   	${TE_BASE}/dispatcher.sh --conf-dir=${TS_BASE}/conf
-
-   In our test project all configuration file names match with the default names, which is why we do not specify them with separate conf-<prog> options, but only tell where to find configuration files with conf-dir option.
-
-As the result of these operations a number of directories are created that have TE and suite build and installation files.
+To run it:
 
 .. code-block:: none
 
 
-	${TE_BASE}/suites/minimal
-	  +-- conf
-	  +-- suite
-	  +-- build - build directory
-	        +-- engine - :ref:`Test Engine <doxid-group__te__engine>` build directory
-	        +-- agents - :ref:`Test Agents <doxid-group__te__agents>` build directory
-	        +-- lib - build directory for TE libraries
-	        +-- include - build directory for includes
-	        +-- platforms - platforms build
-	        +-- suites - test suites build directory
-	              +-- minimal -- build directory of our minimal test suite
-	                    +-- sample1 - test executable
-	        +-- inst - installation directory
-	              +-- agents - :ref:`Test Agents <doxid-group__te__agents>` installation directory
-	              +-- default - te_test_engine installation directory
-	              +-- suites - test suites installation directory
-	                    +-- minimal -- installation directory of our minimal test suite
-	                          +-- package.xml - installed package description file
-	                          +-- sample1 - test executable
+	cd ${TE_BASE}/suites/selftest
+	./run.sh --cfg=localhost
 
-Please note that :ref:`Tester <doxid-group__te__engine__tester>` runs a test suite from inst/suites/<suite_name> directory.
+``run.sh`` is a thin wrapper around ``dispatcher.sh`` that fills in the
+suite-specific options; ``--cfg=<name>`` selects one of the configurations under
+``conf/run``. See :ref:`TE Execution <doxid-group__te__user_1te_user_run>` for
+what happens next and where the logs end up.
+
+The build artefacts appear under the build directory:
+
+.. code-block:: none
+
+
+	build
+	  +-- engine     - :ref:`Test Engine <doxid-group__te__engine>` build directory
+	  +-- agents     - :ref:`Test Agents <doxid-group__te__agents>` build directory
+	  +-- lib        - build directory for TE libraries
+	  +-- include    - build directory for includes
+	  +-- platforms  - platforms build
+	  +-- suites     - test suites build directory
+	  +-- inst       - installation directory
+	        +-- agents
+	        +-- default
+	        +-- suites
+	              +-- ts
+	                    +-- package.xml    - installed package description file
+	                    +-- minimal
+	                          +-- helloworld  - test executable
+
+Please note that :ref:`Tester <doxid-group__te__engine__tester>` runs a test suite from the inst/suites/<suite_name> directory.
 
 
 
 .. _doxid-group__te__ts_1te_ts_min_builder:
 
-Autotools files
----------------
+Build files
+-----------
 
-The content of configure.ac of our minimal test suite is following:
+A package ``meson.build`` lists the tests in the directory and builds one
+executable per test. This is the whole of ``ts/minimal/meson.build``, with the
+list of tests cut down:
 
-.. ref-code-block:: cpp
+.. code-block:: none
 
-The content of Makefile.am is following:
 
-.. ref-code-block:: cpp
+	tests = [
+	    'helloworld',
+	    'verdict',
+	]
 
+	foreach test : tests
+	    test_exe = test
+	    test_c = test + '.c'
+	    package_tests_c += [ test_c ]
+	    executable(test_exe, test_c, install: true, install_dir: package_dir,
+	               dependencies: test_deps)
+	endforeach
+
+	install_data([ 'package.xml' ], install_dir: package_dir)
+
+``package_dir``, ``package_tests_c`` and ``test_deps`` come from the suite level
+``ts/meson.build``, which is where the TE libraries the tests link against are
+declared:
+
+.. code-block:: none
+
+
+	project('selftest', 'c',
+	    version : '1.0.0',
+	    meson_version: '>= 0.49.0',
+	)
+
+	te_path = get_option('te_path')
+	te_libdir = get_option('te_libdir')
+	add_project_arguments(get_option('te_cflags').split(), language: 'c')
+	add_project_link_arguments(get_option('te_ldflags').split(), language: 'c')
+
+	test_deps = [ dependency('threads') ]
+
+	te_libs = [
+	    'rcfapi',
+	    'confapi',
+	    'tapi',
+	    'tapi_rpc',
+	    'tapi_env',
+	    'tools',
+	    'logger_core',
+	    'logger_ten',
+	]
+
+	foreach lib : te_libs
+	    test_deps += dependency('te-' + lib)
+	endforeach
+
+	package_dir = 'ts'
+	package_tests_c = [ ]
+
+	packages = [ 'minimal' ]
+
+	mydir = package_dir
+	foreach package : packages
+	    package_dir = join_paths(mydir, package)
+	    package_tests_c = []
+	    subdir(package)
+	endforeach
+
+The ``te_path``, ``te_libdir``, ``te_cflags`` and ``te_ldflags`` options are
+passed in by :ref:`Builder <doxid-group__te__engine__builder>`; a suite does not
+set them itself. Each TE library is picked up as ``dependency('te-<name>')``,
+and the same library must also be listed in the suite's ``builder.conf`` so that
+it gets built in the first place --- see
+:ref:`Builder configuration file <doxid-group__te__engine__builder_1te_engine_builder_conf_file>`.
+
+Adding a test to an existing package therefore means three things: write the
+``.c`` file, add its name to ``tests`` in ``meson.build``, and add a ``run``
+entry for it in ``package.xml``.
 
 
 
@@ -244,13 +291,76 @@ The content of Makefile.am is following:
 Test scenario file
 ------------------
 
-A test scenario file used in minimal test suite is a C source file:
+A test scenario is a plain C program. This is ``ts/minimal/helloworld.c`` in
+full --- it is as small as a TE test gets:
 
-.. ref-code-block:: cpp
+.. code-block:: c
 
 
+	/* SPDX-License-Identifier: Apache-2.0 */
+	/** @file
+	 * @brief Minimal test
+	 *
+	 * Minimal test scenario.
+	 *
+	 * Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved.
+	 */
+
+	/** @page minimal_helloworld Hello World test
+	 *
+	 * @objective Demo of minimal Hello World test
+	 *
+	 * For each test @p TEST_STEP() is required. This is needed to generate
+	 * documentation of test steps.
+	 *
+	 * @par Test sequence:
+	 *
+	 */
+
+	#ifndef DOXYGEN_TEST_SPEC
+
+	/** Logging subsystem entity name */
+	#define TE_TEST_NAME    "helloworld"
+
+	#include "te_config.h"
+	#include "tapi_test.h"
+
+	int
+	main(int argc, char **argv)
+	{
+	    TEST_START;
+
+	    TEST_STEP("Print \"Hello, World!\"");
+	    RING("Hello, World!");
+
+	    TEST_SUCCESS;
+
+	cleanup:
+
+	    TEST_END;
+	}
+
+	#endif /* !DOXYGEN_TEST_SPEC */
+
+and the ``package.xml`` entry that makes :ref:`Tester <doxid-group__te__engine__tester>`
+run it:
+
+.. code-block:: xml
 
 
+	<?xml version="1.0"?>
+	<package version="1.0">
+	    <description>Package for demonstrating minimal tests</description>
+	    <author mailto="te-maint@oktetlabs.ru"/>
+
+	    <session>
+	        <run>
+	            <script name="helloworld"/>
+	        </run>
+	    </session>
+	</package>
+
+The next section goes through what each part of the C file is for.
 
 
 
@@ -265,9 +375,9 @@ Each test scenario shall have:
 
    .. ref-code-block:: cpp
 
-   	#define TE_TEST_NAME "sample1"
+   	#define TE_TEST_NAME "helloworld"
 
-#. Inclusion of ``te_config.h`` file. This file defines macros generated by TE configure script after verification of header files, structure fields, structure sizes (i.e. it has definitions of ``HAVE_xxx_H``, ``SIZEOF_xxx`` macros).
+#. Inclusion of ``te_config.h`` file. This file holds the macros the build generates after checking for header files, structure fields and structure sizes (i.e. it has definitions of ``HAVE_xxx_H``, ``SIZEOF_xxx`` macros).
 
    .. ref-code-block:: cpp
 
