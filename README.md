@@ -19,25 +19,28 @@ ease creating automated test suites.
 
 ## Documentation
 
-TE has two types of documentation:
+The documentation is built with the `./gen_docs` script in the top directory:
 
-1. Auto-generated Doxygen documentation is built using the
+```sh
+export DOXYREST_PREFIX=<path-to-doxyrest>
+./gen_docs
+```
 
-   ```sh
-   ./gen_docs
-   ```
+It produces a single HTML site under `doc/generated/html/` combining two
+sources:
 
-   script located in the top directory. Most versions of Doxygen are supported.
+1. Hand-written guides in `doc/sphinx/` — architecture, the user guide, the
+   test suite guide and the per-subsystem pages.
 
-   The documentation can be found at `doc/generated/html/`.
+2. API reference generated from the Doxygen comments in the sources.
 
-   Doxygen warnings can be found in the `./doxygen.warn` file.
+Doxygen warnings are collected in `./doxygen.warn`. Some pictures require
+`ditaa` to be installed. Run `./gen_docs -c` to check the sources for Doxygen
+errors without generating anything; see `./gen_docs -h` for the other options.
 
-   Some pictures require `ditaa` to be installed.
-
-2. Static documents can be found in the `doc/` folder.
-   However, these may be outdated, so it is recommended to check
-   the Doxygen documentation first.
+`doc/` also holds reference material that is not part of the generated site:
+the configuration model in `doc/cm/`, XML schemas in `doc/xsd/` and ASN.1
+definitions in `doc/ndn/`.
 
 ## Build
 
