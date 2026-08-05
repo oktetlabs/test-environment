@@ -245,36 +245,35 @@ Optional libraries and packages:
 Build configuration
 -------------------
 
-In order to build sources you will need to prepare project-specific :ref:`Builder <doxid-group__te__engine__builder>` configuration file. For the details on the file format please read :ref:`Builder configuration file <doxid-group__te__engine__builder_1te_engine_builder_conf_file>` section.
+In order to build sources you will need a project-specific
+:ref:`Builder <doxid-group__te__engine__builder>` configuration file, normally
+called ``builder.conf``. For the details on the file format please read
+:ref:`Builder configuration file <doxid-group__te__engine__builder_1te_engine_builder_conf_file>`.
 
-If you're dealing with existing test suite the file usualy was already written by the suite author/maintainer.
+If you're dealing with an existing test suite the file was usually already
+written by the suite author or maintainer, and lives in the suite's ``conf/``
+directory.
 
-For example builder.conf file for a sample test suite located under ${TE_BASE}/suites/ipv6-demo is following:
+It says which TE libraries and tools to build for the engine, and what kind of
+Test Agent to build. Cut down to its essentials, it looks like this:
 
-.. ref-code-block:: cpp
+.. code-block:: none
 
-	#
-	# Builder configuration file for IPv6 Demo Test Suite.
-	#
 
 	TE_PLATFORM([], [], [-D_GNU_SOURCE], [], [],
-	            [logger_core tools logic_expr rpc_types conf_oid rpcxdr \
-	             comm_net_agent loggerta rpctransport agentlib rpcserver rcfpch trc \
-	             ipc bsapi loggerten rcfapi confapi comm_net_engine rcfunix \
-	             tapi rcfrpc tapi_env tapi_rpc dummy_tad netconf asn ndn])
+	            [logger_core tools conf_oid asn ndn logic_expr ipc bsapi \
+	             loggerten rcfapi confapi comm_net_engine rcfunix trc tapi \
+	             rpcxdr rcfrpc rpc_types tapi_rpc tapi_env tapi_job])
 
 	TE_TOOLS([rgt trc])
 
-	TE_TOOL_PARMS([trc], [--with-popups --with-log-urls])
-
-	TE_LIB_PARMS([dummy_tad], [], [tad], [])
-
 	TE_TA_TYPE([linux], [], [unix],
-	           [--with-tad=dummy_tad --with-rcf-rpc \
-	            --with-cfg-unix-daemons='dns ftp Xvfb smtp telnet rsh vncserver dhcp vtund' \
-	            --with-libnetconf],
-	           [], [], [], [comm_net_agent asn ndn])
+	           [--with-rcf-rpc --with-libnetconf], [], [], [],
+	           [comm_net_agent asn ndn])
 
+Every library a test links against has to appear in the ``TE_PLATFORM`` list
+here as well as in the suite's ``meson.build``. See
+``${TE_BASE}/suites/selftest/conf/builder.conf`` for a complete, working one.
 
 
 
@@ -284,57 +283,62 @@ For example builder.conf file for a sample test suite located under ${TE_BASE}/s
 Building
 --------
 
-When you prepared a :ref:`Builder <doxid-group__te__engine__builder>` configuration file, you are ready to start building process.
+Before building you **must** export the TE_BASE environment variable pointing at
+the root directory of the Test Environment sources. As you usually work with one
+copy of TE it is worth putting
 
-You should have two folders: Test Environment sources folder; test suite sources folder.
+.. code-block:: none
 
-Before building you **must** export TE_BASE environment variable that points to the root directory of Test Environment sources.
-
-As you usually work with one copy of Test Environment it is useful to add
-
-.. ref-code-block:: cpp
 
 	export TE_BASE=/path/to/TE_root_dir
 
-into your ~/.bashrc.
+into your ~/.bashrc. Suites that ship a ``scripts/guess.sh`` work it out
+themselves if TE is checked out next to them.
 
-Suppose we have the following structure under our project directory (a directory where we run Test Environment building procedure):
+There is nothing to configure and no ``make`` to run: ``dispatcher.sh`` drives
+:ref:`Builder <doxid-group__te__engine__builder>`, which drives meson. Do not
+invoke meson by hand.
 
-.. code-block:: none
-
-
-	${PRJ_ROOT}
-	  +-- conf_ipv6
-	        +-- builder.conf.ipv6_demo
-
-To start building process we should run the following command:
+To build TE on its own, without any test suite:
 
 .. code-block:: none
 
 
-	cd $PRJ_ROOT
-	${TE_BASE}/dispatcher.sh --conf-dir=conf_ipv6 --conf-builder=builder.conf.ipv6_demo --build-only --no-tester
+	cd ${TE_BASE}
+	./dispatcher.sh --no-run
 
---build-only option means that we don't try to run any tests and --no-tester means that dispatcher.sh doesn't start the te_tester.
-
-If you build with a test suite (which means that you have run.sh) you can call:
+To build a suite together with TE, run the suite's own ``run.sh`` and tell
+Tester not to run anything:
 
 .. code-block:: none
 
 
-	cd $PRJ_ROOT
-	${TE_BASE}/run.sh --cfg=myconfiguration_name --tester-norun
+	cd /path/to/my-ts
+	./run.sh --cfg=<configuration> --tester-no-run
 
-run.sh script is a wrapper for dispatcher.sh which introduces some suite-specific options and defaults. The above run.sh invocations will build both TE and the test suite. See :ref:`TE Execution <doxid-group__te__user_1te_user_run>` or dispatcher.sh help for details on the --cfg option.
+``run.sh`` is a wrapper around ``dispatcher.sh`` that adds suite-specific
+options and defaults; ``--cfg=<name>`` picks one of the suite's configurations.
+See :ref:`TE Execution <doxid-group__te__user_1te_user_run>` or
+``dispatcher.sh --help`` for the details.
 
-If you get some errors during building procedure, you should first check if your have all necessary packages installed on your development platform. Please refer to :ref:`Test Environment Engine dependencies <doxid-group__te__user_1te_deps>` section to check the list of required packages and libraries.
+Useful while working on the build:
 
-If you do not specify TE_BUILD environment variable, :ref:`Builder <doxid-group__te__engine__builder>` calls configure scripts and calls make under ${PRJ_ROOT} directory (i.e. a directory where you run dispatcher.sh).
+* ``--build-only`` --- build everything, including the test suites, but run no tests;
 
+* ``--build-from-scratch`` --- discard previous build artefacts, which is what
+  you want after changing the toolchain or the Builder configuration;
 
+* ``--build-parallel[=num]`` --- build with several jobs;
 
+* ``--builder-debug`` --- be verbose about what the build is doing.
 
+If you get errors during the build, first check that all the required packages
+are installed; see
+:ref:`Test Environment Engine dependencies <doxid-group__te__user_1te_deps>`.
 
+Build artefacts go to the directory named by the TE_BUILD environment variable.
+If it is not set, they are placed under the directory from which you started
+``dispatcher.sh``.
 
 
 .. _doxid-group__te__user_1te_user_run:
@@ -358,8 +362,9 @@ You should either specify all the configuration files with --conf-\* options or 
 	CONF_BUILDER=builder.conf
 	CONF_LOGGER=logger.conf
 	CONF_TESTER=tester.conf
-	CONF_CS=configurator.conf
+	CONF_CS=cs.conf
 	CONF_RCF=rcf.conf
+	CONF_NUT=nut.conf
 
 To avoid extremely long command lines you can use --opts option and pass a file:
 
