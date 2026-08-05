@@ -72,7 +72,7 @@ The following diagram gives more detailed information on relations between Test 
 |				:ref:`DUT serial console access<doxid-group__tapi__conf__serial>`
 |				:ref:`Environment variables configuration<doxid-group__tapi__conf__sh__env>`
 |				:ref:`Ethernet PHY configuration<doxid-group__tapi__conf__phy>`
-|				:ref:`Ethernet interface features configuration<doxid-group__tapi__conf__eth>`
+|				:ref:`Network interface configuration TAPI<doxid-group__tapi__conf__if>`
 |				:ref:`IP rules configuration<doxid-group__tapi__conf__ip__rule>`
 |				:ref:`IPv6 specific configuration<doxid-group__tapi__conf__ip6>`
 |				:ref:`Kernel modules configuration<doxid-group__tapi__conf__modules>`

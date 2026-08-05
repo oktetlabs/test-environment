@@ -278,7 +278,7 @@ Test API to set interface feature
 
 The following function can be used to set a feature value of an ethernet interface and all its parents if they are.
 
-* :ref:`tapi_eth_feature_set_all_parents() <doxid-group__tapi__conf__eth_1ga9014cda041f828426edd0b6ab2b14c16>`
+* ``tapi_cfg_if_feature_set_all_parents()`` from :ref:`Network interface configuration TAPI <doxid-group__tapi__conf__if>`
 
 The target interface ancestors can belong to different test agents and net namespaces.
 

@@ -211,7 +211,7 @@ Apart from main components, TE provides the following set of tools:
 |					:ref:`DUT serial console access<doxid-group__tapi__conf__serial>`
 |					:ref:`Environment variables configuration<doxid-group__tapi__conf__sh__env>`
 |					:ref:`Ethernet PHY configuration<doxid-group__tapi__conf__phy>`
-|					:ref:`Ethernet interface features configuration<doxid-group__tapi__conf__eth>`
+|					:ref:`Network interface configuration TAPI<doxid-group__tapi__conf__if>`
 |					:ref:`IP rules configuration<doxid-group__tapi__conf__ip__rule>`
 |					:ref:`IPv6 specific configuration<doxid-group__tapi__conf__ip6>`
 |					:ref:`Kernel modules configuration<doxid-group__tapi__conf__modules>`
@@ -318,9 +318,9 @@ Apart from main components, TE provides the following set of tools:
 |				:ref:`Test parameters<doxid-group__te__ts__tapi__test__param>`
 |				:ref:`Test run status<doxid-group__te__ts__tapi__test__run__status>`
 |			:ref:`Test API to control a network throughput test tool<doxid-group__tapi__performance>`
-|			:ref:`Test API to control Unbound DNS server<doxid-group__ts__tapi__dns__unbound>`
-|			:ref:`Test API to generate Unbound DNS server config file<doxid-group__ts__tapi__dns__cfg__unbound>`
-|			:ref:`Test API to generate zone file<doxid-group__ts__tapi__dns__zone__file>`
+|			:ref:`Test API to control Unbound DNS server<doxid-group__tapi__dns__unbound>`
+|			:ref:`Test API to generate zone file<doxid-group__tapi__dns__zone__file>`
+|			:ref:`Test API to manage the dnsperf tool<doxid-group__tapi__dnsperf>`
 |			:ref:`Test API to operate the UPnP<doxid-group__tapi__upnp>`
 |				:ref:`Test API for DLNA UPnP commons<doxid-group__tapi__upnp__common>`
 |				:ref:`Test API to operate the DLNA UPnP Content Directory Resources<doxid-group__tapi__upnp__cd__resources>`
