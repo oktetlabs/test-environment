@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /** @file
- * @prief redis-benchmark tool TAPI
+ * @brief redis-benchmark tool TAPI
  *
  * @defgroup tapi_redis_benchmark redis-benchmark tool TAPI (tapi_redis_benchmark)
  * @ingroup te_ts_tapi
