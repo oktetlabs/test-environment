@@ -226,7 +226,7 @@ extern void tapi_net_ta_init(const char *ta_name, tapi_net_ta *cfg_net_ta);
 /**
  * Set interfaces in network configuration for specific Test Agent.
  *
- * @param[in]  cfg_net_ta           TA network configuration.
+ * @param[in]  net_cfg_ta           TA network configuration.
  * @param[in]  if_name_list         NULL-terminated list of physical
  *                                  interface names.
  *
@@ -238,7 +238,7 @@ extern void tapi_net_ta_set_ifaces(tapi_net_ta *net_cfg_ta,
 /**
  * Destroy Test Agent network configuration.
  *
- * @param net_cfg_ta Pointer to TA network configuration.
+ * @param cfg_net_ta Pointer to TA network configuration.
  */
 extern void tapi_net_ta_destroy(tapi_net_ta *cfg_net_ta);
 
@@ -337,7 +337,7 @@ extern tapi_net_iface *tapi_net_find_iface_by_name(tapi_net_ta *net_cfg_ta,
 /**
  * Get interface type by its string representation.
  *
- * @param if_name  String with Network type
+ * @param iface_type_str  String with Network type
  *
  * @return Interface type.
  */
@@ -432,7 +432,7 @@ extern te_errno tapi_net_addr_fill(tapi_net_ctx *net_ctx);
 /**
  * Resolve IP address of specific network endpoint.
  *
- * @param net_ctx       Network contex to use for resolving.
+ * @param ctx           Network contex to use for resolving.
  * @param ep            Network endpoint.
  *
  * @return Resolved IP address.

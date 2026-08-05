@@ -72,8 +72,8 @@ extern te_errno tapi_icmp4_add_pdu(asn_value **tmpl_or_ptrn,
  * @param receive_mode      Bitmask with receive mode, see 'enum
  *                          tad_eth_recv_mode' in tad_common.h.
  *                          Use TAD_ETH_RECV_DEF by default.
- * @param src_mac           Local MAC address (or NULL)
- * @param dst_mac           Remote MAC address (or NULL)
+ * @param eth_src           Local MAC address (or NULL)
+ * @param eth_dst           Remote MAC address (or NULL)
  * @param src_addr          Local IP address in network byte order (or NULL)
  * @param dst_addr          Remote IP address in network byte order (or NULL)
  * @param msg_src_addr      Source IPv4 Address of ICMP Error message
@@ -111,8 +111,8 @@ extern te_errno tapi_ipproto_ip4_icmp_ip4_eth_csap_create(
  * @param receive_mode  Bitmask with receive mode, see 'enum
  *                      tad_eth_recv_mode' in tad_common.h.
  *                      Use TAD_ETH_RECV_DEF by default.
- * @param src_mac       Local MAC address (or NULL)
- * @param dst_mac       Remote MAC address (or NULL)
+ * @param eth_src       Local MAC address (or NULL)
+ * @param eth_dst       Remote MAC address (or NULL)
  * @param src_addr      Local IP address in network byte order (or NULL)
  * @param dst_addr      Remote IP address in network byte order (or NULL)
  * @param msg_src_addr  Source IPv4 Address of ICMP Error message
@@ -148,8 +148,8 @@ extern te_errno tapi_tcp_ip4_icmp_ip4_eth_csap_create(
  * @param receive_mode  Bitmask with receive mode, see 'enum
  *                      tad_eth_recv_mode' in tad_common.h.
  *                      Use TAD_ETH_RECV_DEF by default.
- * @param src_mac       Local MAC address (or NULL)
- * @param dst_mac       Remote MAC address (or NULL)
+ * @param eth_src       Local MAC address (or NULL)
+ * @param eth_dst       Remote MAC address (or NULL)
  * @param src_addr      Local IP address in network byte order (or NULL)
  * @param dst_addr      Remote IP address in network byte order (or NULL)
  * @param msg_src_addr  Source IPv4 Address of ICMP Error message

@@ -210,7 +210,7 @@ typedef void (*tcp4_callback)(const tcp4_message *pkt, void *userdata);
  * Convert TCP.IPv4 datagram ASN.1 value to plain C structure.
  *
  * @param pkt           ASN.1 value of type Raw-Packet.
- * @param tcp_message   converted structure (OUT).
+ * @param tcp_msg       converted structure (OUT).
  *
  * @return zero on success or error code.
  *
@@ -694,7 +694,7 @@ extern te_errno tapi_tcp_init_connection(
  * Parameters are same as above plus:
  *
  * @param enc_vlan      Use VLAN encapsulation
- * @param enc_llc       Use LLC/SNAP encapsulation
+ * @param enc_snap      Use LLC/SNAP encapsulation
  */
 extern int tapi_tcp_init_connection_enc(const char *agt,
                                         tapi_tcp_mode_t mode,
@@ -778,8 +778,6 @@ extern int tapi_tcp_send_fin_ack(tapi_tcp_handler_t handler, int timeout);
  * Send RST in TCP connection.
  *
  * @param handler       TAPI handler of TCP connection;
- * @param timeout       time in milliseconds, while TA should wait
- *                      for answer for FIN;
  *
  * @return Status code
  */
@@ -863,7 +861,7 @@ extern int tapi_tcp_send_template(tapi_tcp_handler_t handler,
  * @param ack_mode          Mode of sending ACK to the message, for this
  *                          method valid values are TAPI_TCP_AUTO or
  *                          TAPI_TCP_QUIET only.
- * @param payload           Pointer to message payload buffer (OUT).
+ * @param buffer            Pointer to message payload buffer (OUT).
  * @param len               Length of buffer / got payload (IN/OUT).
  * @param seqn_got          Place for received SEQ number or NULL (OUT).
  * @param ackn_got          Place for received ACK number or NULL (OUT).
@@ -889,7 +887,7 @@ extern int tapi_tcp_recv_msg_gen(tapi_tcp_handler_t handler,
  * @param timeout       timeout in milliseconds;
  * @param ack_mode      mode of sending ACK to the message, for this
  *                      method valid values are 'AUTO' or 'QUIET' only;
- * @param payload       pointer to message payload buffer (OUT);
+ * @param buffer        pointer to message payload buffer (OUT);
  * @param len           length of buffer / got payload (IN/OUT);
  * @param seqn_got      place for received SEQ number or NULL (OUT);
  * @param ackn_got      place for received ACK number or NULL (OUT);
@@ -1098,7 +1096,7 @@ typedef struct {
  * All unset fields have to be zero.
  *
  * @param ta_name       TA name
- * @param sid           RCF session id
+ * @param session       RCF session id
  * @param iface         Ethernet interface
  * @param dir_out       boolean flag wheather SYN-ACK will be outgoing;
  *                      @c true if it is.
@@ -1117,7 +1115,7 @@ extern int tapi_tcp_reset_hack_init(const char *ta_name, int session,
  * call 'init'.
  *
  * @param ta_name       TA name
- * @param sid           RCF session id
+ * @param session       RCF session id
  * @param context       pointer to structure with context data, IN/OUT
  *
  * @return status code
@@ -1129,7 +1127,7 @@ extern int tapi_tcp_reset_hack_catch(const char *ta_name, int session,
  * Send TCP RST.
  *
  * @param ta_name       TA name
- * @param sid           RCF session id
+ * @param session       RCF session id
  * @param context       pointer to structure with context data
  * @param received      received bytes during TCP connection life
  * @param sent          sent bytes during TCP connection life
@@ -1144,7 +1142,7 @@ extern int tapi_tcp_reset_hack_send(const char *ta_name, int session,
  * Clear TCP reset hack context
  *
  * @param ta_name       TA name
- * @param sid           RCF session id
+ * @param session       RCF session id
  * @param context       pointer to structure with context data, IN/OUT
  *
  * @return status code
@@ -1234,7 +1232,7 @@ extern int tapi_tcp_get_packets(tapi_tcp_handler_t handler);
  *
  * @param handler     TAPI TCP connection handler.
  * @param enable      Whether to enable or disable timestamp.
- * @param start_time  If @p enable is @c true, this is the start value
+ * @param start_value If @p enable is @c true, this is the start value
  *                    for TCP timestamp. Each new TCP timestamp will
  *                    be computed as this value + number of milliseconds
  *                    since the moment of time when the first packet
@@ -1366,7 +1364,7 @@ extern te_errno tapi_tcp_ip_eth_csap_create(const char        *ta_name,
  *       presence.
  *
  * @param pkt       Packet captured by CSAP.
- * @param hrds_len  Where to save headers length (may be @c NULL).
+ * @param hdrs_len  Where to save headers length (may be @c NULL).
  * @param pld_len   Where to save payload length (may be @c NULL).
  *
  * @return Status code.

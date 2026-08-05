@@ -77,10 +77,9 @@ extern int tapi_stp_bpdu_send(const char *ta_name, int sid,
  * Callback function for the tapi_eth_recv_start() routine, it is called
  * for each packet received for csap.
  *
- * @param header        Structure with Ethernet header of the frame.
- * @param payload       Payload of the frame.
- * @param plen          Length of the frame payload.
- * @param userdata      Pointer to user data, provided by  the caller of
+ * @param bpdu          Structure with the received STP BPDU.
+ * @param time_stamp    Time when the BPDU was received.
+ * @param userdata      Pointer to user data, provided by the caller of
  *                      tapi_eth_recv_start.
  */
 typedef void (*tapi_stp_bpdu_callback)
