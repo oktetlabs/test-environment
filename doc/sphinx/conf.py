@@ -25,8 +25,9 @@ project = 'Test Environment'
 copyright = '2019, OKTET Labs'
 author = 'OKTET Labs'
 
-# The full version, including alpha/beta/rc tags
-release = '1.0'
+# TE is developed continuously and has no release numbering, so there is
+# no version to show.
+release = ''
 
 # -- General configuration ---------------------------------------------------
 # Add any Sphinx extension module names here, as strings. They can be
