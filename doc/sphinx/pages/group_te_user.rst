@@ -383,7 +383,7 @@ In case you're running with run.sh there is even faster way to start the framewo
 
 	$ ./run.sh --cfg=<cfgname> --tester-run=foobar-ts/basic/trivial
 
-In this case the conf/run.conf.<cfgname> file is considered as an option file. This is very useful as usually project has several test configurations (i.e. **apple**, **carrot** and **tomato**). Although each configuration may use its own hosts they usually share tester.conf, builder.conf (if all hosts run the same operating system), configurator.conf
+In this case the conf/run.conf.<cfgname> file is considered as an option file. This is very useful as usually project has several test configurations (i.e. **apple**, **carrot** and **tomato**). Although each configuration may use its own hosts they usually share tester.conf, builder.conf (if all hosts run the same operating system), cs.conf
 
 When you start the TE the following is written to the console:
 
