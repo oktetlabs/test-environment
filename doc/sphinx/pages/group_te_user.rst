@@ -69,26 +69,23 @@ When you get TE in source code form you need to build TE before it can be used f
 
 If you're living on a deb-based distribution you could benefit from installing ol-te and other packages. They will automatically install all the deps for the engine and your project. Contact developers if you need access to the the debian repository or to get the .deb file.
 
-To build any of components TE Engine or TA it is necessary to install development toolchain. You can use these packages on Debian derivatives:
+To build either the Test Engine or a Test Agent you first need a development
+toolchain. On Debian derivatives:
 
-* build-essential - this package provokes the installation of the following packages:
+* build-essential - pulls in ``gcc``, ``g++``, ``libc-dev`` and ``make``;
 
-  * g++,
+* pkg-config - used to locate every library listed below;
 
-  * gcc,
+* meson - at least 0.49.0, the version required by TE's own ``meson.build``;
 
-  * libc-dev,
-
-  * make;
-
-* pkg-config.
+* ninja-build - the backend meson drives.
 
 Same for Debian derivatives in one line:
 
 .. code-block:: none
 
 
-	apt-get install build-essential pkg-config
+	apt-get install build-essential pkg-config meson ninja-build
 
 
 
@@ -97,78 +94,54 @@ Same for Debian derivatives in one line:
 Test Environment Engine dependencies
 ------------------------------------
 
-Test Environment Engine depends on a set of 3-rd party libraries and packages:
+The Test Engine needs the following packages. What wants each one is named,
+so that a build failure is easier to place.
 
-* bash - at least 4.3;
+.. list-table::
+   :header-rows: 1
+   :widths: 22 78
 
-* bison;
-
-* curl;
-
-* file;
-
-* flex - at least 2.5.31;
-
-* gawk;
-
-* libcurl4-openssl-dev;
-
-* libexpat1;
-
-* libexpat1-dev;
-
-* libglib2.0-dev;
-
-* libncurses5;
-
-* libncurses5-dev;
-
-* libpam0g;
-
-* libpam0g-dev;
-
-* libpcap0.8-dev;
-
-* libpopt-dev;
-
-* libreadline5 - at least 5.0;
-
-* libreadline-dev - at least 5.0;
-
-* libssl-dev;
-
-* libusb-1.0-0;
-
-* libusb-1.0-0-dev;
-
-* libxml2;
-
-* libxml2-dev - at least 2.6.10;
-
-* libxslt1.1;
-
-* libxslt1-dev - at least 1.1.6;
-
-* xsltproc;
-
-* meson - at least 0.45.1;
-
-* ssh;
-
-* tcl-dev;
-
-* wget.
+   * - Package
+     - Needed for
+   * - bash
+     - at least 4.3; runs ``dispatcher.sh`` and the helper scripts
+   * - bison, flex
+     - flex at least 2.5.31; the :ref:`Tester <doxid-group__te__engine__tester>` test path parser, the test environment parser and logical expressions
+   * - gawk, file, wget, ssh
+     - the build and run scripts; ssh is also how :ref:`RCF <doxid-group__te__engine__rcf>` reaches a Test Agent
+   * - libxml2-dev
+     - at least 2.6.10; XML configuration files and raw log processing
+   * - xsltproc
+     - filtering subtrees out of a :ref:`Configurator <doxid-group__te__engine__conf>` backup; the command is run as it is, so the binary is what is needed, not the library headers
+   * - libpopt-dev
+     - command line parsing in every engine application
+   * - libjansson-dev
+     - JSON: :ref:`Tester <doxid-group__te__engine__tester>`, :ref:`Logger <doxid-group__te__engine__logger>`, :ref:`Report Generator Tool <doxid-group__rgt>` and :ref:`Test Results Comparator <doxid-group__trc>`
+   * - libyaml-dev
+     - the YAML configuration files: :ref:`Configurator <doxid-group__te__engine__conf>`, :ref:`Logger <doxid-group__te__engine__logger>` and :ref:`RCF <doxid-group__te__engine__rcf>`
+   * - libcurl4-openssl-dev
+     - publishing logs from the :ref:`Logger <doxid-group__te__engine__logger>`
+   * - libglib2.0-dev
+     - :ref:`Report Generator Tool <doxid-group__rgt>`
+   * - libssl-dev
+     - :ref:`Test Results Comparator <doxid-group__trc>`
+   * - libpcre2-dev
+     - log post-processing
+   * - libbsd-dev
+     - string helpers in the common tools library; optional, the build falls back to its own implementations
 
 Same for Debian derivatives in one line:
 
 .. code-block:: none
 
 
-	apt-get install bison curl file flex gawk libcurl4-openssl-dev libexpat1 libexpat1-dev libglib2.0-dev libncurses5 libncurses5-dev libpam0g libpam0g-dev libpcap0.8-dev libpopt-dev libreadline5 libreadline-dev libssl-dev libusb-1.0-0 libusb-1.0-0-dev libxml2 libxml2-dev libxslt1.1 libxslt1-dev xsltproc meson ssh tcl-dev wget
+	apt-get install bison flex gawk file wget ssh libxml2-dev xsltproc libpopt-dev libjansson-dev libyaml-dev libcurl4-openssl-dev libglib2.0-dev libssl-dev libpcre2-dev libbsd-dev
 
 Or easy way, you can install meta package **oktetlabs-te-dev** from OKTET Labs repository.
 
 Optional libraries and packages:
+
+* libreadline-dev and libncurses-dev - enable the interactive :ref:`Tester <doxid-group__te__engine__tester>` mode (the ``--tester-interactive`` option). Without them the build succeeds and the option is simply unavailable;
 
 * perl-Time-HiRes - package on Redhat/Fedora is very useful (it allows to avoid mixture in log because of unprecise timestamps in messages logged by Dispatcher (via logging script)).
 
@@ -181,34 +154,60 @@ Optional libraries and packages:
 Test Agent build dependencies
 -----------------------------
 
-Default Test Agent build depends on a set of 3-rd party libraries and packages:
+A default Test Agent build needs:
 
-* bison;
+.. list-table::
+   :header-rows: 1
+   :widths: 22 78
 
-* file;
+   * - Package
+     - Needed for
+   * - gawk, file, wget
+     - the build and run scripts
+   * - libpcap-dev
+     - packet capture and injection in the :ref:`Traffic Application Domain <doxid-group__tapi__tad__main>`
+   * - libtirpc-dev
+     - Sun RPC; glibc no longer provides it, so this package is needed on any current distribution
+   * - libpcre2-dev
+     - agent job control
+   * - libnl-3-dev
+     - netlink, used for network configuration on Linux agents
+   * - openssh-server
+     - not a build dependency: an ssh server has to run on the agent host, because :ref:`RCF <doxid-group__te__engine__rcf>` copies the agent there and starts it over ssh
 
-* flex - at least 2.5.31;
+Agents configured with extra features need more:
 
-* gawk;
+.. list-table::
+   :header-rows: 1
+   :widths: 22 78
 
-* libpcap0.8-dev;
-
-* libpopt-dev;
-
-* ssh server, in Debian derivatives it is openssh-server;
-
-* wget.
+   * - Package
+     - Needed for
+   * - bison, flex
+     - flex at least 2.5.31; the DNS and DHCP server configuration support, which is off unless the agent is built with those daemons
+   * - libssl-dev
+     - OpenVPN daemon support
+   * - libbsd-dev
+     - string helpers in the common tools library; optional, the build falls back to its own implementations
 
 Same for Debian derivatives in one line:
 
 .. code-block:: none
 
 
-	apt-get install bison file flex gawk libpcap0.8-dev libpopt-dev openssh-server wget
+	apt-get install gawk file wget libpcap-dev libtirpc-dev libpcre2-dev libnl-3-dev openssh-server
 
 Optional libraries and packages:
 
-* libsnmp-dev - for SNMP support.
+* libelf-dev - BPF/XDP support on the agent;
+
+* libsnmp-dev - for SNMP support, used by the power control agent;
+
+* libyang-dev and libnetconf2-dev - NETCONF/RESTCONF RPCs;
+
+* libpam0g-dev - PAM support;
+
+* tcl-dev and expect - Tcl and expect support in :ref:`Traffic Application Domain <doxid-group__tapi__tad__main>`.
 
 
 
