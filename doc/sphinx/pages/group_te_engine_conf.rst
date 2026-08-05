@@ -76,7 +76,7 @@ Empty instance name is used when the object has only one instance.
 
 Instances which belong to /agent: subtree correspond to real configuration items observed on the te_agents (network interfaces, IP addresses, routes, ARP entries, daemons, etc.). Their change may lead to re-configuration of remote hosts.
 
-The list of basic configuration objects, which is likely to be supported by any Test Agent, can be found in ${TE_BASE}/doc/cm/cm_base.xml file.
+The list of basic configuration objects, which is likely to be supported by any Test Agent, can be found in ${TE_BASE}/doc/cm/cm_base.yml file. The rest of ${TE_BASE}/doc/cm covers the remaining subtrees, one YAML file per area; every object there carries a ``d:`` field explaining what it means.
 
 Other subtrees may be considered as information storage: changing instances in these subtrees does not affect the hosts controlled by te_agents, but may be used to share data between tests.
 
