@@ -148,98 +148,133 @@ Configurator Configuration File
 File Syntax
 -----------
 
-You can find samples of :ref:`Configurator <doxid-group__te__engine__conf>` configuration files under ${TE_BASE}/conf directory.
+Configuration files are written in YAML. (Configurator still reads the older
+XML form; it is described in :ref:`Legacy XML syntax <doxid-group__te__engine__conf_1te_engine_conf_file_xml>`
+below, but new files should not use it.)
 
-Normally the structure of :ref:`Configurator <doxid-group__te__engine__conf>` configuration files is organized as following:
+You can find samples under ${TE_BASE}/conf, and a larger real-world set in the
+``cs/`` directory of the shared test suite configuration.
 
-.. ref-code-block:: xml
+A configuration file is a YAML sequence of commands. Each command is one of:
 
-	<?xml version="1.0"?>
-	<history>
-	  <!-- Register object nodes section -->
-	  <register>
-	      ...
-	  </register>
+============  ===========================================================
+Command       Meaning
+============  ===========================================================
+register      describe new objects to Configurator
+unregister    make Configurator forget objects
+add           add object instances
+set           change the value of existing instances
+delete        remove instances
+get           read instances
+copy          copy instances
+comment       free text, ignored by Configurator
+include       process other configuration files
+cond          process commands only if a condition holds
+============  ===========================================================
 
-	  <!-- Add object instance section -->
-	  <add>
-	      ...
-	  </add>
-	</history>
+The usual shape of a file is therefore:
 
-There can be multiple occurences of register object and add instance sections and they can be mixed.
+.. code-block:: yaml
 
-For example:
 
-.. ref-code-block:: xml
+	---
+	- comment: |
+	    What this file is for.
 
-	<?xml version="1.0"?>
-	<history>
-	  <register>
-	    <object oid="/agent/env" access="read_create" type="string"/>
-	    <object oid="/agent/uname" access="read_only" type="string"/>
-	  </register>
+	- register:
+	    - oid: "/agent/env"
+	      access: read_create
+	      type: string
 
-	  <register>
-	    <object oid="/agent/interface" access="read_create" type="none"/>
-	    <object oid="/agent/interface/index"
-	            access="read_only" type="integer" volatile="true"/>
+	- add:
+	    - oid: "/agent:Agt_A/env:LOG_LEVEL"
+	      value: "info"
 
-	    <!--
-	      For IPv6 interfaces 'net_addr' depends on 'link_addr' because
-	      IPv6 Link-Local Address value derived from Link Layer address
-	      (MAC address of an interface).
-	      It means that once we have an update of 'link_addr',
-	      the collection of 'net_addr' should be synced between
-	      Test Agent and Configurator.
-	     -->
-	    <object oid="/agent/interface/net_addr" access="read_create" type="integer">
-	      <depends oid="/agent/interface/link_addr"/>
-	    </object>
-	  </register>
+``register`` and ``unregister`` take objects, everything else takes instances,
+and the two may be mixed and repeated as many times as you like.
 
-	  <register>
-	    <object oid="/snmp" access="read_create" type="none"/>
-	    <object oid="/snmp/mibs" access="read_create" type="none"/>
-	    <object oid="/snmp/mibs/load" access="read_create" type="none"/>
-	    <object oid="/snmp/version" access="read_create" type="integer"/>
-	    <object oid="/snmp/community" access="read_create" type="string"/>
-	    <object oid="/snmp/timeout" access="read_create" type="integer"/>
-	  </register>
 
-	  <add>
-	    <instance oid="/snmp:"/>
-	    <instance oid="/snmp:/mibs:"/>
-	    <instance oid="/snmp:/mibs:/load:SNMPV2-MIB"/>
-	    <instance oid="/snmp:/mibs:/load:IEEE802dot11-MIB"/>
-	  </add>
+Describing objects
+------------------
 
-	  <add>
-	    <instance oid="/snmp:/version:" value="2"/>
-	    <instance oid="/snmp:/community:" value="public"/>
-	    <instance oid="/snmp:/timeout:" value="5"/>
-	  </add>
-	</history>
+An object entry carries the attributes that define the node --- what it is
+called, what it holds and who may change it:
 
-This sample registers few object nodes and then adds some object instances. Instance adding feature is very useful when you need to tune some configuration parameters via configurator configuration file. Then from test scenarios it is possible to gather this information, which means there is no need to rebuild sources when you need to change some configuration, but instead you can just modify a simple text file.
+.. code-block:: yaml
 
-Note that you can also add new instances and set instance values of /agent subtree.
 
-For example if you want to switch off IPv4 forwarding in your test suite you can write the following lines in your configuration file:
+	- register:
+	    - oid: "/agent/interface"
+	      access: read_create
+	      type: none
+	      d: |
+	        Network interface
+	        Name: interface name
 
-.. ref-code-block:: xml
+	    - oid: "/agent/interface/index"
+	      access: read_only
+	      type: integer
+	      volatile: true
 
-	<register>
-	  <object oid="/agent/ip4_fw" access="read_write" type="integer"/>
-	</register>
+	    - oid: "/agent/interface/net_addr"
+	      access: read_create
+	      type: address
+	      depends:
+	        - oid: "/agent/interface/link_addr"
+	      d: |
+	        For IPv6 interfaces net_addr depends on link_addr, because an IPv6
+	        link-local address is derived from the link layer address. Once
+	        link_addr is updated, the net_addr collection has to be synced
+	        between the Test Agent and Configurator.
 
-	<set>
-	  <!-- Switch off IPv4 forwarding on Agent 'Agt_A' -->
-	  <instance oid="/agent:Agt_A/ip4_fw:" value="0"/>
-	</set>
+The attributes an object entry accepts:
 
-XSD schema of :ref:`Configurator <doxid-group__te__engine__conf>` configuration file can be found at ${TE_BASE}/doc/xsd/cs_config.xsd.
+================  =============================================================
+Attribute         Meaning
+================  =============================================================
+``oid``           object identifier, the only mandatory attribute
+``access``        ``read_only``, ``read_write`` or ``read_create``
+``type``          ``none``, ``integer``, ``uint64``, ``string`` or ``address``
+``volatile``      ``true`` if the value may change without Configurator knowing
+``depends``       list of ``oid`` entries this object depends on
+``d``             description; this is what documents the node
+``unit``          unit of the value, for numeric nodes
+``substitution``  value substitution rules
+``name``          marks an instance-keyed collection rather than a singleton
+================  =============================================================
 
+The ``d`` and ``name`` fields are not used by Configurator to make decisions ---
+they document the node and feed code generators. The configuration model under
+${TE_BASE}/doc/cm is written in exactly this form and is the reference for
+what every standard node means.
+
+
+Adding and setting instances
+----------------------------
+
+Instance entries take an ``oid`` and, for anything but a ``none`` type node, a
+``value``:
+
+.. code-block:: yaml
+
+
+	- register:
+	    - oid: "/agent/ip4_fw"
+	      access: read_write
+	      type: integer
+
+	- set:
+	    # Switch off IPv4 forwarding on Agent 'Agt_A'
+	    - oid: "/agent:Agt_A/ip4_fw:"
+	      value: 0
+
+Adding instances from the configuration file is a convenient way to tune a test
+suite: tests read the values back through the
+:ref:`Configurator API <doxid-group__confapi>`, so changing behaviour does not
+mean rebuilding anything, only editing a text file.
+
+Note that you can add instances and set values in the /agent subtree the same
+way, which is what actually reconfigures the hosts under test.
 
 
 
@@ -249,38 +284,107 @@ XSD schema of :ref:`Configurator <doxid-group__te__engine__conf>` configuration 
 Special features
 ----------------
 
-One useful feature of :ref:`Configurator <doxid-group__te__engine__conf>` configuration file is that it is possible to include the content of one file into another with XML **include** tag. For example your upper level file can keep only includes to different parts of configuration:
+**Including other files.** A top level file usually does little more than pull
+in the parts it needs:
 
-.. ref-code-block:: xml
+.. code-block:: yaml
+
+
+	---
+	- include:
+	    - cs.conf.common.yml
+	    - cs.conf.env.yml
+	    - cs.conf.hw.yml
+
+**Environment variables.** Values, and conditions, go through ordinary BASH
+parameter substitution, so a configuration can be tuned from the environment
+without being edited:
+
+.. code-block:: yaml
+
+
+	- set:
+	    # Take the value from TEST_LIBDIR, or use /usr/lib if it is not set.
+	    - oid: "/local:Agt_B/libdir:"
+	      value: "${TEST_LIBDIR:-/usr/lib}"
+
+	- add:
+	    - oid: "/local:Agt_A/env:LOG_LEVEL"
+	      value: "${TEST_LOG_LEVEL}"
+
+**Conditions.** An ``if`` on a single entry skips just that entry:
+
+.. code-block:: yaml
+
+
+	- add:
+	    - if: ${TE_ENV_IUT_NET_DRIVER} != ""
+	      oid: "/local:${TE_IUT_TA_NAME}/net_driver:"
+	      value: "${TE_ENV_IUT_NET_DRIVER}"
+
+while a ``cond`` command guards a whole group, with an optional ``else``:
+
+.. code-block:: yaml
+
+
+	- cond:
+	    if: ${TE_LOG_LISTENER} != ""
+	    then:
+	      - include:
+	          - cm_netconsole.yml
+	          - inc.log_listener.yml
+
+This is how one set of configuration files serves many testbeds: the variables
+come from the environment for the chosen configuration, and the conditions pick
+the matching pieces.
+
+
+
+
+.. _doxid-group__te__engine__conf_1te_engine_conf_file_xml:
+
+Legacy XML syntax
+-----------------
+
+Configurator also reads configuration files in an older XML form. It is still
+supported and plenty of it survives in existing suites, but it has no
+conditions and is not being extended, so prefer YAML for anything new.
+
+The structure mirrors the YAML one:
+
+.. code-block:: xml
+
 
 	<?xml version="1.0"?>
 	<history>
-	  <xi:include xmlns:xi="http://www.w3.org/2003/XInclude" href="cs.conf.common" parse="xml"/>
-	  <xi:include xmlns:xi="http://www.w3.org/2003/XInclude" href="cs.conf.env" parse="xml"/>
-	  <xi:include xmlns:xi="http://www.w3.org/2003/XInclude" href="cs.conf.hw" parse="xml"/>
+	  <register>
+	    <object oid="/agent/env" access="read_create" type="string"/>
+	    <object oid="/agent/interface/index"
+	            access="read_only" type="integer" volatile="true"/>
+	    <object oid="/agent/interface/net_addr" access="read_create" type="address">
+	      <depends oid="/agent/interface/link_addr"/>
+	    </object>
+	  </register>
+
+	  <add>
+	    <instance oid="/agent:Agt_A/env:LOG_LEVEL" value="${TEST_LOG_LEVEL}"/>
+	  </add>
+
+	  <set>
+	    <instance oid="/agent:Agt_A/ip4_fw:" value="0"/>
+	  </set>
 	</history>
 
-:ref:`Configurator <doxid-group__te__engine__conf>` allows to use environment variables in the content of configuration file. Which makes it possible to tune configuration via environment variables without modification of configuration file. For example:
+Files are pulled in with XInclude rather than the ``include`` command:
 
-.. ref-code-block:: xml
+.. code-block:: xml
 
-	<!--
-	  Set '/local:Agt_B/libdir:' to the value of environment variable TEST_LIBDIR.
-	  If this variable is not set, then the value is set to '/usr/lib'.
-	  This is just ordinary "${parameter:-default}" BASH substitution.
-	  -->
-	<set>
-	  <instance oid="/local:Agt_B/libdir:" value="${TEST_LIBDIR:-/usr/lib}"/>
-	</set>
-	<!--
-	  Set the value of '/local:Agt_A/env:LOG_LEVEL' instance to the value of
-	  TEST_LOG_LEVEL environment variable.
-	  --
-	<add>
-	  <instance oid="/local:Agt_A/env:LOG_LEVEL" value="${TEST_LOG_LEVEL}"/>
-	</add>
 
-Actually as object instance value you can use syntax of BASH Parameter Substitution.
+	<xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+	            href="cs.conf.common" parse="xml"/>
+
+The XSD schema for this form is at ${TE_BASE}/doc/xsd/cs_config.xsd.
+
 
 |	:ref:`API Usage: Configurator API<doxid-group__confapi>`
 |		:ref:`API: Configurator<doxid-group__confapi__base>`
