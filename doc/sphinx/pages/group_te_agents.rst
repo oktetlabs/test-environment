@@ -15,7 +15,6 @@ Test Agents
 	group_te_agents_conf.rst
 	/generated/group_rcf_pch.rst
 	group_te_agents_unix.rst
-	group_te_agents_win.rst
 
 
 
@@ -132,9 +131,7 @@ Functions declared in ``lib/rcfpch/rcf_ch_api.h`` should be exported by a Test A
 Types of supported Test Agents
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Currently we support two main types of te_agents:
-
-* :ref:`Test Agents: Windows Test Agent <doxid-group__te__agents__win>`;
+The Unix Test Agent is the agent used in practice:
 
 * :ref:`Test Agents: Unix Test Agent <doxid-group__te__agents__unix>`.
 
@@ -183,6 +180,5 @@ Adding new configuration nodes
 |	:ref:`Test Agents: Portable Commands Handler<doxid-group__rcf__pch>`
 |		:ref:`API: Shared TA resources<doxid-group__rcf__pch__rsrc>`
 |	:ref:`Test Agents: Unix Test Agent<doxid-group__te__agents__unix>`
-|	:ref:`Test Agents: Windows Test Agent<doxid-group__te__agents__win>`
 
 

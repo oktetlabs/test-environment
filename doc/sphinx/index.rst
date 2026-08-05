@@ -189,7 +189,6 @@ Apart from main components, TE provides the following set of tools:
 |		:ref:`Test Agents: Portable Commands Handler<doxid-group__rcf__pch>`
 |			:ref:`API: Shared TA resources<doxid-group__rcf__pch__rsrc>`
 |		:ref:`Test Agents: Unix Test Agent<doxid-group__te__agents__unix>`
-|		:ref:`Test Agents: Windows Test Agent<doxid-group__te__agents__win>`
 |	:ref:`Test Engine<doxid-group__te__engine>`
 |		:ref:`Builder<doxid-group__te__engine__builder>`
 |		:ref:`Configurator<doxid-group__te__engine__conf>`

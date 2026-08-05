@@ -205,11 +205,7 @@ Assuming you are implementing RPC calls for some standard API, you should better
 Support RPC call on Test Agent side
 -----------------------------------
 
-Now we are ready to implement server side for our **foobar()** function. Implementation of server side of RPC calls can be found under:
-
-* for te_agents_unix - agents/unix/rpc/tarpc_server.c file;
-
-* for te_agents_win - agents/win32/tarpc_server.c file.
+Now we are ready to implement server side for our **foobar()** function. Implementation of server side of RPC calls for the Unix Test Agent can be found in the agents/unix/rpc/tarpc_server.c file.
 
 To define a new RPC function call we should use TARPC_FUNC() macro.
 
