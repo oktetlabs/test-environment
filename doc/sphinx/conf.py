@@ -12,6 +12,9 @@
 
 import sys
 import os
+import re
+import subprocess
+from urllib.parse import urlsplit
 
 doxyrest_prefix = os.environ["DOXYREST_PREFIX"]
 doxyrest_ext_path = os.path.join(doxyrest_prefix, "share", "doxyrest", "sphinx")
@@ -28,6 +31,63 @@ author = 'OKTET Labs'
 # TE is developed continuously and has no release numbering, so there is
 # no version to show.
 release = ''
+
+# -- The repository these pages were generated from ---------------------------
+# The user guide has to tell the reader where to get TE. That answer is a
+# property of the tree the documentation is built from, not text to freeze
+# into a page: a fork, a mirror or a private clone has to document itself,
+# not the repository it was copied from.
+
+te_base = os.path.dirname(os.path.dirname(this_dir))
+
+# Used when the tree has no origin, e.g. unpacked from an archive.
+te_public_repo = 'https://github.com/ts-factory/test-environment.git'
+
+
+def _clone_url():
+    """URL this tree was cloned from."""
+    try:
+        url = subprocess.run(
+            ['git', '-C', te_base, 'config', '--get', 'remote.origin.url'],
+            capture_output=True, text=True, check=True).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        url = ''
+
+    return url or te_public_repo
+
+
+def _browse_url(url):
+    """The same repository in a form a browser can open, if there is one."""
+    scp = re.match(r'^(?:[^@/]+@)?([^/:]+):(?!//)(.+)$', url)
+    if scp:
+        host, path = scp.group(1), scp.group(2)
+    else:
+        parts = urlsplit(url)
+        if parts.scheme in ('http', 'https'):
+            return re.sub(r'\.git$', '', url)
+        if parts.scheme not in ('ssh', 'git') or not parts.hostname:
+            return None
+        host, path = parts.hostname, parts.path.lstrip('/')
+
+    return 'https://%s/%s' % (host, re.sub(r'\.git$', '', path))
+
+
+te_clone_url = _clone_url()
+_te_browse_url = _browse_url(te_clone_url)
+
+# A standalone URI is recognised wherever it appears, which would turn the
+# clone command into a link inside its code block; escaping the scheme colon
+# keeps that one plain text.
+_te_plain_url = te_clone_url.replace(':', '\\:', 1)
+
+# Defined in the epilog rather than the prolog: appended to a document these
+# cannot come between a file and its title.
+rst_epilog = """
+.. |te_clone_url| replace:: %s
+.. |te_repository| replace:: %s
+""" % (_te_plain_url,
+       '`%s <%s>`__' % (_te_browse_url, _te_browse_url) if _te_browse_url
+       else '``%s``' % te_clone_url)
 
 # -- General configuration ---------------------------------------------------
 # Add any Sphinx extension module names here, as strings. They can be

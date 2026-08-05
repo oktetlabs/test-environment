@@ -40,12 +40,15 @@ If you have pre-installed binaries you can obviously skip the sources download a
 Getting TE sources
 ~~~~~~~~~~~~~~~~~~
 
-Test Environment sources can be obtained from
-`https://git.oktetlabs.ru/git/oktetlabs/test-environment <https://git.oktetlabs.ru/git/oktetlabs/test-environment.git>`__
+Test Environment is an open source project. Its sources live in
+|te_repository| and can be cloned by anyone:
 
-You will need OKTET Labs account and appropriate permissions, contact `Konstantin.Ushakov@oktetlabs.ru <mailto:Konstantin.Ushakov@oktetlabs.ru>`__ if you need any assistance.
+.. parsed-literal::
 
-If you have a test suite which is not structurally embeded in the TE subtree (not in suites/) directory you also need to download its sources.
+
+	git clone |te_clone_url| te
+
+If you have a test suite which is not structurally embedded in the TE subtree (not in suites/) directory you also need to download its sources.
 
 So in general case after all source code is retrieved from the repository one should have:
 
