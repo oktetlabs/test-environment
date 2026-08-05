@@ -222,7 +222,7 @@ extern void te_enum_map_fill_by_conversion(te_enum_map map[],
  *     ...
  * }
  *
- * static te_errno handler1(int arg)
+ * static te_errno handler2(int arg)
  * {
  *     ...
  * }
@@ -236,7 +236,7 @@ extern void te_enum_map_fill_by_conversion(te_enum_map map[],
  * int arg;
  *
  * TE_ENUM_DISPATCH(actions, unknown_handler, rc, arg);
- * @encode
+ * @endcode
  *
  * @param[in]  table_    a table of name-to-action mappings
  * @param[in]  unknown_  a handler for unknown names
