@@ -96,3 +96,5 @@ extern te_errno tapi_cfg_bridge_port_del(const char *ta,
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_CFG_BRIDGE_H__ */
+
+/**@} <!-- END tapi_conf_bridge --> */

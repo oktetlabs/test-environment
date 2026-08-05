@@ -43,3 +43,5 @@ extern te_errno tapi_cfg_tap_del(const char *ta, const char *ifname);
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_CFG_TAP_H__ */
+
+/**@} <!-- END tapi_conf_tap --> */

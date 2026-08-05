@@ -117,3 +117,5 @@ extern te_errno tapi_cfg_tunnel_get(const char *ta,
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_CFG_TUNNEL_H__ */
+
+/**@} <!-- END tapi_conf_tunnel --> */
