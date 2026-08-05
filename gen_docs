@@ -149,6 +149,12 @@ function generate_sphinx_only()
 {
     $SPHINX_ONLY && check_sphinx_binary
     $DO_EXCLUDE_GLOBAL && exclude_global
+
+    # Regenerate the option list the Dispatcher page includes.
+    [[ -z "$SCRIPT_DIR" ]] && SCRIPT_DIR="${TE_BASE}/scripts/docs"
+    ${SCRIPT_DIR}/gen_dispatcher_options.sh ||
+        echo "Failed to generate the Dispatcher option list" 1>&2
+
     SPHINX_BUILD_OPTS=(
       "${SPHINX_EXCLUDE_PATTERNS[@]}"
       -j auto             # use cpu count

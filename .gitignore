@@ -17,3 +17,4 @@ cscope*
 build
 cmake
 .vscode
+doc/sphinx/pages/dispatcher_options.inc
