@@ -27,7 +27,7 @@ Test scenarios should use functions exported via:
 
 * semantic based interface :ref:`TAPI: Test API for configuration nodes <doxid-group__tapi__conf>`.
 
-Here we will show how to play with samples discussed at te_agents_conf page.
+Here we will show how to play with samples discussed at :ref:`Creating new configuration nodes in Test Agent <doxid-group__te__agents__conf>` page.
 
 
 
@@ -38,20 +38,20 @@ Here we will show how to play with samples discussed at te_agents_conf page.
 Tuning Configurator configuration file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In order to let :ref:`Configurator <doxid-group__te__engine__conf>` know about instances of new nodes we should register these new object nodes in configurator tree. Then :ref:`Configurator <doxid-group__te__engine__conf>` will be able to get instances of these objects from te_agents. Otherwise :ref:`Configurator <doxid-group__te__engine__conf>` ignores node instances whose object nodes were not registered.
+In order to let :ref:`Configurator <doxid-group__te__engine__conf>` know about instances of new nodes we should register these new object nodes in configurator tree. Then :ref:`Configurator <doxid-group__te__engine__conf>` will be able to get instances of these objects from Test Agents. Otherwise :ref:`Configurator <doxid-group__te__engine__conf>` ignores node instances whose object nodes were not registered.
 
 .. image:: /static/image/ten_conf_startup.png
 	:alt: Configurator start-up event flow
 
 When :ref:`Configurator <doxid-group__te__engine__conf>` starts it processes configurator configuration file that keeps object descriptions that need to be registered in local tree of objects (see arrow [2]).
 
-Configuration file can also keep rules to add object instances, but these instances can not be applied for /agent subtree. /agent subtree is in control by te_agents.
+Configuration file can also keep rules to add object instances, but these instances can not be applied for /agent subtree. /agent subtree is in control by Test Agents.
 
-:ref:`Configurator <doxid-group__te__engine__conf>` should ask te_agents about these instances that is why it call :ref:`rcf_ta_cfg_get() <doxid-group__rcfapi__base_1ga92bb850be576f887a71251e4d86ccd45>` function with wildcard object instance identifier (arrow [4] in the figure).
+:ref:`Configurator <doxid-group__te__engine__conf>` should ask Test Agents about these instances that is why it call :ref:`rcf_ta_cfg_get() <doxid-group__rcfapi__base_1ga92bb850be576f887a71251e4d86ccd45>` function with wildcard object instance identifier (arrow [4] in the figure).
 
 When :ref:`Configurator <doxid-group__te__engine__conf>` receives a reply with the list of object instance names it checks whether an instance name has corresponding object node in its local object tree. If yes, then it adds an instance into its instance configuration tree, otherwise it ignores an instance name and tests will not be able to access those instances until they register corresponding object nodes in :ref:`Configurator <doxid-group__te__engine__conf>` (see arrow [6]).
 
-Regarding an example described at te_agents_conf page, we should add the following lines into :ref:`Configurator <doxid-group__te__engine__conf>` configuration file to let :ref:`Configurator <doxid-group__te__engine__conf>` know about our new supported object instances:
+Regarding an example described at :ref:`Creating new configuration nodes in Test Agent <doxid-group__te__agents__conf>` page, we should add the following lines into :ref:`Configurator <doxid-group__te__engine__conf>` configuration file to let :ref:`Configurator <doxid-group__te__engine__conf>` know about our new supported object instances:
 
 .. ref-code-block:: xml
 
@@ -179,7 +179,7 @@ You can use the following functions to Get the value of object instance node:
 .. image:: /static/image/ten_conf_get_instance.png
 	:alt: Sequence of events caused by cfg_get_instance() call
 
-Please note that :ref:`cfg_get_instance() <doxid-group__confapi__base__access_1ga958125eed1df71e6a6bf4d96056e01d2>` call does not cause any exchange between :ref:`Configurator <doxid-group__te__engine__conf>` and te_agents, but rather value to return is got from local object instance database.
+Please note that :ref:`cfg_get_instance() <doxid-group__confapi__base__access_1ga958125eed1df71e6a6bf4d96056e01d2>` call does not cause any exchange between :ref:`Configurator <doxid-group__te__engine__conf>` and Test Agents, but rather value to return is got from local object instance database.
 
 If you want to get the value from Test Agent you can do one of the following:
 
@@ -192,7 +192,7 @@ If you want to get the value from Test Agent you can do one of the following:
 .. image:: /static/image/ten_conf_get_instance_sync.png
 	:alt: Sequence of events caused by cfg_get_instance_sync() call
 
-Please note that you should use synced calls only if you are sure that object instance values can change in the backgroud, otherwise it is better to use non-synced calls in order to minimize data exchange between :ref:`Configurator <doxid-group__te__engine__conf>` and te_agents.
+Please note that you should use synced calls only if you are sure that object instance values can change in the backgroud, otherwise it is better to use non-synced calls in order to minimize data exchange between :ref:`Configurator <doxid-group__te__engine__conf>` and Test Agents.
 
 Please note that you can also do set operation in :ref:`Configurator <doxid-group__te__engine__conf>` configuration file.
 

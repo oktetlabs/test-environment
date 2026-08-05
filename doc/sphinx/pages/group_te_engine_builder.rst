@@ -24,7 +24,7 @@ From the Builder point of view Test Environment consists of a lot of packages: l
 
 Each package may be built for one or several platforms. The platform for which TEN applications, Test API libraries and tests are built is called host platform. Test Agents and libraries linked with them may be built for platforms other than host platform.
 
-Test Environment depends on many third party libraries that need to be installed on :ref:`Test Engine <doxid-group__te__engine>` host in order to build all Test Environment components successfully. The list of required libraries can be found in ${TE_BASE}/README file.
+Test Environment depends on many third party libraries that need to be installed on :ref:`Test Engine <doxid-group__te__engine>` host in order to build all Test Environment components successfully. The list of required libraries can be found in :ref:`Test Environment Engine dependencies <doxid-group__te__user_1te_deps>`.
 
 
 

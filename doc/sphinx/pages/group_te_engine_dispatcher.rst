@@ -65,7 +65,7 @@ The following sequence of events happen each time when you launch Test Environme
 
 #. :ref:`Dispatcher <doxid-group__te__engine__dispatcher>` runs te_log_init script to initialize script based logging facility. All further actions can be logged via script based interface (te_log_message script). Please note that :ref:`Logger <doxid-group__te__engine__logger>` application hasn't started yet;
 
-#. :ref:`Dispatcher <doxid-group__te__engine__dispatcher>` starts :ref:`Builder <doxid-group__te__engine__builder>` to prepare libraries and executables for all TE Subsystems (except :ref:`Dispatcher <doxid-group__te__engine__dispatcher>`), Test Packages, te_agents and bootable NUT image(s).  te_engine_builder is passed a configuration file that describes a set of executables to be built with a set of options for building process.
+#. :ref:`Dispatcher <doxid-group__te__engine__dispatcher>` starts :ref:`Builder <doxid-group__te__engine__builder>` to prepare libraries and executables for all TE Subsystems (except :ref:`Dispatcher <doxid-group__te__engine__dispatcher>`), Test Packages, Test Agents and bootable NUT image(s).  :ref:`Builder <doxid-group__te__engine__builder>` is passed a configuration file that describes a set of executables to be built with a set of options for building process.
 
    :ref:`Builder <doxid-group__te__engine__builder>` configuration file name specified via conf-builder option of :ref:`Dispatcher <doxid-group__te__engine__dispatcher>`.
 
@@ -77,13 +77,13 @@ The following sequence of events happen each time when you launch Test Environme
 
    :ref:`Logger <doxid-group__te__engine__logger>` starts listening for incoming log requests that can come from tests and other TEN components;
 
-#. :ref:`Dispatcher <doxid-group__te__engine__dispatcher>` starts :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>`. :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>` is passed a configuration file that describes te_agents to be started (for information about the format of :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>` configuration file refer to :ref:`RCF Configuration File <doxid-group__te__engine__rcf_1te_engine_rcf_conf_file>`).
+#. :ref:`Dispatcher <doxid-group__te__engine__dispatcher>` starts :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>`. :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>` is passed a configuration file that describes Test Agents to be started (for information about the format of :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>` configuration file refer to :ref:`RCF Configuration File <doxid-group__te__engine__rcf_1te_engine_rcf_conf_file>`).
 
-   As a part of initialization :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>` establishes communication with te_agents using Test Protocol;
+   As a part of initialization :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>` establishes communication with Test Agents using Test Protocol;
 
-#. As soon as :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>` has initialized, :ref:`Logger <doxid-group__te__engine__logger>` starts a thread that is responsible for polling te_agents Test Agents in order to gather log messages accumulated on Test Agent side. Polling interval is configured via :ref:`Logger <doxid-group__te__engine__logger>` configuration file;
+#. As soon as :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>` has initialized, :ref:`Logger <doxid-group__te__engine__logger>` starts a thread that is responsible for polling Test Agents in order to gather log messages accumulated on Test Agent side. Polling interval is configured via :ref:`Logger <doxid-group__te__engine__logger>` configuration file;
 
-#. :ref:`Dispatcher <doxid-group__te__engine__dispatcher>` starts :ref:`Configurator <doxid-group__te__engine__conf>`. :ref:`Configurator <doxid-group__te__engine__conf>` is passed a configuration file that describes configuration objects to register as well as object instances to add (for information about the format of :ref:`Configurator <doxid-group__te__engine__conf>` configuration file refer to :ref:`Configurator Configuration File <doxid-group__te__engine__conf_1te_engine_conf_file>`). On start-up :ref:`Configurator <doxid-group__te__engine__conf>` retrives configuration information from te_agents and initializes local trees of objects and instances;
+#. :ref:`Dispatcher <doxid-group__te__engine__dispatcher>` starts :ref:`Configurator <doxid-group__te__engine__conf>`. :ref:`Configurator <doxid-group__te__engine__conf>` is passed a configuration file that describes configuration objects to register as well as object instances to add (for information about the format of :ref:`Configurator <doxid-group__te__engine__conf>` configuration file refer to :ref:`Configurator Configuration File <doxid-group__te__engine__conf_1te_engine_conf_file>`). On start-up :ref:`Configurator <doxid-group__te__engine__conf>` retrives configuration information from Test Agents and initializes local trees of objects and instances;
 
 #. :ref:`Dispatcher <doxid-group__te__engine__dispatcher>` starts :ref:`Tester <doxid-group__te__engine__tester>`. :ref:`Tester <doxid-group__te__engine__tester>` processes configuration file and if necessary asks :ref:`Builder <doxid-group__te__engine__builder>` to build test suites (test executables). Then :ref:`Tester <doxid-group__te__engine__tester>` processes test package description files and runs tests in corresponding order and with specified set of parameter values. (For information about :ref:`Tester <doxid-group__te__engine__tester>` configuration file format refer to :ref:`Configuration File <doxid-group__te__engine__tester_1te_engine_tester_conf>` section).
 
@@ -93,7 +93,7 @@ The following sequence of events happen each time when you launch Test Environme
 
 #. Flushing of the log from all Test Agents is performed;
 
-#. :ref:`Dispatcher <doxid-group__te__engine__dispatcher>` stops :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>`. During its shutdown, :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>` performs a shutdown of all te_agents;
+#. :ref:`Dispatcher <doxid-group__te__engine__dispatcher>` stops :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>`. During its shutdown, :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>` performs a shutdown of all Test Agents;
 
 #. :ref:`Dispatcher <doxid-group__te__engine__dispatcher>` stops :ref:`Logger <doxid-group__te__engine__logger>`. :ref:`Dispatcher <doxid-group__te__engine__dispatcher>` calls Report Generator tool to convert the log from a raw format to the text and/or HTML format;
 

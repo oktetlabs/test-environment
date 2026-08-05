@@ -76,7 +76,7 @@ Configuration File
 
 :ref:`Logger <doxid-group__te__engine__logger>` has its own configuration file that can be used to specify:
 
-* polling interval to use by Logger while gathering log messages from te_agents. It is possible to specify default interval that is applied to all te_agents as well as intervals for the particular Test Agent or for a goup of Agents of the same type;
+* polling interval to use by Logger while gathering log messages from Test Agents. It is possible to specify default interval that is applied to all Test Agents as well as intervals for the particular Test Agent or for a goup of Agents of the same type;
 
 * sniffer configuration settings.
 

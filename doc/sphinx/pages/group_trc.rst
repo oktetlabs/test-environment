@@ -92,16 +92,16 @@ The skipped section
 Runtime results comparison
 --------------------------
 
-If **te_tester** is built without (--without-trc) flag (default behaviour) then it will perform run-time results comparison.
+**te_tester** performs run-time results comparison by default: the meson option
+``trc`` that controls it defaults to true.
 
-To disable **te_tester** integration with TRC add
-
-.. code-block:: none
-
-
-	TE_APP_PARMS([tester], [--without-trc])
-
-into builder.conf, see :ref:`TE_APP_PARMS <doxid-group__te__engine__builder_1te_engine_builder_conf_file_te_app_parms>` for details.
+.. note:: This page used to say that the integration can be switched off with
+	``TE_APP_PARMS([tester], [--without-trc])`` in builder.conf. That does not
+	work --- the build recognises only ``--with-trc`` for the tester, and an
+	unrecognised parameter is dropped with a "parameters not supported"
+	warning. To skip run-time comparison for a particular run, use the
+	:ref:`Dispatcher <doxid-group__te__engine__dispatcher>` option
+	``--tester-no-trc``.
 
 When running **te_tester** which was built with enabled runtime TRC support the usual output:
 

@@ -16,13 +16,13 @@ Configurator
 Introduction
 ~~~~~~~~~~~~
 
-Configurator (Configuration Subsystem, CS) is an application of :ref:`Test Engine <doxid-group__te__engine>` that exports configuration tree. A node of configuration tree can be associated with some software or hardware component controlled or tracked by a Test Agent. Such nodes have well-known path names and require support on te_agents side. Also :ref:`Configurator <doxid-group__te__engine__conf>` allows creating an arbitrary set of auxiliary configuration nodes that are not associated with anything and rather play role of shared storage or database.
+Configurator (Configuration Subsystem, CS) is an application of :ref:`Test Engine <doxid-group__te__engine>` that exports configuration tree. A node of configuration tree can be associated with some software or hardware component controlled or tracked by a Test Agent. Such nodes have well-known path names and require support on Test Agents side. Also :ref:`Configurator <doxid-group__te__engine__conf>` allows creating an arbitrary set of auxiliary configuration nodes that are not associated with anything and rather play role of shared storage or database.
 
 Configurator features:
 
 * stores a configuration database;
 
-* synchronizes the database with te_agents (See :ref:`Synchronization configuration tree with Test Agent <doxid-group__confapi__base__sync>`);
+* synchronizes the database with Test Agents (See :ref:`Synchronization configuration tree with Test Agent <doxid-group__confapi__base__sync>`);
 
 * provides an API for traversing configuration tree;
 
@@ -30,7 +30,7 @@ Configurator features:
 
 * provides an API to tests and :ref:`Tester <doxid-group__te__engine__tester>` for backuping, verifying and restoring the configuration (See :ref:`Configuration backup manipulation <doxid-group__confapi__base__backup>`);
 
-* provides an API to tests for te_agents rebooting with or without restoring of the configuration (See :ref:`Test Agent reboot <doxid-group__confapi__base__reboot>`).
+* provides an API to tests for Test Agents rebooting with or without restoring of the configuration (See :ref:`Test Agent reboot <doxid-group__confapi__base__reboot>`).
 
 
 
@@ -64,7 +64,7 @@ Each object is identified by a string, which consists of several labels (sub-ide
 
 For example, an object /agent/interface/net_addr is a son of the object /agent/interface which in its turn is a son of the object /agent.
 
-Tree of instances contains information about real configuration items observed by CS on te_agents, and/or instances created during processing of the configuration file or test requests.
+Tree of instances contains information about real configuration items observed by CS on Test Agents, and/or instances created during processing of the configuration file or test requests.
 
 Each instance also has an object identifier. It also consists of a set of labels separated by slashes, but each label contains both a sub-identifier of the corresponding object and an instance name, which identifies uniquely the particular configuration item. Instance name is separated from the sub-identifier by a colon.
 
@@ -74,11 +74,11 @@ It's allowed to use empty instance names. For example, /agent/:nut/interface:eth
 
 Empty instance name is used when the object has only one instance.
 
-Instances which belong to /agent: subtree correspond to real configuration items observed on the te_agents (network interfaces, IP addresses, routes, ARP entries, daemons, etc.). Their change may lead to re-configuration of remote hosts.
+Instances which belong to /agent: subtree correspond to real configuration items observed on the Test Agents (network interfaces, IP addresses, routes, ARP entries, daemons, etc.). Their change may lead to re-configuration of remote hosts.
 
 The list of basic configuration objects, which is likely to be supported by any Test Agent, can be found in ${TE_BASE}/doc/cm/cm_base.yml file. The rest of ${TE_BASE}/doc/cm covers the remaining subtrees, one YAML file per area; every object there carries a ``d:`` field explaining what it means.
 
-Other subtrees may be considered as information storage: changing instances in these subtrees does not affect the hosts controlled by te_agents, but may be used to share data between tests.
+Other subtrees may be considered as information storage: changing instances in these subtrees does not affect the hosts controlled by Test Agents, but may be used to share data between tests.
 
 API to browse configuration trees can be found at :ref:`Configuration tree traversal <doxid-group__confapi__base__traverse>` page.
 

@@ -84,5 +84,5 @@ It does not generate any documentation, does
 not run Sphinx, just prints a list of warnings to stdout.
 
 .. _doxyrest: https://github.com/vovkos/doxyrest
-.. _RST: https://www.sphinx-doc.org/es/master/usage/restructuredtext/basics.html
+.. _RST: https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html
 .. _here: https://github.com/vovkos/doxyrest/releases

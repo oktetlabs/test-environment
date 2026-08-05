@@ -20,14 +20,14 @@ Introduction
 
 In most cases a test scenario requires a special phisical set-up to be prepared. The simplest example is when a test expects two nodes to have a physical connection. From test point of view it does not matter where these nodes reside - the same test should work on different physical set-ups.
 
-Partly physical set-up for a test run is configured via :ref:`RCF Configuration File <doxid-group__te__engine__rcf_1te_engine_rcf_conf_file>` where we specify te_agents to run together with their physical locations (network hosts).
+Partly physical set-up for a test run is configured via :ref:`RCF Configuration File <doxid-group__te__engine__rcf_1te_engine_rcf_conf_file>` where we specify Test Agents to run together with their physical locations (network hosts).
 
 Each host can have a number of network interfaces some of which can be connected with interfaces of another hosts mentioned in :ref:`RCF Configuration File <doxid-group__te__engine__rcf_1te_engine_rcf_conf_file>`. If we specify relation between network interfaces we would clarify network topology, not just a list of hosts used in test procedure.
 
 .. image:: /static/image/te_lib_tapi_net_cfg_rcf_only.png
 	:alt: Network topology from RCF point of view
 
-From :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>` point of view all hosts where we run te_agents should be accessible from a host where we run :ref:`Test Engine <doxid-group__te__engine>`. It is not necessary to be a direct link access - for example we can run :ref:`Test Engine <doxid-group__te__engine>` on our local PC, but te_agents can reside on remote hosts reside in another countries accessed via the Internet.
+From :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>` point of view all hosts where we run Test Agents should be accessible from a host where we run :ref:`Test Engine <doxid-group__te__engine>`. It is not necessary to be a direct link access - for example we can run :ref:`Test Engine <doxid-group__te__engine>` on our local PC, but Test Agents can reside on remote hosts reside in another countries accessed via the Internet.
 
 To specify network topology of hosts used in test set-up we need to specify relationship between network interfaces.
 
@@ -117,7 +117,7 @@ For our sample configuration we would add the following lines in :ref:`Configura
       <instance oid="/net:net2/node:B/type:" value="1"/>
     </set>
 
-Please note that in our sample we have two te_agents running on host h1. Depending on our design and the type of te_agents we can use particular combinations of (Test Agent, interface name) pairs (for example Agt_B may be a dedicated Test Agent that does not support interface configuration, i.e. it is not expected to have instances of /agent/interface object).
+Please note that in our sample we have two Test Agents running on host h1. Depending on our design and the type of Test Agents we can use particular combinations of (Test Agent, interface name) pairs (for example Agt_B may be a dedicated Test Agent that does not support interface configuration, i.e. it is not expected to have instances of /agent/interface object).
 
 Assuming we have only Agt_A that exports instances of /agent/interface configuration tree we would have:
 

@@ -200,7 +200,9 @@ This configuration file asks :ref:`Tester <doxid-group__te__engine__tester>` to:
 
 * build a test suite whose sources located at ${TE_TS_IPV6_HOST} directory;
 
-* build a test suite located at ${TE_BASE}/suites/ipv6_router directory.
+* build a test suite named ipv6_router. As no src attribute is given,
+  :ref:`Tester <doxid-group__te__engine__tester>` looks for it under
+  ${TE_INSTALL_SUITE}, i.e. among the already installed suites.
 
 
 
