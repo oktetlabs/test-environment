@@ -326,7 +326,7 @@ If you build with a test suite (which means that you have run.sh) you can call:
 	cd $PRJ_ROOT
 	${TE_BASE}/run.sh --cfg=myconfiguration_name --tester-norun
 
-run.sh script is a wrapper for dispatcher.sh which introduces some suite-specific options and defaults. The above run.sh invocations will build both TE and the test suite. See @te_user_run or dispatcher.sh help for details on the --cfg option.
+run.sh script is a wrapper for dispatcher.sh which introduces some suite-specific options and defaults. The above run.sh invocations will build both TE and the test suite. See :ref:`TE Execution <doxid-group__te__user_1te_user_run>` or dispatcher.sh help for details on the --cfg option.
 
 If you get some errors during building procedure, you should first check if your have all necessary packages installed on your development platform. Please refer to :ref:`Test Environment Engine dependencies <doxid-group__te__user_1te_deps>` section to check the list of required packages and libraries.
 
@@ -340,7 +340,7 @@ If you do not specify TE_BUILD environment variable, :ref:`Builder <doxid-group_
 
 .. _doxid-group__te__user_1te_user_run:
 
-TE Exectuion
+TE Execution
 ~~~~~~~~~~~~
 
 To run TE one needs to have configuration files for all the TE subsystems.

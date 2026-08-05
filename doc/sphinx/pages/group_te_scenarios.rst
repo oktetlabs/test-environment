@@ -147,7 +147,7 @@ The complex test suite scenario:
 	        values:
 	        - 1
 	        - 25
-	        - default: do not set (default alpha value is @c 16)
+	        - default: do not set (default alpha value is 16)
 	      - param: beta
 	        description: beta parameter
 	      steps:
