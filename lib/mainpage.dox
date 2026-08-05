@@ -1,40 +1,16 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /**@mainpage
 
-@copyright_notice
-
 Copyright (C) 2005-2022 OKTET Labs Ltd. All rights reserved.
 
-@section contact_information Contact Information
+This is the API reference for the OKTET Labs Test Environment, generated from
+the sources.
 
-Unit 3H, Universitetsky pr, 2/18, Petergoff, 198504, St.-Petersburg, Russia
+The guides -- architecture, user guide, test suite guide and the per-subsystem
+pages -- live in doc/sphinx and are built together with this reference by the
+gen_docs script in the top directory. Start there if you are new to TE.
 
-Phone: +7(812)428-6709    Fax: +7(812)428-5003
+See the Modules list for the API grouped by subsystem and library.
 
-Questions regarding this document may be forwarded to support@oktetlabs.ru
-
-@section libraries Libraries links
-
-- @ref confapi
-- @ref loggerten
-- @ref rcfapi
-- @ref rcfrpc
-- @ref asn
-- @ref tapi
-- @ref tapi_arp
-- @ref tapi_bpf
-- @ref tapi_bridge
-- @ref tapi_cli
-- @ref tapi_eth
-- @ref tapi_ipstack
-- @ref tapi_media
-- @ref tapi_performance
-- @ref tapi_packetdrill
-- @ref tapi_rpc
-- @ref tapi_snmp
-- @ref tapi_storage
-- @ref tapi_tad
-- @ref tapi_tcp_states
-- @ref tapi_upnp
-- @ref tapi_wifi
+Project home: https://github.com/oktetlabs/test-environment
 */
