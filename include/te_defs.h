@@ -557,7 +557,7 @@ te_round_up_pow2(unsigned long long num)
  *
  * @note Casting away constness may still be dangerous, use with caution.
  *
- * @note If @ptr_ does already have a compatible non-const pointer type,
+ * @note If @p ptr_ does already have a compatible non-const pointer type,
  *       the macro effectively does nothing.
  *
  * @param type_  The expected type of the pointer @p ptr_.
