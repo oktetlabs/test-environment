@@ -18,23 +18,27 @@ Terminology
 Abbreviations
 ~~~~~~~~~~~~~
 
-====  ======================================
-
+====  ==================================
 API   Application Programming Interface
 CLI   Command Line Interface
+CS    Configuration Subsystem
 CSAP  Communication Service Access Point
-      Device Under Testing
+DUT   Device Under Test
+IUT   Implementation Under Testing
 LAN   Local Area Network
-
+MI    Machine Interface
+NUT   Node Under Test
 RCF   Remote Control Facility
 RGT   Report Generator Tool
+RPC   Remote Procedure Call
 TA    Test Agent
-TAD   Traffic Application Domain of the RCFG
+TAD   Traffic Application Domain
+TAPI  Test API
 TCE   Test Coverage Estimation
 TE    Test Environment
 TEN   TE Engine
-      Tester
-====  ======================================
+TRC   Test Results Comparator
+====  ==================================
 
 
 
