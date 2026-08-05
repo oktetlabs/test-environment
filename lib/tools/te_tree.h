@@ -307,10 +307,10 @@ extern te_errno te_tree_get_float_attr(const te_tree *tree, const char *attr,
  * Get a boolean value of an attribute of a tree.
  *
  * All "natural" way of representing booleans are supported:
- * - @c true, @c true, @c True, @c T, @c t, @c YES, @c yes,
- *   @c Yes, @c Y, @c y, @c 1 all map to @c true
- * - @c false, @c false, @c False, @c F, @c f, @c NO, @c no,
- * - @c No, @c N, @xc n, @c 0 and empty string all map to @c false.
+ * - @c TRUE, @c True, @c true, @c T, @c t, @c YES, @c Yes,
+ *   @c yes, @c Y, @c y, @c 1 all map to @c true
+ * - @c FALSE, @c False, @c false, @c F, @c f, @c NO, @c No,
+ *   @c no, @c N, @c n, @c 0 and empty string all map to @c false.
  *
  * @param[in]  tree    tree
  * @param[in]  attr    attribute name

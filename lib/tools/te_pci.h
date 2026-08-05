@@ -28,7 +28,7 @@
  * of the defined list.
  */
 
-/** @enum te_pci_class
+/** @enum te_pci_subclass
  * A set of defined PCI subclass values.
  *
  * The values are actually class + subclass.

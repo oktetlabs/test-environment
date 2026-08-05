@@ -110,15 +110,15 @@ typedef struct te_buf_pattern {
  *
  * @par Examples:
  *
- * - @c "[0-9]"                        a sequence of decimal digits
- *                                     (not zero-terminated)
- * - @c "[a-zA-Z_]([a-zA-Z0-9_])`\0"   a valid C identifier
- *                                     (zero-terminated)
- * - @c "[^`\0\x1-\x1F\x7F-\xFF^\n\t]" a sequence of printable ASCII
- *                                     characters  + newline and tab
- * - @c "[ -~\n\t]"                    a shorter version of the previous
- * - @c "`[([0-9a-f])`]`\0"            a zero-terminated sequence of
- *                                     hexadecimal digits enclosed in brackets
+ * - @c "[0-9]"                                a sequence of decimal digits
+ *                                             (not zero-terminated)
+ * - @c "[a-zA-Z_]([a-zA-Z0-9_])`\\0"          a valid C identifier
+ *                                             (zero-terminated)
+ * - @c "[^`\\0\\x1-\\x1F\\x7F-\\xFF^\\n\\t]"  a sequence of printable ASCII
+ *                                             characters + newline and tab
+ * - @c "[ -~\\n\\t]"                          a shorter version of the previous
+ * - @c "`[([0-9a-f])`]`\\0"                   a zero-terminated sequence of
+ *                                             hexadecimal digits enclosed in brackets
  *
  * @param[in]  spec      pattern spec
  * @param[out] storage   buffer to hold the compiled pattern
