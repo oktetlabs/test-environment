@@ -11,6 +11,8 @@
 
 #include "te_config.h"
 
+#include <limits.h>
+#include <math.h>
 #include <stdio.h>
 
 #include "tapi_dpdk.h"
@@ -19,6 +21,9 @@
 #include "tapi_rpc_rte_eal.h"
 #include "tapi_file.h"
 #include "te_ethernet.h"
+#include "te_sleep.h"
+#include "te_time.h"
+#include "te_units.h"
 #include "te_vector.h"
 #include "tapi_job_factory_rpc.h"
 
@@ -30,6 +35,23 @@
 #define TESTPMD_TOTAL_MBUFS_MIN 2048
 #define MBUF_OVERHEAD 256
 #define TESTPMD_MIN_N_CORES 2
+
+/*
+ * Keep link status and speed within the same port report. If the report is
+ * incomplete, stop before the next port instead of mixing their fields.
+ */
+#define TESTPMD_PORT_INFO_RE                                               \
+    "(?ms:^\\*+ Infos for port [0-9]+ +\\*+\\r?\\n"                        \
+    "(?:(?!^\\*+ Infos for port ).)*?"                                     \
+    "^Link status: (?:up|down)\\r?\\n"                                     \
+    "(?:(?!^\\*+ Infos for port ).)*?"                                     \
+    "^Link speed: [^\\r\\n]+\\r?\\n)"
+
+static const te_unit_list testpmd_link_speed_units = {
+    .scale = 1000,
+    .start_pow = 0,
+    .units = (const char * const[]){ " Mbps", " Gbps", NULL },
+};
 
 typedef enum testpmd_param_type {
     TESTPMD_PARAM_TYPE_UINT64,
@@ -1230,15 +1252,10 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
                                     },
                                     {.use_stdout = true,
                                      .readable = true,
-                                     .re = "(?m)^Link speed: ([0-9]+ [MG])bps$",
-                                     .extract = 1,
-                                     .filter_var = &testpmd_job->link_speed_filter,
-                                    },
-                                    {.use_stdout = true,
-                                     .readable = true,
-                                     .re = "(?m)^\\*+ Infos for port ([0-9]+) +\\*+$",
-                                     .extract = 1,
-                                     .filter_var = &testpmd_job->infos_port_filter,
+                                     .re = TESTPMD_PORT_INFO_RE,
+                                     .extract = 0,
+                                     .filter_var =
+                                         &testpmd_job->link_info_filter,
                                     },
                                     {.use_stderr = true,
                                      .log_level = TE_LL_ERROR,
@@ -1502,6 +1519,151 @@ ring_next_index(unsigned int max, unsigned int cur)
     return cur == max ? 0 : (cur + 1);
 }
 
+static te_errno
+testpmd_parse_link_speed(const te_string *value, unsigned int *link_speed,
+                         bool *speed_known)
+{
+    double speed_mbps;
+    unsigned int result;
+    te_errno rc;
+
+    *link_speed = 0;
+    *speed_known = false;
+
+    if (strcmp(value->ptr, "None") == 0 ||
+        strcmp(value->ptr, "Unknown") == 0)
+    {
+        return 0;
+    }
+
+    rc = te_unit_list_value_from_string(value->ptr,
+                                        &testpmd_link_speed_units,
+                                        &speed_mbps);
+    if (rc != 0)
+        return TE_RC_UPSTREAM(TE_TAPI, rc);
+    if (!isfinite(speed_mbps) || speed_mbps < 0)
+        return TE_RC(TE_TAPI, TE_EFMT);
+    if (speed_mbps > UINT_MAX)
+        return TE_RC(TE_TAPI, TE_EOVERFLOW);
+
+    result = (unsigned int)speed_mbps;
+    if ((double)result != speed_mbps)
+        return TE_RC(TE_TAPI, TE_EFMT);
+
+    *link_speed = result;
+    *speed_known = true;
+
+    return 0;
+}
+
+static te_errno
+testpmd_parse_port_info(const te_string *info, unsigned int *port_id,
+                        bool *link_up, unsigned int *link_speed,
+                        bool *speed_known)
+{
+    static const char port_prefix[] = "Infos for port ";
+    static const char status_prefix[] = "\nLink status: ";
+    static const char speed_prefix[] = "\nLink speed: ";
+    te_substring_t field = TE_SUBSTRING_INIT(info);
+    te_string speed = TE_STRING_INIT;
+    long int parsed_port_id;
+    const char *value;
+    char *port_id_end;
+    te_errno rc;
+
+    *speed_known = false;
+    *link_speed = 0;
+
+    if (!te_substring_find(&field, port_prefix))
+        return TE_RC(TE_TAPI, TE_EFMT);
+    te_substring_advance(&field);
+    value = te_string_value(info) + field.start;
+
+    rc = te_strtol_raw(value, &port_id_end, 10, &parsed_port_id);
+    if (rc != 0)
+        return TE_RC_UPSTREAM(TE_TAPI, rc);
+    if (*port_id_end != ' ')
+        return TE_RC(TE_TAPI, TE_EFMT);
+    if (parsed_port_id < 0 || (unsigned long)parsed_port_id > UINT_MAX)
+        return TE_RC(TE_TAPI, TE_EOVERFLOW);
+    *port_id = (unsigned int)parsed_port_id;
+
+    field.start = port_id_end - te_string_value(info);
+    field.len = 0;
+    if (!te_substring_find(&field, status_prefix))
+        return TE_RC(TE_TAPI, TE_EFMT);
+    te_substring_advance(&field);
+    te_substring_span(&field, "\r\n", true);
+
+    if (te_substring_compare_str(&field, "up") == 0)
+        *link_up = true;
+    else if (te_substring_compare_str(&field, "down") == 0)
+        *link_up = false;
+    else
+        return TE_RC(TE_TAPI, TE_EFMT);
+
+    te_substring_advance(&field);
+    if (!te_substring_find(&field, speed_prefix))
+        return TE_RC(TE_TAPI, TE_EFMT);
+    te_substring_advance(&field);
+    te_substring_span(&field, "\r\n", true);
+    if (field.len == 0)
+        return TE_RC(TE_TAPI, TE_EFMT);
+
+    if (!*link_up)
+        return 0;
+
+    te_string_append_buf(&speed,
+                         te_string_value(field.base) + field.start,
+                         field.len);
+    rc = testpmd_parse_link_speed(&speed, link_speed, speed_known);
+    te_string_free(&speed);
+
+    return rc;
+}
+
+static te_errno
+testpmd_receive_port_info(tapi_dpdk_testpmd_job_t *testpmd_job,
+                          const struct timeval *start,
+                          tapi_job_buffer_t *buf)
+{
+    struct timeval now;
+    int64_t elapsed_us;
+    uint64_t elapsed_ms;
+    unsigned int remaining_ms;
+    te_errno rc;
+
+    rc = te_gettimeofday(&now, NULL);
+    if (rc != 0)
+        return rc;
+
+    elapsed_us = TIMEVAL_SUB(now, *start);
+    if (elapsed_us < 0)
+        return TE_RC(TE_TAPI, TE_EFAIL);
+
+    elapsed_ms = TE_US2MS((uint64_t)elapsed_us);
+    if (elapsed_ms >= TAPI_DPDK_TESTPMD_RECEIVE_TIMEOUT_MS)
+        return TE_RC(TE_TAPI, TE_ETIMEDOUT);
+    remaining_ms = TAPI_DPDK_TESTPMD_RECEIVE_TIMEOUT_MS - elapsed_ms;
+
+    rc = tapi_job_receive(
+             TAPI_JOB_CHANNEL_SET(testpmd_job->link_info_filter),
+             remaining_ms, buf);
+    if (rc != 0)
+        return rc;
+    if (buf->eos)
+        return TE_RC(TE_TAPI, TE_EFAIL);
+    if (buf->dropped > 0)
+    {
+        ERROR("Dropped testpmd port reports: %u", buf->dropped);
+        return TE_RC(TE_TAPI, TE_EOVERFLOW);
+    }
+    if (buf->filter != testpmd_job->link_info_filter)
+        return TE_RC(TE_TAPI, TE_EPROTO);
+
+    return 0;
+}
+
 te_errno
 tapi_dpdk_testpmd_get_link_speed_many_ports(
         tapi_dpdk_testpmd_job_t *testpmd_job,
@@ -1511,122 +1673,108 @@ tapi_dpdk_testpmd_get_link_speed_many_ports(
         unsigned int *link_speed)
 {
     tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;
-    unsigned int *idx;
-    unsigned int prod = 0;
-    unsigned int cons = 0;
+    unsigned int *candidate_speed = NULL;
+    bool *reports_received = NULL;
+    unsigned int n_reports = 0;
+    struct timeval start;
+    bool speed_unknown = false;
+    bool link_down = false;
     unsigned int i;
-    te_errno rc = 0;
+    te_errno rc;
 
-    if (testpmd_job == NULL || n_port_ids == NULL || port_ids == NULL ||
-        link_speed == NULL)
+    if (testpmd_job == NULL || n_port_ids == NULL ||
+        port_ids == NULL || link_speed == NULL ||
+        *n_port_ids > n_ports ||
+        n_ports > te_vec_size(&testpmd_job->ports) ||
+        testpmd_job->link_info_filter == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
 
-    /* Ring must be one element bigger than maximum */
-    idx = TE_ALLOC((n_ports + 1) * sizeof(*idx));
+    if (n_ports == 0)
+        return 0;
 
-    for (i = 0; i < n_ports * 2; ++i)
+    reports_received = TE_ALLOC(n_ports * sizeof(*reports_received));
+    candidate_speed = TE_ALLOC(n_ports * sizeof(*candidate_speed));
+
+    rc = te_gettimeofday(&start, NULL);
+    if (rc != 0)
     {
-        rc = tapi_job_receive(
-                TAPI_JOB_CHANNEL_SET(testpmd_job->infos_port_filter,
-                                     testpmd_job->link_speed_filter),
-                TAPI_DPDK_TESTPMD_RECEIVE_TIMEOUT_MS, &buf);
+        goto out;
+    }
 
+    while (n_reports < n_ports)
+    {
+        bool current_speed_known;
+        bool current_link_up;
+        unsigned int port_id;
+        unsigned int speed;
+        unsigned int idx;
+
+        rc = testpmd_receive_port_info(testpmd_job, &start, &buf);
+        if (rc != 0)
+            goto out;
+
+        rc = testpmd_parse_port_info(&buf.data, &port_id, &current_link_up,
+                                     &speed, &current_speed_known);
         if (rc != 0)
         {
-            ERROR("Failed to get link speed from testpmd job");
+            ERROR("Failed to parse testpmd port information: %r", rc);
             goto out;
         }
 
-        if (buf.eos)
+        for (i = 0; i < te_vec_size(&testpmd_job->ports); ++i)
         {
-            ERROR("End of stream before link speed message");
-            rc = TE_RC(TE_TAPI, TE_EFAIL);
+            if (TE_VEC_GET(unsigned int, &testpmd_job->ports, i) == port_id)
+                break;
+        }
+        if (i == te_vec_size(&testpmd_job->ports))
+        {
+            ERROR("Unexpected port %u in testpmd link report", port_id);
+            rc = TE_RC(TE_TAPI, TE_EPROTO);
             goto out;
         }
 
-        if (buf.dropped > 0)
-            WARN("Dropped messages count: %lu", buf.dropped);
-
-        if (buf.filter == testpmd_job->infos_port_filter)
+        idx = find_port_index(n_ports, n_port_ids, port_ids, port_id);
+        if (idx == UINT_MAX)
         {
-            unsigned int port_id;
-
-            if ((rc = te_strtoui(buf.data.ptr, 0, &port_id)) != 0)
-            {
-                ERROR("Failed to parse port ID '%s'", buf.data.ptr);
-                goto out;
-            }
-
-            idx[prod] = find_port_index(n_ports, n_port_ids, port_ids, port_id);
-            if (idx[prod] == UINT_MAX)
-            {
-                rc = TE_RC(TE_TAPI, TE_EFAIL);
-                goto out;
-            }
-            prod = ring_next_index(n_ports, prod);
-            if (prod == cons)
-            {
-                ERROR("Producer(%u)/consumer(%u) overflow", prod, cons);
-                rc = TE_RC(TE_TAPI, TE_EFAIL);
-                goto out;
-            }
+            rc = TE_RC(TE_TAPI, TE_EINVAL);
+            goto out;
         }
-        else if (buf.filter == testpmd_job->link_speed_filter)
+        if (reports_received[idx])
         {
-            unsigned int multiplier;
-            unsigned int speed;
-
-            switch (buf.data.ptr[buf.data.len - 1])
-            {
-                case 'G':
-                    multiplier = 1000;
-                    break;
-
-                case 'M':
-                    multiplier = 1;
-                    break;
-
-                default:
-                    ERROR("Invalid bps prefix in the link speed");
-                    rc = TE_RC(TE_TAPI, TE_EINVAL);
-                    goto out;
-            }
-
-            /* Remove bps prefix and a space after the link speed value */
-            te_string_cut(&buf.data, 2);
-
-            if ((rc = te_strtoui(buf.data.ptr, 0, &speed)) != 0)
-            {
-                ERROR("Failed to parse link speed");
-                rc = TE_RC(TE_TAPI, TE_EFAIL);
-                goto out;
-            }
-
-            INFO("Got link speed %u with multiplier %u with index %u",
-                 speed, multiplier, idx[cons]);
-            if (cons == prod)
-            {
-                ERROR("Producer(%u)/consumer(%u) underflow", prod, cons);
-                rc = TE_RC(TE_TAPI, TE_EFAIL);
-                goto out;
-            }
-
-            link_speed[idx[cons]] = speed * multiplier;
-            cons = ring_next_index(n_ports, cons);
-        }
-        else
-        {
-            ERROR("Received buf from a job contains invalid filter pointer");
-            rc = TE_RC(TE_TAPI, TE_EFAIL);
+            ERROR("Duplicate testpmd link report for port %u", port_id);
+            rc = TE_RC(TE_TAPI, TE_EPROTO);
             goto out;
         }
 
+        reports_received[idx] = true;
+        candidate_speed[idx] = speed;
+        if (!current_link_up)
+            link_down = true;
+        else if (!current_speed_known)
+            speed_unknown = true;
+        n_reports++;
         te_string_reset(&buf.data);
     }
 
+    if (link_down)
+    {
+        rc = TE_RC(TE_TAPI, TE_ENETDOWN);
+        goto out;
+    }
+    if (speed_unknown)
+    {
+        rc = TE_RC(TE_TAPI, TE_ENODATA);
+        goto out;
+    }
+
+    memcpy(link_speed, candidate_speed, n_ports * sizeof(*link_speed));
+    rc = 0;
+
 out:
     te_string_free(&buf.data);
-    free(idx);
+    free(candidate_speed);
+    free(reports_received);
+
     return rc;
 }
 

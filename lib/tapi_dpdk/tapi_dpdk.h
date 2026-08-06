@@ -52,8 +52,7 @@ typedef struct tapi_dpdk_testpmd_job_t {
     tapi_job_channel_t *tx_pps_filter;
     tapi_job_channel_t *rx_pps_filter;
     tapi_job_channel_t *stats_port_filter;
-    tapi_job_channel_t *infos_port_filter;
-    tapi_job_channel_t *link_speed_filter;
+    tapi_job_channel_t *link_info_filter;
     tapi_job_channel_t *tx_dbells_filter;
     tapi_job_channel_t *tx_dbells_skip_filter;
     tapi_job_channel_t *rx_dbells_filter;
@@ -111,27 +110,49 @@ extern te_errno tapi_dpdk_testpmd_is_opt_supported(rcf_rpc_server *rpcs,
 extern te_errno tapi_dpdk_testpmd_start(tapi_dpdk_testpmd_job_t *testpmd_job);
 
 /**
- * Get link speed from running test-pmd job.
+ * Get link speed from running testpmd job.
+ *
+ * The function reads the port report produced during testpmd startup. It
+ * reports the recorded state without waiting for the link to change.
+ *
+ * @note The startup report is consumed and cannot be read again.
+ * @note @p link_speed is not changed on failure.
  *
  * @param testpmd_job       Handle of test-pmd job
  * @param[out] link_speed   Link speed in Mbps
  *
- * @return          Status code
+ * @retval 0             Link is up and its speed is returned.
+ * @retval TE_ENETDOWN   Testpmd reported that the link is down.
+ * @retval TE_ENODATA    Link is up, but its speed is unknown.
+ * @retval TE_ETIMEDOUT  The startup report was not received in time.
+ * @return Other status code on failure.
  */
 extern te_errno tapi_dpdk_testpmd_get_link_speed(
                                     tapi_dpdk_testpmd_job_t *testpmd_job,
                                     unsigned int *link_speed);
 
 /**
- * Get link speed from running test-pmd job with many ports.
+ * Get link speed from running testpmd job with many ports.
+ *
+ * The function reads port reports produced during testpmd startup. It reports
+ * the recorded states without waiting for the links to change.
+ *
+ * @note The startup reports are consumed and cannot be read again.
+ * @note On failure, @p link_speed is not changed, while @p n_port_ids and
+ *       @p port_ids may be updated.
  *
  * @param testpmd_job           Handle of test-pmd job
- * @param n_ports               Expected number of ports
+ * @param n_ports               Expected number of port reports
  * @param[in,out] n_port_ids    Number of set port IDs
  * @param[in,out] port_ids      Port IDs array
  * @param[out] link_speed       Array of link speeds in Mbps
  *
- * @return          Status code
+ * @retval 0             All links are up and their speeds are returned.
+ * @retval TE_ENETDOWN   All reports were received and at least one link is
+ *                       down.
+ * @retval TE_ENODATA    All links are up, but at least one speed is unknown.
+ * @retval TE_ETIMEDOUT  Not all startup reports were received in time.
+ * @return Other status code on failure.
  */
 extern te_errno tapi_dpdk_testpmd_get_link_speed_many_ports(
                                     tapi_dpdk_testpmd_job_t *testpmd_job,
