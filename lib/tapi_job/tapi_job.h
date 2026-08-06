@@ -505,8 +505,10 @@ extern te_errno tapi_job_filter_remove_channels(tapi_job_channel_t *filter,
 /**
  * Send data to a job input channel.
  *
- * @param channel  Output channel handle
- * @param str      A pointer to string buffer
+ * @param channel  Input channel handle.
+ * @param str      String containing the data to send. Exactly @c str->len
+ *                 bytes are sent, so the terminating null byte and spare buffer
+ *                 capacity are not sent.
  *
  * @return          Status code
  * @retval TE_EPERM if @p channel is not an input channel
