@@ -307,7 +307,9 @@ trc_db_walker_step_test(te_trc_db_walker *walker, const char *test_name,
             }
             else
             {
-                ERROR("Step test '%s' - unknown", test_name);
+                if (walker->db->unknown_exp_status !=
+                    TRC_UNKNOWN_EXP_STATUS_PASSED_OK)
+                    ERROR("Step test '%s' - unknown", test_name);
                 walker->unknown++;
             }
         }
