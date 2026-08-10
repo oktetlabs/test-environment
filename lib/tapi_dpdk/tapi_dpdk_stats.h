@@ -141,6 +141,31 @@ void tapi_dpdk_stats_stab_artifact(te_mi_logger *logger,
                                    const char *prefix);
 
 /**
+ * Get the sample used to report rate statistics.
+ *
+ * Prefer the filtered sample when it is available. Otherwise, use the
+ * measurements collected so far.
+ *
+ * @param meas_stats    Measurement statistics (may be @c NULL).
+ *
+ * @return Selected sample or @c NULL if @p meas_stats is @c NULL.
+ */
+static inline const te_meas_stats_data_t *
+tapi_dpdk_stats_get_rate_data(const te_meas_stats_t *meas_stats)
+{
+    if (meas_stats == NULL)
+        return NULL;
+
+    if (meas_stats->stab_required &&
+        meas_stats->stab.correct_data.num_datapoints > 0)
+    {
+        return &meas_stats->stab.correct_data;
+    }
+
+    return &meas_stats->data;
+}
+
+/**
  * Report rates corresponding to PPS, packet_size and link speed
  * as test artifacts.
  *
@@ -151,7 +176,10 @@ void tapi_dpdk_stats_stab_artifact(te_mi_logger *logger,
  * @param link_speed        Link speed in Mbps
  * @param prefix            Prefix of artifact messages (may be @c NULL)
  *
- * @return      0 on success
+ * @retval 0             Statistics are logged successfully.
+ * @retval TE_EINVAL     Measurement statistics are not specified.
+ * @retval TE_ENODATA    The selected sample contains no measurements.
+ * @return Other status code on failure.
  */
 te_errno tapi_dpdk_stats_log_rates(const char *tool,
                                    const te_meas_stats_t *meas_stats,
@@ -171,7 +199,9 @@ te_errno tapi_dpdk_stats_log_rates(const char *tool,
  * @param link_speed        Array of link speeds in Mbps
  * @param prefix            Prefix of artifact messages (may be @c NULL)
  *
- * @return      0 on success
+ * @retval 0             Aggregate rates are logged successfully.
+ * @retval TE_ENODATA    At least one selected sample is empty.
+ * @return Other status code on failure.
  */
 te_errno tapi_dpdk_stats_log_aggr_rates(const char *tool,
                                         unsigned int n_meas_stats,

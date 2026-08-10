@@ -232,21 +232,27 @@ tapi_dpdk_stats_log_rates(const char *tool, const te_meas_stats_t *meas_stats,
                           unsigned int packet_size, unsigned int link_speed,
                           const char *prefix)
 {
+    const te_meas_stats_data_t *data;
     te_mi_logger *logger;
     uint64_t l1_bitrate;
     uint64_t pps;
     double cv;
     te_errno rc;
 
-    pps = meas_stats->stab_required ?
-          meas_stats->stab.correct_data.mean :
-          meas_stats->data.mean;
+    if (meas_stats == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
+    data = tapi_dpdk_stats_get_rate_data(meas_stats);
+    if (data->num_datapoints == 0)
+    {
+        ERROR("%s%sNo rate measurements to report",
+              empty_string_if_null(prefix), prefix == NULL ? "" : ": ");
+        return TE_RC(TE_TAPI, TE_ENODATA);
+    }
+
+    pps = data->mean;
     l1_bitrate = tapi_dpdk_stats_calculate_l1_bitrate(pps, packet_size);
-
-    cv = meas_stats->stab_required ?
-         meas_stats->stab.correct_data.cv :
-         meas_stats->data.cv;
+    cv = data->cv;
 
     rc = te_mi_logger_meas_create(tool, &logger);
     if (rc != 0)
@@ -313,12 +319,16 @@ tapi_dpdk_stats_log_aggr_rates(const char *tool, unsigned int n_meas_stats,
 
     for (i = 0; i < n_meas_stats; ++i)
     {
-        uint64_t pps = meas_stats[i].stab_required ?
-            meas_stats[i].stab.correct_data.mean :
-            meas_stats[i].data.mean;
+        const te_meas_stats_data_t *data;
+        uint64_t l1_bitrate;
+        uint64_t pps;
 
-        uint64_t l1_bitrate =
-            tapi_dpdk_stats_calculate_l1_bitrate(pps, packet_size);
+        data = tapi_dpdk_stats_get_rate_data(&meas_stats[i]);
+        if (data->num_datapoints == 0)
+            return TE_RC(TE_TAPI, TE_ENODATA);
+
+        pps = data->mean;
+        l1_bitrate = tapi_dpdk_stats_calculate_l1_bitrate(pps, packet_size);
 
         aggr_pps += pps;
         aggr_l1_bitrate += l1_bitrate;
