@@ -136,6 +136,10 @@ tapi_dpdk_stats_summary_artifact(const te_meas_stats_t *meas_stats,
     if (data->num_datapoints == 0)
         return TE_RC(TE_TAPI, TE_ENODATA);
 
+    /* Relative deviations are undefined for a zero-mean sample. */
+    if (data->mean == 0)
+        return TE_RC(TE_TAPI, TE_EDOM);
+
     if (summary->sample_deviation == NULL || summary->freq == NULL ||
         summary->bin_edges == NULL ||
         summary->num_datapoints != data->num_datapoints ||
@@ -278,7 +282,15 @@ tapi_dpdk_stats_log_rates(const char *tool, const te_meas_stats_t *meas_stats,
 
     tapi_dpdk_stats_pps_artifact(logger, pps, prefix);
     tapi_dpdk_stats_l1_bitrate_artifact(logger, l1_bitrate, prefix);
-    tapi_dpdk_stats_cv_artifact(logger, cv, prefix);
+    if (data->mean == 0)
+    {
+        WARN("%s%sCV is undefined for a zero-mean sample",
+             empty_string_if_null(prefix), prefix == NULL ? "" : ": ");
+    }
+    else
+    {
+        tapi_dpdk_stats_cv_artifact(logger, cv, prefix);
+    }
 
     if (link_speed == 0)
     {
@@ -301,8 +313,17 @@ tapi_dpdk_stats_log_rates(const char *tool, const te_meas_stats_t *meas_stats,
 
     if (meas_stats->summary_required)
     {
-        if ((rc = tapi_dpdk_stats_summary_artifact(meas_stats, prefix)) != 0)
-            return rc;
+        if (meas_stats->data.mean != 0)
+        {
+            rc = tapi_dpdk_stats_summary_artifact(meas_stats, prefix);
+            if (rc != 0)
+                return rc;
+        }
+        else
+        {
+            WARN("%s%sSummary is skipped for a zero-mean sample",
+                 empty_string_if_null(prefix), prefix == NULL ? "" : ": ");
+        }
     }
 
     return 0;

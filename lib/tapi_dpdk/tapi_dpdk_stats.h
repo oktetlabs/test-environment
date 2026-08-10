@@ -128,6 +128,7 @@ void tapi_dpdk_stats_cv_artifact(te_mi_logger *logger, double cv,
  * @retval TE_EINVAL     Measurement statistics are not specified.
  * @retval TE_ENODATA    The sample contains no measurements.
  * @retval TE_EFAULT     Summary is unavailable or does not match the sample.
+ * @retval TE_EDOM       Relative statistics are undefined for a zero mean.
  * @return Other status code on failure.
  */
 te_errno tapi_dpdk_stats_summary_artifact(const te_meas_stats_t *meas_stats,
@@ -172,6 +173,9 @@ tapi_dpdk_stats_get_rate_data(const te_meas_stats_t *meas_stats)
 /**
  * Report rates corresponding to PPS, packet_size and link speed
  * as test artifacts.
+ *
+ * A zero rate is reported as a valid measurement, but CV and summary are
+ * omitted in this case because calculating them requires a non-zero mean.
  *
  * @param tool              Tool used for measurement gathering
  *                          (must not be @c NULL)
