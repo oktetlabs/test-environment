@@ -1717,6 +1717,7 @@ tapi_dpdk_testpmd_get_stats_many_ports(tapi_dpdk_testpmd_job_t *testpmd_job,
             }
 
             if (tx != NULL &&
+                te_meas_stats_continue(&tx[idx[tx_cons]]) &&
                 te_meas_stats_update(&tx[idx[tx_cons]], (double)tx_pps) ==
                 TE_MEAS_STATS_UPDATE_NOMEM)
             {
@@ -1739,6 +1740,7 @@ tapi_dpdk_testpmd_get_stats_many_ports(tapi_dpdk_testpmd_job_t *testpmd_job,
             }
 
             if (rx != NULL &&
+                te_meas_stats_continue(&rx[idx[rx_cons]]) &&
                 te_meas_stats_update(&rx[idx[rx_cons]], (double)rx_pps) ==
                 TE_MEAS_STATS_UPDATE_NOMEM)
             {

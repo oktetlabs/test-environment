@@ -83,6 +83,7 @@ tapi_dpdk_l2fwd_get_stats(tapi_dpdk_l2fwd_job_t *l2fwd_job,
             prev_tx_pkts = tx_pkts;
 
             if (tx != NULL &&
+                te_meas_stats_continue(tx) &&
                 te_meas_stats_update(tx, (double)tx_pps) ==
                 TE_MEAS_STATS_UPDATE_NOMEM)
             {
@@ -99,6 +100,7 @@ tapi_dpdk_l2fwd_get_stats(tapi_dpdk_l2fwd_job_t *l2fwd_job,
             prev_rx_pkts = rx_pkts;
 
             if (rx != NULL &&
+                te_meas_stats_continue(rx) &&
                 te_meas_stats_update(rx, (double)rx_pps) ==
                 TE_MEAS_STATS_UPDATE_NOMEM)
             {
