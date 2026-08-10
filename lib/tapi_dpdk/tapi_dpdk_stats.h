@@ -124,7 +124,11 @@ void tapi_dpdk_stats_cv_artifact(te_mi_logger *logger, double cv,
  * @param meas_stats    Pointer to te_meas_stats_t structure
  * @param prefix        Prefix of the artifact message (may be @c NULL)
  *
- * @return      0 on success
+ * @retval 0             Summary is logged successfully.
+ * @retval TE_EINVAL     Measurement statistics are not specified.
+ * @retval TE_ENODATA    The sample contains no measurements.
+ * @retval TE_EFAULT     Summary is unavailable or does not match the sample.
+ * @return Other status code on failure.
  */
 te_errno tapi_dpdk_stats_summary_artifact(const te_meas_stats_t *meas_stats,
                                           const char *prefix);

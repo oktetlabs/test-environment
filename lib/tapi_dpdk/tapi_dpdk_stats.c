@@ -128,10 +128,21 @@ tapi_dpdk_stats_summary_artifact(const te_meas_stats_t *meas_stats,
     unsigned int j;
     char *fmt_str;
 
+    if (meas_stats == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
     data = &meas_stats->data;
     summary = &meas_stats->summary;
-    if (summary->sample_deviation == NULL)
-        return TE_EFAULT;
+    if (data->num_datapoints == 0)
+        return TE_RC(TE_TAPI, TE_ENODATA);
+
+    if (summary->sample_deviation == NULL || summary->freq == NULL ||
+        summary->bin_edges == NULL ||
+        summary->num_datapoints != data->num_datapoints ||
+        summary->freq_size == 0 || summary->bin_edges_num == 0 ||
+        (summary->freq_size != summary->bin_edges_num &&
+         summary->freq_size + 1 != summary->bin_edges_num))
+        return TE_RC(TE_TAPI, TE_EFAULT);
 
     te_string_append(&str, "%s%s%s",
                      empty_string_if_null(prefix),

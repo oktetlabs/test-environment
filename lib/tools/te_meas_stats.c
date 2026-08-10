@@ -254,6 +254,7 @@ te_meas_stats_fill_summary(te_meas_stats_summary_t *summary,
 {
     te_meas_stats_fill_summary_histogram(summary, data);
     te_meas_stats_fill_summary_sample_deviation(summary, data);
+    summary->num_datapoints = data->num_datapoints;
 }
 
 te_meas_stats_update_code
@@ -399,6 +400,7 @@ te_meas_stats_summary_free(te_meas_stats_summary_t *summary)
     if (summary->sample_deviation != NULL)
         free(*summary->sample_deviation);
     free(summary->sample_deviation);
+    memset(summary, 0, sizeof(*summary));
 }
 
 te_meas_stats_update_code
@@ -424,6 +426,9 @@ te_meas_stats_update(te_meas_stats_t *meas_stats, double new_datapoint)
     {
         return code;
     }
+
+    if (meas_stats->summary_required)
+        te_meas_stats_summary_free(&meas_stats->summary);
 
     if (meas_stats->stab_required)
         code = te_meas_stats_stab_update(&meas_stats->stab,

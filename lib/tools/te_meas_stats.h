@@ -85,6 +85,7 @@ typedef struct te_meas_stats_summary_t {
                                       subsample standard deviation */
     unsigned int bin_edges_num;
     unsigned int freq_size;
+    unsigned int num_datapoints; /**< Sample size the summary describes */
 } te_meas_stats_summary_t;
 
 /** Structure for providing both summary and stabilization by request */
@@ -388,6 +389,10 @@ te_meas_stats_update_code te_meas_stats_stab_update(te_meas_stats_stab_t *stab,
  * Update te_meas_stats_t structure with new datapoint.
  * Note that in worst cases square of new datapoint may be calculated
  * inside of this function call.
+ *
+ * When the datapoint is added, any previously calculated summary is
+ * discarded. A new summary is calculated if the resulting sample is stable
+ * or the measurement limit has been reached.
  *
  * @param meas_stats        Pointer to te_meas_stats_t structure
  * @param new_datapoint     New datapoint
