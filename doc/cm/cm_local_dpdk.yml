@@ -61,6 +61,16 @@
               Format - pci_fn:<vendor_id>:<device_id>:
         Value: Maximum number of Tx queues
 
+    - oid: "/local/dpdk/rss_offloads"
+      access: read_create
+      type: uint64
+      d: |
+        RSS offloads supported by a DPDK ethdev.
+
+        Name: DPDK ethdev name
+        Value: Bitmask reported in flow_type_rss_offloads by
+               rte_eth_dev_info_get()
+
     - oid: "/local/dpdk/min_mtu"
       access: read_create
       type: int32
