@@ -178,6 +178,10 @@
       access: read_write
       type: int32
 
+    - oid: "/agent/sys/net/ipv4/tcp_tw_reuse"
+      access: read_write
+      type: int32
+
     - oid: "/agent/sys/net/ipv4/tcp_syncookies"
       access: read_write
       type: int32
