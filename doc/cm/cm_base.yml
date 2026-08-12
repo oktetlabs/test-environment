@@ -1070,36 +1070,6 @@
          Name:  Name of statistic
          Value: Value of statistic
 
-    - oid: "/agent/interface/irq"
-      access: read_only
-      type: none
-      depends:
-        - oid: "/agent/interface/status"
-        - oid: "/agent/interface/channels/combined/current"
-        - oid: "/agent/interface/channels/rx/current"
-        - oid: "/agent/interface/channels/tx/current"
-      d: |
-         Network interface interrupt information
-         Name: Interrupt ID
-         Value: none
-
-    - oid: "/agent/interface/irq/name"
-      access: read_only
-      type: string
-      d: |
-         Interrupt name
-         Name:  none
-         Value: Name of IRQ
-
-    - oid: "/agent/interface/irq/cpu"
-      access: read_only
-      type: uint64
-      volatile: true
-      d: |
-         Interrupt counter per CPU
-         Name: CPU ID
-         Value: Interrupt counter
-
     - oid: "/agent/loadavg"
       access: read_only
       type: none

@@ -19,6 +19,7 @@ cm_files = files(
     'cm_ftpserver.yml',
     'cm_iptables.yml',
     'cm_iptables_global.yml',
+    'cm_if_irq.yml',
     'cm_iscsi.yml',
     'cm_keys.yml',
     'cm_l2tp_server.yml',

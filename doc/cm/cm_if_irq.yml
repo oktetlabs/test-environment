@@ -1,0 +1,42 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Information about interrupts on interfaces.
+
+    You need to include cm_base.yml first to use this.
+
+    Copyright (C) 2004-2026 OKTET Labs Ltd. All rights reserved.
+
+
+- register:
+
+    - oid: "/agent/interface/irq"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/interface/status"
+        - oid: "/agent/interface/channels/combined/current"
+        - oid: "/agent/interface/channels/rx/current"
+        - oid: "/agent/interface/channels/tx/current"
+      d: |
+         Network interface interrupt information
+         Name: Interrupt ID
+         Value: none
+
+    - oid: "/agent/interface/irq/name"
+      access: read_only
+      type: string
+      d: |
+         Interrupt name
+         Name:  none
+         Value: Name of IRQ
+
+    - oid: "/agent/interface/irq/cpu"
+      access: read_only
+      type: uint64
+      volatile: true
+      d: |
+         Interrupt counter per CPU
+         Name: CPU ID
+         Value: Interrupt counter
