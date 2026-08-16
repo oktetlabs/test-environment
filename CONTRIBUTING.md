@@ -68,7 +68,8 @@ The summary line should:
    agent/unix: support VLAN interfaces control
    ```
 
- - be human-readable and contain no file and symbol names from the sources
+ - be human-readable and contain no file, symbol, variable or field names
+   from the sources
 
 Note that it is prohibited to use ticket tracker references (e.g.
 "Bug 12345: " or "#12345") in the summary line. Use corresponding helper
