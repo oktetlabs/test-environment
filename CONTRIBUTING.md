@@ -396,7 +396,7 @@ A more elaborate example with a complex patch workflow:
 
     Breaks: a lot of legacy testsuites
     OL-Redmine-Id: 12345
-    Link: Link: https://github.com/oktetlabs/test-environment/pull/999
+    Link: https://github.com/oktetlabs/test-environment/pull/999
     Suggested-by: Gavin Armstrong <g.armstrong@example.com>
     Signed-off-by: James Baxter <jbaxter@example.com>
     Acked-by: Joanne Chappell <joanned@example.com>
