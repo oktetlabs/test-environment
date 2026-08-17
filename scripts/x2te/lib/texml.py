@@ -82,14 +82,14 @@ class PackageXML(TEXML):
 
         return TEXML.addnext_unique(self.session, arg, eq_node)
 
-    def add_run_script(self, script, name=None, template=None, args=None, reqs=None):
+    def add_run_script(self, script, name=None, template=None, args=None, reqs=None, objective=None):
         run_attr = dict()
         attr = dict(name=script)
         if name:
             run_attr["name"] = name
         if template:
             run_attr["template"] = template
-        return self._add_run("script", run_attr, attr, args, reqs)
+        return self._add_run("script", run_attr, attr, args, reqs, objective)
 
     def add_run_package(self, name=None, src=None, args=None):
         attr = dict()
@@ -99,7 +99,7 @@ class PackageXML(TEXML):
             attr["name"] = name
         return self._add_run("package", dict(), attr, args)
 
-    def _add_run(self, run_type, run_attr=None, attr=None, args=None, reqs=None):
+    def _add_run(self, run_type, run_attr=None, attr=None, args=None, reqs=None, objective=None):
         if run_attr is None:
             run_attr = dict()
         if attr is None:
@@ -123,6 +123,10 @@ class PackageXML(TEXML):
         if isinstance(reqs, list):
             for req in reqs:
                 etree.SubElement(script, "req", id=req)
+
+        if isinstance(objective, str):
+            description = etree.SubElement(script, "objective")
+            description.text = objective
 
         return TEXML.addnext_unique(self.session, run, eq_node)
 
