@@ -3,7 +3,7 @@
 /** @file
  * @brief Test API for FIO tool
  *
- * @defgroup tapi_fio FIO tool
+ * @defgroup tapi_fio fio
  * @ingroup tapi_tool_storage
  * @{
  *

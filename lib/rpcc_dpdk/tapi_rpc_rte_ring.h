@@ -21,7 +21,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_rte_ring TAPI for RTE ring API remote calls
+ * @defgroup te_lib_rpc_rte_ring RTE ring
  * @ingroup te_lib_rpc_rte
  * @{
  *

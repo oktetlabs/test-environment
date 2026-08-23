@@ -3,7 +3,7 @@
 /** @file
  * @brief TAPI to manage dnsperf tool
  *
- * @defgroup tapi_dnsperf TAPI to manage dnsperf tool
+ * @defgroup tapi_dnsperf dnsperf
  * @ingroup tapi_tool_service
  * @{
  *

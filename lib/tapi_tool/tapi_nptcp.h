@@ -2,7 +2,7 @@
 /** @file
  * @brief NPtcp tool TAPI
  *
- * @defgroup tapi_nptcp NPtcp tool tapi (tapi_nptcp)
+ * @defgroup tapi_nptcp NPtcp
  * @ingroup tapi_tool_perf
  * @{
  *

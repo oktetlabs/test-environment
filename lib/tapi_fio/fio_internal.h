@@ -2,7 +2,7 @@
 /** @file
  * @brief Auxiliary functions to fio TAPI
  *
- * @defgroup tapi_fio_internal FIO tool internals
+ * @defgroup tapi_fio_internal fio helpers
  * @ingroup tapi_fio
  * @{
  *

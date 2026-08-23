@@ -2,7 +2,7 @@
 /** @file
  * @brief Auxiliary functions for internal use in TAPI Job
  *
- * @defgroup tapi_job_internal TAPI Job internal functions (tapi_job_internal)
+ * @defgroup tapi_job_internal Job internals
  * @ingroup tapi_job
  * @{
  *

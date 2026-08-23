@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to configure bonding and bridging.
  *
- * @defgroup tapi_conf_aggr Bonding and bridging configuration
+ * @defgroup tapi_conf_aggr Bonding and bridging
  * @ingroup tapi_conf_link
  * @{
  *

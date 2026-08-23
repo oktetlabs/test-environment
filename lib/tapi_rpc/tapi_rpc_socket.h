@@ -30,7 +30,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_socket TAPI for socket API remote calls
+ * @defgroup te_lib_rpc_socket Sockets
  * @ingroup te_lib_rpc_io
  * @{
  */

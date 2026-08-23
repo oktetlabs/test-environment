@@ -2,7 +2,7 @@
 /** @file
  * @brief TAPI to manage memcached
  *
- * @defgroup tapi_memcached TAPI to manage memcached
+ * @defgroup tapi_memcached memcached
  * @ingroup tapi_tool_service
  * @{
  *

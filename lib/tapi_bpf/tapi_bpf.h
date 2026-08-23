@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to configure BPF/XDP programs.
  *
- * @defgroup tapi_bpf BPF/XDP configuration of Test Agents
+ * @defgroup tapi_bpf BPF and XDP
  * @ingroup tapi_devices
  * @{
  *

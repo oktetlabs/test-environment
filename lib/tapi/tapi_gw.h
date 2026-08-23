@@ -2,7 +2,7 @@
 /** @file
  * @brief Test GateWay network configuring API
  *
- * @defgroup ts_tapi_gw Macros to get test parameters on a gateway configuration
+ * @defgroup ts_tapi_gw Gateway test parameters
  * @ingroup tapi_netenv
  * @{
  *

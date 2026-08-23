@@ -2,7 +2,7 @@
 /** @file
  * @brief TAPI to handle Configurator job factory
  *
- * @defgroup tapi_job_factory_cfg Configurator job factory control (tapi_job_factory_cfg)
+ * @defgroup tapi_job_factory_cfg Configurator job factory
  * @ingroup tapi_job
  * @{
  *

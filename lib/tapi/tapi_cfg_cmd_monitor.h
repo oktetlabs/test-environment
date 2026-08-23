@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to configure command monitor.
  *
- * @defgroup tapi_cmd_monitor_def Command monitor TAPI
+ * @defgroup tapi_cmd_monitor_def Command monitor
  * @ingroup tapi_conf_diag
  * @{
  *

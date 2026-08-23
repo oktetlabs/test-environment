@@ -2,7 +2,7 @@
 /** @file
  * @brief API to modify target requirements from prologues
  *
- * @defgroup ts_tapi_reqs Target requirements modification
+ * @defgroup ts_tapi_reqs Target requirements
  * @ingroup tapi_scenario
  * @{
  *

@@ -2,7 +2,7 @@
 /** @file
  * @brief DPDK helper functions TAPI
  *
- * @defgroup tapi_dpdk DPDK helper functions TAPI
+ * @defgroup tapi_dpdk DPDK helpers
  * @ingroup tapi_dpdk_grp
  * @{
  *

@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_rte_mempool TAPI for RTE MEMPOOL API remote calls
+ * @defgroup te_lib_rpc_rte_mempool RTE mempool
  * @ingroup te_lib_rpc_rte
  * @{
  *

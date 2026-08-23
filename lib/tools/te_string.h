@@ -2,7 +2,7 @@
 /** @file
  * @brief API to deal with dynamic strings
  *
- * @defgroup te_tools_te_string Dynamic strings
+ * @defgroup te_tools_te_string Growable strings
  * @ingroup te_tools_text
  * @{
  *

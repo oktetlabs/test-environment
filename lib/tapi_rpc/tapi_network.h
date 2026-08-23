@@ -2,7 +2,7 @@
 /** @file
  * @brief High level test API to configure tested network
  *
- * @defgroup ts_tapi_network High level TAPI to configure network
+ * @defgroup ts_tapi_network High level network setup
  * @ingroup tapi_netenv
  * @{
  *

@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_aio TAPI for asynchronous I/O calls
+ * @defgroup te_lib_rpc_aio Asynchronous I/O
  * @ingroup te_lib_rpc_io
  * @{
  *

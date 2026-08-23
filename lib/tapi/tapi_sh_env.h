@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to control environment variables on the agent side
  *
- * @defgroup tapi_conf_sh_env Environment variables configuration
+ * @defgroup tapi_conf_sh_env Environment variables
  * @ingroup tapi_conf_tree
  * @{
  *

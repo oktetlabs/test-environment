@@ -2,7 +2,7 @@
 /** @file
  * @brief sfnt-pingpong tool TAPI
  *
- * @defgroup tapi_sfnt_pingpong tool functions TAPI
+ * @defgroup tapi_sfnt_pingpong sfnt-pingpong
  * @ingroup tapi_tool_perf
  * @{
  *

@@ -52,7 +52,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup tapi_conf_changed Data change tracking
+ * @defgroup tapi_conf_changed Change tracking
  * @ingroup tapi_conf_tree
  * @{
  *

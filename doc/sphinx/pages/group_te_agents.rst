@@ -119,7 +119,7 @@ Types of supported Test Agents
 
 The Unix Test Agent is the agent used in practice:
 
-* :ref:`Test Agents: Unix Test Agent <doxid-group__te__agents__unix>`.
+* :ref:`Unix Test Agent <doxid-group__te__agents__unix>`.
 
 
 .. _doxid-group__te__agents_1te_agt_extending:
@@ -141,6 +141,6 @@ Adding new RPC calls
 Adding new configuration nodes
 ------------------------------
 
-* :ref:`Test Agents: Creating new configuration nodes in Test Agent <doxid-group__te__agents__conf>` page gives guidelines on how to add new configuration nodes to Test Agent;
+* :ref:`Adding configuration nodes <doxid-group__te__agents__conf>` page gives guidelines on how to add new configuration nodes to Test Agent;
 
-* :ref:`API Usage: Configurator API <doxid-group__confapi>` page gives guidelines on how to work with API from test scenarios.
+* :ref:`Using the Configurator API <doxid-group__confapi>` page gives guidelines on how to work with API from test scenarios.

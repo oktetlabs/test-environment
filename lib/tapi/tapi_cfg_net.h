@@ -21,7 +21,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup tapi_conf_net Network topology configuration of Test Agents
+ * @defgroup tapi_conf_net Agent network topology
  * @ingroup tapi_conf_topo
  * @{
  */

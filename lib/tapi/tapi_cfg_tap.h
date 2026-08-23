@@ -3,7 +3,7 @@
 /** @file
  * @brief Test API to configure TAP interface.
  *
- * @defgroup tapi_conf_tap TAP interface configuration
+ * @defgroup tapi_conf_tap TAP interfaces
  * @ingroup tapi_conf_link
  * @{
  *

@@ -3,7 +3,7 @@
 /** @file
  * @brief API to deal with strings
  *
- * @defgroup te_tools_te_str Regular strings
+ * @defgroup te_tools_te_str Plain strings
  * @ingroup te_tools_text
  * @{
  *

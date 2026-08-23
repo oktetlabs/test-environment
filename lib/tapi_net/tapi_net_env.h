@@ -3,7 +3,7 @@
 /** @file
  * @brief Auxiliary library for interacting with test environment.
  *
- * @defgroup tapi_net_env Auxiliary library for interacting with test environment.
+ * @defgroup tapi_net_env Test environment interaction
  * @ingroup tapi_net
  * @{
  *

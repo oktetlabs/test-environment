@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to storage server routines
  *
- * @defgroup tapi_storage_server Test API to control the storage server
+ * @defgroup tapi_storage_server Storage server
  * @ingroup tapi_storage
  * @{
  *

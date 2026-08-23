@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to manage Solarflare PTP daemon
  *
- * @defgroup tapi_conf_sfptpd Solarflare PTP daemon configuration
+ * @defgroup tapi_conf_sfptpd Solarflare PTP daemon
  * @ingroup tapi_conf_serv
  * @{
  *

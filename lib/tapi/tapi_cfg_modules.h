@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to configure kernel modules
  *
- * @defgroup tapi_conf_modules Kernel modules configuration
+ * @defgroup tapi_conf_modules Kernel modules
  * @ingroup tapi_conf_host
  * @{
  *

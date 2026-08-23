@@ -36,7 +36,7 @@
 extern "C" {
 #endif
 
-/** @defgroup rcf_ch Test Agents: Command Handler
+/** @defgroup rcf_ch Command Handler
  * Common Handler (CH) is an interface to hide the details of Test Agent
  * implementation for Portable Command Handler (PCH).
  * When you support a new type of Test Agent you will need to implement
@@ -125,7 +125,7 @@ extern void rcf_ch_unlock(void);
 
 #endif /* !HAVE_PTHREAD_H */
 
-/** @defgroup rcf_ch_reboot Command Handler: Reboot and shutdown support
+/** @defgroup rcf_ch_reboot Reboot and shutdown
  * @ingroup rcf_ch
  * @{
  *
@@ -234,7 +234,7 @@ extern int rcf_ch_configure(struct rcf_comm_connection *handle,
                             const char *oid, const char *val);
 /**@} <!-- END rcf_ch_cfg --> */
 
-/** @defgroup rcf_ch_var Command Handler: Variables support
+/** @defgroup rcf_ch_var Variables
  * @ingroup rcf_ch
  * @{
  *
@@ -290,7 +290,7 @@ extern int rcf_ch_vwrite(struct rcf_comm_connection *handle,
                          rcf_var_type_t type, const char *var, ...);
 /**@} <!-- END rcf_ch_var --> */
 
-/** @defgroup rcf_ch_file Command Handler: File manipulation support
+/** @defgroup rcf_ch_file File manipulation
  * @ingroup rcf_ch
  * @{
  *
@@ -329,7 +329,7 @@ extern int rcf_ch_file(struct rcf_comm_connection *handle,
                        rcf_op_t op, const char *filename);
 /**@} <!-- END rcf_ch_file --> */
 
-/** @defgroup rcf_ch_tad Command Handler: Traffic Application Domain (TAD) support
+/** @defgroup rcf_ch_tad Traffic Application Domain support
  * A set of functions exported by a Test Agent to support TAD.
  * The only supported version of TAD available at @path{lib/tad},
  * so Test Agent code located under @path{agents/[agent type]} should
@@ -680,7 +680,7 @@ extern int rcf_ch_trpoll_cancel(struct rcf_comm_connection *handle,
                                 unsigned int poll_id);
 /**@} <!-- END rcf_ch_tad --> */
 
-/** @defgroup rcf_ch_func Command Handler: Function call support
+/** @defgroup rcf_ch_func Function calls
  * @ingroup rcf_ch
  * @{
  *
@@ -722,7 +722,7 @@ extern int rcf_ch_call(struct rcf_comm_connection *handle,
                        int argc, void **params);
 /**@} <!-- END rcf_ch_func --> */
 
-/** @defgroup rcf_ch_proc Command Handler: Process/thread support
+/** @defgroup rcf_ch_proc Processes and threads
  * A set of functions exported by a Test Agent to support interface
  * of Command Handler for Test Agent thread and process manipulations.
  * @ingroup rcf_ch
@@ -799,7 +799,7 @@ extern int rcf_ch_free_proc_data(unsigned int pid);
 extern int rcf_ch_kill_thread(unsigned int tid);
 /**@} <!-- END rcf_ch_proc --> */
 
-/** @defgroup rcf_ch_cfg Command Handler: Configuration support
+/** @defgroup rcf_ch_cfg Configuration support
  * A set of functions exported by a Test Agent to support interface
  * of Command Handler for Test Agent configuration.
  * @ingroup rcf_ch

@@ -2,7 +2,7 @@
 /** @file
  * @brief Unix Test Agent serial console parser support.
  *
- * @defgroup te_tools_te_serial_parser Serial console parser
+ * @defgroup te_tools_te_serial_parser Parser
  * @ingroup te_tools_serial
  * @{
  *

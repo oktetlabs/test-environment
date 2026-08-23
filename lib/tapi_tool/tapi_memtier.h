@@ -3,7 +3,7 @@
 /** @file
  * @brief TAPI to manage memtier_benchmark
  *
- * @defgroup tapi_memtier TAPI to manage memtier_benchmark
+ * @defgroup tapi_memtier memtier_benchmark
  * @ingroup tapi_tool_service
  * @{
  */

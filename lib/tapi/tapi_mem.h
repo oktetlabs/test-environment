@@ -3,7 +3,7 @@
  * @brief Test API to use malloc, calloc, realloc, memcpy and strdup
  *
  * Find details on page @ref tapi_mem.
- * @defgroup tapi_mem Test API to use memory-related functions conveniently
+ * @defgroup tapi_mem Memory helpers
  * @ingroup tapi_scenario
  * @{
  * Implementation of API to use memory-related functions in a convenient way

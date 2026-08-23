@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup tapi_conf_iptable iptables configuration
+ * @defgroup tapi_conf_iptable iptables
  * @ingroup tapi_conf_serv
  * @{
  *

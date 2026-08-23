@@ -2,7 +2,7 @@
 /** @file
  * @brief API to modify TRC tags from prologues
  *
- * @defgroup ts_tapi_tags TRC tags modification
+ * @defgroup ts_tapi_tags TRC tags
  * @ingroup tapi_scenario
  * @{
  *

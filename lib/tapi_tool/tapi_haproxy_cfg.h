@@ -3,7 +3,7 @@
 /** @file
  * @brief HAProxy tool config file generation TAPI
  *
- * @defgroup tapi_haproxy_cfg HAProxy tool config file generation TAPI
+ * @defgroup tapi_haproxy_cfg HAProxy configuration file
  * @ingroup tapi_tool_service
  * @{
  *

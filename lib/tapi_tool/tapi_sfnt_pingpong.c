@@ -47,7 +47,7 @@ struct tapi_sfnt_pp_app_server_t {
 };
 
 /**
- * @defgroup tapi_job_opt_formatting custom functions for argument formatting
+ * @defgroup tapi_job_opt_formatting functions for argument formatting
  * @{
  *
  * @param[in]     value     Pointer to an argument.

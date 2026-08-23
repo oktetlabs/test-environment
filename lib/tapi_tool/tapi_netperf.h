@@ -2,7 +2,7 @@
 /** @file
  * @brief netperf tool TAPI
  *
- * @defgroup tapi_netperf tool functions TAPI
+ * @defgroup tapi_netperf netperf
  * @ingroup tapi_tool_perf
  * @{
  *

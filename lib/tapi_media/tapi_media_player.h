@@ -2,7 +2,7 @@
 /** @file
  * @brief Generic Test API to media player routines
  *
- * @defgroup tapi_media_player Test API to control a media player
+ * @defgroup tapi_media_player Media player control
  * @ingroup tapi_media
  * @{
  *

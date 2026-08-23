@@ -28,7 +28,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup tapi_conf_ip6 IPv6 specific configuration
+ * @defgroup tapi_conf_ip6 IPv6
  * @ingroup tapi_conf_addr
  * @{
  *

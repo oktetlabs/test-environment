@@ -2,7 +2,7 @@
 /** @file
  * @brief TAPI to manage bttrack torrent tracker
  *
- * @defgroup tapi_bttrack TAPI to manage bttrack torrent tracker (tapi_bttrack)
+ * @defgroup tapi_bttrack bttrack torrent tracker
  * @ingroup tapi_ctorrent
  * @{
  *

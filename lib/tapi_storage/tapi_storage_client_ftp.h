@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to FTP client routines
  *
- * @defgroup tapi_storage_client_ftp Test API to control the storage FTP client
+ * @defgroup tapi_storage_client_ftp Storage FTP client
  * @ingroup tapi_storage
  * @{
  *

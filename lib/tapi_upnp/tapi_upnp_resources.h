@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to DLNA UPnP routines
  *
- * @defgroup tapi_upnp_cd_resources Test API to operate the DLNA UPnP Content Directory Resources
+ * @defgroup tapi_upnp_cd_resources UPnP content directory resources
  * @ingroup tapi_upnp
  * @{
  *

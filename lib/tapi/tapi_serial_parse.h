@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API of serial console parsers
  *
- * @defgroup tapi_conf_serial_parse Serial console parsers configuration
+ * @defgroup tapi_conf_serial_parse Serial console parsers
  * @ingroup tapi_conf_diag
  * @{
  *

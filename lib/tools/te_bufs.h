@@ -2,7 +2,7 @@
 /** @file
  * @brief API to deal with buffers
  *
- * @defgroup te_tools_te_bufs Regular binary buffers
+ * @defgroup te_tools_te_bufs Binary buffers
  * @ingroup te_tools_data
  * @{
  *

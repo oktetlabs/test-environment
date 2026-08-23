@@ -2,7 +2,7 @@
 /** @file
  * @brief Unix Test Agent serial console support.
  *
- * @defgroup te_tools_te_serial Serial console
+ * @defgroup te_tools_te_serial Console access
  * @ingroup te_tools_serial
  * @{
  *

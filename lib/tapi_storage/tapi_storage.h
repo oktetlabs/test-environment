@@ -2,7 +2,7 @@
 /** @file
  * @brief Generic test API to storage routines
  *
- * @defgroup tapi_storage_wrapper Test API to perform the generic operations over the storage
+ * @defgroup tapi_storage_wrapper Generic storage operations
  * @ingroup tapi_storage
  * @{
  *

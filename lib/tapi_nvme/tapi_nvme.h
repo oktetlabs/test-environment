@@ -2,7 +2,7 @@
 /** @file
  * @brief Control NVMeOF
  *
- * @defgroup tapi_nvme Control NVMeOF
+ * @defgroup tapi_nvme NVMe over Fabrics
  * @ingroup tapi_devices
  * @{
  *

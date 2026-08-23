@@ -4,7 +4,7 @@
 /** @file
  * @brief API for random numbers
  *
- * @defgroup te_tools_te_rand Random numbers generation
+ * @defgroup te_tools_te_rand Random numbers
  * @ingroup te_tools_numeric
  * @{
  *

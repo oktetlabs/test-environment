@@ -2,7 +2,7 @@
 /** @file
  * @brief Generic mapping between names and integral values
  *
- * @defgroup te_tools_te_enum Mapping between names and values
+ * @defgroup te_tools_te_enum Name/value mappings
  * @ingroup te_tools_text
  * @{
  *

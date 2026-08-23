@@ -2,7 +2,7 @@
 /** @file
  * @brief Network interface configuration
  *
- * @defgroup tapi_conf_if Network interface configuration TAPI
+ * @defgroup tapi_conf_if Interface features and offloads
  * @ingroup tapi_conf_link
  * @{
  *

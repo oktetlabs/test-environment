@@ -2,7 +2,7 @@
 /** @file
  * @brief wrk tool TAPI
  *
- * @defgroup tapi_wrk tool functions TAPI
+ * @defgroup tapi_wrk wrk
  * @ingroup tapi_tool_perf
  * @{
  *

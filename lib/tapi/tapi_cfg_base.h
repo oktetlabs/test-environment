@@ -63,7 +63,7 @@ extern te_errno tapi_cfg_base_get_ta_uname(const char *ta,
                                            struct utsname *uts);
 
 /**
- * @defgroup tapi_conf_base_net Network Base configuration
+ * @defgroup tapi_conf_base_net Base network settings
  * @ingroup tapi_conf_addr
  * @{
  *

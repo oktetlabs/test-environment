@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to DLNA UPnP routines
  *
- * @defgroup tapi_upnp_device_info Test API to operate the DLNA UPnP Device information
+ * @defgroup tapi_upnp_device_info UPnP device information
  * @ingroup tapi_upnp
  * @{
  *

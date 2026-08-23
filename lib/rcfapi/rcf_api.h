@@ -21,7 +21,7 @@
 #include "tad_common.h"
 #include "te_vector.h"
 
-/** @defgroup rcfapi_base API: RCF
+/** @defgroup rcfapi_base RCF API
  * @ingroup rcfapi
  * @{
  */

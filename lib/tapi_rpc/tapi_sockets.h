@@ -3,7 +3,7 @@
 /** @file
  * @brief Functions to opearate with socket
  *
- * @defgroup ts_tapi_sockets High level TAPI to work with sockets
+ * @defgroup ts_tapi_sockets High level socket helpers
  * @ingroup tapi_sockets
  * @{
  *

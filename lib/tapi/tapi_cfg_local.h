@@ -25,7 +25,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup tapi_conf_local Local subtree access
+ * @defgroup tapi_conf_local Local subtree
  * @ingroup tapi_conf_tree
  * @{
  *

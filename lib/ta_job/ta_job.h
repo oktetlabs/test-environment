@@ -3,7 +3,7 @@
 /** @file
  * @brief Library for Agent job control on agent side
  *
- * @defgroup ta_job Library for Agent job control on agent side (ta_job)
+ * @defgroup ta_job Agent-side job control
  * @ingroup tapi_job
  * @{
  *

@@ -25,7 +25,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_netdb TAPI for name/address resolution remote calls
+ * @defgroup te_lib_rpc_netdb Name and address resolution
  * @ingroup te_lib_rpc_sys
  * @{
  *

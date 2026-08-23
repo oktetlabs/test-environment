@@ -3,7 +3,7 @@
 /** @file
  * @brief Auxiliary library to define network in YAML format
  *
- * @defgroup tapi_net_yaml Auxiliary library to define network in YAML format
+ * @defgroup tapi_net_yaml Network definition in YAML
  * @ingroup tapi_net
  * @{
  *

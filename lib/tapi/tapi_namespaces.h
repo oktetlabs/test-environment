@@ -2,7 +2,7 @@
 /** @file
  * @brief Linux namespaces configuration test API
  *
- * @defgroup tapi_namespaces Agent namespaces configuration
+ * @defgroup tapi_namespaces Agent namespaces
  * @ingroup tapi_conf_topo
  * @{
  *

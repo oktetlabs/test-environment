@@ -7,6 +7,6 @@
 	:hidden:
 
 	/generated/group_te_lib_rcfrpc.rst
+	group_te_lib_rpc_tapi.rst
 	/generated/group_rpc_type_ns.rst
 	/generated/group_rpc_socket_addr_family.rst
-	group_te_lib_rpc_tapi.rst

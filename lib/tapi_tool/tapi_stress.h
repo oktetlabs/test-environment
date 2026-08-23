@@ -2,7 +2,7 @@
 /** @file
  * @brief stress tool TAPI
  *
- * @defgroup tapi_stress tool functions TAPI
+ * @defgroup tapi_stress stress
  * @ingroup tapi_tool_system
  * @{
  *

@@ -18,7 +18,7 @@
 #include "tapi_mem.h"
 
 /**
- * @defgroup tapi_bpf_stim_common_map Common map names to control BPF stimulus
+ * @defgroup tapi_bpf_stim_common_map Stimulus common map
  *                                    programs. All BPF programs provide this
  *                                    interface.
  * @{
@@ -33,7 +33,7 @@
 /**@} <!-- END tapi_bpf_stim_common_map --> */
 
 /**
- * @defgroup tapi_bpf_stim_drop_cd Drop stimulus BPF control data.
+ * @defgroup tapi_bpf_stim_drop_cd Drop stimulus control data
  *
  * @{
  */
@@ -44,7 +44,7 @@
 /**@} <!-- END tapi_bpf_stim_drop_cd --> */
 
 /**
- * @defgroup tapi_bpf_stim_dup_cd Duplicate stimulus BPF control data.
+ * @defgroup tapi_bpf_stim_dup_cd Duplicate stimulus control data
  *
  * @{
  */
@@ -65,7 +65,7 @@
 /**@} <!-- END tapi_bpf_stim_dup_cd --> */
 
 /**
- * @defgroup tapi_bpf_stim_delay_cd Delay stimulus BPF control data.
+ * @defgroup tapi_bpf_stim_delay_cd Delay stimulus control data
  *
  * @{
  */

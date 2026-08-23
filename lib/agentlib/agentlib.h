@@ -197,7 +197,7 @@ extern int power_sw(int type, const char *dev, int mask, int cmd);
 #endif /* ENABLE_UPNP */
 
 
-/** @defgroup rcf_ch_addr Command Handler: Symbol name and address resolver support
+/** @defgroup rcf_ch_addr Symbol and address resolution
  * @ingroup rcf_ch
  * @{
  *

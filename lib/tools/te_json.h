@@ -3,7 +3,7 @@
 /** @file
  * @brief JSON-handling routines.
  *
- * @defgroup te_tools_te_json JSON routines.
+ * @defgroup te_tools_te_json JSON
  * @ingroup te_tools_serial_fmt
  * @{
  *

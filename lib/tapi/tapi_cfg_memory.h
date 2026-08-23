@@ -18,7 +18,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup tapi_conf_memory RAM configuration of Test Agents
+ * @defgroup tapi_conf_memory RAM
  * @ingroup tapi_conf_host
  * @{
  *

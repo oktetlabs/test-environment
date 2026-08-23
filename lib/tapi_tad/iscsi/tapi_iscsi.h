@@ -2,7 +2,7 @@
 /** @file
  * @brief TAPI TAD iSCSI
  *
- * @defgroup tapi_tad_iscsi iSCSI
+ * @defgroup tapi_tad_iscsi iSCSI CSAP
  * @ingroup tapi_tad_main
  * @{
  *

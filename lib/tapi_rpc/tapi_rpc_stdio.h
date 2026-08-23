@@ -21,7 +21,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_stdio TAPI for standard I/O calls
+ * @defgroup te_lib_rpc_stdio Standard I/O
  * @ingroup te_lib_rpc_io
  * @{
  *

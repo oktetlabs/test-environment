@@ -12,7 +12,7 @@
 
 #include "logger_api.h"
 
-/** @defgroup te_log_stack API: Logger messages stack
+/** @defgroup te_log_stack Logger message stack
  *
  * In order to use @ref logger_stack you need to include te_log_stack.h
  *

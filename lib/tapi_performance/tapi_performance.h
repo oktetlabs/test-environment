@@ -2,7 +2,7 @@
 /** @file
  * @brief Generic Test API to network throughput test tools
  *
- * @defgroup tapi_performance Test API to control a network throughput test tool
+ * @defgroup tapi_performance Network throughput tools
  * @ingroup tapi_tool_perf
  * @{
  *

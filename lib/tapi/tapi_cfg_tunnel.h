@@ -3,7 +3,7 @@
 /** @file
  * @brief Test API to configure tunnel.
  *
- * @defgroup tapi_conf_tunnel Tunnel configuration
+ * @defgroup tapi_conf_tunnel Tunnels
  * @ingroup tapi_conf_serv
  * @{
  *

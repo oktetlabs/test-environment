@@ -2,7 +2,7 @@
 /** @file
  * @brief redis-server tool TAPI
  *
- * @defgroup tapi_redis_srv redis-server tool TAPI (tapi_redis_srv)
+ * @defgroup tapi_redis_srv redis-server
  * @ingroup tapi_tool_service
  * @{
  *

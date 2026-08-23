@@ -20,7 +20,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_dlfcn TAPI for remote calls of dynamic linking loader
+ * @defgroup te_lib_rpc_dlfcn Dynamic linking loader
  * @ingroup te_lib_rpc_sys
  * @{
  *

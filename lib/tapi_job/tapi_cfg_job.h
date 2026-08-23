@@ -2,7 +2,7 @@
 /** @file
  * @brief Configurator API for Agent job control
  *
- * @defgroup tapi_cfg_job Configurator API for Agent job control (tapi_cfg_job)
+ * @defgroup tapi_cfg_job Job control via Configurator
  * @ingroup tapi_job
  * @{
  *

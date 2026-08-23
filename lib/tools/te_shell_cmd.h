@@ -2,7 +2,7 @@
 /** @file
  * @brief API to call shell commands
  *
- * @defgroup te_tools_te_shell_cmd Call shell commands
+ * @defgroup te_tools_te_shell_cmd Shell commands
  * @ingroup te_tools_process
  * @{
  *

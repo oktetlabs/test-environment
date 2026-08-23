@@ -3,7 +3,7 @@
 /** @file
  * @brief Generic tree routines.
  *
- * @defgroup te_tools_te_tree Tree routines.
+ * @defgroup te_tools_te_tree Trees
  * @ingroup te_tools_data
  * @{
  *

@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to manage NTP daemon
  *
- * @defgroup tapi_conf_ntpd NTP daemon configuration
+ * @defgroup tapi_conf_ntpd NTP daemon
  * @ingroup tapi_conf_serv
  * @{
  *

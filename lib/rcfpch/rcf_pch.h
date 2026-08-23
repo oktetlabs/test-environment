@@ -28,7 +28,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup rcf_pch Test Agents: Portable Commands Handler
+ * @defgroup rcf_pch Portable Command Handler
  * @ingroup te_agents
  * @{
  *
@@ -323,7 +323,7 @@ extern te_errno rcf_pch_del_node(rcf_pch_cfg_object *node);
 /*--------------- Dynamically grabbed TA resources -------------------*/
 
 /**
- * @defgroup rcf_pch_rsrc API: Shared TA resources
+ * @defgroup rcf_pch_rsrc Shared agent resources
  * @ingroup rcf_pch
  * @{
  *

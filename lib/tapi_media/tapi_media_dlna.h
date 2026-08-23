@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to DLNA media routines
  *
- * @defgroup tapi_media_dlna Test API to operate the DLNA media files
+ * @defgroup tapi_media_dlna DLNA media files
  * @ingroup tapi_media
  * @{
  *

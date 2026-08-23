@@ -26,7 +26,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup tapi_conf_pppoe PPPoE Server configuration
+ * @defgroup tapi_conf_pppoe PPPoE server
  * @ingroup tapi_conf_serv
  * @{
  *

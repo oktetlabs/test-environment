@@ -2,7 +2,7 @@
 /** @file
  * @brief DPDK statistics helper functions TAPI
  *
- * @defgroup tapi_dpdk_stats DPDK statistics helper functions TAPI
+ * @defgroup tapi_dpdk_stats DPDK statistics
  * @ingroup tapi_dpdk_grp
  * @{
  *

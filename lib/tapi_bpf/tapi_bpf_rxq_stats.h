@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to control rxq_stats BPF program.
  *
- * @defgroup tapi_bpf_rxq_stats Test API to control rxq_stats BPF program
+ * @defgroup tapi_bpf_rxq_stats rxq_stats BPF program
  * @ingroup tapi_bpf
  * @{
  *

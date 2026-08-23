@@ -14,7 +14,7 @@
 
 #include "logger_defs.h"
 
-/** @defgroup logger_api API: Logger
+/** @defgroup logger_api Logger API
  * In order to use @ref logger_api you need to include
  * <A href="logger__api_8h.html">logger_api.h</A> file into your sources.
  *

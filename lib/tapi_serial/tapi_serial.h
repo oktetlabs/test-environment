@@ -2,7 +2,7 @@
 /** @file
  * @brief DUT serial console TAPI
  *
- * @defgroup tapi_conf_serial DUT serial console access
+ * @defgroup tapi_conf_serial DUT serial console
  * @ingroup tapi_conf_diag
  * @{
  *

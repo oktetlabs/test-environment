@@ -21,7 +21,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_rte_flow TAPI for RTE FLOW API remote calls
+ * @defgroup te_lib_rpc_rte_flow RTE flow
  * @ingroup te_lib_rpc_rte
  * @{
  *

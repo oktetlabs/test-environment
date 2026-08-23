@@ -38,7 +38,7 @@ extern "C" {
 #define TAPI_CFG_MAX_IRQ_NAME 32
 
 /**
- * @defgroup tapi_conf_stats Network statistics access
+ * @defgroup tapi_conf_stats Interface statistics
  * @ingroup tapi_conf_link
  * @{
  */

@@ -2,7 +2,7 @@
 /** @file
  * @brief IP rule Configuration Model TAPI
  *
- * @defgroup tapi_conf_ip_rule IP rules configuration
+ * @defgroup tapi_conf_ip_rule IP rules
  * @ingroup tapi_conf_addr
  * @{
  *

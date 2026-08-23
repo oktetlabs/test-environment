@@ -3,7 +3,7 @@
 /** @file
  * @brief TAPI to manage Cisco TRex
  *
- * @defgroup tapi_trex TAPI to manage Cisco TRex
+ * @defgroup tapi_trex Cisco TRex
  * @ingroup tapi_tool_perf
  * @{
  *

@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to DLNA UPnP routines
  *
- * @defgroup tapi_upnp_cp Test API to operate the UPnP Control Point
+ * @defgroup tapi_upnp_cp UPnP control point
  * @ingroup tapi_upnp
  * @{
  *

@@ -12,7 +12,7 @@
 #define __TE_TAPI_RPCSOCK_MACROS_H__
 
 /**
- * @defgroup te_lib_rpcsock_macros Macros for socket API remote calls
+ * @defgroup te_lib_rpcsock_macros Socket call macros
  * @ingroup te_lib_rpc_io
  * @{
  *

@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API for RADIUS Server Configuration and RADIUS CSAP
  *
- * @defgroup tapi_radius RADIUS Server Configuration and RADIUS CSAP
+ * @defgroup tapi_radius RADIUS server and CSAP
  * @ingroup tapi_traffic
  * @{
  *

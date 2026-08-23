@@ -2,7 +2,7 @@
 /** @file
  * @brief Unix Kernel Logger
  *
- * @defgroup te_tools_te_kernel_log Unix Kernel Logger
+ * @defgroup te_tools_te_kernel_log Kernel log
  * @ingroup te_tools_logging
  * @{
  *

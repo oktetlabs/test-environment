@@ -3,7 +3,7 @@
 /** @file
  * @brief Test API to allocate L4 port
  *
- * @defgroup tapi_conf_l4_port Test API to allocate L4 port
+ * @defgroup tapi_conf_l4_port L4 port allocation
  * @ingroup tapi_conf_addr
  * @{
  *

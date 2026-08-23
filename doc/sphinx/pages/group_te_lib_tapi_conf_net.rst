@@ -3,11 +3,11 @@
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
   te-parent: te_ts
 
-.. index:: pair: group; Network topology configuration of Test Agents
+.. index:: pair: group; Network topology model
 .. _doxid-group__te__lib__tapi__conf__net:
 
-Network topology configuration of Test Agents
-=============================================
+Network topology model
+======================
 
 .. toctree::
 	:hidden:
@@ -46,11 +46,11 @@ Later the information about network interfaces can be used by test scenario to p
 Basic configuration tree nodes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-From test scenarios point of view network configuration can be analized with the help of functions exported by :ref:`Network topology configuration of Test Agents <doxid-group__tapi__conf__net>` library.
+From test scenarios point of view network configuration can be analized with the help of functions exported by :ref:`Network topology model <doxid-group__tapi__conf__net>` library.
 
 The library gets information from local configurator management tree that shall be prepared by hands for each physical set-up.
 
-Configuration nodes responsible for :ref:`Network topology configuration of Test Agents <doxid-group__tapi__conf__net>` are:
+Configuration nodes responsible for :ref:`Network topology model <doxid-group__tapi__conf__net>` are:
 
 * /net - root object of network configuration tree. Instance name represents network name - an arbitrary string that is associated with a group of nodes belonging to the network.
 
@@ -189,7 +189,7 @@ Please note that the only nodes we should take care of are:
 
 * /net_pool/entry/prefix.
 
-All the other nodes are tracked by :ref:`Network topology configuration of Test Agents <doxid-group__tapi__conf__net>` library internally.
+All the other nodes are tracked by :ref:`Network topology model <doxid-group__tapi__conf__net>` library internally.
 
 To specify pools of networks we would write something like the following in our :ref:`Configurator Configuration File <doxid-group__te__engine__conf_1te_engine_conf_file>`
 
@@ -241,7 +241,7 @@ To specify pools of networks we would write something like the following in our 
 
 To manipulate network topology and pools of subnetworks use:
 
-* :ref:`Network topology configuration of Test Agents <doxid-group__tapi__conf__net>`;
+* :ref:`Network topology model <doxid-group__tapi__conf__net>`;
 
 * :ref:`Manipulation of network address pools <doxid-group__tapi__conf__net__pool>`.
 

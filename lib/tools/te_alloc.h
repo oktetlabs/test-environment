@@ -3,7 +3,7 @@
 /** @file
  * @brief API to safely allocate memory
  *
- * @defgroup te_tools_te_alloc Safe memory allocation
+ * @defgroup te_tools_te_alloc Memory allocation
  * @ingroup te_tools_data
  * @{
  *

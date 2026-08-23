@@ -2,7 +2,7 @@
 /** @file
  * @brief API to operate the time
  *
- * @defgroup te_tools_te_time Date, time
+ * @defgroup te_tools_te_time Date and time
  * @ingroup te_tools_numeric
  * @{
  *

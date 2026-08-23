@@ -2,7 +2,7 @@
 /** @file
  * @brief Network Emulator configuration
  *
- * @defgroup tapi_conf_netem Network Emulator configuration
+ * @defgroup tapi_conf_netem Network emulator
  * @ingroup tapi_conf_link
  * @{
  *

@@ -2,7 +2,7 @@
 /** @file
  * @brief Machine interface data logging
  *
- * @defgroup te_tools_te_mi_log Machine interface data logging
+ * @defgroup te_tools_te_mi_log MI data logging
  * @ingroup te_tools_logging
  * @{
  *

@@ -2,7 +2,7 @@
 /** @file
  * @brief TE iSCSI stuff
  *
- * @defgroup te_tools_te_iscsi iSCSI
+ * @defgroup te_tools_te_iscsi iSCSI definitions
  * @ingroup te_tools_types
  * @{
  *

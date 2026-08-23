@@ -22,7 +22,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup tapi_conf_ovs PCI devices configuration of Test Agents
+ * @defgroup tapi_conf_ovs Open vSwitch
  * @ingroup tapi_conf_serv
  * @{
  */

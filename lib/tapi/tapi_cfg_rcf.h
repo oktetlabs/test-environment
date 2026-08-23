@@ -3,7 +3,7 @@
 /** @file
  * @brief RCF interface via CS
  *
- * @defgroup tapi_conf_rcf RCF interface via Configurator
+ * @defgroup tapi_conf_rcf RCF via Configurator
  * @ingroup tapi_conf_tree
  * @{
  *

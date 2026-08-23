@@ -2,7 +2,7 @@
 /** @file
  * @brief TAPI to handle RPC server job factory
  *
- * @defgroup tapi_job_factory_rpc RPC server job factory control (tapi_job_factory_rpc)
+ * @defgroup tapi_job_factory_rpc RPC job factory
  * @ingroup tapi_job
  * @{
  *

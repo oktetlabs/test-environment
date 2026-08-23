@@ -2,7 +2,7 @@
 /** @file
  * @brief Unix Test Agent serial console common tools
  *
- * @defgroup te_tools_te_serial_common Serial console common tools
+ * @defgroup te_tools_te_serial_common Common definitions
  * @ingroup te_tools_serial
  * @{
  *

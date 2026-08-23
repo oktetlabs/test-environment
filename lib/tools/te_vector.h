@@ -3,7 +3,7 @@
 /** @file
  * @brief Dynamic vectors.
  *
- * @defgroup te_tools_te_vec Dynamic vectors.
+ * @defgroup te_tools_te_vec Dynamic vectors
  * @ingroup te_tools_data
  * @{
  *

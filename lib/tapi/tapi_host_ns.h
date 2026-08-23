@@ -2,7 +2,7 @@
 /** @file
  * @brief Configuration TAPI to work with /local/host subtree
  *
- * @defgroup tapi_host_ns Agents, namespaces and interfaces relations
+ * @defgroup tapi_host_ns Agent, namespace and interface map
  * @ingroup tapi_conf_topo
  * @{
  *

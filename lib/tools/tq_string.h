@@ -2,7 +2,7 @@
 /** @file
  * @brief Tail queue of strings (char *).
  *
- * @defgroup te_tools_tq_string Tail queue of strings
+ * @defgroup te_tools_tq_string String tail queues
  * @ingroup te_tools_text
  * @{
  *

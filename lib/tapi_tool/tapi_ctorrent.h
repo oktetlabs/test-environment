@@ -2,7 +2,7 @@
 /** @file
  * @brief TAPI to manage ctorrent
  *
- * @defgroup tapi_ctorrent TAPI to manage ctorrent (tapi_ctorrent)
+ * @defgroup tapi_ctorrent ctorrent
  * @ingroup tapi_tool_system
  * @{
  *

@@ -2,7 +2,7 @@
 /** @file
  * @brief redis-benchmark tool TAPI
  *
- * @defgroup tapi_redis_benchmark redis-benchmark tool TAPI (tapi_redis_benchmark)
+ * @defgroup tapi_redis_benchmark redis-benchmark
  * @ingroup tapi_tool_service
  * @{
  *

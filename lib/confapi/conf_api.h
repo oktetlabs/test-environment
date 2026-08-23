@@ -52,7 +52,7 @@
 extern "C" {
 #endif
 
-/** @defgroup confapi_base API: Configurator
+/** @defgroup confapi_base Configurator API
  * @ingroup tapi_conf
  * @{
  */
@@ -848,7 +848,7 @@ extern te_errno cfg_get_addr_sync(struct sockaddr **val,
 
 /**@}*/
 
-/** @defgroup confapi_base_sync Synchronization configuration tree with Test Agent
+/** @defgroup confapi_base_sync Synchronising with an agent
  * @ingroup confapi_base
  * @{
  *

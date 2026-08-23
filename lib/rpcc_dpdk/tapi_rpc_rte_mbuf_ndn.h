@@ -25,7 +25,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_rte_mbuf_ndn TAPI for RTE mbuf layer API remote calls
+ * @defgroup te_lib_rpc_rte_mbuf_ndn RTE mbuf CSAP layer
  * @ingroup te_lib_rpc_rte
  * @{
  *

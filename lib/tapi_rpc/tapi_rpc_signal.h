@@ -24,7 +24,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_signal TAPI for signal and signal sets remote calls
+ * @defgroup te_lib_rpc_signal Signals
  * @ingroup te_lib_rpc_sys
  * @{
  */

@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup tapi_conf_arl ARL table configuration
+ * @defgroup tapi_conf_arl ARL table
  * @ingroup tapi_conf_diag
  * @{
  */

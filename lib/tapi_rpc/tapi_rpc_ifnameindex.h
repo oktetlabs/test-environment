@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_ifnameindex TAPI for interface name/index calls
+ * @defgroup te_lib_rpc_ifnameindex Interface name and index
  * @ingroup te_lib_rpc_sys
  * @{
  *

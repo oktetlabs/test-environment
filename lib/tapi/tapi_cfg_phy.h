@@ -22,7 +22,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup tapi_conf_phy Ethernet PHY configuration
+ * @defgroup tapi_conf_phy Ethernet PHY
  * @ingroup tapi_conf_link
  * @{
  *

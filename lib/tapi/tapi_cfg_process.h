@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to configure processes.
  *
- * @defgroup tapi_conf_process Processes configuration
+ * @defgroup tapi_conf_process Processes
  * @ingroup tapi_conf_host
  * @{
  *

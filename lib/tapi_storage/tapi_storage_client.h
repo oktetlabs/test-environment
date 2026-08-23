@@ -2,7 +2,7 @@
 /** @file
  * @brief Generic test API to storage client routines
  *
- * @defgroup tapi_storage_client Test API to control the storage client
+ * @defgroup tapi_storage_client Storage client
  * @ingroup tapi_storage
  * @{
  *

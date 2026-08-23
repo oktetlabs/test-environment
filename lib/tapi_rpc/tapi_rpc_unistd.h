@@ -36,7 +36,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_unistd TAPI for some file operations calls
+ * @defgroup te_lib_rpc_unistd File operations
  * @ingroup te_lib_rpc_io
  * @{
  */

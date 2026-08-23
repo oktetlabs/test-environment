@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to work with the files on the engine and TA.
  *
- * @defgroup ts_tapi_file Engine and TA files management
+ * @defgroup ts_tapi_file Engine and agent files
  * @ingroup tapi_scenario
  * @{
  *

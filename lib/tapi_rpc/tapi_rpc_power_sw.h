@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_power_sw TAPI for remote calls of power switch
+ * @defgroup te_lib_rpc_power_sw Power switch
  * @ingroup te_lib_rpc_other
  * @{
  *

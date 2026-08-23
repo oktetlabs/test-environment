@@ -6,8 +6,8 @@
 .. toctree::
 	:hidden:
 
-	group_ta_core_watcher.rst
-	/generated/group_rcf_ch.rst
 	group_te_agents_conf.rst
+	/generated/group_rcf_ch.rst
+	group_ta_core_watcher.rst
 	/generated/group_rcf_pch.rst
 	group_te_agents_unix.rst

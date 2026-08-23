@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_rte_ethdev TAPI for RTE Ethernet Device API remote calls
+ * @defgroup te_lib_rpc_rte_ethdev RTE ethdev
  * @ingroup te_lib_rpc_rte
  * @{
  *

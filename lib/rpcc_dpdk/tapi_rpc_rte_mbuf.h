@@ -22,7 +22,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_rte_mbuf TAPI for RTE MBUF API remote calls
+ * @defgroup te_lib_rpc_rte_mbuf RTE mbuf
  * @ingroup te_lib_rpc_rte
  * @{
  *

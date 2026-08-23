@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to configure sniffers.
  *
- * @defgroup tapi_conf_sniffer Network sniffers configuration
+ * @defgroup tapi_conf_sniffer Sniffers
  * @ingroup tapi_conf_diag
  * @{
  *

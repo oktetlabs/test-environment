@@ -2,7 +2,7 @@
 /** @file
  * @brief ping tool TAPI
  *
- * @defgroup tapi_ping ping tool TAPI (tapi_ping)
+ * @defgroup tapi_ping ping
  * @ingroup tapi_tool_perf
  * @{
  *

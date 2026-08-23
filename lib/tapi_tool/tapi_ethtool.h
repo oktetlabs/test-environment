@@ -2,7 +2,7 @@
 /** @file
  * @brief ethtool tool TAPI
  *
- * @defgroup tapi_ethtool ethtool tool TAPI (tapi_ethtool)
+ * @defgroup tapi_ethtool ethtool
  * @ingroup tapi_tool_system
  * @{
  *

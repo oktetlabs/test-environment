@@ -18,7 +18,7 @@ Introduction
 
 In the context of TE, Remote Procedure Calls functionality provides the ability to invoke a function on a Test Agent side. It can be obvious, but anyway it is worth nothing that in order to call a function on Test Agent a special action shall be done to tell Agent to treat that function as a function for RPC calls. I.e. RPC does not allow any function on Test Agent to be called, but only a set of functions that were told to be RPC aware.
 
-On Test Engine side RPC functionlity is exported by RCF RPC library: :ref:`API: RCF RPC <doxid-group__te__lib__rcfrpc>`, but end users should utilize and if necessary enhance upper layer API exported by :ref:`TAPI: Remote Procedure Calls (RPC) <doxid-group__te__lib__rpc__tapi>`.
+On Test Engine side RPC functionlity is exported by RCF RPC library: :ref:`API: RCF RPC <doxid-group__te__lib__rcfrpc>`, but end users should utilize and if necessary enhance upper layer API exported by :ref:`RPC call wrappers <doxid-group__te__lib__rpc__tapi>`.
 
 Here is the diagram of libraries and TE components that take part in RPC data flow:
 
@@ -78,4 +78,4 @@ For more information on functions exported by RCF RPC library refer to :ref:`API
 TAPI for RPC
 ~~~~~~~~~~~~
 
-Test code should not use :ref:`rcf_rpc_call() <doxid-group__te__lib__rcfrpc_1ga3175cd6f2a0dce9edbc315c7ec1709af>` function directly, but instead it shall use functions exported by :ref:`TAPI: Remote Procedure Calls (RPC) <doxid-group__te__lib__rpc__tapi>`.
+Test code should not use :ref:`rcf_rpc_call() <doxid-group__te__lib__rcfrpc_1ga3175cd6f2a0dce9edbc315c7ec1709af>` function directly, but instead it shall use functions exported by :ref:`RPC call wrappers <doxid-group__te__lib__rpc__tapi>`.

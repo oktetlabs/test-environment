@@ -15,7 +15,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup ovs_flow_rule Open vSwitch flow rule handling
+ * @defgroup ovs_flow_rule Open vSwitch flow rules
  * @ingroup tapi_traffic
  * @{
  */

@@ -2,7 +2,7 @@
 /** @file
  * @brief Queuing Discipline configuration
  *
- * @defgroup tapi_conf_qdisc Queuing Discipline configuration
+ * @defgroup tapi_conf_qdisc Queuing disciplines
  * @ingroup tapi_conf_link
  * @{
  *

@@ -2,7 +2,7 @@
 /** @file
  * @brief Utility functions for YAML processing
  *
- * @defgroup te_tools_te_yaml YAML processing
+ * @defgroup te_tools_te_yaml YAML
  * @ingroup te_tools_serial_fmt
  * @{
  *

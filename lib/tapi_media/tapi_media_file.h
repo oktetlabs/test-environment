@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to media file routines
  *
- * @defgroup tapi_media_file Test API to operate the media files
+ * @defgroup tapi_media_file Media files
  * @ingroup tapi_media
  * @{
  *

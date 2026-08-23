@@ -48,7 +48,7 @@ extern int tapi_cfg_get_son_mac(const char *father, const char *subid,
 /**@} <!-- END tapi_conf_iface --> */
 
 /**
- * @defgroup tapi_conf_switch Network Switch configuration
+ * @defgroup tapi_conf_switch Network switch
  * @ingroup tapi_conf_topo
  * @{
  *
@@ -102,7 +102,7 @@ extern int tapi_cfg_switch_vlan_del_port(const char *ta_name,
 /**@} <!-- END tapi_conf_switch --> */
 
 /**
- * @defgroup tapi_conf_route Routing Table configuration
+ * @defgroup tapi_conf_route Routing table
  * @ingroup tapi_conf_addr
  * @{
  */
@@ -514,7 +514,7 @@ extern te_errno tapi_cfg_add_route2(const char *ta,
 /**@} <!-- END tapi_conf_route --> */
 
 /**
- * @defgroup tapi_conf_neigh Neighbour table configuration
+ * @defgroup tapi_conf_neigh Neighbour table
  * @ingroup tapi_conf_addr
  * @{
  *
@@ -644,7 +644,7 @@ extern te_errno tapi_cfg_add_neigh_proxy(const char *ta, const char *ifname,
 /**@} <!-- END tapi_conf_neigh --> */
 
 /**
- * @defgroup tapi_conf_iface Network Interface configuration
+ * @defgroup tapi_conf_iface Interface hardware addresses
  * @ingroup tapi_conf_link
  * @{
  */
@@ -840,7 +840,7 @@ extern te_errno tapi_cfg_get_if_last_ancestor(const char *ta,
 /**@} <!-- END tapi_conf_iface --> */
 
 /**
- * @defgroup tapi_conf_net_pool Manipulation of network address pools
+ * @defgroup tapi_conf_net_pool Address pools
  * @ingroup tapi_conf_addr
  * @{
  *

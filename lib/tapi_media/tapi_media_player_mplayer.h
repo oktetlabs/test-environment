@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to 'mplayer' routines
  *
- * @defgroup tapi_media_player_mplayer Test API to control the mplayer media player
+ * @defgroup tapi_media_player_mplayer mplayer
  * @ingroup tapi_media
  * @{
  *

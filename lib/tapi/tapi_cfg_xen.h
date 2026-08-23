@@ -21,7 +21,7 @@ extern "C" {
 struct sockaddr; /** Forward declaration to avoid header inclusion */
 
 /**
- * @defgroup tapi_conf_xen XEN configuration
+ * @defgroup tapi_conf_xen XEN
  * @ingroup tapi_conf_serv
  * @{
  */

@@ -3,11 +3,11 @@
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
   te-parent: te_agents
 
-.. index:: pair: group; Test Agents: Unix Test Agent
+.. index:: pair: group; Unix Test Agent
 .. _doxid-group__te__agents__unix:
 
-Test Agents: Unix Test Agent
-============================
+Unix Test Agent
+===============
 
 .. toctree::
 	:hidden:
@@ -78,5 +78,5 @@ The sources of UNIX Test Agent located under agents/unix directory of TE tree:
 
   * agents/unix/conf/util - support of configuration models of external utilities integrated in TE (sniffer);
 
-  Please refer to :ref:`Test Agents: Creating new configuration nodes in Test Agent <doxid-group__te__agents__conf>` for the details on how to add new configuration nodes into :ref:`Test Agents <doxid-group__te__agents>`.
+  Please refer to :ref:`Adding configuration nodes <doxid-group__te__agents__conf>` for the details on how to add new configuration nodes into :ref:`Test Agents <doxid-group__te__agents>`.
 

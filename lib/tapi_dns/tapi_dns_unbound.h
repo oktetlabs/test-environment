@@ -3,7 +3,7 @@
 /** @file
  * @brief Unbound DNS server tool TAPI.
  *
- * @defgroup tapi_dns_unbound unbound DNS server tool TAPI (tapi_dns_unbound)
+ * @defgroup tapi_dns_unbound unbound DNS server
  * @ingroup tapi_tool_service
  * @{
  *

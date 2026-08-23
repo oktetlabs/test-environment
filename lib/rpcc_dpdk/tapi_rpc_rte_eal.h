@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_rte_eal TAPI for RTE EAL API remote calls
+ * @defgroup te_lib_rpc_rte_eal RTE EAL
  * @ingroup te_lib_rpc_rte
  * @{
  *

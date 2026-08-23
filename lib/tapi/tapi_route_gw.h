@@ -2,7 +2,7 @@
 /** @file
  * @brief Gateway host configuration API
  *
- * @defgroup ts_tapi_route_gw Control network channel using a gateway
+ * @defgroup ts_tapi_route_gw Route gateway control
  * @ingroup tapi_netenv
  * @{
  *

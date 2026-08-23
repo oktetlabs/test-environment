@@ -27,7 +27,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_dirent TAPI for directory operation calls
+ * @defgroup te_lib_rpc_dirent Directory operations
  * @ingroup te_lib_rpc_io
  * @{
  */

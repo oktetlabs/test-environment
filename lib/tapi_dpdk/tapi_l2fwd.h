@@ -2,7 +2,7 @@
 /** @file
  * @brief TAPI functions to support l2fwd
  *
- * @defgroup tapi_l2fwd TAPI functions to support l2fwd
+ * @defgroup tapi_l2fwd l2fwd
  * @ingroup tapi_dpdk_grp
  * @{
  *

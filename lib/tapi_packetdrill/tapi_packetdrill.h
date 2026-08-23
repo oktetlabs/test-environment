@@ -2,7 +2,7 @@
 /** @file
  * @brief Generic Test API for packetdrill test tool
  *
- * @defgroup tapi_packetdrill Test API to use packetdrill test tool
+ * @defgroup tapi_packetdrill packetdrill
  * @ingroup tapi_tool_system
  * @{
  *

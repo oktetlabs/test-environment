@@ -6,8 +6,8 @@
 .. toctree::
 	:hidden:
 
+	group_te_cmd_monitor.rst
 	/generated/group_logger_api.rst
 	/generated/group_te_log_stack.rst
-	group_te_cmd_monitor.rst
 	group_sniffer.rst
 	page_loggerten.rst

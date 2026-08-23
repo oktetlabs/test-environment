@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to DLNA UPnP routines
  *
- * @defgroup tapi_upnp_common Test API for DLNA UPnP commons
+ * @defgroup tapi_upnp_common UPnP common definitions
  * @ingroup tapi_upnp
  * @{
  *

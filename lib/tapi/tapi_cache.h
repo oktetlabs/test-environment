@@ -2,7 +2,7 @@
 /** @file
  * @brief API to deal with cached data
  *
- * @defgroup tapi_cache Test API to handle a cache
+ * @defgroup tapi_cache Configuration cache
  * @ingroup tapi_conf_tree
  * @{
  *

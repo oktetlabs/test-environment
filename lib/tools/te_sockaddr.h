@@ -3,7 +3,7 @@
 /** @file
  * @brief Functions to opearate generic "struct sockaddr"
  *
- * @defgroup te_tools_te_sockaddr Sockaddr
+ * @defgroup te_tools_te_sockaddr struct sockaddr
  * @ingroup te_tools_types
  * @{
  *

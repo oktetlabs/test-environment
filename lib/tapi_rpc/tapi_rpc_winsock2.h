@@ -21,7 +21,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_winsock2 TAPI for remote calls of Winsock2-specific routines
+ * @defgroup te_lib_rpc_winsock2 Winsock2
  * @ingroup te_lib_rpc_other
  * @{
  */

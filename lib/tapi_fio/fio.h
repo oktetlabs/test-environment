@@ -2,7 +2,7 @@
 /** @file
  * @brief FIO Test API for fio tool routine
  *
- * @defgroup tapi_fio_fio Control a FIO tool
+ * @defgroup tapi_fio_fio fio internals
  * @ingroup tapi_fio
  * @{
  *

@@ -3,7 +3,7 @@
 /** @file
  * @brief Test API to configure bridge.
  *
- * @defgroup tapi_conf_bridge Bridge configuration
+ * @defgroup tapi_conf_bridge Bridges
  * @ingroup tapi_conf_link
  * @{
  *

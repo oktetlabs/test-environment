@@ -2,7 +2,7 @@
 /** @file
  * @brief OpenSSH tools and utilities TAPI
  *
- * @defgroup tapi_ssh OpenSSH tools and utilities TAPI (tapi_ssh)
+ * @defgroup tapi_ssh OpenSSH
  * @ingroup tapi_tool_system
  * @{
  *

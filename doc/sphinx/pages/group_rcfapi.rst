@@ -3,11 +3,11 @@
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
   te-parent: te_engine_rcf
 
-.. index:: pair: group; API Usage: Remote Control Facility API
+.. index:: pair: group; Using the RCF API
 .. _doxid-group__rcfapi:
 
-API Usage: Remote Control Facility API
-======================================
+Using the RCF API
+=================
 
 .. include:: _toctree/rcfapi.inc
 

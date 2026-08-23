@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to configure L2TP.
  *
- * @defgroup tapi_conf_l2tp L2TP configuration
+ * @defgroup tapi_conf_l2tp L2TP
  * @ingroup tapi_conf_serv
  * @{
  *

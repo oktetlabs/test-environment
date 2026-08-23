@@ -26,7 +26,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup tapi_conf_dhcp_serv DHCP Server configuration
+ * @defgroup tapi_conf_dhcp_serv DHCP server
  * @ingroup tapi_conf_serv
  * @{
  *

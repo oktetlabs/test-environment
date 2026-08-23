@@ -353,7 +353,7 @@ You would like to test communication between end point pairs:
 
 * Windows and Linux.
 
-The API to be tested is the same on all platforms, which means we can use the same test suite for each pair. The only thing specific for our test set-up is where to run Test Agent that supports interface to be tested (assume we exported interface to be tested via :ref:`TAPI: Remote Procedure Calls (RPC) <doxid-group__te__lib__rpc__tapi>`).
+The API to be tested is the same on all platforms, which means we can use the same test suite for each pair. The only thing specific for our test set-up is where to run Test Agent that supports interface to be tested (assume we exported interface to be tested via :ref:`RPC call wrappers <doxid-group__te__lib__rpc__tapi>`).
 
 For testing BSD vs Windows configuration we should use the following set-up:
 

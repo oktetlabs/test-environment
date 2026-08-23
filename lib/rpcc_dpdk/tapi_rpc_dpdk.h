@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_dpdk TAPI for helper DPDK functions
+ * @defgroup te_lib_rpc_dpdk DPDK helpers
  * @ingroup te_lib_rpc_rte
  * @{
  *

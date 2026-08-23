@@ -6,7 +6,7 @@
  * Ring buffers are an efficient way to store
  * N last items from a continuous stream of data.
  *
- * @defgroup te_tools_te_ring Ring buffers.
+ * @defgroup te_tools_te_ring Ring buffers
  * @ingroup te_tools_data
  * @{
  */

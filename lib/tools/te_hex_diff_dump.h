@@ -3,7 +3,7 @@
 /** @file
  * @brief API to log a diff between two binary blocks of memory
  *
- * @defgroup te_tools_te_hex_diff_dump HEX diff dump API
+ * @defgroup te_tools_te_hex_diff_dump Hex diff dump
  * @ingroup te_tools_logging
  * @{
  *

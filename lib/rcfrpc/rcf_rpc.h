@@ -35,7 +35,7 @@
 
 
 /**
- * @defgroup te_lib_rcfrpc API: RCF RPC
+ * @defgroup te_lib_rcfrpc RCF RPC API
  * @ingroup te_lib_rpc
  * @{
  */

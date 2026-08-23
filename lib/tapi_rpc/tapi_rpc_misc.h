@@ -48,7 +48,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_misc TAPI for miscellaneous remote calls
+ * @defgroup te_lib_rpc_misc Miscellaneous calls
  * @ingroup te_lib_rpc_other
  * @{
  */

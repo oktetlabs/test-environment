@@ -3,11 +3,11 @@
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
   te-parent: te_lib_rpc
 
-.. index:: pair: group; TAPI: Remote Procedure Calls (RPC)
+.. index:: pair: group; RPC call wrappers
 .. _doxid-group__te__lib__rpc__tapi:
 
-TAPI: Remote Procedure Calls (RPC)
-==================================
+RPC call wrappers
+=================
 
 .. include:: _toctree/te_lib_rpc_tapi.inc
 

@@ -2,7 +2,7 @@
 /** @file
  * @brief Wrapper for Google Test
  *
- * @defgroup tapi_gtest GTest support
+ * @defgroup tapi_gtest GTest
  * @ingroup tapi_tool_system
  * @{
  *

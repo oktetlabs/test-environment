@@ -20,7 +20,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_lib_rpc_netconf TAPI for libnetconf client functions
+ * @defgroup te_lib_rpc_netconf libnetconf client
  * @ingroup te_lib_rpc_other
  * @{
  *

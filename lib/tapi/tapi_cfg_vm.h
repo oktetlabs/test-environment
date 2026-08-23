@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to configure virtual machines.
  *
- * @defgroup tapi_conf_vm Virtual machines configuration
+ * @defgroup tapi_conf_vm Virtual machines
  * @ingroup tapi_conf_serv
  * @{
  *

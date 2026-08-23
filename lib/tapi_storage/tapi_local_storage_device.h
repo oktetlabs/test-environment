@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to storage device routines
  *
- * @defgroup tapi_local_storage_device Test API to control the local storage device
+ * @defgroup tapi_local_storage_device Local storage device
  * @ingroup tapi_storage
  * @{
  *

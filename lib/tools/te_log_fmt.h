@@ -2,7 +2,7 @@
 /** @file
  * @brief TE log format string processing
  *
- * @defgroup te_tools_te_log_fmt Log format string processing
+ * @defgroup te_tools_te_log_fmt Log format strings
  * @ingroup te_tools_logging
  * @{
  *

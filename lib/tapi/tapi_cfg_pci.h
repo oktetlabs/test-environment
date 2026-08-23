@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup tapi_conf_pci PCI devices configuration of Test Agents
+ * @defgroup tapi_conf_pci PCI devices
  * @ingroup tapi_conf_host
  * @{
  *

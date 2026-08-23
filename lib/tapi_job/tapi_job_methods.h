@@ -3,7 +3,7 @@
 /** @file
  * @brief Functions that TAPI Job backend might implement
  *
- * @defgroup tapi_job_methods TAPI Job Methods (tapi_job_methods)
+ * @defgroup tapi_job_methods Job methods
  * @ingroup tapi_job
  * @{
  *

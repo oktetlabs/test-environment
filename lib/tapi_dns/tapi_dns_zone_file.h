@@ -3,7 +3,7 @@
 /** @file
  * @brief DNS zone file generation tool TAPI.
  *
- * @defgroup tapi_dns_zone_file DNS zone file generation tool TAPI
+ * @defgroup tapi_dns_zone_file DNS zone files
  *           (tapi_dns_zone_file).
  * @ingroup tapi_tool_service
  * @{

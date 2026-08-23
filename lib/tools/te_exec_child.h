@@ -3,7 +3,7 @@
 /** @file
  * @brief API to execute a program in a child process
  *
- * @defgroup te_tools_te_exec_child Execute a program in a child process
+ * @defgroup te_tools_te_exec_child Child processes
  * @ingroup te_tools_process
  * @{
  *

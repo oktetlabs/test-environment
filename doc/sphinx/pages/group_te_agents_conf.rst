@@ -3,11 +3,11 @@
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
   te-parent: te_agents
 
-.. index:: pair: group; Test Agents: Creating new configuration nodes in Test Agent
+.. index:: pair: group; Adding configuration nodes
 .. _doxid-group__te__agents__conf:
 
-Test Agents: Creating new configuration nodes in Test Agent
-===========================================================
+Adding configuration nodes
+==========================
 
 .. toctree::
 	:hidden:
@@ -33,7 +33,7 @@ Configurator API exports functionality that makes it possible to:
 
 * Get the value of an object instance.
 
-Details of API usage can be found at :ref:`API Usage: Configurator API <doxid-group__confapi>` page.
+Details of API usage can be found at :ref:`Using the Configurator API <doxid-group__confapi>` page.
 
 Here we will explain how to add support for a new objects and instances on Test Agent side.
 

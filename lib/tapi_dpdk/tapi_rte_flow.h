@@ -2,7 +2,7 @@
 /** @file
  * @brief DPDK RTE flow helper functions TAPI
  *
- * @defgroup tapi_rte_flow DPDK RTE flow helper functions TAPI
+ * @defgroup tapi_rte_flow RTE flow helpers
  * @ingroup tapi_dpdk_grp
  * @{
  *

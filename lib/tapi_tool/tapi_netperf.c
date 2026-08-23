@@ -191,7 +191,7 @@ set_test_rr_opt(te_vec *args, int32_t response_size,
     return 0;
 }
 /**
- * @defgroup tapi_job_opt_formatting custom functions for argument formatting
+ * @defgroup tapi_job_opt_formatting functions for argument formatting
  * @{
  *
  * @param[in]     value     Pointer to an argument.

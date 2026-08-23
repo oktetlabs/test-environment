@@ -2,7 +2,7 @@
 /** @file
  * @brief Mapping of unix signal name->number and number->name
  *
- * @defgroup te_tools_te_sigmap Mapping of unix signal names and numbers
+ * @defgroup te_tools_te_sigmap Signal name mapping
  * @ingroup te_tools_process
  * @{
  *

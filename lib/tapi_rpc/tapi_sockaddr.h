@@ -2,7 +2,7 @@
 /** @file
  * @brief Functions to opearate with generic "struct sockaddr"
  *
- * @defgroup ts_tapi_sockaddr Tools to work with "struct sockaddr"
+ * @defgroup ts_tapi_sockaddr struct sockaddr helpers
  * @ingroup tapi_sockets
  * @{
  *

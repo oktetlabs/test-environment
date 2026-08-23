@@ -2,7 +2,7 @@
 /** @file
  * @brief mke2fs tool TAPI
  *
- * @defgroup tapi_mke2fs mke2fs tool tapi (tapi_mke2fs)
+ * @defgroup tapi_mke2fs mke2fs
  * @ingroup tapi_tool_storage
  * @{
  *

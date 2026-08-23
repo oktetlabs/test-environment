@@ -2,7 +2,7 @@
 /** @file
  * @brief Test API to get/set parameters in /proc/sys/
  *
- * @defgroup tapi_cfg_sys System parameters configuration
+ * @defgroup tapi_cfg_sys System parameters
  * @ingroup tapi_conf_host
  * @{
  *

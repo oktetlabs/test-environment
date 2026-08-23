@@ -21,7 +21,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup tapi_conf_key Agent keys subtree
+ * @defgroup tapi_conf_key Agent keys
  * @ingroup tapi_conf_tree
  * @{
  *

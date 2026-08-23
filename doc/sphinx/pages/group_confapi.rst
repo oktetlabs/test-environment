@@ -3,11 +3,11 @@
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
   te-parent: tapi_conf
 
-.. index:: pair: group; API Usage: Configurator API
+.. index:: pair: group; Using the Configurator API
 .. _doxid-group__confapi:
 
-API Usage: Configurator API
-===========================
+Using the Configurator API
+==========================
 
 .. _doxid-group__confapi_1confapi_introduction:
 

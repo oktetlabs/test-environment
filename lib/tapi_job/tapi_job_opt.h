@@ -4,7 +4,7 @@
  *
  * @brief generic tool options TAPI
  *
- * @defgroup tapi_job_opt Helper functions for handling options
+ * @defgroup tapi_job_opt Option handling helpers
  * @ingroup tapi_job
  * @{
  *
