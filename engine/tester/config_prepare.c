@@ -659,21 +659,65 @@ expand_check_item_cb(char *key, size_t idx, char *value, bool has_more,
 /**
  * Ask a single declared value whether it provides the name.
  *
+ * A value whose text comes from an enclosing run item cannot be asked,
+ * so exactly the names it could provide are accepted unresolved: the
+ * name of the argument and the names te_compound_build_name() joins to
+ * it with an underscore.
+ *
+ * @note The same function builds @c stem<idx> with no separator at all
+ *       for the second and later values of an unnamed compound, so a
+ *       reference like @c ${dev1} is not accepted here even though
+ *       @c dev might provide it at run time, and the run refuses to
+ *       start.  This is deliberate: accepting a digit suffix would
+ *       swallow real misspellings, and no package needs it.
+ *
  * The function complies with test_entity_value_enum_cb prototype.
  */
 static te_errno
 expand_check_value_cb(const test_entity_value *value, void *opaque)
 {
     expand_check_lookup *lookup = opaque;
+    const char *stem = lookup->va->name;
 
     if (value->plain != NULL)
-        te_compound_iterate_str(value->plain, expand_check_item_cb, lookup);
+    {
+        /*
+         * Exactly the names run.c resolves for this value are accepted
+         * here.  An unnamed item provides the name of the argument
+         * itself, while a named one provides the name of the field
+         * only, so a reference to a named compound as a whole is left
+         * unresolved here just as it is left unresolved at run time.
+         */
+        if (te_compound_iterate_str(value->plain, expand_check_item_cb,
+                                    lookup) == TE_ENODATA)
+        {
+            /*
+             * An empty value has no items at all, so run.c resolves
+             * nothing and the reference expands to an empty string,
+             * which is what an empty value is meant to give.  Accept
+             * the name here as well, so that it is not reported.
+             */
+            if (strcmp(lookup->name, stem) == 0)
+                lookup->provided = true;
+        }
+    }
+    else if (value->ext != NULL)
+    {
+        size_t len = strlen(stem);
+
+        if (strncmp(lookup->name, stem, len) == 0 &&
+            (lookup->name[len] == '\0' || lookup->name[len] == '_'))
+            lookup->provided = true;
+    }
 
     return 0;
 }
 
 /**
- * Ask an argument and its declared values whether they provide the name.
+ * Ask every declared value of an argument whether it provides the name.
+ *
+ * The name of the argument itself is not accepted here: whether it is a
+ * name at all depends on the value, and it is the value that says so.
  *
  * The function complies with test_var_arg_enum_cb prototype.
  */
@@ -681,9 +725,6 @@ static te_errno
 expand_check_arg_cb(const test_var_arg *va, void *opaque)
 {
     expand_check_lookup *lookup = opaque;
-
-    if (strcmp(lookup->name, va->name) == 0)
-        lookup->provided = true;
 
     lookup->va = va;
     (void)test_var_arg_enum_values(lookup->ri, va, expand_check_value_cb,

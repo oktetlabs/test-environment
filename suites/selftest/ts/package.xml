@@ -49,6 +49,12 @@
                 <value>10G</value>
                 <value>100G</value>
             </arg>
+            <arg name="dev">
+                <value>
+                    <field name="pci">0000:01:00.0</field>
+                    <field name="name">eth0</field>
+                </value>
+            </arg>
         </run>
 
         <run>
