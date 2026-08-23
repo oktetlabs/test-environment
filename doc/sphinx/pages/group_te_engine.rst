@@ -2,6 +2,7 @@
   SPDX-License-Identifier: Apache-2.0
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
   te-parent: te
+  te-order: 30
 
 .. index:: pair: group; Test Engine
 .. _doxid-group__te__engine:

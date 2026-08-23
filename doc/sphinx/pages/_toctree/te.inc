@@ -6,11 +6,10 @@
 .. toctree::
 	:hidden:
 
-	pages/group_te_tools.rst
-	pages/add_doc.rst
-	pages/selftest.rst
 	pages/group_te_user.rst
-	pages/group_terminology.rst
-	pages/group_te_agents.rst
-	pages/group_te_engine.rst
 	pages/group_te_ts.rst
+	pages/group_te_engine.rst
+	pages/group_te_agents.rst
+	pages/group_te_tools.rst
+	pages/group_te_contrib.rst
+	pages/group_terminology.rst
