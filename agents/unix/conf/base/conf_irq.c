@@ -622,23 +622,17 @@ irq_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
     return 0;
 }
 
-static rcf_pch_cfg_object node_irq_cpu = {
-    .sub_id = "cpu",
-    .get = (rcf_ch_cfg_get)irq_cpu_get,
-    .list = (rcf_ch_cfg_list)irq_cpu_list,
-};
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_irq_cpu, "cpu",
+                               NULL, NULL,
+                               irq_cpu_get, irq_cpu_list);
 
-static rcf_pch_cfg_object node_irq_name = {
-    .sub_id = "name",
-    .brother = &node_irq_cpu,
-    .get = (rcf_ch_cfg_get)irq_name_get,
-};
+RCF_PCH_CFG_NODE_RO(node_irq_name, "name",
+                    NULL, &node_irq_cpu,
+                    irq_name_get);
 
-static rcf_pch_cfg_object node_irq = {
-    .sub_id = "irq",
-    .son = &node_irq_name,
-    .list = (rcf_ch_cfg_list)irq_list,
-};
+RCF_PCH_CFG_NODE_COLLECTION(node_irq, "irq",
+                            &node_irq_name, NULL,
+                            NULL, NULL, irq_list, NULL);
 
 /**
  * Add a child nodes for IRQ subtree to interface object.
