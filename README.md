@@ -77,15 +77,15 @@ Dependencies are detailed in the TE build and test suite documentation.
 
 ### External libraries
 
-External libraries can be specified using the `TE_EXT_LIBS` macro in
-`builder.conf` (see comments in `engine/builder/builder.m4`).
+Prebuilt external libraries can be requested with the `TE_EXT_LIBS` macro in
+`builder.conf` (see comments in `engine/builder/builder.m4`). The build then
+downloads each of them over HTTP from the server named by the `TE_EXT_LIBS`
+environment variable, which you are expected to point at a host of your own.
+It defaults to an OKTET Labs host that is not reachable from outside.
 
-The `TE_EXT_LIB` environment variable should be set to
-`http://oktetlabs.ru/~tester/te`.
-
-External libraries should be placed in
-`http://oktetlabs.ru/~tester/te/<platform>`, e.g.,
-`http://oktetlabs.ru/~tester/te/i686-pc-linux-gnu`.
+The archives are looked up in `${TE_EXT_LIBS}/<platform>`, where `<platform>`
+is the second argument of the `TE_EXT_LIBS` macro, e.g.,
+`${TE_EXT_LIBS}/i686-pc-linux-gnu`.
 
 Libraries should be `*.tgz` archives that contain the `lib/` and `include/`
 directories. They are simply unpacked to the installation directory of the
