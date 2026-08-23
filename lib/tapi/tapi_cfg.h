@@ -51,6 +51,9 @@ extern int tapi_cfg_get_son_mac(const char *father, const char *subid,
  * @defgroup tapi_conf_switch Network Switch configuration
  * @ingroup tapi_conf
  * @{
+ *
+ * Configure the VLANs and port membership of a managed switch in the test
+ * bed.
  */
 
 /**
@@ -514,6 +517,9 @@ extern te_errno tapi_cfg_add_route2(const char *ta,
  * @defgroup tapi_conf_neigh Neighbour table configuration
  * @ingroup tapi_conf
  * @{
+ *
+ * Add, look up and remove entries in an agent's ARP and neighbour tables,
+ * including proxy entries.
  */
 
 /**
@@ -837,6 +843,9 @@ extern te_errno tapi_cfg_get_if_last_ancestor(const char *ta,
  * @defgroup tapi_conf_net_pool Manipulation of network address pools
  * @ingroup tapi_conf
  * @{
+ *
+ * Hand out addresses and subnets from the pools declared in the
+ * configuration, so that tests on the same test bed do not collide.
  */
 
 /**

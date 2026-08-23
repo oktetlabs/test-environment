@@ -28,6 +28,10 @@ extern "C" {
  * @defgroup te_lib_rpc_rte_mbuf_ndn TAPI for RTE mbuf layer API remote calls
  * @ingroup te_lib_rpc_tapi
  * @{
+ *
+ * Convert between RTE mbufs and the ASN.1 packet representation the
+ * Traffic Application Domain uses, so that a DPDK test can describe
+ * packets the same way a CSAP test does.
  */
 
 /**

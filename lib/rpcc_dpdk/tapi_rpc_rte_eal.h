@@ -26,6 +26,9 @@ extern "C" {
  * @defgroup te_lib_rpc_rte_eal TAPI for RTE EAL API remote calls
  * @ingroup te_lib_rpc_tapi
  * @{
+ *
+ * RTE EAL calls executed on a Test Agent: initialising the environment
+ * abstraction layer and querying the ports and lcores it found.
  */
 
 /**

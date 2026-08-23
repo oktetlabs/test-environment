@@ -22,6 +22,9 @@ extern "C" {
  * @defgroup te_lib_rpc_aio TAPI for asynchronous I/O calls
  * @ingroup te_lib_rpc_tapi
  * @{
+ *
+ * POSIX asynchronous I/O calls executed on a Test Agent: aio_read(),
+ * aio_write(), aio_suspend() and the rest of the family.
  */
 
 /**

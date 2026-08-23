@@ -31,6 +31,9 @@ extern "C" {
  * @defgroup tapi_conf_ip6 IPv6 specific configuration
  * @ingroup tapi_conf
  * @{
+ *
+ * IPv6-specific knobs of an agent's interfaces, such as accepting router
+ * advertisements and duplicate address detection.
  */
 
 /* IPv6 address length */

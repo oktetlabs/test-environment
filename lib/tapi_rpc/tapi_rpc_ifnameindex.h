@@ -26,6 +26,9 @@ extern "C" {
  * @defgroup te_lib_rpc_ifnameindex TAPI for interface name/index calls
  * @ingroup te_lib_rpc_tapi
  * @{
+ *
+ * if_nametoindex(), if_indextoname() and interface enumeration executed on
+ * a Test Agent.
  */
 
 /**

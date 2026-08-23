@@ -24,6 +24,9 @@ extern "C" {
  * @defgroup te_lib_rpc_rte_flow TAPI for RTE FLOW API remote calls
  * @ingroup te_lib_rpc_tapi
  * @{
+ *
+ * RTE flow calls executed on a Test Agent: validating, creating and
+ * destroying flow rules and reading their counters.
  */
 
 /**

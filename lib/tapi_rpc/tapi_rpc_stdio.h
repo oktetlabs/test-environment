@@ -24,6 +24,9 @@ extern "C" {
  * @defgroup te_lib_rpc_stdio TAPI for standard I/O calls
  * @ingroup te_lib_rpc_tapi
  * @{
+ *
+ * Standard I/O on a Test Agent: opening streams, reading and writing them,
+ * and running a shell command with its output captured.
  */
 
 /** Maximum resulting command length for rpc_shell() */

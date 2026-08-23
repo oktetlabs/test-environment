@@ -200,6 +200,9 @@ extern int power_sw(int type, const char *dev, int mask, int cmd);
 /** @defgroup rcf_ch_addr Command Handler: Symbol name and address resolver support
  * @ingroup rcf_ch
  * @{
+ *
+ * Command Handler support for resolving a symbol name to an address, and an
+ * address back to a name, in the Test Agent's own image.
  */
 
 /**

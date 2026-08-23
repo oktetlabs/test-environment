@@ -392,6 +392,9 @@ extern te_errno cfg_get_father(cfg_handle handle, cfg_handle *father);
 /** @defgroup confapi_base_access Configuration tree access operations
  * @ingroup confapi_base
  * @{
+ *
+ * Create, read, write and delete instances in the configuration tree, and
+ * look up the object an instance belongs to.
  */
 
 /**
@@ -848,6 +851,10 @@ extern te_errno cfg_get_addr_sync(struct sockaddr **val,
 /** @defgroup confapi_base_sync Synchronization configuration tree with Test Agent
  * @ingroup confapi_base
  * @{
+ *
+ * Bring the Configurator's copy of a subtree back in step with the Test
+ * Agent, in either direction, after something outside Configurator has
+ * changed the agent's state.
  */
 
 /**
@@ -894,6 +901,9 @@ extern te_errno cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
 /** @defgroup confapi_base_reboot Test Agent reboot
  * @ingroup confapi_base
  * @{
+ *
+ * Reboot a Test Agent and wait for it to come back, so that the
+ * configuration tree is restored afterwards.
  */
 
 /**
@@ -913,6 +923,9 @@ extern te_errno cfg_reboot_ta(const char *ta_name, bool restore,
 /** @defgroup confapi_base_backup Configuration backup manipulation
  * @ingroup confapi_base
  * @{
+ *
+ * Take a snapshot of the configuration tree and restore it later.  Backups
+ * are how the Tester returns the test bed to a known state between tests.
  */
 
 /**

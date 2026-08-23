@@ -23,6 +23,9 @@ extern "C" {
  * @defgroup te_lib_rpc_netconf TAPI for libnetconf client functions
  * @ingroup te_lib_rpc_tapi
  * @{
+ *
+ * libnetconf2 client calls executed on a Test Agent, for driving a NETCONF
+ * session against the device under test.
  */
 
 /**

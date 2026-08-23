@@ -21,6 +21,8 @@ extern "C" {
  * @defgroup tapi_conf_memory RAM configuration of Test Agents
  * @ingroup tapi_conf
  * @{
+ *
+ * Query how much RAM a Test Agent has and how much of it is in use.
  */
 
 /**

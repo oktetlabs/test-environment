@@ -25,6 +25,9 @@ extern "C" {
  * @defgroup te_lib_rpc_rte_mbuf TAPI for RTE MBUF API remote calls
  * @ingroup te_lib_rpc_tapi
  * @{
+ *
+ * RTE mbuf calls executed on a Test Agent, for building and inspecting the
+ * packet buffers a DPDK test sends and receives.
  */
 
 /**

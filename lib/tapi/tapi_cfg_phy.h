@@ -25,6 +25,9 @@ extern "C" {
  * @defgroup tapi_conf_phy Ethernet PHY configuration
  * @ingroup tapi_conf
  * @{
+ *
+ * Read and set the physical layer settings of an interface: speed, duplex,
+ * autonegotiation and link state.
  */
 
 /* Time to sleep after PHY properties has been changed */

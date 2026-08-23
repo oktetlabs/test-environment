@@ -6,6 +6,9 @@
  * @defgroup tapi_conf_rcf RCF interface via Configurator
  * @ingroup tapi_conf
  * @{
+ *
+ * Reach RCF through the configuration tree: add and remove agents at run
+ * time, and inspect the ones already running.
  */
 
 #ifndef __TE_TAPI_CFG_RCF_H__

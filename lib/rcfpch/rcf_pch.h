@@ -31,6 +31,10 @@ extern "C" {
  * @defgroup rcf_pch Test Agents: Portable Commands Handler
  * @ingroup te_agents
  * @{
+ *
+ * The portable half of the Command Handler: the ready-made command loop and
+ * dispatch a Test Agent links against, so that a port only has to supply
+ * what is genuinely platform-specific.
  */
 
 #define RCF_PCH_MAX_ID_LEN 128
@@ -322,6 +326,9 @@ extern te_errno rcf_pch_del_node(rcf_pch_cfg_object *node);
  * @defgroup rcf_pch_rsrc API: Shared TA resources
  * @ingroup rcf_pch
  * @{
+ *
+ * Lock the resources an agent shares between RPC servers - interfaces, PCI
+ * devices, ports - so that two tests cannot claim the same one at once.
  */
 
 /**

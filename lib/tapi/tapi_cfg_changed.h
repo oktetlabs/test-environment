@@ -55,6 +55,9 @@ extern "C" {
  * @defgroup tapi_conf_changed Data change tracking
  * @ingroup tapi_conf
  * @{
+ *
+ * Record which parts of the configuration a test has touched, so that
+ * cleanup can put back exactly what was changed and nothing else.
  */
 
 /**

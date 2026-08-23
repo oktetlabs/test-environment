@@ -244,7 +244,11 @@ extern rpc_socket_domain domain_h2rpc(int domain);
 
 /**
  * @defgroup rpc_socket_addr_family TA-independent address families
+ * @ingroup te_lib_rpc
  * @{
+ *
+ * Address family constants in a form that survives the trip between engine
+ * and agent, whose native numbering need not agree.
  */
 
 /**

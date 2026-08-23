@@ -28,6 +28,9 @@ extern "C" {
  * @defgroup tapi_conf_local Local subtree access
  * @ingroup tapi_conf
  * @{
+ *
+ * The /local: subtree, which holds values a test wants Configurator to keep
+ * for it without any of them reaching a Test Agent.
  */
 
 /**

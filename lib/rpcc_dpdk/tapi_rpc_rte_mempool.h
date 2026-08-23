@@ -22,6 +22,9 @@ extern "C" {
  * @defgroup te_lib_rpc_rte_mempool TAPI for RTE MEMPOOL API remote calls
  * @ingroup te_lib_rpc_tapi
  * @{
+ *
+ * RTE mempool calls executed on a Test Agent: creating pools and taking
+ * objects from them.
  */
 
 /**

@@ -15,6 +15,10 @@
  * @defgroup te_lib_rpcsock_macros Macros for socket API remote calls
  * @ingroup te_lib_rpc_tapi
  * @{
+ *
+ * Wrappers around the socket RPC calls that check the result and fail the
+ * test on error, so that a scenario reads as a sequence of operations
+ * rather than of error checks.
  */
 
 #ifndef MACRO_ERROR_EXIT

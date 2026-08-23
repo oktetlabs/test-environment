@@ -128,6 +128,9 @@ extern void rcf_ch_unlock(void);
 /** @defgroup rcf_ch_reboot Command Handler: Reboot and shutdown support
  * @ingroup rcf_ch
  * @{
+ *
+ * Command Handler entry points a Test Agent implements to shut itself down
+ * or reboot the host it serves.
  */
 
 /**
@@ -234,6 +237,9 @@ extern int rcf_ch_configure(struct rcf_comm_connection *handle,
 /** @defgroup rcf_ch_var Command Handler: Variables support
  * @ingroup rcf_ch
  * @{
+ *
+ * Command Handler entry points for reading and writing the variables a Test
+ * Agent exports.
  */
 
 /**
@@ -287,6 +293,9 @@ extern int rcf_ch_vwrite(struct rcf_comm_connection *handle,
 /** @defgroup rcf_ch_file Command Handler: File manipulation support
  * @ingroup rcf_ch
  * @{
+ *
+ * Command Handler entry points for transferring files to and from a Test
+ * Agent, or the NUT it serves.
  */
 
 /**
@@ -674,6 +683,9 @@ extern int rcf_ch_trpoll_cancel(struct rcf_comm_connection *handle,
 /** @defgroup rcf_ch_func Command Handler: Function call support
  * @ingroup rcf_ch
  * @{
+ *
+ * Command Handler entry points for calling a routine in the Test Agent's
+ * address space, in the current process or in a new thread or process.
  */
 
 /**

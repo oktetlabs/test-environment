@@ -66,6 +66,9 @@ extern te_errno tapi_cfg_base_get_ta_uname(const char *ta,
  * @defgroup tapi_conf_base_net Network Base configuration
  * @ingroup tapi_conf
  * @{
+ *
+ * Read and change the basic network settings of a Test Agent: interface
+ * addresses, link state, MTU and the like.
  */
 
 /** MAC VLAN interface mode: don't talk to other macvlans. */

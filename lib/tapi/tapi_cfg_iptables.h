@@ -26,6 +26,8 @@ extern "C" {
  * @defgroup tapi_conf_iptable iptables configuration
  * @ingroup tapi_conf
  * @{
+ *
+ * Add, list and flush iptables rules and chains on a Test Agent.
  */
 
 /* Maximum length of iptables command string */

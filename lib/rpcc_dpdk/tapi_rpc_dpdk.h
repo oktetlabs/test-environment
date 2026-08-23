@@ -22,6 +22,9 @@ extern "C" {
  * @defgroup te_lib_rpc_dpdk TAPI for helper DPDK functions
  * @ingroup te_lib_rpc_tapi
  * @{
+ *
+ * Helper calls around the DPDK RPC family: mbuf comparison, packet
+ * matching and other operations that do not belong to one RTE library.
  */
 
 /**

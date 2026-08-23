@@ -24,6 +24,8 @@ extern "C" {
  * @defgroup te_lib_rpc_rte_ring TAPI for RTE ring API remote calls
  * @ingroup te_lib_rpc_tapi
  * @{
+ *
+ * RTE ring calls executed on a Test Agent.
  */
 
 /**

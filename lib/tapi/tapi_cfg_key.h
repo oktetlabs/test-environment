@@ -24,6 +24,9 @@ extern "C" {
  * @defgroup tapi_conf_key Agent keys subtree
  * @ingroup tapi_conf
  * @{
+ *
+ * Generate, inspect and remove cryptographic keys on a Test Agent, and copy
+ * the public part of a key to the hosts that need to trust it.
  */
 
 /** Support key managers */

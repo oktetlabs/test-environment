@@ -6,6 +6,9 @@
  * @defgroup tapi_conf_l4_port Test API to allocate L4 port
  * @ingroup tapi_conf
  * @{
+ *
+ * Allocate TCP and UDP port numbers that no other test is using, either
+ * anywhere on an agent or from a given range.
  */
 
 #ifndef __TE_TAPI_CFG_L4_PORT_H__

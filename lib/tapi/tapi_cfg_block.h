@@ -21,6 +21,9 @@ extern "C" {
  * @defgroup tapi_conf_block Block devices subtree
  * @ingroup tapi_conf
  * @{
+ *
+ * Enumerate the block devices an agent exposes and check which of them are
+ * free to be used by a test.
  */
 
 /**

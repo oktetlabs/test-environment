@@ -22,6 +22,9 @@ extern "C" {
  * @defgroup tapi_conf_pci PCI devices configuration of Test Agents
  * @ingroup tapi_conf
  * @{
+ *
+ * Find the PCI devices of a Test Agent, learn which driver each is bound to
+ * and rebind it - the usual first step of a DPDK test.
  */
 
 /** Driver type */
