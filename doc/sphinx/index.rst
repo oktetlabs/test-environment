@@ -172,7 +172,6 @@ Apart from main components, TE provides the following set of tools:
 |		:ref:`iSCSI<doxid-group__te__tools__te__iscsi>`
 |	:ref:`TE: User Guide<doxid-group__te__user>`
 |		:ref:`Network namespaces<doxid-group__te__netns>`
-|		:ref:`TE Config Files Basics<doxid-group__te__user__run__details>`
 |	:ref:`Terminology<doxid-group__terminology>`
 |	:ref:`Test Agents<doxid-group__te__agents>`
 |		:ref:`Test Agents: Command Handler<doxid-group__rcf__ch>`
