@@ -1,6 +1,7 @@
 ..
   SPDX-License-Identifier: Apache-2.0
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+  te-parent: kernel_log
 
 .. index:: pair: group; Console Log Level Configuration
 .. _doxid-group__console__ll:

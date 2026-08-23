@@ -124,8 +124,15 @@ html_logo = 'static/image/te-logo.png'
 html_theme_options = {
     'logo_only': True,
     'style_nav_header_background': '#fcfcfc',
+    # Show page titles in the sidebar, not the headings inside a page - the
+    # right-hand "On this page" panel already covers those.
     'titles_only': True,
-    'collapse_navigation': False,
+    # The API tree is several hundred pages, so keep everything off the
+    # current path folded away...
+    'collapse_navigation': True,
+    # ...but do not truncate the path itself: the deepest TAPI pages sit six
+    # levels down, well past the theme's default limit of four.
+    'navigation_depth': -1,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,

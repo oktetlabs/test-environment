@@ -1,6 +1,7 @@
 ..
   SPDX-License-Identifier: Apache-2.0
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+  te-parent: te
 
 .. index:: pair: group; Terminology
 .. _doxid-group__terminology:

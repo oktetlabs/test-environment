@@ -1,6 +1,7 @@
 ..
   SPDX-License-Identifier: Apache-2.0
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+  te-parent: te_engine_rcf
 
 .. index:: pair: group; API Usage: Remote Procedure Calls (RPC)
 .. _doxid-group__te__lib__rpc:
@@ -8,14 +9,7 @@
 API Usage: Remote Procedure Calls (RPC)
 =======================================
 
-.. toctree::
-	:hidden:
-
-	/generated/group_te_lib_rcfrpc.rst
-	/generated/group_rpc_type_ns.rst
-	group_te_lib_rpc_tapi.rst
-
-
+.. include:: _toctree/te_lib_rpc.inc
 
 .. _doxid-group__te__lib__rpc_1te_lib_rpc_introduction:
 
@@ -32,9 +26,6 @@ Here is the diagram of libraries and TE components that take part in RPC data fl
 	:alt: Remote Procedure Call context in TE
 
 RCF RPC library is actually reside at the same layer as RCF API library, but it is selected to a dedicated library just to split it on functionality basis.
-
-
-
 
 
 .. _doxid-group__te__lib__rpc_1te_lib_rpc_server:
@@ -82,38 +73,9 @@ Once you have an RPC Server handle you are ready to do RPC call by means of the 
 For more information on functions exported by RCF RPC library refer to :ref:`API: RCF RPC <doxid-group__te__lib__rcfrpc>`.
 
 
-
-
-
 .. _doxid-group__te__lib__rpc_1te_lib_rpc_tapi_section:
 
 TAPI for RPC
 ~~~~~~~~~~~~
 
 Test code should not use :ref:`rcf_rpc_call() <doxid-group__te__lib__rcfrpc_1ga3175cd6f2a0dce9edbc315c7ec1709af>` function directly, but instead it shall use functions exported by :ref:`TAPI: Remote Procedure Calls (RPC) <doxid-group__te__lib__rpc__tapi>`.
-
-|	:ref:`API: RCF RPC<doxid-group__te__lib__rcfrpc>`
-|	:ref:`RPC pointer namespaces<doxid-group__rpc__type__ns>`
-|	:ref:`TAPI: Remote Procedure Calls (RPC)<doxid-group__te__lib__rpc__tapi>`
-|		:ref:`Macros for socket API remote calls<doxid-group__te__lib__rpcsock__macros>`
-|		:ref:`TAPI for RTE EAL API remote calls<doxid-group__te__lib__rpc__rte__eal>`
-|		:ref:`TAPI for RTE Ethernet Device API remote calls<doxid-group__te__lib__rpc__rte__ethdev>`
-|		:ref:`TAPI for RTE FLOW API remote calls<doxid-group__te__lib__rpc__rte__flow>`
-|		:ref:`TAPI for RTE MBUF API remote calls<doxid-group__te__lib__rpc__rte__mbuf>`
-|		:ref:`TAPI for RTE MEMPOOL API remote calls<doxid-group__te__lib__rpc__rte__mempool>`
-|		:ref:`TAPI for RTE mbuf layer API remote calls<doxid-group__te__lib__rpc__rte__mbuf__ndn>`
-|		:ref:`TAPI for RTE ring API remote calls<doxid-group__te__lib__rpc__rte__ring>`
-|		:ref:`TAPI for asynchronous I/O calls<doxid-group__te__lib__rpc__aio>`
-|		:ref:`TAPI for directory operation calls<doxid-group__te__lib__rpc__dirent>`
-|		:ref:`TAPI for interface name/index calls<doxid-group__te__lib__rpc__ifnameindex>`
-|		:ref:`TAPI for miscellaneous remote calls<doxid-group__te__lib__rpc__misc>`
-|		:ref:`TAPI for name/address resolution remote calls<doxid-group__te__lib__rpc__netdb>`
-|		:ref:`TAPI for remote calls of Winsock2-specific routines<doxid-group__te__lib__rpc__winsock2>`
-|		:ref:`TAPI for remote calls of dynamic linking loader<doxid-group__te__lib__rpc__dlfcn>`
-|		:ref:`TAPI for remote calls of power switch<doxid-group__te__lib__rpc__power__sw>`
-|		:ref:`TAPI for signal and signal sets remote calls<doxid-group__te__lib__rpc__signal>`
-|		:ref:`TAPI for socket API remote calls<doxid-group__te__lib__rpc__socket>`
-|		:ref:`TAPI for some file operations calls<doxid-group__te__lib__rpc__unistd>`
-|		:ref:`TAPI for standard I/O calls<doxid-group__te__lib__rpc__stdio>`
-
-

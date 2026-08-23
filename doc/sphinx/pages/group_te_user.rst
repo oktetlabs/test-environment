@@ -1,6 +1,7 @@
 ..
   SPDX-License-Identifier: Apache-2.0
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+  te-parent: te
 
 .. index:: pair: group; TE: User Guide
 .. _doxid-group__te__user:
@@ -8,12 +9,7 @@
 TE: User Guide
 ==============
 
-.. toctree::
-	:hidden:
-
-	group_te_netns.rst
-
-
+.. include:: _toctree/te_user.inc
 
 .. _doxid-group__te__user_1te_user_introduction:
 
@@ -29,9 +25,6 @@ TE can be supplied in two release types:
 * source code form (all sources of TE components are available).
 
 If you have pre-installed binaries you can obviously skip the sources download and build part.
-
-
-
 
 
 .. _doxid-group__te__user_1te_user_src:
@@ -59,9 +52,6 @@ So in general case after all source code is retrieved from the repository one sh
 	   my-ts/
 
 
-
-
-
 .. _doxid-group__te__user_1te_user_build:
 
 Building TE components
@@ -86,7 +76,6 @@ Same for Debian derivatives in one line:
 
 
 	apt-get install build-essential pkg-config meson ninja-build
-
 
 
 .. _doxid-group__te__user_1te_deps:
@@ -142,9 +131,6 @@ Optional libraries and packages:
 * libreadline-dev and libncurses-dev - enable the interactive :ref:`Tester <doxid-group__te__engine__tester>` mode (the ``--tester-interactive`` option). Without them the build succeeds and the option is simply unavailable;
 
 * perl-Time-HiRes - package on Redhat/Fedora is very useful (it allows to avoid mixture in log because of unprecise timestamps in messages logged by Dispatcher (via logging script)).
-
-
-
 
 
 .. _doxid-group__te__user_1ta_build_deps:
@@ -208,9 +194,6 @@ Optional libraries and packages:
 * tcl-dev and expect - Tcl and expect support in :ref:`Traffic Application Domain <doxid-group__tapi__tad__main>`.
 
 
-
-
-
 .. _doxid-group__te__user_1ta_run_deps:
 
 Test Agent run dependencies
@@ -234,9 +217,6 @@ Same for Debian derivatives in one line:
 Optional libraries and packages:
 
 * libsnmp - for SNMP support.
-
-
-
 
 
 .. _doxid-group__te__user_1te_build_config:
@@ -273,8 +253,6 @@ Test Agent to build. Cut down to its essentials, it looks like this:
 Every library a test links against has to appear in the ``TE_PLATFORM`` list
 here as well as in the suite's ``meson.build``. See
 ``${TE_BASE}/suites/selftest/conf/builder.conf`` for a complete, working one.
-
-
 
 
 .. _doxid-group__te__user_1te_build_do:
@@ -745,7 +723,3 @@ Files include:
 * if --cs-print-trees option was given then objects and instances will be created; they will contain dump of objects and instances :ref:`Configurator <doxid-group__te__engine__conf>` trees.
 
 You can read the logs in text or HTML format. See :ref:`Output Formats <doxid-group__rgt_1rgt_output_formats>` for more info on logs generation and looks.
-
-|	:ref:`Network namespaces<doxid-group__te__netns>`
-
-

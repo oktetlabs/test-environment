@@ -1,6 +1,7 @@
 ..
   SPDX-License-Identifier: Apache-2.0
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+  te-parent: te_engine_conf
 
 .. index:: pair: group; API Usage: Configurator API
 .. _doxid-group__confapi:
@@ -8,13 +9,7 @@
 API Usage: Configurator API
 ===========================
 
-.. toctree::
-	:hidden:
-
-	/generated/group_confapi_base.rst
-	group_tapi_conf.rst
-
-
+.. include:: _toctree/confapi.inc
 
 .. _doxid-group__confapi_1confapi_introduction:
 
@@ -25,12 +20,9 @@ Test scenarios should use functions exported via:
 
 * base :ref:`API: Configurator <doxid-group__confapi__base>` (``lib/confapi/conf_api.h``);
 
-* semantic based interface :ref:`TAPI: Test API for configuration nodes <doxid-group__tapi__conf>`.
+* semantic based interface :ref:`Configuring the test bed <doxid-group__tapi__conf>`.
 
 Here we will show how to play with samples discussed at :ref:`Creating new configuration nodes in Test Agent <doxid-group__te__agents__conf>` page.
-
-
-
 
 
 .. _doxid-group__confapi_1confapi_usage_conf:
@@ -61,9 +53,6 @@ Regarding an example described at :ref:`Creating new configuration nodes in Test
 	<object oid="/agent/col_object/var" access="read_only" type="string"/>
 
 For more information on :ref:`Configurator <doxid-group__te__engine__conf>` configuration file read :ref:`Configurator Configuration File <doxid-group__te__engine__conf_1te_engine_conf_file>` section.
-
-
-
 
 
 .. _doxid-group__confapi_1confapi_usage_add_del:
@@ -125,9 +114,6 @@ Please note that you can also add an instance of any "read-create" object via :r
 These lines will force :ref:`Configurator <doxid-group__te__engine__conf>` to create on start-up two instances of /agent/col_object object on Test Agent Agt_A with instance names A amd C. (For more information about configuration file see :ref:`Configurator Configuration File <doxid-group__te__engine__conf_1te_engine_conf_file>` section).
 
 
-
-
-
 .. _doxid-group__confapi_1confapi_usage_set:
 
 Set/Get configuration value operations
@@ -146,7 +132,6 @@ Or corresponding local varsions:
 * :ref:`cfg_set_instance_local() <doxid-group__confapi__base__access_1ga45d21edf256b590df80b23e6d6fa88c6>`;
 
 * :ref:`cfg_set_instance_local_fmt() <doxid-group__confapi__base__access_1ga2b7d39a2044fd1175cd620919e507bae>`.
-
 
 
 .. image:: /static/image/ten_conf_set_instance.png
@@ -188,7 +173,6 @@ If you want to get the value from Test Agent you can do one of the following:
 * call :ref:`cfg_synchronize() <doxid-group__confapi__base__sync_1gace10730546274a648c2e7534a29adb32>` or :ref:`cfg_synchronize_fmt() <doxid-group__confapi__base__sync_1gad769295f5a2e8ee80640f88124a84a26>` to synchronize a subtree of configuration nodes and then call ordinary :ref:`cfg_get_instance() <doxid-group__confapi__base__access_1ga958125eed1df71e6a6bf4d96056e01d2>` function.
 
 
-
 .. image:: /static/image/ten_conf_get_instance_sync.png
 	:alt: Sequence of events caused by cfg_get_instance_sync() call
 
@@ -203,53 +187,3 @@ Please note that you can also do set operation in :ref:`Configurator <doxid-grou
 	</set>
 
 These lines will force :ref:`Configurator <doxid-group__te__engine__conf>` to run Set operation on start-up for instance /agent:Agt_A/col_object:B/var1:. (For more information about configuration file see :ref:`Configurator Configuration File <doxid-group__te__engine__conf_1te_engine_conf_file>` section).
-
-|	:ref:`API: Configurator<doxid-group__confapi__base>`
-|		:ref:`Configuration backup manipulation<doxid-group__confapi__base__backup>`
-|		:ref:`Configuration tree traversal<doxid-group__confapi__base__traverse>`
-|		:ref:`Configuration tree access operations<doxid-group__confapi__base__access>`
-|		:ref:`Synchronization configuration tree with Test Agent<doxid-group__confapi__base__sync>`
-|		:ref:`Test Agent reboot<doxid-group__confapi__base__reboot>`
-|	:ref:`TAPI: Test API for configuration nodes<doxid-group__tapi__conf>`
-|		:ref:`ARL table configuration<doxid-group__tapi__conf__arl>`
-|		:ref:`Agent namespaces configuration<doxid-group__tapi__namespaces>`
-|		:ref:`Agents, namespaces and interfaces relations<doxid-group__tapi__host__ns>`
-|		:ref:`Bonding and bridging configuration<doxid-group__tapi__conf__aggr>`
-|		:ref:`CPU topology configuration of Test Agents<doxid-group__tapi__conf__cpu>`
-|		:ref:`Command monitor TAPI<doxid-group__tapi__cmd__monitor__def>`
-|		:ref:`DHCP Server configuration<doxid-group__tapi__conf__dhcp__serv>`
-|		:ref:`DUT serial console access<doxid-group__tapi__conf__serial>`
-|		:ref:`Environment variables configuration<doxid-group__tapi__conf__sh__env>`
-|		:ref:`Ethernet PHY configuration<doxid-group__tapi__conf__phy>`
-|		:ref:`Network interface configuration TAPI<doxid-group__tapi__conf__if>`
-|		:ref:`IP rules configuration<doxid-group__tapi__conf__ip__rule>`
-|		:ref:`IPv6 specific configuration<doxid-group__tapi__conf__ip6>`
-|		:ref:`Kernel modules configuration<doxid-group__tapi__conf__modules>`
-|		:ref:`L2TP configuration<doxid-group__tapi__conf__l2tp>`
-|		:ref:`Local subtree access<doxid-group__tapi__conf__local>`
-|		:ref:`Manipulation of network address pools<doxid-group__tapi__conf__net__pool>`
-|		:ref:`NTP daemon configuration<doxid-group__tapi__conf__ntpd>`
-|		:ref:`Neighbour table configuration<doxid-group__tapi__conf__neigh>`
-|		:ref:`Network Base configuration<doxid-group__tapi__conf__base__net>`
-|		:ref:`Network Emulator configuration<doxid-group__tapi__conf__netem>`
-|		:ref:`Network Interface configuration<doxid-group__tapi__conf__iface>`
-|		:ref:`Network Switch configuration<doxid-group__tapi__conf__switch>`
-|		:ref:`Network sniffers configuration<doxid-group__tapi__conf__sniffer>`
-|		:ref:`Network statistics access<doxid-group__tapi__conf__stats>`
-|		:ref:`Network topology configuration of Test Agents<doxid-group__tapi__conf__net>`
-|		:ref:`PPPoE Server configuration<doxid-group__tapi__conf__pppoe>`
-|		:ref:`Processes configuration<doxid-group__tapi__conf__process>`
-|		:ref:`Queuing Discipline configuration<doxid-group__tapi__conf__qdisc>`
-|			:ref:`tc qdisc TBF configuration<doxid-group__tapi__conf__tbf>`
-|		:ref:`Routing Table configuration<doxid-group__tapi__conf__route>`
-|		:ref:`Serial console parsers configuration<doxid-group__tapi__conf__serial__parse>`
-|		:ref:`Solarflare PTP daemon configuration<doxid-group__tapi__conf__sfptpd>`
-|		:ref:`System parameters configuration<doxid-group__tapi__cfg__sys>`
-|		:ref:`TA system options configuration (OBSOLETE)<doxid-group__tapi__conf__proc>`
-|		:ref:`Test API to handle a cache<doxid-group__tapi__cache>`
-|		:ref:`VTund configuration<doxid-group__tapi__conf__vtund>`
-|		:ref:`Virtual machines configuration<doxid-group__tapi__conf__vm>`
-|		:ref:`XEN configuration<doxid-group__tapi__conf__xen>`
-|		:ref:`iptables configuration<doxid-group__tapi__conf__iptable>`
-
-

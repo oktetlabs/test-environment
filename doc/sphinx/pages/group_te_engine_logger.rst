@@ -1,18 +1,13 @@
+..
+  te-parent: te_engine
+
 .. index:: pair: group; Logger
 .. _doxid-group__te__engine__logger:
 
 Logger
 ======
 
-.. toctree::
-	:hidden:
-
-    group_sniffer.rst
-    group_te_cmd_monitor.rst
-	/generated/group_logger_api.rst
-	/generated/group_te_log_stack.rst
-
-
+.. include:: _toctree/te_engine_logger.inc
 
 .. _doxid-group__te__engine__logger_1te_engine_logger_introduction:
 
@@ -22,9 +17,6 @@ Introduction
 Logger provides an API for event logging to TE Subsystems, Test Agents and tests (if Test Agent runs on an operating system with shared address space, logging facilities may be provided to tested software as well).
 
 Logger stores log messages in a binary file in raw format that can be later converted to XML, HTML and plain text as well as filtered.
-
-
-
 
 
 .. _doxid-group__te__engine__logger_1te_engine_logger_operation:
@@ -66,9 +58,6 @@ Apart from C function API, Logger provides script-based mechanism for logging to
 * te_log_message - script to use for logging from scripts.
 
 
-
-
-
 .. _doxid-group__te__engine__logger_1te_engine_logger_conf_file:
 
 Configuration File
@@ -107,9 +96,6 @@ If you need to specify polling intervals on per Test Agent basis or on per Agent
 		_default: 100
 
 
-
-
-
 .. _doxid-group__te__engine__logger_1te_engine_logger_log_msg:
 
 Log messages
@@ -143,8 +129,3 @@ Live mode is suitable to use when it is necessary to get log output in the text 
 In postponed mode raw log is first converted to XML format (structured, time ordered) and then XML file can be converted to HTML or text format log.
 
 To ask :ref:`Dispatcher <doxid-group__te__engine__dispatcher>` prepare HTML version of the log you should pass --log-html=[output dir name] option in command line. Then :ref:`Dispatcher <doxid-group__te__engine__dispatcher>` generates HTML pages under specified [output dir name] directory.
-
-|	:ref:`API: Logger<doxid-group__logger__api>`
-|	:ref:`API: Logger messages stack<doxid-group__te__log__stack>`
-
-

@@ -1,6 +1,7 @@
 ..
   SPDX-License-Identifier: Apache-2.0
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+  te-parent: te_engine
 
 .. index:: pair: group; Kernel Logging
 .. _doxid-group__kernel__log:
@@ -8,16 +9,11 @@
 Kernel Logging
 ==============
 
-.. toctree::
-	:hidden:
-
-	group_console_ll.rst
-	group_serial.rst
+.. include:: _toctree/kernel_log.inc
 
 Kernel log can be obtained from two sources - either from serial console (directly or via Conserver) or from netconsole kernel module sending kernel logs via UDP to the specified address.
 
 TE can process kernel log either in Test Agent or in Logger.
-
 
 
 .. _doxid-group__kernel__log_1kernel_log_direct:
@@ -48,9 +44,6 @@ To configure direct serial console logging, in :ref:`RCF Configuration File <dox
 	</thread>
 
 
-
-
-
 .. _doxid-group__kernel__log_1kernel_log_conserver:
 
 Using Conserver
@@ -72,9 +65,6 @@ If you have configured Conserver, you can tell Test Agent to use it adding the f
 	</thread>
 
 If you want to use Logger directly, the above tag should be specified in Logger :ref:`Configuration File <doxid-group__te__engine__logger_1te_engine_logger_conf_file>` instead.
-
-
-
 
 
 .. _doxid-group__kernel__log_1kernel_log_netconsole:
@@ -111,8 +101,3 @@ If netconsole kernel module is not configured and you wish to configure it from 
 	</add>
 
 You can add more than one **netconsole** node. Note: if the default configfs directory (/sys/kernel/config) is not available, the netconsole dynamic reconfiguration will not be used, but kernel module will be reloaded with new parameters.
-
-|	:ref:`Console Log Level Configuration<doxid-group__console__ll>`
-|	:ref:`Packet Serial Parser<doxid-group__serial>`
-
-

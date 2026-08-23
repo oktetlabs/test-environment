@@ -1,6 +1,7 @@
 ..
   SPDX-License-Identifier: Apache-2.0
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+  te-parent: te
 
 .. index:: pair: group; Test Agents
 .. _doxid-group__te__agents:
@@ -8,15 +9,7 @@
 Test Agents
 ===========
 
-.. toctree::
-	:hidden:
-
-	/generated/group_rcf_ch.rst
-	group_te_agents_conf.rst
-	/generated/group_rcf_pch.rst
-	group_te_agents_unix.rst
-
-
+.. include:: _toctree/te_agents.inc
 
 .. _doxid-group__te__agents_1te_agt_introduction:
 
@@ -34,7 +27,6 @@ At the time or writing this document TE has Test Agents available for the follow
 * FreBSD;
 
 * Windows.
-
 
 
 .. image:: /static/image/agt_types.png
@@ -83,9 +75,6 @@ Depending on the physical location of Test Agent and the device it controls we c
   All communication with Test Agents performed via :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>` components. Interactions are done with text-based Test Protocol.
 
 
-
-
-
 .. _doxid-group__te__agents_1te_agt_organization:
 
 Test Agent Organization
@@ -106,7 +95,6 @@ Basically Test Agent consists of:
 * a number of standard RCF Services supported in separate libraries (like TAD).
 
 
-
 .. image:: /static/image/ta_decomp.png
 	:alt: Test Agent decomposition
 
@@ -123,9 +111,6 @@ In RCF PCH Test Agent passively waits for :ref:`Remote Control Facility (RCF) <d
 Functions declared in ``lib/rcfpch/rcf_ch_api.h`` should be exported by a Test Agent, though they can return -1 telling that an operation is not supported.
 
 
-
-
-
 .. _doxid-group__te__agents_1te_agt_types:
 
 Types of supported Test Agents
@@ -136,14 +121,10 @@ The Unix Test Agent is the agent used in practice:
 * :ref:`Test Agents: Unix Test Agent <doxid-group__te__agents__unix>`.
 
 
-
-
-
 .. _doxid-group__te__agents_1te_agt_extending:
 
 Extending Test Agent with new functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 
 
 .. _doxid-group__te__agents_1te_agt_extending_rpc:
@@ -154,9 +135,6 @@ Adding new RPC calls
 * :ref:`RPC Development Framework <doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_framework>` section gives guidelines on how to add support for a new RPC call.
 
 
-
-
-
 .. _doxid-group__te__agents_1te_agt_extending_cfg:
 
 Adding new configuration nodes
@@ -165,20 +143,3 @@ Adding new configuration nodes
 * :ref:`Test Agents: Creating new configuration nodes in Test Agent <doxid-group__te__agents__conf>` page gives guidelines on how to add new configuration nodes to Test Agent;
 
 * :ref:`API Usage: Configurator API <doxid-group__confapi>` page gives guidelines on how to work with API from test scenarios.
-
-|	:ref:`Test Agents: Command Handler<doxid-group__rcf__ch>`
-|		:ref:`Command Handler: Configuration support<doxid-group__rcf__ch__cfg>`
-|			:ref:`Configuration node definition macros<doxid-group__rcf__ch__cfg__node__def>`
-|		:ref:`Command Handler: File manipulation support<doxid-group__rcf__ch__file>`
-|		:ref:`Command Handler: Function call support<doxid-group__rcf__ch__func>`
-|		:ref:`Command Handler: Process/thread support<doxid-group__rcf__ch__proc>`
-|		:ref:`Command Handler: Reboot and shutdown support<doxid-group__rcf__ch__reboot>`
-|		:ref:`Command Handler: Symbol name and address resolver support<doxid-group__rcf__ch__addr>`
-|		:ref:`Command Handler: Traffic Application Domain (TAD) support<doxid-group__rcf__ch__tad>`
-|		:ref:`Command Handler: Variables support<doxid-group__rcf__ch__var>`
-|	:ref:`Test Agents: Creating new configuration nodes in Test Agent<doxid-group__te__agents__conf>`
-|	:ref:`Test Agents: Portable Commands Handler<doxid-group__rcf__pch>`
-|		:ref:`API: Shared TA resources<doxid-group__rcf__pch__rsrc>`
-|	:ref:`Test Agents: Unix Test Agent<doxid-group__te__agents__unix>`
-
-

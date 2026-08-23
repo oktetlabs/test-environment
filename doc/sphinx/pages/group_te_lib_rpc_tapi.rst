@@ -1,6 +1,7 @@
 ..
   SPDX-License-Identifier: Apache-2.0
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+  te-parent: te_lib_rpc
 
 .. index:: pair: group; TAPI: Remote Procedure Calls (RPC)
 .. _doxid-group__te__lib__rpc__tapi:
@@ -8,31 +9,7 @@
 TAPI: Remote Procedure Calls (RPC)
 ==================================
 
-.. toctree::
-	:hidden:
-
-	/generated/group_te_lib_rpcsock_macros.rst
-	/generated/group_te_lib_rpc_rte_eal.rst
-	/generated/group_te_lib_rpc_rte_ethdev.rst
-	/generated/group_te_lib_rpc_rte_flow.rst
-	/generated/group_te_lib_rpc_rte_mbuf.rst
-	/generated/group_te_lib_rpc_rte_mempool.rst
-	/generated/group_te_lib_rpc_rte_mbuf_ndn.rst
-	/generated/group_te_lib_rpc_rte_ring.rst
-	/generated/group_te_lib_rpc_aio.rst
-	/generated/group_te_lib_rpc_dirent.rst
-	/generated/group_te_lib_rpc_ifnameindex.rst
-	/generated/group_te_lib_rpc_misc.rst
-	/generated/group_te_lib_rpc_netdb.rst
-	/generated/group_te_lib_rpc_winsock2.rst
-	/generated/group_te_lib_rpc_dlfcn.rst
-	/generated/group_te_lib_rpc_power_sw.rst
-	/generated/group_te_lib_rpc_signal.rst
-	/generated/group_te_lib_rpc_socket.rst
-	/generated/group_te_lib_rpc_unistd.rst
-	/generated/group_te_lib_rpc_stdio.rst
-
-
+.. include:: _toctree/te_lib_rpc_tapi.inc
 
 .. _doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_introduction:
 
@@ -40,9 +17,6 @@ Introduction
 ~~~~~~~~~~~~
 
 TAPI RPC library is an auxiliary library that hides the details of RPC encoding/decoding procedure. Its purpose is to provide an interface for tests that is almost equal to direct function calls made on test side.
-
-
-
 
 
 .. _doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_framework:
@@ -197,9 +171,6 @@ A lot of RPC data types and convert functions are defined under lib/rpc_types li
 Assuming you are implementing RPC calls for some standard API, you should better have a look at lib/rpc_types library and create your own header (and if necessary C source) file with corresponding data types.
 
 
-
-
-
 .. _doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_framework_ta_side:
 
 Support RPC call on Test Agent side
@@ -230,7 +201,6 @@ Please make sure that data types and values of arguments passed to a function ca
 * ``foobar_type1::field`` field is set to the value got from RPC input argument structure. This is acceptable because it is just the value of integer type.
 
 Please also note that for our sample we should better use ``func_ptr`` instead of ``func`` - refer to :ref:`Aspects of TARPC_FUNC() macro <doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_framework_ta_side_TARPC_FUNC>` section for the details.
-
 
 
 .. _doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_framework_ta_side_TARPC_FUNC:
@@ -271,11 +241,6 @@ This feature allows you to provide alternative implementations of the same funct
 Normally you would have functions statically linked with Test Agent. Regarding our **foobar** sample you could add **foobar()** function to an appropriate source file that will be later linked into Test Agent binary.
 
 If you have a look at agents/unix/rpc/tarpc_server.c file you will find that together with TARPC_FUNC() code blocks it keeps implementation of some private functions to be called. For example check_port_is_free() function.
-
-
-
-
-
 
 
 .. _doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_framework_more_samples:
@@ -434,9 +399,6 @@ Notes:
 * We use INIT_CHECKED_ARG() macro to register our ``out_buf`` for validation against out of bound update - :ref:`MAKE_CALL() <doxid-rpc__server_8h_1a393830a65d04a95c1829f752bcfbcf04>` will automatically check that the data beyond specified buffer length is not updated;
 
 
-
-
-
 .. _doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_framework_errors:
 
 Reporting errors from RPC calls
@@ -475,16 +437,10 @@ On the test side the error data set with :ref:`te_rpc_error_set() <doxid-rpc__se
 In this case both the error code and the error string will be printed out in verdict. The error string description can also be obtained via :ref:`RPC_ERROR_MSG() <doxid-group__te__lib__rcfrpc_1gad24d189804e1369b4d639c6af15f8fee>` macro, while :ref:`RPC_ERRNO() <doxid-group__te__lib__rcfrpc_1ga98b23de539d6cac225a3d5c45ce8faa7>` macro can be used to access the error code.
 
 
-
-
-
-
-
 .. _doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_usage:
 
 Some usage aspects of TAPI RPC library
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 
 
 .. _doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_usage_error_handling:
@@ -521,9 +477,6 @@ By default if an error occurred during RPC call, TAPI RPC interrupts test execut
 	              errno_rpc2str(RPC_ERRNO(tst_srv)),
 	              errno_rpc2str(RPC_EADDRNOTAVAIL));
 	}
-
-
-
 
 
 .. _doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_usage_non_blocking_calls:
@@ -571,9 +524,6 @@ In the following example we do non blocking call for recv() function on one sock
 	if (memcmp(rx_buf, tx_buf, TST_BUF_LEN) != 0)
 	    TEST_FAIL("recv() returns buffer whose content does not match with "
 	              "the content of transmitted buffer");
-
-
-
 
 
 .. _doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_usage_library_name:
@@ -627,26 +577,3 @@ For example:
 	/* Now switch back to libmy_shared_library.so */
 	rpc_srv->use_libc = false;
 	rpc_connect(rpc_srv, sock_1, bind_addr_2);
-
-|	:ref:`Macros for socket API remote calls<doxid-group__te__lib__rpcsock__macros>`
-|	:ref:`TAPI for RTE EAL API remote calls<doxid-group__te__lib__rpc__rte__eal>`
-|	:ref:`TAPI for RTE Ethernet Device API remote calls<doxid-group__te__lib__rpc__rte__ethdev>`
-|	:ref:`TAPI for RTE FLOW API remote calls<doxid-group__te__lib__rpc__rte__flow>`
-|	:ref:`TAPI for RTE MBUF API remote calls<doxid-group__te__lib__rpc__rte__mbuf>`
-|	:ref:`TAPI for RTE MEMPOOL API remote calls<doxid-group__te__lib__rpc__rte__mempool>`
-|	:ref:`TAPI for RTE mbuf layer API remote calls<doxid-group__te__lib__rpc__rte__mbuf__ndn>`
-|	:ref:`TAPI for RTE ring API remote calls<doxid-group__te__lib__rpc__rte__ring>`
-|	:ref:`TAPI for asynchronous I/O calls<doxid-group__te__lib__rpc__aio>`
-|	:ref:`TAPI for directory operation calls<doxid-group__te__lib__rpc__dirent>`
-|	:ref:`TAPI for interface name/index calls<doxid-group__te__lib__rpc__ifnameindex>`
-|	:ref:`TAPI for miscellaneous remote calls<doxid-group__te__lib__rpc__misc>`
-|	:ref:`TAPI for name/address resolution remote calls<doxid-group__te__lib__rpc__netdb>`
-|	:ref:`TAPI for remote calls of Winsock2-specific routines<doxid-group__te__lib__rpc__winsock2>`
-|	:ref:`TAPI for remote calls of dynamic linking loader<doxid-group__te__lib__rpc__dlfcn>`
-|	:ref:`TAPI for remote calls of power switch<doxid-group__te__lib__rpc__power__sw>`
-|	:ref:`TAPI for signal and signal sets remote calls<doxid-group__te__lib__rpc__signal>`
-|	:ref:`TAPI for socket API remote calls<doxid-group__te__lib__rpc__socket>`
-|	:ref:`TAPI for some file operations calls<doxid-group__te__lib__rpc__unistd>`
-|	:ref:`TAPI for standard I/O calls<doxid-group__te__lib__rpc__stdio>`
-
-

@@ -1,6 +1,7 @@
 ..
   SPDX-License-Identifier: Apache-2.0
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+  te-parent: tapi_tad_main
 
 .. index:: pair: page; ASN.1 library
 .. _doxid-asn:

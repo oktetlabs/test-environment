@@ -1,15 +1,13 @@
+..
+  te-parent: te_engine
+
 .. index:: pair: group; Configurator
 .. _doxid-group__te__engine__conf:
 
 Configurator
 ============
 
-.. toctree::
-	:hidden:
-
-	group_confapi.rst
-
-
+.. include:: _toctree/te_engine_conf.inc
 
 .. _doxid-group__te__engine__conf_1te_engine_conf_introduction:
 
@@ -33,12 +31,8 @@ Configurator features:
 * provides an API to tests for Test Agents rebooting with or without restoring of the configuration (See :ref:`Test Agent reboot <doxid-group__confapi__base__reboot>`).
 
 
-
 .. image:: /static/image/ten_conf_context.png
 	:alt: Configurator context in TE
-
-
-
 
 
 .. _doxid-group__te__engine__conf_1te_engine_conf_tree:
@@ -83,9 +77,6 @@ Other subtrees may be considered as information storage: changing instances in t
 API to browse configuration trees can be found at :ref:`Configuration tree traversal <doxid-group__confapi__base__traverse>` page.
 
 
-
-
-
 .. _doxid-group__te__engine__conf_1te_engine_conf_oper:
 
 Configuration Operations
@@ -100,9 +91,6 @@ Moreover, :ref:`Configurator <doxid-group__te__engine__conf>` provides an API fo
 All operations requested in the configuration file and by the tests are stored in the history to allow quick configuration restoring.
 
 API to read and modify configuration tree can be found at :ref:`Configuration tree access operations <doxid-group__confapi__base__access>` page.
-
-
-
 
 
 .. _doxid-group__te__engine__conf_1te_engine_conf_backup:
@@ -131,16 +119,12 @@ After a successful restoring of the backup from the history or after a successfu
 API to manipulate configuration backups can be found at :ref:`Configuration backup manipulation <doxid-group__confapi__base__backup>` page.
 
 
-
-
-
 .. _doxid-group__te__engine__conf_1te_engine_conf_file:
 
 Configurator Configuration File
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :ref:`Configurator <doxid-group__te__engine__conf>` has its own configuration file where it is possible to specify the sequence of configuration operations to be run on :ref:`Configurator <doxid-group__te__engine__conf>` start-up. It is also possible to use a backup-like snapshot as a configuration file, which could be useful when you want to reproduce some problem that happens with particular configuration set-up.
-
 
 
 .. _doxid-group__te__engine__conf_1te_engine_conf_file_content:
@@ -277,8 +261,6 @@ Note that you can add instances and set values in the /agent subtree the same
 way, which is what actually reconfigures the hosts under test.
 
 
-
-
 .. _doxid-group__te__engine__conf_1te_engine_conf_file_features:
 
 Special features
@@ -339,8 +321,6 @@ come from the environment for the chosen configuration, and the conditions pick
 the matching pieces.
 
 
-
-
 .. _doxid-group__te__engine__conf_1te_engine_conf_file_xml:
 
 Legacy XML syntax
@@ -384,55 +364,3 @@ Files are pulled in with XInclude rather than the ``include`` command:
 	            href="cs.conf.common" parse="xml"/>
 
 The XSD schema for this form is at ${TE_BASE}/doc/xsd/cs_config.xsd.
-
-
-|	:ref:`API Usage: Configurator API<doxid-group__confapi>`
-|		:ref:`API: Configurator<doxid-group__confapi__base>`
-|			:ref:`Configuration backup manipulation<doxid-group__confapi__base__backup>`
-|			:ref:`Configuration tree traversal<doxid-group__confapi__base__traverse>`
-|			:ref:`Configuration tree access operations<doxid-group__confapi__base__access>`
-|			:ref:`Synchronization configuration tree with Test Agent<doxid-group__confapi__base__sync>`
-|			:ref:`Test Agent reboot<doxid-group__confapi__base__reboot>`
-|		:ref:`TAPI: Test API for configuration nodes<doxid-group__tapi__conf>`
-|			:ref:`ARL table configuration<doxid-group__tapi__conf__arl>`
-|			:ref:`Agent namespaces configuration<doxid-group__tapi__namespaces>`
-|			:ref:`Agents, namespaces and interfaces relations<doxid-group__tapi__host__ns>`
-|			:ref:`Bonding and bridging configuration<doxid-group__tapi__conf__aggr>`
-|			:ref:`CPU topology configuration of Test Agents<doxid-group__tapi__conf__cpu>`
-|			:ref:`Command monitor TAPI<doxid-group__tapi__cmd__monitor__def>`
-|			:ref:`DHCP Server configuration<doxid-group__tapi__conf__dhcp__serv>`
-|			:ref:`DUT serial console access<doxid-group__tapi__conf__serial>`
-|			:ref:`Environment variables configuration<doxid-group__tapi__conf__sh__env>`
-|			:ref:`Ethernet PHY configuration<doxid-group__tapi__conf__phy>`
-|			:ref:`Network interface configuration TAPI<doxid-group__tapi__conf__if>`
-|			:ref:`IP rules configuration<doxid-group__tapi__conf__ip__rule>`
-|			:ref:`IPv6 specific configuration<doxid-group__tapi__conf__ip6>`
-|			:ref:`Kernel modules configuration<doxid-group__tapi__conf__modules>`
-|			:ref:`L2TP configuration<doxid-group__tapi__conf__l2tp>`
-|			:ref:`Local subtree access<doxid-group__tapi__conf__local>`
-|			:ref:`Manipulation of network address pools<doxid-group__tapi__conf__net__pool>`
-|			:ref:`NTP daemon configuration<doxid-group__tapi__conf__ntpd>`
-|			:ref:`Neighbour table configuration<doxid-group__tapi__conf__neigh>`
-|			:ref:`Network Base configuration<doxid-group__tapi__conf__base__net>`
-|			:ref:`Network Emulator configuration<doxid-group__tapi__conf__netem>`
-|			:ref:`Network Interface configuration<doxid-group__tapi__conf__iface>`
-|			:ref:`Network Switch configuration<doxid-group__tapi__conf__switch>`
-|			:ref:`Network sniffers configuration<doxid-group__tapi__conf__sniffer>`
-|			:ref:`Network statistics access<doxid-group__tapi__conf__stats>`
-|			:ref:`Network topology configuration of Test Agents<doxid-group__tapi__conf__net>`
-|			:ref:`PPPoE Server configuration<doxid-group__tapi__conf__pppoe>`
-|			:ref:`Processes configuration<doxid-group__tapi__conf__process>`
-|			:ref:`Queuing Discipline configuration<doxid-group__tapi__conf__qdisc>`
-|				:ref:`tc qdisc TBF configuration<doxid-group__tapi__conf__tbf>`
-|			:ref:`Routing Table configuration<doxid-group__tapi__conf__route>`
-|			:ref:`Serial console parsers configuration<doxid-group__tapi__conf__serial__parse>`
-|			:ref:`Solarflare PTP daemon configuration<doxid-group__tapi__conf__sfptpd>`
-|			:ref:`System parameters configuration<doxid-group__tapi__cfg__sys>`
-|			:ref:`TA system options configuration (OBSOLETE)<doxid-group__tapi__conf__proc>`
-|			:ref:`Test API to handle a cache<doxid-group__tapi__cache>`
-|			:ref:`VTund configuration<doxid-group__tapi__conf__vtund>`
-|			:ref:`Virtual machines configuration<doxid-group__tapi__conf__vm>`
-|			:ref:`XEN configuration<doxid-group__tapi__conf__xen>`
-|			:ref:`iptables configuration<doxid-group__tapi__conf__iptable>`
-
-

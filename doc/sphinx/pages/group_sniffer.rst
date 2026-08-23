@@ -1,3 +1,6 @@
+..
+  te-parent: te_engine_logger
+
 .. index:: pair: group; Packet Sniffer
 .. _doxid-group__sniffer:
 

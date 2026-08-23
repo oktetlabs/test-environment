@@ -1,16 +1,13 @@
+..
+  te-parent: te_engine
+
 .. index:: pair: group; Remote Control Facility (RCF)
 .. _doxid-group__te__engine__rcf:
 
 Remote Control Facility (RCF)
 =============================
 
-.. toctree::
-	:hidden:
-
-	group_rcfapi.rst
-	group_te_lib_rpc.rst
-
-
+.. include:: _toctree/te_engine_rcf.inc
 
 .. _doxid-group__te__engine__rcf_1te_engine_rcf_introduction:
 
@@ -233,7 +230,6 @@ This configuration file tells :ref:`Remote Control Facility (RCF) <doxid-group__
                [], [], [comm_net_agent ndn asn])
 
 
-
   .. ref-code-block:: xml
 
     <?xml version="1.0"?>
@@ -310,7 +306,6 @@ RCF configuration file allows to specify a number of threads or processes to cre
 * :ref:`rcf_ta_call() <doxid-group__rcfapi__base_1ga2f02c1a61e6756b4c97772e5d07a31da>`.
 
 
-
 .. ref-code-block:: xml
 
 	<?xml version="1.0"?>
@@ -370,7 +365,6 @@ RCF Communication Library
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For each Test Agent listed in :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>` configuration file we specify rcflib attribute whose value define the name of communication library that :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>` shall use while sending or receiving commands to/from that Test Agent. Currently TE supports only one type of :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>` communication library - :ref:`RCF UNIX Communication Library <doxid-group__te__engine__rcf_1te_engine_rcf_comm_lib_unix>`.
-
 
 
 .. _doxid-group__te__engine__rcf_1te_engine_rcf_comm_lib_unix:
@@ -472,32 +466,3 @@ This will build default version of rcfunix suitable for Linux, but there can be 
     TE_PLATFORM([], [], [-D_GNU_SOURCE], [-D_GNU_SOURCE], [], [tools ... rcfunix rcfsolaris ...]) TE_LIB_PARMS([rcfsolaris], [], [rcfunix], [], [-DRCF_UNIX_SOLARIS])
 
 Then in RCF configuration file we can specify 'rcfsolaris' as the value of 'rcflib' attribute.
-
-|	:ref:`API Usage: Remote Control Facility API<doxid-group__rcfapi>`
-|		:ref:`API: RCF<doxid-group__rcfapi__base>`
-|	:ref:`API Usage: Remote Procedure Calls (RPC)<doxid-group__te__lib__rpc>`
-|		:ref:`API: RCF RPC<doxid-group__te__lib__rcfrpc>`
-|		:ref:`RPC pointer namespaces<doxid-group__rpc__type__ns>`
-|		:ref:`TAPI: Remote Procedure Calls (RPC)<doxid-group__te__lib__rpc__tapi>`
-|			:ref:`Macros for socket API remote calls<doxid-group__te__lib__rpcsock__macros>`
-|			:ref:`TAPI for RTE EAL API remote calls<doxid-group__te__lib__rpc__rte__eal>`
-|			:ref:`TAPI for RTE Ethernet Device API remote calls<doxid-group__te__lib__rpc__rte__ethdev>`
-|			:ref:`TAPI for RTE FLOW API remote calls<doxid-group__te__lib__rpc__rte__flow>`
-|			:ref:`TAPI for RTE MBUF API remote calls<doxid-group__te__lib__rpc__rte__mbuf>`
-|			:ref:`TAPI for RTE MEMPOOL API remote calls<doxid-group__te__lib__rpc__rte__mempool>`
-|			:ref:`TAPI for RTE mbuf layer API remote calls<doxid-group__te__lib__rpc__rte__mbuf__ndn>`
-|			:ref:`TAPI for RTE ring API remote calls<doxid-group__te__lib__rpc__rte__ring>`
-|			:ref:`TAPI for asynchronous I/O calls<doxid-group__te__lib__rpc__aio>`
-|			:ref:`TAPI for directory operation calls<doxid-group__te__lib__rpc__dirent>`
-|			:ref:`TAPI for interface name/index calls<doxid-group__te__lib__rpc__ifnameindex>`
-|			:ref:`TAPI for miscellaneous remote calls<doxid-group__te__lib__rpc__misc>`
-|			:ref:`TAPI for name/address resolution remote calls<doxid-group__te__lib__rpc__netdb>`
-|			:ref:`TAPI for remote calls of Winsock2-specific routines<doxid-group__te__lib__rpc__winsock2>`
-|			:ref:`TAPI for remote calls of dynamic linking loader<doxid-group__te__lib__rpc__dlfcn>`
-|			:ref:`TAPI for remote calls of power switch<doxid-group__te__lib__rpc__power__sw>`
-|			:ref:`TAPI for signal and signal sets remote calls<doxid-group__te__lib__rpc__signal>`
-|			:ref:`TAPI for socket API remote calls<doxid-group__te__lib__rpc__socket>`
-|			:ref:`TAPI for some file operations calls<doxid-group__te__lib__rpc__unistd>`
-|			:ref:`TAPI for standard I/O calls<doxid-group__te__lib__rpc__stdio>`
-
-

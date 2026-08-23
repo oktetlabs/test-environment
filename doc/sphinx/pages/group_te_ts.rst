@@ -1,6 +1,7 @@
 ..
   SPDX-License-Identifier: Apache-2.0
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+  te-parent: te
 
 .. index:: pair: group; Test Suite
 .. _doxid-group__te__ts:
@@ -8,13 +9,7 @@
 Test Suite
 ==========
 
-.. toctree::
-	:hidden:
-
-	group_te_lib_tapi_conf_net.rst
-	/generated/group_te_ts_tapi_test.rst
-
-
+.. include:: _toctree/te_ts.inc
 
 .. _doxid-group__te__ts_1te_ts_terminology:
 
@@ -29,9 +24,6 @@ Test Package  Group of tightly related tests or test packages, which may share i
 Test Script   A test which is a minimal structural unit of a test harness.
 Test Suite    Test Package which may be considered as standalone entity from organisational point of view and build issues.
 ============  ================================================================================================================================================================================
-
-
-
 
 
 .. _doxid-group__te__ts_1te_ts_tree_structure:
@@ -101,8 +93,6 @@ for the suite.
 .. note:: Some old suites in the tree still carry ``configure.ac`` and
 	``Makefile.am`` from the days when Builder used autotools. Do not copy
 	them for new work.
-
-
 
 
 .. _doxid-group__te__ts_1te_ts_min:
@@ -197,7 +187,6 @@ The build artefacts appear under the build directory:
 Please note that :ref:`Tester <doxid-group__te__engine__tester>` runs a test suite from the inst/suites/<suite_name> directory.
 
 
-
 .. _doxid-group__te__ts_1te_ts_min_builder:
 
 Build files
@@ -283,8 +272,6 @@ Adding a test to an existing package therefore means three things: write the
 entry for it in ``package.xml``.
 
 
-
-
 .. _doxid-group__te__ts_1te_ts_min_test_file:
 
 Test scenario file
@@ -360,7 +347,6 @@ run it:
 	</package>
 
 The next section goes through what each part of the C file is for.
-
 
 
 .. _doxid-group__te__ts_1te_ts_scenario_layout:
@@ -472,9 +458,6 @@ The following things should be taken into account while writing a test scenario:
   	#define TEST_START_VARS TEST_START_ENV_VARS
   	#define TEST_START_SPECIFIC TEST_START_ENV
   	#define TEST_END_SPECIFIC TEST_END_ENV
-
-
-
 
 
 .. _doxid-group__te__ts_1te_ts_scenario_params:
@@ -603,97 +586,3 @@ Then in your test scenario you can write the following:
 	    }
 	    ...
 	}
-
-|	:ref:`Network topology configuration of Test Agents<doxid-group__te__lib__tapi__conf__net>`
-|	:ref:`Test API<doxid-group__te__ts__tapi>`
-|		:ref:`Agent job control<doxid-group__tapi__job>`
-|			:ref:`Helper functions for handling options<doxid-group__tapi__job__opt>`
-|				:ref:`convenience macros for option<doxid-group__tapi__job__opt__bind__constructors>`
-|				:ref:`functions for argument formatting<doxid-group__tapi__job__opt__formatting>`
-|		:ref:`BPF/XDP configuration of Test Agents<doxid-group__tapi__bpf>`
-|		:ref:`Control NVMeOF<doxid-group__tapi__nvme>`
-|			:ref:`Kernel target<doxid-group__tapi__nvme__kern__target>`
-|			:ref:`ONVMe target<doxid-group__tapi__nvme__onvme__target>`
-|		:ref:`Control network channel using a gateway<doxid-group__ts__tapi__route__gw>`
-|		:ref:`DPDK RTE flow helper functions TAPI<doxid-group__tapi__rte__flow>`
-|		:ref:`DPDK helper functions TAPI<doxid-group__tapi__dpdk>`
-|		:ref:`DPDK statistics helper functions TAPI<doxid-group__tapi__dpdk__stats>`
-|		:ref:`Engine and TA files management<doxid-group__ts__tapi__file>`
-|		:ref:`FIO tool<doxid-group__tapi__fio>`
-|			:ref:`Control a FIO tool<doxid-group__tapi__fio__fio>`
-|			:ref:`FIO tool internals<doxid-group__tapi__fio__internal>`
-|		:ref:`GTest support<doxid-group__tapi__gtest>`
-|		:ref:`High level TAPI to configure network<doxid-group__ts__tapi__network>`
-|		:ref:`High level TAPI to work with sockets<doxid-group__ts__tapi__sockets>`
-|		:ref:`I/O multiplexers<doxid-group__tapi__iomux>`
-|		:ref:`Macros to get test parameters on a gateway configuration<doxid-group__ts__tapi__gw>`
-|		:ref:`Network Traffic TAPI<doxid-group__net__traffic>`
-|			:ref:`CSAP TAPI<doxid-group__csap>`
-|			:ref:`Route Gateway TAPI<doxid-group__route__gw>`
-|			:ref:`TAPI for testing TCP states<doxid-group__tapi__tcp__states>`
-|				:ref:`TAPI definitions for testing TCP states<doxid-group__tapi__tcp__states__def>`
-|			:ref:`TCP socket emulation<doxid-group__tcp__sock__emulation>`
-|		:ref:`RADIUS Server Configuration and RADIUS CSAP<doxid-group__tapi__radius>`
-|		:ref:`Stack of jumps<doxid-group__ts__tapi__jmp>`
-|		:ref:`Target requirements modification<doxid-group__ts__tapi__reqs>`
-|		:ref:`Test<doxid-group__te__ts__tapi__test>`
-|			:ref:`Network environment<doxid-group__tapi__env>`
-|			:ref:`Test execution flow<doxid-group__te__ts__tapi__test__log>`
-|			:ref:`Test misc<doxid-group__te__ts__tapi__test__misc>`
-|			:ref:`Test parameters<doxid-group__te__ts__tapi__test__param>`
-|			:ref:`Test run status<doxid-group__te__ts__tapi__test__run__status>`
-|		:ref:`Test API to control a network throughput test tool<doxid-group__tapi__performance>`
-|		:ref:`Test API to operate the UPnP<doxid-group__tapi__upnp>`
-|			:ref:`Test API for DLNA UPnP commons<doxid-group__tapi__upnp__common>`
-|			:ref:`Test API to operate the DLNA UPnP Content Directory Resources<doxid-group__tapi__upnp__cd__resources>`
-|			:ref:`Test API to operate the DLNA UPnP Content Directory Service<doxid-group__tapi__upnp__cd__service>`
-|			:ref:`Test API to operate the DLNA UPnP Device information<doxid-group__tapi__upnp__device__info>`
-|			:ref:`Test API to operate the DLNA UPnP Service information<doxid-group__tapi__upnp__service__info>`
-|			:ref:`Test API to operate the UPnP Control Point<doxid-group__tapi__upnp__cp>`
-|		:ref:`Test API to operate the media data<doxid-group__tapi__media>`
-|			:ref:`Test API to control a media player<doxid-group__tapi__media__player>`
-|			:ref:`Test API to control the mplayer media player<doxid-group__tapi__media__player__mplayer>`
-|			:ref:`Test API to operate the DLNA media files<doxid-group__tapi__media__dlna>`
-|			:ref:`Test API to operate the media files<doxid-group__tapi__media__file>`
-|		:ref:`Test API to operate the storage<doxid-group__tapi__storage>`
-|			:ref:`Test API to control the local storage device<doxid-group__tapi__local__storage__device>`
-|			:ref:`Test API to control the storage FTP client<doxid-group__tapi__storage__client__ftp>`
-|			:ref:`Test API to control the storage client<doxid-group__tapi__storage__client>`
-|			:ref:`Test API to control the storage server<doxid-group__tapi__storage__server>`
-|			:ref:`Test API to perform the generic operations over the storage<doxid-group__tapi__storage__wrapper>`
-|		:ref:`Test API to use memory-related functions conveniently<doxid-group__tapi__mem>`
-|		:ref:`Test API to use packetdrill test tool<doxid-group__tapi__packetdrill>`
-|		:ref:`Test API to control Wi-Fi client<doxid-group__tapi__wifi>`
-|		:ref:`Tools to work with "struct sockaddr"<doxid-group__ts__tapi__sockaddr>`
-|		:ref:`Traffic Application Domain<doxid-group__tapi__tad__main>`
-|			:ref:`ARP<doxid-group__tapi__tad__arp>`
-|			:ref:`ATM<doxid-group__tapi__tad__atm>`
-|			:ref:`CLI<doxid-group__tapi__tad__cli>`
-|			:ref:`DHCP<doxid-group__tapi__tad__dhcp>`
-|			:ref:`Ethernet<doxid-group__tapi__tad__eth>`
-|			:ref:`Forwarder module<doxid-group__tapi__tad__forw>`
-|			:ref:`Generic TAD API<doxid-group__tapi__tad>`
-|			:ref:`IGMP<doxid-group__tapi__tad__igmp>`
-|			:ref:`IP stack<doxid-group__tapi__tad__ipstack>`
-|				:ref:`Common functions for IPv4 and IPv6<doxid-group__tapi__tad__ip__common>`
-|				:ref:`ICMP<doxid-group__tapi__tad__icmp>`
-|				:ref:`ICMP4<doxid-group__tapi__tad__icmp4>`
-|				:ref:`ICMP6<doxid-group__tapi__tad__icmp6>`
-|				:ref:`IPv4<doxid-group__tapi__tad__ip4>`
-|				:ref:`IPv6<doxid-group__tapi__tad__ip6>`
-|				:ref:`Socket<doxid-group__tapi__tad__socket>`
-|				:ref:`TCP<doxid-group__tapi__tad__tcp>`
-|				:ref:`UDP<doxid-group__tapi__tad__udp>`
-|			:ref:`Network Data Notation (NDN)<doxid-group__tapi__ndn>`
-|			:ref:`PCAP<doxid-group__tapi__tad__pcap>`
-|			:ref:`PPP<doxid-group__tapi__tad__ppp>`
-|			:ref:`PPPOE<doxid-group__tapi__tad__pppoe>`
-|			:ref:`Packet flow processing<doxid-group__tapi__tad__flow>`
-|			:ref:`RTE mbuf<doxid-group__tapi__tad__rte__mbuf>`
-|			:ref:`SNMP<doxid-group__tapi__tad__snmp>`
-|			:ref:`STP<doxid-group__tapi__tad__stp>`
-|			:ref:`iSCSI<doxid-group__tapi__tad__iscsi>`
-|		:ref:`tool functions TAPI<doxid-group__tapi__wrk>`
-|		:ref:`tool functions TAPI<doxid-group__tapi__netperf>`
-
-

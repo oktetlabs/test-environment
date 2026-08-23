@@ -1,0 +1,99 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright (C) 2026 OKTET Ltd. */
+/**
+ * @file
+ * @brief Grouping of the API reference
+ *
+ * These groups hold the reference together; they document no code of their
+ * own. Doxygen nests a module under the @ingroup it names only when that name
+ * is defined somewhere, so they are defined here. Previously they were
+ * hand-written pages under doc/sphinx/pages/ that faked the Doxygen anchor,
+ * which left the navigation half generated and half maintained by hand.
+ */
+
+/**
+ * @defgroup tapi_conf Configuring the test bed
+ * @ingroup confapi
+ * @{
+ *
+ * Test scenarios can use functions exported by Configurator API directly:
+ * :ref:`API: Configurator <doxid-group__confapi__base>`, but there are
+ * high level interfaces that simplify access to some parts of
+ * configuration tree.
+ * @}
+ */
+
+/**
+ * @defgroup te_ts_tapi Test API
+ * @ingroup te_ts
+ * @{
+ *
+ * The Test API (TAPI) is what a test scenario is written against. Every
+ * module below wraps some capability of a :ref:`Test Agent <doxid-
+ * group__te__agents>` - a remote procedure call, a configuration subtree,
+ * a traffic generator, a command line tool - behind a C interface that a
+ * test can call directly. Tests link against these libraries; they are
+ * engine-side, not agent-side. The :ref:`Test Suite <doxid-group__te__ts>`
+ * page describes how a suite is laid out and built, and :ref:`Test <doxid-
+ * group__te__ts__tapi__test>` covers the scaffolding every test scenario
+ * uses.
+ * @}
+ */
+
+/**
+ * @defgroup tapi_media Media data
+ * @ingroup te_ts_tapi
+ * @{
+ *
+
+ * @}
+ */
+
+/**
+ * @defgroup tapi_storage Storage
+ * @ingroup te_ts_tapi
+ * @{
+ *
+
+ * @}
+ */
+
+/**
+ * @defgroup tapi_tad_main Traffic Application Domain
+ * @ingroup te_ts_tapi
+ * @{
+ *
+ * Traffic Application Domain (TAD) is a part of Remote Control Facility
+ * (RCF) which provides traffic transmission and receiving services on Test
+ * Agents. Any kind of data are considered as traffic. For example, IPv4
+ * over Ethernet packet, CLI command or its output, SNMP request. Find
+ * details in the document: doc/hld/OKTL-HLD-0000236-TE_TAD.sxw
+ * @}
+ */
+
+/**
+ * @defgroup tapi_tad_ipstack IP stack
+ * @ingroup tapi_tad_main
+ * @{
+ *
+ * Test API for IP stack CSAP.
+ * @}
+ */
+
+/**
+ * @defgroup tapi_upnp UPnP
+ * @ingroup te_ts_tapi
+ * @{
+ *
+
+ * @}
+ */
+
+/**
+ * @defgroup tapi_wifi Wi-Fi client
+ * @ingroup te_ts_tapi
+ * @{
+ *
+
+ * @}
+ */

@@ -1,3 +1,6 @@
+..
+  te-parent: kernel_log
+
 .. index:: pair: group; Packet Serial Parser
 .. _doxid-group__serial:
 

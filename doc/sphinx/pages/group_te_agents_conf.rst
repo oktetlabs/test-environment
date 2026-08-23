@@ -1,6 +1,7 @@
 ..
   SPDX-License-Identifier: Apache-2.0
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+  te-parent: te_agents
 
 .. index:: pair: group; Test Agents: Creating new configuration nodes in Test Agent
 .. _doxid-group__te__agents__conf:

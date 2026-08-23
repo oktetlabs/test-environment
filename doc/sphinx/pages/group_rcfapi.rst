@@ -1,6 +1,7 @@
 ..
   SPDX-License-Identifier: Apache-2.0
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+  te-parent: te_engine_rcf
 
 .. index:: pair: group; API Usage: Remote Control Facility API
 .. _doxid-group__rcfapi:
@@ -8,12 +9,7 @@
 API Usage: Remote Control Facility API
 ======================================
 
-.. toctree::
-	:hidden:
-
-	/generated/group_rcfapi_base.rst
-
-
+.. include:: _toctree/rcfapi.inc
 
 .. _doxid-group__rcfapi_1rcfapi_introduction:
 
@@ -30,9 +26,6 @@ The following diagram shows components that use this or that RCF API function.
 
 .. image:: /static/image/ten_rcfapi_users.png
 	:alt: RCF API Users
-
-
-
 
 
 .. _doxid-group__rcfapi_1rcfapi_test_user:
@@ -69,7 +62,3 @@ For test scenarios we can use RCF API for:
   * :ref:`rcf_ta_start_thread() <doxid-group__rcfapi__base_1ga354bb92b6a19239e5ead46a9985ed8cc>`;
 
   * :ref:`rcf_ta_kill_thread() <doxid-group__rcfapi__base_1gaed61242aa8027c5561ea20d64e11637d>`.
-
-|	:ref:`API: RCF<doxid-group__rcfapi__base>`
-
-

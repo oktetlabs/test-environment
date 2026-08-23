@@ -1,6 +1,7 @@
 ..
   SPDX-License-Identifier: Apache-2.0
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+  te-parent: net_traffic
 
 .. index:: pair: group; TCP socket emulation
 .. _doxid-group__tcp__sock__emulation:

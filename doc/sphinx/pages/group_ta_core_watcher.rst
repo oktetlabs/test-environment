@@ -1,6 +1,7 @@
 ..
   SPDX-License-Identifier: Apache-2.0
   Copyright (C) 2023 OKTET Labs Ltd. All rights reserved.
+  te-parent: te_agents
 
 .. index:: pair: group; Core watcher
 .. _doxid-group__ta__core__watcher:

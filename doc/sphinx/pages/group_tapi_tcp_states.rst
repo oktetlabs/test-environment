@@ -1,6 +1,7 @@
 ..
   SPDX-License-Identifier: Apache-2.0
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
+  te-parent: net_traffic
 
 .. index:: pair: group; TAPI for testing TCP states
 .. _doxid-group__tapi__tcp__states:
@@ -8,15 +9,11 @@
 TAPI for testing TCP states
 ===========================
 
-.. toctree::
-	:hidden:
-
-	/generated/group_tapi_tcp_states_def.rst
+.. include:: _toctree/tapi_tcp_states.inc
 
 tapi_tcp_states (TSA) library can be used to test a TCP socket in various TCP states. It is used to check that every TCP state can be reached according to TCP states diagram, and to check what happens if we perform some actions while being in some TCP state.
 
 Its interface is defined in ``lib/tapi_tcp_states/tapi_tcp_states.h``.
-
 
 
 .. _doxid-group__tapi__tcp__states_1tapi_tcp_states_how:
@@ -29,9 +26,6 @@ In this library it is supposed that we have a TCP socket under test, which we mo
 Not all TCP states exist for a long time. Some of them usually take place only for a short time interval, until a peer replies to a packet which was sent to it by a socket under test. For example, a socket sends SYN to reach SYN_SENT state, and then quickly reaches ESTABLISHED state when SYN-ACK arrives from a peer.
 
 To make such a transient TCP state stable for a while, we can either break network connection from Tester to IUT, so that no reply is received from the peer, or use tcp_sock_emulation instead of a normal socket on Tester, so that we can determine the exact moment when a reply is sent.
-
-
-
 
 
 .. _doxid-group__tapi__tcp__states_1tapi_tcp_states_init:
@@ -60,18 +54,12 @@ To use the library, follow these steps:
 #. Call :ref:`tsa_create_session() <doxid-group__tapi__tcp__states__def_1ga112ea2149a0b7098b1a2b92378f23679>` to create a socket under test on IUT and its peer on Tester. The socket under test is initially in TCP_CLOSE state.
 
 
-
-
-
 .. _doxid-group__tapi__tcp__states_1tapi_tcp_states_fini:
 
 Finalization
 ~~~~~~~~~~~~
 
 :ref:`tsa_destroy_session() <doxid-group__tapi__tcp__states__def_1ga89edeca462df2cc3657847a9d1a33664>` should be used to perform cleanup after using the library.
-
-
-
 
 
 .. _doxid-group__tapi__tcp__states_1tapi_tcp_states_use:
@@ -102,9 +90,6 @@ The following functions can be used to obtain information about the TCP state of
 * :ref:`tsa_state_to() <doxid-group__tapi__tcp__states__def_1ga7d23909a0cafc9916328a81330086a45>` returns the latest state to which a transition was attempted.
 
 
-
-
-
 .. _doxid-group__tapi__tcp__states_1tapi_tcp_states_conn:
 
 Changing network connectivity
@@ -127,9 +112,6 @@ The following functions can be used to repair or break again the network connect
 * :ref:`tsa_break_iut_tst_conn() <doxid-group__tapi__tcp__states__def_1ga1f69d97355b1e725c62eb46fdbb731f8>`
 
 After calling these functions CFG_WAIT_CHANGES macro should be used.
-
-
-
 
 
 .. _doxid-group__tapi__tcp__states_1tapi_tcp_states_example:
@@ -205,7 +187,3 @@ Example
 
 	    TEST_END;
 	}
-
-|	:ref:`TAPI definitions for testing TCP states<doxid-group__tapi__tcp__states__def>`
-
-
