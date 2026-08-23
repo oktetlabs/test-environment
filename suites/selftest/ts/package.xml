@@ -44,6 +44,14 @@
         </run>
 
         <run>
+            <package name="expansion"/>
+            <arg name="speed">
+                <value>10G</value>
+                <value>100G</value>
+            </arg>
+        </run>
+
+        <run>
             <package name="tools"/>
         </run>
 

@@ -73,6 +73,7 @@ install_data([ 'package.xml' ], install_dir: package_dir)
 
 packages = [
     'minimal',
+    'expansion',
     'tools',
     'cs',
     'tapi',

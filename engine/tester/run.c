@@ -42,6 +42,7 @@
 #include "tq_string.h"
 #include "te_str.h"
 #include "te_compound.h"
+#include "te_expand.h"
 #include "conf_api.h"
 #include "log_bufs.h"
 #include "te_trc.h"
@@ -1279,6 +1280,105 @@ test_params_to_te_string(te_string *str, const unsigned int n_args,
 }
 
 /**
+ * Values of the current iteration available for variable expansion.
+ *
+ * The arguments are looked up as they are: a name is resolved against
+ * the compound items of every argument on demand, so nothing has to be
+ * prepared for an iteration whose objectives hold no reference at all,
+ * and that is most of them.
+ */
+typedef struct expand_args {
+    unsigned int n_args;        /**< Number of iteration arguments */
+    const test_iter_arg *args;  /**< Iteration arguments */
+} expand_args;
+
+/**
+ * Append the value of the item a reference resolved to.
+ *
+ * The function complies with te_compound_iter_fn prototype.
+ */
+static te_errno
+expand_args_item_cb(char *key, size_t idx, char *value, bool has_more,
+                    void *user)
+{
+    te_string *dest = user;
+
+    UNUSED(key);
+    UNUSED(idx);
+    UNUSED(has_more);
+
+    te_string_append(dest, "%s", value);
+
+    return 0;
+}
+
+/* See the description in tester_run.h */
+bool
+test_iter_args_dereference(const test_iter_arg *args, unsigned int n_args,
+                           const char *name, te_string *dest)
+{
+    unsigned int i;
+
+    for (i = 0; i < n_args; i++)
+    {
+        if (te_compound_dereference_str(args[i].value, args[i].name, name,
+                                        expand_args_item_cb, dest) == 0)
+            return true;
+    }
+
+    return false;
+}
+
+/**
+ * Expand a reference to an argument of the current iteration.
+ *
+ * The function complies with te_expand_param_func prototype.
+ */
+static bool
+expand_args_value(const char *name, const void *ctx, te_string *dest)
+{
+    const expand_args *ea = ctx;
+
+    return test_iter_args_dereference(ea->args, ea->n_args, name, dest);
+}
+
+/**
+ * Append @p src to @p dest expanding variable references in it.
+ *
+ * Only a malformed template makes the expansion fail; then a warning
+ * is logged and @p src is appended unchanged, so no part of it is ever
+ * silently lost.  A reference to a name that no argument provides is
+ * not a failure here, it expands to an empty string; such a reference
+ * is reported when the configuration is prepared, long before any
+ * objective is logged.
+ *
+ * @param ea    Expansion context.
+ * @param dest  Destination string.
+ * @param src   Source string (may be @c NULL).
+ */
+static void
+expand_args_append(const expand_args *ea, te_string *dest, const char *src)
+{
+    te_string expanded = TE_STRING_INIT;
+
+    if (src == NULL)
+        return;
+
+    if (te_string_expand_parameters(src, expand_args_value, ea,
+                                    &expanded) != 0)
+    {
+        WARN("%s(): failed to expand '%s', keeping it as is",
+             __func__, src);
+        te_string_append(dest, "%s", src);
+    }
+    else
+    {
+        te_string_append(dest, "%s", te_string_value(&expanded));
+    }
+    te_string_free(&expanded);
+}
+
+/**
  * Construct iteration objective from objective of the test/session/package
  * and objectives of parameter values.
  *
@@ -1286,11 +1386,13 @@ test_params_to_te_string(te_string *str, const unsigned int n_args,
  * @param objective   The test/session/package objective.
  * @param n_args      Number of test iteration arguments.
  * @param args        Test iteration arguments.
+ * @param ea          Variable expansion context.
  */
 static void
 collect_objectives(te_string *str, const char *objective,
                    const unsigned int n_args,
-                   const test_iter_arg *args)
+                   const test_iter_arg *args,
+                   const expand_args *ea)
 {
     unsigned int i;
     const test_iter_arg *p;
@@ -1299,7 +1401,7 @@ collect_objectives(te_string *str, const char *objective,
 
     if (objective != NULL)
     {
-        te_string_append(str, "%s", objective);
+        expand_args_append(ea, str, objective);
     }
     else
     {
@@ -1323,7 +1425,7 @@ collect_objectives(te_string *str, const char *objective,
             if (comma)
                 te_string_append(str, ", ");
 
-            te_string_append(str, "%s", p->objective);
+            expand_args_append(ea, str, p->objective);
             comma = true;
         }
     }
@@ -1804,6 +1906,11 @@ log_test_start(unsigned int flags,
     te_string   obj_str     = TE_STRING_INIT;
     char       *hash_str    = NULL;
 
+    const expand_args ea = {
+        .n_args = ri->n_args,
+        .args = ctx->args,
+    };
+
     const char *objective = NULL;
 
 #define SET_JSON_STRING(_target, _string) \
@@ -1951,8 +2058,7 @@ log_test_start(unsigned int flags,
             ERROR("Invalid run item type %d", ri->type);
     }
 
-    collect_objectives(&obj_str, objective, ri->n_args,
-                       ctx->args);
+    collect_objectives(&obj_str, objective, ri->n_args, ctx->args, &ea);
     objective = te_string_value(&obj_str);
     if (!te_str_is_null_or_empty(objective))
     {

@@ -18,6 +18,7 @@
 #endif
 
 #include "te_queue.h"
+#include "te_string.h"
 #include "tq_string.h"
 
 #include "tester_reqs.h"
@@ -40,6 +41,28 @@ typedef struct test_iter_arg {
     /** Current value objective */
     const char *objective;
 } test_iter_arg;
+
+/**
+ * Resolve @p name against the arguments of an iteration and append the
+ * value it names to @p dest.
+ *
+ * A reference names either an argument as a whole or one item of a
+ * compound argument value, and in the latter case the argument's own
+ * name is only a prefix of it, so the owning argument is found by
+ * trying each in turn.  The names accepted are exactly those under
+ * which the values are logged among the parameters of the test, so a
+ * reference addresses a value by the name a reader of the log sees.
+ *
+ * @param args    Iteration arguments.
+ * @param n_args  Number of @p args.
+ * @param name    Name to resolve.
+ * @param dest    String the value is appended to.
+ *
+ * @return @c true if @p name was resolved and @p dest appended.
+ */
+extern bool test_iter_args_dereference(const test_iter_arg *args,
+                                       unsigned int n_args,
+                                       const char *name, te_string *dest);
 
 
 /** Act of the testing scenario */

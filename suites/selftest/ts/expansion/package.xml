@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2026 OKTET Labs Ltd. All rights reserved. -->
+<package version="1.0">
+    <description>Objective expansion at ${speed}</description>
+    <author mailto="te-maint@oktetlabs.ru"/>
+
+    <session>
+        <arg name="speed"/>
+        <run>
+            <script name="helloworld">
+                <objective>Say hello at ${speed}</objective>
+            </script>
+        </run>
+    </session>
+</package>

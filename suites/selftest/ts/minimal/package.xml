@@ -21,6 +21,15 @@
             <script name="helloworld"/>
         </run>
         <run>
+            <script name="helloworld">
+                <objective>Say hello at ${speed} over ${media:-copper}</objective>
+            </script>
+            <arg name="speed">
+                <value>10G</value>
+                <value objective="the fastest supported speed of ${speed}">100G</value>
+            </arg>
+        </run>
+        <run>
             <script name="artifact"/>
         </run>
         <run>
