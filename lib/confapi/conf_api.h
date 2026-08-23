@@ -53,7 +53,7 @@ extern "C" {
 #endif
 
 /** @defgroup confapi_base API: Configurator
- * @ingroup confapi
+ * @ingroup tapi_conf
  * @{
  */
 

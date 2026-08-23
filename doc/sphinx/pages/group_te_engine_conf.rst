@@ -7,8 +7,6 @@
 Configurator
 ============
 
-.. include:: _toctree/te_engine_conf.inc
-
 .. _doxid-group__te__engine__conf_1te_engine_conf_introduction:
 
 Introduction

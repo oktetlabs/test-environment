@@ -1,15 +1,13 @@
 ..
   SPDX-License-Identifier: Apache-2.0
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
-  te-parent: te_engine_conf
+  te-parent: tapi_conf
 
 .. index:: pair: group; API Usage: Configurator API
 .. _doxid-group__confapi:
 
 API Usage: Configurator API
 ===========================
-
-.. include:: _toctree/confapi.inc
 
 .. _doxid-group__confapi_1confapi_introduction:
 

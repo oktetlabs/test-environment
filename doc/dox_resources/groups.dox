@@ -12,18 +12,6 @@
  */
 
 /**
- * @defgroup tapi_conf Configuring the test bed
- * @ingroup confapi
- * @{
- *
- * Test scenarios can use functions exported by Configurator API directly:
- * :ref:`API: Configurator <doxid-group__confapi__base>`, but there are
- * high level interfaces that simplify access to some parts of
- * configuration tree.
- * @}
- */
-
-/**
  * @defgroup te_ts_tapi Test API
  * @ingroup te_ts
  * @{
@@ -37,6 +25,18 @@
  * page describes how a suite is laid out and built, and :ref:`Test <doxid-
  * group__te__ts__tapi__test>` covers the scaffolding every test scenario
  * uses.
+ * @}
+ */
+
+/**
+ * @defgroup tapi_conf Configuring the test bed
+ * @ingroup te_ts_tapi
+ * @{
+ *
+ * Test scenarios can use functions exported by Configurator API directly:
+ * :ref:`API: Configurator <doxid-group__confapi__base>`, but there are
+ * high level interfaces that simplify access to some parts of
+ * configuration tree.
  * @}
  */
 

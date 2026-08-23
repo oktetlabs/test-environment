@@ -1,13 +1,13 @@
 ..
   SPDX-License-Identifier: Apache-2.0
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
-  te-parent: te_engine_rcf
+  te-parent: te_ts_tapi
 
-.. index:: pair: group; API Usage: Remote Procedure Calls (RPC)
+.. index:: pair: group; Remote calls on an agent
 .. _doxid-group__te__lib__rpc:
 
-API Usage: Remote Procedure Calls (RPC)
-=======================================
+Remote calls on an agent
+========================
 
 .. include:: _toctree/te_lib_rpc.inc
 

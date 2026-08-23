@@ -7,4 +7,3 @@
 	:hidden:
 
 	group_rcfapi.rst
-	group_te_lib_rpc.rst
