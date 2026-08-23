@@ -3,7 +3,7 @@
  * @brief IP rule Configuration Model TAPI
  *
  * @defgroup tapi_conf_ip_rule IP rules configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_addr
  * @{
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.

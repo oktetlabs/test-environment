@@ -3,7 +3,7 @@
  * @brief Test API to get/set parameters in /proc/sys/
  *
  * @defgroup tapi_cfg_sys System parameters configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_host
  * @{
  *
  * Definitions of TAPI to get/set system parameters using `/agent/sys/`

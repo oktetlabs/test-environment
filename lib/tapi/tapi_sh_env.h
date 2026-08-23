@@ -3,7 +3,7 @@
  * @brief Test API to control environment variables on the agent side
  *
  * @defgroup tapi_conf_sh_env Environment variables configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_tree
  * @{
  *
  * Definition of API to deal with thread-safe stack of jumps.

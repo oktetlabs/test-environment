@@ -26,7 +26,7 @@ extern "C" {
 
 /**
  * @defgroup tapi_conf_local Local subtree access
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_tree
  * @{
  *
  * The /local: subtree, which holds values a test wants Configurator to keep

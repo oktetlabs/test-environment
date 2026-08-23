@@ -3,7 +3,7 @@
  * @brief Test API to configure command monitor.
  *
  * @defgroup tapi_cmd_monitor_def Command monitor TAPI
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_diag
  * @{
  *
  * Definition of API to configure command monitor.

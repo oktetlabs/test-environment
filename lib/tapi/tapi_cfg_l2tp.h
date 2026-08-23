@@ -3,7 +3,7 @@
  * @brief Test API to configure L2TP.
  *
  * @defgroup tapi_conf_l2tp L2TP configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_serv
  * @{
  *
  * Definition of TAPI to configure L2TP.

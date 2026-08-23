@@ -24,7 +24,7 @@ extern "C" {
 
 /**
  * @defgroup tapi_conf_iptable iptables configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_serv
  * @{
  *
  * Add, list and flush iptables rules and chains on a Test Agent.

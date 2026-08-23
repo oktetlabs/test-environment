@@ -3,7 +3,7 @@
  * @brief Configuration TAPI to work with /local/host subtree
  *
  * @defgroup tapi_host_ns Agents, namespaces and interfaces relations
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_topo
  * @{
  *
  * Definition of test API to manage the configurator subtree `/local/host`.

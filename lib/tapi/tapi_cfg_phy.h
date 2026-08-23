@@ -23,7 +23,7 @@ extern "C" {
 
 /**
  * @defgroup tapi_conf_phy Ethernet PHY configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_link
  * @{
  *
  * Read and set the physical layer settings of an interface: speed, duplex,

@@ -27,7 +27,7 @@ extern "C" {
 
 /**
  * @defgroup tapi_conf_pppoe PPPoE Server configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_serv
  * @{
  *
  * Configure the PPPoE server running on a Test Agent.

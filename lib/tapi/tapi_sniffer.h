@@ -3,7 +3,7 @@
  * @brief Test API to configure sniffers.
  *
  * @defgroup tapi_conf_sniffer Network sniffers configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_diag
  * @{
  *
  * Definition of API to configure sniffers.

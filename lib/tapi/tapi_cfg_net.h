@@ -22,7 +22,7 @@ extern "C" {
 
 /**
  * @defgroup tapi_conf_net Network topology configuration of Test Agents
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_topo
  * @{
  */
 

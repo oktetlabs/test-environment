@@ -20,7 +20,7 @@ extern "C" {
 
 /**
  * @defgroup tapi_conf_irq Interface interrupts configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_link
  * @{
  *
  * Query and change the SMP affinity of the interrupts of a network

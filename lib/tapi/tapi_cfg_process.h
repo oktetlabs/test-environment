@@ -3,7 +3,7 @@
  * @brief Test API to configure processes.
  *
  * @defgroup tapi_conf_process Processes configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_host
  * @{
  *
  * Definition of TAPI to configure processes.

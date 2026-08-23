@@ -4,7 +4,7 @@
  * @brief Test API to allocate L4 port
  *
  * @defgroup tapi_conf_l4_port Test API to allocate L4 port
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_addr
  * @{
  *
  * Allocate TCP and UDP port numbers that no other test is using, either

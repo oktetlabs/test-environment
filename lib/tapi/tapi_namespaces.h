@@ -3,7 +3,7 @@
  * @brief Linux namespaces configuration test API
  *
  * @defgroup tapi_namespaces Agent namespaces configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_topo
  * @{
  *
  * Definition of test API for linux namespaces configuration model

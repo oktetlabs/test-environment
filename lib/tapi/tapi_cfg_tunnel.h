@@ -4,7 +4,7 @@
  * @brief Test API to configure tunnel.
  *
  * @defgroup tapi_conf_tunnel Tunnel configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_serv
  * @{
  *
  * Definition of TAPI to configure tunnel.

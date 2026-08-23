@@ -3,7 +3,7 @@
  * @brief Test API to configure bonding and bridging.
  *
  * @defgroup tapi_conf_aggr Bonding and bridging configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_link
  * @{
  *
  * Definition of API to configure linux trunks (IEEE 802.3ad) and bridges.

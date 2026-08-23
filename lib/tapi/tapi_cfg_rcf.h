@@ -4,7 +4,7 @@
  * @brief RCF interface via CS
  *
  * @defgroup tapi_conf_rcf RCF interface via Configurator
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_tree
  * @{
  *
  * Reach RCF through the configuration tree: add and remove agents at run

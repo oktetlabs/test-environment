@@ -119,6 +119,74 @@
  */
 
 /**
+ * @defgroup tapi_conf_addr Addressing and routing
+ * @ingroup tapi_conf
+ * @{
+ *
+ * Where packets are sent and which addresses a test may use.
+ * @}
+ */
+
+/**
+ * @defgroup tapi_conf_diag Diagnostics and console
+ * @ingroup tapi_conf
+ * @{
+ *
+ * Watching what the agent and the device under test are doing while a test
+ * runs.
+ * @}
+ */
+
+/**
+ * @defgroup tapi_conf_host Host resources
+ * @ingroup tapi_conf
+ * @{
+ *
+ * What the machine under an agent has and what is loaded on it.
+ * @}
+ */
+
+/**
+ * @defgroup tapi_conf_link Interfaces and links
+ * @ingroup tapi_conf
+ * @{
+ *
+ * The interfaces themselves: addresses and flags, what the driver offers,
+ * and the bridges, bonds and queues layered on top.
+ * @}
+ */
+
+/**
+ * @defgroup tapi_conf_serv Network services and daemons
+ * @ingroup tapi_conf
+ * @{
+ *
+ * Servers, tunnels and virtualisation a test starts on an agent to build
+ * the environment it needs.
+ * @}
+ */
+
+/**
+ * @defgroup tapi_conf_tree The configuration tree itself
+ * @ingroup tapi_conf
+ * @{
+ *
+ * Working with Configurator rather than with what it configures: local
+ * storage, caching, change tracking and the agents themselves.
+ * @}
+ */
+
+/**
+ * @defgroup tapi_conf_topo Topology and namespaces
+ * @ingroup tapi_conf
+ * @{
+ *
+ * How the agents in a test bed are wired to one another, and which network
+ * namespace each interface lives in.
+ * @}
+ */
+
+/**
  * @defgroup tapi_media Media data
  * @ingroup te_ts_tapi
  * @{

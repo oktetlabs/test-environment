@@ -3,7 +3,7 @@
  * @brief Test API to configure virtual machines.
  *
  * @defgroup tapi_conf_vm Virtual machines configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_serv
  * @{
  *
  * Definition of TAPI to configure virtual machines.

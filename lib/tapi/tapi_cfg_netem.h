@@ -3,7 +3,7 @@
  * @brief Network Emulator configuration
  *
  * @defgroup tapi_conf_netem Network Emulator configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_link
  * @{
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.

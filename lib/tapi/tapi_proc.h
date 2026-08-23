@@ -3,7 +3,7 @@
  * @brief API to configure some system options via /proc/sys
  *
  * @defgroup tapi_conf_proc TA system options configuration (OBSOLETE)
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_host
  * @{
  *
  * ###########################################################################

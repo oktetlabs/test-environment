@@ -29,7 +29,7 @@ extern "C" {
 
 /**
  * @defgroup tapi_conf_ip6 IPv6 specific configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_addr
  * @{
  *
  * IPv6-specific knobs of an agent's interfaces, such as accepting router

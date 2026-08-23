@@ -23,7 +23,7 @@ extern "C" {
 
 /**
  * @defgroup tapi_conf_ovs PCI devices configuration of Test Agents
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_serv
  * @{
  */
 

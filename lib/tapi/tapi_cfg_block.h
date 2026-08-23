@@ -19,7 +19,7 @@ extern "C" {
 
 /**
  * @defgroup tapi_conf_block Block devices subtree
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_host
  * @{
  *
  * Enumerate the block devices an agent exposes and check which of them are

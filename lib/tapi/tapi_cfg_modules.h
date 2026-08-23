@@ -3,7 +3,7 @@
  * @brief Test API to configure kernel modules
  *
  * @defgroup tapi_conf_modules Kernel modules configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_host
  * @{
  *
  * Definition of API to configure kernel modules and their parameters.

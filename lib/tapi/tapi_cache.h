@@ -3,7 +3,7 @@
  * @brief API to deal with cached data
  *
  * @defgroup tapi_cache Test API to handle a cache
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_tree
  * @{
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.

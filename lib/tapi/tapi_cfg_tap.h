@@ -4,7 +4,7 @@
  * @brief Test API to configure TAP interface.
  *
  * @defgroup tapi_conf_tap TAP interface configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_link
  * @{
  *
  * Definition of TAPI to configure TAP interface.

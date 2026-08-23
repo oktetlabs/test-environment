@@ -19,7 +19,7 @@ extern "C" {
 
 /**
  * @defgroup tapi_conf_cpu CPU topology configuration of Test Agents
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_host
  * @{
  */
 

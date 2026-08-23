@@ -3,7 +3,7 @@
  * @brief Queuing Discipline configuration
  *
  * @defgroup tapi_conf_qdisc Queuing Discipline configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_link
  * @{
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.

@@ -27,7 +27,7 @@ extern "C" {
 
 /**
  * @defgroup tapi_conf_dhcp_serv DHCP Server configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_serv
  * @{
  *
  * Configure the DHCP server running on a Test Agent: subnets, hosts, groups

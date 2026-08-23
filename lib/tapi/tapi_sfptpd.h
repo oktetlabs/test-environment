@@ -3,7 +3,7 @@
  * @brief Test API to manage Solarflare PTP daemon
  *
  * @defgroup tapi_conf_sfptpd Solarflare PTP daemon configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_serv
  * @{
  *
  * Definition of API to manage sfptpd daemon.

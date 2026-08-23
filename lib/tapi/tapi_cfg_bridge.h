@@ -4,7 +4,7 @@
  * @brief Test API to configure bridge.
  *
  * @defgroup tapi_conf_bridge Bridge configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_link
  * @{
  *
  * Definition of TAPI to configure bridge.

@@ -3,7 +3,7 @@
  * @brief Test API to configure VTund.
  *
  * @defgroup tapi_conf_vtund VTun (Virtual Tunnel) daemon configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_serv
  * @{
  *
  * Definition of API to configure VTund.

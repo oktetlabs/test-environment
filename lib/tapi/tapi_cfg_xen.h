@@ -22,7 +22,7 @@ struct sockaddr; /** Forward declaration to avoid header inclusion */
 
 /**
  * @defgroup tapi_conf_xen XEN configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_serv
  * @{
  */
 

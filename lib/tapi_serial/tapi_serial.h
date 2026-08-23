@@ -3,7 +3,7 @@
  * @brief DUT serial console TAPI
  *
  * @defgroup tapi_conf_serial DUT serial console access
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_diag
  * @{
  *
  * Definition of API for communicating with DUT via serial console.

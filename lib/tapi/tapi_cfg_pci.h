@@ -20,7 +20,7 @@ extern "C" {
 
 /**
  * @defgroup tapi_conf_pci PCI devices configuration of Test Agents
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_host
  * @{
  *
  * Find the PCI devices of a Test Agent, learn which driver each is bound to

@@ -39,7 +39,7 @@ extern "C" {
 
 /**
  * @defgroup tapi_conf_stats Network statistics access
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_link
  * @{
  */
 

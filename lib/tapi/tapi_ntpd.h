@@ -3,7 +3,7 @@
  * @brief Test API to manage NTP daemon
  *
  * @defgroup tapi_conf_ntpd NTP daemon configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_serv
  * @{
  *
  * Definition of API to manage ntpd daemon.

@@ -22,7 +22,7 @@ extern "C" {
 
 /**
  * @defgroup tapi_conf_key Agent keys subtree
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_tree
  * @{
  *
  * Generate, inspect and remove cryptographic keys on a Test Agent, and copy

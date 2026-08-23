@@ -3,7 +3,7 @@
  * @brief Test API of serial console parsers
  *
  * @defgroup tapi_conf_serial_parse Serial console parsers configuration
- * @ingroup tapi_conf
+ * @ingroup tapi_conf_diag
  * @{
  *
  * Definition of API to configure serial console parsers.
