@@ -33,6 +33,9 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_queue.h"
+#include "te_string.h"
+#include "te_str.h"
+#include "te_compound.h"
 #include "logger_api.h"
 
 #include "tester_conf.h"
@@ -65,6 +68,9 @@ typedef struct config_prepare_ctx {
     run_item           *keepalive;  /**< Current keep-alive handler */
     unsigned int        track_conf; /**< Current track_conf attribute */
 
+    const char         *pkg_path;   /**< Package file the current session
+                                         comes from */
+
 } config_prepare_ctx;
 
 /**
@@ -75,6 +81,17 @@ typedef struct config_prepare_data {
     SLIST_HEAD(, config_prepare_ctx) ctxs;   /**< Stack of contexts */
 
     te_errno                        rc;     /**< Status code */
+
+    const char                     *new_pkg_path; /**< Path of the package
+                                                       file whose session is
+                                                       about to be entered */
+
+    te_errno                        expand_rc;    /**< Status of the check of
+                                                       variable references,
+                                                       kept aside so that the
+                                                       walk may go on and
+                                                       report every run item
+                                                       that has a bad one */
 
 } config_prepare_data;
 
@@ -151,6 +168,7 @@ config_prepare_new_ctx(config_prepare_data *gctx)
         new_ctx->exception = cur_ctx->exception;
         new_ctx->keepalive = cur_ctx->keepalive;
         new_ctx->track_conf = cur_ctx->track_conf;
+        new_ctx->pkg_path = cur_ctx->pkg_path;
     }
     else
     {
@@ -426,15 +444,18 @@ prepare_cfg_start(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
     config_prepare_data    *gctx = opaque;
     config_prepare_ctx     *ctx;
 
-    UNUSED(cfg);
     UNUSED(cfg_id_off);
 
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
-    if (config_prepare_new_ctx(gctx) == NULL)
+    ctx = config_prepare_new_ctx(gctx);
+    if (ctx == NULL)
         return TESTER_CFG_WALK_FAULT;
+
+    /* Run items declared here come from the Tester configuration file */
+    ctx->pkg_path = cfg->filename;
 
     return TESTER_CFG_WALK_CONT;
 }
@@ -460,6 +481,21 @@ prepare_cfg_end(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
 }
 
 static tester_cfg_walk_ctl
+prepare_pkg_start(run_item *ri, test_package *pkg, unsigned int cfg_id_off,
+                  void *opaque)
+{
+    config_prepare_data *gctx = opaque;
+
+    UNUSED(ri);
+    UNUSED(cfg_id_off);
+
+    assert(gctx != NULL);
+    gctx->new_pkg_path = pkg->path;
+
+    return TESTER_CFG_WALK_CONT;
+}
+
+static tester_cfg_walk_ctl
 prepare_session_start(run_item *ri, test_session *session,
                       unsigned int cfg_id_off, void *opaque)
 {
@@ -473,6 +509,16 @@ prepare_session_start(run_item *ri, test_session *session,
 
     if ((ctx =  config_prepare_new_ctx(gctx)) == NULL)
         return TESTER_CFG_WALK_FAULT;
+
+    /*
+     * pkg_start() is called just before the session of the package is
+     * entered, so the announced path belongs to this very session.
+     */
+    if (gctx->new_pkg_path != NULL)
+    {
+        ctx->pkg_path = gctx->new_pkg_path;
+        gctx->new_pkg_path = NULL;
+    }
 
     /* Service executables inheritance */
     inherit_executable(&session->exception, &session->flags,
@@ -552,6 +598,295 @@ prepare_session_end(run_item *ri, test_session *session,
     return TESTER_CFG_WALK_CONT;
 }
 
+/**
+ * @name Variable reference syntax.
+ *
+ * The part of the syntax of te_string_expand_parameters() that the
+ * check has to know about, see te_expand.h.
+ *
+ * @{
+ */
+/** Start of a variable reference. */
+#define EXPAND_VARREF "${"
+/** Opening brace of a reference. */
+#define EXPAND_OPENING '{'
+/** Closing brace of a reference. */
+#define EXPAND_CLOSING '}'
+/** Start of a reference modifier. */
+#define EXPAND_MODIFIER ":"
+/** Separator before a filter name. */
+#define EXPAND_FILTER "|"
+/** @} */
+
+/** Data to be passed as opaque to expand_check_* callbacks. */
+typedef struct expand_check_data {
+    const run_item     *ri;         /**< Run item being checked */
+    const char         *pkg_path;   /**< Package file for diagnostics */
+    te_errno            rc;         /**< Status of the check */
+} expand_check_data;
+
+/** Data to be passed as opaque to the callbacks resolving a name. */
+typedef struct expand_check_lookup {
+    const run_item     *ri;         /**< Run item being checked */
+    const test_var_arg *va;         /**< Argument being looked through */
+    const char         *name;       /**< Name being looked up */
+    bool                provided;   /**< The name is provided */
+} expand_check_lookup;
+
+/**
+ * Note whether a compound item of a declared value provides the name.
+ *
+ * The function complies with te_compound_iter_fn prototype.
+ */
+static te_errno
+expand_check_item_cb(char *key, size_t idx, char *value, bool has_more,
+                     void *user)
+{
+    expand_check_lookup *lookup = user;
+    te_string name = TE_STRING_INIT;
+
+    UNUSED(value);
+    UNUSED(has_more);
+
+    te_compound_build_name(&name, lookup->va->name, key, idx);
+    if (strcmp(te_string_value(&name), lookup->name) == 0)
+        lookup->provided = true;
+    te_string_free(&name);
+
+    return 0;
+}
+
+/**
+ * Ask a single declared value whether it provides the name.
+ *
+ * The function complies with test_entity_value_enum_cb prototype.
+ */
+static te_errno
+expand_check_value_cb(const test_entity_value *value, void *opaque)
+{
+    expand_check_lookup *lookup = opaque;
+
+    if (value->plain != NULL)
+        te_compound_iterate_str(value->plain, expand_check_item_cb, lookup);
+
+    return 0;
+}
+
+/**
+ * Ask an argument and its declared values whether they provide the name.
+ *
+ * The function complies with test_var_arg_enum_cb prototype.
+ */
+static te_errno
+expand_check_arg_cb(const test_var_arg *va, void *opaque)
+{
+    expand_check_lookup *lookup = opaque;
+
+    if (strcmp(lookup->name, va->name) == 0)
+        lookup->provided = true;
+
+    lookup->va = va;
+    (void)test_var_arg_enum_values(lookup->ri, va, expand_check_value_cb,
+                                   lookup, NULL, NULL);
+    lookup->va = NULL;
+
+    return 0;
+}
+
+/**
+ * Check whether anything can provide @p name at run time.
+ *
+ * @param data  Validation context.
+ * @param name  Name a reference looks up.
+ *
+ * @return @c true if an argument or a variable of the run item provides
+ *         the name.
+ */
+static bool
+expand_check_name_provided(const expand_check_data *data, const char *name)
+{
+    expand_check_lookup lookup = {
+        .ri = data->ri,
+        .va = NULL,
+        .name = name,
+        .provided = false,
+    };
+
+    (void)test_run_item_enum_args(data->ri, expand_check_arg_cb, false,
+                                  &lookup);
+
+    return lookup.provided;
+}
+
+/**
+ * Check that every variable reference in @p src can be resolved.
+ *
+ * The references are walked here instead of the string being expanded,
+ * because expansion answers a different question.  The expander splits
+ * a reference at the modifier before it looks the name up and applies
+ * the default value after the lookup has failed, so it can only say
+ * that @c x is undefined, never whether the text said @c ${x} or
+ * @c ${x:-default}; a check driven by it would refuse every deliberate
+ * default.  Walking the references also reports all of them in one
+ * pass, rather than the first one that fails.
+ *
+ * A reference nested in another one is not checked: it is expanded by
+ * the value of the enclosing reference, which is not known until the
+ * run item is iterated.
+ *
+ * @param data  Validation context.
+ * @param what  Human readable name of the string being checked.
+ * @param src   String to check (may be @c NULL).
+ */
+static void
+expand_check_string(expand_check_data *data, const char *what,
+                    const char *src)
+{
+    const char *pos = src;
+
+    if (src == NULL)
+        return;
+
+    while ((pos = strstr(pos, EXPAND_VARREF)) != NULL)
+    {
+        te_string ref = TE_STRING_INIT;
+        const char *end = NULL;
+        const char *sep = NULL;
+
+        /* Skip the sigil, so that the brace is the first character. */
+        pos++;
+        if (te_strpbrk_balanced(pos, EXPAND_OPENING, EXPAND_CLOSING, '\0',
+                                NULL, &end) != 0)
+        {
+            INFO("Cannot check %s of the run item '%s' in '%s': the "
+                 "reference is not closed in the text '%s'", what,
+                 run_item_name(data->ri),
+                 te_str_empty_if_null(data->pkg_path), src);
+            break;
+        }
+
+        te_string_append(&ref, "%.*s", (int)(end - pos - 2), pos + 1);
+        pos = end;
+
+        /*
+         * A reference with a modifier says itself what an undefined
+         * name means there, so it is never an error: ${name:-default}
+         * asks for the default and ${name:+alternate} for nothing.
+         */
+        te_strpbrk_balanced(te_string_value(&ref), EXPAND_OPENING,
+                            EXPAND_CLOSING, '\0', EXPAND_MODIFIER, &sep);
+        if (sep != NULL)
+        {
+            te_string_free(&ref);
+            continue;
+        }
+
+        /* What is left of the reference before the filters is the name. */
+        te_strpbrk_balanced(te_string_value(&ref), EXPAND_OPENING,
+                            EXPAND_CLOSING, '\0', EXPAND_FILTER, &sep);
+        if (sep != NULL)
+            te_string_cut(&ref, ref.len - (sep - te_string_value(&ref)));
+
+        if (!expand_check_name_provided(data, te_string_value(&ref)))
+        {
+            ERROR("Cannot expand %s of the run item '%s' in '%s': nothing "
+                  "provides '%s' in the text '%s'", what,
+                  run_item_name(data->ri),
+                  te_str_empty_if_null(data->pkg_path),
+                  te_string_value(&ref), src);
+            data->rc = TE_RC(TE_TESTER, TE_ENOENT);
+        }
+
+        te_string_free(&ref);
+    }
+}
+
+/**
+ * Check the objectives of every declared value of an argument.
+ *
+ * The function complies with test_entity_value_enum_cb prototype.
+ */
+static te_errno
+expand_check_value_objective_cb(const test_entity_value *value, void *opaque)
+{
+    expand_check_data *data = opaque;
+
+    expand_check_string(data, "a value objective", value->objective);
+
+    return 0;
+}
+
+/**
+ * Check the objectives of every argument of the run item.
+ *
+ * The function complies with test_var_arg_enum_cb prototype.
+ */
+static te_errno
+expand_check_arg_objectives_cb(const test_var_arg *va, void *opaque)
+{
+    expand_check_data *data = opaque;
+
+    (void)test_var_arg_enum_values(data->ri, va,
+                                   expand_check_value_objective_cb,
+                                   data, NULL, NULL);
+
+    return 0;
+}
+
+/**
+ * Check every string of a run item that is subject to expansion.
+ *
+ * Only the strings that run.c really expands are checked.
+ *
+ * @param ri        Run item.
+ * @param pkg_path  Package file the run item comes from.
+ *
+ * @return Status code.
+ */
+static te_errno
+expand_check_run_item(const run_item *ri, const char *pkg_path)
+{
+    expand_check_data data = {
+        .ri = ri,
+        .pkg_path = pkg_path,
+        .rc = 0,
+    };
+
+    switch (ri->type)
+    {
+        case RUN_ITEM_SCRIPT:
+            expand_check_string(&data, "the objective",
+                                ri->objective != NULL ?
+                                ri->objective : ri->u.script.objective);
+            break;
+
+        case RUN_ITEM_SESSION:
+            expand_check_string(&data, "the objective",
+                                ri->u.session.objective);
+            break;
+
+        case RUN_ITEM_PACKAGE:
+            /*
+             * Unlike the strings above, the description of a package is
+             * written in the package file itself, not in the file the
+             * run item comes from.
+             */
+            data.pkg_path = ri->u.package->path;
+            expand_check_string(&data, "the objective",
+                                ri->u.package->objective);
+            data.pkg_path = pkg_path;
+            break;
+
+        default:
+            break;
+    }
+
+    (void)test_run_item_enum_args(ri, expand_check_arg_objectives_cb,
+                                  false, &data);
+
+    return data.rc;
+}
+
 static tester_cfg_walk_ctl
 prepare_test_start(run_item *ri, unsigned int cfg_id_off,
                    unsigned int flags, void *opaque)
@@ -559,6 +894,7 @@ prepare_test_start(run_item *ri, unsigned int cfg_id_off,
     config_prepare_data    *gctx = opaque;
     config_prepare_ctx     *ctx;
     test_attrs             *attrs = test_get_attrs(ri);
+    te_errno                rc;
 
     UNUSED(cfg_id_off);
     UNUSED(flags);
@@ -585,6 +921,16 @@ prepare_test_start(run_item *ri, unsigned int cfg_id_off,
         else
             attrs->track_conf = TESTER_TRACK_CONF_DEF;
     }
+
+    /*
+     * A bad reference is not a reason to stop looking at the rest of
+     * the configuration: the walk goes on, so that one run reports
+     * every run item that has one, and tester_prepare_configs() fails
+     * once the whole configuration has been looked through.
+     */
+    rc = expand_check_run_item(ri, ctx->pkg_path);
+    if (rc != 0 && gctx->expand_rc == 0)
+        gctx->expand_rc = rc;
 
     gctx->rc = prepare_calc_iters(ri);
     if (gctx->rc != 0)
@@ -686,7 +1032,7 @@ tester_prepare_configs(tester_cfgs *cfgs)
     const tester_cfg_walk   cbs = {
         prepare_cfg_start,
         prepare_cfg_end,
-        NULL, /* pkg_start */
+        prepare_pkg_start,
         NULL, /* pkg_end */
         prepare_session_start,
         prepare_session_end,
@@ -714,6 +1060,8 @@ tester_prepare_configs(tester_cfgs *cfgs)
     ENTRY();
 
     gctx.rc = 0;
+    gctx.new_pkg_path = NULL;
+    gctx.expand_rc = 0;
     SLIST_INIT(&gctx.ctxs);
     if (config_prepare_new_ctx(&gctx) == NULL)
     {
@@ -736,6 +1084,12 @@ tester_prepare_configs(tester_cfgs *cfgs)
             return rc;
         }
 
+        if (gctx.expand_rc != 0)
+        {
+            EXIT("%r", gctx.expand_rc);
+            return gctx.expand_rc;
+        }
+
         EXIT("0 - total_iters=%u", cfgs->total_iters);
         return 0;
     }
@@ -744,6 +1098,6 @@ tester_prepare_configs(tester_cfgs *cfgs)
         while (!SLIST_EMPTY(&gctx.ctxs))
             config_prepare_destroy_ctx(&gctx);
 
-        return gctx.rc;
+        return gctx.rc != 0 ? gctx.rc : gctx.expand_rc;
     }
 }
