@@ -174,7 +174,10 @@ References to internal code review systems may be added in a similar way.
 
 A reference to a public pull request or some other publicly available
 discussion may be provided with the `Link: <url>` trailer, as it is done
-by the Linux kernel community.
+by the Linux kernel community. TE is mirrored under more than one
+organisation, so the URL is the one of the repository the pull request was
+opened against - the repository the working copy was cloned from - and not
+necessarily the one in the example below.
 
 
 #### Co-authorship trailers (if applicable)
