@@ -145,6 +145,10 @@
             <xsd:annotation>
                 <xsd:documentation>
                     Objective for the value.
+
+                    ${name} references in this text are replaced with
+                    the values of the arguments and variables of the
+                    current iteration.
                 </xsd:documentation>
             </xsd:annotation>
         </xsd:attribute>
@@ -423,6 +427,10 @@
                 <xsd:annotation>
                     <xsd:documentation>
                         Objective of the test provided by the script.
+
+                        ${name} references in this text are replaced
+                        with the values of the arguments and variables
+                        of the current iteration.
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:element>
@@ -555,6 +563,10 @@
                 <xsd:annotation>
                     <xsd:documentation>
                         Objective of the session.
+
+                        ${name} references in this text are replaced
+                        with the values of the arguments and variables
+                        of the current iteration.
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:element>
@@ -788,6 +800,10 @@
                 <xsd:annotation>
                     <xsd:documentation>
                         Objective of the test package.
+
+                        ${name} references in this text are replaced
+                        with the values of the arguments and variables
+                        of the current iteration.
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:element>

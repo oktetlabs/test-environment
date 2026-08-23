@@ -374,6 +374,93 @@ XML schema for :ref:`Tester <doxid-group__te__engine__tester>` configuration fil
 
 
 
+.. _doxid-group__te__engine__tester_1te_engine_tester_objective_expansion:
+
+Variable expansion in objectives
+---------------------------------
+
+``${name}`` references in the following places are replaced with the
+values of the arguments and variables of the iteration being started:
+
+* the content of ``<objective>`` of a package, a session or a test;
+
+* the ``objective`` attribute of a ``<value>``.
+
+For example:
+
+.. ref-code-block:: xml
+
+	<run>
+	    <script name="advertise">
+	        <objective>Test that ${speed} link speed is
+	        correctly advertised</objective>
+	    </script>
+	    <arg name="speed">
+	        <value>10G</value>
+	        <value>25G</value>
+	    </arg>
+	</run>
+
+is logged as *Test that 10G link speed is correctly advertised* for
+the first iteration and *Test that 25G link speed is correctly
+advertised* for the second one.
+
+The names that can be referenced are the arguments and the handed-down
+session variables of the run item. A compound value provides one name
+per field, spelled ``argument_field``, exactly as the fields appear
+among the logged parameters. For instance, if a run item is given a
+compound argument ``dev`` with fields ``pci`` and ``name``, its
+objective may refer to ``${dev_pci}`` and ``${dev_name}``. A compound
+value provides no name for the argument as a whole, so a bare
+``${dev}`` is reported as unresolvable instead of quietly expanding to
+nothing.
+
+The syntax is the one te_string_expand_parameters() implements, see
+``lib/tools/te_expand.h``: in particular ``${name:-default}``,
+``${name:+alternate}`` and filters such as ``${name|upper}``.
+
+A reference to a name that no argument or variable of the run item
+can provide is a fatal error: the Tester refuses to start any test.
+Every such reference of the configuration is reported, so that a
+single run tells everything that has to be fixed. The limits of the
+check are:
+
+* An argument declared as ``<arg name="x"/>`` takes its value from
+  the parent run item.  The name is known, so ``${x}`` is confirmed
+  to be declared.  The value is not: should it be a compound, the
+  field names it carries are settled only when the parent supplies
+  it, and two iterations may supply different ones.  A reference
+  beginning ``x_``, such as ``${x_field}``, is therefore accepted
+  without checking the field, and the check does not follow the
+  argument up to the parent to enumerate the possibilities.  Every
+  reference outside that prefix is still verified.
+
+* A reference nested inside another one, such as ``typo`` in
+  ``${name:-${typo}}``, is not checked, because what the enclosing
+  reference expands to is not known in advance.
+
+* A missing value is not an error when the reference says so:
+  write ``${name:-default}`` where absence is intentional.
+
+The diagnostic is logged with ``ERROR()``, not printed to the
+console.  When a run refuses to start, the log (or a run with
+``--log-txt``) has the message naming the package file, the run
+item and the reference that could not be resolved.
+
+Test parameters themselves are never expanded, so expansion cannot
+affect iteration identity, the iteration hash or test history.
+The execution plan carries objectives as written; expansion happens
+when the run item starts.
+
+.. note::
+
+   ``trc_update`` stores the objective it reads from the log as the
+   objective of the test in the TRC database. For an objective with
+   references that is the text of the last processed iteration, not
+   the generic wording from the package file.
+
+
+
 
 
 .. _doxid-group__te__engine__tester_1te_engine_tester_iteration:
