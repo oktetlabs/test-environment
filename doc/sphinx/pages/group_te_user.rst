@@ -70,8 +70,6 @@ Building TE components
 
 When you get TE in source code form you need to build TE before it can be used for testing.
 
-If you're living on a deb-based distribution you could benefit from installing ol-te and other packages. They will automatically install all the deps for the engine and your project. Contact developers if you need access to the the debian repository or to get the .deb file.
-
 To build either the Test Engine or a Test Agent you first need a development
 toolchain. On Debian derivatives:
 
@@ -139,8 +137,6 @@ Same for Debian derivatives in one line:
 
 
 	apt-get install bison flex gawk file wget ssh libxml2-dev xsltproc libpopt-dev libjansson-dev libyaml-dev libcurl4-openssl-dev libglib2.0-dev libssl-dev libpcre2-dev libbsd-dev
-
-Or easy way, you can install meta package **oktetlabs-te-dev** from OKTET Labs repository.
 
 Optional libraries and packages:
 
