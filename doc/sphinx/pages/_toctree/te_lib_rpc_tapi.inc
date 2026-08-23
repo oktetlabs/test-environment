@@ -6,25 +6,7 @@
 .. toctree::
 	:hidden:
 
-	/generated/group_te_lib_rpcsock_macros.rst
-	/generated/group_te_lib_rpc_aio.rst
-	/generated/group_te_lib_rpc_dirent.rst
-	/generated/group_te_lib_rpc_dpdk.rst
-	/generated/group_te_lib_rpc_ifnameindex.rst
-	/generated/group_te_lib_rpc_netconf.rst
-	/generated/group_te_lib_rpc_misc.rst
-	/generated/group_te_lib_rpc_netdb.rst
-	/generated/group_te_lib_rpc_dlfcn.rst
-	/generated/group_te_lib_rpc_power_sw.rst
-	/generated/group_te_lib_rpc_winsock2.rst
-	/generated/group_te_lib_rpc_rte_eal.rst
-	/generated/group_te_lib_rpc_rte_ethdev.rst
-	/generated/group_te_lib_rpc_rte_flow.rst
-	/generated/group_te_lib_rpc_rte_mbuf.rst
-	/generated/group_te_lib_rpc_rte_mbuf_ndn.rst
-	/generated/group_te_lib_rpc_rte_mempool.rst
-	/generated/group_te_lib_rpc_rte_ring.rst
-	/generated/group_te_lib_rpc_signal.rst
-	/generated/group_te_lib_rpc_socket.rst
-	/generated/group_te_lib_rpc_unistd.rst
-	/generated/group_te_lib_rpc_stdio.rst
+	/generated/group_te_lib_rpc_other.rst
+	/generated/group_te_lib_rpc_sys.rst
+	/generated/group_te_lib_rpc_rte.rst
+	/generated/group_te_lib_rpc_io.rst

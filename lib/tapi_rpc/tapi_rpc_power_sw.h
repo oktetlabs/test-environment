@@ -20,7 +20,7 @@ extern "C" {
 
 /**
  * @defgroup te_lib_rpc_power_sw TAPI for remote calls of power switch
- * @ingroup te_lib_rpc_tapi
+ * @ingroup te_lib_rpc_other
  * @{
  *
  * Switch the power of a test bed outlet on or off through an agent that

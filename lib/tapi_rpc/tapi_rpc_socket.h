@@ -31,7 +31,7 @@ extern "C" {
 
 /**
  * @defgroup te_lib_rpc_socket TAPI for socket API remote calls
- * @ingroup te_lib_rpc_tapi
+ * @ingroup te_lib_rpc_io
  * @{
  */
 

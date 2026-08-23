@@ -24,7 +24,7 @@ extern "C" {
 
 /**
  * @defgroup te_lib_rpc_rte_ethdev TAPI for RTE Ethernet Device API remote calls
- * @ingroup te_lib_rpc_tapi
+ * @ingroup te_lib_rpc_rte
  * @{
  *
  * RTE ethdev calls executed on a Test Agent - the DPDK poll mode driver

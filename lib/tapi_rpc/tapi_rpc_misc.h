@@ -49,7 +49,7 @@ extern "C" {
 
 /**
  * @defgroup te_lib_rpc_misc TAPI for miscellaneous remote calls
- * @ingroup te_lib_rpc_tapi
+ * @ingroup te_lib_rpc_other
  * @{
  */
 

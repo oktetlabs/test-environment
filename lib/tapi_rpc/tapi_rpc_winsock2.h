@@ -22,7 +22,7 @@ extern "C" {
 
 /**
  * @defgroup te_lib_rpc_winsock2 TAPI for remote calls of Winsock2-specific routines
- * @ingroup te_lib_rpc_tapi
+ * @ingroup te_lib_rpc_other
  * @{
  */
 

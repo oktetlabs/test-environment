@@ -13,7 +13,7 @@
 
 /**
  * @defgroup te_lib_rpcsock_macros Macros for socket API remote calls
- * @ingroup te_lib_rpc_tapi
+ * @ingroup te_lib_rpc_io
  * @{
  *
  * Wrappers around the socket RPC calls that check the result and fail the

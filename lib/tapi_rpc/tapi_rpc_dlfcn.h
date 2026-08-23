@@ -21,7 +21,7 @@ extern "C" {
 
 /**
  * @defgroup te_lib_rpc_dlfcn TAPI for remote calls of dynamic linking loader
- * @ingroup te_lib_rpc_tapi
+ * @ingroup te_lib_rpc_sys
  * @{
  *
  * dlopen(), dlsym() and friends executed on a Test Agent, for loading a

@@ -20,7 +20,7 @@ extern "C" {
 
 /**
  * @defgroup te_lib_rpc_dpdk TAPI for helper DPDK functions
- * @ingroup te_lib_rpc_tapi
+ * @ingroup te_lib_rpc_rte
  * @{
  *
  * Helper calls around the DPDK RPC family: mbuf comparison, packet

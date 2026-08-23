@@ -26,7 +26,7 @@ extern "C" {
 
 /**
  * @defgroup te_lib_rpc_netdb TAPI for name/address resolution remote calls
- * @ingroup te_lib_rpc_tapi
+ * @ingroup te_lib_rpc_sys
  * @{
  *
  * Name and address resolution on a Test Agent: getaddrinfo(),

@@ -12,6 +12,46 @@
  */
 
 /**
+ * @defgroup te_lib_rpc_other Other calls
+ * @ingroup te_lib_rpc_tapi
+ * @{
+ *
+ * Calls that belong to no single family: platform-specific interfaces and
+ * hardware a test bed happens to have.
+ * @}
+ */
+
+/**
+ * @defgroup te_lib_rpc_sys Processes and system calls
+ * @ingroup te_lib_rpc_tapi
+ * @{
+ *
+ * Everything around the I/O: signals, loading libraries into an RPC
+ * server, and resolving names to addresses and interfaces.
+ * @}
+ */
+
+/**
+ * @defgroup te_lib_rpc_rte RTE calls
+ * @ingroup te_lib_rpc_tapi
+ * @{
+ *
+ * The DPDK libraries driven from a test: the environment abstraction
+ * layer, the poll mode driver API, and the buffer and pool types they use.
+ * @}
+ */
+
+/**
+ * @defgroup te_lib_rpc_io Socket calls
+ * @ingroup te_lib_rpc_tapi
+ * @{
+ *
+ * The socket and file descriptor calls a test makes on the host under test
+ * - the bulk of what a networking scenario does.
+ * @}
+ */
+
+/**
  * @defgroup te_tools_data Data structures
  * @ingroup te_tools
  * @{

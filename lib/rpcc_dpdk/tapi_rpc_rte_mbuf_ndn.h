@@ -26,7 +26,7 @@ extern "C" {
 
 /**
  * @defgroup te_lib_rpc_rte_mbuf_ndn TAPI for RTE mbuf layer API remote calls
- * @ingroup te_lib_rpc_tapi
+ * @ingroup te_lib_rpc_rte
  * @{
  *
  * Convert between RTE mbufs and the ASN.1 packet representation the
