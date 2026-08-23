@@ -13,7 +13,6 @@ Test Suite
 
 	group_te_lib_tapi_conf_net.rst
 	/generated/group_te_ts_tapi_test.rst
-	group_te_scenarios.rst
 
 
 
@@ -696,6 +695,5 @@ Then in your test scenario you can write the following:
 |			:ref:`iSCSI<doxid-group__tapi__tad__iscsi>`
 |		:ref:`tool functions TAPI<doxid-group__tapi__wrk>`
 |		:ref:`tool functions TAPI<doxid-group__tapi__netperf>`
-|	:ref:`The format of test suite scenarios<doxid-group__te__scenarios>`
 
 

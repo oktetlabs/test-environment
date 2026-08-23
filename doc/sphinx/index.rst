@@ -372,6 +372,5 @@ Apart from main components, TE provides the following set of tools:
 |				:ref:`iSCSI<doxid-group__tapi__tad__iscsi>`
 |			:ref:`tool functions TAPI<doxid-group__tapi__wrk>`
 |			:ref:`tool functions TAPI<doxid-group__tapi__netperf>`
-|		:ref:`The format of test suite scenarios<doxid-group__te__scenarios>`
 
 
