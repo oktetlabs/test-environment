@@ -10,8 +10,6 @@
 TE: User Guide
 ==============
 
-.. include:: _toctree/te_user.inc
-
 .. _doxid-group__te__user_1te_user_introduction:
 
 Introduction
