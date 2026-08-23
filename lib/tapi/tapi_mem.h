@@ -4,7 +4,7 @@
  *
  * Find details on page @ref tapi_mem.
  * @defgroup tapi_mem Test API to use memory-related functions conveniently
- * @ingroup te_ts_tapi
+ * @ingroup tapi_scenario
  * @{
  * Implementation of API to use memory-related functions in a convenient way
  *

@@ -3,7 +3,7 @@
  * @brief DPDK RTE flow helper functions TAPI
  *
  * @defgroup tapi_rte_flow DPDK RTE flow helper functions TAPI
- * @ingroup te_ts_tapi
+ * @ingroup tapi_dpdk_grp
  * @{
  *
  * RTE flow helper functions TAPI

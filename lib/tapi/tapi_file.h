@@ -3,7 +3,7 @@
  * @brief Test API to work with the files on the engine and TA.
  *
  * @defgroup ts_tapi_file Engine and TA files management
- * @ingroup te_ts_tapi
+ * @ingroup tapi_scenario
  * @{
  *
  * Functions for convinient work with the files on the engine and TA.

@@ -4,7 +4,7 @@
  * @brief TAPI to manage dnsperf tool
  *
  * @defgroup tapi_dnsperf TAPI to manage dnsperf tool
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_service
  * @{
  *
  * TAPI to manage *dnsperf*.

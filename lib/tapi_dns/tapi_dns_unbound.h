@@ -4,7 +4,7 @@
  * @brief Unbound DNS server tool TAPI.
  *
  * @defgroup tapi_dns_unbound unbound DNS server tool TAPI (tapi_dns_unbound)
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_service
  * @{
  *
  * TAPI to handle unbound DNS server tool.

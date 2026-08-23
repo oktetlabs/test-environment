@@ -3,7 +3,7 @@
  * @brief Generic Test API for packetdrill test tool
  *
  * @defgroup tapi_packetdrill Test API to use packetdrill test tool
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_system
  * @{
  *
  * Generic API to use packetdrill test tool.

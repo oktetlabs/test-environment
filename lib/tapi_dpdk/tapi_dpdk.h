@@ -3,7 +3,7 @@
  * @brief DPDK helper functions TAPI
  *
  * @defgroup tapi_dpdk DPDK helper functions TAPI
- * @ingroup te_ts_tapi
+ * @ingroup tapi_dpdk_grp
  * @{
  *
  * TAPI to handle DPDK-related operations

@@ -3,7 +3,7 @@
  * @brief Test GateWay network configuring API
  *
  * @defgroup ts_tapi_gw Macros to get test parameters on a gateway configuration
- * @ingroup te_ts_tapi
+ * @ingroup tapi_netenv
  * @{
  *
  * Macros to be used in tests. The header must be included from test

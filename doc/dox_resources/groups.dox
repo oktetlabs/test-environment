@@ -187,8 +187,17 @@
  */
 
 /**
- * @defgroup tapi_media Media data
+ * @defgroup tapi_devices Devices and services
  * @ingroup te_ts_tapi
+ * @{
+ *
+ * Driving a specific subsystem or protocol on the host under test.
+ * @}
+ */
+
+/**
+ * @defgroup tapi_media Media data
+ * @ingroup tapi_devices
  * @{
  *
 
@@ -197,7 +206,7 @@
 
 /**
  * @defgroup tapi_storage Storage
- * @ingroup te_ts_tapi
+ * @ingroup tapi_devices
  * @{
  *
 
@@ -205,8 +214,114 @@
  */
 
 /**
- * @defgroup tapi_tad_main Traffic Application Domain
+ * @defgroup tapi_upnp UPnP
+ * @ingroup tapi_devices
+ * @{
+ *
+
+ * @}
+ */
+
+/**
+ * @defgroup tapi_wifi Wi-Fi client
+ * @ingroup tapi_devices
+ * @{
+ *
+
+ * @}
+ */
+
+/**
+ * @defgroup tapi_dpdk_grp DPDK
  * @ingroup te_ts_tapi
+ * @{
+ *
+ * Helpers for tests that drive a DPDK application rather than the kernel
+ * stack.
+ * @}
+ */
+
+/**
+ * @defgroup tapi_netenv Network environment and topology
+ * @ingroup te_ts_tapi
+ * @{
+ *
+ * Turning the test bed described in the configuration into the addresses,
+ * interfaces and routes a scenario actually uses.
+ * @}
+ */
+
+/**
+ * @defgroup tapi_run Running programs on an agent
+ * @ingroup te_ts_tapi
+ * @{
+ *
+ * Starting a process on a Test Agent, feeding it options and reading its
+ * output - and the ready-made wrappers for the programs tests reach for
+ * most.
+ * @}
+ */
+
+/**
+ * @defgroup tapi_tool_perf Network performance tools
+ * @ingroup tapi_run
+ * @{
+ *
+ * Programs that measure throughput, latency or packet rate between two
+ * hosts.
+ * @}
+ */
+
+/**
+ * @defgroup tapi_tool_service Server and service tools
+ * @ingroup tapi_run
+ * @{
+ *
+ * Daemons a test starts so that it has something to talk to, and the
+ * benchmarks that drive them.
+ * @}
+ */
+
+/**
+ * @defgroup tapi_tool_storage Storage and filesystem tools
+ * @ingroup tapi_run
+ * @{
+ *
+ * Programs that exercise a block device or build a filesystem on one.
+ * @}
+ */
+
+/**
+ * @defgroup tapi_tool_system System and diagnostic tools
+ * @ingroup tapi_run
+ * @{
+ *
+ * Everything else run on an agent: querying a device, loading the machine,
+ * or running a third-party test suite.
+ * @}
+ */
+
+/**
+ * @defgroup tapi_sockets Sockets and I/O
+ * @ingroup te_ts_tapi
+ * @{
+ *
+ * Working with sockets from the engine side, above the raw RPC calls.
+ * @}
+ */
+
+/**
+ * @defgroup tapi_traffic Traffic generation and capture
+ * @ingroup te_ts_tapi
+ * @{
+ *
+ * Building packets, putting them on the wire and matching what comes back.
+ * @}
+ */
+
+/**
+ * @defgroup tapi_tad_main Traffic Application Domain
+ * @ingroup tapi_traffic
  * @{
  *
  * Traffic Application Domain (TAD) is a part of Remote Control Facility
@@ -227,19 +342,12 @@
  */
 
 /**
- * @defgroup tapi_upnp UPnP
+ * @defgroup tapi_scenario Writing a test scenario
  * @ingroup te_ts_tapi
  * @{
  *
-
- * @}
- */
-
-/**
- * @defgroup tapi_wifi Wi-Fi client
- * @ingroup te_ts_tapi
- * @{
- *
-
+ * The scaffolding every test is built from: parameters, logging, the
+ * environment it runs in, and how it reports what it needs and what it
+ * did.
  * @}
  */

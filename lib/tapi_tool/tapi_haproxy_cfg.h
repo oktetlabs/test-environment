@@ -4,7 +4,7 @@
  * @brief HAProxy tool config file generation TAPI
  *
  * @defgroup tapi_haproxy_cfg HAProxy tool config file generation TAPI
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_service
  * @{
  *
  * TAPI to handle HAProxy tool config file generation.

@@ -3,7 +3,7 @@
  * @brief ping tool TAPI
  *
  * @defgroup tapi_ping ping tool TAPI (tapi_ping)
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_perf
  * @{
  *
  * TAPI to handle ping tool.

@@ -3,7 +3,7 @@
  * @brief redis-benchmark tool TAPI
  *
  * @defgroup tapi_redis_benchmark redis-benchmark tool TAPI (tapi_redis_benchmark)
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_service
  * @{
  *
  * TAPI to handle redis-benchmark tool.

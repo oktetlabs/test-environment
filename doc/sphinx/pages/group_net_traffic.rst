@@ -1,7 +1,7 @@
 ..
   SPDX-License-Identifier: Apache-2.0
   Copyright (C) 2020-2022 OKTET Labs Ltd. All rights reserved.
-  te-parent: te_ts_tapi
+  te-parent: tapi_traffic
 
 .. index:: pair: group; Network Traffic TAPI
 .. _doxid-group__net__traffic:

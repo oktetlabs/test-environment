@@ -3,7 +3,7 @@
  * @brief API to modify TRC tags from prologues
  *
  * @defgroup ts_tapi_tags TRC tags modification
- * @ingroup te_ts_tapi
+ * @ingroup tapi_scenario
  * @{
  *
  * Declaration of API to modify TRC tags from prologues.

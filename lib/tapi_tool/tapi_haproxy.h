@@ -4,7 +4,7 @@
  * @brief HAProxy tool TAPI
  *
  * @defgroup tapi_haproxy HAProxy tool TAPI
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_service
  * @{
  *
  * TAPI to manage HAProxy tool.

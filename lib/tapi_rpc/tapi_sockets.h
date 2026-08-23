@@ -4,7 +4,7 @@
  * @brief Functions to opearate with socket
  *
  * @defgroup ts_tapi_sockets High level TAPI to work with sockets
- * @ingroup te_ts_tapi
+ * @ingroup tapi_sockets
  * @{
  *
  * Definition of test API for working with socket.

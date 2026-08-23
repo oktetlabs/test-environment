@@ -4,7 +4,7 @@
  * @brief Test API for FIO tool
  *
  * @defgroup tapi_fio FIO tool
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_storage
  * @{
  *
  * Test API to control 'fio' tool.

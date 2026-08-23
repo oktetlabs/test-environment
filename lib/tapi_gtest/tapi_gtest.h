@@ -3,7 +3,7 @@
  * @brief Wrapper for Google Test
  *
  * @defgroup tapi_gtest GTest support
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_system
  * @{
  *
  * Test API for run Google Test binaries

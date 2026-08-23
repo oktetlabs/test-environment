@@ -3,7 +3,7 @@
  * @brief NPtcp tool TAPI
  *
  * @defgroup tapi_nptcp NPtcp tool tapi (tapi_nptcp)
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_perf
  * @{
  *
  * TAPI to handle NPtcp tool.

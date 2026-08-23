@@ -3,7 +3,7 @@
  * @brief Test API to use setjmp/longjmp.
  *
  * @defgroup ts_tapi_jmp Stack of jumps
- * @ingroup te_ts_tapi
+ * @ingroup tapi_scenario
  * @{
  *
  * Definition of API to deal with thread-safe stack of jumps.

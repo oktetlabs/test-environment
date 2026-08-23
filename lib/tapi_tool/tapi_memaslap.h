@@ -3,7 +3,7 @@
  * @brief TAPI to manage memaslap
  *
  * @defgroup tapi_memaslap TAPI to manage memaslap
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_service
  * @{
  *
  * TAPI to manage *memaslap*.

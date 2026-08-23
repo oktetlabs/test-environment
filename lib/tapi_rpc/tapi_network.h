@@ -3,7 +3,7 @@
  * @brief High level test API to configure tested network
  *
  * @defgroup ts_tapi_network High level TAPI to configure network
- * @ingroup te_ts_tapi
+ * @ingroup tapi_netenv
  * @{
  *
  * This API can be used to set up network configurations like resources

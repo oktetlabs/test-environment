@@ -3,7 +3,7 @@
  * @brief Test API to configure BPF/XDP programs.
  *
  * @defgroup tapi_bpf BPF/XDP configuration of Test Agents
- * @ingroup te_ts_tapi
+ * @ingroup tapi_devices
  * @{
  *
  * Definition of API to configure BPF/XDP programs.

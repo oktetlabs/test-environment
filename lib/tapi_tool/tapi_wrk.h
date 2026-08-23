@@ -3,7 +3,7 @@
  * @brief wrk tool TAPI
  *
  * @defgroup tapi_wrk tool functions TAPI
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_perf
  * @{
  *
  * TAPI to handle wrk tool.

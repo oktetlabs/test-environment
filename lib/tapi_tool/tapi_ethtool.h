@@ -3,7 +3,7 @@
  * @brief ethtool tool TAPI
  *
  * @defgroup tapi_ethtool ethtool tool TAPI (tapi_ethtool)
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_system
  * @{
  *
  * Declarations for TAPI to handle ethtool tool.

@@ -4,7 +4,7 @@
  * @brief TAPI to manage memtier_benchmark
  *
  * @defgroup tapi_memtier TAPI to manage memtier_benchmark
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_service
  * @{
  */
 

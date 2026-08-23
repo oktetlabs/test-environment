@@ -3,7 +3,7 @@
  * @brief Control NVMeOF
  *
  * @defgroup tapi_nvme Control NVMeOF
- * @ingroup te_ts_tapi
+ * @ingroup tapi_devices
  * @{
  *
  * API for control NVMe Over Fabrics

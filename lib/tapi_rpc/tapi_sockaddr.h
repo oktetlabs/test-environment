@@ -3,7 +3,7 @@
  * @brief Functions to opearate with generic "struct sockaddr"
  *
  * @defgroup ts_tapi_sockaddr Tools to work with "struct sockaddr"
- * @ingroup te_ts_tapi
+ * @ingroup tapi_sockets
  * @{
  *
  * Definition of test API for working with struct sockaddr.

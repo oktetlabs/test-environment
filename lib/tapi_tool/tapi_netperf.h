@@ -3,7 +3,7 @@
  * @brief netperf tool TAPI
  *
  * @defgroup tapi_netperf tool functions TAPI
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_perf
  * @{
  *
  * TAPI to handle netperf tool.

@@ -3,7 +3,7 @@
  * @brief Gateway host configuration API
  *
  * @defgroup ts_tapi_route_gw Control network channel using a gateway
- * @ingroup te_ts_tapi
+ * @ingroup tapi_netenv
  * @{
  *
  * Macros and functions for gateway configuration to be used in tests.

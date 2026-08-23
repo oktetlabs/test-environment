@@ -3,7 +3,7 @@
  * @brief TAPI to manage memcached
  *
  * @defgroup tapi_memcached TAPI to manage memcached
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_service
  * @{
  *
  * TAPI to manage *memcached*.

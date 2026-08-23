@@ -3,7 +3,7 @@
  * @brief stress tool TAPI
  *
  * @defgroup tapi_stress tool functions TAPI
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_system
  * @{
  *
  * TAPI to handle stress tool.

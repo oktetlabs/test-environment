@@ -4,7 +4,7 @@
  * @brief Agent job control
  *
  * @defgroup tapi_job Agent job control
- * @ingroup te_ts_tapi
+ * @ingroup tapi_run
  * @{
  *
  * API to manage subordinate jobs at the agent side

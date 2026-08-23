@@ -5,7 +5,7 @@
  *
  * @defgroup tapi_dns_zone_file DNS zone file generation tool TAPI
  *           (tapi_dns_zone_file).
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_service
  * @{
  *
  * TAPI to handle DNS zone file generation tool.

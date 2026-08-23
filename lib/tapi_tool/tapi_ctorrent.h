@@ -3,7 +3,7 @@
  * @brief TAPI to manage ctorrent
  *
  * @defgroup tapi_ctorrent TAPI to manage ctorrent (tapi_ctorrent)
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_system
  * @{
  *
  * TAPI to manage ctorrent - a BitTorrent client.

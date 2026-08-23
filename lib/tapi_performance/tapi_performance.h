@@ -3,7 +3,7 @@
  * @brief Generic Test API to network throughput test tools
  *
  * @defgroup tapi_performance Test API to control a network throughput test tool
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_perf
  * @{
  *
  * Generic high level test API to control a network throughput test tool.

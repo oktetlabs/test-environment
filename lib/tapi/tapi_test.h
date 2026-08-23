@@ -50,7 +50,7 @@ extern "C" {
 
 /**
  * @defgroup te_ts_tapi_test Test
- * @ingroup te_ts_tapi
+ * @ingroup tapi_scenario
  * @{
  */
 

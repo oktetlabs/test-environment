@@ -4,7 +4,7 @@
  *
  * Find details on page @ref tapi_iomux.
  * @defgroup tapi_iomux I/O multiplexers
- * @ingroup te_ts_tapi
+ * @ingroup tapi_sockets
  * @{
  *
  * This API is dedicated to work with arbitrary I/O multiplexer functions in

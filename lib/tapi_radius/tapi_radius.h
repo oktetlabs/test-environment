@@ -3,7 +3,7 @@
  * @brief Test API for RADIUS Server Configuration and RADIUS CSAP
  *
  * @defgroup tapi_radius RADIUS Server Configuration and RADIUS CSAP
- * @ingroup te_ts_tapi
+ * @ingroup tapi_traffic
  * @{
  *
  * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.

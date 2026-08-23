@@ -4,7 +4,7 @@
  * @brief Network setup library
  *
  * @defgroup tapi_net Network setup library
- * @ingroup te_ts_tapi
+ * @ingroup tapi_netenv
  * @{
  *
  * Definition of test API to define and set up test network.

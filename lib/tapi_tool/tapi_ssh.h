@@ -3,7 +3,7 @@
  * @brief OpenSSH tools and utilities TAPI
  *
  * @defgroup tapi_ssh OpenSSH tools and utilities TAPI (tapi_ssh)
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_system
  * @{
  *
  * TAPI to handle OpenSSH tools and utilities.

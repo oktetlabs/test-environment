@@ -3,7 +3,7 @@
  * @brief redis-server tool TAPI
  *
  * @defgroup tapi_redis_srv redis-server tool TAPI (tapi_redis_srv)
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_service
  * @{
  *
  * TAPI to handle redis-server tool.

@@ -3,7 +3,7 @@
  * @brief sfnt-pingpong tool TAPI
  *
  * @defgroup tapi_sfnt_pingpong tool functions TAPI
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_perf
  * @{
  *
  * TAPI to handle sfnt-pingpong tool.

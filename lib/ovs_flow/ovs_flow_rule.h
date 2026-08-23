@@ -16,7 +16,7 @@ extern "C" {
 
 /**
  * @defgroup ovs_flow_rule Open vSwitch flow rule handling
- * @ingroup te_ts_tapi
+ * @ingroup tapi_traffic
  * @{
  */
 

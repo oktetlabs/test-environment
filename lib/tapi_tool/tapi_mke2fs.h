@@ -3,7 +3,7 @@
  * @brief mke2fs tool TAPI
  *
  * @defgroup tapi_mke2fs mke2fs tool tapi (tapi_mke2fs)
- * @ingroup te_ts_tapi
+ * @ingroup tapi_tool_storage
  * @{
  *
  * TAPI to handle mke2fs tool.

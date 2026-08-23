@@ -3,7 +3,7 @@
  * @brief API to modify target requirements from prologues
  *
  * @defgroup ts_tapi_reqs Target requirements modification
- * @ingroup te_ts_tapi
+ * @ingroup tapi_scenario
  * @{
  *
  * Declaration of API to modify target requirements from prologues.
