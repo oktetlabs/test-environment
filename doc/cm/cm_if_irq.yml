@@ -42,3 +42,14 @@
          Interrupt counter per CPU
          Name: CPU ID
          Value: Interrupt counter
+
+    - oid: "/agent/interface/irq/smp_affinity"
+      access: read_write
+      type: string
+      d: |
+         Interrupt SMP affinity
+         Name: none
+         Value: List of CPUs allowed to handle the interrupt, in the
+                Linux kernel CPU list syntax, e.g. "0-3,8". Backed by
+                /proc/irq/<IRQ>/smp_affinity_list, so it has no upper
+                bound on the number of CPUs.

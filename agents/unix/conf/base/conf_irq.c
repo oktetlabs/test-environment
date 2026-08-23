@@ -9,6 +9,7 @@
 #define TE_LGR_USER     "IRQ stats Conf"
 
 #include <dirent.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 
 #include "te_config.h"
@@ -19,7 +20,9 @@
 #include "te_alloc.h"
 #include "rcf_pch_ta_cfg.h"
 
+#include "te_file.h"
 #include "te_printf.h"
+#include "te_string.h"
 
 #define MAX_IRQ_NAME_LEN 64
 
@@ -495,6 +498,79 @@ get_irq_obj(unsigned int gid, const char *if_name, const char *irq_num_str,
     return 0;
 }
 
+/*
+ * The kernel exposes IRQ affinity twice: as a hexadecimal mask in
+ * /proc/irq/<IRQ>/smp_affinity and as a CPU list in
+ * /proc/irq/<IRQ>/smp_affinity_list. Only the CPU list is used here,
+ * because the mask form is capped by the width of the type used to
+ * carry it, while the list form is not, and because the list syntax is
+ * exactly what te_intset.h parses.
+ *
+ * The value is not cached in struct ta_irq_obj: it does not come from
+ * /proc/interrupts, so reading it during the listing pass would make an
+ * IRQ that disappears mid-pass fail the whole subtree.
+ */
+static te_errno
+irq_smp_affinity_get(unsigned int gid, const char *oid, char *value,
+                     const char *if_name, const char *irq_num)
+{
+    te_string affinity = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
+    struct ta_irq_obj *irq_obj;
+    te_errno rc;
+
+    UNUSED(oid);
+
+    /* Check that the IRQ really belongs to the interface. */
+    rc = get_irq_obj(gid, if_name, irq_num, &irq_obj);
+    if (rc != 0)
+        return rc;
+
+    rc = te_file_read_string(&affinity, false, RCF_MAX_VAL - 1,
+                             "/proc/irq/%u/smp_affinity_list",
+                             irq_obj->irq_num);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to read affinity of IRQ %u: %r", __FUNCTION__,
+              irq_obj->irq_num, rc);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    return 0;
+}
+
+static te_errno
+irq_smp_affinity_set(unsigned int gid, const char *oid, const char *value,
+                     const char *if_name, const char *irq_num)
+{
+    te_string affinity = TE_STRING_INIT_RO_PTR(value);
+    struct ta_irq_obj *irq_obj;
+    te_errno rc;
+
+    UNUSED(oid);
+
+    if (*value == '\0')
+    {
+        ERROR("%s(): empty CPU list for IRQ %s", __FUNCTION__, irq_num);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    rc = get_irq_obj(gid, if_name, irq_num, &irq_obj);
+    if (rc != 0)
+        return rc;
+
+    rc = te_file_write_string(&affinity, 0, O_TRUNC, 0,
+                              "/proc/irq/%u/smp_affinity_list",
+                              irq_obj->irq_num);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to set affinity of IRQ %u to '%s': %r",
+              __FUNCTION__, irq_obj->irq_num, value, rc);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    return 0;
+}
+
 static te_errno
 irq_cpu_get(unsigned int gid, const char *oid, char *value,
             const char *if_name, const char *irq_num,
@@ -622,8 +698,12 @@ irq_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
     return 0;
 }
 
+RCF_PCH_CFG_NODE_RW(node_irq_smp_affinity, "smp_affinity",
+                    NULL, NULL,
+                    irq_smp_affinity_get, irq_smp_affinity_set);
+
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_irq_cpu, "cpu",
-                               NULL, NULL,
+                               NULL, &node_irq_smp_affinity,
                                irq_cpu_get, irq_cpu_list);
 
 RCF_PCH_CFG_NODE_RO(node_irq_name, "name",
