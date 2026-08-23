@@ -3,7 +3,7 @@
  * @brief Format string parsing
  *
  * @defgroup te_tools_te_format Format string parsing
- * @ingroup te_tools
+ * @ingroup te_tools_text
  * @{
  *
  * Some TE-specific features, such as memory dump, file content logging,

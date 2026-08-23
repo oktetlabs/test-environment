@@ -4,7 +4,7 @@
  * @brief API to execute a program in a child process
  *
  * @defgroup te_tools_te_exec_child Execute a program in a child process
- * @ingroup te_tools
+ * @ingroup te_tools_process
  * @{
  *
  * Routines to execute a program in a child process

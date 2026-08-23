@@ -3,7 +3,7 @@
  * @brief API to call shell commands
  *
  * @defgroup te_tools_te_shell_cmd Call shell commands
- * @ingroup te_tools
+ * @ingroup te_tools_process
  * @{
  *
  * Routines to call shell commands

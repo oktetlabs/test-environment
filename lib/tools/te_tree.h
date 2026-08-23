@@ -4,7 +4,7 @@
  * @brief Generic tree routines.
  *
  * @defgroup te_tools_te_tree Tree routines.
- * @ingroup te_tools
+ * @ingroup te_tools_data
  * @{
  *
  * Trees are recursive objects which have an attached list

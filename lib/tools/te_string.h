@@ -3,7 +3,7 @@
  * @brief API to deal with dynamic strings
  *
  * @defgroup te_tools_te_string Dynamic strings
- * @ingroup te_tools
+ * @ingroup te_tools_text
  * @{
  *
  * Helper functions to work with strings.

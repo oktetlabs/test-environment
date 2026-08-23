@@ -3,7 +3,7 @@
  * @brief Unix Test Agent serial console common tools
  *
  * @defgroup te_tools_te_serial_common Serial console common tools
- * @ingroup te_tools
+ * @ingroup te_tools_serial
  * @{
  *
  * Definition of unix TA serial console configuring support.

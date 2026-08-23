@@ -4,7 +4,7 @@
  * @brief Functions to opearate generic "struct sockaddr"
  *
  * @defgroup te_tools_te_sockaddr Sockaddr
- * @ingroup te_tools
+ * @ingroup te_tools_types
  * @{
  *
  * Definition of API for working with struct sockaddr.

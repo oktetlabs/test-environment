@@ -3,7 +3,7 @@
  * @brief API to deal with buffers
  *
  * @defgroup te_tools_te_bufs Regular binary buffers
- * @ingroup te_tools
+ * @ingroup te_tools_data
  * @{
  *
  * Allocation of buffers, fill in by random numbers, etc.

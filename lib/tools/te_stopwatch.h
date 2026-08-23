@@ -3,7 +3,7 @@
  * @brief Test API to operate the Stopwatch service
  *
  * @defgroup te_tools_te_stopwatch Stopwatch
- * @ingroup te_tools
+ * @ingroup te_tools_numeric
  * @{
  *
  * Functions for time measurement

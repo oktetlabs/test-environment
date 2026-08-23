@@ -12,6 +12,84 @@
  */
 
 /**
+ * @defgroup te_tools_data Data structures
+ * @ingroup te_tools
+ * @{
+ *
+ * The containers TE code reaches for: growable arrays and buffers, maps,
+ * sets and trees, plus the allocator they are built on.
+ * @}
+ */
+
+/**
+ * @defgroup te_tools_logging Logging and diagnostics
+ * @ingroup te_tools
+ * @{
+ *
+ * What engine and agent code uses to get information into the log, and the
+ * helpers that format it on the way.
+ * @}
+ */
+
+/**
+ * @defgroup te_tools_types Network and hardware types
+ * @ingroup te_tools
+ * @{
+ *
+ * Shared representations of the addresses, headers and device identifiers
+ * that engine and agent both have to speak.
+ * @}
+ */
+
+/**
+ * @defgroup te_tools_numeric Numbers, time and randomness
+ * @ingroup te_tools
+ * @{
+ *
+ * Arithmetic that has to be checked, quantities that carry units, clocks
+ * and the random sources tests draw from.
+ * @}
+ */
+
+/**
+ * @defgroup te_tools_process Processes and files
+ * @ingroup te_tools
+ * @{
+ *
+ * Running something else and dealing with what it leaves behind.
+ * @}
+ */
+
+/**
+ * @defgroup te_tools_serial Serial console
+ * @ingroup te_tools
+ * @{
+ *
+ * Reading a device's serial console and reacting to what appears on it.
+ * @}
+ */
+
+/**
+ * @defgroup te_tools_serial_fmt Serialisation
+ * @ingroup te_tools
+ * @{
+ *
+ * Reading and writing the structured formats TE exchanges with the outside
+ * world.
+ * @}
+ */
+
+/**
+ * @defgroup te_tools_text Strings and text
+ * @ingroup te_tools
+ * @{
+ *
+ * Building, parsing and comparing strings without hand-rolling the buffer
+ * management each time.
+ * @}
+ */
+
+/**
  * @defgroup te_ts_tapi Test API
  * @ingroup te_ts
  * @{

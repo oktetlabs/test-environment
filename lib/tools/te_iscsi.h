@@ -3,7 +3,7 @@
  * @brief TE iSCSI stuff
  *
  * @defgroup te_tools_te_iscsi iSCSI
- * @ingroup te_tools
+ * @ingroup te_tools_types
  * @{
  *
  * Functions and constant declared here can be used bothe on the agent

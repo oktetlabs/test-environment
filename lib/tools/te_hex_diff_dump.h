@@ -4,7 +4,7 @@
  * @brief API to log a diff between two binary blocks of memory
  *
  * @defgroup te_tools_te_hex_diff_dump HEX diff dump API
- * @ingroup te_tools
+ * @ingroup te_tools_logging
  * @{
  *
  * Functions to format a hex diff dump of two binary memory blocks and log it.

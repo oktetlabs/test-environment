@@ -3,7 +3,7 @@
  * @brief Mapping of unix signal name->number and number->name
  *
  * @defgroup te_tools_te_sigmap Mapping of unix signal names and numbers
- * @ingroup te_tools
+ * @ingroup te_tools_process
  * @{
  *
  * Definition of the mapping functions.

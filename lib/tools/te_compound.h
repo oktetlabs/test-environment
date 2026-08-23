@@ -4,7 +4,7 @@
  * @brief API to work with compound strings.
  *
  * @defgroup te_tools_te_compound Compound strings
- * @ingroup te_tools
+ * @ingroup te_tools_text
  * @{
  *
  * Compound strings are an extension to ordinary TE dynamic

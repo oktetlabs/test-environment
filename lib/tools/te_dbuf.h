@@ -4,7 +4,7 @@
  * @brief API to deal with dynamic buffers
  *
  * @defgroup te_tools_te_dbuf Dynamic buffers
- * @ingroup te_tools
+ * @ingroup te_tools_data
  * @{
  *
  * Definition of functions to work with dynamic buffers.

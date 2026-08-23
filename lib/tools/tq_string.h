@@ -3,7 +3,7 @@
  * @brief Tail queue of strings (char *).
  *
  * @defgroup te_tools_tq_string Tail queue of strings
- * @ingroup te_tools
+ * @ingroup te_tools_text
  * @{
  *
  * Definition of API for working with tail queue of strings.

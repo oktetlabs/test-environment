@@ -3,7 +3,7 @@
  * @brief Machine interface data logging
  *
  * @defgroup te_tools_te_mi_log Machine interface data logging
- * @ingroup te_tools
+ * @ingroup te_tools_logging
  * @{
  *
  * Definition of API for machine interface data logging.

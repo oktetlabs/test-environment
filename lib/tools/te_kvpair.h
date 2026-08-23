@@ -3,7 +3,7 @@
  * @brief Key-value pairs API
  *
  * @defgroup te_tools_te_kvpair Key-value pairs
- * @ingroup te_tools
+ * @ingroup te_tools_data
  * @{
  *
  * Definition of API for working with key-value pairs

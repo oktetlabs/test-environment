@@ -4,7 +4,7 @@
  * @brief Dynamic vectors.
  *
  * @defgroup te_tools_te_vec Dynamic vectors.
- * @ingroup te_tools
+ * @ingroup te_tools_data
  * @{
  *
  * Implementation of dynamic vectors.

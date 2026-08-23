@@ -4,7 +4,7 @@
  * @brief API to safely allocate memory
  *
  * @defgroup te_tools_te_alloc Safe memory allocation
- * @ingroup te_tools
+ * @ingroup te_tools_data
  * @{
  *
  * Safe memory allocation.

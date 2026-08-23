@@ -3,7 +3,7 @@
  * @brief Logger subsystem API
  *
  * @defgroup te_tools_logger_file Logger subsystem
- * @ingroup te_tools
+ * @ingroup te_tools_logging
  * @{
  *
  * Logger internal API to be used by standalone TE off-line applications.

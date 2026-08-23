@@ -3,7 +3,7 @@
  * @brief Test Environment unit-conversion functions
  *
  * @defgroup te_tools_te_units Unit-conversion
- * @ingroup te_tools
+ * @ingroup te_tools_numeric
  * @{
  *
  * Unit-conversion functions

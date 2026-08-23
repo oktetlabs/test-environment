@@ -4,7 +4,7 @@
  * @brief JSON-handling routines.
  *
  * @defgroup te_tools_te_json JSON routines.
- * @ingroup te_tools
+ * @ingroup te_tools_serial_fmt
  * @{
  *
  * These functions provide an easy but robust way to convert

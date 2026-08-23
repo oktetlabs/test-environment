@@ -5,7 +5,7 @@
  * @brief API for random numbers
  *
  * @defgroup te_tools_te_rand Random numbers generation
- * @ingroup te_tools
+ * @ingroup te_tools_numeric
  * @{
  *
  * Definition of API for generating random numbers.

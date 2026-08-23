@@ -3,7 +3,7 @@
  * @brief API to deal with files
  *
  * @defgroup te_tools_te_file File operations
- * @ingroup te_tools
+ * @ingroup te_tools_process
  * @{
  *
  * Functions to operate the files.

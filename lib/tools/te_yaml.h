@@ -3,7 +3,7 @@
  * @brief Utility functions for YAML processing
  *
  * @defgroup te_tools_te_yaml YAML processing
- * @ingroup te_tools
+ * @ingroup te_tools_serial_fmt
  * @{
  *
  * YAML processing

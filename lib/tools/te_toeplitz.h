@@ -3,7 +3,7 @@
  * @brief API to calculate hash used by RSS
  *
  * @defgroup te_tools_te_toeplitz Toeplitz hash
- * @ingroup te_tools
+ * @ingroup te_tools_numeric
  * @{
  *
  * Definition of API to calculate hash used by RSS

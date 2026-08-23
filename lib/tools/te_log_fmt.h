@@ -3,7 +3,7 @@
  * @brief TE log format string processing
  *
  * @defgroup te_tools_te_log_fmt Log format string processing
- * @ingroup te_tools
+ * @ingroup te_tools_logging
  * @{
  *
  * Some TE-specific features, such as memory dump, file content logging,

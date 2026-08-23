@@ -3,7 +3,7 @@
  * @brief TE tools
  *
  * @defgroup te_tools_te_sleep Sleep
- * @ingroup te_tools
+ * @ingroup te_tools_numeric
  * @{
  *
  * Functions for different delays.

@@ -3,7 +3,7 @@
  * @brief Auxiliary tools to deal with IP stack headers and checksums
  *
  * @defgroup te_tools_te_ipstack IP stack headers
- * @ingroup te_tools
+ * @ingroup te_tools_types
  * @{
  *
  * Definition of the auxiliary data structures and functions to operate the IP

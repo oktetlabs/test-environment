@@ -4,7 +4,7 @@
  * @brief Test API to operate the Timer service
  *
  * @defgroup te_tools_te_timer Timer
- * @ingroup te_tools
+ * @ingroup te_tools_numeric
  * @{
  *
  * Functions to check if time expired

@@ -3,7 +3,7 @@
  * @brief API to operate the time
  *
  * @defgroup te_tools_te_time Date, time
- * @ingroup te_tools
+ * @ingroup te_tools_numeric
  * @{
  *
  * Functions to operate the date and time.

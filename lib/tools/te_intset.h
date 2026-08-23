@@ -4,7 +4,7 @@
  * @brief Generic API to operate on integral sets.
  *
  * @defgroup te_tools_te_intset Integral sets
- * @ingroup te_tools
+ * @ingroup te_tools_data
  * @{
  *
  * Generic functions to operate on integral sets.

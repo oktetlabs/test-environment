@@ -4,7 +4,7 @@
  * @brief API to deal with strings
  *
  * @defgroup te_tools_te_str Regular strings
- * @ingroup te_tools
+ * @ingroup te_tools_text
  * @{
  *
  * Function to operate the strings.

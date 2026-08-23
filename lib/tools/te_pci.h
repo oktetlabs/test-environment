@@ -11,7 +11,7 @@
  * PCI ids database, see http://pci-ids.ucw.cz/.
  *
  * @defgroup te_tools_te_pci PCI definitions
- * @ingroup te_tools
+ * @ingroup te_tools_types
  * @{
  * PCI-related constants and supplementary functions.
  */

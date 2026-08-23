@@ -3,7 +3,7 @@
  * @brief Generic mapping between names and integral values
  *
  * @defgroup te_tools_te_enum Mapping between names and values
- * @ingroup te_tools
+ * @ingroup te_tools_text
  * @{
  *
  * Definition of the mapping functions.

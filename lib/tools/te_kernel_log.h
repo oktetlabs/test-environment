@@ -3,7 +3,7 @@
  * @brief Unix Kernel Logger
  *
  * @defgroup te_tools_te_kernel_log Unix Kernel Logger
- * @ingroup te_tools
+ * @ingroup te_tools_logging
  * @{
  *
  * Unix Kernel Logger header file

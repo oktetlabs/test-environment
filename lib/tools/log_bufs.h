@@ -3,7 +3,7 @@
  * @brief API to collect long log messages
  *
  * @defgroup te_tools_log_bufs Log buffers
- * @ingroup te_tools
+ * @ingroup te_tools_logging
  * @{
  *
  * Declaration of API to collect long log messages.

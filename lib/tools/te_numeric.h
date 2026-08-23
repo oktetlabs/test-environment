@@ -4,7 +4,7 @@
  * @brief Numeric operations.
  *
  * @defgroup te_tools_te_numeric Numeric operations.
- * @ingroup te_tools
+ * @ingroup te_tools_numeric
  * @{
  *
  * Numeric operations.
