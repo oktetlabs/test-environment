@@ -179,6 +179,15 @@ function generate_sphinx_doc()
       --frame-dir=$DOXYREST_PREFIX/share/doxyrest/frame/common
     )
 
+    # Doxygen 1.9 moved grouped member definitions out of the file compounds
+    # that doxyrest reads them from; without this the manual comes out with no
+    # API reference at all.  See the script.
+    [ -z "$SCRIPT_DIR" ] && SCRIPT_DIR="${TE_BASE}/scripts/docs"
+    ${SCRIPT_DIR}/doxyrest_compat.py doc/generated/xml || {
+        echo "Failed to prepare the Doxygen XML for doxyrest" 1>&2
+        return 1
+    }
+
     ${DOXYREST_BIN} "${DOXYREST_OPTS[@]}" > /dev/null || exit 1
 
     [ -z "$SCRIPT_DIR" ] && SCRIPT_DIR="${TE_BASE}/scripts/docs"
