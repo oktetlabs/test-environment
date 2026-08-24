@@ -447,8 +447,6 @@ prepare_cfg_start(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
     UNUSED(cfg_id_off);
 
     assert(gctx != NULL);
-    ctx = SLIST_FIRST(&gctx->ctxs);
-    assert(ctx != NULL);
 
     ctx = config_prepare_new_ctx(gctx);
     if (ctx == NULL)
