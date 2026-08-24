@@ -209,20 +209,18 @@
                 Type of element to specify options on how to handle XML syntax.
             </xsd:documentation>
         </xsd:annotation>
-        <xsd:choice minOccurs="0" maxOccurs="unbounded">
-            <xsd:attribute name="strip_indent" type="xsd:boolean" default="false">
-                <xsd:annotation>
-                    <xsd:documentation>
-                        Enable indentation stripping for values of variables
-                        and arguments, content of objective, description and
-                        values of properties of command monitor.
-                        Also, leading and trailing lines which contains only
-                        whitespaces will be removed.
-                        Disabled by default.
-                    </xsd:documentation>
-                </xsd:annotation>
-            </xsd:attribute>
-        </xsd:choice>
+        <xsd:attribute name="strip_indent" type="xsd:boolean" default="false">
+            <xsd:annotation>
+                <xsd:documentation>
+                    Enable indentation stripping for values of variables
+                    and arguments, content of objective, description and
+                    values of properties of command monitor.
+                    Also, leading and trailing lines which contains only
+                    whitespaces will be removed.
+                    Disabled by default.
+                </xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
     </xsd:complexType>
 
 </xsd:schema>
