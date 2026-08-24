@@ -35,8 +35,13 @@ max-doc-length = 96
 "__init__.py" = [
     "F401" # "imported but unused" is ok for __init__.py files
 ]
+"mdparse.py" = [
+    "C901", # a recursive-descent parser is naturally branchy
+    "PLR0912", # same: branch count comes from the grammar
+]
 "tests/*" = [
     "S101", # Unactual for tests
+    "PLR2004", # literal expected values are the point of a test
 ]
 
 [tool.ruff.lint.flake8-quotes]
