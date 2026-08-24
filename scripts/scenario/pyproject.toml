@@ -1,0 +1,58 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2026 OKTET Ltd.
+#
+# Per https://github.com/oktet-dev/styleguides/blob/master/python.md
+# (poetry sections omitted: stdlib-only tool, not packaged).
+
+[tool.ruff]
+line-length = 96
+target-version = "py39"
+show-fixes = true
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "ANN", # We will use mypy for annotations
+    "D1", # Too many places where docstrings are needed
+    "FA102", # No backward compatibility below python 3.9
+    "FA100", # Missing `from __future__ import annotations`
+    "EM101", # Raw string in exception: avoids useless variables
+    "COM812", # may conflict with ruff formatter
+    "ISC001", # may conflict with ruff formatter
+    "T201", # this is a CLI tool: print() is its output channel
+]
+
+[tool.ruff.lint.pylint]
+max-args = 16
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 96
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = [
+    "F401" # "imported but unused" is ok for __init__.py files
+]
+"tests/*" = [
+    "S101", # Unactual for tests
+]
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+avoid-escape = false
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.mypy]
+check_untyped_defs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_decorators = true
+disallow_any_unimported = true
+warn_return_any = true
+warn_unused_ignores = true
+no_implicit_optional = true
+show_error_codes = true
