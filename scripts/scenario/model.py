@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator
@@ -64,6 +64,9 @@ class Step:
 @dataclass
 class Test:
     """A single test scenario."""
+
+    # Keep pytest from collecting this dataclass as a test class.
+    __test__: ClassVar[bool] = False
 
     name: str
     summary: str
