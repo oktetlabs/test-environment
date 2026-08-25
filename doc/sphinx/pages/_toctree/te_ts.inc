@@ -8,3 +8,4 @@
 
 	group_te_lib_tapi_conf_net.rst
 	/generated/group_te_ts_tapi.rst
+	scenario_md.rst
