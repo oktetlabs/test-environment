@@ -97,6 +97,7 @@ extensions = [
     'doxyrest',
     'cpplexer',
     'override_css',
+    'sphinx_rtd_theme',
 ]
 
 # The suffix(es) of source filenames.
