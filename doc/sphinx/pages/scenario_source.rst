@@ -125,3 +125,28 @@ What stays undecided on purpose:
 - ``switch`` and the ``if (0)`` error-path landing pad;
 - a loop whose repeat count the parameters do not pin down - the
   tool evaluates conditions, it does not interpret loop bodies.
+
+Doxygen filter
+~~~~~~~~~~~~~~
+
+Test suites that publish doxygen documentation can feed it through
+the same extractor instead of the classic ``c2dox`` awk filter:
+
+.. code-block:: none
+
+    FILTER_PATTERNS = *.c="${TE_BASE}/scripts/c2dox_ast"
+
+The filter keeps the test's doxygen header comment and injects
+the scenario after ``@par Scenario:``, moving ``@author`` to the
+bottom of the page (which ``c2dox`` meant to do, but lost the
+line instead). The scenario is a nested list: steps
+under the condition or loop that guards them ("If ``cond``:",
+"For each iteration (...):"), substeps under their step,
+``TEST_STEP_PUSH`` groups under their heading. Step strings are
+decoded properly - concatenation, escapes - and ``@p``/``@c``
+references stay for doxygen to resolve.
+
+The filter needs ``python3`` with the ``libclang`` package on
+``PATH`` at documentation build time; without them it falls back
+to ``c2dox`` with a warning on stderr, so the build still
+produces pages, just flat ones.
