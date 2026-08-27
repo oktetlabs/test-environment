@@ -39,6 +39,10 @@ _MACROS = {
     'TEST_STEP_RESET': 'RESET',
 }
 
+# Public view of the step macro names, for tools that stub them to
+# parse a test without the TE headers (doxygen filter, probes).
+STEP_MACROS = tuple(_MACROS)
+
 # TEST_GET_* accessors: the C variable name equals the test
 # parameter name, which is what lets package.xml values bind to
 # condition identifiers.

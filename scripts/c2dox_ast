@@ -1,0 +1,24 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2026 OKTET Ltd.
+#
+# Doxygen input filter for C test sources: extracts the scenario
+# with its control flow through the libclang scenario tool, so
+# conditional steps document their conditions and substeps nest.
+# Point FILTER_PATTERNS at it:
+#
+#     FILTER_PATTERNS = *.c="${TE_BASE}/scripts/c2dox_ast"
+#
+# Falls back to the classic c2dox awk filter when python3 is
+# missing (the filter itself falls back likewise when libclang is
+# not installed), because doxygen ignores filter failures and a
+# hard error here would silently document nothing.
+
+SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+
+if command -v python3 >/dev/null 2>&1; then
+    exec python3 "${SCRIPTS_DIR}/scenario/doxfilter.py" "$1"
+fi
+
+echo "c2dox_ast: python3 not found, falling back to c2dox" >&2
+exec gawk -f "${SCRIPTS_DIR}/c2dox" "$1"
