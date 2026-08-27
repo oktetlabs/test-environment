@@ -37,28 +37,28 @@ For test scenarios we can use RCF API for:
 
 * manipulation of environment variables:
 
-  * :ref:`rcf_ta_get_var() <doxid-group__rcfapi__base_1gaeedff701d6d9ca8ee6df9f5762081b1a>`;
+  * :cref:`rcf_ta_get_var() <rcf_ta_get_var>`;
 
-  * :ref:`rcf_ta_set_var() <doxid-group__rcfapi__base_1ga5d84fcce34e3c001d3972302f7f7eed4>`.
+  * :cref:`rcf_ta_set_var() <rcf_ta_set_var>`.
 
 * manipulation of files on Test Agent side:
 
-  * :ref:`rcf_ta_get_file() <doxid-group__rcfapi__base_1gab7f10dce65461737da79bfc5f6204718>`;
+  * :cref:`rcf_ta_get_file() <rcf_ta_get_file>`;
 
-  * :ref:`rcf_ta_put_file() <doxid-group__rcfapi__base_1ga5de4f5d3c247041df66c16331ee1cc68>`;
+  * :cref:`rcf_ta_put_file() <rcf_ta_put_file>`;
 
-  * :ref:`rcf_ta_del_file() <doxid-group__rcfapi__base_1ga347ccc19384c7d0ccc957e538625d185>`.
+  * :cref:`rcf_ta_del_file() <rcf_ta_del_file>`.
 
 * calling a function on Test Agent side (do not mix it with RPC calls):
 
-  * :ref:`rcf_ta_call() <doxid-group__rcfapi__base_1gada2a8bccc55e218eab22a0b11b32a59e>`.
+  * :cref:`rcf_ta_call() <rcf_ta_call>`.
 
 * process and thread manipulation on Test Agent side:
 
-  * :ref:`rcf_ta_start_task() <doxid-group__rcfapi__base_1gae1c152e3cd1e112b0953964c92a59a6b>`;
+  * :cref:`rcf_ta_start_task() <rcf_ta_start_task>`;
 
-  * :ref:`rcf_ta_kill_task() <doxid-group__rcfapi__base_1gafd464ab429554e9e201a738d8a9ac86c>`;
+  * :cref:`rcf_ta_kill_task() <rcf_ta_kill_task>`;
 
-  * :ref:`rcf_ta_start_thread() <doxid-group__rcfapi__base_1ga5296de8e49774f9c5d68274c30ec0def>`;
+  * :cref:`rcf_ta_start_thread() <rcf_ta_start_thread>`;
 
-  * :ref:`rcf_ta_kill_thread() <doxid-group__rcfapi__base_1gaed61242aa8027c5561ea20d64e11637d>`.
+  * :cref:`rcf_ta_kill_thread() <rcf_ta_kill_thread>`.

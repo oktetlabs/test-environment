@@ -441,7 +441,7 @@ The Test API provides the possibilities to add, delete, configure and manage the
 	    int interval;        /**< Interval to poll data from the conserver. Use -1 for default value. */
 	} tapi_parser_id;
 
-It is possible to initialize the **parser id** structure using the **TAPI**. In this case the structure should be cleaned after use, because **TAPI** function allocates memory. Use the :ref:`tapi_serial_id_cleanup() <doxid-group__tapi__conf__serial__parse_1ga77e9ef3c3fae27066d9b1d0ed845a0f5>` to cleanup the **id** structure. By default the **user** field value is **NULL**, it means in logs will use the default user - **tester**. Default port is **3109**, interval - **100** milliseconds. See the following example.
+It is possible to initialize the **parser id** structure using the **TAPI**. In this case the structure should be cleaned after use, because **TAPI** function allocates memory. Use the :cref:`tapi_serial_id_cleanup() <tapi_serial_id_cleanup>` to cleanup the **id** structure. By default the **user** field value is **NULL**, it means in logs will use the default user - **tester**. Default port is **3109**, interval - **100** milliseconds. See the following example.
 
 .. ref-code-block:: cpp
 

@@ -84,11 +84,11 @@ In our example we will define the following objects:
 Test Agent initialization
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-On Test Agent start-up we should pass control to PCH (Portable Command Handler) main loop function :ref:`rcf_pch_run() <doxid-group__rcf__pch_1ga674454c23e4d97f6597fedb057aaf835>`. As a part of initialization process for configuration support :ref:`rcf_pch_run() <doxid-group__rcf__pch_1ga674454c23e4d97f6597fedb057aaf835>` function calls:
+On Test Agent start-up we should pass control to PCH (Portable Command Handler) main loop function :cref:`rcf_pch_run() <rcf_pch_run>`. As a part of initialization process for configuration support :cref:`rcf_pch_run() <rcf_pch_run>` function calls:
 
-* :ref:`rcf_ch_conf_init() <doxid-group__rcf__ch__cfg_1gade2d2cfc87dcd5ba89eb0f7a994a2ae6>` - to do all Test Agent specific initialization.
+* :cref:`rcf_ch_conf_init() <rcf_ch_conf_init>` - to do all Test Agent specific initialization.
 
-In :ref:`rcf_ch_conf_init() <doxid-group__rcf__ch__cfg_1gade2d2cfc87dcd5ba89eb0f7a994a2ae6>` function you should register all object nodes that Test Agent will support during its operation. Nodes are registered to RCF PCH with :ref:`rcf_pch_add_node() <doxid-group__rcf__pch_1gaf3f0c34fb03ec93f821bc5b4007192bb>` function where you specify parent object path and pointer to object description structure of :ref:`rcf_pch_cfg_object <doxid-structrcf__pch__cfg__object>` type.
+In :cref:`rcf_ch_conf_init() <rcf_ch_conf_init>` function you should register all object nodes that Test Agent will support during its operation. Nodes are registered to RCF PCH with :cref:`rcf_pch_add_node() <rcf_pch_add_node>` function where you specify parent object path and pointer to object description structure of :ref:`rcf_pch_cfg_object <doxid-structrcf__pch__cfg__object>` type.
 
 .. image:: /static/image/ta_conf_call_diagram.png
 	:alt: Test Agent configuration support event sequence diagram
@@ -110,7 +110,7 @@ For example definition of nodes of our sample might look like:
 	                            &rw_node, /* bother node (neighbor node) */
 	                            NULL, NULL, col_list, NULL);
 
-These definitions should be placed in the source of Test Agent. Then in the implementation of :ref:`rcf_ch_conf_init() <doxid-group__rcf__ch__cfg_1gade2d2cfc87dcd5ba89eb0f7a994a2ae6>` you should put the following line of code that will register your configuration subtree:
+These definitions should be placed in the source of Test Agent. Then in the implementation of :cref:`rcf_ch_conf_init() <rcf_ch_conf_init>` you should put the following line of code that will register your configuration subtree:
 
 .. ref-code-block:: c
 
@@ -282,7 +282,7 @@ Collection nodes can support synamic add/del operations which require implementa
 	    return 0;
 	}
 
-Apart from basic get/set/list/add/del handlers there is one more handler :ref:`rcf_pch_cfg_object::commit <doxid-structrcf__pch__cfg__object_1a10e8489e786107818fa832d52e3659cf>` that is additionally called for each successful set/add/del operation. There are two modes of commit call:
+Apart from basic get/set/list/add/del handlers there is one more handler :cref:`rcf_pch_cfg_object::commit` that is additionally called for each successful set/add/del operation. There are two modes of commit call:
 
 * immediate call (commit is called after successful completion of set/add/del operation);
 
@@ -300,7 +300,7 @@ Apart from basic get/set/list/add/del handlers there is one more handler :ref:`r
 
 Please note that in the group call case the particular commit function is called only once - in our sample commit_X() is called once though it is a commit function for /X/a and /X/c objects whose instances are updated.
 
-Usually the commit function is specified in parent node and children nodes refer to parent node with :ref:`RCF_PCH_CFG_NODE_RWC() <doxid-group__rcf__ch__cfg__node__def_1ga62bd1bcfb958d8bc6bb88486bdc7477f>` macro:
+Usually the commit function is specified in parent node and children nodes refer to parent node with :cref:`RCF_PCH_CFG_NODE_RWC() <RCF_PCH_CFG_NODE_RWC>` macro:
 
 .. ref-code-block:: c
 

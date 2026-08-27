@@ -29,23 +29,23 @@ TCP socket emulation API is defined in ``lib/tapi_tad/ipstack/tapi_tcp.h``
 Creating and destroying TCP socket emulation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TCP socket emulation can be created with :ref:`tapi_tcp_init_connection() <doxid-group__tapi__tad__tcp_1ga6b4e5e9b2155fe822f46c0ea81b16506>`, which returns handler of type tapi_tcp_handler_t.
+TCP socket emulation can be created with :cref:`tapi_tcp_init_connection() <tapi_tcp_init_connection>`, which returns handler of type tapi_tcp_handler_t.
 
 This function allows to specify local and remote IP and MAC addresses. It is important that local MAC address we use should not be assigned to any host in our network, including host on which we create TCP socket emulation. Otherwise Linux can disturb our connection by replying on packets from peer. For example, it can send RST to SYN sent from peer because it does not have any listener socket for that address and port and have no idea about our TCP socket emulation.
 
 For alien MAC address to work, we should create an ARP entry for local IP address we use associating it with this MAC address. This ARP entry can be created either on test host where peer socket resides, or on a gateway host via which our hosts are connected.
 
-:ref:`Route Gateway TAPI <doxid-group__route__gw>` uses creating such ARP entry with alien MAC address to break network connection in a specified direction between two hosts connected via gateway host. So it can be easily used with TCP socket emulation: break connection from a host where tested socket resides to a host where TCP socket emulation should be created, and then use :ref:`tapi_tcp_init_connection() <doxid-group__tapi__tad__tcp_1ga6b4e5e9b2155fe822f46c0ea81b16506>` passing to it the same alien MAC address as a local MAC.
+:ref:`Route Gateway TAPI <doxid-group__route__gw>` uses creating such ARP entry with alien MAC address to break network connection in a specified direction between two hosts connected via gateway host. So it can be easily used with TCP socket emulation: break connection from a host where tested socket resides to a host where TCP socket emulation should be created, and then use :cref:`tapi_tcp_init_connection() <tapi_tcp_init_connection>` passing to it the same alien MAC address as a local MAC.
 
 Emulated TCP connection may be established either actively or passively.
 
 Passive connection establishment:
 
-#. Call :ref:`tapi_tcp_init_connection() <doxid-group__tapi__tad__tcp_1ga6b4e5e9b2155fe822f46c0ea81b16506>` with mode=TAPI_TCP_SERVER.
+#. Call :cref:`tapi_tcp_init_connection() <tapi_tcp_init_connection>` with mode=TAPI_TCP_SERVER.
 
 #. Call non-blocking connect() from peer.
 
-#. Call :ref:`tapi_tcp_wait_open() <doxid-group__tapi__tad__tcp_1ga2471181d512d3d25ae294407d6ad51a0>`.
+#. Call :cref:`tapi_tcp_wait_open() <tapi_tcp_wait_open>`.
 
 #. Check than connect() on peer returns success.
 
@@ -53,13 +53,13 @@ Active connection establishment:
 
 #. Create listener socket on peer.
 
-#. Call :ref:`tapi_tcp_init_connection() <doxid-group__tapi__tad__tcp_1ga6b4e5e9b2155fe822f46c0ea81b16506>` with mode=TAPI_TCP_CLIENT.
+#. Call :cref:`tapi_tcp_init_connection() <tapi_tcp_init_connection>` with mode=TAPI_TCP_CLIENT.
 
-#. Call :ref:`tapi_tcp_wait_open() <doxid-group__tapi__tad__tcp_1ga2471181d512d3d25ae294407d6ad51a0>`.
+#. Call :cref:`tapi_tcp_wait_open() <tapi_tcp_wait_open>`.
 
 #. Call accept() on peer.
 
-TCP socket emulation can be destroyed with :ref:`tapi_tcp_destroy_connection() <doxid-group__tapi__tad__tcp_1ga17c0870454417b5a99d55bc93e79be5d>`.
+TCP socket emulation can be destroyed with :cref:`tapi_tcp_destroy_connection() <tapi_tcp_destroy_connection>`.
 
 
 
@@ -70,13 +70,13 @@ TCP socket emulation can be destroyed with :ref:`tapi_tcp_destroy_connection() <
 Receiving
 ~~~~~~~~~
 
-* :ref:`tapi_tcp_wait_msg() <doxid-group__tapi__tad__tcp_1ga63dc0d47f9bdad9ae2b367abdaca7fe3>` - wait for new packet for a specified amount of time. It ignores retransmits. When a packet is received, information about the last received SEQN/ACKN, FIN, RST, etc. is updated.
+* :cref:`tapi_tcp_wait_msg() <tapi_tcp_wait_msg>` - wait for new packet for a specified amount of time. It ignores retransmits. When a packet is received, information about the last received SEQN/ACKN, FIN, RST, etc. is updated.
 
-* :ref:`tapi_tcp_recv_msg() <doxid-group__tapi__tad__tcp_1gaf9db6ec07b55d8e64a03b2d8b6c0c20b>` - retrieve payload and ACKN/SEQN of the next TCP packet; send ACK to it if requested. If there is no packet in queue, it waits for it for a specified amount of time.
+* :cref:`tapi_tcp_recv_msg() <tapi_tcp_recv_msg>` - retrieve payload and ACKN/SEQN of the next TCP packet; send ACK to it if requested. If there is no packet in queue, it waits for it for a specified amount of time.
 
-* :ref:`tapi_tcp_recv_msg_gen() <doxid-group__tapi__tad__tcp_1ga479e5690f69998d8ab1924adf1e62656>` - the same as :ref:`tapi_tcp_recv_msg() <doxid-group__tapi__tad__tcp_1gaf9db6ec07b55d8e64a03b2d8b6c0c20b>`, but it allows to filter out retransmits.
+* :cref:`tapi_tcp_recv_msg_gen() <tapi_tcp_recv_msg_gen>` - the same as :cref:`tapi_tcp_recv_msg() <tapi_tcp_recv_msg>`, but it allows to filter out retransmits.
 
-* :ref:`tapi_tcp_recv_data() <doxid-group__tapi__tad__tcp_1gac24feae401f1f5fec66c1b1e5c718546>` - append all payload data received from peer to specified dynamic buffer.
+* :cref:`tapi_tcp_recv_data() <tapi_tcp_recv_data>` - append all payload data received from peer to specified dynamic buffer.
 
 
 
@@ -87,9 +87,9 @@ Receiving
 Sending
 ~~~~~~~
 
-* :ref:`tapi_tcp_send_msg() <doxid-group__tapi__tad__tcp_1ga685264289c925ac4e83e5395bc529737>` - send TCP packet with specified payload.
+* :cref:`tapi_tcp_send_msg() <tapi_tcp_send_msg>` - send TCP packet with specified payload.
 
-* :ref:`tapi_tcp_send_template() <doxid-group__tapi__tad__tcp_1gafd5fcebd30ac2ed12a0acbdbb7b810db>` - send TCP packet according to template described in ASN. Template can be created with :ref:`tapi_tcp_conn_template() <doxid-group__tapi__tad__tcp_1gac1555426b20da4d4f114ace3fc2626a7>`.
+* :cref:`tapi_tcp_send_template() <tapi_tcp_send_template>` - send TCP packet according to template described in ASN. Template can be created with :cref:`tapi_tcp_conn_template() <tapi_tcp_conn_template>`.
 
 
 
@@ -98,15 +98,15 @@ Sending
 Sending TCP packets with special flags
 --------------------------------------
 
-* :ref:`tapi_tcp_send_fin() <doxid-group__tapi__tad__tcp_1gae87b9e19165410c3ebb1567d8dff2170>` - send FIN.
+* :cref:`tapi_tcp_send_fin() <tapi_tcp_send_fin>` - send FIN.
 
-* :ref:`tapi_tcp_send_fin_ack() <doxid-group__tapi__tad__tcp_1ga371f68c420593772845b32e7178753a5>` - send FIN-ACK.
+* :cref:`tapi_tcp_send_fin_ack() <tapi_tcp_send_fin_ack>` - send FIN-ACK.
 
-* :ref:`tapi_tcp_send_rst() <doxid-group__tapi__tad__tcp_1ga8045232fef58c66c0344c0d791cd2c7e>` - send RST.
+* :cref:`tapi_tcp_send_rst() <tapi_tcp_send_rst>` - send RST.
 
-* :ref:`tapi_tcp_send_ack() <doxid-group__tapi__tad__tcp_1ga0473edd00b7e1efd0382979b6acabe65>` - send ACK with specified ACKN.
+* :cref:`tapi_tcp_send_ack() <tapi_tcp_send_ack>` - send ACK with specified ACKN.
 
-* :ref:`tapi_tcp_ack_all() <doxid-group__tapi__tad__tcp_1ga4b6668322aa74b1a1e9c4859ea07e1cf>` - send ACK to all data received.
+* :cref:`tapi_tcp_ack_all() <tapi_tcp_ack_all>` - send ACK to all data received.
 
 
 
@@ -119,23 +119,23 @@ Sending TCP packets with special flags
 Obtaining information about TCP connection
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* :ref:`tapi_tcp_last_seqn_got() <doxid-group__tapi__tad__tcp_1ga510b0a559657e89d3a8a5523e978e93e>` - get last SEQN received from a peer.
+* :cref:`tapi_tcp_last_seqn_got() <tapi_tcp_last_seqn_got>` - get last SEQN received from a peer.
 
-* :ref:`tapi_tcp_last_ackn_got() <doxid-group__tapi__tad__tcp_1ga88936949864dff594247d94f62379364>` - get last ACKN received from a peer.
+* :cref:`tapi_tcp_last_ackn_got() <tapi_tcp_last_ackn_got>` - get last ACKN received from a peer.
 
-* :ref:`tapi_tcp_last_win_got() <doxid-group__tapi__tad__tcp_1ga5bc524091e89d7c5997a09bcab7b0f21>` - get last TCP window size received from a peer.
+* :cref:`tapi_tcp_last_win_got() <tapi_tcp_last_win_got>` - get last TCP window size received from a peer.
 
-* :ref:`tapi_tcp_fin_got() <doxid-group__tapi__tad__tcp_1gacae8521bd001f10067f4f5fc4d9b9796>` - check whether FIN was received from a peer.
+* :cref:`tapi_tcp_fin_got() <tapi_tcp_fin_got>` - check whether FIN was received from a peer.
 
-* :ref:`tapi_tcp_rst_got() <doxid-group__tapi__tad__tcp_1ga59a93a41d87e3f2aed04f0d5404ba253>` - check wheter RST was received from a peer.
+* :cref:`tapi_tcp_rst_got() <tapi_tcp_rst_got>` - check wheter RST was received from a peer.
 
-* :ref:`tapi_tcp_last_seqn_sent() <doxid-group__tapi__tad__tcp_1ga3772fb87b1fefcd895cfd54636c58114>` - get last SEQN sent to a peer.
+* :cref:`tapi_tcp_last_seqn_sent() <tapi_tcp_last_seqn_sent>` - get last SEQN sent to a peer.
 
-* :ref:`tapi_tcp_last_ackn_sent() <doxid-group__tapi__tad__tcp_1ga2e6edecb6a2d79a3d77e01b351876be9>` - get last ACKN sent to a peer.
+* :cref:`tapi_tcp_last_ackn_sent() <tapi_tcp_last_ackn_sent>` - get last ACKN sent to a peer.
 
-* :ref:`tapi_tcp_next_seqn() <doxid-group__tapi__tad__tcp_1ga06dc8b36c7367d02e2b342beeab9a3f5>` - next SEQN to be sent to a peer.
+* :cref:`tapi_tcp_next_seqn() <tapi_tcp_next_seqn>` - next SEQN to be sent to a peer.
 
-* :ref:`tapi_tcp_next_ackn() <doxid-group__tapi__tad__tcp_1ga7c07230bc630c873fa9c8e701d66d062>` - next ACKN to be sent to a peer.
+* :cref:`tapi_tcp_next_ackn() <tapi_tcp_next_ackn>` - next ACKN to be sent to a peer.
 
 
 

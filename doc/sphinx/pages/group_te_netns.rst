@@ -122,13 +122,13 @@ There are two ways to organize TEN<->TA communication channel:
 
 The following two functions can be used (alternatively) to create a network namespace and configure the options above accordingly:
 
-#. :ref:`tapi_netns_create_ns_with_macvlan() <doxid-group__tapi__namespaces_1gae4d4c5c946acf8d4f36986c3a7352a85>`
+#. :cref:`tapi_netns_create_ns_with_macvlan() <tapi_netns_create_ns_with_macvlan>`
 
-#. :ref:`tapi_netns_create_ns_with_net_channel() <doxid-group__tapi__namespaces_1gad617211e067a647d0730f2f1b73bff38>`
+#. :cref:`tapi_netns_create_ns_with_net_channel() <tapi_netns_create_ns_with_net_channel>`
 
-Then function :ref:`tapi_netns_add_ta() <doxid-group__tapi__namespaces_1ga4b171c8ebe701afd20d0a17c16d912b4>` can be used to create test agent in the prepared namespace.
+Then function :cref:`tapi_netns_add_ta() <tapi_netns_add_ta>` can be used to create test agent in the prepared namespace.
 
-Note, function :ref:`tapi_netns_destroy_ns_with_macvlan() <doxid-group__tapi__namespaces_1ga1b94e2b0bab72a524fb756ddede3f26c>` must be called (in epilogue) to neutralise :ref:`tapi_netns_create_ns_with_macvlan() <doxid-group__tapi__namespaces_1gae4d4c5c946acf8d4f36986c3a7352a85>` configurations.
+Note, function :cref:`tapi_netns_destroy_ns_with_macvlan() <tapi_netns_destroy_ns_with_macvlan>` must be called (in epilogue) to neutralise :cref:`tapi_netns_create_ns_with_macvlan() <tapi_netns_create_ns_with_macvlan>` configurations.
 
 
 
@@ -260,13 +260,13 @@ Test API to manage system parameters
 
 There is Configurator subtree /agent/sys which is used to control system parameters (like files /proc/sys/net in linux). Some options may absent in auxiliary network namespace, but exist in default namespace. In this case a test writer can be interested in getting or setting an option in default net namespace if it does not exist in the target agent namespace. The following four TAPI functions help to do it:
 
-* :ref:`tapi_cfg_sys_ns_get_int() <doxid-group__tapi__cfg__sys_1ga681cba2a9622b7fea645baea92dd1c07>`
+* :cref:`tapi_cfg_sys_ns_get_int() <tapi_cfg_sys_ns_get_int>`
 
-* :ref:`tapi_cfg_sys_ns_set_int() <doxid-group__tapi__cfg__sys_1gabdffd0b927fb94caec92c29180fa1f38>`
+* :cref:`tapi_cfg_sys_ns_set_int() <tapi_cfg_sys_ns_set_int>`
 
-* :ref:`tapi_cfg_sys_ns_get_str() <doxid-group__tapi__cfg__sys_1gaa2d9820c871e34fdbd6da80b69a5cb5f>`
+* :cref:`tapi_cfg_sys_ns_get_str() <tapi_cfg_sys_ns_get_str>`
 
-* :ref:`tapi_cfg_sys_ns_set_str() <doxid-group__tapi__cfg__sys_1gaccad9666a6f7768a445c97f2c6172911>`
+* :cref:`tapi_cfg_sys_ns_set_str() <tapi_cfg_sys_ns_set_str>`
 
 
 
@@ -294,9 +294,9 @@ Test API to set interface MTU
 
 There are TAPI functions to set MTU on the interface and on its relatives if required:
 
-* :ref:`tapi_set_if_mtu_smart() <doxid-group__te__lib__rpc__misc_1ga7d11d94b74165f226bcc4038cde07a07>`
+* :cref:`tapi_set_if_mtu_smart() <tapi_set_if_mtu_smart>`
 
-* :ref:`tapi_set_if_mtu_smart2() <doxid-group__te__lib__rpc__misc_1ga8e59bb5b1eb3186d9e6ac7817cd0b239>`, :ref:`tapi_set_if_mtu_smart2_rollback() <doxid-group__te__lib__rpc__misc_1ga8ab4e58bbef868426f26ed2238990ba8>`
+* :cref:`tapi_set_if_mtu_smart2() <tapi_set_if_mtu_smart2>`, :cref:`tapi_set_if_mtu_smart2_rollback() <tapi_set_if_mtu_smart2_rollback>`
 
-Note, Configurator may fail to roll back MTU changes in some complex interface configuration schemas. In this case it is worth to use function :ref:`tapi_set_if_mtu_smart2() <doxid-group__te__lib__rpc__misc_1ga8e59bb5b1eb3186d9e6ac7817cd0b239>` to apply MTU changes and then function :ref:`tapi_set_if_mtu_smart2_rollback() <doxid-group__te__lib__rpc__misc_1ga8ab4e58bbef868426f26ed2238990ba8>` to undo them.
+Note, Configurator may fail to roll back MTU changes in some complex interface configuration schemas. In this case it is worth to use function :cref:`tapi_set_if_mtu_smart2() <tapi_set_if_mtu_smart2>` to apply MTU changes and then function :cref:`tapi_set_if_mtu_smart2_rollback() <tapi_set_if_mtu_smart2_rollback>` to undo them.
 

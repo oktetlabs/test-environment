@@ -37,7 +37,7 @@ When :ref:`Configurator <doxid-group__te__engine__conf>` starts it processes con
 
 Configuration file can also keep rules to add object instances, but these instances can not be applied for /agent subtree. /agent subtree is in control by Test Agents.
 
-:ref:`Configurator <doxid-group__te__engine__conf>` should ask Test Agents about these instances that is why it call :ref:`rcf_ta_cfg_get() <doxid-group__rcfapi__base_1ga92bb850be576f887a71251e4d86ccd45>` function with wildcard object instance identifier (arrow [4] in the figure).
+:ref:`Configurator <doxid-group__te__engine__conf>` should ask Test Agents about these instances that is why it call :cref:`rcf_ta_cfg_get() <rcf_ta_cfg_get>` function with wildcard object instance identifier (arrow [4] in the figure).
 
 When :ref:`Configurator <doxid-group__te__engine__conf>` receives a reply with the list of object instance names it checks whether an instance name has corresponding object node in its local object tree. If yes, then it adds an instance into its instance configuration tree, otherwise it ignores an instance name and tests will not be able to access those instances until they register corresponding object nodes in :ref:`Configurator <doxid-group__te__engine__conf>` (see arrow [6]).
 
@@ -58,17 +58,17 @@ For more information on :ref:`Configurator <doxid-group__te__engine__conf>` conf
 Adding/Deleting an entry to/from configuration tree
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For nodes of "read-create" access type it is possible to add or delete an instance in run time (from a test). Access type "read-create" does not guarantee the ability to run add or delete operation, but implementation of :ref:`rcf_pch_cfg_object::add <doxid-structrcf__pch__cfg__object_1ad7ce244750f7ef2c2b850dd98a9af7f2>` and :ref:`rcf_pch_cfg_object::del <doxid-structrcf__pch__cfg__object_1a5c5c2a064b8de217f700ff324ec8548f>` functions is required.
+For nodes of "read-create" access type it is possible to add or delete an instance in run time (from a test). Access type "read-create" does not guarantee the ability to run add or delete operation, but implementation of :cref:`rcf_pch_cfg_object::add` and :cref:`rcf_pch_cfg_object::del` functions is required.
 
-Please note that there can be "read-create" objects that do not provide implementation of :ref:`rcf_pch_cfg_object::add <doxid-structrcf__pch__cfg__object_1ad7ce244750f7ef2c2b850dd98a9af7f2>` or :ref:`rcf_pch_cfg_object::del <doxid-structrcf__pch__cfg__object_1a5c5c2a064b8de217f700ff324ec8548f>` functions. This mainly means that the number of instances can vary depending on events happened on Test Agent. Test Agent reports about the number of instances of that objects with :ref:`rcf_pch_cfg_object::list <doxid-structrcf__pch__cfg__object_1a908690657283ab4537a7bf36c4877123>` handler.
+Please note that there can be "read-create" objects that do not provide implementation of :cref:`rcf_pch_cfg_object::add` or :cref:`rcf_pch_cfg_object::del` functions. This mainly means that the number of instances can vary depending on events happened on Test Agent. Test Agent reports about the number of instances of that objects with :cref:`rcf_pch_cfg_object::list` handler.
 
 In order to add a new object instance you should use one of the following functions:
 
-* :ref:`cfg_add_instance() <doxid-group__confapi__base__access_1ga856f5dcea2bf506805e79fc13aa02cde>`;
+* :cref:`cfg_add_instance() <cfg_add_instance>`;
 
-* :ref:`cfg_add_instance_str() <doxid-group__confapi__base__access_1ga7771fd0dd155ef377ca94d8be282b47c>`;
+* :cref:`cfg_add_instance_str() <cfg_add_instance_str>`;
 
-* :ref:`cfg_add_instance_fmt() <doxid-group__confapi__base__access_1ga45cfda8cc1cc54d72c2482c6f48a507e>`.
+* :cref:`cfg_add_instance_fmt() <cfg_add_instance_fmt>`.
 
 The following diagram shows the sequence of events caused by calling any of these functions.
 
@@ -77,19 +77,19 @@ The following diagram shows the sequence of events caused by calling any of thes
 
 Similar things happen when you call a function to delete an object instance:
 
-* :ref:`cfg_del_instance() <doxid-group__confapi__base__access_1ga5abd708a2c82ecf19e40f91c08916d1e>`;
+* :cref:`cfg_del_instance() <cfg_del_instance>`;
 
-* :ref:`cfg_del_instance_fmt() <doxid-group__confapi__base__access_1ga30090ed0cdf07ca43115b5496a4fe606>`.
+* :cref:`cfg_del_instance_fmt() <cfg_del_instance_fmt>`.
 
 You can also use *local* version of instance add functions:
 
-* :ref:`cfg_add_instance_local() <doxid-group__confapi__base__access_1ga6962cddecb5fdbd01e628550a256c85c>`;
+* :cref:`cfg_add_instance_local() <cfg_add_instance_local>`;
 
-* :ref:`cfg_add_instance_local_str() <doxid-group__confapi__base__access_1ga4365e5060e03cba6145615bf6df7c965>`;
+* :cref:`cfg_add_instance_local_str() <cfg_add_instance_local_str>`;
 
-* :ref:`cfg_add_instance_local_fmt() <doxid-group__confapi__base__access_1gab4943c0e980604b56b98692d6c9ef71e>`.
+* :cref:`cfg_add_instance_local_fmt() <cfg_add_instance_local_fmt>`.
 
-The only difference is that these functions will not cause :ref:`rcf_pch_cfg_object::commit <doxid-structrcf__pch__cfg__object_1a10e8489e786107818fa832d52e3659cf>` function to be called after :ref:`rcf_pch_cfg_object::add <doxid-structrcf__pch__cfg__object_1ad7ce244750f7ef2c2b850dd98a9af7f2>`. Instead :ref:`rcf_pch_cfg_object::commit <doxid-structrcf__pch__cfg__object_1a10e8489e786107818fa832d52e3659cf>` is called when a test calls :ref:`cfg_commit() <doxid-group__confapi__base__access_1gaad97002e07f02c462da2aa3298b93fa1>` or :ref:`cfg_commit_fmt() <doxid-group__confapi__base__access_1gabbe8ba443fbb0a5f47f1c1613b7a2d03>` function for newly created object instance.
+The only difference is that these functions will not cause :cref:`rcf_pch_cfg_object::commit` function to be called after :cref:`rcf_pch_cfg_object::add`. Instead :cref:`rcf_pch_cfg_object::commit` is called when a test calls :cref:`cfg_commit() <cfg_commit>` or :cref:`cfg_commit_fmt() <cfg_commit_fmt>` function for newly created object instance.
 
 To add a new instance of ``col_object`` object one could use the following piece of code in their tests:
 
@@ -121,15 +121,15 @@ More frequently used operations are to Get node instance value or to Set new val
 
 To Set a node instance value use:
 
-* :ref:`cfg_set_instance() <doxid-group__confapi__base__access_1ga8c979af06cc536645552a1f51aad8066>`;
+* :cref:`cfg_set_instance() <cfg_set_instance>`;
 
-* :ref:`cfg_set_instance_fmt() <doxid-group__confapi__base__access_1ga0ef30d2e2cd16ee8490abb8d45fec2ca>`.
+* :cref:`cfg_set_instance_fmt() <cfg_set_instance_fmt>`.
 
 Or corresponding local varsions:
 
-* :ref:`cfg_set_instance_local() <doxid-group__confapi__base__access_1ga45d21edf256b590df80b23e6d6fa88c6>`;
+* :cref:`cfg_set_instance_local() <cfg_set_instance_local>`;
 
-* :ref:`cfg_set_instance_local_fmt() <doxid-group__confapi__base__access_1ga71a414e93926cb59927d20d3d55ec191>`.
+* :cref:`cfg_set_instance_local_fmt() <cfg_set_instance_local_fmt>`.
 
 
 .. image:: /static/image/ten_conf_set_instance.png
@@ -155,20 +155,20 @@ To understand the necessity of dependencies we need to know how :ref:`Configurat
 
 You can use the following functions to Get the value of object instance node:
 
-* :ref:`cfg_get_instance() <doxid-group__confapi__base__access_1ga46f53025b3ceb5adbfa99ad3424a5869>`;
+* :cref:`cfg_get_instance() <cfg_get_instance>`;
 
-* :ref:`cfg_get_instance_fmt() <doxid-group__confapi__base__access_1ga8713300c1f12431b4d6dd6d6d8de17d9>`.
+* :cref:`cfg_get_instance_fmt() <cfg_get_instance_fmt>`.
 
 .. image:: /static/image/ten_conf_get_instance.png
 	:alt: Sequence of events caused by cfg_get_instance() call
 
-Please note that :ref:`cfg_get_instance() <doxid-group__confapi__base__access_1ga46f53025b3ceb5adbfa99ad3424a5869>` call does not cause any exchange between :ref:`Configurator <doxid-group__te__engine__conf>` and Test Agents, but rather value to return is got from local object instance database.
+Please note that :cref:`cfg_get_instance() <cfg_get_instance>` call does not cause any exchange between :ref:`Configurator <doxid-group__te__engine__conf>` and Test Agents, but rather value to return is got from local object instance database.
 
 If you want to get the value from Test Agent you can do one of the following:
 
-* call :ref:`cfg_get_instance_sync() <doxid-group__confapi__base__access_1ga408535c456988093cc5e4bd38bb39961>` or :ref:`cfg_get_instance_sync_fmt() <doxid-group__confapi__base__access_1gae72e82b1419c4ac9c27248f6999fe0a1>` that will first synchronize object instance value with Test Agent and the return an updated value;
+* call :cref:`cfg_get_instance_sync() <cfg_get_instance_sync>` or :cref:`cfg_get_instance_sync_fmt() <cfg_get_instance_sync_fmt>` that will first synchronize object instance value with Test Agent and the return an updated value;
 
-* call :ref:`cfg_synchronize() <doxid-group__confapi__base__sync_1ga5634a6c78a078ce3dd839afddc532418>` or :ref:`cfg_synchronize_fmt() <doxid-group__confapi__base__sync_1ga353e4f44de81fa19463c36a3e7399f43>` to synchronize a subtree of configuration nodes and then call ordinary :ref:`cfg_get_instance() <doxid-group__confapi__base__access_1ga46f53025b3ceb5adbfa99ad3424a5869>` function.
+* call :cref:`cfg_synchronize() <cfg_synchronize>` or :cref:`cfg_synchronize_fmt() <cfg_synchronize_fmt>` to synchronize a subtree of configuration nodes and then call ordinary :cref:`cfg_get_instance() <cfg_get_instance>` function.
 
 
 .. image:: /static/image/ten_conf_get_instance_sync.png

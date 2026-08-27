@@ -256,7 +256,7 @@ Other attributes that you can specify for a Test Agent are:
 
 * ``synch_time`` - Enable/disable time synchronization between Test Engine and Test Agent (possile values are yes or no, the default is no);
 
-* ``rebootable`` - Tell RCF whether Test Agent can be rebooted or not (possile values are yes or no, the default is no). If this attribute is not enabled, :ref:`rcf_ta_reboot() <doxid-group__rcfapi__base_1ga2e9709ec1e4fce9a7014e131ab40aba2>` function from :ref:`API: RCF <doxid-group__rcfapi__base>` returns ``TE_EPERM`` error code;
+* ``rebootable`` - Tell RCF whether Test Agent can be rebooted or not (possile values are yes or no, the default is no). If this attribute is not enabled, :cref:`rcf_ta_reboot() <rcf_ta_reboot>` function from :ref:`API: RCF <doxid-group__rcfapi__base>` returns ``TE_EPERM`` error code;
 
 * ``disabled`` - Whether RCF shall ignore this Test Agent (act as if there was no such Test Agent in configuration file). This attribute can be used to tune RCF configuration via environment variables. For example:
 
@@ -299,11 +299,11 @@ Agent side threads/processes
 
 RCF configuration file allows to specify a number of threads or processes to create on Test Agent at start-up. Also it is possible to specify the list of functions to be called on Test Agent at start-up. These features are implemented via standard RCF mechanisms that can be done from test scenarios with calls to:
 
-* :ref:`rcf_ta_start_task() <doxid-group__rcfapi__base_1gae1c152e3cd1e112b0953964c92a59a6b>`;
+* :cref:`rcf_ta_start_task() <rcf_ta_start_task>`;
 
-* :ref:`rcf_ta_start_thread() <doxid-group__rcfapi__base_1ga5296de8e49774f9c5d68274c30ec0def>`;
+* :cref:`rcf_ta_start_thread() <rcf_ta_start_thread>`;
 
-* :ref:`rcf_ta_call() <doxid-group__rcfapi__base_1gada2a8bccc55e218eab22a0b11b32a59e>`.
+* :cref:`rcf_ta_call() <rcf_ta_call>`.
 
 
 .. ref-code-block:: xml
@@ -348,7 +348,7 @@ Another good example is serial logs collection:
 	    <arg value="3109:${TE_LOG_SERIAL_USER:-tester}:${TE_AGT_LOG_SERIAL}"/>
 	</thread>
 
-Below element tells RCF that an agent should have a thread running :ref:`log_serial() <doxid-group__te__tools__te__kernel__log_1gac4c1a83a4811e07cba3e529f6b644324>` function if TE_AGT_LOG_SERIAL is set. Arguments are passed to the thead function.
+Below element tells RCF that an agent should have a thread running :cref:`log_serial() <log_serial>` function if TE_AGT_LOG_SERIAL is set. Arguments are passed to the thead function.
 
 
 .. _doxid-group__te__engine__rcf_1te_engine_rcf_conf_file_xsd:

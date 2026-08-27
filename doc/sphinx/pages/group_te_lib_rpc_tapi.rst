@@ -49,7 +49,7 @@ Functions with array parameters are discussed in :ref:`Using arrays of variable 
 Support RPC call on Test Engine side
 ------------------------------------
 
-First thing in supporting an RPC call is to define necessary data structures in include/tarpc.x.m4 file. According to the prototype of :ref:`rcf_rpc_call() <doxid-group__te__lib__rcfrpc_1ga3175cd6f2a0dce9edbc315c7ec1709af>` function we can see that to issue RPC we need to pass the following information:
+First thing in supporting an RPC call is to define necessary data structures in include/tarpc.x.m4 file. According to the prototype of :cref:`rcf_rpc_call() <rcf_rpc_call>` function we can see that to issue RPC we need to pass the following information:
 
 * RPC name;
 
@@ -109,7 +109,7 @@ Any TAPI RPC function should do the following things:
 
 * fill in fields of IN arguments variable;
 
-* call :ref:`rcf_rpc_call() <doxid-group__te__lib__rcfrpc_1ga3175cd6f2a0dce9edbc315c7ec1709af>`;
+* call :cref:`rcf_rpc_call() <rcf_rpc_call>`;
 
 * set corresponding output parameters and return value with values extracted from OUT arguments variable.
 
@@ -160,11 +160,11 @@ You should note the following things:
 
     string param_name<>;
 
-* assuming we know the range of return value from a function, we can check the return value is in range with one of macros defined in ``lib/tapi_rpc/tapi_rpc_internal.h`` file. In our case we check that the return value is more or equal to -1 using :ref:`CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE() <doxid-tapi__rpc__internal_8h_1a2f7837d77b0450f140ef2b6bca0d739d>` macro. More generic macro to use is :ref:`CHECK_RETVAL_VAR() <doxid-tapi__rpc__internal_8h_1aae5b5613c9f12e0295f1a1c6d020dee4>`, but more likely you will find some predefined specific macro;
+* assuming we know the range of return value from a function, we can check the return value is in range with one of macros defined in ``lib/tapi_rpc/tapi_rpc_internal.h`` file. In our case we check that the return value is more or equal to -1 using :cref:`CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE() <CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE>` macro. More generic macro to use is :cref:`CHECK_RETVAL_VAR() <CHECK_RETVAL_VAR>`, but more likely you will find some predefined specific macro;
 
 * right before returning a value from a function, we should provide log message about our function call. We specify value of input and output arguments and return value;
 
-* return from a function should be done with one of macros defined in ``lib/tapi_rpc/tapi_rpc_internal.h`` file. In our case we return integer, which is why we use :ref:`RETVAL_INT() <doxid-tapi__rpc__internal_8h_1a5fa9a2e07acde98971d14a5fa8232b1b>` macro.
+* return from a function should be done with one of macros defined in ``lib/tapi_rpc/tapi_rpc_internal.h`` file. In our case we return integer, which is why we use :cref:`RETVAL_INT() <RETVAL_INT>` macro.
 
 A lot of RPC data types and convert functions are defined under lib/rpc_types library. Mainly this library keeps data types to use while doing RPC calls for system functions with well-known prototypes (like libc functions or functions from POSIX API). The purpose of this library is to export header files analogue to system library files.
 
@@ -214,7 +214,7 @@ In the context of code blocks represented as the second and the third argument o
 
 * ``out`` of type **tarpc\_<func_name>_out** (for our **foobar** sample it would be **struct tarpc_foobar_out**) - location for RPC output arguments of a call;
 
-* ``func`` - pointer to an address of RPC function to be called. The type of this variable is :ref:`api_func <doxid-rpc__server_8h_1a926efd7c583bf0a5c162de5d3342895b>`, which assumes the first argument of the function is of integer type and the return value is of integer type. If your function does not match that prototype you shall use one of the following names while calling your function:
+* ``func`` - pointer to an address of RPC function to be called. The type of this variable is :cref:`api_func`, which assumes the first argument of the function is of integer type and the return value is of integer type. If your function does not match that prototype you shall use one of the following names while calling your function:
 
   * func_ptr;
 
@@ -226,7 +226,7 @@ In the context of code blocks represented as the second and the third argument o
 
   * func_void_ret_ptr.
 
-  The usage of the correct reference name is desired to fix compilation warning that might pop up due to implicit cast to a different function type. In our **foobar** sample we should have used func_ptr instead of ``func``, because **foobar()** function gets a pointer as the value of the first argument and returns an integer, which matches exactly :ref:`api_func_ptr <doxid-rpc__server_8h_1a0b20e8dd158dd4ee03cdb80e2d5bf452>` prototype. I.e. :ref:`MAKE_CALL() <doxid-rpc__server_8h_1a393830a65d04a95c1829f752bcfbcf04>` line in **foobar** sample would be:
+  The usage of the correct reference name is desired to fix compilation warning that might pop up due to implicit cast to a different function type. In our **foobar** sample we should have used func_ptr instead of ``func``, because **foobar()** function gets a pointer as the value of the first argument and returns an integer, which matches exactly :cref:`api_func_ptr` prototype. I.e. :cref:`MAKE_CALL() <MAKE_CALL>` line in **foobar** sample would be:
 
   .. ref-code-block:: c
 
@@ -396,7 +396,7 @@ Notes:
 
 * We copy ``out_buf`` and ``out_buf_len`` arguments from IN to OUT. You should note that for the case of RPC we must pass output arguments (if necessary) first in IN arguments data structure and then all the values function returns or updates are passed via OUT data structure (tarpc_foo_out structure). Because of this we need to copy the content of buffers that potentially could be updated by the function. Field names for such arguments should be the same in input and output arguments structures;
 
-* We use INIT_CHECKED_ARG() macro to register our ``out_buf`` for validation against out of bound update - :ref:`MAKE_CALL() <doxid-rpc__server_8h_1a393830a65d04a95c1829f752bcfbcf04>` will automatically check that the data beyond specified buffer length is not updated;
+* We use INIT_CHECKED_ARG() macro to register our ``out_buf`` for validation against out of bound update - :cref:`MAKE_CALL() <MAKE_CALL>` will automatically check that the data beyond specified buffer length is not updated;
 
 
 .. _doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_framework_errors:
@@ -404,7 +404,7 @@ Notes:
 Reporting errors from RPC calls
 -------------------------------
 
-Normally :ref:`MAKE_CALL() <doxid-rpc__server_8h_1a393830a65d04a95c1829f752bcfbcf04>` macro captures errno value and saves it in ``out->common._errno``. On Test Engine side you can get this error code from RPC server structure with the help of :ref:`RPC_ERRNO() <doxid-group__te__lib__rcfrpc_1ga98b23de539d6cac225a3d5c45ce8faa7>` macro (see :ref:`Handling expected errors <doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_usage_error_handling>`). So if you implement a simple RPC wrapper over a system function, such as socket(), you do not need to worry about error reporting.
+Normally :cref:`MAKE_CALL() <MAKE_CALL>` macro captures errno value and saves it in ``out->common._errno``. On Test Engine side you can get this error code from RPC server structure with the help of :ref:`RPC_ERRNO() <doxid-group__te__lib__rcfrpc_1ga98b23de539d6cac225a3d5c45ce8faa7>` macro (see :ref:`Handling expected errors <doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_usage_error_handling>`). So if you implement a simple RPC wrapper over a system function, such as socket(), you do not need to worry about error reporting.
 
 However in case of complex RPC calls (when you have some function implemented on TA side which can fail in different places for various reasons), returning a negative value and some system errno code may not be specific enough. In this case you can use
 
@@ -412,17 +412,17 @@ However in case of complex RPC calls (when you have some function implemented on
 
 	void te_rpc_error_set(te_errno err, const char *msg, ...);
 
-to set an error code reported to the RPC caller, together with a string describing what happened. If this function is used, the error code set by it will be reported from :ref:`MAKE_CALL() <doxid-rpc__server_8h_1a393830a65d04a95c1829f752bcfbcf04>` instead of the errno value. Also there is
+to set an error code reported to the RPC caller, together with a string describing what happened. If this function is used, the error code set by it will be reported from :cref:`MAKE_CALL() <MAKE_CALL>` instead of the errno value. Also there is
 
 .. ref-code-block:: c
 
 	te_errno te_rpc_error_get_num(void);
 
-which returns the error code previously set by :ref:`te_rpc_error_set() <doxid-rpc__server_8h_1a9cb37f3bba0020bedb4e6999f4016098>`.
+which returns the error code previously set by :cref:`te_rpc_error_set() <te_rpc_error_set>`.
 
-Please note that these functions work correctly only if they are called from the same thread in which :ref:`MAKE_CALL() <doxid-rpc__server_8h_1a393830a65d04a95c1829f752bcfbcf04>` is used.
+Please note that these functions work correctly only if they are called from the same thread in which :cref:`MAKE_CALL() <MAKE_CALL>` is used.
 
-On the test side the error data set with :ref:`te_rpc_error_set() <doxid-rpc__server_8h_1a9cb37f3bba0020bedb4e6999f4016098>` can be used in the following way:
+On the test side the error data set with :cref:`te_rpc_error_set() <te_rpc_error_set>` can be used in the following way:
 
 .. ref-code-block:: c
 
@@ -434,7 +434,7 @@ On the test side the error data set with :ref:`te_rpc_error_set() <doxid-rpc__se
 	                 RPC_ERROR_ARGS(rpcs));
 	}
 
-In this case both the error code and the error string will be printed out in verdict. The error string description can also be obtained via :ref:`RPC_ERROR_MSG() <doxid-group__te__lib__rcfrpc_1gad24d189804e1369b4d639c6af15f8fee>` macro, while :ref:`RPC_ERRNO() <doxid-group__te__lib__rcfrpc_1ga98b23de539d6cac225a3d5c45ce8faa7>` macro can be used to access the error code.
+In this case both the error code and the error string will be printed out in verdict. The error string description can also be obtained via :cref:`RPC_ERROR_MSG() <RPC_ERROR_MSG>` macro, while :ref:`RPC_ERRNO() <doxid-group__te__lib__rcfrpc_1ga98b23de539d6cac225a3d5c45ce8faa7>` macro can be used to access the error code.
 
 
 .. _doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_usage:
@@ -456,7 +456,7 @@ Each RPC call (TAPI RPC call) can finish with success or an error. Error conditi
 
 * Test Agent crash.
 
-By default if an error occurred during RPC call, TAPI RPC interrupts test execution and passes control to test termination block. Sometimes you would expect an error to be returned by a function and you would not want a test to be terminated. To tell TAPI RPC that you expect an error condition on RPC call you can use :ref:`RPC_AWAIT_IUT_ERROR() <doxid-group__te__lib__rcfrpc_1ga8fdf87f7fd729794cad82629cd2a4473>` macro. For example:
+By default if an error occurred during RPC call, TAPI RPC interrupts test execution and passes control to test termination block. Sometimes you would expect an error to be returned by a function and you would not want a test to be terminated. To tell TAPI RPC that you expect an error condition on RPC call you can use :cref:`RPC_AWAIT_IUT_ERROR() <RPC_AWAIT_IUT_ERROR>` macro. For example:
 
 .. ref-code-block:: c
 
@@ -484,7 +484,7 @@ By default if an error occurred during RPC call, TAPI RPC interrupts test execut
 Non blocking calls of RPC
 -------------------------
 
-In some tests you may have RPC calls that block until some external event happens and a test is the entity that should cause this external event. One possible solution would be to create a separate thread that blocks on RPC call while another thread takes care of necessary event generating. This approach could be the right choice for some complex test cases, but in most cases it is enough to use a non blocking RPC call with further calls to check/get return status. As soon as non blocking RPC call finishes we can continue our test sequence taking into account that there is a pending call on some RPC Server. The type of RPC call can be controlled with :ref:`rcf_rpc_server::op <doxid-structrcf__rpc__server_1a1abaf4ae738264d46d7ab8e08107b9bb>` field of RPC Server.
+In some tests you may have RPC calls that block until some external event happens and a test is the entity that should cause this external event. One possible solution would be to create a separate thread that blocks on RPC call while another thread takes care of necessary event generating. This approach could be the right choice for some complex test cases, but in most cases it is enough to use a non blocking RPC call with further calls to check/get return status. As soon as non blocking RPC call finishes we can continue our test sequence taking into account that there is a pending call on some RPC Server. The type of RPC call can be controlled with :cref:`rcf_rpc_server::op` field of RPC Server.
 
 In the following example we do non blocking call for recv() function on one socket and then call send() function on another socket that causes recv() function to return.
 
@@ -535,7 +535,7 @@ By default RPC Server resolves symbols from Test Agent executable, which means i
 
 Here we will explain how to tell RPC Server to search RPC call symbol in user-specified library.
 
-By default a newly created RPC Server searches for symbols in Test Agent binary, but as soon as you specify an alternative library it will use that library instead. To switch to an alternative library use :ref:`rcf_rpc_setlibname() <doxid-group__te__lib__rcfrpc_1ga93f11072f7e2bc2f87edce186c7d33ea>` function:
+By default a newly created RPC Server searches for symbols in Test Agent binary, but as soon as you specify an alternative library it will use that library instead. To switch to an alternative library use :cref:`rcf_rpc_setlibname() <rcf_rpc_setlibname>` function:
 
 .. ref-code-block:: c
 
@@ -548,9 +548,9 @@ You should keep in mind that on Test Agent side RPC Server will first call a cod
 
 Sometimes you may need to call a function from **libc** library without switching default dynamic library name. This can be done with the help of two fields of :ref:`rcf_rpc_server <doxid-structrcf__rpc__server>` data structure:
 
-* :ref:`rcf_rpc_server::use_libc <doxid-structrcf__rpc__server_1ae100880f0869b9f2ab49f90ae2b3019b>` - to use **libc** library (and Test Agent global symbols) for name resolution in next RPC calls;
+* :cref:`rcf_rpc_server::use_libc` - to use **libc** library (and Test Agent global symbols) for name resolution in next RPC calls;
 
-* :ref:`rcf_rpc_server::use_libc_once <doxid-structrcf__rpc__server_1a738376169b9adb76c38bbdf08e1e84b0>` - to use **libc** library for name resolution only for the next RPC call.
+* :cref:`rcf_rpc_server::use_libc_once` - to use **libc** library for name resolution only for the next RPC call.
 
 For example:
 

@@ -27,7 +27,7 @@ To store all variables related to route gateway configuration, :ref:`tapi_route_
 
 Macro TAPI_DECLARE_ROUTE_GATEWAY_PARAMS can be used to declare all test parameters related to route gateway configuration, such as RPC servers, network interfaces and addresses. It should be used together with macro TAPI_GET_ROUTE_GATEWAY_PARAMS which allows to get all these parameters from environment. Also macro TAPI_INIT_ROUTE_GATEWAY is declared which can be used to initialize route gateway variable with values obtained by TAPI_GET_ROUTE_GATEWAY_PARAMS.
 
-After initializing route gateway, use :ref:`tapi_route_gateway_configure() <doxid-group__ts__tapi__route__gw_1ga777597392d0e6b782559c646b1b601ae>` to configure forwarding through gateway host. It creates two routes, from IUT to Tester on IUT and from Tester to IUT on Tester, and enables IPv4 forwarding on gateway host.
+After initializing route gateway, use :cref:`tapi_route_gateway_configure() <tapi_route_gateway_configure>` to configure forwarding through gateway host. It creates two routes, from IUT to Tester on IUT and from Tester to IUT on Tester, and enables IPv4 forwarding on gateway host.
 
 .. ref-code-block:: cpp
 
@@ -42,7 +42,7 @@ After initializing route gateway, use :ref:`tapi_route_gateway_configure() <doxi
 
 	CHECK_RC(tapi_route_gateway_configure(&gw));
 
-These marcos can be used only if your environment defines parameters with names hardcoded in these macros (for example RPC server on IUT is named pco_iut). If this is not true, you should instead declare and obtain all test parameters manually and then use :ref:`tapi_route_gateway_init() <doxid-group__ts__tapi__route__gw_1ga426f99cafa42a0c0a1aa0ac37fdd769c>` instead of TAPI_INIT_ROUTE_GATEWAY to initialize route gateway.
+These marcos can be used only if your environment defines parameters with names hardcoded in these macros (for example RPC server on IUT is named pco_iut). If this is not true, you should instead declare and obtain all test parameters manually and then use :cref:`tapi_route_gateway_init() <tapi_route_gateway_init>` instead of TAPI_INIT_ROUTE_GATEWAY to initialize route gateway.
 
 
 
@@ -55,27 +55,27 @@ Breaking and repairing network connection
 
 Route Gateway TAPI allows to break network connection with the following methods:
 
-* :ref:`tapi_route_gateway_set_forwarding() <doxid-group__ts__tapi__route__gw_1gab81c21c7e5d19ce3d15e388d47924fc7>` allows to disable forwarding on gateway, breaking connection in both directions.
+* :cref:`tapi_route_gateway_set_forwarding() <tapi_route_gateway_set_forwarding>` allows to disable forwarding on gateway, breaking connection in both directions.
 
-* :ref:`tapi_route_gateway_break_gw_iut() <doxid-group__ts__tapi__route__gw_1ga2a0ec27813846514f565805f44539a30>` breaks connection gateway -> IUT.
+* :cref:`tapi_route_gateway_break_gw_iut() <tapi_route_gateway_break_gw_iut>` breaks connection gateway -> IUT.
 
-* :ref:`tapi_route_gateway_break_iut_gw() <doxid-group__ts__tapi__route__gw_1ga5f863da0a72cfbf616941a87d70677a3>` breaks connection IUT -> gateway.
+* :cref:`tapi_route_gateway_break_iut_gw() <tapi_route_gateway_break_iut_gw>` breaks connection IUT -> gateway.
 
-* :ref:`tapi_route_gateway_break_gw_tst() <doxid-group__ts__tapi__route__gw_1ga0f87a7796970d8b8033cc910456d9488>` breaks connection gateway -> Tester.
+* :cref:`tapi_route_gateway_break_gw_tst() <tapi_route_gateway_break_gw_tst>` breaks connection gateway -> Tester.
 
-* :ref:`tapi_route_gateway_break_tst_gw() <doxid-group__ts__tapi__route__gw_1ga3a7ef4de8a787d4246574b889728d879>` breaks connection Tester -> gateway.
+* :cref:`tapi_route_gateway_break_tst_gw() <tapi_route_gateway_break_tst_gw>` breaks connection Tester -> gateway.
 
 Broken network connection then can be repaired by using corresponding repair method:
 
-* :ref:`tapi_route_gateway_set_forwarding() <doxid-group__ts__tapi__route__gw_1gab81c21c7e5d19ce3d15e388d47924fc7>` with enabled=true.
+* :cref:`tapi_route_gateway_set_forwarding() <tapi_route_gateway_set_forwarding>` with enabled=true.
 
-* :ref:`tapi_route_gateway_repair_gw_iut() <doxid-group__ts__tapi__route__gw_1ga85e6d5265adf3479f7fca727deab7b8a>`.
+* :cref:`tapi_route_gateway_repair_gw_iut() <tapi_route_gateway_repair_gw_iut>`.
 
-* :ref:`tapi_route_gateway_repair_iut_gw() <doxid-group__ts__tapi__route__gw_1gaa0b1ff414b349a0788573e217ed54ae2>`.
+* :cref:`tapi_route_gateway_repair_iut_gw() <tapi_route_gateway_repair_iut_gw>`.
 
-* :ref:`tapi_route_gateway_repair_gw_tst() <doxid-group__ts__tapi__route__gw_1ga2df28ba9498f94670450f4e7234e7a85>`.
+* :cref:`tapi_route_gateway_repair_gw_tst() <tapi_route_gateway_repair_gw_tst>`.
 
-* :ref:`tapi_route_gateway_repair_tst_gw() <doxid-group__ts__tapi__route__gw_1ga7a815dfc1cfefb74d5b7785b1a286f79>`.
+* :cref:`tapi_route_gateway_repair_tst_gw() <tapi_route_gateway_repair_tst_gw>`.
 
 
 

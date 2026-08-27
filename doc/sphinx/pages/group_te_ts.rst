@@ -466,31 +466,31 @@ The following things should be taken into account while writing a test scenario:
 Test parameters
 ~~~~~~~~~~~~~~~
 
-The main function to process test parameters in test scenario context is :ref:`test_get_param() <doxid-group__te__ts__tapi__test__param_1ga77a71497ad2b8ab7c1e29125938bb85b>`. It gets parameter name as an argument value and returns string value associated with that parameter.
+The main function to process test parameters in test scenario context is :cref:`test_get_param() <test_get_param>`. It gets parameter name as an argument value and returns string value associated with that parameter.
 
-Apart from base function :ref:`test_get_param() <doxid-group__te__ts__tapi__test__param_1ga77a71497ad2b8ab7c1e29125938bb85b>` there are a number of macros that process type-specific parameters:
+Apart from base function :cref:`test_get_param() <test_get_param>` there are a number of macros that process type-specific parameters:
 
-* :ref:`TEST_GET_ENUM_PARAM() <doxid-group__te__ts__tapi__test__param_1ga165df4451b2456291410cb5203b7b787>`;
+* :cref:`TEST_GET_ENUM_PARAM() <TEST_GET_ENUM_PARAM>`;
 
-* :ref:`TEST_GET_STRING_PARAM() <doxid-group__te__ts__tapi__test__param_1gaa1d7b320bc887b35d9c486c0f5c01271>`;
+* :cref:`TEST_GET_STRING_PARAM() <TEST_GET_STRING_PARAM>`;
 
-* :ref:`TEST_GET_INT_PARAM() <doxid-group__te__ts__tapi__test__param_1ga42ce6e09659e68964858166357d9cda9>`;
+* :cref:`TEST_GET_INT_PARAM() <TEST_GET_INT_PARAM>`;
 
-* :ref:`TEST_GET_INT64_PARAM() <doxid-group__te__ts__tapi__test__param_1gac1b946de532bfa453f97eafcef33cde7>`;
+* :cref:`TEST_GET_INT64_PARAM() <TEST_GET_INT64_PARAM>`;
 
-* :ref:`TEST_GET_DOUBLE_PARAM() <doxid-group__te__ts__tapi__test__param_1gae80cda63a67e37dbc4ab610a9408b7ed>`;
+* :cref:`TEST_GET_DOUBLE_PARAM() <TEST_GET_DOUBLE_PARAM>`;
 
-* :ref:`TEST_GET_OCTET_STRING_PARAM() <doxid-group__te__ts__tapi__test__param_1gaec445c18a2c06f56472575cf072d866d>`;
+* :cref:`TEST_GET_OCTET_STRING_PARAM() <TEST_GET_OCTET_STRING_PARAM>`;
 
-* :ref:`TEST_GET_STRING_LIST_PARAM() <doxid-group__te__ts__tapi__test__param_1ga5554072fbebc45f2735cfa882a7ed338>`;
+* :cref:`TEST_GET_STRING_LIST_PARAM() <TEST_GET_STRING_LIST_PARAM>`;
 
-* :ref:`TEST_GET_INT_LIST_PARAM() <doxid-group__te__ts__tapi__test__param_1ga41da78b0997e884a8565765a2b3567c9>`;
+* :cref:`TEST_GET_INT_LIST_PARAM() <TEST_GET_INT_LIST_PARAM>`;
 
-* :ref:`TEST_GET_BOOL_PARAM() <doxid-group__te__ts__tapi__test__param_1ga3881eaa71326e2e6ee763ad9b76dbb9d>`;
+* :cref:`TEST_GET_BOOL_PARAM() <TEST_GET_BOOL_PARAM>`;
 
-* :ref:`TEST_GET_FILENAME_PARAM() <doxid-group__te__ts__tapi__test__param_1ga6a2f77fcb3e9abafa7ed3afbf37c54d8>`;
+* :cref:`TEST_GET_FILENAME_PARAM() <TEST_GET_FILENAME_PARAM>`;
 
-* :ref:`TEST_GET_BUFF_SIZE() <doxid-group__te__ts__tapi__test__param_1ga4ea8dadbaddcd936470f432740911332>`.
+* :cref:`TEST_GET_BUFF_SIZE() <TEST_GET_BUFF_SIZE>`.
 
 For example for the following test run (from package.xml):
 
@@ -531,7 +531,7 @@ we can have the following test scenario:
 
 Please note that variable name passed to TEST_GET_xxx_PARAM() macro shall be the same as expected parameter name.
 
-Test suite can also define parameters of enumeration type. For this kind of parameters you will need to define a macro based on :ref:`TEST_GET_ENUM_PARAM() <doxid-group__te__ts__tapi__test__param_1ga165df4451b2456291410cb5203b7b787>`.
+Test suite can also define parameters of enumeration type. For this kind of parameters you will need to define a macro based on :cref:`TEST_GET_ENUM_PARAM() <TEST_GET_ENUM_PARAM>`.
 
 For example if you want to specify something like the following in your package.xml files:
 

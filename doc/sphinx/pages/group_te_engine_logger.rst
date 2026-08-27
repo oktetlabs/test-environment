@@ -37,17 +37,17 @@ Logger defines a number of log levels that gradate log messages by their importa
 
 * :ref:`ERROR() <doxid-group__logger__api_1gab917aa4a73d839cc18faff31b013d680>` - errors and faults;
 
-* :ref:`WARN() <doxid-group__logger__api_1gaf2e7f5ba954abedfcea33ca79e197e7d>` - warnings;
+* :cref:`WARN() <WARN>` - warnings;
 
-* :ref:`RING() <doxid-group__logger__api_1ga7b815b8f872c9036bba29ddfecd07368>` - significant events;
+* :cref:`RING() <RING>` - significant events;
 
-* :ref:`INFO() <doxid-group__logger__api_1gaa2da67464d48c3529acab6e54a97515b>` - informational;
+* :cref:`INFO() <INFO>` - informational;
 
-* :ref:`VERB() <doxid-group__logger__api_1ga44b30c7ecb5a931abda27f5ede014926>` - verbose;
+* :cref:`VERB() <VERB>` - verbose;
 
-* :ref:`ENTRY() <doxid-group__logger__api_1ga02bfdb68ee815c98c614d7edf19e122e>` - function entry point;
+* :cref:`ENTRY() <ENTRY>` - function entry point;
 
-* :ref:`EXIT() <doxid-group__logger__api_1ga51aaf0b1817f579662645cb6c2548aea>` - function exit.
+* :cref:`EXIT() <EXIT>` - function exit.
 
 Log level is a compile-time value – low log level leads to removing macro calls by the pre-processor. ERROR, WARN and RING are enabled by default.
 

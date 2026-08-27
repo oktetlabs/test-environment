@@ -45,13 +45,13 @@ To use the library, follow these steps:
 
 #. Declare variable of type :ref:`tsa_session <doxid-structtsa__session>`, which will be used to store the session context.
 
-#. Specify the mode of operation to :ref:`tsa_state_init() <doxid-group__tapi__tcp__states__def_1ga900fafc922c95fd441defff2fde6ed77>`.
+#. Specify the mode of operation to :cref:`tsa_state_init() <tsa_state_init>`.
 
-#. Use :ref:`tsa_iut_set() <doxid-group__tapi__tcp__states__def_1ga5c2055d56f0240b8b9cdf20238f3cb3b>` and :ref:`tsa_tst_set() <doxid-group__tapi__tcp__states__def_1ga3b4d0924922d5f7a6d142d2ed9b6063f>` to specify IUT and Tester properties. If the selected mode of operation requires a gateway, use :ref:`tsa_gw_set() <doxid-group__tapi__tcp__states__def_1gadc3e55803f99b7436d7ab92b720a67c7>` too.
+#. Use :cref:`tsa_iut_set() <tsa_iut_set>` and :cref:`tsa_tst_set() <tsa_tst_set>` to specify IUT and Tester properties. If the selected mode of operation requires a gateway, use :cref:`tsa_gw_set() <tsa_gw_set>` too.
 
 #. Use CFG_WAIT_CHANGES macro to wait until configuration changes are made.
 
-#. Call :ref:`tsa_create_session() <doxid-group__tapi__tcp__states__def_1ga112ea2149a0b7098b1a2b92378f23679>` to create a socket under test on IUT and its peer on Tester. The socket under test is initially in TCP_CLOSE state.
+#. Call :cref:`tsa_create_session() <tsa_create_session>` to create a socket under test on IUT and its peer on Tester. The socket under test is initially in TCP_CLOSE state.
 
 
 .. _doxid-group__tapi__tcp__states_1tapi_tcp_states_fini:
@@ -59,7 +59,7 @@ To use the library, follow these steps:
 Finalization
 ~~~~~~~~~~~~
 
-:ref:`tsa_destroy_session() <doxid-group__tapi__tcp__states__def_1ga89edeca462df2cc3657847a9d1a33664>` should be used to perform cleanup after using the library.
+:cref:`tsa_destroy_session() <tsa_destroy_session>` should be used to perform cleanup after using the library.
 
 
 .. _doxid-group__tapi__tcp__states_1tapi_tcp_states_use:
@@ -69,25 +69,25 @@ Usage
 
 The following functions can be used to perform transition to desired TCP state following a chosen path:
 
-* :ref:`tsa_do_tcp_move() <doxid-group__tapi__tcp__states__def_1ga446dccab8ee2b79fbe8e740f33b95dad>` can be used to move from the current TCP state to one of the next states, according to the TCP state machine.
+* :cref:`tsa_do_tcp_move() <tsa_do_tcp_move>` can be used to move from the current TCP state to one of the next states, according to the TCP state machine.
 
-* :ref:`tsa_do_moves() <doxid-group__tapi__tcp__states__def_1gac34c52e94b29e6e361db65f33a82bad2>` can be used to move from the current TCP state to the desired one through specified intermediate states. This function takes variable number of arguments, and intermediary and final TCP states are specified as its last arguments. The final argument should be ``RPC_TCP_UNKNOWN``, it denotes end of the list of TCP states.
+* :cref:`tsa_do_moves() <tsa_do_moves>` can be used to move from the current TCP state to the desired one through specified intermediate states. This function takes variable number of arguments, and intermediary and final TCP states are specified as its last arguments. The final argument should be ``RPC_TCP_UNKNOWN``, it denotes end of the list of TCP states.
 
-* :ref:`tsa_do_moves_str() <doxid-group__tapi__tcp__states__def_1ga2596e97a37da6fc2ee5458b2b97cceb1>` is similar to :ref:`tsa_do_moves() <doxid-group__tapi__tcp__states__def_1gac34c52e94b29e6e361db65f33a82bad2>`, but instead of variable number of arguments it takes string as it last argument, which can describe desired TCP states sequence like "TCP_CLOSE -> TCP_SYN_SENT -> TCP_ESTABLISHED -> TCP_FIN_WAIT1".
+* :cref:`tsa_do_moves_str() <tsa_do_moves_str>` is similar to :cref:`tsa_do_moves() <tsa_do_moves>`, but instead of variable number of arguments it takes string as it last argument, which can describe desired TCP states sequence like "TCP_CLOSE -> TCP_SYN_SENT -> TCP_ESTABLISHED -> TCP_FIN_WAIT1".
 
 The following functions can be used to obtain the socket under test and its peer, in order to perform some actions on them when the desired TCP state is reached:
 
-* :ref:`tsa_iut_sock() <doxid-group__tapi__tcp__states__def_1gae02d0584f6527a483f125d4492d66a84>` returns an IUT socket.
+* :cref:`tsa_iut_sock() <tsa_iut_sock>` returns an IUT socket.
 
-* :ref:`tsa_tst_sock() <doxid-group__tapi__tcp__states__def_1ga9a35603d9a7584742f8d4ff403fe9bcb>` returns either a real socket or a TCP socket emulation ID on Tester, according to the chosen mode of operation.
+* :cref:`tsa_tst_sock() <tsa_tst_sock>` returns either a real socket or a TCP socket emulation ID on Tester, according to the chosen mode of operation.
 
 The following functions can be used to obtain information about the TCP state of a socket under test:
 
-* :ref:`tsa_state_cur() <doxid-group__tapi__tcp__states__def_1gae8538e7f94052047074acf93a9367bb3>` returns current TCP state.
+* :cref:`tsa_state_cur() <tsa_state_cur>` returns current TCP state.
 
-* :ref:`tsa_state_from() <doxid-group__tapi__tcp__states__def_1ga2631e22ff93907a97534f0ff174c92ca>` returns the latest state from which a transition to the next state was attempted.
+* :cref:`tsa_state_from() <tsa_state_from>` returns the latest state from which a transition to the next state was attempted.
 
-* :ref:`tsa_state_to() <doxid-group__tapi__tcp__states__def_1ga7d23909a0cafc9916328a81330086a45>` returns the latest state to which a transition was attempted.
+* :cref:`tsa_state_to() <tsa_state_to>` returns the latest state to which a transition was attempted.
 
 
 .. _doxid-group__tapi__tcp__states_1tapi_tcp_states_conn:
@@ -103,13 +103,13 @@ As a result of using the library, network connectivity can be broken in the foll
 
 The following functions can be used to repair or break again the network connectivity by changing the ARP table:
 
-* :ref:`tsa_repair_tst_iut_conn() <doxid-group__tapi__tcp__states__def_1ga4cf772c328f23d54931321d685862b2e>`
+* :cref:`tsa_repair_tst_iut_conn() <tsa_repair_tst_iut_conn>`
 
-* :ref:`tsa_repair_iut_tst_conn() <doxid-group__tapi__tcp__states__def_1gac1361613e15b201566c03bff001983f9>`
+* :cref:`tsa_repair_iut_tst_conn() <tsa_repair_iut_tst_conn>`
 
-* :ref:`tsa_break_tst_iut_conn() <doxid-group__tapi__tcp__states__def_1gaa88310d2d2f9a864dc643d3a9f830c56>`
+* :cref:`tsa_break_tst_iut_conn() <tsa_break_tst_iut_conn>`
 
-* :ref:`tsa_break_iut_tst_conn() <doxid-group__tapi__tcp__states__def_1ga1f69d97355b1e725c62eb46fdbb731f8>`
+* :cref:`tsa_break_iut_tst_conn() <tsa_break_iut_tst_conn>`
 
 After calling these functions CFG_WAIT_CHANGES macro should be used.
 
