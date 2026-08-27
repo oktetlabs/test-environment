@@ -57,6 +57,10 @@ main(void)
 recover:
         TEST_STEP("Recover after failure");
     }
+    do
+    {
+        TEST_SUBSTEP("Poll once");
+    } while (n < 3);
     helper();
     return 0;
 }
@@ -98,6 +102,10 @@ def test_conditions(tmp_path: Path) -> None:
     pad = by_text['Recover after failure']
     assert pad.conds == ['if (0), reached by goto']
 
+    # clang orders do-while children [body, cond], unlike for/while.
+    poll = by_text['Poll once']
+    assert poll.conds == ['do while (n < 3)']
+
 
 def test_source_order(tmp_path: Path) -> None:
     steps = extract(write_fixture(tmp_path), extra_args=MACRO_DEFS)
@@ -110,4 +118,5 @@ def test_source_order(tmp_path: Path) -> None:
         'First item detail',
         'Check the negative macro gate',
         'Recover after failure',
+        'Poll once',
     ]

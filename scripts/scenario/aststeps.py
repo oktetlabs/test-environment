@@ -281,17 +281,18 @@ def _control_regions(func: object) -> list[tuple[tuple[int, int, int, int], str]
                     # adds its own condition after this one.
                     regions.append((_extent_key(kids[2]), f'!({cond})'))
             elif (
-                kind
-                in (
-                    cindex.CursorKind.FOR_STMT,
-                    cindex.CursorKind.WHILE_STMT,
-                    cindex.CursorKind.DO_STMT,
-                )
+                kind in (cindex.CursorKind.FOR_STMT, cindex.CursorKind.WHILE_STMT)
                 and kids
-                and (written(child, 'for') or written(child, 'while') or written(child, 'do'))
+                and (written(child, 'for') or written(child, 'while'))
             ):
                 header = _span_text(child, kids[-1])
                 regions.append((_extent_key(kids[-1]), header))
+            elif kind == cindex.CursorKind.DO_STMT and kids and written(child, 'do'):
+                # Unlike for/while, clang orders do-while children as
+                # [body, condition]: the body is first, and the header
+                # worth showing is the trailing while.
+                cond = _source_text(kids[-1])
+                regions.append((_extent_key(kids[0]), f'do while ({cond})'))
             elif (
                 kind == cindex.CursorKind.SWITCH_STMT
                 and len(kids) >= 2  # noqa: PLR2004
