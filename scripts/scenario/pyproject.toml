@@ -61,3 +61,7 @@ warn_return_any = true
 warn_unused_ignores = true
 no_implicit_optional = true
 show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = "clang.*"
+ignore_missing_imports = true

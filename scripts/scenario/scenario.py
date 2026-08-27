@@ -18,6 +18,7 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import aststeps
 from cstep import compare
 from emit_c import emit_test
 from mdparse import parse_package
@@ -150,6 +151,28 @@ def _cmd_list(args: argparse.Namespace) -> int:
     return 0
 
 
+def _steps_from_source(path: Path, compile_db: str | None) -> int:
+    db = Path(compile_db) if compile_db else aststeps.find_compile_db(path)
+    if db is None:
+        print(
+            f'no compile_commands.json found for {path}; build the suite or pass --compile-db',
+            file=sys.stderr,
+        )
+        return 1
+    for step in aststeps.extract(path, compile_db=db):
+        where = f'[{c}] ' if (c := '] ['.join(step.conds)) else ''
+        scope = f'({step.func}) ' if step.func != 'main' else ''
+        print(f'{step.kind}\t{scope}{where}{step.text}')
+    return 0
+
+
+def _cmd_steps(args: argparse.Namespace) -> int:
+    try:
+        return _steps_from_source(Path(args.source), args.compile_db)
+    except (OSError, ValueError, RuntimeError) as exc:
+        print(exc, file=sys.stderr)
+        return 1
+
 def _add_root_arg(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         '-t',
@@ -191,6 +214,21 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument('--pending', action='store_true', help='only unimplemented')
     g.add_argument('--implemented', action='store_true', help='only implemented')
     p.set_defaults(func=_cmd_list)
+
+    p = sub.add_parser(
+        'steps', help='list the steps of a test source with control flow'
+    )
+    p.add_argument(
+        'source',
+        help='a test .c source; steps are annotated with their'
+        ' control flow (needs the libclang package)',
+    )
+    p.add_argument(
+        '--compile-db',
+        help='compile_commands.json to take compiler flags from'
+        ' (default: found in a build tree near the source)',
+    )
+    p.set_defaults(func=_cmd_steps)
 
     args = parser.parse_args(argv)
     try:
