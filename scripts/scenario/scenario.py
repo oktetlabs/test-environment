@@ -201,11 +201,13 @@ def _env(
     env.update(info.enums)
     for name, raw in params.items():
         binding = info.bindings.get(name)
-        val = _numeric(raw)
-        if val is None and binding is not None and binding.mapping is not None:
+        val: condeval.Num | None = None
+        if binding is not None and binding.mapping is not None:
             val = binding.mapping.get(raw)
             if val is None and binding.kind == 'bool':
                 val = binding.mapping.get(raw.upper())
+        if val is None:
+            val = _numeric(raw)
         if val is None:
             if not quiet:
                 print(f'note: {name}={raw} has no numeric value, kept unbound', file=sys.stderr)

@@ -204,3 +204,59 @@ def test_steps_param(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None
     assert rc == 0
     out = capsys.readouterr().out
     assert 'SKIP\tSTEP\t[if (iters > 10)] Warm up' in out
+
+
+def write_steps_src(tmp_path: Path, text: str) -> Path:
+    src = tmp_path / 'demo.c'
+    src.write_text(text, encoding='utf-8')
+    db = tmp_path / 'compile_commands.json'
+    db.write_text(
+        json.dumps([{'directory': str(tmp_path), 'file': 'demo.c', 'command': 'cc -c demo.c'}]),
+        encoding='utf-8',
+    )
+    return src
+
+
+ENUM_MAP_SRC = """\
+#define TEST_STEP(...) (void)0
+#define TEST_GET_ENUM_PARAM(x_, map_) (void)0
+
+enum {
+    M_ONE = 7,
+};
+
+#define M_MAP { "1", M_ONE }
+
+int
+main(void)
+{
+    int mode;
+
+    TEST_GET_ENUM_PARAM(mode, M_MAP);
+    if (mode == 7)
+    {
+        TEST_STEP("Chosen");
+    }
+    return 0;
+}
+"""
+
+
+@needs_clang
+def test_steps_param_mapping_wins_over_numeric(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A mapping key that looks numeric must resolve through the map.
+
+    "mode" maps the string "1" to the enum constant M_ONE (7); with
+    --param mode=1 the binding must resolve through the mapping, not
+    be misread as the literal number 1.
+    """
+    src = write_steps_src(tmp_path, ENUM_MAP_SRC)
+    db = str(tmp_path / 'compile_commands.json')
+
+    rc = main(['steps', str(src), '--compile-db', db, '--param', 'mode=1'])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert 'STEP\tChosen' in out
+    assert '[if (mode == 7)]' not in out

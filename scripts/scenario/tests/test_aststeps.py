@@ -140,6 +140,8 @@ def test_source_order(tmp_path: Path) -> None:
 
 
 PARAM_FIXTURE = """\
+extern int external_value;
+
 enum {
     MODE_A,
     MODE_B = 5,
@@ -148,6 +150,8 @@ enum {
 #define MODE_MAP \\
     { "a", MODE_A },  \\
     { "b", MODE_B }
+
+#define BAD_MAP { "x", external_value }
 
 #define LIMIT 42
 
@@ -158,11 +162,13 @@ main(void)
     int mode;
     int on;
     const char *name;
+    int bad;
 
     TEST_GET_INT_PARAM(iters);
     TEST_GET_ENUM_PARAM(mode, MODE_MAP);
     TEST_GET_BOOL_PARAM(on);
     TEST_GET_STRING_PARAM(name);
+    TEST_GET_ENUM_PARAM(bad, BAD_MAP);
     return 0;
 }
 """
@@ -173,7 +179,7 @@ def test_bindings(tmp_path: Path) -> None:
     src.write_text(PARAM_FIXTURE, encoding='utf-8')
     info = aststeps.analyze(src, extra_args=MACRO_DEFS)
 
-    assert set(info.bindings) == {'iters', 'mode', 'on', 'name'}
+    assert set(info.bindings) == {'iters', 'mode', 'on', 'name', 'bad'}
     assert info.bindings['iters'].kind == 'int'
     assert info.bindings['name'].kind == 'string'
     assert info.bindings['on'].kind == 'bool'
@@ -182,7 +188,9 @@ def test_bindings(tmp_path: Path) -> None:
     mode = info.bindings['mode']
     assert mode.kind == 'enum'
     assert mode.map_macros == ['MODE_MAP']
-    assert mode.mapping is None  # resolution comes in a later task
+    assert mode.mapping == {'a': 0, 'b': 5}
+
+    assert info.bindings['bad'].mapping is None
 
     assert info.enums == {'MODE_A': 0, 'MODE_B': 5}
     assert info.macros['LIMIT'] == 42

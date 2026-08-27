@@ -540,6 +540,66 @@ def _int_literal(tok: str) -> int | None:
         return None
 
 
+def _mapping_entries(
+    toks: list[str], enums: dict[str, int], macros: dict[str, int]
+) -> dict[str, int] | None:
+    """Decode { "name", VALUE } initializer pairs from macro tokens.
+
+    Entries whose key is not a string literal are skipped (e.g. a
+    NULL terminator); a string entry whose value cannot be resolved
+    makes the whole mapping unusable.
+
+    Args:
+        toks: The macro's definition tokens.
+        enums: Enum constant values for resolving VALUE identifiers.
+        macros: Integer macro values, tried after the enums.
+
+    Returns:
+        The decoded mapping, or None when it is empty or any string
+        entry's value stays unresolved.
+    """
+    entries: dict[str, int] = {}
+    i = 0
+    while i < len(toks):
+        if toks[i] != '{':
+            i += 1
+            continue
+        if i + 3 < len(toks) and toks[i + 1].startswith('"') and toks[i + 2] == ',':
+            val_tok = toks[i + 3]
+            val = _int_literal(val_tok)
+            if val is None:
+                val = enums.get(val_tok, macros.get(val_tok))
+            if val is None:
+                return None
+            entries[toks[i + 1][1:-1]] = val
+        while i < len(toks) and toks[i] != '}':
+            i += 1
+        i += 1
+    return entries or None
+
+
+def _resolve_mappings(info: SourceInfo) -> None:
+    """Resolve enum bindings through their mapping-list macros.
+
+    Merges the recorded map macros of every unresolved enum binding
+    into its mapping, in place.  A mapping with any unresolvable
+    macro is discarded whole: the parameter stays unbound rather
+    than wrongly decided.
+    """
+    for binding in info.bindings.values():
+        if binding.kind != 'enum' or binding.mapping is not None or not binding.map_macros:
+            continue
+        mapping: dict[str, int] = {}
+        for name in binding.map_macros:
+            toks = info.macro_tokens.get(name)
+            entries = _mapping_entries(toks, info.enums, info.macros) if toks else None
+            if entries is None:
+                mapping.clear()
+                break
+            mapping.update(entries)
+        binding.mapping = mapping or None
+
+
 def _macro_args(cursor: object) -> list[str]:
     """Top-level comma-separated argument texts of a macro use.
 
@@ -742,7 +802,9 @@ def analyze(
         )
     ]
 
-    return _walk(tu, funcs, source)
+    info = _walk(tu, funcs, source)
+    _resolve_mappings(info)
+    return info
 
 
 def extract(
