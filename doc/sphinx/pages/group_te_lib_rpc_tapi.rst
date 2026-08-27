@@ -97,7 +97,7 @@ It means that for each function we need to define ONE data structure that will k
 	    } = 1;
 	} = 1;
 
-Please note that each structure for input arguments should have struct :ref:`tarpc_in_arg <doxid-structtarpc__in__arg>` as the first field of the structure, each structure for output arguments should have struct :ref:`tarpc_out_arg <doxid-structtarpc__out__arg>` structure. The format of include/tarpc.x.m4 file complies with :ref:`XDR <doxid-structXDR>` format specified in RFC 1014.
+Please note that each structure for input arguments should have struct :ref:`tarpc_in_arg <doxid-structtarpc__in__arg>` as the first field of the structure, each structure for output arguments should have struct :ref:`tarpc_out_arg <doxid-structtarpc__out__arg>` structure. The format of include/tarpc.x.m4 file complies with XDR format specified in RFC 1014.
 
 Now we are ready to implement TAPI side for our **foobar()** function. Due to the fact that our target is to call **foobar()** function in the context of another process, we can't use the same name for the function implementation - it may conflict with such a function in our context. To sort this out we prefix all functions with **rpc\_** string.
 
@@ -548,9 +548,9 @@ You should keep in mind that on Test Agent side RPC Server will first call a cod
 
 Sometimes you may need to call a function from **libc** library without switching default dynamic library name. This can be done with the help of two fields of :ref:`rcf_rpc_server <doxid-structrcf__rpc__server>` data structure:
 
-* :ref:`rcf_rpc_server::use_libc <doxid-structrcf__rpc__server_1a10dab8c239b2e2d1810a53d652afeb0f>` - to use **libc** library (and Test Agent global symbols) for name resolution in next RPC calls;
+* :ref:`rcf_rpc_server::use_libc <doxid-structrcf__rpc__server_1ae100880f0869b9f2ab49f90ae2b3019b>` - to use **libc** library (and Test Agent global symbols) for name resolution in next RPC calls;
 
-* :ref:`rcf_rpc_server::use_libc_once <doxid-structrcf__rpc__server_1a52fde4b7b1b9103d84da628f0f2b7414>` - to use **libc** library for name resolution only for the next RPC call.
+* :ref:`rcf_rpc_server::use_libc_once <doxid-structrcf__rpc__server_1a738376169b9adb76c38bbdf08e1e84b0>` - to use **libc** library for name resolution only for the next RPC call.
 
 For example:
 

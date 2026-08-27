@@ -282,7 +282,7 @@ Imagine that the test **foobar** is expected to fail because of socket creation 
 	  </results>
 	</iter>
 
-**Verdict** is a special message which test produces during it's execution. It can be just before failure or at the middle. It's produced with :ref:`TEST_VERDICT() <doxid-tapi__test__log_8h_1aa36c8292e774ba1625bcb80593cfb006>` call.
+**Verdict** is a special message which test produces during it's execution. It can be just before failure or at the middle. It's produced with :ref:`TEST_VERDICT() <doxid-group__te__ts__tapi__test__log_1gaa36c8292e774ba1625bcb80593cfb006>` call.
 
 
 

@@ -126,7 +126,7 @@ The following two functions can be used (alternatively) to create a network name
 
 #. :ref:`tapi_netns_create_ns_with_net_channel() <doxid-group__tapi__namespaces_1gad617211e067a647d0730f2f1b73bff38>`
 
-Then function :ref:`tapi_netns_add_ta() <doxid-group__tapi__namespaces_1gae37e6ce59ca62fe31c9deba812488f36>` can be used to create test agent in the prepared namespace.
+Then function :ref:`tapi_netns_add_ta() <doxid-group__tapi__namespaces_1ga4b171c8ebe701afd20d0a17c16d912b4>` can be used to create test agent in the prepared namespace.
 
 Note, function :ref:`tapi_netns_destroy_ns_with_macvlan() <doxid-group__tapi__namespaces_1ga1b94e2b0bab72a524fb756ddede3f26c>` must be called (in epilogue) to neutralise :ref:`tapi_netns_create_ns_with_macvlan() <doxid-group__tapi__namespaces_1gae4d4c5c946acf8d4f36986c3a7352a85>` configurations.
 
@@ -260,13 +260,13 @@ Test API to manage system parameters
 
 There is Configurator subtree /agent/sys which is used to control system parameters (like files /proc/sys/net in linux). Some options may absent in auxiliary network namespace, but exist in default namespace. In this case a test writer can be interested in getting or setting an option in default net namespace if it does not exist in the target agent namespace. The following four TAPI functions help to do it:
 
-* :ref:`tapi_cfg_sys_ns_get_int() <doxid-group__tapi__cfg__sys_1ga6b70d500da910939912bbf6110831efc>`
+* :ref:`tapi_cfg_sys_ns_get_int() <doxid-group__tapi__cfg__sys_1ga681cba2a9622b7fea645baea92dd1c07>`
 
-* :ref:`tapi_cfg_sys_ns_set_int() <doxid-group__tapi__cfg__sys_1ga13716406d802c242be37928d431b3040>`
+* :ref:`tapi_cfg_sys_ns_set_int() <doxid-group__tapi__cfg__sys_1gabdffd0b927fb94caec92c29180fa1f38>`
 
-* :ref:`tapi_cfg_sys_ns_get_str() <doxid-group__tapi__cfg__sys_1gaa4bc411124a2de258383d9965423b51e>`
+* :ref:`tapi_cfg_sys_ns_get_str() <doxid-group__tapi__cfg__sys_1gaa2d9820c871e34fdbd6da80b69a5cb5f>`
 
-* :ref:`tapi_cfg_sys_ns_set_str() <doxid-group__tapi__cfg__sys_1ga04d581a8e59418aeae7e8fa70af2294e>`
+* :ref:`tapi_cfg_sys_ns_set_str() <doxid-group__tapi__cfg__sys_1gaccad9666a6f7768a445c97f2c6172911>`
 
 
 

@@ -74,9 +74,9 @@ Configuration nodes responsible for :ref:`Network topology model <doxid-group__t
 
 * /net/node/type - type of the network node. Each node is assigned with its logical type value:
 
-  * NUT - :ref:`Node <doxid-structNode>` Under Test - node of this type exports functionality that we are to test. In configuration tree the value of this node is of integer type and should be equal to 1;
+  * NUT - Node Under Test - node of this type exports functionality that we are to test. In configuration tree the value of this node is of integer type and should be equal to 1;
 
-  * TST - Tester :ref:`Node <doxid-structNode>` - node of this type provides auxiliary services to make it possible to do the testing of functionality exported by DUT or NUT. In configuration tree the value of this node is of integer type and should be equal to 0.
+  * TST - Tester Node - node of this type provides auxiliary services to make it possible to do the testing of functionality exported by DUT or NUT. In configuration tree the value of this node is of integer type and should be equal to 0.
 
 For our sample configuration we would add the following lines in :ref:`Configurator Configuration File <doxid-group__te__engine__conf_1te_engine_conf_file>`
 

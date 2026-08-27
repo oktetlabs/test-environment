@@ -55,7 +55,7 @@ Breaking and repairing network connection
 
 Route Gateway TAPI allows to break network connection with the following methods:
 
-* :ref:`tapi_route_gateway_set_forwarding() <doxid-group__ts__tapi__route__gw_1ga53c749056c8609e85d8efe699db131ce>` allows to disable forwarding on gateway, breaking connection in both directions.
+* :ref:`tapi_route_gateway_set_forwarding() <doxid-group__ts__tapi__route__gw_1gab81c21c7e5d19ce3d15e388d47924fc7>` allows to disable forwarding on gateway, breaking connection in both directions.
 
 * :ref:`tapi_route_gateway_break_gw_iut() <doxid-group__ts__tapi__route__gw_1ga2a0ec27813846514f565805f44539a30>` breaks connection gateway -> IUT.
 
@@ -67,7 +67,7 @@ Route Gateway TAPI allows to break network connection with the following methods
 
 Broken network connection then can be repaired by using corresponding repair method:
 
-* :ref:`tapi_route_gateway_set_forwarding() <doxid-group__ts__tapi__route__gw_1ga53c749056c8609e85d8efe699db131ce>` with enabled=true.
+* :ref:`tapi_route_gateway_set_forwarding() <doxid-group__ts__tapi__route__gw_1gab81c21c7e5d19ce3d15e388d47924fc7>` with enabled=true.
 
 * :ref:`tapi_route_gateway_repair_gw_iut() <doxid-group__ts__tapi__route__gw_1ga85e6d5265adf3479f7fca727deab7b8a>`.
 

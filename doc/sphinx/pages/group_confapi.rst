@@ -68,7 +68,7 @@ In order to add a new object instance you should use one of the following functi
 
 * :ref:`cfg_add_instance_str() <doxid-group__confapi__base__access_1ga7771fd0dd155ef377ca94d8be282b47c>`;
 
-* :ref:`cfg_add_instance_fmt() <doxid-group__confapi__base__access_1ga53648a566529159c2f6831541a00d9c3>`.
+* :ref:`cfg_add_instance_fmt() <doxid-group__confapi__base__access_1ga45cfda8cc1cc54d72c2482c6f48a507e>`.
 
 The following diagram shows the sequence of events caused by calling any of these functions.
 
@@ -77,19 +77,19 @@ The following diagram shows the sequence of events caused by calling any of thes
 
 Similar things happen when you call a function to delete an object instance:
 
-* :ref:`cfg_del_instance() <doxid-group__confapi__base__access_1ga5f6fdcc65f8ebbc6b0581b383141a368>`;
+* :ref:`cfg_del_instance() <doxid-group__confapi__base__access_1ga5abd708a2c82ecf19e40f91c08916d1e>`;
 
-* :ref:`cfg_del_instance_fmt() <doxid-group__confapi__base__access_1gad03c25531ecc9ccaeeba5c96c87238c9>`.
+* :ref:`cfg_del_instance_fmt() <doxid-group__confapi__base__access_1ga30090ed0cdf07ca43115b5496a4fe606>`.
 
 You can also use *local* version of instance add functions:
 
-* :ref:`cfg_add_instance_local() <doxid-group__confapi__base__access_1ga8ddd7977bcfa71c75cb5bf6e23ceee07>`;
+* :ref:`cfg_add_instance_local() <doxid-group__confapi__base__access_1ga6962cddecb5fdbd01e628550a256c85c>`;
 
 * :ref:`cfg_add_instance_local_str() <doxid-group__confapi__base__access_1ga4365e5060e03cba6145615bf6df7c965>`;
 
-* :ref:`cfg_add_instance_local_fmt() <doxid-group__confapi__base__access_1ga37be0a1caccba48210e75d655d48d5fd>`.
+* :ref:`cfg_add_instance_local_fmt() <doxid-group__confapi__base__access_1gab4943c0e980604b56b98692d6c9ef71e>`.
 
-The only difference is that these functions will not cause :ref:`rcf_pch_cfg_object::commit <doxid-structrcf__pch__cfg__object_1a10e8489e786107818fa832d52e3659cf>` function to be called after :ref:`rcf_pch_cfg_object::add <doxid-structrcf__pch__cfg__object_1ad7ce244750f7ef2c2b850dd98a9af7f2>`. Instead :ref:`rcf_pch_cfg_object::commit <doxid-structrcf__pch__cfg__object_1a10e8489e786107818fa832d52e3659cf>` is called when a test calls :ref:`cfg_commit() <doxid-group__confapi__base__access_1gaf4e4bb6bee1e3e9a1336a88a007172cf>` or :ref:`cfg_commit_fmt() <doxid-group__confapi__base__access_1gae8f98dfd0646b2ef86aeefec7291aa57>` function for newly created object instance.
+The only difference is that these functions will not cause :ref:`rcf_pch_cfg_object::commit <doxid-structrcf__pch__cfg__object_1a10e8489e786107818fa832d52e3659cf>` function to be called after :ref:`rcf_pch_cfg_object::add <doxid-structrcf__pch__cfg__object_1ad7ce244750f7ef2c2b850dd98a9af7f2>`. Instead :ref:`rcf_pch_cfg_object::commit <doxid-structrcf__pch__cfg__object_1a10e8489e786107818fa832d52e3659cf>` is called when a test calls :ref:`cfg_commit() <doxid-group__confapi__base__access_1gaad97002e07f02c462da2aa3298b93fa1>` or :ref:`cfg_commit_fmt() <doxid-group__confapi__base__access_1gabbe8ba443fbb0a5f47f1c1613b7a2d03>` function for newly created object instance.
 
 To add a new instance of ``col_object`` object one could use the following piece of code in their tests:
 
@@ -121,15 +121,15 @@ More frequently used operations are to Get node instance value or to Set new val
 
 To Set a node instance value use:
 
-* :ref:`cfg_set_instance() <doxid-group__confapi__base__access_1gabe22c59fbbef6fc79f6f22ed91fff4c3>`;
+* :ref:`cfg_set_instance() <doxid-group__confapi__base__access_1ga8c979af06cc536645552a1f51aad8066>`;
 
-* :ref:`cfg_set_instance_fmt() <doxid-group__confapi__base__access_1ga611a5f1a85332c38cd2e38598e78198d>`.
+* :ref:`cfg_set_instance_fmt() <doxid-group__confapi__base__access_1ga0ef30d2e2cd16ee8490abb8d45fec2ca>`.
 
 Or corresponding local varsions:
 
 * :ref:`cfg_set_instance_local() <doxid-group__confapi__base__access_1ga45d21edf256b590df80b23e6d6fa88c6>`;
 
-* :ref:`cfg_set_instance_local_fmt() <doxid-group__confapi__base__access_1ga2b7d39a2044fd1175cd620919e507bae>`.
+* :ref:`cfg_set_instance_local_fmt() <doxid-group__confapi__base__access_1ga71a414e93926cb59927d20d3d55ec191>`.
 
 
 .. image:: /static/image/ten_conf_set_instance.png
@@ -155,20 +155,20 @@ To understand the necessity of dependencies we need to know how :ref:`Configurat
 
 You can use the following functions to Get the value of object instance node:
 
-* :ref:`cfg_get_instance() <doxid-group__confapi__base__access_1ga958125eed1df71e6a6bf4d96056e01d2>`;
+* :ref:`cfg_get_instance() <doxid-group__confapi__base__access_1ga46f53025b3ceb5adbfa99ad3424a5869>`;
 
-* :ref:`cfg_get_instance_fmt() <doxid-group__confapi__base__access_1ga35697384772bdf748c2e348ae22dedf7>`.
+* :ref:`cfg_get_instance_fmt() <doxid-group__confapi__base__access_1ga8713300c1f12431b4d6dd6d6d8de17d9>`.
 
 .. image:: /static/image/ten_conf_get_instance.png
 	:alt: Sequence of events caused by cfg_get_instance() call
 
-Please note that :ref:`cfg_get_instance() <doxid-group__confapi__base__access_1ga958125eed1df71e6a6bf4d96056e01d2>` call does not cause any exchange between :ref:`Configurator <doxid-group__te__engine__conf>` and Test Agents, but rather value to return is got from local object instance database.
+Please note that :ref:`cfg_get_instance() <doxid-group__confapi__base__access_1ga46f53025b3ceb5adbfa99ad3424a5869>` call does not cause any exchange between :ref:`Configurator <doxid-group__te__engine__conf>` and Test Agents, but rather value to return is got from local object instance database.
 
 If you want to get the value from Test Agent you can do one of the following:
 
-* call :ref:`cfg_get_instance_sync() <doxid-group__confapi__base__access_1ga408535c456988093cc5e4bd38bb39961>` or :ref:`cfg_get_instance_sync_fmt() <doxid-group__confapi__base__access_1ga23c24b00c4113d08b4f0636d8f14162a>` that will first synchronize object instance value with Test Agent and the return an updated value;
+* call :ref:`cfg_get_instance_sync() <doxid-group__confapi__base__access_1ga408535c456988093cc5e4bd38bb39961>` or :ref:`cfg_get_instance_sync_fmt() <doxid-group__confapi__base__access_1gae72e82b1419c4ac9c27248f6999fe0a1>` that will first synchronize object instance value with Test Agent and the return an updated value;
 
-* call :ref:`cfg_synchronize() <doxid-group__confapi__base__sync_1gace10730546274a648c2e7534a29adb32>` or :ref:`cfg_synchronize_fmt() <doxid-group__confapi__base__sync_1gad769295f5a2e8ee80640f88124a84a26>` to synchronize a subtree of configuration nodes and then call ordinary :ref:`cfg_get_instance() <doxid-group__confapi__base__access_1ga958125eed1df71e6a6bf4d96056e01d2>` function.
+* call :ref:`cfg_synchronize() <doxid-group__confapi__base__sync_1ga5634a6c78a078ce3dd839afddc532418>` or :ref:`cfg_synchronize_fmt() <doxid-group__confapi__base__sync_1ga353e4f44de81fa19463c36a3e7399f43>` to synchronize a subtree of configuration nodes and then call ordinary :ref:`cfg_get_instance() <doxid-group__confapi__base__access_1ga46f53025b3ceb5adbfa99ad3424a5869>` function.
 
 
 .. image:: /static/image/ten_conf_get_instance_sync.png

@@ -108,7 +108,7 @@ For example, if you want to run onload_stackdump and log its output every second
 	    </session>
 	</package>
 
-Here run_monitor specifies a condition that should be met to enable this command output logging. If the text inside it is "yes" or non-zero number, it is considered true (L5_RUN environment variable evaluates to "yes" when tests are run with Onload library). This node is optional; if it is omitted, specified command output logging is always enabled. :ref:`Node <doxid-structNode>` ta, specifying the name of Test Agent on which to run and log output of a given command, is optional as well; if it is omitted, then name of Test Agent is taken from TE_IUT_TA_NAME environment variable.
+Here run_monitor specifies a condition that should be met to enable this command output logging. If the text inside it is "yes" or non-zero number, it is considered true (L5_RUN environment variable evaluates to "yes" when tests are run with Onload library). This node is optional; if it is omitted, specified command output logging is always enabled. Node ta, specifying the name of Test Agent on which to run and log output of a given command, is optional as well; if it is omitted, then name of Test Agent is taken from TE_IUT_TA_NAME environment variable.
 
 You can specify several command_monitor nodes to enable logging of several commands simultaneously.
 

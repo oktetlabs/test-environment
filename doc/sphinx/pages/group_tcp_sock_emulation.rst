@@ -74,7 +74,7 @@ Receiving
 
 * :ref:`tapi_tcp_recv_msg() <doxid-group__tapi__tad__tcp_1gaf9db6ec07b55d8e64a03b2d8b6c0c20b>` - retrieve payload and ACKN/SEQN of the next TCP packet; send ACK to it if requested. If there is no packet in queue, it waits for it for a specified amount of time.
 
-* :ref:`tapi_tcp_recv_msg_gen() <doxid-group__tapi__tad__tcp_1ga4d3a7a5a995e6374309eb359659053a6>` - the same as :ref:`tapi_tcp_recv_msg() <doxid-group__tapi__tad__tcp_1gaf9db6ec07b55d8e64a03b2d8b6c0c20b>`, but it allows to filter out retransmits.
+* :ref:`tapi_tcp_recv_msg_gen() <doxid-group__tapi__tad__tcp_1ga479e5690f69998d8ab1924adf1e62656>` - the same as :ref:`tapi_tcp_recv_msg() <doxid-group__tapi__tad__tcp_1gaf9db6ec07b55d8e64a03b2d8b6c0c20b>`, but it allows to filter out retransmits.
 
 * :ref:`tapi_tcp_recv_data() <doxid-group__tapi__tad__tcp_1gac24feae401f1f5fec66c1b1e5c718546>` - append all payload data received from peer to specified dynamic buffer.
 
@@ -125,9 +125,9 @@ Obtaining information about TCP connection
 
 * :ref:`tapi_tcp_last_win_got() <doxid-group__tapi__tad__tcp_1ga5bc524091e89d7c5997a09bcab7b0f21>` - get last TCP window size received from a peer.
 
-* :ref:`tapi_tcp_fin_got() <doxid-group__tapi__tad__tcp_1ga834b79120ee2b94c8e9072c69f8f6778>` - check whether FIN was received from a peer.
+* :ref:`tapi_tcp_fin_got() <doxid-group__tapi__tad__tcp_1gacae8521bd001f10067f4f5fc4d9b9796>` - check whether FIN was received from a peer.
 
-* :ref:`tapi_tcp_rst_got() <doxid-group__tapi__tad__tcp_1ga7d3c823280f11e6b7d2cbac44e881ebe>` - check wheter RST was received from a peer.
+* :ref:`tapi_tcp_rst_got() <doxid-group__tapi__tad__tcp_1ga59a93a41d87e3f2aed04f0d5404ba253>` - check wheter RST was received from a peer.
 
 * :ref:`tapi_tcp_last_seqn_sent() <doxid-group__tapi__tad__tcp_1ga3772fb87b1fefcd895cfd54636c58114>` - get last SEQN sent to a peer.
 

@@ -51,14 +51,14 @@ For test scenarios we can use RCF API for:
 
 * calling a function on Test Agent side (do not mix it with RPC calls):
 
-  * :ref:`rcf_ta_call() <doxid-group__rcfapi__base_1ga2f02c1a61e6756b4c97772e5d07a31da>`.
+  * :ref:`rcf_ta_call() <doxid-group__rcfapi__base_1gada2a8bccc55e218eab22a0b11b32a59e>`.
 
 * process and thread manipulation on Test Agent side:
 
-  * :ref:`rcf_ta_start_task() <doxid-group__rcfapi__base_1ga6bb2cb53cce5237a8c50a0ffbd09b823>`;
+  * :ref:`rcf_ta_start_task() <doxid-group__rcfapi__base_1gae1c152e3cd1e112b0953964c92a59a6b>`;
 
   * :ref:`rcf_ta_kill_task() <doxid-group__rcfapi__base_1gafd464ab429554e9e201a738d8a9ac86c>`;
 
-  * :ref:`rcf_ta_start_thread() <doxid-group__rcfapi__base_1ga354bb92b6a19239e5ead46a9985ed8cc>`;
+  * :ref:`rcf_ta_start_thread() <doxid-group__rcfapi__base_1ga5296de8e49774f9c5d68274c30ec0def>`;
 
   * :ref:`rcf_ta_kill_thread() <doxid-group__rcfapi__base_1gaed61242aa8027c5561ea20d64e11637d>`.

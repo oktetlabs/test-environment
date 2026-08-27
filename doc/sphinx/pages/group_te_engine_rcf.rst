@@ -256,7 +256,7 @@ Other attributes that you can specify for a Test Agent are:
 
 * ``synch_time`` - Enable/disable time synchronization between Test Engine and Test Agent (possile values are yes or no, the default is no);
 
-* ``rebootable`` - Tell RCF whether Test Agent can be rebooted or not (possile values are yes or no, the default is no). If this attribute is not enabled, :ref:`rcf_ta_reboot() <doxid-group__rcfapi__base_1ga65756a262339c28a61f62c04766734ff>` function from :ref:`API: RCF <doxid-group__rcfapi__base>` returns ``TE_EPERM`` error code;
+* ``rebootable`` - Tell RCF whether Test Agent can be rebooted or not (possile values are yes or no, the default is no). If this attribute is not enabled, :ref:`rcf_ta_reboot() <doxid-group__rcfapi__base_1ga2e9709ec1e4fce9a7014e131ab40aba2>` function from :ref:`API: RCF <doxid-group__rcfapi__base>` returns ``TE_EPERM`` error code;
 
 * ``disabled`` - Whether RCF shall ignore this Test Agent (act as if there was no such Test Agent in configuration file). This attribute can be used to tune RCF configuration via environment variables. For example:
 
@@ -299,11 +299,11 @@ Agent side threads/processes
 
 RCF configuration file allows to specify a number of threads or processes to create on Test Agent at start-up. Also it is possible to specify the list of functions to be called on Test Agent at start-up. These features are implemented via standard RCF mechanisms that can be done from test scenarios with calls to:
 
-* :ref:`rcf_ta_start_task() <doxid-group__rcfapi__base_1ga6bb2cb53cce5237a8c50a0ffbd09b823>`;
+* :ref:`rcf_ta_start_task() <doxid-group__rcfapi__base_1gae1c152e3cd1e112b0953964c92a59a6b>`;
 
-* :ref:`rcf_ta_start_thread() <doxid-group__rcfapi__base_1ga354bb92b6a19239e5ead46a9985ed8cc>`;
+* :ref:`rcf_ta_start_thread() <doxid-group__rcfapi__base_1ga5296de8e49774f9c5d68274c30ec0def>`;
 
-* :ref:`rcf_ta_call() <doxid-group__rcfapi__base_1ga2f02c1a61e6756b4c97772e5d07a31da>`.
+* :ref:`rcf_ta_call() <doxid-group__rcfapi__base_1gada2a8bccc55e218eab22a0b11b32a59e>`.
 
 
 .. ref-code-block:: xml

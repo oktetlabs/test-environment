@@ -466,9 +466,9 @@ The following things should be taken into account while writing a test scenario:
 Test parameters
 ~~~~~~~~~~~~~~~
 
-The main function to process test parameters in test scenario context is :ref:`test_get_param() <doxid-group__te__ts__tapi__test__param_1ga95801d63b3a278c981269d17e389bebc>`. It gets parameter name as an argument value and returns string value associated with that parameter.
+The main function to process test parameters in test scenario context is :ref:`test_get_param() <doxid-group__te__ts__tapi__test__param_1ga77a71497ad2b8ab7c1e29125938bb85b>`. It gets parameter name as an argument value and returns string value associated with that parameter.
 
-Apart from base function :ref:`test_get_param() <doxid-group__te__ts__tapi__test__param_1ga95801d63b3a278c981269d17e389bebc>` there are a number of macros that process type-specific parameters:
+Apart from base function :ref:`test_get_param() <doxid-group__te__ts__tapi__test__param_1ga77a71497ad2b8ab7c1e29125938bb85b>` there are a number of macros that process type-specific parameters:
 
 * :ref:`TEST_GET_ENUM_PARAM() <doxid-group__te__ts__tapi__test__param_1ga165df4451b2456291410cb5203b7b787>`;
 
