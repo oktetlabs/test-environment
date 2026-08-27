@@ -70,6 +70,27 @@ _DROP_WITH_VALUE = {'-o', '-MQ', '-MF', '-MT'}
 
 
 @dataclass
+class Cond:
+    """One control construct enclosing a step.
+
+    Attributes:
+        kind: Construct kind: 'if', 'else', 'for', 'while', 'do',
+            'switch', or 'goto' for the if (0) landing pad.
+        cond: The controlling expression as written in the source
+            (for 'else' the paired if's expression; '0' for 'goto').
+        desc: Human-readable description, used as the annotation.
+        init: The init clause of a for header, when it parsed.
+        incr: The increment clause of a for header, when it parsed.
+    """
+
+    kind: str
+    cond: str
+    desc: str
+    init: str | None = None
+    incr: str | None = None
+
+
+@dataclass
 class SourceStep:
     """One step as written in the source.
 
@@ -80,15 +101,15 @@ class SourceStep:
             concatenated and escapes decoded.
         func: Name of the function the step is written in; empty
             when no enclosing definition was found.
-        conds: Descriptions of the control constructs enclosing the
-            step, outermost first.
+        conds: The control constructs enclosing the step,
+            outermost first.
     """
 
     kind: str
     line: int
     text: str
     func: str
-    conds: list[str] = field(default_factory=list)
+    conds: list[Cond] = field(default_factory=list)
 
 
 @dataclass
@@ -303,15 +324,79 @@ def _contains(extent: tuple[int, int, int, int], line: int, col: int) -> bool:
     return not (line == el and col > ec)
 
 
-def _control_regions(func: object) -> list[tuple[tuple[int, int, int, int], str]]:
-    """(extent, description) for every control construct in a function.
+def _split_top(text: str, sep: str) -> list[str]:
+    """Split on a separator at bracket depth zero.
+
+    Args:
+        text: The text to split.
+        sep: A single-character separator.
+
+    Returns:
+        The parts between top-level separators; separators inside
+        parentheses or square brackets do not split.
+    """
+    parts: list[str] = []
+    cur: list[str] = []
+    depth = 0
+    for ch in text:
+        if ch in '([':
+            depth += 1
+        elif ch in ')]':
+            depth -= 1
+        if ch == sep and depth == 0:
+            parts.append(''.join(cur))
+            cur = []
+        else:
+            cur.append(ch)
+    parts.append(''.join(cur))
+    return parts
+
+
+def _for_parts(header: str) -> tuple[str | None, str, str | None]:
+    """(init, cond, incr) clauses of a for header, best effort.
+
+    Args:
+        header: The loop header text, 'for (...)' as written.
+
+    Returns:
+        The three clause texts; init and incr are None when empty or
+        when the header does not have the three-clause shape, and
+        cond is empty then too.
+    """
+    inner = header.removeprefix('for').strip()
+    if not (inner.startswith('(') and inner.endswith(')')):
+        return None, '', None
+    parts = _split_top(inner[1:-1], ';')
+    if len(parts) != 3:  # noqa: PLR2004 - init; cond; incr
+        return None, '', None
+    init, cond, incr = (p.strip() for p in parts)
+    return init or None, cond, incr or None
+
+
+def _loop_cond(kind: object, kids: list, header: str) -> Cond:
+    """The Cond for a for/while loop header.
+
+    Args:
+        kind: The statement's cursor kind (FOR_STMT or WHILE_STMT).
+        kids: The statement's child cursors.
+        header: The header text up to the loop body.
+    """
+    if kind == cindex.CursorKind.FOR_STMT:
+        init, cond_part, incr = _for_parts(header)
+        return Cond(kind='for', cond=cond_part, desc=header, init=init, incr=incr)
+    cond_part = _source_text(kids[0])
+    return Cond(kind='while', cond=cond_part, desc=header)
+
+
+def _control_regions(func: object) -> list[tuple[tuple[int, int, int, int], Cond]]:
+    """(extent, cond) for every control construct in a function.
 
     A region is the guarded range of an if/else branch, a loop body,
-    or a switch body, described by the construct's condition as
-    written.  Constructs that a macro expansion introduces (the
-    do-while of the step macros themselves, TAPI_ON_JMP's hidden if)
-    are filtered out by checking that the construct's first token is
-    its own keyword.
+    or a switch body, carrying the Cond that describes the construct.
+    Constructs that a macro expansion introduces (the do-while of
+    the step macros themselves, TAPI_ON_JMP's hidden if) are
+    filtered out by checking that the construct's first token is its
+    own keyword.
 
     Args:
         func: A function definition cursor.
@@ -340,34 +425,41 @@ def _control_regions(func: object) -> list[tuple[tuple[int, int, int, int], str]
                 # The if (0) { label: ... } idiom marks a block only
                 # ever entered through a goto, typically the error
                 # path.  Read it as such, not as dead code.
-                desc = 'if (0), reached by goto' if cond == '0' else f'if ({cond})'
-                regions.append((_extent_key(kids[1]), desc))
+                if cond == '0':
+                    then_cond = Cond(kind='goto', cond='0', desc='if (0), reached by goto')
+                else:
+                    then_cond = Cond(kind='if', cond=cond, desc=f'if ({cond})')
+                regions.append((_extent_key(kids[1]), then_cond))
                 if len(kids) >= 3:  # noqa: PLR2004 - if with an else branch
                     # Name what is false, not just "else": the branch may
                     # sit far from its if, and its description has to
                     # stand alone.  For an else-if chain the nested if
                     # adds its own condition after this one.
-                    regions.append((_extent_key(kids[2]), f'!({cond})'))
+                    else_cond = Cond(kind='else', cond=cond, desc=f'!({cond})')
+                    regions.append((_extent_key(kids[2]), else_cond))
             elif (
                 kind in (cindex.CursorKind.FOR_STMT, cindex.CursorKind.WHILE_STMT)
                 and kids
                 and (written(child, 'for') or written(child, 'while'))
             ):
                 header = _span_text(child, kids[-1])
-                regions.append((_extent_key(kids[-1]), header))
+                loop_cond = _loop_cond(kind, kids, header)
+                regions.append((_extent_key(kids[-1]), loop_cond))
             elif kind == cindex.CursorKind.DO_STMT and kids and written(child, 'do'):
                 # Unlike for/while, clang orders do-while children as
                 # [body, condition]: the body is first, and the header
                 # worth showing is the trailing while.
                 cond = _source_text(kids[-1])
-                regions.append((_extent_key(kids[0]), f'do while ({cond})'))
+                do_cond = Cond(kind='do', cond=cond, desc=f'do while ({cond})')
+                regions.append((_extent_key(kids[0]), do_cond))
             elif (
                 kind == cindex.CursorKind.SWITCH_STMT
                 and len(kids) >= 2  # noqa: PLR2004
                 and written(child, 'switch')
             ):
                 cond = _source_text(kids[0])
-                regions.append((_extent_key(kids[1]), f'switch ({cond})'))
+                switch_cond = Cond(kind='switch', cond=cond, desc=f'switch ({cond})')
+                regions.append((_extent_key(kids[1]), switch_cond))
             walk(child)
 
     walk(func)
@@ -378,26 +470,26 @@ def _enclosure(
     funcs: list[tuple[object, tuple[int, int, int, int], list]],
     line: int,
     col: int,
-) -> tuple[str, list[str]]:
+) -> tuple[str, list[Cond]]:
     """Function name and control constructs enclosing a location.
 
     Args:
         funcs: (cursor, extent key, control regions) per function
-            definition, as prepared by extract().
+            definition, as prepared by analyze().
         line: Source line of the location.
         col: Source column of the location.
 
     Returns:
-        The enclosing function's name and the descriptions of the
+        The enclosing function's name and the Cond records of the
         constructs around the location, outermost first; an empty
         name and list when no function contains the location.
     """
     for func, extent, regions in funcs:
         if not _contains(extent, line, col):
             continue
-        inner = [(ext, desc) for ext, desc in regions if _contains(ext, line, col)]
+        inner = [(ext, cond) for ext, cond in regions if _contains(ext, line, col)]
         inner.sort(key=lambda r: (r[0][0], r[0][1]))
-        return func.spelling, [desc for _, desc in inner]  # type: ignore[attr-defined]
+        return func.spelling, [cond for _, cond in inner]  # type: ignore[attr-defined]
     return '', []
 
 

@@ -84,16 +84,26 @@ def test_conditions(tmp_path: Path) -> None:
     assert by_text['Initialize the device'].conds == []
     assert by_text['Initialize the device'].func == 'main'
 
-    assert by_text['Check the failure is reported'].conds == ['if (must_fail)']
-    assert by_text['Check the result'].conds == ['!(must_fail)']
+    assert [c.desc for c in by_text['Check the failure is reported'].conds] == [
+        'if (must_fail)'
+    ]
+    assert [c.desc for c in by_text['Check the result'].conds] == ['!(must_fail)']
 
     loop = by_text['Process item']
     assert loop.kind == 'SUBSTEP'
-    assert loop.conds == ['for (i = 0; i < n; i++)']
+    assert [c.desc for c in loop.conds] == ['for (i = 0; i < n; i++)']
+
+    loop_cond = loop.conds[0]
+    assert (loop_cond.kind, loop_cond.cond, loop_cond.init, loop_cond.incr) == (
+        'for',
+        'i < n',
+        'i = 0',
+        'i++',
+    )
 
     nested = by_text['First item detail']
     assert nested.kind == 'PUSH'
-    assert nested.conds == ['for (i = 0; i < n; i++)', 'if (i == 0)']
+    assert [c.desc for c in nested.conds] == ['for (i = 0; i < n; i++)', 'if (i == 0)']
 
     assert by_text['From a helper'].func == 'helper'
     assert by_text['From a helper'].conds == []
@@ -101,14 +111,17 @@ def test_conditions(tmp_path: Path) -> None:
     # Condition text comes from the source verbatim: unary minus and
     # macro call spelling survive.
     gate = by_text['Check the negative macro gate']
-    assert gate.conds == ['if (n == -FOO(1, 2))']
+    assert [c.desc for c in gate.conds] == ['if (n == -FOO(1, 2))']
 
     pad = by_text['Recover after failure']
-    assert pad.conds == ['if (0), reached by goto']
+    assert [c.desc for c in pad.conds] == ['if (0), reached by goto']
+    assert by_text['Check the result'].conds[0].kind == 'else'
+    assert by_text['Recover after failure'].conds[0].kind == 'goto'
 
     # clang orders do-while children [body, cond], unlike for/while.
     poll = by_text['Poll once']
-    assert poll.conds == ['do while (n < 3)']
+    assert [c.desc for c in poll.conds] == ['do while (n < 3)']
+    assert by_text['Poll once'].conds[0].cond == 'n < 3'
 
 
 def test_source_order(tmp_path: Path) -> None:

@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import aststeps
+import condeval
 from cstep import compare
 from emit_c import emit_test
 from mdparse import parse_package
@@ -151,27 +152,181 @@ def _cmd_list(args: argparse.Namespace) -> int:
     return 0
 
 
-def _steps_from_source(path: Path, compile_db: str | None) -> int:
-    db = Path(compile_db) if compile_db else aststeps.find_compile_db(path)
+def _parse_params(pairs: list[str]) -> dict[str, str]:
+    """Parameter values from repeated --param NAME=VALUE options.
+
+    Raises:
+        ValueError: An option is not of the NAME=VALUE form.
+    """
+    params: dict[str, str] = {}
+    for pair in pairs:
+        name, eq, val = pair.partition('=')
+        if not (name and eq):
+            msg = f'--param wants NAME=VALUE, got "{pair}"'
+            raise ValueError(msg)
+        params[name] = val
+    return params
+
+
+def _numeric(raw: str) -> condeval.Num | None:
+    """The number a value string spells (any int base, float), or None."""
+    try:
+        return int(raw, 0)
+    except ValueError:
+        try:
+            return float(raw)
+        except ValueError:
+            return None
+
+
+def _env(
+    info: aststeps.SourceInfo, params: dict[str, str], *, quiet: bool = False
+) -> dict[str, condeval.Num]:
+    """Evaluation environment: constants plus bound parameters.
+
+    Args:
+        info: The analyzed source, providing enum constants, integer
+            macros, and the parameter bindings.
+        params: Raw parameter values by name, as strings.
+        quiet: Suppress the stderr note about values that bind
+            neither through a mapping nor as a number.
+
+    Returns:
+        Identifier values for condeval: macros, then enum constants,
+        then the parameters that could be bound (parameters win on
+        name collisions).
+    """
+    env: dict[str, condeval.Num] = {}
+    env.update(info.macros)
+    env.update(info.enums)
+    for name, raw in params.items():
+        binding = info.bindings.get(name)
+        val = _numeric(raw)
+        if val is None and binding is not None and binding.mapping is not None:
+            val = binding.mapping.get(raw)
+            if val is None and binding.kind == 'bool':
+                val = binding.mapping.get(raw.upper())
+        if val is None:
+            if not quiet:
+                print(f'note: {name}={raw} has no numeric value, kept unbound', file=sys.stderr)
+            continue
+        env[name] = val
+    return env
+
+
+def _judge(cond: aststeps.Cond, env: dict[str, condeval.Num]) -> tuple[bool | None, str | None]:
+    """Verdict for one construct: (taken, annotation to keep).
+
+    Args:
+        cond: The construct to judge.
+        env: Identifier values for the evaluation.
+
+    Returns:
+        The verdict and the annotation to keep: False means the
+        construct is decidably not entered (the step drops), None
+        means undecided (the annotation stays), True drops the
+        annotation only.
+    """
+    if cond.kind in ('switch', 'goto') or not cond.cond:
+        return None, cond.desc
+    verdict = condeval.evaluate(cond.cond, env)
+    if cond.kind == 'else':
+        verdict = None if verdict is None else not verdict
+    elif cond.kind == 'do':
+        # The body runs at least once; a false condition only means
+        # it does not repeat.
+        return (True, None) if verdict is False else (None, cond.desc)
+    elif cond.kind in ('for', 'while') and verdict is True:
+        # Entered, but the repeat count is unknown.
+        return None, cond.desc
+    return (verdict, None) if verdict is not None else (None, cond.desc)
+
+
+def _render(
+    steps: list[aststeps.SourceStep], env: dict[str, condeval.Num]
+) -> list[tuple[str, bool]]:
+    """(line, taken) for each step under the given environment.
+
+    Args:
+        steps: The steps in source order.
+        env: Identifier values; copied per step, so a judge may bind
+            step-local values without leaking across steps.
+
+    Returns:
+        The rendered line of every step, with taken False for steps
+        decidably not reached (the falsifying construct's
+        description is kept as their annotation).
+    """
+    rendered = []
+    for step in steps:
+        local = dict(env)
+        notes: list[str] = []
+        taken = True
+        for cond in step.conds:
+            verdict, note = _judge(cond, local)
+            if verdict is False:
+                taken = False
+                notes.append(cond.desc)
+                break
+            if note is not None:
+                notes.append(note)
+        scope = f'({step.func}) ' if step.func and step.func != 'main' else ''
+        where = f'[{"] [".join(notes)}] ' if notes else ''
+        rendered.append((f'{step.kind}\t{scope}{where}{step.text}', taken))
+    return rendered
+
+
+def _steps_from_source(args: argparse.Namespace) -> int:
+    path = Path(args.source)
+    db = Path(args.compile_db) if args.compile_db else aststeps.find_compile_db(path)
     if db is None:
         print(
             f'no compile_commands.json found for {path}; build the suite or pass --compile-db',
             file=sys.stderr,
         )
         return 1
-    for step in aststeps.extract(path, compile_db=db):
-        where = f'[{c}] ' if (c := '] ['.join(step.conds)) else ''
-        scope = f'({step.func}) ' if step.func != 'main' else ''
-        print(f'{step.kind}\t{scope}{where}{step.text}')
+    info = aststeps.analyze(path, compile_db=db)
+    params = _parse_params(args.param)
+    if not params:
+        for step in info.steps:
+            where = f'[{c}] ' if (c := '] ['.join(c.desc for c in step.conds)) else ''
+            scope = f'({step.func}) ' if step.func != 'main' else ''
+            print(f'{step.kind}\t{scope}{where}{step.text}')
+        return 0
+    _print_scenario(info, params, show_skipped=args.show_skipped)
     return 0
+
+
+def _print_scenario(
+    info: aststeps.SourceInfo,
+    params: dict[str, str],
+    *,
+    show_skipped: bool,
+    quiet: bool = False,
+) -> None:
+    """Print the scenario evaluated for one set of parameter values.
+
+    Steps not taken are summarized in a trailing count line, or
+    printed SKIP-prefixed with show_skipped.
+    """
+    rendered = _render(info.steps, _env(info, params, quiet=quiet))
+    for line, taken in rendered:
+        if taken:
+            print(line)
+        elif show_skipped:
+            print(f'SKIP\t{line}')
+    skipped = sum(1 for _, taken in rendered if not taken)
+    if skipped and not show_skipped:
+        print(f'{skipped} step(s) not taken with these parameters')
 
 
 def _cmd_steps(args: argparse.Namespace) -> int:
     try:
-        return _steps_from_source(Path(args.source), args.compile_db)
+        return _steps_from_source(args)
     except (OSError, ValueError, RuntimeError) as exc:
         print(exc, file=sys.stderr)
         return 1
+
 
 def _add_root_arg(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
@@ -215,9 +370,7 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument('--implemented', action='store_true', help='only implemented')
     p.set_defaults(func=_cmd_list)
 
-    p = sub.add_parser(
-        'steps', help='list the steps of a test source with control flow'
-    )
+    p = sub.add_parser('steps', help='list the steps of a test source with control flow')
     p.add_argument(
         'source',
         help='a test .c source; steps are annotated with their'
@@ -227,6 +380,20 @@ def main(argv: list[str] | None = None) -> int:
         '--compile-db',
         help='compile_commands.json to take compiler flags from'
         ' (default: found in a build tree near the source)',
+    )
+    p.add_argument(
+        '--param',
+        action='append',
+        default=[],
+        metavar='NAME=VALUE',
+        help='bind a test parameter and evaluate step conditions'
+        ' (repeatable); conditions the values decide drop their'
+        ' annotation or their step',
+    )
+    p.add_argument(
+        '--show-skipped',
+        action='store_true',
+        help='print steps not taken with the given parameters, marked SKIP',
     )
     p.set_defaults(func=_cmd_steps)
 
