@@ -39,6 +39,31 @@ _MACROS = {
     'TEST_STEP_RESET': 'RESET',
 }
 
+# TEST_GET_* accessors: the C variable name equals the test
+# parameter name, which is what lets package.xml values bind to
+# condition identifiers.
+_PARAM_MACROS = {
+    'TEST_GET_INT_PARAM': 'int',
+    'TEST_GET_UINT_PARAM': 'uint',
+    'TEST_GET_INT64_PARAM': 'int',
+    'TEST_GET_UINT64_PARAM': 'uint',
+    'TEST_GET_DOUBLE_PARAM': 'double',
+    'TEST_GET_DEFAULT_DOUBLE_PARAM': 'double',
+    'TEST_GET_OPT_UINT_PARAM': 'uint',
+    'TEST_GET_OPT_DOUBLE_PARAM': 'double',
+    'TEST_GET_STRING_PARAM': 'string',
+    'TEST_GET_OPT_STRING_PARAM': 'string',
+    'TEST_GET_BOOL_PARAM': 'bool',
+    'TEST_GET_ENUM_PARAM': 'enum',
+}
+
+_BOOL_MAPPING = {'TRUE': 1, 'FALSE': 0}
+
+# Object-like macro definitions with more tokens than this are not
+# worth harvesting as scalar values; a mapping table macro like
+# MODE_MAP still fits comfortably under it.
+_MAX_MACRO_TOKENS = 64
+
 # Compiler arguments that make no sense for a bare parse.
 _DROP_ARGS = {'-c', '-MD', '-MMD'}
 _DROP_WITH_VALUE = {'-o', '-MQ', '-MF', '-MT'}
@@ -64,6 +89,49 @@ class SourceStep:
     text: str
     func: str
     conds: list[str] = field(default_factory=list)
+
+
+@dataclass
+class Binding:
+    """One test parameter read via a TEST_GET_* macro.
+
+    Attributes:
+        name: The parameter name (equals the C variable name by TE
+            convention).
+        kind: Accessor kind, a value of _PARAM_MACROS ('int',
+            'bool', 'enum', ...).
+        line: Line of the accessor use in the source file.
+        mapping: Value-string to number mapping for bool and enum
+            parameters; None while (or if) unresolved.
+        map_macros: Names of the mapping-list macros an enum
+            accessor was given, for later resolution.
+    """
+
+    name: str
+    kind: str
+    line: int
+    mapping: dict[str, int] | None = None
+    map_macros: list[str] = field(default_factory=list)
+
+
+@dataclass
+class SourceInfo:
+    """Everything the analysis reads out of one test source.
+
+    Attributes:
+        steps: The steps in source order.
+        bindings: Parameter bindings keyed by parameter name.
+        enums: Enum constant values seen by the parse, any file.
+        macros: Object-like integer macro values, any file.
+        macro_tokens: Raw definition tokens of object-like macros,
+            kept for decoding mapping-list macros.
+    """
+
+    steps: list[SourceStep]
+    bindings: dict[str, Binding]
+    enums: dict[str, int]
+    macros: dict[str, int]
+    macro_tokens: dict[str, list[str]]
 
 
 def compile_args(source: Path, compile_db: Path) -> tuple[list[str], str]:
@@ -372,12 +440,172 @@ def _parse(  # type: ignore[no-any-unimported]
             os.chdir(cwd)
 
 
-def extract(
+def _int_literal(tok: str) -> int | None:
+    """The value of an integer literal token (any base), or None."""
+    try:
+        return int(tok.rstrip('uUlL'), 0)
+    except ValueError:
+        return None
+
+
+def _macro_args(cursor: object) -> list[str]:
+    """Top-level comma-separated argument texts of a macro use.
+
+    Args:
+        cursor: A macro instantiation cursor.
+
+    Returns:
+        One space-joined token string per argument; commas nested in
+        parentheses do not split.  Empty for a use without
+        parentheses.
+    """
+    toks = [t.spelling for t in cursor.get_tokens()]  # type: ignore[attr-defined]
+    args: list[str] = []
+    cur: list[str] = []
+    depth = 0
+    for tok in toks[1:]:
+        if tok == '(':
+            depth += 1
+            if depth == 1:
+                continue
+        elif tok == ')':
+            depth -= 1
+            if depth == 0:
+                break
+        if tok == ',' and depth == 1:
+            args.append(' '.join(cur))
+            cur = []
+            continue
+        cur.append(tok)
+    if cur:
+        args.append(' '.join(cur))
+    return args
+
+
+def _harvest_decl(
+    cursor: object,
+    enums: dict[str, int],
+    macros: dict[str, int],
+    macro_tokens: dict[str, list[str]],
+) -> bool:
+    """Record an enum constant or object-like macro; True if handled.
+
+    Runs unfiltered by source file: enum constants and macros from
+    headers are legal condition identifiers too.
+
+    Args:
+        cursor: Any cursor from the tree walk.
+        enums: Enum constant values, updated in place.
+        macros: Integer macro values, updated in place.
+        macro_tokens: Raw macro definition tokens, updated in place.
+
+    Returns:
+        True when the cursor was one of the harvested kinds (the
+        caller skips further dispatch), False otherwise.
+    """
+    if cursor.kind == cindex.CursorKind.ENUM_CONSTANT_DECL:  # type: ignore[attr-defined]
+        enums[cursor.spelling] = cursor.enum_value  # type: ignore[attr-defined]
+        return True
+    if cursor.kind == cindex.CursorKind.MACRO_DEFINITION:  # type: ignore[attr-defined]
+        toks = [t.spelling for t in cursor.get_tokens()]  # type: ignore[attr-defined]
+        if 1 < len(toks) <= _MAX_MACRO_TOKENS:
+            macro_tokens[toks[0]] = toks[1:]
+            value = _int_literal(toks[1])
+            if len(toks) == 2 and value is not None:  # noqa: PLR2004
+                macros[toks[0]] = value
+        return True
+    return False
+
+
+def _param_binding(cursor: object, line: int) -> Binding | None:
+    """A Binding for a TEST_GET_*_PARAM use, or None if not one.
+
+    Bool accessors bind with the builtin TRUE/FALSE mapping right
+    away; enum accessors record their mapping-list macro names only
+    when every extra argument is a plain identifier, leaving the
+    mapping unresolved otherwise.
+
+    Args:
+        cursor: A macro instantiation cursor.
+        line: Source line of the use, stored in the binding.
+    """
+    pkind = _PARAM_MACROS.get(cursor.spelling)  # type: ignore[attr-defined]
+    if pkind is None:
+        return None
+    margs = _macro_args(cursor)
+    if not margs:
+        return None
+    binding = Binding(name=margs[0], kind=pkind, line=line)
+    if pkind == 'bool':
+        binding.mapping = dict(_BOOL_MAPPING)
+    elif pkind == 'enum':
+        maps = [a for a in margs[1:] if a.isidentifier()]
+        if len(maps) == len(margs) - 1:
+            binding.map_macros = maps
+    return binding
+
+
+def _walk(  # type: ignore[no-any-unimported]
+    tu: cindex.TranslationUnit,
+    funcs: list[tuple[object, tuple[int, int, int, int], list]],
+    source: Path,
+) -> SourceInfo:
+    """Walk the parsed tree once, collecting steps, bindings, and declarations.
+
+    Declarations are harvested from every file; step and parameter
+    macro uses only from the analyzed source itself.
+
+    Args:
+        tu: The parsed translation unit.
+        funcs: (cursor, extent key, control regions) per function
+            definition, for attributing steps.
+        source: The analyzed source, for the in-this-file filter.
+    """
+    steps = []
+    bindings: dict[str, Binding] = {}
+    enums: dict[str, int] = {}
+    macros: dict[str, int] = {}
+    macro_tokens: dict[str, list[str]] = {}
+    for cursor in tu.cursor.walk_preorder():
+        if _harvest_decl(cursor, enums, macros, macro_tokens):
+            continue
+        if cursor.kind != cindex.CursorKind.MACRO_INSTANTIATION:
+            continue
+        loc = cursor.location
+        if loc.file is None or not loc.file.name.endswith(source.name):
+            continue
+        kind = _MACROS.get(cursor.spelling)
+        if kind is None:
+            binding = _param_binding(cursor, loc.line)
+            if binding is not None:
+                bindings.setdefault(binding.name, binding)
+            continue
+        func_name, conds = _enclosure(funcs, loc.line, loc.column)
+        steps.append(
+            SourceStep(
+                kind=kind,
+                line=loc.line,
+                text=_step_text(cursor),
+                func=func_name,
+                conds=conds,
+            )
+        )
+    steps.sort(key=lambda s: s.line)
+    return SourceInfo(
+        steps=steps,
+        bindings=bindings,
+        enums=enums,
+        macros=macros,
+        macro_tokens=macro_tokens,
+    )
+
+
+def analyze(
     source: Path,
     compile_db: Path | None = None,
     extra_args: list[str] | None = None,
-) -> list[SourceStep]:
-    """Extract the steps of a test source with their control flow.
+) -> SourceInfo:
+    """Analyze a test source: steps, parameter bindings, and declarations.
 
     Args:
         source: The C source to analyze.
@@ -387,8 +615,8 @@ def extract(
             the step macros when no compile database is available.
 
     Returns:
-        The steps in source order, each with its enclosing function
-        and control constructs.
+        The steps in source order plus everything needed to bind
+        parameter values to their conditions later.
 
     Raises:
         RuntimeError: libclang is not installed, or the parse failed.
@@ -422,25 +650,17 @@ def extract(
         )
     ]
 
-    steps = []
-    for cursor in tu.cursor.walk_preorder():
-        if cursor.kind != cindex.CursorKind.MACRO_INSTANTIATION:
-            continue
-        kind = _MACROS.get(cursor.spelling)
-        if kind is None:
-            continue
-        loc = cursor.location
-        if loc.file is None or not loc.file.name.endswith(source.name):
-            continue
-        func_name, conds = _enclosure(funcs, loc.line, loc.column)
-        steps.append(
-            SourceStep(
-                kind=kind,
-                line=loc.line,
-                text=_step_text(cursor),
-                func=func_name,
-                conds=conds,
-            )
-        )
-    steps.sort(key=lambda s: s.line)
-    return steps
+    return _walk(tu, funcs, source)
+
+
+def extract(
+    source: Path,
+    compile_db: Path | None = None,
+    extra_args: list[str] | None = None,
+) -> list[SourceStep]:
+    """Extract the steps of a test source with their control flow.
+
+    A convenience wrapper around analyze() for callers that need
+    only the steps; arguments, errors, and ordering are analyze()'s.
+    """
+    return analyze(source, compile_db, extra_args).steps

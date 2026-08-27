@@ -18,6 +18,10 @@ MACRO_DEFS = [
     '-DTEST_STEP_PUSH(...)=(void)0',
     '-DTEST_STEP_POP(...)=(void)0',
     '-DFOO(...)=1',
+    '-DTEST_GET_INT_PARAM(...)=(void)0',
+    '-DTEST_GET_BOOL_PARAM(...)=(void)0',
+    '-DTEST_GET_ENUM_PARAM(...)=(void)0',
+    '-DTEST_GET_STRING_PARAM(...)=(void)0',
 ]
 
 FIXTURE = """\
@@ -120,3 +124,58 @@ def test_source_order(tmp_path: Path) -> None:
         'Recover after failure',
         'Poll once',
     ]
+
+
+PARAM_FIXTURE = """\
+enum {
+    MODE_A,
+    MODE_B = 5,
+};
+
+#define MODE_MAP \\
+    { "a", MODE_A },  \\
+    { "b", MODE_B }
+
+#define LIMIT 42
+
+int
+main(void)
+{
+    int iters;
+    int mode;
+    int on;
+    const char *name;
+
+    TEST_GET_INT_PARAM(iters);
+    TEST_GET_ENUM_PARAM(mode, MODE_MAP);
+    TEST_GET_BOOL_PARAM(on);
+    TEST_GET_STRING_PARAM(name);
+    return 0;
+}
+"""
+
+
+def test_bindings(tmp_path: Path) -> None:
+    src = tmp_path / 'params.c'
+    src.write_text(PARAM_FIXTURE, encoding='utf-8')
+    info = aststeps.analyze(src, extra_args=MACRO_DEFS)
+
+    assert set(info.bindings) == {'iters', 'mode', 'on', 'name'}
+    assert info.bindings['iters'].kind == 'int'
+    assert info.bindings['name'].kind == 'string'
+    assert info.bindings['on'].kind == 'bool'
+    assert info.bindings['on'].mapping == {'TRUE': 1, 'FALSE': 0}
+
+    mode = info.bindings['mode']
+    assert mode.kind == 'enum'
+    assert mode.map_macros == ['MODE_MAP']
+    assert mode.mapping is None  # resolution comes in a later task
+
+    assert info.enums == {'MODE_A': 0, 'MODE_B': 5}
+    assert info.macros['LIMIT'] == 42
+    assert 'MODE_MAP' in info.macro_tokens
+
+
+def test_extract_still_returns_steps(tmp_path: Path) -> None:
+    steps = extract(write_fixture(tmp_path), extra_args=MACRO_DEFS)
+    assert steps and steps[0].text == 'From a helper'  # noqa: PT018 - single condition read
