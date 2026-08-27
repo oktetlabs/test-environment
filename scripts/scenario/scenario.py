@@ -216,12 +216,33 @@ def _env(
     return env
 
 
-def _judge(cond: aststeps.Cond, env: dict[str, condeval.Num]) -> tuple[bool | None, str | None]:
+def _reset_for_var(cond: aststeps.Cond, env: dict[str, condeval.Num]) -> None:
+    """Drop any stale binding of a for-loop's own init variable.
+
+    The init clause assigns this variable, so an earlier binding of
+    it (e.g. from a bound test parameter of the same name) is dead
+    from here on, for both the loop condition and its body.
+    """
+    if cond.init is None:
+        return
+    var = condeval.init_var(cond.init)
+    if var is not None:
+        env.pop(var, None)
+
+
+def _judge(  # noqa: PLR0911
+    cond: aststeps.Cond, env: dict[str, condeval.Num]
+) -> tuple[bool | None, str | None]:
     """Verdict for one construct: (taken, annotation to keep).
+
+    A one-trip counting loop binds its variable in env for the
+    inner conditions of the same step (env is a per-step copy,
+    conds are outermost-first).
 
     Args:
         cond: The construct to judge.
-        env: Identifier values for the evaluation.
+        env: Identifier values for the evaluation, updated in place
+            for one-trip loop variables.
 
     Returns:
         The verdict and the annotation to keep: False means the
@@ -231,6 +252,17 @@ def _judge(cond: aststeps.Cond, env: dict[str, condeval.Num]) -> tuple[bool | No
     """
     if cond.kind in ('switch', 'goto') or not cond.cond:
         return None, cond.desc
+    if cond.kind == 'for':
+        _reset_for_var(cond, env)
+        trip = condeval.trip_count(cond.init, cond.cond, cond.incr, env)
+        if trip is not None:
+            var, start, count = trip
+            if count == 0:
+                return False, None
+            if count == 1:
+                env[var] = start
+                return True, None
+            return None, f'repeats {count} times'
     verdict = condeval.evaluate(cond.cond, env)
     if cond.kind == 'else':
         verdict = None if verdict is None else not verdict

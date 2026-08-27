@@ -145,6 +145,15 @@ main(void)
     {
         TEST_STEP("Warm up");
     }
+    int i;
+    for (i = 0; i < iters; i++)
+    {
+        TEST_SUBSTEP("Poke the device");
+        if (i > 0)
+        {
+            TEST_SUBSTEP("Settle");
+        }
+    }
     return 0;
 }
 """
@@ -260,3 +269,109 @@ def test_steps_param_mapping_wins_over_numeric(
     out = capsys.readouterr().out
     assert 'STEP\tChosen' in out
     assert '[if (mode == 7)]' not in out
+
+
+@needs_clang
+def test_steps_trip_count(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    src = make_steps_suite(tmp_path)
+    db = str(tmp_path / 'compile_commands.json')
+
+    rc = main(['steps', str(src), '--compile-db', db, '--param', 'iters=100'])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert 'SUBSTEP\t[repeats 100 times] Poke the device' in out
+    assert '[repeats 100 times] [if (i > 0)] Settle' in out
+
+    rc = main(['steps', str(src), '--compile-db', db, '--param', 'iters=1'])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert 'SUBSTEP\tPoke the device' in out  # runs once: no loop annotation
+    assert 'Settle' not in out  # i is bound to 0, if (i > 0) is false
+
+    rc = main(['steps', str(src), '--compile-db', db, '--param', 'iters=0'])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert 'Poke the device' not in out
+
+
+FOR_NONCANON_SRC = """\
+#define TEST_STEP(...) (void)0
+#define TEST_GET_INT_PARAM(x_) (void)0
+
+int
+main(void)
+{
+    int iters;
+
+    TEST_GET_INT_PARAM(iters);
+    for (iters = 0; iters < 5; iters += 2)
+    {
+        TEST_STEP("Loop body");
+    }
+    return 0;
+}
+"""
+
+
+FOR_CANON_SRC = """\
+#define TEST_STEP(...) (void)0
+#define TEST_GET_INT_PARAM(x_) (void)0
+
+int
+main(void)
+{
+    int iters;
+
+    TEST_GET_INT_PARAM(iters);
+    for (iters = 0; iters < 3; iters++)
+    {
+        if (iters == 0)
+        {
+            TEST_STEP("Inner");
+        }
+    }
+    return 0;
+}
+"""
+
+
+@needs_clang
+def test_steps_for_init_resets_noncanonical(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A stale outer binding of the loop variable must not decide it.
+
+    The loop reuses the "iters" parameter as its own counter with a
+    non-canonical increment (+= 2), so trip_count cannot model it and
+    the condition falls back to evaluate(); with the outer --param
+    iters=100 still bound, the condition must not be judged against
+    that stale value.
+    """
+    src = write_steps_src(tmp_path, FOR_NONCANON_SRC)
+    db = str(tmp_path / 'compile_commands.json')
+
+    rc = main(['steps', str(src), '--compile-db', db, '--param', 'iters=100'])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert 'Loop body' in out
+    assert 'not taken' not in out
+
+
+@needs_clang
+def test_steps_for_init_resets_canonical(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A canonical multi-trip loop must also clear the stale binding.
+
+    The loop variable "iters" is also the name of a bound --param;
+    the outer binding must not leak into the inner condition, which
+    should stay undecided (annotated), not be wrongly decided False.
+    """
+    src = write_steps_src(tmp_path, FOR_CANON_SRC)
+    db = str(tmp_path / 'compile_commands.json')
+
+    rc = main(['steps', str(src), '--compile-db', db, '--param', 'iters=100'])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert 'Inner' in out
+    assert '[if (iters == 0)]' in out

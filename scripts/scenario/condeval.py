@@ -323,6 +323,76 @@ def value(expr: str, env: Mapping[str, Num]) -> Num | None:
     return None if parser.pos != len(tokens) else result
 
 
+# The three clauses of a canonical counting loop, one regex each,
+# applied to the clause texts aststeps splits out of a for header:
+# - init: 'i = 0', optionally after declaration words ('unsigned
+#   int i = 0'); group 1 is the variable, group 2 the start
+#   expression;
+# - cond: 'i < limit' or 'i <= limit'; groups: variable, operator,
+#   limit expression;
+# - incr: matched with all whitespace removed, so '++i', 'i++' and
+#   'i += 1' are the three alternatives; exactly one group (the
+#   variable) is non-None.
+# The variable captured by all three must be the same one, which
+# trip_count checks after matching.
+_FOR_INIT = re.compile(r'^(?:[A-Za-z_]\w*\s+)*([A-Za-z_]\w*)\s*=\s*(.+)$')
+_FOR_COND = re.compile(r'^([A-Za-z_]\w*)\s*(<=|<)\s*(.+)$')
+_FOR_INCR = re.compile(r'^(?:\+\+([A-Za-z_]\w*)|([A-Za-z_]\w*)\+\+|([A-Za-z_]\w*)\+=1)$')
+
+
+def init_var(init: str) -> str | None:
+    """The variable a for-loop init clause assigns, or None.
+
+    Recognizes the same "[decl] var = ..." shape as trip_count's
+    init clause, without requiring the condition/increment to also
+    fit a canonical counting loop.
+
+    Args:
+        init: The for header's init clause text.
+    """
+    m_init = _FOR_INIT.match(init.strip())
+    return m_init.group(1) if m_init is not None else None
+
+
+def trip_count(
+    init: str | None, cond: str, incr: str | None, env: Mapping[str, Num]
+) -> tuple[str, int, int] | None:
+    """(variable, start, count) of a canonical counting loop.
+
+    Recognizes "var = START; var < LIMIT; var++" shapes (also <=,
+    ++var, var += 1, an optional declaration in the init) when START
+    and LIMIT evaluate to integers; anything else is None.
+
+    Args:
+        init: The for header's init clause, or None.
+        cond: The loop condition text.
+        incr: The for header's increment clause, or None.
+        env: Known identifier values for the bound evaluation.
+
+    Returns:
+        The loop variable, its start value, and the number of trips
+        (clamped to zero for loops that never run); None when the
+        loop is not of the canonical shape or a bound is undecided.
+    """
+    if init is None or incr is None:
+        return None
+    m_init = _FOR_INIT.match(init.strip())
+    m_cond = _FOR_COND.match(cond.strip())
+    m_incr = _FOR_INCR.match(re.sub(r'\s+', '', incr))
+    if m_init is None or m_cond is None or m_incr is None:
+        return None
+    var = m_init.group(1)
+    incr_var = next(g for g in m_incr.groups() if g is not None)
+    if m_cond.group(1) != var or incr_var != var:
+        return None
+    start = value(m_init.group(2), env)
+    limit = value(m_cond.group(3), env)
+    if not isinstance(start, int) or not isinstance(limit, int):
+        return None
+    count = limit - start + (1 if m_cond.group(2) == '<=' else 0)
+    return var, start, max(count, 0)
+
+
 def evaluate(expr: str, env: Mapping[str, Num]) -> bool | None:
     """Whether a C condition holds: True, False, or None (cannot tell).
 

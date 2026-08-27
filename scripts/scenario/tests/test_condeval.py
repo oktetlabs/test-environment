@@ -2,7 +2,7 @@
 # Copyright (C) 2026 OKTET Ltd.
 """Tests for the tri-state C condition evaluator."""
 
-from condeval import evaluate, value
+from condeval import evaluate, trip_count, value
 
 ENV = {'iters': 100, 'TEST_IF_UP': 1, 'TEST_IF_UP_DOWN': 2, 'if_status': 1, 'x': 0}
 
@@ -52,3 +52,15 @@ def test_prefix_operators() -> None:
     assert evaluate('flags == 0x1F', {'flags': 1}) is False
     assert evaluate('--x == 0', {'x': 1}) is None
     assert evaluate('++n', {'n': 1}) is None
+
+
+def test_trip_count() -> None:
+    env = {'iters': 100}
+    assert trip_count('i = 0', 'i < iters', 'i++', env) == ('i', 0, 100)
+    assert trip_count('unsigned int i = 2', 'i <= iters', '++i', env) == ('i', 2, 99)
+    assert trip_count('i = 0', 'i < 4', 'i += 1', env) == ('i', 0, 4)
+    assert trip_count('i = 5', 'i < 3', 'i++', env) == ('i', 5, 0)
+    assert trip_count('i = 0', 'i < unknown', 'i++', env) is None
+    assert trip_count(None, 'running', None, env) is None
+    assert trip_count('i = 0', 'i < iters', 'i--', env) is None
+    assert trip_count('i = 0', 'j < iters', 'i++', env) is None
