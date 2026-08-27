@@ -18,3 +18,9 @@ VERBATIM_TO_CODE_BLOCK = "c"
 ESCAPE_ASTERISKS = true
 ESCAPE_PIPES = true
 ESCAPE_TRAILING_UNDERSCORES = true
+
+-- Build the code-reference database, so that pages can link to an API item
+-- by its name (the :cref: role) instead of by its Doxygen anchor.  An
+-- anchor is a hash of the declaration and dies silently when a signature
+-- changes; a name does not.
+CREF_DB = true

@@ -229,6 +229,14 @@ function generate_sphinx_doc()
 
     ${DOXYREST_BIN} "${DOXYREST_OPTS[@]}" > /dev/null || exit 1
 
+    # The doxyrest Sphinx extension finds the cref database by walking the
+    # source directory, and os.walk() does not follow symlinks -- which is
+    # all doc/sphinx/generated is.  Put a copy where the walk can see it.
+    cp doc/generated/rst/crefdb.py doc/sphinx/crefdb.py || {
+        echo "Failed to install the cref database" 1>&2
+        return 1
+    }
+
     [ -z "$SCRIPT_DIR" ] && SCRIPT_DIR="${TE_BASE}/scripts/docs"
 
     ${SCRIPT_DIR}/add_orphan_tag.sh || echo "Failed to add orphan tag" 1>&2
