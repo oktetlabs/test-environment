@@ -26,6 +26,8 @@ from typing import TYPE_CHECKING
 from cheader import parse_doc_header
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from aststeps import Cond, SourceStep
 
 _REF = re.compile(r'@[pc]\s+([A-Za-z_][A-Za-z0-9_]*)')
@@ -60,7 +62,24 @@ def cond_note(cond: Cond) -> str:
     return f'{before}`{cond.cond}`.'
 
 
-def step_items(steps: list[SourceStep]) -> list[tuple[int, str, list[str]]]:
+_FIXED_DEPTH = {'STEP': 1, 'SUBSTEP': 2}
+_STACK_SHIFT = {'PUSH': 1, 'NEXT': 0, 'POP': -1}
+
+
+def _step_notes(
+    step: SourceStep,
+    judge: Callable[[SourceStep], tuple[list[str], bool]] | None,
+) -> tuple[list[str], bool]:
+    """The step's note sentences and whether it stays in the listing."""
+    if judge is None:
+        return [cond_note(c) for c in step.conds], True
+    return judge(step)
+
+
+def step_items(
+    steps: list[SourceStep],
+    judge: Callable[[SourceStep], tuple[list[str], bool]] | None = None,
+) -> list[tuple[int, str, list[str]]]:
     """(depth, text, notes) per step, with the drift check's depths.
 
     The depth rules mirror cstep.extract_steps - STEP is 1, SUBSTEP
@@ -68,6 +87,12 @@ def step_items(steps: list[SourceStep]) -> list[tuple[int, str, list[str]]]:
     so the emitted list compares clean against the source.  The
     INFO variants and empty-text steps do not become items, and each
     enclosing construct becomes a note on its step.
+
+    Args:
+        steps: The steps in source order.
+        judge: Optional evaluation hook returning (notes, taken) for
+            a step; an untaken step is left out (its depth still
+            counts), and the notes replace the construct sentences.
     """
     items: list[tuple[int, str, list[str]]] = []
     prev = 0
@@ -78,20 +103,15 @@ def step_items(steps: list[SourceStep]) -> list[tuple[int, str, list[str]]]:
         if kind == 'RESET':
             prev = 0
             continue
-        if kind == 'STEP':
-            depth = 1
-        elif kind == 'SUBSTEP':
-            depth = 2
-        elif kind == 'PUSH':
-            depth = prev + 1
-        elif kind == 'NEXT':
-            depth = prev
-        else:  # POP
-            depth = prev - 1
+        depth = _FIXED_DEPTH.get(kind)
+        if depth is None:
+            depth = prev + _STACK_SHIFT[kind]
         prev = depth
         if not step.text:
             continue
-        notes = [cond_note(c) for c in step.conds]
+        notes, taken = _step_notes(step, judge)
+        if not taken:
+            continue
         items.append((max(depth, 1), uninline(step.text), notes))
     return items
 

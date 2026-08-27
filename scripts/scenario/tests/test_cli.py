@@ -178,13 +178,13 @@ def test_steps_param(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None
     src = make_steps_suite(tmp_path)
     db = str(tmp_path / 'compile_commands.json')
 
-    rc = main(['steps', str(src), '--compile-db', db])
+    rc = main(['steps', str(src), '--compile-db', db, '--flat'])
     assert rc == 0
     out = capsys.readouterr().out
     assert '[if (verbose)] Dump the state' in out
     assert '[if (iters > 10)] Warm up' in out
 
-    rc = main(['steps', str(src), '--compile-db', db, '--param', 'iters=100'])
+    rc = main(['steps', str(src), '--compile-db', db, '--param', 'iters=100', '--flat'])
     assert rc == 0
     out = capsys.readouterr().out
     assert 'STEP\tWarm up' in out  # decided true: annotation gone
@@ -201,6 +201,7 @@ def test_steps_param(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None
             'iters=5',
             '--param',
             'verbose=FALSE',
+            '--flat',
         ]
     )
     assert rc == 0
@@ -209,7 +210,18 @@ def test_steps_param(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None
     assert 'Dump the state' not in out
     assert '2 step(s) not taken with these parameters' in out
 
-    rc = main(['steps', str(src), '--compile-db', db, '--param', 'iters=5', '--show-skipped'])
+    rc = main(
+        [
+            'steps',
+            str(src),
+            '--compile-db',
+            db,
+            '--param',
+            'iters=5',
+            '--show-skipped',
+            '--flat',
+        ]
+    )
     assert rc == 0
     out = capsys.readouterr().out
     assert 'SKIP\tSTEP\t[if (iters > 10)] Warm up' in out
@@ -264,7 +276,7 @@ def test_steps_param_mapping_wins_over_numeric(
     src = write_steps_src(tmp_path, ENUM_MAP_SRC)
     db = str(tmp_path / 'compile_commands.json')
 
-    rc = main(['steps', str(src), '--compile-db', db, '--param', 'mode=1'])
+    rc = main(['steps', str(src), '--compile-db', db, '--param', 'mode=1', '--flat'])
     assert rc == 0
     out = capsys.readouterr().out
     assert 'STEP\tChosen' in out
@@ -276,19 +288,19 @@ def test_steps_trip_count(tmp_path: Path, capsys: pytest.CaptureFixture[str]) ->
     src = make_steps_suite(tmp_path)
     db = str(tmp_path / 'compile_commands.json')
 
-    rc = main(['steps', str(src), '--compile-db', db, '--param', 'iters=100'])
+    rc = main(['steps', str(src), '--compile-db', db, '--param', 'iters=100', '--flat'])
     assert rc == 0
     out = capsys.readouterr().out
     assert 'SUBSTEP\t[repeats 100 times] Poke the device' in out
     assert '[repeats 100 times] [if (i > 0)] Settle' in out
 
-    rc = main(['steps', str(src), '--compile-db', db, '--param', 'iters=1'])
+    rc = main(['steps', str(src), '--compile-db', db, '--param', 'iters=1', '--flat'])
     assert rc == 0
     out = capsys.readouterr().out
     assert 'SUBSTEP\tPoke the device' in out  # runs once: no loop annotation
     assert 'Settle' not in out  # i is bound to 0, if (i > 0) is false
 
-    rc = main(['steps', str(src), '--compile-db', db, '--param', 'iters=0'])
+    rc = main(['steps', str(src), '--compile-db', db, '--param', 'iters=0', '--flat'])
     assert rc == 0
     out = capsys.readouterr().out
     assert 'Poke the device' not in out
@@ -350,7 +362,7 @@ def test_steps_for_init_resets_noncanonical(
     src = write_steps_src(tmp_path, FOR_NONCANON_SRC)
     db = str(tmp_path / 'compile_commands.json')
 
-    rc = main(['steps', str(src), '--compile-db', db, '--param', 'iters=100'])
+    rc = main(['steps', str(src), '--compile-db', db, '--param', 'iters=100', '--flat'])
     assert rc == 0
     out = capsys.readouterr().out
     assert 'Loop body' in out
@@ -370,8 +382,79 @@ def test_steps_for_init_resets_canonical(
     src = write_steps_src(tmp_path, FOR_CANON_SRC)
     db = str(tmp_path / 'compile_commands.json')
 
-    rc = main(['steps', str(src), '--compile-db', db, '--param', 'iters=100'])
+    rc = main(['steps', str(src), '--compile-db', db, '--param', 'iters=100', '--flat'])
     assert rc == 0
     out = capsys.readouterr().out
     assert 'Inner' in out
     assert '[if (iters == 0)]' in out
+
+
+MD_SRC = """\
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/** @defgroup demo-md Markdown demo
+ * @ingroup demo
+ * @{
+ *
+ * @objective Check the markdown output.
+ *
+ * @param iters  Loop count
+ *
+ * @par Scenario:
+ */
+#define TEST_STEP(...) (void)0
+#define TEST_SUBSTEP(...) (void)0
+#define TEST_GET_INT_PARAM(x_) (void)0
+
+int
+main(void)
+{
+    int iters;
+    int i;
+
+    TEST_GET_INT_PARAM(iters);
+    TEST_STEP("Prepare");
+    if (iters > 10)
+    {
+        TEST_STEP("Warm up");
+    }
+    for (i = 0; i < iters; i++)
+    {
+        TEST_SUBSTEP("Poke");
+    }
+    return 0;
+}
+"""
+
+
+@needs_clang
+def test_steps_md_default(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    src = write_steps_src(tmp_path, MD_SRC)
+    db = str(tmp_path / 'compile_commands.json')
+
+    rc = main(['steps', str(src), '--compile-db', db])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert out.startswith('## demo: Markdown demo')
+    assert 'Check the markdown output.' in out
+    assert '- `iters`: Loop count' in out
+    assert '1. Prepare' in out
+    assert '2. Warm up' in out
+    assert '   Only when `iters > 10`.' in out
+    assert '   - Poke' in out
+    assert '     For each iteration (`i = 0; i < iters; i++`).' in out
+
+
+@needs_clang
+def test_steps_md_param(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    src = write_steps_src(tmp_path, MD_SRC)
+    db = str(tmp_path / 'compile_commands.json')
+
+    rc = main(['steps', str(src), '--compile-db', db, '--param', 'iters=3'])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert 'Warm up' not in out  # decided false: step dropped
+    assert '1. Prepare' in out
+    assert '   - Poke' in out
+    assert '     Repeats 3 times.' in out
+    assert 'Only when' not in out

@@ -20,13 +20,14 @@ from typing import TYPE_CHECKING
 
 import aststeps
 import condeval
+import emit_md
 from cstep import compare
 from emit_c import emit_test
 from mdparse import parse_package
 from model import Package, ScenarioError
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
 
 def _root(opt: str) -> Path:
@@ -293,21 +294,63 @@ def _render(
     """
     rendered = []
     for step in steps:
-        local = dict(env)
-        notes: list[str] = []
-        taken = True
-        for cond in step.conds:
-            verdict, note = _judge(cond, local)
-            if verdict is False:
-                taken = False
-                notes.append(cond.desc)
-                break
-            if note is not None:
-                notes.append(note)
+        pairs, taken = _judge_step(step, dict(env))
+        notes = [override if override is not None else cond.desc for cond, override in pairs]
         scope = f'({step.func}) ' if step.func and step.func != 'main' else ''
         where = f'[{"] [".join(notes)}] ' if notes else ''
         rendered.append((f'{step.kind}\t{scope}{where}{step.text}', taken))
     return rendered
+
+
+def _judge_step(
+    step: aststeps.SourceStep, env: dict[str, condeval.Num]
+) -> tuple[list[tuple[aststeps.Cond, str | None]], bool]:
+    """Judge one step's constructs: kept (cond, note override) pairs.
+
+    Args:
+        step: The step to judge.
+        env: Identifier values; mutated by one-trip loop bindings,
+            so pass a per-step copy.
+
+    Returns:
+        The constructs that stay on the step - the override is a
+        replacement note like "repeats N times", None to show the
+        construct itself - and whether the step is taken at all.
+        For an untaken step the falsifying construct ends the list.
+    """
+    kept: list[tuple[aststeps.Cond, str | None]] = []
+    for cond in step.conds:
+        verdict, note = _judge(cond, env)
+        if verdict is False:
+            kept.append((cond, None))
+            return kept, False
+        if note is not None:
+            kept.append((cond, None if note == cond.desc else note))
+    return kept, True
+
+
+def _md_judge(
+    env: dict[str, condeval.Num],
+) -> Callable[[aststeps.SourceStep], tuple[list[str], bool]]:
+    """A step judge for the markdown emitter under bound parameters.
+
+    Decided-true constructs disappear, untaken steps are dropped,
+    and the surviving constructs turn into note sentences.
+    """
+
+    def judge(step: aststeps.SourceStep) -> tuple[list[str], bool]:
+        pairs, taken = _judge_step(step, dict(env))
+        if not taken:
+            return [], False
+        notes = []
+        for cond, override in pairs:
+            if override is None:
+                notes.append(emit_md.cond_note(cond))
+            else:
+                notes.append(f'{override[0].upper()}{override[1:]}.')
+        return notes, True
+
+    return judge
 
 
 def _steps_from_source(args: argparse.Namespace) -> int:
@@ -321,14 +364,25 @@ def _steps_from_source(args: argparse.Namespace) -> int:
         return 1
     info = aststeps.analyze(path, compile_db=db)
     params = _parse_params(args.param)
-    if not params:
-        for step in info.steps:
-            where = f'[{c}] ' if (c := '] ['.join(c.desc for c in step.conds)) else ''
-            scope = f'({step.func}) ' if step.func != 'main' else ''
-            print(f'{step.kind}\t{scope}{where}{step.text}')
+    if args.flat:
+        if params:
+            _print_scenario(info, params, show_skipped=args.show_skipped)
+        else:
+            _print_annotated(info.steps)
         return 0
-    _print_scenario(info, params, show_skipped=args.show_skipped)
+    judge = _md_judge(_env(info, params)) if params else None
+    items = emit_md.step_items(info.steps, judge=judge)
+    text = path.read_text(encoding='utf-8', errors='replace')
+    print(emit_md.emit_test_md(path.stem, text, items), end='')
     return 0
+
+
+def _print_annotated(steps: list[aststeps.SourceStep]) -> None:
+    """Print every step flat, with its full condition annotations."""
+    for step in steps:
+        where = f'[{c}] ' if (c := '] ['.join(c.desc for c in step.conds)) else ''
+        scope = f'({step.func}) ' if step.func != 'main' else ''
+        print(f'{step.kind}\t{scope}{where}{step.text}')
 
 
 def _print_scenario(
@@ -404,11 +458,12 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument('--implemented', action='store_true', help='only implemented')
     p.set_defaults(func=_cmd_list)
 
-    p = sub.add_parser('steps', help='list the steps of a test source with control flow')
+    p = sub.add_parser('steps', help='read the scenario back from a test source')
     p.add_argument(
         'source',
-        help='a test .c source; steps are annotated with their'
-        ' control flow (needs the libclang package)',
+        help='a test .c source; emits its scenario as a markdown'
+        ' test section, steps annotated with their control flow'
+        ' (needs the libclang package)',
     )
     p.add_argument(
         '--compile-db',
@@ -427,7 +482,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument(
         '--show-skipped',
         action='store_true',
-        help='print steps not taken with the given parameters, marked SKIP',
+        help='with --flat, print steps not taken with the given parameters, marked SKIP',
+    )
+    p.add_argument(
+        '--flat',
+        action='store_true',
+        help='one line per step instead of the markdown test section',
     )
     p.set_defaults(func=_cmd_steps)
 
