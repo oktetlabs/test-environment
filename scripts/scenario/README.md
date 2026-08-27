@@ -7,6 +7,7 @@ stubs and keeps the two in sync:
     scenario.py generate <package>/<test>   # write the C stub
     scenario.py check                       # report drift, non-zero exit
     scenario.py list --pending              # the backlog
+    scenario.py steps <test>.c              # annotated steps from the built source
 
 Run it from the suite; the test root is `-t` (default: the
 current directory, or its `ts/` subdirectory when present).
