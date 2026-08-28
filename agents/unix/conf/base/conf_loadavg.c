@@ -13,8 +13,8 @@
 #include "config.h"
 
 #include "logger_api.h"
-#include "rcf_ch_api.h"
 #include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 #include "conf_common.h"
 #include "te_str.h"
 
@@ -50,128 +50,117 @@ get_loadavg_stats(loadavg_stats *stats)
     return 0;
 }
 
-te_errno
-loadavg_latest_pid_get(unsigned int gid, const char *oid, char *value)
+static te_errno
+loadavg_latest_pid_get(const ta_conf_ctx *ctx, uint64_t *val)
 {
     loadavg_stats stats;
-    te_errno rc = 0;
+    te_errno rc;
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
     rc = get_loadavg_stats(&stats);
     if (rc != 0)
         return rc;
 
-    return te_snprintf(value, RCF_MAX_VAL, "%" PRIu64, stats.latest_pid);
+    *val = stats.latest_pid;
+    return 0;
 }
 
-te_errno
-loadavg_total_get(unsigned int gid, const char *oid, char *value)
+static te_errno
+loadavg_total_get(const ta_conf_ctx *ctx, uint64_t *val)
 {
     loadavg_stats stats;
-    te_errno rc = 0;
+    te_errno rc;
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
     rc = get_loadavg_stats(&stats);
     if (rc != 0)
         return rc;
 
-    return te_snprintf(value, RCF_MAX_VAL, "%" PRIu64, stats.total);
+    *val = stats.total;
+    return 0;
 }
 
-te_errno
-loadavg_runnable_get(unsigned int gid, const char *oid, char *value)
+static te_errno
+loadavg_runnable_get(const ta_conf_ctx *ctx, uint64_t *val)
 {
     loadavg_stats stats;
-    te_errno rc = 0;
+    te_errno rc;
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
     rc = get_loadavg_stats(&stats);
     if (rc != 0)
         return rc;
 
-    return te_snprintf(value, RCF_MAX_VAL, "%" PRIu64, stats.runnable);
+    *val = stats.runnable;
+    return 0;
 }
 
-te_errno
-loadavg_min15_get(unsigned int gid, const char *oid, char *value)
+static te_errno
+loadavg_min15_get(const ta_conf_ctx *ctx, te_string *val)
 {
     loadavg_stats stats;
-    te_errno rc = 0;
+    te_errno rc;
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
     rc = get_loadavg_stats(&stats);
     if (rc != 0)
         return rc;
 
-    return te_snprintf(value, RCF_MAX_VAL, "%g", stats.min15);
+    te_string_append(val, "%g", stats.min15);
+    return 0;
 }
 
-te_errno
-loadavg_min5_get(unsigned int gid, const char *oid, char *value)
+static te_errno
+loadavg_min5_get(const ta_conf_ctx *ctx, te_string *val)
 {
     loadavg_stats stats;
-    te_errno rc = 0;
+    te_errno rc;
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
     rc = get_loadavg_stats(&stats);
     if (rc != 0)
         return rc;
 
-    return te_snprintf(value, RCF_MAX_VAL, "%g", stats.min5);
+    te_string_append(val, "%g", stats.min5);
+    return 0;
 }
 
-te_errno
-loadavg_min1_get(unsigned int gid, const char *oid, char *value)
+static te_errno
+loadavg_min1_get(const ta_conf_ctx *ctx, te_string *val)
 {
     loadavg_stats stats;
-    te_errno rc = 0;
+    te_errno rc;
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
     rc = get_loadavg_stats(&stats);
     if (rc != 0)
         return rc;
 
-    return te_snprintf(value, RCF_MAX_VAL, "%g", stats.min1);
+    te_string_append(val, "%g", stats.min1);
+    return 0;
 }
 
-RCF_PCH_CFG_NODE_RO(node_loadavg_latest_pid, "latest_pid", NULL, NULL,
-                    loadavg_latest_pid_get);
-
-RCF_PCH_CFG_NODE_RO(node_loadavg_total, "total", NULL, &node_loadavg_latest_pid,
-                    loadavg_total_get);
-
-RCF_PCH_CFG_NODE_RO(node_loadavg_runnable, "runnable", NULL,
-                    &node_loadavg_total, loadavg_runnable_get);
-
-RCF_PCH_CFG_NODE_RO(node_loadavg_min15, "min15", NULL, &node_loadavg_runnable,
-                    loadavg_min15_get);
-
-RCF_PCH_CFG_NODE_RO(node_loadavg_min5, "min5", NULL, &node_loadavg_min15,
-                    loadavg_min5_get);
-
-RCF_PCH_CFG_NODE_RO(node_loadavg_min1, "min1", NULL, &node_loadavg_min5,
-                    loadavg_min1_get);
-
-RCF_PCH_CFG_NODE_NA(node_loadavg, "loadavg", &node_loadavg_min1, NULL);
+static const ta_conf_node *const node_loadavg =
+    TA_CONF_NA("loadavg",
+        TA_CONF_RO_STR("min1", loadavg_min1_get),
+        TA_CONF_RO_STR("min5", loadavg_min5_get),
+        TA_CONF_RO_STR("min15", loadavg_min15_get),
+        TA_CONF_RO_UINT64("runnable", loadavg_runnable_get),
+        TA_CONF_RO_UINT64("total", loadavg_total_get),
+        TA_CONF_RO_UINT64("latest_pid", loadavg_latest_pid_get));
 
 te_errno
 ta_unix_conf_loadavg_init(void)
 {
     te_errno rc;
 
-    rc = rcf_pch_add_node("/agent", &node_loadavg);
+    rc = ta_conf_register("/agent", node_loadavg);
     if (rc != 0)
         return rc;
 
