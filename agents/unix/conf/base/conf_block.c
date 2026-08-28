@@ -35,9 +35,12 @@
 #include<string.h>
 
 #include "te_stdint.h"
+#include "te_alloc.h"
+#include "te_string.h"
+#include "te_vector.h"
 #include "logger_api.h"
 #include "comm_agent.h"
-#include "rcf_ch_api.h"
+#include "rcf_pch_tree.h"
 #include "unix_internal.h"
 #include "conf_common.h"
 
@@ -49,34 +52,20 @@ ta_block_is_mine(const char *block_name, void *data)
 }
 
 static te_errno
-block_dev_list(unsigned int gid, const char *oid,
-               const char *sub_id, char **list)
+block_dev_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    char buf[4096];
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    UNUSED(ctx);
 
 #ifdef __linux__
-    {
-        te_errno rc;
-        rc = get_dir_list("/sys/block", buf, sizeof(buf), false,
-                          &ta_block_is_mine, NULL, NULL);
-        if (rc != 0)
-            return rc;
-    }
+    return get_dir_list_vec("/sys/block", names, false,
+                            &ta_block_is_mine, NULL, NULL);
 #else
-    UNUSED(list);
+    UNUSED(names);
+
     ERROR("%s(): getting list of block devices "
           "is supported only for Linux", __FUNCTION__);
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
-
-    if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    return 0;
 }
 
 #if HAVE_LINUX_MAJOR_H
@@ -115,9 +104,9 @@ check_block_loop(const char *block_name)
 #endif
 
 static te_errno
-block_dev_loop_get(unsigned int gid, const char *oid, char *value,
-                   const char *block_name)
+block_dev_loop_get(const ta_conf_ctx *ctx, int32_t *val)
 {
+    const char *block_name = ta_conf_ctx_inst(ctx, "block");
     te_errno rc = TE_RC(TE_TA_UNIX, TE_ENOTBLK);
 
     if (!ta_block_is_mine(block_name, NULL))
@@ -128,26 +117,24 @@ block_dev_loop_get(unsigned int gid, const char *oid, char *value,
 #else
     UNUSED(block_name);
 #endif
-    UNUSED(gid);
-    UNUSED(oid);
 
     if (TE_RC_GET_ERROR(rc) == TE_ENOTBLK)
     {
-        strcpy(value, "0");
+        *val = 0;
         rc = 0;
     }
     else if (rc == 0)
     {
-        strcpy(value, "1");
+        *val = 1;
     }
 
     return rc;
 }
 
 static te_errno
-block_dev_loop_backing_file_get(unsigned int gid, const char *oid, char *value,
-                                const char *block_name)
+block_dev_loop_backing_file_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *block_name = ta_conf_ctx_inst(ctx, "block");
     char filename[RCF_MAX_VAL];
     te_errno rc;
 
@@ -169,14 +156,11 @@ block_dev_loop_backing_file_get(unsigned int gid, const char *oid, char *value,
          * it means there is no backing file configured
          */
         if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
-        {
-            *value = '\0';
             return 0;
-        }
         return rc;
     }
 
-    strcpy(value, filename);
+    te_string_append(val, "%s", filename);
     return 0;
 }
 
@@ -245,9 +229,9 @@ detach_loop_device(const char *devname)
 #endif
 
 static te_errno
-block_dev_loop_backing_file_set(unsigned int gid, const char *oid,
-                                const char *value, const char *block_name)
+block_dev_loop_backing_file_set(const ta_conf_ctx *ctx, const char *val)
 {
+    const char *block_name = ta_conf_ctx_inst(ctx, "block");
     te_errno rc;
     char devname[RCF_MAX_VAL];
 
@@ -257,45 +241,38 @@ block_dev_loop_backing_file_set(unsigned int gid, const char *oid,
 #if HAVE_LINUX_MAJOR_H
     rc = check_block_loop(block_name);
     if (rc != 0)
-        return *value == '\0' ? 0 : rc;
+        return *val == '\0' ? 0 : rc;
 #endif
 
 #if HAVE_LINUX_LOOP_H
     /* FIXME: we will need to discover a real device file name */
     TE_SPRINTF(devname, "/dev/%s", block_name);
-    if (*value == '\0')
+    if (*val == '\0')
         rc = detach_loop_device(devname);
     else
-        rc = attach_loop_device(devname, value);
+        rc = attach_loop_device(devname, val);
 
     return rc;
 #else
     UNUSED(devname);
     UNUSED(rc);
 
-    return *value == '\0' ? 0 : TE_RC(TE_TA_UNIX, TE_ENOSYS);
+    return *val == '\0' ? 0 : TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
-RCF_PCH_CFG_NODE_RW(node_block_dev_loop_backing_file,
-                    "backing_file", NULL, NULL,
-                    block_dev_loop_backing_file_get,
-                    block_dev_loop_backing_file_set);
-
-RCF_PCH_CFG_NODE_RO(node_block_dev_loop, "loop",
-                    &node_block_dev_loop_backing_file, NULL,
-                    block_dev_loop_get);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_block_dev, "block",
-                            &node_block_dev_loop, NULL,
-                            NULL, NULL, block_dev_list, NULL);
+static const ta_conf_node *const node_block_dev =
+    TA_CONF_LIST("block", block_dev_list,
+        TA_CONF_RO_INT32("loop", block_dev_loop_get,
+            TA_CONF_RW_STR("backing_file", block_dev_loop_backing_file_get,
+                           block_dev_loop_backing_file_set)));
 
 te_errno
 ta_unix_conf_block_dev_init(void)
 {
     te_errno rc;
 
-    rc = rcf_pch_add_node("/agent", &node_block_dev);
+    rc = ta_conf_register("/agent", node_block_dev);
     if (rc != 0)
         return rc;
 
