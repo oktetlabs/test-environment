@@ -15,10 +15,9 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
-#include "conf_oid.h"
 #include "logger_api.h"
 #include "te_str.h"
-#include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 #include "agentlib.h"
 #include "te_vector.h"
 
@@ -29,48 +28,24 @@ static bool allocate_on_get = true;
 static int32_t last_allocated_port = -1;
 static bool allocate_property_changed = false;
 
-static int *
-l4_port_alloc_property_ptr_by_oid(const char *oid)
-{
-    cfg_oid *coid = cfg_convert_oid_str(oid);
-    int *result = NULL;
-    char *prop_subid;
-
-    if (coid == NULL)
-        goto exit;
-
-    prop_subid = cfg_oid_inst_subid(coid, 5);
-    if (prop_subid == NULL)
-        goto exit;
-
-    if (strcmp(prop_subid, "family") == 0)
-        result = &socket_family;
-    else if (strcmp(prop_subid, "type") == 0)
-        result = &socket_type;
-
-exit:
-    cfg_free_oid(coid);
-
-    if (result == NULL)
-        ERROR("Failed to get property by oid '%s'", oid);
-
-    return result;
-}
-
+/**
+ * Update an allocation property (socket family or socket type), tracking
+ * whether the effective value actually changed.
+ *
+ * @param property      Pointer to the property to update
+ * @param value         New value, already parsed with base 0
+ *
+ * @return              Status code
+ */
 static te_errno
-l4_port_alloc_property_set(unsigned int gid, const char *oid, const char *value)
+l4_port_alloc_property_set(int *property, int32_t value)
 {
-    int *property;
     int property_value;
 
-    UNUSED(gid);
-
-    property = l4_port_alloc_property_ptr_by_oid(oid);
-    if (property == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    if (te_strtoi(value, 0, &property_value) != 0)
+    if (value < 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    property_value = (int)value;
 
     if (*property != property_value)
         allocate_property_changed = true;
@@ -81,30 +56,43 @@ l4_port_alloc_property_set(unsigned int gid, const char *oid, const char *value)
 }
 
 static te_errno
-l4_port_alloc_property_get(unsigned int gid, const char *oid, char *value)
+l4_port_alloc_family_get(const ta_conf_ctx *ctx, int32_t *val)
 {
-    int *property;
-
-    UNUSED(gid);
-
-    property = l4_port_alloc_property_ptr_by_oid(oid);
-    if (property == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    te_snprintf(value, RCF_MAX_VAL, "%d", *property);
-
+    UNUSED(ctx);
+    *val = socket_family;
     return 0;
 }
 
 static te_errno
-l4_port_alloc_next_get(unsigned int gid, const char *oid, char *value)
+l4_port_alloc_family_set(const ta_conf_ctx *ctx, int32_t val)
+{
+    UNUSED(ctx);
+    return l4_port_alloc_property_set(&socket_family, val);
+}
+
+static te_errno
+l4_port_alloc_type_get(const ta_conf_ctx *ctx, int32_t *val)
+{
+    UNUSED(ctx);
+    *val = socket_type;
+    return 0;
+}
+
+static te_errno
+l4_port_alloc_type_set(const ta_conf_ctx *ctx, int32_t val)
+{
+    UNUSED(ctx);
+    return l4_port_alloc_property_set(&socket_type, val);
+}
+
+static te_errno
+l4_port_alloc_next_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     bool realloc_last_port;
     uint16_t port;
     te_errno rc;
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
     realloc_last_port = !allocate_on_get && allocate_property_changed &&
                         !agent_check_l4_port_is_free(socket_family, socket_type,
@@ -124,7 +112,7 @@ l4_port_alloc_next_get(unsigned int gid, const char *oid, char *value)
 
     allocate_property_changed = false;
     allocate_on_get = false;
-    te_snprintf(value, RCF_MAX_VAL, "%d", last_allocated_port);
+    *val = last_allocated_port;
 
     return 0;
 }
@@ -144,19 +132,12 @@ l4_port_allocated_find(uint16_t port)
 }
 
 static te_errno
-l4_port_allocated_add(unsigned int gid, const char *oid, const char *value,
-                      const char *empty1, const char *empty2,
-                      const char *port_str)
+l4_port_allocated_add(const ta_conf_ctx *ctx)
 {
+    const char *port_str = ta_conf_ctx_inst(ctx, "allocated");
     unsigned int port_val;
     uint16_t port;
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    UNUSED(empty1);
-    UNUSED(empty2);
 
     rc = te_strtoui(port_str, 0, &port_val);
     if (rc != 0)
@@ -188,17 +169,12 @@ l4_port_allocated_add(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-l4_port_allocated_del(unsigned int gid, const char *oid, const char *empty1,
-                      const char *empty2, const char *port_str)
+l4_port_allocated_del(const ta_conf_ctx *ctx)
 {
+    const char *port_str = ta_conf_ctx_inst(ctx, "allocated");
     unsigned int port;
     te_errno rc;
     int index;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(empty1);
-    UNUSED(empty2);
 
     rc = te_strtoui(port_str, 0, &port);
     if (rc != 0)
@@ -215,46 +191,37 @@ l4_port_allocated_del(unsigned int gid, const char *oid, const char *empty1,
 }
 
 static te_errno
-l4_port_allocated_list(unsigned int gid, const char *oid, const char *empty1,
-                       char **list)
+l4_port_allocated_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string result = TE_STRING_INIT;
     uint16_t *p;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(empty1);
+    UNUSED(ctx);
 
     TE_VEC_FOREACH(&allocated_ports, p)
     {
-        te_string_append(&result, "%u ", *p);
-    }
+        char *name = te_string_fmt("%u", *p);
 
-    *list = result.ptr;
+        TE_VEC_APPEND(names, name);
+    }
 
     return 0;
 }
 
-RCF_PCH_CFG_NODE_COLLECTION(node_port_allocated, "allocated",
-                    NULL, NULL,
-                    l4_port_allocated_add, l4_port_allocated_del,
-                    l4_port_allocated_list, NULL);
-RCF_PCH_CFG_NODE_RW(node_port_alloc_type, "type",
-                    NULL, NULL,
-                    l4_port_alloc_property_get, l4_port_alloc_property_set);
-RCF_PCH_CFG_NODE_RW(node_port_alloc_family, "family",
-                    NULL, &node_port_alloc_type,
-                    l4_port_alloc_property_get, l4_port_alloc_property_set);
-RCF_PCH_CFG_NODE_RW(node_port_alloc_next, "next",
-                    &node_port_alloc_family, &node_port_allocated,
-                    l4_port_alloc_next_get, NULL);
-
-RCF_PCH_CFG_NODE_NA(node_port_alloc, "alloc", &node_port_alloc_next, NULL);
-RCF_PCH_CFG_NODE_NA(node_port, "l4_port", &node_port_alloc, NULL);
+static const ta_conf_node *const node_port =
+    TA_CONF_NA("l4_port",
+        TA_CONF_NA("alloc",
+            TA_CONF_RO_INT32("next", l4_port_alloc_next_get,
+                TA_CONF_RW_INT32("family", l4_port_alloc_family_get,
+                                 l4_port_alloc_family_set),
+                TA_CONF_RW_INT32("type", l4_port_alloc_type_get,
+                                 l4_port_alloc_type_set)),
+            TA_CONF_COLL("allocated", l4_port_allocated_add,
+                         l4_port_allocated_del,
+                         l4_port_allocated_list)));
 
 
 te_errno
 ta_unix_conf_l4_port_init()
 {
-    return rcf_pch_add_node("/agent", &node_port);
+    return ta_conf_register("/agent", node_port);
 }
