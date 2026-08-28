@@ -21,7 +21,7 @@ Communication Service Access Point (CSAP) is an object which can be created on T
 Creating CSAP object
 ~~~~~~~~~~~~~~~~~~~~
 
-CSAP is created on TA for specific protocol stack (such as TCP/IPv4/Ethernet). There is a generic function for creating CSAP, :cref:`tapi_tad_csap_create() <tapi_tad_csap_create>`. However more often helper functions defined for specific protocol stacks are used. For example, for TCP/IPv4/Ethernet there is :cref:`tapi_tcp_ip4_eth_csap_create() <tapi_tcp_ip4_eth_csap_create>`. These helper functions can be found in header files under lib/tapi_tad/.
+CSAP is created on TA for specific protocol stack (such as TCP/IPv4/Ethernet). There is a generic function for creating CSAP, :cref:`tapi_tad_csap_create`. However more often helper functions defined for specific protocol stacks are used. For example, for TCP/IPv4/Ethernet there is :cref:`tapi_tcp_ip4_eth_csap_create`. These helper functions can be found in header files under lib/tapi_tad/.
 
 
 
@@ -32,11 +32,11 @@ CSAP is created on TA for specific protocol stack (such as TCP/IPv4/Ethernet). T
 Sniffing network traffic
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Once CSAP is created, you can start sniffing network packets matching its properties (protocols, addresses, ports, etc.) with :cref:`tapi_tad_trrecv_start() <tapi_tad_trrecv_start>`.
+Once CSAP is created, you can start sniffing network packets matching its properties (protocols, addresses, ports, etc.) with :cref:`tapi_tad_trrecv_start`.
 
-To process packets sniffed by CSAP, use either :cref:`tapi_tad_trrecv_stop() <tapi_tad_trrecv_stop>` (which stops sniffing) or :cref:`tapi_tad_trrecv_get() <tapi_tad_trrecv_get>` (which gets already received packets without stopping sniffing for new ones). These functions report number of packets received; also they allow to specify callback which will be called for every obtained packet.
+To process packets sniffed by CSAP, use either :cref:`tapi_tad_trrecv_stop` (which stops sniffing) or :cref:`tapi_tad_trrecv_get` (which gets already received packets without stopping sniffing for new ones). These functions report number of packets received; also they allow to specify callback which will be called for every obtained packet.
 
-These two functions are just simple wrappers for :cref:`rcf_ta_trrecv_stop() <rcf_ta_trrecv_stop>` and :cref:`rcf_ta_trrecv_get() <rcf_ta_trrecv_get>` which are often used directly.
+These two functions are just simple wrappers for :cref:`rcf_ta_trrecv_stop` and :cref:`rcf_ta_trrecv_get` which are often used directly.
 
 
 
@@ -47,11 +47,11 @@ These two functions are just simple wrappers for :cref:`rcf_ta_trrecv_stop() <rc
 Sending packets
 ~~~~~~~~~~~~~~~
 
-To send packets with CSAP, use :cref:`tapi_tad_trsend_start() <tapi_tad_trsend_start>`. It can be called either in blocking (RCF_MODE_BLOCKING) or nonblocking (RCF_MODE_NONBLOCKING) mode, as defined by its **blk_mode** argument.
+To send packets with CSAP, use :cref:`tapi_tad_trsend_start`. It can be called either in blocking (RCF_MODE_BLOCKING) or nonblocking (RCF_MODE_NONBLOCKING) mode, as defined by its **blk_mode** argument.
 
 Packets specification should be defined in ASN value of type Taffic-Pattern passed to this function. Usually not all fields of the template should be filled; for example, if you specified local and remote addresses when creating CSAP, they will be filled automatically by CSAP for outgoing packets.
 
-Note that you cannot send packets from CSAP if it is currently sniffing packets. You should either stop sniffing by :cref:`tapi_tad_trrecv_stop() <tapi_tad_trrecv_stop>` or create a separate CSAP for sending.
+Note that you cannot send packets from CSAP if it is currently sniffing packets. You should either stop sniffing by :cref:`tapi_tad_trrecv_stop` or create a separate CSAP for sending.
 
 
 
@@ -62,7 +62,7 @@ Note that you cannot send packets from CSAP if it is currently sniffing packets.
 Destroying CSAP object
 ~~~~~~~~~~~~~~~~~~~~~~
 
-To destroy CSAP object, use :cref:`tapi_tad_csap_destroy() <tapi_tad_csap_destroy>`.
+To destroy CSAP object, use :cref:`tapi_tad_csap_destroy`.
 
 
 

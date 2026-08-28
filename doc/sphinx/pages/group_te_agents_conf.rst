@@ -84,11 +84,11 @@ In our example we will define the following objects:
 Test Agent initialization
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-On Test Agent start-up we should pass control to PCH (Portable Command Handler) main loop function :cref:`rcf_pch_run() <rcf_pch_run>`. As a part of initialization process for configuration support :cref:`rcf_pch_run() <rcf_pch_run>` function calls:
+On Test Agent start-up we should pass control to PCH (Portable Command Handler) main loop function :cref:`rcf_pch_run`. As a part of initialization process for configuration support :cref:`rcf_pch_run` function calls:
 
-* :cref:`rcf_ch_conf_init() <rcf_ch_conf_init>` - to do all Test Agent specific initialization.
+* :cref:`rcf_ch_conf_init` - to do all Test Agent specific initialization.
 
-In :cref:`rcf_ch_conf_init() <rcf_ch_conf_init>` function you should register all object nodes that Test Agent will support during its operation. Nodes are registered to RCF PCH with :cref:`rcf_pch_add_node() <rcf_pch_add_node>` function where you specify parent object path and pointer to object description structure of :ref:`rcf_pch_cfg_object <doxid-structrcf__pch__cfg__object>` type.
+In :cref:`rcf_ch_conf_init` function you should register all object nodes that Test Agent will support during its operation. Nodes are registered to RCF PCH with :cref:`rcf_pch_add_node` function where you specify parent object path and pointer to object description structure of :ref:`rcf_pch_cfg_object <doxid-structrcf__pch__cfg__object>` type.
 
 .. image:: /static/image/ta_conf_call_diagram.png
 	:alt: Test Agent configuration support event sequence diagram
@@ -110,7 +110,7 @@ For example definition of nodes of our sample might look like:
 	                            &rw_node, /* bother node (neighbor node) */
 	                            NULL, NULL, col_list, NULL);
 
-These definitions should be placed in the source of Test Agent. Then in the implementation of :cref:`rcf_ch_conf_init() <rcf_ch_conf_init>` you should put the following line of code that will register your configuration subtree:
+These definitions should be placed in the source of Test Agent. Then in the implementation of :cref:`rcf_ch_conf_init` you should put the following line of code that will register your configuration subtree:
 
 .. ref-code-block:: c
 
@@ -300,7 +300,7 @@ Apart from basic get/set/list/add/del handlers there is one more handler :cref:`
 
 Please note that in the group call case the particular commit function is called only once - in our sample commit_X() is called once though it is a commit function for /X/a and /X/c objects whose instances are updated.
 
-Usually the commit function is specified in parent node and children nodes refer to parent node with :cref:`RCF_PCH_CFG_NODE_RWC() <RCF_PCH_CFG_NODE_RWC>` macro:
+Usually the commit function is specified in parent node and children nodes refer to parent node with :cref:`RCF_PCH_CFG_NODE_RWC` macro:
 
 .. ref-code-block:: c
 

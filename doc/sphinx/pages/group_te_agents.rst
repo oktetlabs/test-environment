@@ -101,11 +101,11 @@ Basically Test Agent consists of:
 
 On start-up Test Agent does the following things:
 
-* calls :cref:`ta_log_init() <ta_log_init>` to initialize logger API;
+* calls :cref:`ta_log_init` to initialize logger API;
 
-* if a Test Agent supports process or thread creation (:cref:`rcf_ch_start_process() <rcf_ch_start_process>`, and :cref:`rcf_ch_start_thread() <rcf_ch_start_thread>` are supported), then it is necessary to create a separate thread or process that will receive log messages from different processes and threads run on behalf of Test Agent. lib/loggerta library exports :cref:`logfork_entry() <logfork_entry>` function that should be used as an entry point for such a thread/process;
+* if a Test Agent supports process or thread creation (:cref:`rcf_ch_start_process`, and :cref:`rcf_ch_start_thread` are supported), then it is necessary to create a separate thread or process that will receive log messages from different processes and threads run on behalf of Test Agent. lib/loggerta library exports :cref:`logfork_entry` function that should be used as an entry point for such a thread/process;
 
-* calls :cref:`rcf_pch_run() <rcf_pch_run>` function that passes control to RCF Portable Command Handler.
+* calls :cref:`rcf_pch_run` function that passes control to RCF Portable Command Handler.
 
 In RCF PCH Test Agent passively waits for :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>` commands. RCF commands are handled in the main loop of RCF PCH library. Depending on the command type it can be handled either by generic part of RCF PCH (located under lib/rcfpch) or it can be directed to Agent specific parts of code (located under agents/[type]).
 

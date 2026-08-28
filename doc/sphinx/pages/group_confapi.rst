@@ -37,7 +37,7 @@ When :ref:`Configurator <doxid-group__te__engine__conf>` starts it processes con
 
 Configuration file can also keep rules to add object instances, but these instances can not be applied for /agent subtree. /agent subtree is in control by Test Agents.
 
-:ref:`Configurator <doxid-group__te__engine__conf>` should ask Test Agents about these instances that is why it call :cref:`rcf_ta_cfg_get() <rcf_ta_cfg_get>` function with wildcard object instance identifier (arrow [4] in the figure).
+:ref:`Configurator <doxid-group__te__engine__conf>` should ask Test Agents about these instances that is why it call :cref:`rcf_ta_cfg_get` function with wildcard object instance identifier (arrow [4] in the figure).
 
 When :ref:`Configurator <doxid-group__te__engine__conf>` receives a reply with the list of object instance names it checks whether an instance name has corresponding object node in its local object tree. If yes, then it adds an instance into its instance configuration tree, otherwise it ignores an instance name and tests will not be able to access those instances until they register corresponding object nodes in :ref:`Configurator <doxid-group__te__engine__conf>` (see arrow [6]).
 
@@ -64,11 +64,11 @@ Please note that there can be "read-create" objects that do not provide implemen
 
 In order to add a new object instance you should use one of the following functions:
 
-* :cref:`cfg_add_instance() <cfg_add_instance>`;
+* :cref:`cfg_add_instance`;
 
-* :cref:`cfg_add_instance_str() <cfg_add_instance_str>`;
+* :cref:`cfg_add_instance_str`;
 
-* :cref:`cfg_add_instance_fmt() <cfg_add_instance_fmt>`.
+* :cref:`cfg_add_instance_fmt`.
 
 The following diagram shows the sequence of events caused by calling any of these functions.
 
@@ -77,19 +77,19 @@ The following diagram shows the sequence of events caused by calling any of thes
 
 Similar things happen when you call a function to delete an object instance:
 
-* :cref:`cfg_del_instance() <cfg_del_instance>`;
+* :cref:`cfg_del_instance`;
 
-* :cref:`cfg_del_instance_fmt() <cfg_del_instance_fmt>`.
+* :cref:`cfg_del_instance_fmt`.
 
 You can also use *local* version of instance add functions:
 
-* :cref:`cfg_add_instance_local() <cfg_add_instance_local>`;
+* :cref:`cfg_add_instance_local`;
 
-* :cref:`cfg_add_instance_local_str() <cfg_add_instance_local_str>`;
+* :cref:`cfg_add_instance_local_str`;
 
-* :cref:`cfg_add_instance_local_fmt() <cfg_add_instance_local_fmt>`.
+* :cref:`cfg_add_instance_local_fmt`.
 
-The only difference is that these functions will not cause :cref:`rcf_pch_cfg_object::commit` function to be called after :cref:`rcf_pch_cfg_object::add`. Instead :cref:`rcf_pch_cfg_object::commit` is called when a test calls :cref:`cfg_commit() <cfg_commit>` or :cref:`cfg_commit_fmt() <cfg_commit_fmt>` function for newly created object instance.
+The only difference is that these functions will not cause :cref:`rcf_pch_cfg_object::commit` function to be called after :cref:`rcf_pch_cfg_object::add`. Instead :cref:`rcf_pch_cfg_object::commit` is called when a test calls :cref:`cfg_commit` or :cref:`cfg_commit_fmt` function for newly created object instance.
 
 To add a new instance of ``col_object`` object one could use the following piece of code in their tests:
 
@@ -121,15 +121,15 @@ More frequently used operations are to Get node instance value or to Set new val
 
 To Set a node instance value use:
 
-* :cref:`cfg_set_instance() <cfg_set_instance>`;
+* :cref:`cfg_set_instance`;
 
-* :cref:`cfg_set_instance_fmt() <cfg_set_instance_fmt>`.
+* :cref:`cfg_set_instance_fmt`.
 
 Or corresponding local varsions:
 
-* :cref:`cfg_set_instance_local() <cfg_set_instance_local>`;
+* :cref:`cfg_set_instance_local`;
 
-* :cref:`cfg_set_instance_local_fmt() <cfg_set_instance_local_fmt>`.
+* :cref:`cfg_set_instance_local_fmt`.
 
 
 .. image:: /static/image/ten_conf_set_instance.png
@@ -155,20 +155,20 @@ To understand the necessity of dependencies we need to know how :ref:`Configurat
 
 You can use the following functions to Get the value of object instance node:
 
-* :cref:`cfg_get_instance() <cfg_get_instance>`;
+* :cref:`cfg_get_instance`;
 
-* :cref:`cfg_get_instance_fmt() <cfg_get_instance_fmt>`.
+* :cref:`cfg_get_instance_fmt`.
 
 .. image:: /static/image/ten_conf_get_instance.png
 	:alt: Sequence of events caused by cfg_get_instance() call
 
-Please note that :cref:`cfg_get_instance() <cfg_get_instance>` call does not cause any exchange between :ref:`Configurator <doxid-group__te__engine__conf>` and Test Agents, but rather value to return is got from local object instance database.
+Please note that :cref:`cfg_get_instance` call does not cause any exchange between :ref:`Configurator <doxid-group__te__engine__conf>` and Test Agents, but rather value to return is got from local object instance database.
 
 If you want to get the value from Test Agent you can do one of the following:
 
-* call :cref:`cfg_get_instance_sync() <cfg_get_instance_sync>` or :cref:`cfg_get_instance_sync_fmt() <cfg_get_instance_sync_fmt>` that will first synchronize object instance value with Test Agent and the return an updated value;
+* call :cref:`cfg_get_instance_sync` or :cref:`cfg_get_instance_sync_fmt` that will first synchronize object instance value with Test Agent and the return an updated value;
 
-* call :cref:`cfg_synchronize() <cfg_synchronize>` or :cref:`cfg_synchronize_fmt() <cfg_synchronize_fmt>` to synchronize a subtree of configuration nodes and then call ordinary :cref:`cfg_get_instance() <cfg_get_instance>` function.
+* call :cref:`cfg_synchronize` or :cref:`cfg_synchronize_fmt` to synchronize a subtree of configuration nodes and then call ordinary :cref:`cfg_get_instance` function.
 
 
 .. image:: /static/image/ten_conf_get_instance_sync.png

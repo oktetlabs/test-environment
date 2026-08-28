@@ -49,7 +49,7 @@ Functions with array parameters are discussed in :ref:`Using arrays of variable 
 Support RPC call on Test Engine side
 ------------------------------------
 
-First thing in supporting an RPC call is to define necessary data structures in include/tarpc.x.m4 file. According to the prototype of :cref:`rcf_rpc_call() <rcf_rpc_call>` function we can see that to issue RPC we need to pass the following information:
+First thing in supporting an RPC call is to define necessary data structures in include/tarpc.x.m4 file. According to the prototype of :cref:`rcf_rpc_call` function we can see that to issue RPC we need to pass the following information:
 
 * RPC name;
 
@@ -109,7 +109,7 @@ Any TAPI RPC function should do the following things:
 
 * fill in fields of IN arguments variable;
 
-* call :cref:`rcf_rpc_call() <rcf_rpc_call>`;
+* call :cref:`rcf_rpc_call`;
 
 * set corresponding output parameters and return value with values extracted from OUT arguments variable.
 
@@ -160,11 +160,11 @@ You should note the following things:
 
     string param_name<>;
 
-* assuming we know the range of return value from a function, we can check the return value is in range with one of macros defined in ``lib/tapi_rpc/tapi_rpc_internal.h`` file. In our case we check that the return value is more or equal to -1 using :cref:`CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE() <CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE>` macro. More generic macro to use is :cref:`CHECK_RETVAL_VAR() <CHECK_RETVAL_VAR>`, but more likely you will find some predefined specific macro;
+* assuming we know the range of return value from a function, we can check the return value is in range with one of macros defined in ``lib/tapi_rpc/tapi_rpc_internal.h`` file. In our case we check that the return value is more or equal to -1 using :cref:`CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE` macro. More generic macro to use is :cref:`CHECK_RETVAL_VAR`, but more likely you will find some predefined specific macro;
 
 * right before returning a value from a function, we should provide log message about our function call. We specify value of input and output arguments and return value;
 
-* return from a function should be done with one of macros defined in ``lib/tapi_rpc/tapi_rpc_internal.h`` file. In our case we return integer, which is why we use :cref:`RETVAL_INT() <RETVAL_INT>` macro.
+* return from a function should be done with one of macros defined in ``lib/tapi_rpc/tapi_rpc_internal.h`` file. In our case we return integer, which is why we use :cref:`RETVAL_INT` macro.
 
 A lot of RPC data types and convert functions are defined under lib/rpc_types library. Mainly this library keeps data types to use while doing RPC calls for system functions with well-known prototypes (like libc functions or functions from POSIX API). The purpose of this library is to export header files analogue to system library files.
 
@@ -226,7 +226,7 @@ In the context of code blocks represented as the second and the third argument o
 
   * func_void_ret_ptr.
 
-  The usage of the correct reference name is desired to fix compilation warning that might pop up due to implicit cast to a different function type. In our **foobar** sample we should have used func_ptr instead of ``func``, because **foobar()** function gets a pointer as the value of the first argument and returns an integer, which matches exactly :cref:`api_func_ptr` prototype. I.e. :cref:`MAKE_CALL() <MAKE_CALL>` line in **foobar** sample would be:
+  The usage of the correct reference name is desired to fix compilation warning that might pop up due to implicit cast to a different function type. In our **foobar** sample we should have used func_ptr instead of ``func``, because **foobar()** function gets a pointer as the value of the first argument and returns an integer, which matches exactly :cref:`api_func_ptr` prototype. I.e. :cref:`MAKE_CALL` line in **foobar** sample would be:
 
   .. ref-code-block:: c
 
@@ -396,7 +396,7 @@ Notes:
 
 * We copy ``out_buf`` and ``out_buf_len`` arguments from IN to OUT. You should note that for the case of RPC we must pass output arguments (if necessary) first in IN arguments data structure and then all the values function returns or updates are passed via OUT data structure (tarpc_foo_out structure). Because of this we need to copy the content of buffers that potentially could be updated by the function. Field names for such arguments should be the same in input and output arguments structures;
 
-* We use INIT_CHECKED_ARG() macro to register our ``out_buf`` for validation against out of bound update - :cref:`MAKE_CALL() <MAKE_CALL>` will automatically check that the data beyond specified buffer length is not updated;
+* We use INIT_CHECKED_ARG() macro to register our ``out_buf`` for validation against out of bound update - :cref:`MAKE_CALL` will automatically check that the data beyond specified buffer length is not updated;
 
 
 .. _doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_framework_errors:
@@ -404,7 +404,7 @@ Notes:
 Reporting errors from RPC calls
 -------------------------------
 
-Normally :cref:`MAKE_CALL() <MAKE_CALL>` macro captures errno value and saves it in ``out->common._errno``. On Test Engine side you can get this error code from RPC server structure with the help of :ref:`RPC_ERRNO() <doxid-group__te__lib__rcfrpc_1ga98b23de539d6cac225a3d5c45ce8faa7>` macro (see :ref:`Handling expected errors <doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_usage_error_handling>`). So if you implement a simple RPC wrapper over a system function, such as socket(), you do not need to worry about error reporting.
+Normally :cref:`MAKE_CALL` macro captures errno value and saves it in ``out->common._errno``. On Test Engine side you can get this error code from RPC server structure with the help of :ref:`RPC_ERRNO() <doxid-group__te__lib__rcfrpc_1ga98b23de539d6cac225a3d5c45ce8faa7>` macro (see :ref:`Handling expected errors <doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_usage_error_handling>`). So if you implement a simple RPC wrapper over a system function, such as socket(), you do not need to worry about error reporting.
 
 However in case of complex RPC calls (when you have some function implemented on TA side which can fail in different places for various reasons), returning a negative value and some system errno code may not be specific enough. In this case you can use
 
@@ -412,17 +412,17 @@ However in case of complex RPC calls (when you have some function implemented on
 
 	void te_rpc_error_set(te_errno err, const char *msg, ...);
 
-to set an error code reported to the RPC caller, together with a string describing what happened. If this function is used, the error code set by it will be reported from :cref:`MAKE_CALL() <MAKE_CALL>` instead of the errno value. Also there is
+to set an error code reported to the RPC caller, together with a string describing what happened. If this function is used, the error code set by it will be reported from :cref:`MAKE_CALL` instead of the errno value. Also there is
 
 .. ref-code-block:: c
 
 	te_errno te_rpc_error_get_num(void);
 
-which returns the error code previously set by :cref:`te_rpc_error_set() <te_rpc_error_set>`.
+which returns the error code previously set by :cref:`te_rpc_error_set`.
 
-Please note that these functions work correctly only if they are called from the same thread in which :cref:`MAKE_CALL() <MAKE_CALL>` is used.
+Please note that these functions work correctly only if they are called from the same thread in which :cref:`MAKE_CALL` is used.
 
-On the test side the error data set with :cref:`te_rpc_error_set() <te_rpc_error_set>` can be used in the following way:
+On the test side the error data set with :cref:`te_rpc_error_set` can be used in the following way:
 
 .. ref-code-block:: c
 
@@ -434,7 +434,7 @@ On the test side the error data set with :cref:`te_rpc_error_set() <te_rpc_error
 	                 RPC_ERROR_ARGS(rpcs));
 	}
 
-In this case both the error code and the error string will be printed out in verdict. The error string description can also be obtained via :cref:`RPC_ERROR_MSG() <RPC_ERROR_MSG>` macro, while :ref:`RPC_ERRNO() <doxid-group__te__lib__rcfrpc_1ga98b23de539d6cac225a3d5c45ce8faa7>` macro can be used to access the error code.
+In this case both the error code and the error string will be printed out in verdict. The error string description can also be obtained via :cref:`RPC_ERROR_MSG` macro, while :ref:`RPC_ERRNO() <doxid-group__te__lib__rcfrpc_1ga98b23de539d6cac225a3d5c45ce8faa7>` macro can be used to access the error code.
 
 
 .. _doxid-group__te__lib__rpc__tapi_1tapi_rpc_lib_usage:
@@ -456,7 +456,7 @@ Each RPC call (TAPI RPC call) can finish with success or an error. Error conditi
 
 * Test Agent crash.
 
-By default if an error occurred during RPC call, TAPI RPC interrupts test execution and passes control to test termination block. Sometimes you would expect an error to be returned by a function and you would not want a test to be terminated. To tell TAPI RPC that you expect an error condition on RPC call you can use :cref:`RPC_AWAIT_IUT_ERROR() <RPC_AWAIT_IUT_ERROR>` macro. For example:
+By default if an error occurred during RPC call, TAPI RPC interrupts test execution and passes control to test termination block. Sometimes you would expect an error to be returned by a function and you would not want a test to be terminated. To tell TAPI RPC that you expect an error condition on RPC call you can use :cref:`RPC_AWAIT_IUT_ERROR` macro. For example:
 
 .. ref-code-block:: c
 
@@ -535,7 +535,7 @@ By default RPC Server resolves symbols from Test Agent executable, which means i
 
 Here we will explain how to tell RPC Server to search RPC call symbol in user-specified library.
 
-By default a newly created RPC Server searches for symbols in Test Agent binary, but as soon as you specify an alternative library it will use that library instead. To switch to an alternative library use :cref:`rcf_rpc_setlibname() <rcf_rpc_setlibname>` function:
+By default a newly created RPC Server searches for symbols in Test Agent binary, but as soon as you specify an alternative library it will use that library instead. To switch to an alternative library use :cref:`rcf_rpc_setlibname` function:
 
 .. ref-code-block:: c
 

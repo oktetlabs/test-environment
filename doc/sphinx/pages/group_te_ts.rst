@@ -466,31 +466,31 @@ The following things should be taken into account while writing a test scenario:
 Test parameters
 ~~~~~~~~~~~~~~~
 
-The main function to process test parameters in test scenario context is :cref:`test_get_param() <test_get_param>`. It gets parameter name as an argument value and returns string value associated with that parameter.
+The main function to process test parameters in test scenario context is :cref:`test_get_param`. It gets parameter name as an argument value and returns string value associated with that parameter.
 
-Apart from base function :cref:`test_get_param() <test_get_param>` there are a number of macros that process type-specific parameters:
+Apart from base function :cref:`test_get_param` there are a number of macros that process type-specific parameters:
 
-* :cref:`TEST_GET_ENUM_PARAM() <TEST_GET_ENUM_PARAM>`;
+* :cref:`TEST_GET_ENUM_PARAM`;
 
-* :cref:`TEST_GET_STRING_PARAM() <TEST_GET_STRING_PARAM>`;
+* :cref:`TEST_GET_STRING_PARAM`;
 
-* :cref:`TEST_GET_INT_PARAM() <TEST_GET_INT_PARAM>`;
+* :cref:`TEST_GET_INT_PARAM`;
 
-* :cref:`TEST_GET_INT64_PARAM() <TEST_GET_INT64_PARAM>`;
+* :cref:`TEST_GET_INT64_PARAM`;
 
-* :cref:`TEST_GET_DOUBLE_PARAM() <TEST_GET_DOUBLE_PARAM>`;
+* :cref:`TEST_GET_DOUBLE_PARAM`;
 
-* :cref:`TEST_GET_OCTET_STRING_PARAM() <TEST_GET_OCTET_STRING_PARAM>`;
+* :cref:`TEST_GET_OCTET_STRING_PARAM`;
 
-* :cref:`TEST_GET_STRING_LIST_PARAM() <TEST_GET_STRING_LIST_PARAM>`;
+* :cref:`TEST_GET_STRING_LIST_PARAM`;
 
-* :cref:`TEST_GET_INT_LIST_PARAM() <TEST_GET_INT_LIST_PARAM>`;
+* :cref:`TEST_GET_INT_LIST_PARAM`;
 
-* :cref:`TEST_GET_BOOL_PARAM() <TEST_GET_BOOL_PARAM>`;
+* :cref:`TEST_GET_BOOL_PARAM`;
 
-* :cref:`TEST_GET_FILENAME_PARAM() <TEST_GET_FILENAME_PARAM>`;
+* :cref:`TEST_GET_FILENAME_PARAM`;
 
-* :cref:`TEST_GET_BUFF_SIZE() <TEST_GET_BUFF_SIZE>`.
+* :cref:`TEST_GET_BUFF_SIZE`.
 
 For example for the following test run (from package.xml):
 
@@ -531,7 +531,7 @@ we can have the following test scenario:
 
 Please note that variable name passed to TEST_GET_xxx_PARAM() macro shall be the same as expected parameter name.
 
-Test suite can also define parameters of enumeration type. For this kind of parameters you will need to define a macro based on :cref:`TEST_GET_ENUM_PARAM() <TEST_GET_ENUM_PARAM>`.
+Test suite can also define parameters of enumeration type. For this kind of parameters you will need to define a macro based on :cref:`TEST_GET_ENUM_PARAM`.
 
 For example if you want to specify something like the following in your package.xml files:
 

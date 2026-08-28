@@ -29,23 +29,23 @@ TCP socket emulation API is defined in ``lib/tapi_tad/ipstack/tapi_tcp.h``
 Creating and destroying TCP socket emulation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TCP socket emulation can be created with :cref:`tapi_tcp_init_connection() <tapi_tcp_init_connection>`, which returns handler of type tapi_tcp_handler_t.
+TCP socket emulation can be created with :cref:`tapi_tcp_init_connection`, which returns handler of type tapi_tcp_handler_t.
 
 This function allows to specify local and remote IP and MAC addresses. It is important that local MAC address we use should not be assigned to any host in our network, including host on which we create TCP socket emulation. Otherwise Linux can disturb our connection by replying on packets from peer. For example, it can send RST to SYN sent from peer because it does not have any listener socket for that address and port and have no idea about our TCP socket emulation.
 
 For alien MAC address to work, we should create an ARP entry for local IP address we use associating it with this MAC address. This ARP entry can be created either on test host where peer socket resides, or on a gateway host via which our hosts are connected.
 
-:ref:`Route Gateway TAPI <doxid-group__route__gw>` uses creating such ARP entry with alien MAC address to break network connection in a specified direction between two hosts connected via gateway host. So it can be easily used with TCP socket emulation: break connection from a host where tested socket resides to a host where TCP socket emulation should be created, and then use :cref:`tapi_tcp_init_connection() <tapi_tcp_init_connection>` passing to it the same alien MAC address as a local MAC.
+:ref:`Route Gateway TAPI <doxid-group__route__gw>` uses creating such ARP entry with alien MAC address to break network connection in a specified direction between two hosts connected via gateway host. So it can be easily used with TCP socket emulation: break connection from a host where tested socket resides to a host where TCP socket emulation should be created, and then use :cref:`tapi_tcp_init_connection` passing to it the same alien MAC address as a local MAC.
 
 Emulated TCP connection may be established either actively or passively.
 
 Passive connection establishment:
 
-#. Call :cref:`tapi_tcp_init_connection() <tapi_tcp_init_connection>` with mode=TAPI_TCP_SERVER.
+#. Call :cref:`tapi_tcp_init_connection` with mode=TAPI_TCP_SERVER.
 
 #. Call non-blocking connect() from peer.
 
-#. Call :cref:`tapi_tcp_wait_open() <tapi_tcp_wait_open>`.
+#. Call :cref:`tapi_tcp_wait_open`.
 
 #. Check than connect() on peer returns success.
 
@@ -53,13 +53,13 @@ Active connection establishment:
 
 #. Create listener socket on peer.
 
-#. Call :cref:`tapi_tcp_init_connection() <tapi_tcp_init_connection>` with mode=TAPI_TCP_CLIENT.
+#. Call :cref:`tapi_tcp_init_connection` with mode=TAPI_TCP_CLIENT.
 
-#. Call :cref:`tapi_tcp_wait_open() <tapi_tcp_wait_open>`.
+#. Call :cref:`tapi_tcp_wait_open`.
 
 #. Call accept() on peer.
 
-TCP socket emulation can be destroyed with :cref:`tapi_tcp_destroy_connection() <tapi_tcp_destroy_connection>`.
+TCP socket emulation can be destroyed with :cref:`tapi_tcp_destroy_connection`.
 
 
 
@@ -70,13 +70,13 @@ TCP socket emulation can be destroyed with :cref:`tapi_tcp_destroy_connection() 
 Receiving
 ~~~~~~~~~
 
-* :cref:`tapi_tcp_wait_msg() <tapi_tcp_wait_msg>` - wait for new packet for a specified amount of time. It ignores retransmits. When a packet is received, information about the last received SEQN/ACKN, FIN, RST, etc. is updated.
+* :cref:`tapi_tcp_wait_msg` - wait for new packet for a specified amount of time. It ignores retransmits. When a packet is received, information about the last received SEQN/ACKN, FIN, RST, etc. is updated.
 
-* :cref:`tapi_tcp_recv_msg() <tapi_tcp_recv_msg>` - retrieve payload and ACKN/SEQN of the next TCP packet; send ACK to it if requested. If there is no packet in queue, it waits for it for a specified amount of time.
+* :cref:`tapi_tcp_recv_msg` - retrieve payload and ACKN/SEQN of the next TCP packet; send ACK to it if requested. If there is no packet in queue, it waits for it for a specified amount of time.
 
-* :cref:`tapi_tcp_recv_msg_gen() <tapi_tcp_recv_msg_gen>` - the same as :cref:`tapi_tcp_recv_msg() <tapi_tcp_recv_msg>`, but it allows to filter out retransmits.
+* :cref:`tapi_tcp_recv_msg_gen` - the same as :cref:`tapi_tcp_recv_msg`, but it allows to filter out retransmits.
 
-* :cref:`tapi_tcp_recv_data() <tapi_tcp_recv_data>` - append all payload data received from peer to specified dynamic buffer.
+* :cref:`tapi_tcp_recv_data` - append all payload data received from peer to specified dynamic buffer.
 
 
 
@@ -87,9 +87,9 @@ Receiving
 Sending
 ~~~~~~~
 
-* :cref:`tapi_tcp_send_msg() <tapi_tcp_send_msg>` - send TCP packet with specified payload.
+* :cref:`tapi_tcp_send_msg` - send TCP packet with specified payload.
 
-* :cref:`tapi_tcp_send_template() <tapi_tcp_send_template>` - send TCP packet according to template described in ASN. Template can be created with :cref:`tapi_tcp_conn_template() <tapi_tcp_conn_template>`.
+* :cref:`tapi_tcp_send_template` - send TCP packet according to template described in ASN. Template can be created with :cref:`tapi_tcp_conn_template`.
 
 
 
@@ -98,15 +98,15 @@ Sending
 Sending TCP packets with special flags
 --------------------------------------
 
-* :cref:`tapi_tcp_send_fin() <tapi_tcp_send_fin>` - send FIN.
+* :cref:`tapi_tcp_send_fin` - send FIN.
 
-* :cref:`tapi_tcp_send_fin_ack() <tapi_tcp_send_fin_ack>` - send FIN-ACK.
+* :cref:`tapi_tcp_send_fin_ack` - send FIN-ACK.
 
-* :cref:`tapi_tcp_send_rst() <tapi_tcp_send_rst>` - send RST.
+* :cref:`tapi_tcp_send_rst` - send RST.
 
-* :cref:`tapi_tcp_send_ack() <tapi_tcp_send_ack>` - send ACK with specified ACKN.
+* :cref:`tapi_tcp_send_ack` - send ACK with specified ACKN.
 
-* :cref:`tapi_tcp_ack_all() <tapi_tcp_ack_all>` - send ACK to all data received.
+* :cref:`tapi_tcp_ack_all` - send ACK to all data received.
 
 
 
@@ -119,23 +119,23 @@ Sending TCP packets with special flags
 Obtaining information about TCP connection
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* :cref:`tapi_tcp_last_seqn_got() <tapi_tcp_last_seqn_got>` - get last SEQN received from a peer.
+* :cref:`tapi_tcp_last_seqn_got` - get last SEQN received from a peer.
 
-* :cref:`tapi_tcp_last_ackn_got() <tapi_tcp_last_ackn_got>` - get last ACKN received from a peer.
+* :cref:`tapi_tcp_last_ackn_got` - get last ACKN received from a peer.
 
-* :cref:`tapi_tcp_last_win_got() <tapi_tcp_last_win_got>` - get last TCP window size received from a peer.
+* :cref:`tapi_tcp_last_win_got` - get last TCP window size received from a peer.
 
-* :cref:`tapi_tcp_fin_got() <tapi_tcp_fin_got>` - check whether FIN was received from a peer.
+* :cref:`tapi_tcp_fin_got` - check whether FIN was received from a peer.
 
-* :cref:`tapi_tcp_rst_got() <tapi_tcp_rst_got>` - check wheter RST was received from a peer.
+* :cref:`tapi_tcp_rst_got` - check wheter RST was received from a peer.
 
-* :cref:`tapi_tcp_last_seqn_sent() <tapi_tcp_last_seqn_sent>` - get last SEQN sent to a peer.
+* :cref:`tapi_tcp_last_seqn_sent` - get last SEQN sent to a peer.
 
-* :cref:`tapi_tcp_last_ackn_sent() <tapi_tcp_last_ackn_sent>` - get last ACKN sent to a peer.
+* :cref:`tapi_tcp_last_ackn_sent` - get last ACKN sent to a peer.
 
-* :cref:`tapi_tcp_next_seqn() <tapi_tcp_next_seqn>` - next SEQN to be sent to a peer.
+* :cref:`tapi_tcp_next_seqn` - next SEQN to be sent to a peer.
 
-* :cref:`tapi_tcp_next_ackn() <tapi_tcp_next_ackn>` - next ACKN to be sent to a peer.
+* :cref:`tapi_tcp_next_ackn` - next ACKN to be sent to a peer.
 
 
 

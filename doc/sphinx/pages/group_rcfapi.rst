@@ -37,28 +37,28 @@ For test scenarios we can use RCF API for:
 
 * manipulation of environment variables:
 
-  * :cref:`rcf_ta_get_var() <rcf_ta_get_var>`;
+  * :cref:`rcf_ta_get_var`;
 
-  * :cref:`rcf_ta_set_var() <rcf_ta_set_var>`.
+  * :cref:`rcf_ta_set_var`.
 
 * manipulation of files on Test Agent side:
 
-  * :cref:`rcf_ta_get_file() <rcf_ta_get_file>`;
+  * :cref:`rcf_ta_get_file`;
 
-  * :cref:`rcf_ta_put_file() <rcf_ta_put_file>`;
+  * :cref:`rcf_ta_put_file`;
 
-  * :cref:`rcf_ta_del_file() <rcf_ta_del_file>`.
+  * :cref:`rcf_ta_del_file`.
 
 * calling a function on Test Agent side (do not mix it with RPC calls):
 
-  * :cref:`rcf_ta_call() <rcf_ta_call>`.
+  * :cref:`rcf_ta_call`.
 
 * process and thread manipulation on Test Agent side:
 
-  * :cref:`rcf_ta_start_task() <rcf_ta_start_task>`;
+  * :cref:`rcf_ta_start_task`;
 
-  * :cref:`rcf_ta_kill_task() <rcf_ta_kill_task>`;
+  * :cref:`rcf_ta_kill_task`;
 
-  * :cref:`rcf_ta_start_thread() <rcf_ta_start_thread>`;
+  * :cref:`rcf_ta_start_thread`;
 
-  * :cref:`rcf_ta_kill_thread() <rcf_ta_kill_thread>`.
+  * :cref:`rcf_ta_kill_thread`.

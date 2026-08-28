@@ -282,7 +282,7 @@ Imagine that the test **foobar** is expected to fail because of socket creation 
 	  </results>
 	</iter>
 
-**Verdict** is a special message which test produces during it's execution. It can be just before failure or at the middle. It's produced with :cref:`TEST_VERDICT() <TEST_VERDICT>` call.
+**Verdict** is a special message which test produces during it's execution. It can be just before failure or at the middle. It's produced with :cref:`TEST_VERDICT` call.
 
 
 

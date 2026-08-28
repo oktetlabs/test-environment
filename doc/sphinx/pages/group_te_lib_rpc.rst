@@ -37,9 +37,9 @@ Any RPC call is done in the context of RPC Server. RPC Server is a separate proc
 
 In order to create or delete an RPC Server, functions from RCF RPC library should be used:
 
-* :cref:`rcf_rpc_server_create() <rcf_rpc_server_create>` - to create an RPC Server with particular name on the particular Test Agent;
+* :cref:`rcf_rpc_server_create` - to create an RPC Server with particular name on the particular Test Agent;
 
-* :cref:`rcf_rpc_server_destroy() <rcf_rpc_server_destroy>` - to destroy an RPC Server.
+* :cref:`rcf_rpc_server_destroy` - to destroy an RPC Server.
 
 Creating and deleting an RPC Server is done via Configurator management tree. On Test Agent side this causes RCF PCH library to pass control to corresponding configuration model handlers - **/agent/rpcserver** node.
 
@@ -52,23 +52,23 @@ Each RPC Server has its own communication link with Test Agent process. On RPC S
 
 There are the following functions available for creating RPC Server in different contexts:
 
-* :cref:`rcf_rpc_server_create() <rcf_rpc_server_create>`;
+* :cref:`rcf_rpc_server_create`;
 
-* :cref:`rcf_rpc_server_thread_create() <rcf_rpc_server_thread_create>`;
+* :cref:`rcf_rpc_server_thread_create`;
 
-* :cref:`rcf_rpc_server_fork() <rcf_rpc_server_fork>`;
+* :cref:`rcf_rpc_server_fork`;
 
-* :cref:`rcf_rpc_server_fork_exec() <rcf_rpc_server_fork_exec>`;
+* :cref:`rcf_rpc_server_fork_exec`;
 
-* :cref:`rcf_rpc_server_create_process() <rcf_rpc_server_create_process>`;
+* :cref:`rcf_rpc_server_create_process`;
 
 Each RPC Server can be switched to use a particular dynamic library on function name resolution during RPC call operation. To change dynamic library name the following function shall be used:
 
-* :cref:`rcf_rpc_setlibname() <rcf_rpc_setlibname>`.
+* :cref:`rcf_rpc_setlibname`.
 
 Once you have an RPC Server handle you are ready to do RPC call by means of the following function:
 
-* :cref:`rcf_rpc_call() <rcf_rpc_call>`.
+* :cref:`rcf_rpc_call`.
 
 For more information on functions exported by RCF RPC library refer to :ref:`API: RCF RPC <doxid-group__te__lib__rcfrpc>`.
 
@@ -78,4 +78,4 @@ For more information on functions exported by RCF RPC library refer to :ref:`API
 TAPI for RPC
 ~~~~~~~~~~~~
 
-Test code should not use :cref:`rcf_rpc_call() <rcf_rpc_call>` function directly, but instead it shall use functions exported by :ref:`RPC call wrappers <doxid-group__te__lib__rpc__tapi>`.
+Test code should not use :cref:`rcf_rpc_call` function directly, but instead it shall use functions exported by :ref:`RPC call wrappers <doxid-group__te__lib__rpc__tapi>`.

@@ -27,7 +27,7 @@ To store all variables related to route gateway configuration, :ref:`tapi_route_
 
 Macro TAPI_DECLARE_ROUTE_GATEWAY_PARAMS can be used to declare all test parameters related to route gateway configuration, such as RPC servers, network interfaces and addresses. It should be used together with macro TAPI_GET_ROUTE_GATEWAY_PARAMS which allows to get all these parameters from environment. Also macro TAPI_INIT_ROUTE_GATEWAY is declared which can be used to initialize route gateway variable with values obtained by TAPI_GET_ROUTE_GATEWAY_PARAMS.
 
-After initializing route gateway, use :cref:`tapi_route_gateway_configure() <tapi_route_gateway_configure>` to configure forwarding through gateway host. It creates two routes, from IUT to Tester on IUT and from Tester to IUT on Tester, and enables IPv4 forwarding on gateway host.
+After initializing route gateway, use :cref:`tapi_route_gateway_configure` to configure forwarding through gateway host. It creates two routes, from IUT to Tester on IUT and from Tester to IUT on Tester, and enables IPv4 forwarding on gateway host.
 
 .. ref-code-block:: cpp
 
@@ -42,7 +42,7 @@ After initializing route gateway, use :cref:`tapi_route_gateway_configure() <tap
 
 	CHECK_RC(tapi_route_gateway_configure(&gw));
 
-These marcos can be used only if your environment defines parameters with names hardcoded in these macros (for example RPC server on IUT is named pco_iut). If this is not true, you should instead declare and obtain all test parameters manually and then use :cref:`tapi_route_gateway_init() <tapi_route_gateway_init>` instead of TAPI_INIT_ROUTE_GATEWAY to initialize route gateway.
+These marcos can be used only if your environment defines parameters with names hardcoded in these macros (for example RPC server on IUT is named pco_iut). If this is not true, you should instead declare and obtain all test parameters manually and then use :cref:`tapi_route_gateway_init` instead of TAPI_INIT_ROUTE_GATEWAY to initialize route gateway.
 
 
 
@@ -55,27 +55,27 @@ Breaking and repairing network connection
 
 Route Gateway TAPI allows to break network connection with the following methods:
 
-* :cref:`tapi_route_gateway_set_forwarding() <tapi_route_gateway_set_forwarding>` allows to disable forwarding on gateway, breaking connection in both directions.
+* :cref:`tapi_route_gateway_set_forwarding` allows to disable forwarding on gateway, breaking connection in both directions.
 
-* :cref:`tapi_route_gateway_break_gw_iut() <tapi_route_gateway_break_gw_iut>` breaks connection gateway -> IUT.
+* :cref:`tapi_route_gateway_break_gw_iut` breaks connection gateway -> IUT.
 
-* :cref:`tapi_route_gateway_break_iut_gw() <tapi_route_gateway_break_iut_gw>` breaks connection IUT -> gateway.
+* :cref:`tapi_route_gateway_break_iut_gw` breaks connection IUT -> gateway.
 
-* :cref:`tapi_route_gateway_break_gw_tst() <tapi_route_gateway_break_gw_tst>` breaks connection gateway -> Tester.
+* :cref:`tapi_route_gateway_break_gw_tst` breaks connection gateway -> Tester.
 
-* :cref:`tapi_route_gateway_break_tst_gw() <tapi_route_gateway_break_tst_gw>` breaks connection Tester -> gateway.
+* :cref:`tapi_route_gateway_break_tst_gw` breaks connection Tester -> gateway.
 
 Broken network connection then can be repaired by using corresponding repair method:
 
-* :cref:`tapi_route_gateway_set_forwarding() <tapi_route_gateway_set_forwarding>` with enabled=true.
+* :cref:`tapi_route_gateway_set_forwarding` with enabled=true.
 
-* :cref:`tapi_route_gateway_repair_gw_iut() <tapi_route_gateway_repair_gw_iut>`.
+* :cref:`tapi_route_gateway_repair_gw_iut`.
 
-* :cref:`tapi_route_gateway_repair_iut_gw() <tapi_route_gateway_repair_iut_gw>`.
+* :cref:`tapi_route_gateway_repair_iut_gw`.
 
-* :cref:`tapi_route_gateway_repair_gw_tst() <tapi_route_gateway_repair_gw_tst>`.
+* :cref:`tapi_route_gateway_repair_gw_tst`.
 
-* :cref:`tapi_route_gateway_repair_tst_gw() <tapi_route_gateway_repair_tst_gw>`.
+* :cref:`tapi_route_gateway_repair_tst_gw`.
 
 
 

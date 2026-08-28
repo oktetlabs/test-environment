@@ -103,7 +103,7 @@ Architecture
 Normal way of collecting logs from a remote host is via Test Agent. A
 process forked from TA sends logs to TA; TA stores them in a buffer. Logger
 regularly collects accumulated logs from TA with help of
-:cref:`rcf_ta_get_log() <rcf_ta_get_log>`.
+:cref:`rcf_ta_get_log`.
 
 Unfortunately core watcher cannot use this mechanism as Test Agent itself
 may crash producing a core dump, in which case logging anything about

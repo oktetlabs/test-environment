@@ -122,13 +122,13 @@ There are two ways to organize TEN<->TA communication channel:
 
 The following two functions can be used (alternatively) to create a network namespace and configure the options above accordingly:
 
-#. :cref:`tapi_netns_create_ns_with_macvlan() <tapi_netns_create_ns_with_macvlan>`
+#. :cref:`tapi_netns_create_ns_with_macvlan`
 
-#. :cref:`tapi_netns_create_ns_with_net_channel() <tapi_netns_create_ns_with_net_channel>`
+#. :cref:`tapi_netns_create_ns_with_net_channel`
 
-Then function :cref:`tapi_netns_add_ta() <tapi_netns_add_ta>` can be used to create test agent in the prepared namespace.
+Then function :cref:`tapi_netns_add_ta` can be used to create test agent in the prepared namespace.
 
-Note, function :cref:`tapi_netns_destroy_ns_with_macvlan() <tapi_netns_destroy_ns_with_macvlan>` must be called (in epilogue) to neutralise :cref:`tapi_netns_create_ns_with_macvlan() <tapi_netns_create_ns_with_macvlan>` configurations.
+Note, function :cref:`tapi_netns_destroy_ns_with_macvlan` must be called (in epilogue) to neutralise :cref:`tapi_netns_create_ns_with_macvlan` configurations.
 
 
 
@@ -260,13 +260,13 @@ Test API to manage system parameters
 
 There is Configurator subtree /agent/sys which is used to control system parameters (like files /proc/sys/net in linux). Some options may absent in auxiliary network namespace, but exist in default namespace. In this case a test writer can be interested in getting or setting an option in default net namespace if it does not exist in the target agent namespace. The following four TAPI functions help to do it:
 
-* :cref:`tapi_cfg_sys_ns_get_int() <tapi_cfg_sys_ns_get_int>`
+* :cref:`tapi_cfg_sys_ns_get_int`
 
-* :cref:`tapi_cfg_sys_ns_set_int() <tapi_cfg_sys_ns_set_int>`
+* :cref:`tapi_cfg_sys_ns_set_int`
 
-* :cref:`tapi_cfg_sys_ns_get_str() <tapi_cfg_sys_ns_get_str>`
+* :cref:`tapi_cfg_sys_ns_get_str`
 
-* :cref:`tapi_cfg_sys_ns_set_str() <tapi_cfg_sys_ns_set_str>`
+* :cref:`tapi_cfg_sys_ns_set_str`
 
 
 
@@ -294,9 +294,9 @@ Test API to set interface MTU
 
 There are TAPI functions to set MTU on the interface and on its relatives if required:
 
-* :cref:`tapi_set_if_mtu_smart() <tapi_set_if_mtu_smart>`
+* :cref:`tapi_set_if_mtu_smart`
 
-* :cref:`tapi_set_if_mtu_smart2() <tapi_set_if_mtu_smart2>`, :cref:`tapi_set_if_mtu_smart2_rollback() <tapi_set_if_mtu_smart2_rollback>`
+* :cref:`tapi_set_if_mtu_smart2`, :cref:`tapi_set_if_mtu_smart2_rollback`
 
-Note, Configurator may fail to roll back MTU changes in some complex interface configuration schemas. In this case it is worth to use function :cref:`tapi_set_if_mtu_smart2() <tapi_set_if_mtu_smart2>` to apply MTU changes and then function :cref:`tapi_set_if_mtu_smart2_rollback() <tapi_set_if_mtu_smart2_rollback>` to undo them.
+Note, Configurator may fail to roll back MTU changes in some complex interface configuration schemas. In this case it is worth to use function :cref:`tapi_set_if_mtu_smart2` to apply MTU changes and then function :cref:`tapi_set_if_mtu_smart2_rollback` to undo them.
 
