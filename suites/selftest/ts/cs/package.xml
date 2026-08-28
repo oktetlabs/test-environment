@@ -260,6 +260,13 @@
         </run>
 
         <run>
+            <script name="ta_conf_demo"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT}}}</value>
+            </arg>
+        </run>
+
+        <run>
             <script name="user"/>
             <arg name="env">
                 <value>{{{'pco_iut':IUT}}}</value>
