@@ -199,6 +199,35 @@ function generate_sphinx_only()
     return ${status}
 }
 
+# The manual is developed against the doxyrest that
+# scripts/doxyrest_deploy.sh installs.  Releases differ in ways that stay
+# invisible until someone compares the output -- 2.1.3 understands a
+# :cref: spelling 2.1.2 silently fails to resolve, for one -- so name the
+# version that produced this build and say when it is not the expected
+# one.  A different release still builds, so this warns rather than stops.
+function report_doxyrest_version()
+{
+    local pinned actual
+
+    pinned=$(sed -n 's/.*doxyrest-\([0-9][0-9.]*\)-linux.*/\1/p' \
+             "${TE_BASE}/scripts/doxyrest_deploy.sh" 2>/dev/null | head -1)
+    actual=$("$DOXYREST_BIN" --version 2>/dev/null |
+             sed -n 's/.*[ v]\([0-9]\+\.[0-9.]*[0-9]\).*/\1/p' | head -1)
+
+    if [ -z "$actual" ]; then
+        echo "doxyrest: version unknown ($DOXYREST_BIN)" >&2
+        return 0
+    fi
+
+    echo "doxyrest: $actual" >&2
+
+    if [ -n "$pinned" ] && [ "$actual" != "$pinned" ]; then
+        echo "warning: this is not the doxyrest $pinned that" >&2
+        echo "         scripts/doxyrest_deploy.sh installs, so the manual" >&2
+        echo "         may build differently here than it does elsewhere" >&2
+    fi
+}
+
 function generate_sphinx_doc()
 {
     if [ -z "$DOXYREST_PREFIX" ]; then
@@ -206,6 +235,7 @@ function generate_sphinx_doc()
         exit -1
     fi
     [ -z "$DOXYREST_BIN" ] && DOXYREST_BIN="$DOXYREST_PREFIX/bin/doxyrest"
+    report_doxyrest_version
     check_sphinx_binary
 
     ( cat Doxyfile ;
