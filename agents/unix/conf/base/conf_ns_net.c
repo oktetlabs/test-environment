@@ -49,7 +49,7 @@
 #include "conf_common.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
-#include "te_string.h"
+#include "rcf_pch_tree.h"
 #include "te_alloc.h"
 #include "agentlib.h"
 #include "unix_internal.h"
@@ -63,9 +63,6 @@
 
 /* Format string of a network namespace file descriptor. */
 #define NETNS_FDS_FMT NETNS_FDS_DIR "/%s"
-
-/* Buffer size to keep namespaces list. */
-#define NETNS_LIST_BUF_SIZE 4096
 
 /**
  * Close network namespace file descriptor @p _fd, return @b te_errno from a
@@ -256,29 +253,19 @@ netns_namespace_del(const char *ns_name)
 /**
  * Move a network interface to a network namespace.
  *
- * @param gid       Group identifier (unused).
- * @param oid       Full object instance identifier (unused).
- * @param value     The object value (unused).
- * @param ns        Namespace configurator instance (unused).
- * @param ns_name   The namespace name.
- * @param if_name   The interface name.
+ * @param ctx       Request context.
  *
  * @return Status code.
  */
 static te_errno
-netns_interface_add(unsigned int gid, const char *oid, const char *value,
-                    const char *ns, const char *ns_name,
-                    const char *if_name)
+netns_interface_add(const ta_conf_ctx *ctx)
 {
+    const char      *ns_name = ta_conf_ctx_inst(ctx, "net");
+    const char      *if_name = ta_conf_ctx_inst(ctx, "interface");
     netns_namespace *netns;
     netns_interface *netif;
     te_errno         rc;
     int              fd;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(ns);
-    UNUSED(value);
 
     rc = netns_get_fd(ns_name, &fd);
     if (rc != 0)
@@ -380,18 +367,15 @@ netns_unset_interface_process(const char *ns_name, const char *if_name)
  * Move a network interface from network namespace @p ns_name to the parent
  * process namespace.
  *
- * @param gid       Group identifier (unused).
- * @param oid       Full object instance identifier (unused).
- * @param ns        Namespace configurator instance (unused).
- * @param ns_name   The namespace name.
- * @param if_name   The interface name.
+ * @param ctx       Request context.
  *
  * @return Status code.
  */
 static te_errno
-netns_interface_del(unsigned int gid, const char *oid, const char *ns,
-                    const char *ns_name, const char *if_name)
+netns_interface_del(const ta_conf_ctx *ctx)
 {
+    const char      *ns_name = ta_conf_ctx_inst(ctx, "net");
+    const char      *if_name = ta_conf_ctx_inst(ctx, "interface");
     netns_namespace *netns;
     netns_interface *netif;
     te_errno         rc;
@@ -399,10 +383,6 @@ netns_interface_del(unsigned int gid, const char *oid, const char *ns,
     int              status;
     int              argc = 2;
     const char      *params[argc];
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(ns);
 
     params[0] = ns_name;
     params[1] = if_name;
@@ -443,29 +423,18 @@ netns_interface_del(unsigned int gid, const char *oid, const char *ns,
 /**
  * Get list of network interfaces moved to a namespace.
  *
- * @param gid       Group identifier (unused).
- * @param oid       Full identifier of the father instance (unused).
- * @param sub_id    ID of the object to be listed (unused).
- * @param list      Where to save the list.
- * @param ns        Namespace configurator instance (unused).
- * @param ns_name   The namespace name.
+ * @param ctx       Request context.
+ * @param names     Vector of heap-allocated names to append to.
  *
  * @return Status code.
  */
 static te_errno
-netns_interface_list(unsigned int gid, const char *oid,
-                     const char *sub_id, char **list,
-                     const char *ns, const char *ns_name)
+netns_interface_list(const ta_conf_ctx *ctx, te_vec *names)
 {
+    const char      *ns_name = ta_conf_ctx_inst(ctx, "net");
     netns_namespace *netns;
     netns_interface *netif;
-    te_string        te_str = TE_STRING_INIT;
     te_errno         rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(ns);
 
     rc = netns_namespace_find_by_name(ns_name, &netns);
     if (rc != 0)
@@ -473,10 +442,10 @@ netns_interface_list(unsigned int gid, const char *oid,
 
     SLIST_FOREACH(netif, &netns->ifs_h, ent_l)
     {
-        te_string_append(&te_str, "%s ", netif->name);
-    }
+        char *name = TE_STRDUP(netif->name);
 
-    *list = te_str.ptr;
+        TE_VEC_APPEND(names, name);
+    }
 
     return 0;
 }
@@ -580,28 +549,19 @@ netns_create_process(const char *ns_name)
 /**
  * Add new network namespace.
  *
- * @param gid       Group identifier (unused).
- * @param oid       Full object instance identifier (unused).
- * @param value     The object value (unused).
- * @param ns        Namespace configurator instance (unused).
- * @param ns_name   The namespace name.
+ * @param ctx       Request context.
  *
  * @return      Status code.
  */
 static te_errno
-netns_add(unsigned int gid, const char *oid, const char *value,
-          const char *ns, const char *ns_name)
+netns_add(const ta_conf_ctx *ctx)
 {
+    const char      *ns_name = ta_conf_ctx_inst(ctx, "net");
     te_errno         rc;
     pid_t            pid;
     int              status;
     int              argc = 1;
     const char      *params[argc];
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(ns);
-    UNUSED(value);
 
     params[0] = ns_name;
 
@@ -632,23 +592,16 @@ netns_add(unsigned int gid, const char *oid, const char *value,
 /**
  * Delete a network namespace.
  *
- * @param gid       Group identifier (unused).
- * @param oid       Full object instance identifier (unused).
- * @param ns        Namespace configurator instance (unused).
- * @param ns_name   The namespace name.
+ * @param ctx       Request context.
  *
  * @return      Status code.
  */
 static te_errno
-netns_del(unsigned int gid, const char *oid, const char *ns,
-          const char *ns_name)
+netns_del(const ta_conf_ctx *ctx)
 {
+    const char      *ns_name = ta_conf_ctx_inst(ctx, "net");
     char             netns_path[RCF_MAX_PATH];
     int              rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(ns);
 
     snprintf(netns_path, RCF_MAX_PATH, NETNS_FDS_FMT, ns_name);
 
@@ -689,28 +642,20 @@ netns_check_rsrc_cb(const char *ns_name, void *data)
 /**
  * Get list of network namespaces.
  *
- * @param gid     Group identifier (unused).
- * @param oid     Full identifier of the father instance (unused).
- * @param sub_id  ID of the object to be listed (unused).
- * @param list    Where to save the list.
- * @param ns      Namespace configurator instance (unused).
+ * @param ctx     Request context (unused).
+ * @param names   Vector of heap-allocated names to append to.
  *
  * @return Status code.
  */
 static te_errno
-netns_list(unsigned int gid, const char *oid,
-           const char *sub_id, char **list, const char *ns)
+netns_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_errno  rc;
-    char      list_buf[NETNS_LIST_BUF_SIZE];
+    te_errno rc;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(ns);
+    UNUSED(ctx);
 
-    rc = get_dir_list(NETNS_FDS_DIR, list_buf, sizeof(list_buf), true,
-                      &netns_check_rsrc_cb, NULL, NULL);
+    rc = get_dir_list_vec(NETNS_FDS_DIR, names, true,
+                          &netns_check_rsrc_cb, NULL, NULL);
     if (rc != 0)
     {
         if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
@@ -720,19 +665,14 @@ netns_list(unsigned int gid, const char *oid,
         return rc;
     }
 
-    if ((*list = strdup(list_buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
     return 0;
 }
 
 
-RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface", NULL, NULL,
-                            netns_interface_add, netns_interface_del,
-                            netns_interface_list, NULL);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_netns, "net", &node_interface, NULL,
-                            netns_add, netns_del, netns_list, NULL);
+static const ta_conf_node *const node_netns =
+    TA_CONF_COLL("net", netns_add, netns_del, netns_list,
+        TA_CONF_COLL("interface", netns_interface_add, netns_interface_del,
+                     netns_interface_list));
 
 /**
  * Grab a network namespace resource hook.
@@ -789,7 +729,7 @@ ta_unix_conf_ns_net_init(void)
 {
     te_errno rc;
 
-    rc = rcf_pch_add_node("/agent/namespace/", &node_netns);
+    rc = ta_conf_register("/agent/namespace/", node_netns);
     if (rc != 0)
         return rc;
 
