@@ -43,16 +43,17 @@
 
 #include "rcf_pch.h"
 #include "rcf_ch_api.h"
+#include "rcf_pch_tree.h"
 #include "conf_common.h"
 #include "unix_internal.h"
 #include "logger_api.h"
 #include "te_alloc.h"
 #include "te_str.h"
 #include "te_string.h"
+#include "te_vector.h"
 
 /* Auxiliary buffer used to construct strings. */
 static char buf[4096];
-static te_string buf_te_str = TE_STRING_BUF_INIT(buf);
 
 #define TE_MODULE_NAME_LEN 32
 #define TE_MODULE_PARAM_NAME_LEN 32
@@ -94,130 +95,6 @@ typedef struct te_kernel_module {
 /* List of modules */
 static LIST_HEAD(te_kernel_modules, te_kernel_module) modules;
 
-
-static te_errno module_list(unsigned int, const char *,
-                            const char *, char **);
-static te_errno module_del(unsigned int gid, const char *oid,
-                           const char *mod_name);
-static te_errno module_add(unsigned int gid, const char *oid,
-                           const char *mod_value, const char *mod_name);
-
-static te_errno module_loaded_set(unsigned int gid, const char *oid,
-                                  char *value, char *mod_name);
-static te_errno module_loaded_get(unsigned int gid, const char *oid,
-                                  char *value, char *mod_name);
-static te_errno module_loaded_oper_get(unsigned int gid, const char *oid,
-                                       char *value, char *mod_name);
-static te_errno module_filename_set(unsigned int gid, const char *oid,
-                                    const char *value,
-                                    const char *mod_name,...);
-static te_errno module_filename_get(unsigned int gid, const char *oid,
-                                    char *value, const char *mod_name,...);
-
-static te_errno module_version_get(unsigned int gid, const char *oid,
-                                   char *value, const char *module_name);
-
-static te_errno module_unload_holders_get(unsigned int gid, const char *oid,
-                                          char *value, const char *mod_name,
-                                          ...);
-static te_errno module_unload_holders_set(unsigned int gid, const char *oid,
-                                          const char *value,
-                                          const char *mod_name, ...);
-
-static te_errno module_filename_load_dependencies_get(unsigned int  gid,
-                                                      const char   *oid,
-                                                      char         *value,
-                                                      const char   *mod_name);
-
-static te_errno module_filename_load_dependencies_set(unsigned int  gid,
-                                                      const char   *oid,
-                                                      const char   *value,
-                                                      const char   *mod_name);
-
-static te_errno module_param_list(unsigned int, const char *,
-                                  const char *, char **,
-                                  const char *);
-static te_errno module_param_get(unsigned int, const char *, char *,
-                                 const char *, const char *);
-static te_errno module_param_set(unsigned int, const char *, const char *,
-                                 const char *, const char *);
-static te_errno module_param_add(unsigned int gid, const char *oid,
-                                 const char *param_value,
-                                 const char *mod_name,
-                                 const char *param_name,...);
-static te_errno module_param_del(unsigned int gid, const char *oid,
-                                 const char *param_name,
-                                 const char *mod_name,...);
-static te_errno module_filename_fallback_get(unsigned int gid, const char *oid,
-                                             char *value,
-                                             const char *mod_name, ...);
-static te_errno module_filename_fallback_set(unsigned int gid, const char *oid,
-                                             const char *value,
-                                             const char *mod_name, ...);
-
-static te_errno module_driver_list(unsigned int gid, const char *oid,
-                                   const char *sub_id, char **list,
-                                   const char *module_name);
-
-static te_errno driver_device_list(unsigned int gid, const char *oid,
-                                   const char *sub_id, char **list,
-                                   const char *module_name,
-                                   const char *driver_name);
-static te_errno driver_device_get(unsigned int gid, const char *oid,
-                                  char *value,
-                                  const char *module_name,
-                                  const char *driver_name,
-                                  const char *device_name);
-
-RCF_PCH_CFG_NODE_RW(node_filename_fallback,
-                    "fallback", NULL, NULL,
-                    module_filename_fallback_get,
-                    module_filename_fallback_set);
-
-RCF_PCH_CFG_NODE_RW(node_filename_load_dependencies,
-                    "load_dependencies", NULL, &node_filename_fallback,
-                    module_filename_load_dependencies_get,
-                    module_filename_load_dependencies_set);
-
-RCF_PCH_CFG_NODE_RW(node_filename, "filename",
-                    &node_filename_load_dependencies, NULL,
-                    module_filename_get, module_filename_set);
-
-RCF_PCH_CFG_NODE_RO(node_version, "version",
-                    NULL, &node_filename,
-                    module_version_get);
-
-RCF_PCH_CFG_NODE_RW(node_module_unload_holders, "unload_holders",
-                    NULL, &node_version,
-                    module_unload_holders_get, module_unload_holders_set);
-
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_module_param, "parameter",
-                               NULL, &node_module_unload_holders,
-                               module_param_get, module_param_set,
-                               module_param_add, module_param_del,
-                               module_param_list, NULL);
-
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_driver_device, "device", NULL,
-                               NULL, &driver_device_get,
-                               &driver_device_list);
-
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_module_driver, "driver",
-                               &node_driver_device,
-                               &node_module_param, NULL,
-                               &module_driver_list);
-
-RCF_PCH_CFG_NODE_RW(node_module_loaded, "loaded",
-                    NULL, &node_module_driver,
-                    module_loaded_get, module_loaded_set);
-
-RCF_PCH_CFG_NODE_RO(node_module_loaded_oper, "loaded_oper",
-                    NULL, &node_module_loaded,
-                    module_loaded_oper_get);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_module, "module",
-                            &node_module_loaded_oper, NULL,
-                            module_add, module_del,
-                            module_list, NULL);
 
 static bool
 module_is_exclusive_locked(const char *name)
@@ -474,8 +351,7 @@ filter_pci_addrs_cb(const char *fn, void *data)
  * List file names inside some folder under /sys/<module>/.
  *
  * @param module_name       Kernel module name
- * @param buf               Buffer where to save list of file names
- * @param len               Size of the buffer
+ * @param names             Vector of heap-allocated names to append to
  * @param include_cb        Callback to use for filtering file names
  * @param cb_data           Data passed to the callback
  * @param fmt               Format string and arguments for a relative
@@ -484,7 +360,7 @@ filter_pci_addrs_cb(const char *fn, void *data)
  * @return Status code.
  */
 static te_errno
-get_module_subdir_list(const char *module_name, char *buf, size_t len,
+get_module_subdir_list(const char *module_name, te_vec *names,
                        include_callback_func include_cb,
                        void *cb_data, const char *fmt, ...)
 {
@@ -503,8 +379,8 @@ get_module_subdir_list(const char *module_name, char *buf, size_t len,
     te_string_append_va(&path_str, fmt, ap);
     va_end(ap);
 
-    rc = get_dir_list(path_str.ptr, buf, len, true,
-                      include_cb, cb_data, NULL);
+    rc = get_dir_list_vec(path_str.ptr, names, true,
+                          include_cb, cb_data, NULL);
 
     te_string_free(&path_str);
     return rc;
@@ -697,78 +573,68 @@ mod_consistentcy_check(te_kernel_module *module, bool loaded)
 /**
  * Get list of module names.
  *
- * @param gid           Group identifier (unused).
- * @param oid           Full identifier of the father instance (unused).
- * @param sub_id        ID of the object to be listed (unused).
- * @param list          Where to save the list.
+ * @param ctx           request context
+ * @param names         vector of heap-allocated names to append to
  *
  * @return Status code.
  */
 static te_errno
-module_list(unsigned int gid, const char *oid,
-            const char *sub_id, char **list)
+module_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    UNUSED(ctx);
 
 #ifdef __linux__
+    te_kernel_module *module;
+
+    LIST_FOREACH(module, &modules, list)
     {
-        te_kernel_module *module;
+        char *name = TE_STRDUP(module->name);
 
-        te_string_reset(&buf_te_str);
-
-        LIST_FOREACH(module, &modules, list)
-            te_string_append(&buf_te_str, "%s ", module->name);
+        TE_VEC_APPEND(names, name);
     }
+
+    return 0;
 #else
     ERROR("%s(): getting list of system modules "
           "is supported only for Linux", __FUNCTION__);
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
-
-    if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    return 0;
 }
 
 /**
  * Get module version.
  *
- * @param gid           Group identifier (unused).
- * @param oid           Full identifier of the father instance (unused).
- * @param value         Where to save the version string.
- * @param module_name   Name of the module.
+ * @param ctx           request context
+ * @param val           location for the version string
  *
  * @return Status code.
  */
 static te_errno
-module_version_get(unsigned int gid, const char *oid, char *value,
-                   const char *module_name)
+module_version_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    const char *module_name = ta_conf_ctx_inst(ctx, "module");
 
 #if __linux__
     char name[TE_MODULE_NAME_LEN];
+    char version[RCF_MAX_VAL];
     te_errno rc;
 
     if (!mod_loaded(module_name))
-    {
-        *value = '\0';
         return 0;
-    }
 
     rc = mod_name_underscorify(module_name, name, sizeof(name));
     if (rc != 0)
         return rc;
 
-    return read_sys_value(value, RCF_MAX_VAL, true,
-                          SYS_MODULE "/%s/version",
-                          name);
+    rc = read_sys_value(version, RCF_MAX_VAL, true,
+                        SYS_MODULE "/%s/version",
+                        name);
+    if (rc != 0)
+        return rc;
+
+    te_string_append(val, "%s", version);
+    return 0;
 #else
-    UNUSED(value);
     UNUSED(module_name);
 
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -838,47 +704,43 @@ verify_loaded_module_params(const te_kernel_module *module)
 /**
  * Get list of module parameter names.
  *
- * @param gid           Group identifier (unused).
- * @param oid           Full identifier of the father instance (unused).
- * @param sub_id        ID of the object to be listed (unused).
- * @param list          Where to save the list.
- * @param module_name   Name of the module.
+ * @param ctx           request context (parent instance is the module)
+ * @param names         vector of heap-allocated names to append to
  *
  * @return Status code.
  */
 static te_errno
-module_param_list(unsigned int gid, const char *oid,
-                  const char *sub_id, char **list,
-                  const char *module_name)
+module_param_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    const char *module_name = ta_conf_ctx_inst(ctx, "module");
 
 #ifdef __linux__
+    if (mod_loaded(module_name))
     {
-        te_kernel_module *module;
         te_errno rc;
 
-        if (mod_loaded(module_name))
-        {
-            rc = get_module_subdir_list(module_name, buf, sizeof(buf),
-                                        NULL, NULL, "parameters");
-            if (rc != 0)
-                return rc;
-        }
-        else
-        {
-            if ((module = mod_find(module_name)) != NULL)
-            {
-                te_kernel_module_param *param;
+        rc = get_module_subdir_list(module_name, names,
+                                    NULL, NULL, "parameters");
+        if (rc != 0)
+            return rc;
+    }
+    else
+    {
+        te_kernel_module *module = mod_find(module_name);
+        te_kernel_module_param *param;
 
-                te_string_reset(&buf_te_str);
-                LIST_FOREACH(param, &module->params, list)
-                    te_string_append(&buf_te_str, "%s ", param->name);
-            }
+        if (module == NULL)
+            return 0;
+
+        LIST_FOREACH(param, &module->params, list)
+        {
+            char *name = TE_STRDUP(param->name);
+
+            TE_VEC_APPEND(names, name);
         }
     }
+
+    return 0;
 #else
     UNUSED(module_name);
 
@@ -886,30 +748,21 @@ module_param_list(unsigned int gid, const char *oid,
           "is supported only for Linux", __FUNCTION__);
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
-
-    if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    return 0;
 }
 
 /**
  * Get value of module parameter.
  *
- * @param gid           Group identifier (unused).
- * @param oid           Full identifier of the father instance (unused).
- * @param value         Where to save the value.
- * @param module_name   Name of the module.
- * @param param_name    Name of the parameter.
+ * @param ctx           request context
+ * @param val           location for the value
  *
  * @return Status code.
  */
 static te_errno
-module_param_get(unsigned int gid, const char *oid, char *value,
-                 const char *module_name, const char *param_name)
+module_param_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    const char *module_name = ta_conf_ctx_inst(ctx, "module");
+    const char *param_name = ta_conf_ctx_inst(ctx, "parameter");
 
 #if __linux__
     te_kernel_module *module = mod_find(module_name);
@@ -917,15 +770,21 @@ module_param_get(unsigned int gid, const char *oid, char *value,
     if (module == NULL || mod_loaded(module_name))
     {
         char name[TE_MODULE_NAME_LEN];
+        char value[RCF_MAX_VAL];
         te_errno rc;
 
         rc = mod_name_underscorify(module_name, name, sizeof(name));
         if (rc != 0)
             return rc;
 
-        return read_sys_value(value, RCF_MAX_VAL, true,
-                              SYS_MODULE "/%s/parameters/%s",
-                              name, param_name);
+        rc = read_sys_value(value, RCF_MAX_VAL, true,
+                            SYS_MODULE "/%s/parameters/%s",
+                            name, param_name);
+        if (rc != 0)
+            return rc;
+
+        te_string_append(val, "%s", value);
+        return 0;
     }
     else
     {
@@ -935,17 +794,14 @@ module_param_get(unsigned int gid, const char *oid, char *value,
         {
             if (strcmp(param->name, param_name) == 0)
             {
-                te_errno rc;
-
-                rc = te_snprintf(value, RCF_MAX_VAL, "%s", param->value);
-                return TE_RC(TE_TA_UNIX, rc);
+                te_string_append(val, "%s", param->value);
+                return 0;
             }
         }
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
 #else
-    UNUSED(value);
     UNUSED(module_name);
     UNUSED(param_name);
 
@@ -956,20 +812,16 @@ module_param_get(unsigned int gid, const char *oid, char *value,
 /**
  * Set value of module parameter.
  *
- * @param gid           Group identifier (unused).
- * @param oid           Full identifier of the father instance (unused).
- * @param value         Value to set.
- * @param module_name   Name of the module.
- * @param param_name    Name of the parameter.
+ * @param ctx           request context
+ * @param value         value to set
  *
  * @return Status code.
  */
 static te_errno
-module_param_set(unsigned int gid, const char *oid, const char *value,
-                 const char *module_name, const char *param_name)
+module_param_set(const ta_conf_ctx *ctx, const char *value)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    const char *module_name = ta_conf_ctx_inst(ctx, "module");
+    const char *param_name = ta_conf_ctx_inst(ctx, "parameter");
 
 #if __linux__
     te_errno rc;
@@ -1040,14 +892,11 @@ module_param_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-module_param_add(unsigned int gid, const char *oid,
-                 const char *param_value, const char *mod_name,
-                 const char *param_name,...)
+module_param_add(const ta_conf_ctx *ctx, const char *param_value)
 {
+    const char *mod_name = ta_conf_ctx_inst(ctx, "module");
+    const char *param_name = ta_conf_ctx_inst(ctx, "parameter");
     te_kernel_module *module = mod_find(mod_name);
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if (!module_is_locked(mod_name))
     {
@@ -1080,14 +929,12 @@ module_param_add(unsigned int gid, const char *oid,
 }
 
 static te_errno
-module_param_del(unsigned int gid, const char *oid,
-                 const char *mod_name, const char *param_name,...)
+module_param_del(const ta_conf_ctx *ctx)
 {
+    const char *mod_name = ta_conf_ctx_inst(ctx, "module");
+    const char *param_name = ta_conf_ctx_inst(ctx, "parameter");
     te_kernel_module *module = mod_find(mod_name);
     te_kernel_module_param *param;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if (!module)
     {
@@ -1122,28 +969,22 @@ module_param_del(unsigned int gid, const char *oid,
 }
 
 static te_errno
-module_filename_fallback_get(unsigned int gid, const char *oid,
-                             char *value, const char *mod_name, ...)
+module_filename_fallback_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *mod_name = ta_conf_ctx_inst(ctx, "module");
     te_kernel_module *module = mod_find(mod_name);
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    value[0] = (module != NULL && module->fallback) ? '1' : '0';
-    value[1] = '\0';
+    te_string_append(val, "%s",
+                     (module != NULL && module->fallback) ? "1" : "0");
 
     return 0;
 }
 
 static te_errno
-module_filename_fallback_set(unsigned int gid, const char *oid,
-                             const char *value, const char *mod_name, ...)
+module_filename_fallback_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *mod_name = ta_conf_ctx_inst(ctx, "module");
     te_kernel_module *module = mod_find(mod_name);
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if (module == NULL)
         return 0;
@@ -1157,61 +998,42 @@ module_filename_fallback_set(unsigned int gid, const char *oid,
 }
 
 static te_errno
-module_filename_load_dependencies_get(unsigned int  gid,
-                                      const char   *oid,
-                                      char         *value,
-                                      const char   *mod_name)
+module_filename_load_dependencies_get(const ta_conf_ctx *ctx, bool *val)
 {
-    te_kernel_module *module;
+    const char *mod_name = ta_conf_ctx_inst(ctx, "module");
+    te_kernel_module *module = mod_find(mod_name);
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    module = mod_find(mod_name);
     if (module == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    value[0] = (module->filename_load_dependencies) ? '1' : '0';
-    value[1] = '\0';
+    *val = module->filename_load_dependencies;
 
     return 0;
 }
 
 static te_errno
-module_filename_load_dependencies_set(unsigned int  gid,
-                                      const char   *oid,
-                                      const char   *value,
-                                      const char   *mod_name)
+module_filename_load_dependencies_set(const ta_conf_ctx *ctx, bool val)
 {
-    te_kernel_module *module;
+    const char *mod_name = ta_conf_ctx_inst(ctx, "module");
+    te_kernel_module *module = mod_find(mod_name);
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    module = mod_find(mod_name);
     if (module == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (module->filename == NULL)
         return TE_RC(TE_TA_UNIX, TE_EBADF);
 
-    if ((value[0] != '0' && value[0] != '1') || value[1] != '\0')
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    module->filename_load_dependencies = (value[0] == '1');
+    module->filename_load_dependencies = val;
 
     return 0;
 }
 
 static te_errno
-module_filename_set(unsigned int gid, const char *oid,
-                    const char *value, const char *mod_name, ...)
+module_filename_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *mod_name = ta_conf_ctx_inst(ctx, "module");
     te_kernel_module *module = mod_find(mod_name);
     bool loaded;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     loaded = mod_loaded(mod_name);
 
@@ -1224,32 +1046,24 @@ module_filename_set(unsigned int gid, const char *oid,
 
     return string_replace(&module->filename, value);
 }
-static te_errno
-module_filename_get(unsigned int gid, const char *oid,
-                    char *value, const char *mod_name, ...)
-{
-    te_kernel_module *module = mod_find(mod_name);
-    te_errno rc;
 
-    UNUSED(gid);
-    UNUSED(oid);
+static te_errno
+module_filename_get(const ta_conf_ctx *ctx, te_string *val)
+{
+    const char *mod_name = ta_conf_ctx_inst(ctx, "module");
+    te_kernel_module *module = mod_find(mod_name);
 
     if (module != NULL && module->filename != NULL)
-        rc = te_snprintf(value, RCF_MAX_VAL, "%s", module->filename);
-    else
-        rc = te_strlcpy(value, "", RCF_MAX_VAL);
+        te_string_append(val, "%s", module->filename);
 
-    return rc;
+    return 0;
 }
 
 static te_errno
-module_unload_holders_set(unsigned int gid, const char *oid,
-                          const char *value, const char *mod_name, ...)
+module_unload_holders_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *mod_name = ta_conf_ctx_inst(ctx, "module");
     te_kernel_module *module = mod_find(mod_name);
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if (module == NULL)
         return 0;
@@ -1260,16 +1074,13 @@ module_unload_holders_set(unsigned int gid, const char *oid,
 }
 
 static te_errno
-module_unload_holders_get(unsigned int gid, const char *oid,
-                          char *value, const char *mod_name, ...)
+module_unload_holders_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *mod_name = ta_conf_ctx_inst(ctx, "module");
     te_kernel_module *module = mod_find(mod_name);
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    value[0] = (module != NULL && module->unload_holders) ? '1' : '0';
-    value[1] = '\0';
+    te_string_append(val, "%s",
+                     (module != NULL && module->unload_holders) ? "1" : "0");
 
     return 0;
 }
@@ -1277,37 +1088,28 @@ module_unload_holders_get(unsigned int gid, const char *oid,
 /**
  * Get list of module driver names.
  *
- * @param gid           Group identifier (unused)
- * @param oid           Full identifier of the father instance (unused)
- * @param sub_id        ID of the object to be listed (unused)
- * @param list          Where to save the list
- * @param module_name   Name of the module
+ * @param ctx           request context (parent instance is the module)
+ * @param names         vector of heap-allocated names to append to
  *
  * @return Status code.
  */
 static te_errno
-module_driver_list(unsigned int gid, const char *oid,
-                   const char *sub_id, char **list,
-                   const char *module_name)
+module_driver_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    const char *module_name = ta_conf_ctx_inst(ctx, "module");
 
 #ifdef __linux__
     if (mod_loaded(module_name))
     {
         te_errno rc;
 
-        rc = get_module_subdir_list(module_name, buf, sizeof(buf),
+        rc = get_module_subdir_list(module_name, names,
                                     NULL, NULL, "drivers");
         if (rc != 0)
             return rc;
     }
-    else
-    {
-        buf[0] = '\0';
-    }
+
+    return 0;
 #else
     UNUSED(module_name);
 
@@ -1315,49 +1117,35 @@ module_driver_list(unsigned int gid, const char *oid,
           "is supported only for Linux", __FUNCTION__);
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
-
-    if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    return 0;
 }
 
 /**
  * Get list of device names for a given driver.
  *
- * @param gid           Group identifier (unused)
- * @param oid           Full identifier of the father instance (unused)
- * @param sub_id        ID of the object to be listed (unused)
- * @param list          Where to save the list
- * @param module_name   Name of the module
- * @param driver_name   Name of the driver
+ * @param ctx           request context (parent instance is the driver)
+ * @param names         vector of heap-allocated names to append to
  *
  * @return Status code.
  */
 static te_errno
-driver_device_list(unsigned int gid, const char *oid,
-                   const char *sub_id, char **list,
-                   const char *module_name, const char *driver_name)
+driver_device_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    const char *module_name = ta_conf_ctx_inst(ctx, "module");
+    const char *driver_name = ta_conf_ctx_inst(ctx, "driver");
 
 #ifdef __linux__
     if (mod_loaded(module_name) && strcmp_start("pci:", driver_name) == 0)
     {
         te_errno rc;
 
-        rc = get_module_subdir_list(module_name, buf, sizeof(buf),
+        rc = get_module_subdir_list(module_name, names,
                                     filter_pci_addrs_cb, NULL,
                                     "drivers/%s/", driver_name);
         if (rc != 0)
             return rc;
     }
-    else
-    {
-        buf[0] = '\0';
-    }
+
+    return 0;
 #else
     UNUSED(module_name);
     UNUSED(driver_name);
@@ -1366,57 +1154,38 @@ driver_device_list(unsigned int gid, const char *oid,
           __FUNCTION__);
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
-
-    if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    return 0;
 }
 
 /**
  * Get device node value (bus address).
  *
- * @param gid           Group identifier (unused)
- * @param oid           Full identifier of the father instance (unused)
- * @param sub_id        ID of the object to be listed (unused)
- * @param list          Where to save the list
- * @param module_name   Name of the module
- * @param driver_name   Name of the driver
- * @param device_name   Name of the device
+ * @param ctx           request context
+ * @param val           location for the value
  *
  * @return Status code.
  */
 static te_errno
-driver_device_get(unsigned int gid, const char *oid,
-                  char *value, const char *module_name,
-                  const char *driver_name,
-                  const char *device_name)
+driver_device_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(module_name);
+    const char *driver_name = ta_conf_ctx_inst(ctx, "driver");
+    const char *device_name = ta_conf_ctx_inst(ctx, "device");
 
     if (strcmp_start("pci:", driver_name) != 0)
     {
         /* Only PCI devices are supported here currently. */
-        *value = '\0';
         return 0;
     }
 
-    return te_snprintf(value, RCF_MAX_VAL,
-                       "/agent:%s/hardware:/pci:/device:%s",
-                       ta_name, device_name);
+    te_string_append(val, "/agent:%s/hardware:/pci:/device:%s",
+                     ta_name, device_name);
+    return 0;
 }
 
 static te_errno
-module_add(unsigned int gid, const char *oid,
-           const char *unused, const char *mod_name)
+module_add(const ta_conf_ctx *ctx)
 {
+    const char *mod_name = ta_conf_ctx_inst(ctx, "module");
     te_kernel_module *module;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused);
 
     if (mod_find(mod_name) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
@@ -1443,13 +1212,11 @@ module_add(unsigned int gid, const char *oid,
 }
 
 static te_errno
-module_del(unsigned int gid, const char *oid, const char *mod_name)
+module_del(const ta_conf_ctx *ctx)
 {
+    const char *mod_name = ta_conf_ctx_inst(ctx, "module");
     bool loaded = mod_loaded(mod_name);
     te_kernel_module *module;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     module = mod_find(mod_name);
     mod_consistentcy_check(module, loaded);
@@ -1523,24 +1290,22 @@ mod_load(te_kernel_module *module)
 }
 
 static te_errno
-module_loaded_set(unsigned int gid, const char *oid, char *value,
-                  char *mod_name)
+module_loaded_set(const ta_conf_ctx *ctx, int32_t val)
 {
+    const char *mod_name = ta_conf_ctx_inst(ctx, "module");
     te_kernel_module *module = mod_find(mod_name);
     bool loaded = mod_loaded(mod_name);
-    bool load;
+    /*
+     * Match legacy te_strtol_bool() semantics: any nonzero decimal
+     * value means "load", not just 1.
+     */
+    bool load = (val != 0);
     te_errno rc = 0;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if (module == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     mod_consistentcy_check(module, loaded);
-
-    if (te_strtol_bool(value, &load))
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     if (load)
     {
@@ -1566,34 +1331,61 @@ module_loaded_set(unsigned int gid, const char *oid, char *value,
 }
 
 static te_errno
-module_loaded_get(unsigned int gid, const char *oid, char *value,
-                  char *mod_name)
+module_loaded_get(const ta_conf_ctx *ctx, int32_t *val)
 {
+    const char *mod_name = ta_conf_ctx_inst(ctx, "module");
     te_kernel_module *module = mod_find(mod_name);
-    bool loaded = module->fake_unload ? false : mod_loaded(mod_name);
+    bool loaded;
 
-    UNUSED(gid);
-    UNUSED(oid);
+    /*
+     * mod_find() can return NULL for a module name too long for
+     * mod_name_underscorify() to handle; the legacy handler
+     * dereferenced module unconditionally here, unlike every other
+     * accessor in this file, and crashed the agent in that case.
+     */
+    if (module == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    loaded = module->fake_unload ? false : mod_loaded(mod_name);
 
     mod_consistentcy_check(module, loaded);
 
-    return te_snprintf(value, RCF_MAX_VAL, "%s", loaded ? "1" : "0");
+    *val = loaded ? 1 : 0;
+    return 0;
 }
 
 static te_errno
-module_loaded_oper_get(unsigned int gid, const char *oid, char *value,
-                       char *mod_name)
+module_loaded_oper_get(const ta_conf_ctx *ctx, bool *val)
 {
+    const char *mod_name = ta_conf_ctx_inst(ctx, "module");
     te_kernel_module *module = mod_find(mod_name);
     bool loaded = mod_loaded(mod_name);
 
-    UNUSED(gid);
-    UNUSED(oid);
-
     mod_consistentcy_check(module, loaded);
 
-    return te_snprintf(value, RCF_MAX_VAL, "%s", loaded ? "1" : "0");
+    *val = loaded;
+    return 0;
 }
+
+static const ta_conf_node *const node_module =
+    TA_CONF_COLL("module", module_add, module_del, module_list,
+        TA_CONF_RO_BOOL("loaded_oper", module_loaded_oper_get),
+        TA_CONF_RW_INT32("loaded", module_loaded_get, module_loaded_set),
+        TA_CONF_LIST("driver", module_driver_list,
+            TA_CONF_RO_COLL("device", driver_device_get,
+                            driver_device_list)),
+        TA_CONF_COLL_STR_RW("parameter", module_param_get,
+                            module_param_set, module_param_add,
+                            module_param_del, module_param_list),
+        TA_CONF_RW_STR("unload_holders", module_unload_holders_get,
+                       module_unload_holders_set),
+        TA_CONF_RO_STR("version", module_version_get),
+        TA_CONF_RW_STR("filename", module_filename_get, module_filename_set,
+            TA_CONF_RW_BOOL("load_dependencies",
+                            module_filename_load_dependencies_get,
+                            module_filename_load_dependencies_set),
+            TA_CONF_RW_STR("fallback", module_filename_fallback_get,
+                           module_filename_fallback_set)));
 
 /**
  * Initialize configuration for system module nodes.
@@ -1606,7 +1398,7 @@ ta_unix_conf_module_init(void)
 #ifdef __linux__
     te_errno rc;
 
-    rc = rcf_pch_add_node("/agent/", &node_module);
+    rc = ta_conf_register("/agent", node_module);
     if (rc != 0)
         return rc;
 
