@@ -18,7 +18,10 @@
 
 #include "conf_netconf.h"
 #include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 #include "te_defs.h"
+#include "te_string.h"
+#include "te_vector.h"
 #include "unix_internal.h"
 
 #include "netconf.h"
@@ -45,63 +48,35 @@ port_list_include_cb(const char *ifname, void *data)
 /**
  * Get port interfaces list.
  *
- * @param gid     Group identifier (unused)
- * @param oid     Full identifier of the father instance (unused)
- * @param sub_id  ID of the object to be listed (unused)
- * @param list    Location for the list pointer
+ * @param ctx     Request context (parent instance OID)
+ * @param names   Vector of heap-allocated names to append to
  *
  * @return      Status code
  */
 static te_errno
-port_list(unsigned int gid, const char *oid,
-          const char *sub_id, char **list)
+port_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_vec        names = TE_VEC_INIT_AUTOPTR(char *);
-    te_string     str = TE_STRING_INIT;
-    const char   *brname;
-    te_errno      rc;
+    const char *brname = ta_conf_ctx_inst(ctx, "bridge");
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-    brname = CFG_OID_GET_INST_NAME(cfg_convert_oid_str(oid), 2);
-
-    rc = netconf_port_list(nh, brname, port_list_include_cb, NULL, &names);
-    if (rc == 0)
-    {
-        te_string_join_vec(&str, &names, " ");
-        *list = str.ptr;
-    }
-
-    te_vec_free(&names);
-
-    return rc;
+    return netconf_port_list(nh, brname, port_list_include_cb, NULL, names);
 }
 
 /**
  * Get port interface OID.
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param if_oid    Buffer for port interface OID
- * @param brname    The bridge name (unused)
- * @param ifname    The interface name
+ * @param ctx       Request context
+ * @param val       Location for the retrieved value
  *
  * @return      Status code
  */
 static te_errno
-port_get(unsigned int gid, char *oid, char *if_oid, char *brname, char *ifname)
+port_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    te_string str = TE_STRING_EXT_BUF_INIT(if_oid, RCF_MAX_VAL);
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(brname);
+    const char *ifname = ta_conf_ctx_inst(ctx, "port");
 
     if (rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, ifname))
     {
-        te_string_append(&str, "/agent:%s/interface:%s", ta_name, ifname);
+        te_string_append(val, "/agent:%s/interface:%s", ta_name, ifname);
     }
     return 0;
 }
@@ -109,22 +84,17 @@ port_get(unsigned int gid, char *oid, char *if_oid, char *brname, char *ifname)
 /**
  * Add a new bridge port interface.
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param data      Unused
- * @param brname    The bridge interface name
- * @param ifname    The interface name
+ * @param ctx       Request context
+ * @param data      OID of the interface to add as a port
  *
  * @return      Status code
  */
 static te_errno
-port_add(unsigned int gid, const char *oid, const char *data, const char *brname, const char *ifname)
+port_add(const ta_conf_ctx *ctx, const char *data)
 {
+    const char *brname = ta_conf_ctx_inst(ctx, "bridge");
+    const char *ifname = ta_conf_ctx_inst(ctx, "port");
     char if_oid[RCF_MAX_VAL];
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(data);
 
     snprintf(if_oid, sizeof(if_oid), "/agent:%s/interface:%s", ta_name, ifname);
     if (strcmp(data, if_oid) != 0)
@@ -138,20 +108,14 @@ port_add(unsigned int gid, const char *oid, const char *data, const char *brname
 /**
  * Delete a bridge interface.
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param brname    The bridge interface name (unused)
- * @param ifname    The interface name
+ * @param ctx       Request context
  *
  * @return      Status code
  */
 static te_errno
-port_del(unsigned int gid, const char *oid,
-         const char *brname, const char *ifname)
+port_del(const ta_conf_ctx *ctx)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(brname);
+    const char *ifname = ta_conf_ctx_inst(ctx, "port");
 
     if (!rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, ifname))
         return TE_RC(TE_TA_UNIX, TE_EACCES);
@@ -159,27 +123,17 @@ port_del(unsigned int gid, const char *oid,
     return netconf_port_del(nh, ifname);
 }
 
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_port, "port", NULL, NULL,
-                               port_get, NULL,
-                               port_add, port_del, port_list,
-                               NULL);
-
 /**
  * Add a new bridge interface.
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param data      Unused
- * @param ifname    The interface name
+ * @param ctx       Request context
  *
  * @return      Status code
  */
 static te_errno
-bridge_add(unsigned int gid, const char *oid, const char *data, const char *ifname)
+bridge_add(const ta_conf_ctx *ctx)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(data);
+    const char *ifname = ta_conf_ctx_inst(ctx, "bridge");
 
     return netconf_bridge_add(nh, ifname);
 }
@@ -187,17 +141,14 @@ bridge_add(unsigned int gid, const char *oid, const char *data, const char *ifna
 /**
  * Delete a bridge interface.
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param ifname    The interface name
+ * @param ctx       Request context
  *
  * @return      Status code
  */
 static te_errno
-bridge_del(unsigned int gid, const char *oid, const char *ifname)
+bridge_del(const ta_conf_ctx *ctx)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    const char *ifname = ta_conf_ctx_inst(ctx, "bridge");
 
     return netconf_bridge_del(nh, ifname);
 }
@@ -223,47 +174,28 @@ bridge_list_include_cb(const char *ifname, void *data)
 /**
  * Get bridge interfaces list.
  *
- * @param gid     Group identifier (unused)
- * @param oid     Full identifier of the father instance (unused)
- * @param sub_id  ID of the object to be listed (unused)
- * @param list    Location for the list pointer
+ * @param ctx     Request context (unused)
+ * @param names   Vector of heap-allocated names to append to
  *
  * @return      Status code
  */
 static te_errno
-bridge_list(unsigned int gid, const char *oid,
-            const char *sub_id, char **list)
+bridge_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_vec        names = TE_VEC_INIT_AUTOPTR(char *);
-    te_string     str = TE_STRING_INIT;
-    te_errno      rc;
+    UNUSED(ctx);
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-    rc = netconf_bridge_list(nh, bridge_list_include_cb, NULL, &names);
-    if (rc == 0)
-    {
-        te_string_join_vec(&str, &names, " ");
-        *list = str.ptr;
-    }
-
-    te_vec_free(&names);
-
-    return rc;
+    return netconf_bridge_list(nh, bridge_list_include_cb, NULL, names);
 }
 
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_bridge, "bridge", &node_port, NULL,
-                              NULL, NULL,
-                              bridge_add, bridge_del, bridge_list,
-                              NULL);
+static const ta_conf_node *const node_bridge =
+    TA_CONF_COLL("bridge", bridge_add, bridge_del, bridge_list,
+        TA_CONF_COLL_STR("port", port_get, port_add, port_del, port_list));
 
 /* See the description in conf_rule.h */
 te_errno
 ta_unix_conf_bridge_init(void)
 {
-    return rcf_pch_add_node("/agent", &node_bridge);
+    return ta_conf_register("/agent", node_bridge);
 }
 
 #else /* USE_LIBNETCONF */
