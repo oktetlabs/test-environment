@@ -13,8 +13,6 @@
 #include "te_config.h"
 #include "config.h"
 
-#include <stdio.h>
-
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -25,11 +23,8 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
-#include "te_str.h"
 #include "logger_api.h"
-#include "rcf_common.h"
-#include "rcf_ch_api.h"
-#include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 
 /**
  * RLIMIT value selector
@@ -49,12 +44,10 @@ typedef enum rlimit_val_sel {
  * @return Status code.
  */
 static te_errno
-rlimit_get(char *value, int resource, rlimit_val_sel val_sel)
+rlimit_uint_get(uintmax_t *value, int resource, rlimit_val_sel val_sel)
 {
     struct rlimit       rlim = { 0 };
     te_errno            rc;
-    int                 ret;
-    long unsigned int   lim;
 
     if (getrlimit(resource, &rlim) < 0)
     {
@@ -63,23 +56,7 @@ rlimit_get(char *value, int resource, rlimit_val_sel val_sel)
         return TE_RC(TE_TA_UNIX, rc);
     }
 
-    if (val_sel == RLIMIT_VAL_CUR)
-        lim = rlim.rlim_cur;
-    else
-        lim = rlim.rlim_max;
-
-    ret = snprintf(value, RCF_MAX_VAL, "%lu", lim);
-    if (ret < 0)
-    {
-        rc = te_rc_os2te(errno);
-        ERROR("%s(): snprintf() failed with errno %r", __FUNCTION__, rc);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
-    else if (ret >= RCF_MAX_VAL)
-    {
-        ERROR("%s(): not enough space to store value", __FUNCTION__);
-        return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
-    }
+    *value = (val_sel == RLIMIT_VAL_CUR) ? rlim.rlim_cur : rlim.rlim_max;
 
     return 0;
 }
@@ -94,18 +71,10 @@ rlimit_get(char *value, int resource, rlimit_val_sel val_sel)
  * @return Status code.
  */
 static te_errno
-rlimit_set(const char *value, int resource, rlimit_val_sel val_sel)
+rlimit_uint_set(uintmax_t value, int resource, rlimit_val_sel val_sel)
 {
     struct rlimit        rlim = { 0 };
-    long unsigned int    num_value;
     te_errno             rc;
-
-    rc = te_strtoul(value, 10, &num_value);
-    if (rc != 0)
-    {
-        ERROR("%s(): failed to parse value '%s'", __FUNCTION__, value);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
 
     if (getrlimit(resource, &rlim) < 0)
     {
@@ -115,9 +84,9 @@ rlimit_set(const char *value, int resource, rlimit_val_sel val_sel)
     }
 
     if (val_sel == RLIMIT_VAL_CUR)
-        rlim.rlim_cur = num_value;
+        rlim.rlim_cur = value;
     else
-        rlim.rlim_max = num_value;
+        rlim.rlim_max = value;
 
     if (val_sel == RLIMIT_VAL_CUR)
     {
@@ -140,171 +109,74 @@ rlimit_set(const char *value, int resource, rlimit_val_sel val_sel)
     return 0;
 }
 
-/**
- * Obtain current value of RLIMIT_NOFILE resource limit.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Full object instance identifier (unused)
- * @param value         Value location
- *
- * @return              Status code.
- */
 static te_errno
-rlimit_nofile_cur_get(unsigned int gid, const char *oid, char *value)
+rlimit_nofile_cur_get(const ta_conf_ctx *ctx, uint64_t *value)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
-    return rlimit_get(value, RLIMIT_NOFILE, RLIMIT_VAL_CUR);
+    UNUSED(ctx);
+    return rlimit_uint_get(value, RLIMIT_NOFILE, RLIMIT_VAL_CUR);
 }
 
-/**
- * Set current value of RLIMIT_NOFILE resource limit.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Full object instance identifier (unused)
- * @param value         Value location
- *
- * @return              Status code.
- */
 static te_errno
-rlimit_nofile_cur_set(unsigned int gid, const char *oid, const char *value)
+rlimit_nofile_cur_set(const ta_conf_ctx *ctx, uint64_t value)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
-    return rlimit_set(value, RLIMIT_NOFILE, RLIMIT_VAL_CUR);
+    UNUSED(ctx);
+    return rlimit_uint_set(value, RLIMIT_NOFILE, RLIMIT_VAL_CUR);
 }
 
-/**
- * Obtain maximum value of RLIMIT_NOFILE resource limit.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Full object instance identifier (unused)
- * @param value         Value location
- *
- * @return              Status code.
- */
 static te_errno
-rlimit_nofile_max_get(unsigned int gid, const char *oid, char *value)
+rlimit_nofile_max_get(const ta_conf_ctx *ctx, uint64_t *value)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
-    return rlimit_get(value, RLIMIT_NOFILE, RLIMIT_VAL_MAX);
+    UNUSED(ctx);
+    return rlimit_uint_get(value, RLIMIT_NOFILE, RLIMIT_VAL_MAX);
 }
 
-/**
- * Set maximum value of RLIMIT_NOFILE resource limit.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Full object instance identifier (unused)
- * @param value         Value location
- *
- * @return              Status code.
- */
 static te_errno
-rlimit_nofile_max_set(unsigned int gid, const char *oid, const char *value)
+rlimit_nofile_max_set(const ta_conf_ctx *ctx, uint64_t value)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
-    return rlimit_set(value, RLIMIT_NOFILE, RLIMIT_VAL_MAX);
+    UNUSED(ctx);
+    return rlimit_uint_set(value, RLIMIT_NOFILE, RLIMIT_VAL_MAX);
 }
 
-
-/**
- * Obtain current value of RLIMIT_MEMLOCK resource limit.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Full object instance identifier (unused)
- * @param value         Value location
- *
- * @return              Status code.
- */
 static te_errno
-rlimit_memlock_cur_get(unsigned int gid, const char *oid, char *value)
+rlimit_memlock_cur_get(const ta_conf_ctx *ctx, uint64_t *value)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
-    return rlimit_get(value, RLIMIT_MEMLOCK, RLIMIT_VAL_CUR);
+    UNUSED(ctx);
+    return rlimit_uint_get(value, RLIMIT_MEMLOCK, RLIMIT_VAL_CUR);
 }
 
-/**
- * Set current value of RLIMIT_MEMLOCK resource limit.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Full object instance identifier (unused)
- * @param value         Value location
- *
- * @return              Status code.
- */
 static te_errno
-rlimit_memlock_cur_set(unsigned int gid, const char *oid, const char *value)
+rlimit_memlock_cur_set(const ta_conf_ctx *ctx, uint64_t value)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
-    return rlimit_set(value, RLIMIT_MEMLOCK, RLIMIT_VAL_CUR);
+    UNUSED(ctx);
+    return rlimit_uint_set(value, RLIMIT_MEMLOCK, RLIMIT_VAL_CUR);
 }
 
-/**
- * Obtain maximum value of RLIMIT_MEMLOCK resource limit.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Full object instance identifier (unused)
- * @param value         Value location
- *
- * @return              Status code.
- */
 static te_errno
-rlimit_memlock_max_get(unsigned int gid, const char *oid, char *value)
+rlimit_memlock_max_get(const ta_conf_ctx *ctx, uint64_t *value)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
-    return rlimit_get(value, RLIMIT_MEMLOCK, RLIMIT_VAL_MAX);
+    UNUSED(ctx);
+    return rlimit_uint_get(value, RLIMIT_MEMLOCK, RLIMIT_VAL_MAX);
 }
 
-/**
- * Set maximum value of RLIMIT_MEMLOCK resource limit.
- *
- * @param gid           Group identifier (unused)
- * @param oid           Full object instance identifier (unused)
- * @param value         Value location
- *
- * @return              Status code.
- */
 static te_errno
-rlimit_memlock_max_set(unsigned int gid, const char *oid, const char *value)
+rlimit_memlock_max_set(const ta_conf_ctx *ctx, uint64_t value)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
-    return rlimit_set(value, RLIMIT_MEMLOCK, RLIMIT_VAL_MAX);
+    UNUSED(ctx);
+    return rlimit_uint_set(value, RLIMIT_MEMLOCK, RLIMIT_VAL_MAX);
 }
 
-RCF_PCH_CFG_NODE_RW(node_rlimit_memlock_max, "max",
-                    NULL, NULL,
-                    rlimit_memlock_max_get, rlimit_memlock_max_set);
-RCF_PCH_CFG_NODE_RW(node_rlimit_memlock_cur, "cur",
-                    NULL, &node_rlimit_memlock_max,
-                    rlimit_memlock_cur_get, rlimit_memlock_cur_set);
-RCF_PCH_CFG_NODE_NA(node_rlimit_memlock, "memlock",
-                    &node_rlimit_memlock_cur, NULL);
-
-RCF_PCH_CFG_NODE_RW(node_rlimit_nofile_max, "max",
-                    NULL, NULL,
-                    rlimit_nofile_max_get, rlimit_nofile_max_set);
-RCF_PCH_CFG_NODE_RW(node_rlimit_nofile_cur, "cur",
-                    NULL, &node_rlimit_nofile_max,
-                    rlimit_nofile_cur_get, rlimit_nofile_cur_set);
-
-RCF_PCH_CFG_NODE_NA(node_rlimit_nofile, "nofile",
-                    &node_rlimit_nofile_cur, &node_rlimit_memlock);
-RCF_PCH_CFG_NODE_NA(node_rlimits, "rlimits", &node_rlimit_nofile,
-                    NULL);
+static const ta_conf_node *const node_rlimits =
+    TA_CONF_NA("rlimits",
+        TA_CONF_NA("nofile",
+            TA_CONF_RW_UINT64("cur", rlimit_nofile_cur_get,
+                            rlimit_nofile_cur_set),
+            TA_CONF_RW_UINT64("max", rlimit_nofile_max_get,
+                            rlimit_nofile_max_set)),
+        TA_CONF_NA("memlock",
+            TA_CONF_RW_UINT64("cur", rlimit_memlock_cur_get,
+                            rlimit_memlock_cur_set),
+            TA_CONF_RW_UINT64("max", rlimit_memlock_max_get,
+                            rlimit_memlock_max_set)));
 
 /**
  * Add resource limits objects to configuration tree.
@@ -314,5 +186,5 @@ RCF_PCH_CFG_NODE_NA(node_rlimits, "rlimits", &node_rlimit_nofile,
 te_errno
 ta_unix_conf_rlimits_init(void)
 {
-    return rcf_pch_add_node("/agent", &node_rlimits);
+    return ta_conf_register("/agent", node_rlimits);
 }

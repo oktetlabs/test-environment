@@ -1902,7 +1902,7 @@
 
     - oid: "/agent/rlimits/nofile/cur"
       access: read_write
-      type: int32
+      type: uint64
       depends:
         - oid: "/agent/rlimits/nofile/max"
       d: |
@@ -1912,7 +1912,7 @@
 
     - oid: "/agent/rlimits/nofile/max"
       access: read_write
-      type: int32
+      type: uint64
       depends:
         - oid: "/agent/rlimits/nofile/cur"
       d: |
