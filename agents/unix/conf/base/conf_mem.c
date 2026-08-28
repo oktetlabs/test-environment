@@ -48,6 +48,7 @@
 
 #include "rcf_pch.h"
 #include "rcf_ch_api.h"
+#include "rcf_pch_tree.h"
 #include "conf_common.h"
 #include "unix_internal.h"
 #include "logger_api.h"
@@ -500,43 +501,35 @@ scan_mounts_file(struct hugepage_info *hp_info)
 }
 
 static te_errno
-hugepages_list(unsigned int gid, const char *oid,
-               const char *sub_id, char **list, ...)
+hugepages_list(const ta_conf_ctx *ctx, te_vec *names)
 {
     struct hugepage_info *hp_info;
-    te_string buf = TE_STRING_INIT;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    UNUSED(ctx);
 
     LIST_FOREACH(hp_info, &hugepages, link)
     {
-        te_string_append(&buf, "%u ", hp_info->size);
-    }
+        char *name = te_string_fmt("%u", hp_info->size);
 
-    *list = buf.ptr;
+        TE_VEC_APPEND(names, name);
+    }
 
     return 0;
 }
 
 static te_errno
-hugepages_set(unsigned int gid, const char *oid, const char *value,
-              const char *unused, const char *hugepage_size)
+hugepages_set(const ta_conf_ctx *ctx, const char *val)
 {
+    const char *hugepage_size = ta_conf_ctx_inst(ctx, "hugepages");
     struct hugepage_info *hp_info;
     long int number;
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused);
 
     rc = find_hugepage_info(hugepage_size, &hp_info, false);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    rc = te_strtol(value, 10, &number);
+    rc = te_strtol(val, 10, &number);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
@@ -558,24 +551,19 @@ hugepages_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-hugepages_get(unsigned int gid, const char *oid, char *value,
-              const char *unused, const char *hugepage_size)
+hugepages_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *hugepage_size = ta_conf_ctx_inst(ctx, "hugepages");
     struct hugepage_info *hp_info;
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused);
 
     rc = find_hugepage_info(hugepage_size, &hp_info, true);
     if (rc != 0)
     {
         if (rc == TE_EPERM)
         {
-            rc = te_snprintf(value, RCF_MAX_VAL, "-1");
-            if (rc != 0)
-                ERROR("%s(): Failed to write value: %r", __FUNCTION__, rc);
+            te_string_append(val, "-1");
+            rc = 0;
         }
 
         return TE_RC(TE_TA_UNIX, rc);
@@ -589,30 +577,20 @@ hugepages_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
-    rc = te_snprintf(value, RCF_MAX_VAL, "%u", hp_info->nr_hugepages);
-    if (rc != 0)
-    {
-        ERROR("%s(): Failed to write value: %r", __FUNCTION__, rc);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
+    te_string_append(val, "%u", hp_info->nr_hugepages);
 
     return 0;
 }
 
 static te_errno
-hugepages_mountpoint_add(unsigned int gid, const char *oid, const char *value,
-                         const char *unused, const char *hugepage_size,
-                         const char *mountpoint)
+hugepages_mountpoint_add(const ta_conf_ctx *ctx)
 {
+    const char *hugepage_size = ta_conf_ctx_inst(ctx, "hugepages");
+    const char *mountpoint = ta_conf_ctx_inst(ctx, "mountpoint");
     struct hugepage_info *hp_info;
     struct mountpoint_info *mp_info;
     te_string decode_name = TE_STRING_INIT;
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused);
-    UNUSED(value);
 
     rc = find_hugepage_info(hugepage_size, &hp_info, false);
     if (rc != 0)
@@ -654,17 +632,14 @@ hugepages_mountpoint_add(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-hugepages_mountpoint_del(unsigned int gid, const char *oid, const char *unused,
-                         const char *hugepage_size, const char *mountpoint)
+hugepages_mountpoint_del(const ta_conf_ctx *ctx)
 {
+    const char *hugepage_size = ta_conf_ctx_inst(ctx, "hugepages");
+    const char *mountpoint = ta_conf_ctx_inst(ctx, "mountpoint");
     te_errno rc;
     struct hugepage_info *hp_info;
     struct mountpoint_info *mp_info;
     te_string decode_name = TE_STRING_INIT;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused);
 
     rc = find_hugepage_info(hugepage_size, &hp_info, false);
     if (rc != 0)
@@ -703,11 +678,9 @@ hugepages_mountpoint_del(unsigned int gid, const char *oid, const char *unused,
 }
 
 static te_errno
-hugepages_mountpoint_list(unsigned int gid, const char *oid, const char *sub_id,
-                          char **list, const char *unused,
-                          const char *hugepage_size, ...)
+hugepages_mountpoint_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string result = TE_STRING_INIT;
+    const char *hugepage_size = ta_conf_ctx_inst(ctx, "hugepages");
     struct hugepage_info *hp_info;
     struct mountpoint_info *mp_info;
     te_errno rc;
@@ -730,11 +703,13 @@ hugepages_mountpoint_list(unsigned int gid, const char *oid, const char *sub_id,
 
     LIST_FOREACH(mp_info, &hp_info->mount_dirs, link)
     {
-        te_string_append(&result, "%s ", mp_info->name);
-    }
+        te_string decoded = TE_STRING_INIT;
 
-    te_string_replace_all_substrings(&result, PATH_DELIMITER, "/");
-    *list = result.ptr;
+        te_string_append(&decoded, "%s", mp_info->name);
+        te_string_replace_all_substrings(&decoded, PATH_DELIMITER, "/");
+
+        TE_VEC_APPEND(names, decoded.ptr);
+    }
 
     return 0;
 }
@@ -805,61 +780,53 @@ hugepages_mountpoint_grab(const char *name)
 }
 
 static te_errno
-thp_enabled_get(unsigned int gid, const char *oid, char *value, ...)
+thp_enabled_get(const ta_conf_ctx *ctx, te_string *val)
 {
     te_errno    rc = 0;
-    char        val[RCF_MAX_VAL] = {0};
+    char        buf[RCF_MAX_VAL] = {0};
     char       *ptr_start = NULL;
     char       *ptr_end = NULL;
     size_t      len;
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
-    rc = read_sys_value(val, RCF_MAX_VAL, false, SYS_THP "/%s", "enabled");
+    rc = read_sys_value(buf, RCF_MAX_VAL, false, SYS_THP "/%s", "enabled");
     if (rc != 0)
         return rc;
 
     /* Parse output, for example: "always madvise [never]" */
-    ptr_start = strchr(val, '[');
-    ptr_end = strchr(val, ']');
+    ptr_start = strchr(buf, '[');
+    ptr_end = strchr(buf, ']');
     if (ptr_start == NULL || ptr_end == NULL || ptr_start > ptr_end)
     {
-        ERROR("%s(): failed to parse '%s'", __func__, val);
+        ERROR("%s(): failed to parse '%s'", __func__, buf);
         return TE_ERANGE;
     }
 
     ptr_start++;
     len = ptr_end - ptr_start;
-    memcpy(value, ptr_start, len);
-    value[len] = '\0';
+    te_string_append(val, "%.*s", (int)len, ptr_start);
 
     return 0;
 }
 
 static te_errno
-thp_enabled_set(unsigned int gid, const char *oid, char *value, ...)
+thp_enabled_set(const ta_conf_ctx *ctx, const char *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
-    return write_sys_value(value, SYS_THP "/%s", "enabled");
+    return write_sys_value(val, SYS_THP "/%s", "enabled");
 }
 
-RCF_PCH_CFG_NODE_RW(thp_enabled, "enabled", NULL, NULL,
-                    thp_enabled_get, thp_enabled_set);
-RCF_PCH_CFG_NODE_NA(node_mem_thp, "transparent_hugepage", &thp_enabled, NULL);
-RCF_PCH_CFG_NODE_COLLECTION(node_hugepage_mountpoint, "mountpoint",
-                            NULL, NULL,
-                            hugepages_mountpoint_add, hugepages_mountpoint_del,
-                            hugepages_mountpoint_list,
-                            NULL);
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_hugepages, "hugepages",
-                               &node_hugepage_mountpoint, &node_mem_thp,
-                               hugepages_get, hugepages_set, NULL, NULL,
-                               hugepages_list,
-                               NULL);
-RCF_PCH_CFG_NODE_NA(node_mem, "mem", &node_hugepages, NULL);
+static const ta_conf_node *const node_mem =
+    TA_CONF_NA("mem",
+        TA_CONF_RW_COLL_STR("hugepages", hugepages_get, hugepages_set,
+                            hugepages_list,
+            TA_CONF_COLL("mountpoint", hugepages_mountpoint_add,
+                         hugepages_mountpoint_del,
+                         hugepages_mountpoint_list)),
+        TA_CONF_NA("transparent_hugepage",
+            TA_CONF_RW_STR("enabled", thp_enabled_get, thp_enabled_set)));
 
 te_errno
 ta_unix_conf_memory_init(void)
@@ -870,7 +837,7 @@ ta_unix_conf_memory_init(void)
     if (rc != 0)
         return rc;
 
-    rc = rcf_pch_add_node("/agent", &node_mem);
+    rc = ta_conf_register("/agent", node_mem);
     if (rc != 0)
         return rc;
 
