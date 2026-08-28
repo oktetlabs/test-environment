@@ -19,9 +19,9 @@
 #include "unix_internal.h"
 #include "te_alloc.h"
 #include "rcf_pch_ta_cfg.h"
+#include "rcf_pch_tree.h"
 
 #include "te_file.h"
-#include "te_printf.h"
 #include "te_string.h"
 
 #define MAX_IRQ_NAME_LEN 64
@@ -511,21 +511,19 @@ get_irq_obj(unsigned int gid, const char *if_name, const char *irq_num_str,
  * IRQ that disappears mid-pass fail the whole subtree.
  */
 static te_errno
-irq_smp_affinity_get(unsigned int gid, const char *oid, char *value,
-                     const char *if_name, const char *irq_num)
+irq_smp_affinity_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    te_string affinity = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *irq_num = ta_conf_ctx_inst(ctx, "irq");
     struct ta_irq_obj *irq_obj;
     te_errno rc;
 
-    UNUSED(oid);
-
     /* Check that the IRQ really belongs to the interface. */
-    rc = get_irq_obj(gid, if_name, irq_num, &irq_obj);
+    rc = get_irq_obj(ta_conf_ctx_gid(ctx), if_name, irq_num, &irq_obj);
     if (rc != 0)
         return rc;
 
-    rc = te_file_read_string(&affinity, false, RCF_MAX_VAL - 1,
+    rc = te_file_read_string(val, false, RCF_MAX_VAL - 1,
                              "/proc/irq/%u/smp_affinity_list",
                              irq_obj->irq_num);
     if (rc != 0)
@@ -539,22 +537,21 @@ irq_smp_affinity_get(unsigned int gid, const char *oid, char *value,
 }
 
 static te_errno
-irq_smp_affinity_set(unsigned int gid, const char *oid, const char *value,
-                     const char *if_name, const char *irq_num)
+irq_smp_affinity_set(const ta_conf_ctx *ctx, const char *val)
 {
-    te_string affinity = TE_STRING_INIT_RO_PTR(value);
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *irq_num = ta_conf_ctx_inst(ctx, "irq");
+    te_string affinity = TE_STRING_INIT_RO_PTR(val);
     struct ta_irq_obj *irq_obj;
     te_errno rc;
 
-    UNUSED(oid);
-
-    if (*value == '\0')
+    if (*val == '\0')
     {
         ERROR("%s(): empty CPU list for IRQ %s", __FUNCTION__, irq_num);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    rc = get_irq_obj(gid, if_name, irq_num, &irq_obj);
+    rc = get_irq_obj(ta_conf_ctx_gid(ctx), if_name, irq_num, &irq_obj);
     if (rc != 0)
         return rc;
 
@@ -564,7 +561,7 @@ irq_smp_affinity_set(unsigned int gid, const char *oid, const char *value,
     if (rc != 0)
     {
         ERROR("%s(): failed to set affinity of IRQ %u to '%s': %r",
-              __FUNCTION__, irq_obj->irq_num, value, rc);
+              __FUNCTION__, irq_obj->irq_num, val, rc);
         return TE_RC(TE_TA_UNIX, rc);
     }
 
@@ -572,18 +569,17 @@ irq_smp_affinity_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-irq_cpu_get(unsigned int gid, const char *oid, char *value,
-            const char *if_name, const char *irq_num,
-            const char *cpu_num_str)
+irq_cpu_get(const ta_conf_ctx *ctx, uint64_t *val)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *irq_num = ta_conf_ctx_inst(ctx, "irq");
+    const char *cpu_num_str = ta_conf_ctx_inst(ctx, "cpu");
     te_errno rc;
     struct ta_irq_obj *irq_obj;
     struct ta_irq_per_cpu *irq_per_cpu;
     unsigned int cpu_num;
     unsigned int cpu_pos;
     bool irq_found = false;
-
-    UNUSED(oid);
 
     rc = te_strtoui(cpu_num_str, 10, &cpu_num);
     if (rc != 0)
@@ -592,7 +588,7 @@ irq_cpu_get(unsigned int gid, const char *oid, char *value,
               cpu_num_str);
         return rc;
     }
-    rc = get_irq_obj(gid, if_name, irq_num, &irq_obj);
+    rc = get_irq_obj(ta_conf_ctx_gid(ctx), if_name, irq_num, &irq_obj);
     if (rc != 0)
         return rc;
 
@@ -606,113 +602,77 @@ irq_cpu_get(unsigned int gid, const char *oid, char *value,
     }
     irq_per_cpu = te_vec_get(&irq_obj->irq_per_cpu, cpu_pos);
 
-    rc = te_snprintf(value, RCF_MAX_VAL, "%" TE_PRINTF_64 "d",
-                     irq_per_cpu->num);
-    if (rc != 0)
-    {
-        ERROR("%s(): te_snprintf() failed", __FUNCTION__);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
+    *val = irq_per_cpu->num;
     return 0;
 }
 
 static te_errno
-irq_cpu_list(unsigned int gid, const char *oid, const char *sub_id,
-             char **list, const char *if_name, const char *irq_num)
+irq_cpu_list(const ta_conf_ctx *ctx, te_vec *names)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *irq_num = ta_conf_ctx_inst(ctx, "irq");
     te_errno rc;
     struct ta_irq_obj *irq_obj;
     struct ta_irq_per_cpu *irq_per_cpu;
-    te_string str = TE_STRING_INIT;
 
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-    rc = get_irq_obj(gid, if_name, irq_num, &irq_obj);
+    rc = get_irq_obj(ta_conf_ctx_gid(ctx), if_name, irq_num, &irq_obj);
     if (rc != 0)
         return rc;
 
     TE_VEC_FOREACH(&irq_obj->irq_per_cpu, irq_per_cpu)
     {
-        rc = te_string_append_chk(&str, "%d ", irq_per_cpu->cpu);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return rc;
-        }
+        char *name = te_string_fmt("%u", irq_per_cpu->cpu);
+
+        TE_VEC_APPEND(names, name);
     }
-    *list = str.ptr;
 
     return 0;
 }
 
 static te_errno
-irq_name_get(unsigned int gid, const char *oid, char *value,
-             const char *if_name, const char *irq_num)
+irq_name_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *irq_num = ta_conf_ctx_inst(ctx, "irq");
     te_errno rc;
     struct ta_irq_obj *irq_obj;
 
-    UNUSED(oid);
-
-    rc = get_irq_obj(gid, if_name, irq_num, &irq_obj);
+    rc = get_irq_obj(ta_conf_ctx_gid(ctx), if_name, irq_num, &irq_obj);
     if (rc != 0)
         return rc;
 
-    rc = te_snprintf(value, RCF_MAX_VAL, "%s", irq_obj->name);
-    if (rc != 0)
-    {
-        ERROR("%s(): te_snprintf() failed", __FUNCTION__);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
+    te_string_append(val, "%s", irq_obj->name);
     return 0;
 }
 
 static te_errno
-irq_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
-         const char *if_name)
+irq_list(const ta_conf_ctx *ctx, te_vec *names)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
     te_errno rc;
     te_vec *irqs;
     struct ta_irq_obj *irq_obj;
-    te_string str = TE_STRING_INIT;
 
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-    rc = get_irqs_vec(gid, if_name, &irqs);
+    rc = get_irqs_vec(ta_conf_ctx_gid(ctx), if_name, &irqs);
     if (rc != 0)
         return rc;
 
     TE_VEC_FOREACH(irqs, irq_obj)
     {
-        rc = te_string_append_chk(&str, "%u ", irq_obj->irq_num);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return rc;
-        }
+        char *name = te_string_fmt("%u", irq_obj->irq_num);
+
+        TE_VEC_APPEND(names, name);
     }
-    *list = str.ptr;
 
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RW(node_irq_smp_affinity, "smp_affinity",
-                    NULL, NULL,
-                    irq_smp_affinity_get, irq_smp_affinity_set);
-
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_irq_cpu, "cpu",
-                               NULL, &node_irq_smp_affinity,
-                               irq_cpu_get, irq_cpu_list);
-
-RCF_PCH_CFG_NODE_RO(node_irq_name, "name",
-                    NULL, &node_irq_cpu,
-                    irq_name_get);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_irq, "irq",
-                            &node_irq_name, NULL,
-                            NULL, NULL, irq_list, NULL);
+static const ta_conf_node *const node_irq =
+    TA_CONF_LIST("irq", irq_list,
+        TA_CONF_RO_STR("name", irq_name_get),
+        TA_CONF_RO_COLL_UINT64("cpu", irq_cpu_get, irq_cpu_list),
+        TA_CONF_RW_STR("smp_affinity", irq_smp_affinity_get,
+                       irq_smp_affinity_set));
 
 /**
  * Add a child nodes for IRQ subtree to interface object.
@@ -722,5 +682,5 @@ RCF_PCH_CFG_NODE_COLLECTION(node_irq, "irq",
 te_errno
 ta_unix_conf_irq_stats_init(void)
 {
-    return rcf_pch_add_node("/agent/interface", &node_irq);
+    return ta_conf_register("/agent/interface", node_irq);
 }
