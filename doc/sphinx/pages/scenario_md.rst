@@ -98,7 +98,7 @@ The rules:
   ``Type:`` paragraph sets the ``@type``; any other paragraph
   before ``Steps:`` becomes a ``@note``.
 * ``Parameters:`` is followed by a list of
-  ```` `name`: description ```` items; nested items list the
+  :literal:`\`name\`: description` items; nested items list the
   values, optionally with a comment after a colon.
 * ``Steps:`` is followed by the step list. Ordered and unordered
   markers are interchangeable at every depth.
