@@ -18,23 +18,23 @@
 #include "te_ethtool.h"
 #endif
 
-#include "te_printf.h"
+#include "te_alloc.h"
+#include "rcf_pch_tree.h"
 #include "conf_ethtool.h"
 
 #ifdef HAVE_LINUX_ETHTOOL_H
-te_errno
-xstat_get(unsigned int gid, const char *oid, char *value, const char *if_name,
-          const char *xstats_name, const char *xstat_name)
+static te_errno
+xstat_get(const ta_conf_ctx *ctx, uint64_t *val)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *xstat_name = ta_conf_ctx_inst(ctx, "xstat");
     const ta_ethtool_strings *xstat_names = NULL;
     const uint64_t *xstat_values = NULL;
     int i;
     te_errno rc;
 
-    UNUSED(xstats_name);
-
-    rc = ta_ethtool_get_strings_stats(gid, if_name, &xstat_names,
-                                      &xstat_values);
+    rc = ta_ethtool_get_strings_stats(ta_conf_ctx_gid(ctx), if_name,
+                                      &xstat_names, &xstat_values);
     if (rc != 0)
         return rc;
 
@@ -42,29 +42,25 @@ xstat_get(unsigned int gid, const char *oid, char *value, const char *if_name,
     {
         if (strcmp(xstat_names->strings[i], xstat_name) == 0)
         {
-            rc = te_snprintf(value, RCF_MAX_VAL, "%" TE_PRINTF_64 "u",
-                             xstat_values[i]);
-            if (rc != 0)
-            {
-                ERROR("%s(): te_snprintf() failed", __FUNCTION__);
-                return TE_RC(TE_TA_UNIX, rc);
-            }
+            *val = xstat_values[i];
             return 0;
         }
     }
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
-te_errno
-xstat_list(unsigned int gid, const char *oid, const char *sub_id,
-           char **list, const char *if_name)
+static te_errno
+xstat_list(const ta_conf_ctx *ctx, te_vec *names)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    char *list = NULL;
+    char *copy;
+    char *saveptr;
+    char *tok;
     te_errno rc;
 
-    UNUSED(sub_id);
-    UNUSED(oid);
-
-    rc = ta_ethtool_get_strings_list(gid, if_name, ETH_SS_STATS, list);
+    rc = ta_ethtool_get_strings_list(ta_conf_ctx_gid(ctx), if_name,
+                                     ETH_SS_STATS, &list);
     if (rc != 0)
     {
         int failed_ethtool_cmd;
@@ -75,6 +71,7 @@ xstat_list(unsigned int gid, const char *oid, const char *sub_id,
         {
             ERROR("%s(): error %r occurred while getting statistics for %s",
                   __FUNCTION__, rc, if_name);
+            return rc;
         }
         else if (rc != TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP) ||
                  failed_ethtool_cmd != ETHTOOL_GSTRINGS)
@@ -83,30 +80,36 @@ xstat_list(unsigned int gid, const char *oid, const char *sub_id,
                   "failed SIOCETHTOOL command is %d (%s)", __FUNCTION__, rc,
                   if_name, failed_ethtool_cmd,
                   ta_ethtool_cmd2str(failed_ethtool_cmd));
+            return rc;
         }
-        else
-        {
-            /*
-             * If statistics are not supported, let Configurator
-             * think they are not present to avoid error messages.
-             */
-            *list = NULL;
-            rc = 0;
-        }
+
+        /*
+         * If statistics are not supported, report an empty list
+         * to avoid error messages.
+         */
+        return 0;
     }
-    return rc;
+
+    if (list == NULL)
+        return 0;
+
+    copy = TE_STRDUP(list);
+    for (tok = strtok_r(copy, " ", &saveptr); tok != NULL;
+         tok = strtok_r(NULL, " ", &saveptr))
+    {
+        char *name = TE_STRDUP(tok);
+
+        TE_VEC_APPEND(names, name);
+    }
+    free(copy);
+    free(list);
+
+    return 0;
 }
 
-static rcf_pch_cfg_object node_xstat = {
-    .sub_id = "xstat",
-    .get = (rcf_ch_cfg_get)xstat_get,
-    .list = (rcf_ch_cfg_list)xstat_list,
-};
-
-static rcf_pch_cfg_object node_xstats = {
-    .sub_id = "xstats",
-    .son = &node_xstat,
-};
+static const ta_conf_node *const node_xstats =
+    TA_CONF_NA("xstats",
+        TA_CONF_RO_COLL_UINT64("xstat", xstat_get, xstat_list));
 
 /**
  * Add a child nodes for ethtool statistics to the statistic interface object.
@@ -116,7 +119,7 @@ static rcf_pch_cfg_object node_xstats = {
 te_errno
 ta_unix_conf_eth_xstats_init(void)
 {
-    return rcf_pch_add_node("/agent/interface", &node_xstats);
+    return ta_conf_register("/agent/interface", node_xstats);
 }
 #else
 te_errno
