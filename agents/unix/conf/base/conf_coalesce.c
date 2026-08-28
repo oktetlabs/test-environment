@@ -13,12 +13,15 @@
 #include "te_config.h"
 #include "config.h"
 
+#include <limits.h>
+
 #include "te_errno.h"
 #include "logger_api.h"
 #include "te_defs.h"
-#include "rcf_pch.h"
-#include "rcf_pch_ta_cfg.h"
-#include "unix_internal.h"
+#include "te_str.h"
+#include "te_alloc.h"
+#include "te_vector.h"
+#include "rcf_pch_tree.h"
 
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
@@ -36,74 +39,60 @@
 
 #if defined (__linux__) && HAVE_LINUX_ETHTOOL_H
 
+/** Names of fields in ethtool_coalesce structure exposed as parameters */
+static const char *const coalesce_param_names[] = {
+    "rx_coalesce_usecs",
+    "rx_max_coalesced_frames",
+    "rx_coalesce_usecs_irq",
+    "rx_max_coalesced_frames_irq",
+    "tx_coalesce_usecs",
+    "tx_max_coalesced_frames",
+    "tx_coalesce_usecs_irq",
+    "tx_max_coalesced_frames_irq",
+    "stats_block_coalesce_usecs",
+    "use_adaptive_rx_coalesce",
+    "use_adaptive_tx_coalesce",
+    "pkt_rate_low",
+    "rx_coalesce_usecs_low",
+    "rx_max_coalesced_frames_low",
+    "tx_coalesce_usecs_low",
+    "tx_max_coalesced_frames_low",
+    "pkt_rate_high",
+    "rx_coalesce_usecs_high",
+    "rx_max_coalesced_frames_high",
+    "tx_coalesce_usecs_high",
+    "tx_max_coalesced_frames_high",
+    "rate_sample_interval",
+};
+
 /**
  * Get list of supported interrupt coalescing parameters.
  *
- * @param gid             Group ID (unused)
- * @param oid             Object instance identifier (unused)
- * @param sub_id          Name of the object to be listed (unused)
- * @param list_out        Pointer to the list will be stored here
- * @param if_name         Interface name
- * @param coalesce_name   Not used
- * @param global_name     Not used
+ * @param ctx             Request context (parent instance OID)
+ * @param names           Vector of heap-allocated names to append to
  *
  * @return Status code.
  */
 static te_errno
-coalesce_param_list(unsigned int gid,
-                    const char *oid,
-                    const char *sub_id,
-                    char **list_out,
-                    const char *if_name,
-                    const char *coalesce_name,
-                    const char *global_name)
+coalesce_param_list(const ta_conf_ctx *ctx, te_vec *names)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
     struct ethtool_coalesce ecmd;
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(coalesce_name);
-    UNUSED(global_name);
+    size_t i;
 
     rc = call_ethtool_ioctl(if_name, ETHTOOL_GCOALESCE, &ecmd);
     if (rc == TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP))
-    {
-        *list_out = NULL;
         return 0;
-    }
     else if (rc != 0)
-    {
         return rc;
+
+    for (i = 0; i < TE_ARRAY_LEN(coalesce_param_names); i++)
+    {
+        char *name = TE_STRDUP(coalesce_param_names[i]);
+
+        TE_VEC_APPEND(names, name);
     }
-
-    *list_out = strdup(
-        "rx_coalesce_usecs "
-        "rx_max_coalesced_frames "
-        "rx_coalesce_usecs_irq "
-        "rx_max_coalesced_frames_irq "
-        "tx_coalesce_usecs "
-        "tx_max_coalesced_frames "
-        "tx_coalesce_usecs_irq "
-        "tx_max_coalesced_frames_irq "
-        "stats_block_coalesce_usecs "
-        "use_adaptive_rx_coalesce "
-        "use_adaptive_tx_coalesce "
-        "pkt_rate_low "
-        "rx_coalesce_usecs_low "
-        "rx_max_coalesced_frames_low "
-        "tx_coalesce_usecs_low "
-        "tx_max_coalesced_frames_low "
-        "pkt_rate_high "
-        "rx_coalesce_usecs_high "
-        "rx_max_coalesced_frames_high "
-        "tx_coalesce_usecs_high "
-        "tx_max_coalesced_frames_high "
-        "rate_sample_interval");
-
-    if (*list_out == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     return 0;
 }
@@ -185,68 +174,48 @@ process_coalesce_param(struct ethtool_coalesce *ecmd,
  *
  * @param eptr          Pointer to ethtool_coalesce structure.
  * @param param_name    Parameter name.
- * @param value         Buffer for obtained value.
+ * @param val           Where to save obtained value.
  *
  * @return Status code.
  */
 static te_errno
 common_param_get(struct ethtool_coalesce *eptr,
                  const char *param_name,
-                 char *value)
+                 uint64_t *val)
 {
     unsigned int param_val;
     te_errno rc;
 
-    rc = process_coalesce_param(eptr, param_name, &param_val,
-                                false);
+    rc = process_coalesce_param(eptr, param_name, &param_val, false);
     if (rc != 0)
         return rc;
 
-    rc = te_snprintf(value, RCF_MAX_VAL, "%u", param_val);
-    if (rc != 0)
-    {
-        ERROR("%s(): te_snprintf() failed", __FUNCTION__);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
-
+    *val = param_val;
     return 0;
 }
 
 /**
  * Get value of interrupt coalescing parameter.
  *
- * @param gid             Group ID
- * @param oid             Object instance identifier (unused)
- * @param value           Where to save the value
- * @param if_name         Interface name
- * @param coalesce_name   Unused
- * @param global_name     Unused
- * @param param_name      Name of the parameter
+ * @param ctx             Request context
+ * @param val             Where to save the value
  *
  * @return Status code.
  */
 static te_errno
-coalesce_param_get(unsigned int gid,
-                   const char *oid,
-                   char *value,
-                   const char *if_name,
-                   const char *coalesce_name,
-                   const char *global_name,
-                   const char *param_name)
+coalesce_param_get(const ta_conf_ctx *ctx, uint64_t *val)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *param_name = ta_conf_ctx_inst(ctx, "param");
     struct ethtool_coalesce *eptr;
     te_errno rc;
 
-    UNUSED(oid);
-    UNUSED(coalesce_name);
-    UNUSED(global_name);
-
-    rc = get_ethtool_value(if_name, gid, TA_ETHTOOL_COALESCE,
+    rc = get_ethtool_value(if_name, ta_conf_ctx_gid(ctx), TA_ETHTOOL_COALESCE,
                            (void **)&eptr);
     if (rc != 0)
         return rc;
 
-    return common_param_get(eptr, param_name, value);
+    return common_param_get(eptr, param_name, val);
 }
 
 /**
@@ -254,91 +223,75 @@ coalesce_param_get(unsigned int gid,
  *
  * @param eptr          Pointer to ethtool_coalesce structure.
  * @param param_name    Parameter name.
- * @param value         Parameter value.
+ * @param val           Parameter value.
  *
  * @return Status code.
  */
 static te_errno
 common_param_set(struct ethtool_coalesce *eptr,
                  const char *param_name,
-                 const char *value)
+                 uint64_t val)
 {
-    unsigned long int parsed_val;
     unsigned int param_val;
-    te_errno rc;
 
-    rc = te_strtoul(value, 10, &parsed_val);
-    if (rc != 0)
+    if (val > UINT_MAX)
     {
-        ERROR("%s(): invalid value '%s'", __FUNCTION__, value);
-        return rc;
-    }
-    else if (parsed_val > UINT_MAX)
-    {
-        ERROR("%s(): too big value '%s'", __FUNCTION__, value);
+        ERROR("%s(): too big value '%" PRIu64 "' for '%s'", __FUNCTION__, val,
+              param_name);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    param_val = parsed_val;
-    return process_coalesce_param(eptr, param_name, &param_val,
-                                  true);
+    param_val = val;
+    return process_coalesce_param(eptr, param_name, &param_val, true);
 }
 
 /**
  * Set value of interrupt coalescing parameter.
  *
- * @param gid             Group ID
- * @param oid             Object instance identifier (unused)
- * @param value           Value to set
- * @param if_name         Interface name
- * @param coalesce_name   Unused
- * @param global_name     Unused
- * @param param_name      Name of the parameter
+ * @param ctx             Request context
+ * @param val             Value to set
  *
  * @return Status code.
  */
 static te_errno
-coalesce_param_set(unsigned int gid,
-                   const char *oid,
-                   char *value,
-                   const char *if_name,
-                   const char *coalesce_name,
-                   const char *global_name,
-                   const char *param_name)
+coalesce_param_set(const ta_conf_ctx *ctx, uint64_t val)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *param_name = ta_conf_ctx_inst(ctx, "param");
     struct ethtool_coalesce *eptr;
     te_errno rc;
 
-    UNUSED(oid);
-    UNUSED(coalesce_name);
-    UNUSED(global_name);
-
-    rc = get_ethtool_value(if_name, gid, TA_ETHTOOL_COALESCE,
+    rc = get_ethtool_value(if_name, ta_conf_ctx_gid(ctx), TA_ETHTOOL_COALESCE,
                            (void **)&eptr);
     if (rc != 0)
         return rc;
 
-    return common_param_set(eptr, param_name, value);
+    return common_param_set(eptr, param_name, val);
 }
 
 /**
  * Commit changes to interrupt coalescing settings.
  *
- * @param gid     Group ID (unused)
- * @param p_oid   Pointer to Object Instance Identitier
+ * @param ctx     Request context
  *
  * @return Status code.
  */
 static te_errno
-if_coalesce_commit(unsigned int gid, const cfg_oid *p_oid)
+if_coalesce_commit(const ta_conf_ctx *ctx)
 {
-    char *if_name;
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
 
-    UNUSED(gid);
-    if_name = CFG_OID_GET_INST_NAME(p_oid, 2);
-
-    return commit_ethtool_value(if_name, gid, TA_ETHTOOL_COALESCE);
+    return commit_ethtool_value(if_name, ta_conf_ctx_gid(ctx),
+                                TA_ETHTOOL_COALESCE);
 }
+
+/** Common node for interrupt coalescing settings */
+static const ta_conf_node *const node_net_if_coalesce =
+    TA_CONF_NA("coalesce",
+        TA_CONF_NA_COMMIT("global", if_coalesce_commit,
+            TA_CONF_RW_COLL_UINT64("param", coalesce_param_get,
+                                 coalesce_param_set,
+                                 coalesce_param_list)));
 
 #ifdef ETHTOOL_PERQUEUE
 
@@ -391,200 +344,108 @@ get_per_queue_data(unsigned int gid, const char *if_name,
 /**
  * Get value of interrupt coalescing parameter for a specific queue.
  *
- * @param gid             Group ID.
- * @param oid             Object instance identifier (unused).
- * @param value           Where to save the value.
- * @param if_name         Interface name.
- * @param coalesce_name   Unused.
- * @param queues_name     Unused.
- * @param queue_name      Queue name.
- * @param param_name      Name of the parameter.
+ * @param ctx             Request context
+ * @param val             Where to save the value
  *
  * @return Status code.
  */
 static te_errno
-queue_param_get(unsigned int gid,
-                const char *oid,
-                char *value,
-                const char *if_name,
-                const char *coalesce_name,
-                const char *queues_name,
-                const char *queue_name,
-                const char *param_name)
+queue_param_get(const ta_conf_ctx *ctx, uint64_t *val)
 {
-
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *queue_name = ta_conf_ctx_inst(ctx, "queue");
+    const char *param_name = ta_conf_ctx_inst(ctx, "param");
     struct ethtool_coalesce *eptr;
     te_errno rc;
 
-    UNUSED(oid);
-    UNUSED(coalesce_name);
-    UNUSED(queues_name);
-
-    rc = get_per_queue_data(gid, if_name, queue_name, &eptr);
+    rc = get_per_queue_data(ta_conf_ctx_gid(ctx), if_name, queue_name, &eptr);
     if (rc != 0)
         return rc;
 
-    return common_param_get(eptr, param_name, value);
+    return common_param_get(eptr, param_name, val);
 }
 
 /**
  * Set value of interrupt coalescing parameter for a specific queue.
  *
- * @param gid             Group ID.
- * @param oid             Object instance identifier (unused).
- * @param value           Value to set.
- * @param if_name         Interface name.
- * @param coalesce_name   Unused
- * @param queues_name     Unused.
- * @param queue_name      Queue name.
- * @param param_name      Name of the parameter.
+ * @param ctx             Request context
+ * @param val             Value to set
  *
  * @return Status code.
  */
 static te_errno
-queue_param_set(unsigned int gid,
-                const char *oid,
-                char *value,
-                const char *if_name,
-                const char *coalesce_name,
-                const char *queues_name,
-                const char *queue_name,
-                const char *param_name)
+queue_param_set(const ta_conf_ctx *ctx, uint64_t val)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *queue_name = ta_conf_ctx_inst(ctx, "queue");
+    const char *param_name = ta_conf_ctx_inst(ctx, "param");
     struct ethtool_coalesce *eptr;
     te_errno rc;
 
-    UNUSED(oid);
-    UNUSED(coalesce_name);
-    UNUSED(queues_name);
-
-    rc = get_per_queue_data(gid, if_name, queue_name, &eptr);
+    rc = get_per_queue_data(ta_conf_ctx_gid(ctx), if_name, queue_name, &eptr);
     if (rc != 0)
         return rc;
 
-    return common_param_set(eptr, param_name, value);
+    return common_param_set(eptr, param_name, val);
 }
 
 /**
  * Get list of interface queues.
  *
- * @param gid             Group ID (unused).
- * @param oid             Object instance identifier (unused).
- * @param sub_id          Name of the object to be listed (unused).
- * @param list_out        Pointer to the list will be stored here.
- * @param if_name         Interface name.
- * @param coalesce_name   Not used.
+ * @param ctx             Request context (parent instance OID)
+ * @param names           Vector of heap-allocated names to append to
  *
  * @return Status code.
  */
 static te_errno
-queue_list(unsigned int gid,
-           const char *oid,
-           const char *sub_id,
-           char **list_out,
-           const char *if_name,
-           const char *coalesce_name)
+queue_list(const ta_conf_ctx *ctx, te_vec *names)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
     ta_ethtool_pq_coalesce *pq;
     te_errno rc;
-    te_string str = TE_STRING_INIT;
     unsigned int i;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(coalesce_name);
-
-    rc = get_ethtool_value(if_name, gid, TA_ETHTOOL_PQ_COALESCE,
+    rc = get_ethtool_value(if_name, ta_conf_ctx_gid(ctx), TA_ETHTOOL_PQ_COALESCE,
                            (void **)&pq);
     if (rc == TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP))
-    {
-        *list_out = NULL;
         return 0;
-    }
     else if (rc != 0)
-    {
         return rc;
-    }
 
     for (i = 0; i < pq->queues_num; i++)
     {
-        if (i > 0)
-            te_string_append(&str, " ");
+        char *name = te_string_fmt("%u", i);
 
-        te_string_append(&str, "%u", i);
+        TE_VEC_APPEND(names, name);
     }
 
-    *list_out = str.ptr;
     return 0;
 }
 
 /**
  * Commit changes to interrupt coalescing settings for interface queues.
  *
- * @param gid     Group ID (unused).
- * @param p_oid   Pointer to Object Instance Identitier.
+ * @param ctx     Request context
  *
  * @return Status code.
  */
 static te_errno
-queues_commit(unsigned int gid, const cfg_oid *p_oid)
+queues_commit(const ta_conf_ctx *ctx)
 {
-    char *if_name;
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
 
-    UNUSED(gid);
-    if_name = CFG_OID_GET_INST_NAME(p_oid, 2);
-
-    return commit_ethtool_value(if_name, gid, TA_ETHTOOL_PQ_COALESCE);
+    return commit_ethtool_value(if_name, ta_conf_ctx_gid(ctx),
+                                TA_ETHTOOL_PQ_COALESCE);
 }
 
-/* Predeclaration */
-static rcf_pch_cfg_object node_queues;
-
-/** Queue coalescing parameter node */
-static rcf_pch_cfg_object node_queue_param = {
-    "param", 0, NULL, NULL,
-    (rcf_ch_cfg_get)queue_param_get,
-    (rcf_ch_cfg_set)queue_param_set,
-    NULL, NULL, (rcf_ch_cfg_list)coalesce_param_list,
-    NULL, &node_queues
-};
-
-/** Interface queue node */
-static rcf_pch_cfg_object node_queue = {
-    "queue", 0, &node_queue_param, NULL,
-    NULL, NULL, NULL, NULL,
-    (rcf_ch_cfg_list)queue_list,
-    NULL, &node_queues
-};
-
-/** Interface queues node */
-static rcf_pch_cfg_object node_queues = {
-    "queues", 0, &node_queue, NULL,
-    NULL, NULL, NULL, NULL, NULL,
-    (rcf_ch_cfg_commit)queues_commit, NULL
-};
+static const ta_conf_node *const node_queues =
+    TA_CONF_NA_COMMIT("queues", queues_commit,
+        TA_CONF_LIST("queue", queue_list,
+            TA_CONF_RW_COLL_UINT64("param", queue_param_get,
+                                 queue_param_set,
+                                 coalesce_param_list)));
 
 #endif /* ETHTOOL_PERQUEUE */
-
-/* Predeclaration */
-static rcf_pch_cfg_object node_global;
-
-/** Coalescing parameter node */
-static rcf_pch_cfg_object node_param = {
-    "param", 0, NULL, NULL,
-    (rcf_ch_cfg_get)coalesce_param_get,
-    (rcf_ch_cfg_set)coalesce_param_set,
-    NULL, NULL, (rcf_ch_cfg_list)coalesce_param_list,
-    NULL, &node_global
-};
-
-/** Interrupt coalescing settings for whole interface */
-RCF_PCH_CFG_NODE_NA_COMMIT(node_global, "global", &node_param, NULL,
-                           &if_coalesce_commit);
-
-/** Common node for interrupt coalescing settings */
-RCF_PCH_CFG_NODE_NA(node_net_if_coalesce, "coalesce", &node_global, NULL);
 
 /**
  * Add a child node for interrupt coalescing settings to the interface
@@ -597,12 +458,12 @@ ta_unix_conf_if_coalesce_init(void)
 {
     te_errno rc;
 
-    rc = rcf_pch_add_node("/agent/interface", &node_net_if_coalesce);
+    rc = ta_conf_register("/agent/interface", node_net_if_coalesce);
     if (rc != 0)
         return rc;
 
 #ifdef ETHTOOL_PERQUEUE
-    rc = rcf_pch_add_node("/agent/interface/coalesce", &node_queues);
+    rc = ta_conf_register("/agent/interface/coalesce", node_queues);
 #endif
 
     return rc;
