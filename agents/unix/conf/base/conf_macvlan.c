@@ -19,8 +19,7 @@
 
 #include "conf_netconf.h"
 #include "logger_api.h"
-#include "rcf_ch_api.h"
-#include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_string.h"
@@ -30,40 +29,32 @@
 /**
  * Add a new MAC VLAN interface.
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param mode      Macvlan mode
- * @param link      Parent (link) interface name
- * @param ifname    The interface name
+ * @param ctx       Request context
+ * @param val       Macvlan mode
  *
  * @return      Status code
  */
 static te_errno
-macvlan_add(unsigned int gid, const char *oid, const char *mode,
-            const char *link, const char *ifname)
+macvlan_add(const ta_conf_ctx *ctx, const char *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    const char *link = ta_conf_ctx_inst(ctx, "interface");
+    const char *ifname = ta_conf_ctx_inst(ctx, "macvlan");
 
-    return netconf_macvlan_modify(nh, NETCONF_CMD_ADD, link, ifname, mode);
+    return netconf_macvlan_modify(nh, NETCONF_CMD_ADD, link, ifname, val);
 }
 
 /**
  * Delete a MAC VLAN interface.
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param link      Parent (link) interface name
- * @param ifname    The interface name
+ * @param ctx       Request context
  *
  * @return      Status code
  */
 static te_errno
-macvlan_del(unsigned int gid, const char *oid, const char *link,
-            const char *ifname)
+macvlan_del(const ta_conf_ctx *ctx)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    const char *link = ta_conf_ctx_inst(ctx, "interface");
+    const char *ifname = ta_conf_ctx_inst(ctx, "macvlan");
 
     return netconf_macvlan_modify(nh, NETCONF_CMD_DEL, link, ifname, 0);
 }
@@ -71,52 +62,40 @@ macvlan_del(unsigned int gid, const char *oid, const char *link,
 /**
  * Set MAC VLAN interface mode.
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param mode      Macvlan mode
- * @param link      Parent (link) interface name
- * @param ifname    The interface name
+ * @param ctx       Request context
+ * @param val       Macvlan mode
  *
  * @return      Status code
  */
 static te_errno
-macvlan_set(unsigned int gid, const char *oid, const char *mode,
-            const char *link, const char *ifname)
+macvlan_set(const ta_conf_ctx *ctx, const char *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    const char *link = ta_conf_ctx_inst(ctx, "interface");
+    const char *ifname = ta_conf_ctx_inst(ctx, "macvlan");
 
-    return netconf_macvlan_modify(nh, NETCONF_CMD_CHANGE, link, ifname,
-                                  mode);
+    return netconf_macvlan_modify(nh, NETCONF_CMD_CHANGE, link, ifname, val);
 }
 
 /**
  * Get MAC VLAN interface mode.
  *
- * @param gid   Group identifier (unused)
- * @param oid   Full object instance identifier (unused)
- * @param mode  MAC VLAN mode
- * @param link  Parent (link) interface name
- * @param ifname  The inteface name
+ * @param ctx   Request context
+ * @param val   Location for the MAC VLAN mode
  *
  * @return      Status code
  */
 static te_errno
-macvlan_get(unsigned int gid, const char *oid, char *mode,
-            const char *link, const char *ifname)
+macvlan_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "macvlan");
     const char *mode_str;
     te_errno    rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(link);
 
     rc = netconf_macvlan_get_mode(nh, ifname, &mode_str);
     if (rc != 0)
         return rc;
 
-    strcpy(mode, mode_str);
+    te_string_append(val, "%s", mode_str);
 
     return 0;
 }
@@ -124,50 +103,28 @@ macvlan_get(unsigned int gid, const char *oid, char *mode,
 /**
  * Get MAC VLAN interfaces list.
  *
- * @param gid     Group identifier (unused)
- * @param oid     Full identifier of the father instance (unused)
- * @param sub_id  ID of the object to be listed (unused)
- * @param list    Location for the list pointer
- * @param link    Parent (link) interface name
+ * @param ctx     Request context (parent instance OID)
+ * @param names   Vector of heap-allocated names to append to
  *
  * @return      Status code
  */
 static te_errno
-macvlan_list(unsigned int gid, const char *oid,
-             const char *sub_id, char **list,
-             const char *link)
+macvlan_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_vec        names = TE_VEC_INIT_AUTOPTR(char *);
-    te_string     str = TE_STRING_INIT;
-    te_errno      rc;
+    const char *link = ta_conf_ctx_inst(ctx, "interface");
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-    rc = netconf_macvlan_list(nh, link, &names);
-    if (rc == 0)
-    {
-        te_string_join_vec(&str, &names, " ");
-        *list = str.ptr;
-    }
-
-    te_vec_free(&names);
-
-    return rc;
+    return netconf_macvlan_list(nh, link, names);
 }
 
-static rcf_pch_cfg_object node_macvlan =
-    { "macvlan", 0, NULL, NULL,
-      (rcf_ch_cfg_get)macvlan_get, (rcf_ch_cfg_set)macvlan_set,
-      (rcf_ch_cfg_add)macvlan_add, (rcf_ch_cfg_del)macvlan_del,
-      (rcf_ch_cfg_list)macvlan_list, NULL, NULL, NULL };
+static const ta_conf_node *const node_macvlan =
+    TA_CONF_COLL_STR_RW("macvlan", macvlan_get, macvlan_set,
+                        macvlan_add, macvlan_del, macvlan_list);
 
 /* See the description in conf_rule.h */
 te_errno
 ta_unix_conf_macvlan_init(void)
 {
-    return rcf_pch_add_node("/agent/interface/", &node_macvlan);
+    return ta_conf_register("/agent/interface", node_macvlan);
 }
 
 #else /* USE_LIBNETCONF */
