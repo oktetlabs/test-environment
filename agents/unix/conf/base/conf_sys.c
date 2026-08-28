@@ -39,11 +39,11 @@
 #include "te_defs.h"
 #include "logger_api.h"
 #include "comm_agent.h"
-#include "rcf_ch_api.h"
-#include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 #include "logger_api.h"
 #include "unix_internal.h"
 #include "te_shell_cmd.h"
+#include "te_str.h"
 
 #ifdef HAVE_SYS_KLOG_H
 #include <sys/klog.h>
@@ -62,240 +62,6 @@ static char trash[128];
  *             [tcp_rmem, tcp_wmem]
  * Solaris TCP: 'ndd' utility
  */
-
-static te_errno rcvbuf_def_set(unsigned int, const char *,
-                               const char *);
-
-static te_errno rcvbuf_def_get(unsigned int, const char *,
-                               char *);
-
-static te_errno rcvbuf_max_set(unsigned int, const char *,
-                               const char *);
-
-static te_errno rcvbuf_max_get(unsigned int, const char *,
-                               char *);
-
-static te_errno sndbuf_def_set(unsigned int, const char *,
-                               const char *);
-
-static te_errno sndbuf_def_get(unsigned int, const char *,
-                               char *);
-
-static te_errno sndbuf_max_set(unsigned int, const char *,
-                               const char *);
-
-static te_errno sndbuf_max_get(unsigned int, const char *,
-                               char *);
-
-static te_errno udp_rcvbuf_def_set(unsigned int, const char *,
-                                   const char *);
-
-static te_errno udp_rcvbuf_def_get(unsigned int, const char *,
-                                   char *);
-
-static te_errno udp_rcvbuf_max_set(unsigned int, const char *,
-                                   const char *);
-
-static te_errno udp_rcvbuf_max_get(unsigned int, const char *,
-                                   char *);
-
-static te_errno udp_sndbuf_def_set(unsigned int, const char *,
-                                   const char *);
-
-static te_errno udp_sndbuf_def_get(unsigned int, const char *,
-                                   char *);
-
-static te_errno udp_sndbuf_max_set(unsigned int, const char *,
-                                   const char *);
-
-static te_errno udp_sndbuf_max_get(unsigned int, const char *,
-                                   char *);
-
-static te_errno tcp_rcvbuf_def_set(unsigned int, const char *,
-                                   const char *);
-
-static te_errno tcp_rcvbuf_def_get(unsigned int, const char *,
-                                   char *);
-
-static te_errno tcp_rcvbuf_max_set(unsigned int, const char *,
-                                   const char *);
-
-static te_errno tcp_rcvbuf_max_get(unsigned int, const char *,
-                                   char *);
-
-static te_errno tcp_sndbuf_def_set(unsigned int, const char *,
-                                   const char *);
-
-static te_errno tcp_sndbuf_def_get(unsigned int, const char *,
-                                   char *);
-
-static te_errno tcp_sndbuf_max_set(unsigned int, const char *,
-                                   const char *);
-
-static te_errno tcp_sndbuf_max_get(unsigned int, const char *,
-                                   char *);
-
-static te_errno proc_sys_common_set(unsigned int, const char *,
-                                    const char *);
-
-static te_errno proc_sys_common_get(unsigned int, const char *,
-                                    char *);
-
-static te_errno console_loglevel_set(unsigned int, const char *,
-                                     const char *);
-
-static te_errno console_loglevel_get(unsigned int, const char *,
-                                     char *);
-
-static te_errno core_pattern_set(unsigned int, const char *,
-                                     const char *);
-
-static te_errno core_pattern_get(unsigned int, const char *,
-                                     char *);
-
-
-#define SYSTEM_WIDE_PARAM(_name, _next) \
-    RCF_PCH_CFG_NODE_RW(node_##_name,               \
-                        #_name,                     \
-                        NULL, &node_##_next,        \
-                        _name##_get, _name##_set);
-
-#define SYSTEM_WIDE_PARAM_COMMON(_name, _next) \
-    RCF_PCH_CFG_NODE_RW(node_##_name, #_name,   \
-                        NULL, &node_##_next,    \
-                        proc_sys_common_get, proc_sys_common_set);
-
-RCF_PCH_CFG_NODE_RW(node_udp_rcvbuf_def,
-                    "udp_rcvbuf_def",
-                    NULL, NULL,
-                    udp_rcvbuf_def_get, udp_rcvbuf_def_set);
-SYSTEM_WIDE_PARAM(console_loglevel, udp_rcvbuf_def);
-SYSTEM_WIDE_PARAM(core_pattern, console_loglevel);
-SYSTEM_WIDE_PARAM(udp_rcvbuf_max, core_pattern);
-SYSTEM_WIDE_PARAM(udp_sndbuf_def, udp_rcvbuf_max);
-SYSTEM_WIDE_PARAM(udp_sndbuf_max, udp_sndbuf_def);
-SYSTEM_WIDE_PARAM(tcp_rcvbuf_def, udp_sndbuf_max);
-SYSTEM_WIDE_PARAM(tcp_rcvbuf_max, tcp_rcvbuf_def);
-SYSTEM_WIDE_PARAM(tcp_sndbuf_def, tcp_rcvbuf_max);
-SYSTEM_WIDE_PARAM(tcp_sndbuf_max, tcp_sndbuf_def);
-SYSTEM_WIDE_PARAM_COMMON(tcp_max_syn_backlog, tcp_sndbuf_max);
-SYSTEM_WIDE_PARAM_COMMON(neigh_gc_thresh3, tcp_max_syn_backlog);
-SYSTEM_WIDE_PARAM_COMMON(busy_read, neigh_gc_thresh3);
-SYSTEM_WIDE_PARAM_COMMON(busy_poll, busy_read);
-SYSTEM_WIDE_PARAM_COMMON(somaxconn, busy_poll);
-SYSTEM_WIDE_PARAM_COMMON(optmem_max, somaxconn);
-SYSTEM_WIDE_PARAM_COMMON(igmp_max_memberships, optmem_max);
-SYSTEM_WIDE_PARAM_COMMON(tcp_synack_retries, igmp_max_memberships);
-SYSTEM_WIDE_PARAM_COMMON(tcp_syn_retries, tcp_synack_retries);
-SYSTEM_WIDE_PARAM_COMMON(tcp_keepalive_time, tcp_syn_retries);
-SYSTEM_WIDE_PARAM_COMMON(tcp_keepalive_probes, tcp_keepalive_time);
-SYSTEM_WIDE_PARAM_COMMON(tcp_keepalive_intvl, tcp_keepalive_probes);
-SYSTEM_WIDE_PARAM_COMMON(tcp_retries2, tcp_keepalive_intvl);
-SYSTEM_WIDE_PARAM_COMMON(tcp_orphan_retries, tcp_retries2);
-SYSTEM_WIDE_PARAM_COMMON(tcp_fin_timeout, tcp_orphan_retries);
-SYSTEM_WIDE_PARAM_COMMON(tcp_syncookies, tcp_fin_timeout);
-SYSTEM_WIDE_PARAM_COMMON(tcp_timestamps, tcp_syncookies);
-SYSTEM_WIDE_PARAM_COMMON(route_mtu_expires, tcp_timestamps);
-SYSTEM_WIDE_PARAM(rcvbuf_def, route_mtu_expires);
-SYSTEM_WIDE_PARAM(rcvbuf_max, rcvbuf_def);
-SYSTEM_WIDE_PARAM(sndbuf_def, rcvbuf_max);
-SYSTEM_WIDE_PARAM(sndbuf_max, sndbuf_def);
-RCF_PCH_CFG_NODE_NA(node_sys, "sys", &node_sndbuf_max, NULL);
-
-te_errno
-ta_unix_conf_sys_init(void)
-{
-#if 0
-    /* disable code was disabled as normal linux is a prio */
-    /* Temporarily disable to be able to run on openvz host */
-    return 0;
-#endif
-    return rcf_pch_add_node("/agent", &node_sys);
-}
-
-/**
- * Set console log level.
- *
- * @param gid          Group identifier (unused)
- * @param oid          Full object instance identifier (unused)
- * @param value        Value of the log level
- *
- * @return Status code
- * @retval 0        Success
- */
-static te_errno
-console_loglevel_set(unsigned int gid, const char *oid, const char *value)
-{
-    int     fd;
-    int     rc;
-    int     error;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    fd = open("/proc/sys/kernel/printk", O_WRONLY);
-    if (fd < 0)
-    {
-        error = errno;
-        ERROR("open failed: %s", strerror(error));
-        return TE_OS_RC(TE_TA_UNIX, error);
-    }
-    rc = write(fd, value, strlen(value));
-    error = errno;
-    close(fd);
-    if (rc < 0)
-    {
-        ERROR("write failed to write %d bytes: rc=%d %s",
-              strlen(value), rc, strerror(error));
-        return TE_OS_RC(TE_TA_UNIX, error);
-    }
-    return 0;
-}
-
-/**
- * Get console log level.
- *
- * @param gid          Group identifier (unused)
- * @param oid          Full object instance identifier (unused)
- * @param value        Value of the log level
- *
- * @return Status code
- * @retval 0        Success
- */
-static te_errno
-console_loglevel_get(unsigned int gid, const char *oid, char *value)
-{
-    int     level = 0;
-    int     fd;
-    ssize_t res;
-    int     error;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    fd = open("/proc/sys/kernel/printk", O_RDONLY);
-    if (fd < 0)
-    {
-        int error = errno;
-        ERROR("open failed: %s", strerror(error));
-        return TE_OS_RC(TE_TA_UNIX, error);
-    }
-
-    res = read(fd, trash, sizeof(trash) - 1);
-    error = errno;
-    close(fd);
-    if (res < 0)
-    {
-        ERROR("read failed: %s", strerror(error));
-        return TE_OS_RC(TE_TA_UNIX, error);
-    }
-
-    trash[sizeof(trash) - 1] = '\0';
-    level = atoi(trash);
-
-    snprintf(value, RCF_MAX_VAL, "%d", level);
-    return 0;
-}
 
 /**
  * Set or Get the appropriate driver value on Solaris.
@@ -366,6 +132,47 @@ cleanup:
     ta_waitpid(pid, &status, 0);
 
     return rc;
+}
+
+/**
+ * Get an integer tunable via 'ndd' on Solaris.
+ *
+ * @param drv           One of 'udp', 'tcp'
+ * @param param         Parameter name
+ * @param val           Where to save the obtained value
+ *
+ * @return              Status code.
+ */
+static te_errno
+sun_ioctl_get_int(char *drv, char *param, int32_t *val)
+{
+    char     strval[RCF_MAX_VAL] = "";
+    te_errno rc;
+
+    rc = sun_ioctl(drv, param, ND_GET, strval);
+    if (rc != 0)
+        return rc;
+
+    return te_strtoi(strval, 10, val);
+}
+
+/**
+ * Set an integer tunable via 'ndd' on Solaris.
+ *
+ * @param drv           One of 'udp', 'tcp'
+ * @param param         Parameter name
+ * @param val           Value to set
+ *
+ * @return              Status code.
+ */
+static te_errno
+sun_ioctl_set_int(char *drv, char *param, int32_t val)
+{
+    char strval[RCF_MAX_VAL] = "";
+
+    snprintf(strval, sizeof(strval), "%" PRId32, val);
+
+    return sun_ioctl(drv, param, ND_SET, strval);
 }
 #endif
 
@@ -462,673 +269,162 @@ tcp_mem_set(const char *proc_file, int *par_array, int len)
 }
 
 /**
- * Put a number value in a system file like
- * /proc/sys/net/ipv4/tcp_timestamps
- *
- * @param path      Full path with file name
- * @param value     String with value
- *
- * return Status code
- */
-static te_errno
-proc_sys_set_value(const char *path, const char *value)
-{
-    char       *tmp;
-    int         bmem = 0;
-    int         rc;
-
-    rc = tcp_mem_get(path, &bmem, 1);
-    if (rc != 0)
-        return rc;
-
-    bmem = strtol(value, &tmp, 10);
-    if (tmp == value || *tmp != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    rc = tcp_mem_set(path, &bmem, 1);
-    if (rc != 0)
-        return rc;
-
-    return 0;
-}
-
-/**
  * Get a number value from a system file like
- * /proc/sys/net/ipv4/tcp_timestamps
+ * /proc/sys/net/ipv4/tcp_timestamps, holding a single field.
  *
  * @param path      Full path with file name
- * @param value     Buffer for string with value
+ * @param val       Where to save the obtained value
  *
  * return Status code
  */
 static te_errno
-proc_sys_get_value(const char *path, char *value)
+proc_sys_common_get(const char *path, int32_t *val)
 {
-    int bmem = 0;
-    int rc;
+    int      bmem = 0;
+    te_errno rc;
 
     rc = tcp_mem_get(path, &bmem, 1);
     if (rc != 0)
         return rc;
 
-    sprintf(value, "%d", bmem);
+    *val = bmem;
 
     return 0;
 }
-#endif
-
 
 /**
- * Set TCP send buffer max size.
+ * Put a number value in a system file like
+ * /proc/sys/net/ipv4/tcp_timestamps, holding a single field.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be set as sndbuf max size
+ * @param path      Full path with file name
+ * @param val       Value to set
  *
- * @return              Status code
+ * return Status code
  */
 static te_errno
-tcp_sndbuf_max_set(unsigned int gid, const char *oid,
-                   const char *value)
+proc_sys_common_set(const char *path, int32_t val)
 {
-    te_errno  rc = 0;
+    int      bmem = 0;
+    te_errno rc;
 
-#if __linux__
-    char     *tmp;
-    int       bmem[3] = { 0, };
-#endif
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-#if __linux__
-    rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
+    rc = tcp_mem_get(path, &bmem, 1);
     if (rc != 0)
         return rc;
 
-    bmem[2] = strtol(value, &tmp, 10);
-    if (tmp == value || *tmp != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    bmem = val;
 
-    rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
-    if (rc != 0)
-        return rc;
-#elif defined(__sun)
-    rc = sun_ioctl("tcp", "tcp_max_buf", ND_SET, (char *)value);
-#else
-    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
+    return tcp_mem_set(path, &bmem, 1);
+}
 #endif
-    return rc;
+
+/**
+ * Define a get/set pair for a /proc/sys/ file holding a single
+ * numeric field, dispatched by node identity rather than by parsing
+ * the OID.
+ */
+#define SYS_COMMON_FIELD(_name, _path) \
+static te_errno                                                       \
+_name##_get(const ta_conf_ctx *ctx, int32_t *val)                           \
+{                                                                      \
+    UNUSED(ctx);                                                      \
+    UNUSED(val);                                                      \
+    return IF_LINUX_COMMON_GET(_path);                                \
+}                                                                      \
+                                                                        \
+static te_errno                                                       \
+_name##_set(const ta_conf_ctx *ctx, int32_t val)                            \
+{                                                                      \
+    UNUSED(ctx);                                                      \
+    UNUSED(val);                                                      \
+    return IF_LINUX_COMMON_SET(_path);                                \
 }
 
+#if __linux__
+#define IF_LINUX_COMMON_GET(_path) proc_sys_common_get(_path, val)
+#define IF_LINUX_COMMON_SET(_path) proc_sys_common_set(_path, val)
+#else
+#define IF_LINUX_COMMON_GET(_path) TE_RC(TE_TA_UNIX, TE_ENOENT)
+#define IF_LINUX_COMMON_SET(_path) TE_RC(TE_TA_UNIX, TE_ENOSYS)
+#endif
+
+SYS_COMMON_FIELD(route_mtu_expires, "/proc/sys/net/ipv4/route/mtu_expires")
+SYS_COMMON_FIELD(tcp_timestamps, "/proc/sys/net/ipv4/tcp_timestamps")
+SYS_COMMON_FIELD(tcp_syncookies, "/proc/sys/net/ipv4/tcp_syncookies")
+SYS_COMMON_FIELD(tcp_fin_timeout, "/proc/sys/net/ipv4/tcp_fin_timeout")
+SYS_COMMON_FIELD(tcp_orphan_retries, "/proc/sys/net/ipv4/tcp_orphan_retries")
+SYS_COMMON_FIELD(tcp_retries2, "/proc/sys/net/ipv4/tcp_retries2")
+SYS_COMMON_FIELD(tcp_keepalive_intvl, "/proc/sys/net/ipv4/tcp_keepalive_intvl")
+SYS_COMMON_FIELD(tcp_keepalive_probes,
+                 "/proc/sys/net/ipv4/tcp_keepalive_probes")
+SYS_COMMON_FIELD(tcp_keepalive_time, "/proc/sys/net/ipv4/tcp_keepalive_time")
+SYS_COMMON_FIELD(tcp_syn_retries, "/proc/sys/net/ipv4/tcp_syn_retries")
+SYS_COMMON_FIELD(tcp_synack_retries, "/proc/sys/net/ipv4/tcp_synack_retries")
+SYS_COMMON_FIELD(igmp_max_memberships,
+                 "/proc/sys/net/ipv4/igmp_max_memberships")
+SYS_COMMON_FIELD(optmem_max, "/proc/sys/net/core/optmem_max")
+SYS_COMMON_FIELD(somaxconn, "/proc/sys/net/core/somaxconn")
+SYS_COMMON_FIELD(busy_poll, "/proc/sys/net/core/busy_poll")
+SYS_COMMON_FIELD(busy_read, "/proc/sys/net/core/busy_read")
+SYS_COMMON_FIELD(neigh_gc_thresh3,
+                 "/proc/sys/net/ipv4/neigh/default/gc_thresh3")
+SYS_COMMON_FIELD(tcp_max_syn_backlog,
+                 "/proc/sys/net/ipv4/tcp_max_syn_backlog")
+
+#undef SYS_COMMON_FIELD
+#undef IF_LINUX_COMMON_GET
+#undef IF_LINUX_COMMON_SET
+
 /**
- * Get TCP send buffer max size.
+ * Get socket send buffer max size.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be get as sndbuf max size
+ * @param ctx           request context (unused)
+ * @param val           to be got as sndbuf max size
  *
  * @return              Status code
  */
 static te_errno
-tcp_sndbuf_max_get(unsigned int gid, const char *oid,
-                   char *value)
+sndbuf_max_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     te_errno  rc = 0;
 #if __linux__
-    int       bmem[3] = { 0, };
+    int       bmem = 0;
 #endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
+    UNUSED(ctx);
 
 #if __linux__
-    rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
+    rc = tcp_mem_get("/proc/sys/net/core/wmem_max", &bmem, 1);
     if (rc != 0)
         return rc;
 
-    sprintf(value,"%d", bmem[2]);
-#elif defined(__sun)
-    rc = sun_ioctl("tcp", "tcp_max_buf", ND_GET, value);
+    *val = bmem;
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
     return rc;
-}
-
-/**
- * Set TCP send buffer default size.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be set as sndbuf default size
- *
- * @return              Status code
- */
-static te_errno
-tcp_sndbuf_def_set(unsigned int gid, const char *oid,
-                   const char *value)
-{
-    te_errno  rc = 0;
-#if __linux__
-    char     *tmp;
-    int       bmem[3] = { 0, };
-#endif
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-#if __linux__
-    rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
-    if (rc != 0)
-        return rc;
-
-    bmem[1] = strtol(value, &tmp, 10);
-    if (tmp == value || *tmp != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
-    if (rc != 0)
-        return rc;
-#elif defined(__sun)
-    rc = sun_ioctl("tcp", "tcp_xmit_hiwat", ND_SET, (char *)value);
-#else
-    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
-#endif
-    return rc;
-}
-
-/**
- * Get TCP send buffer default size.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be get as sndbuf default size
- *
- * @return              Status code
- */
-static te_errno
-tcp_sndbuf_def_get(unsigned int gid, const char *oid,
-                   char *value)
-{
-    te_errno  rc = 0;
-#if __linux__
-    int       bmem[3] = { 0, };
-#endif
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-#if __linux__
-    rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
-    if (rc != 0)
-        return rc;
-
-    sprintf(value,"%d", bmem[1]);
-#elif defined(__sun)
-    rc = sun_ioctl("tcp", "tcp_xmit_hiwat", ND_GET, value);
-#else
-    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
-#endif
-    return rc;
-}
-
-/**
- * Set TCP receive buffer max size.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be set as rcvbuf max size
- *
- * @return              Status code
- */
-static te_errno
-tcp_rcvbuf_max_set(unsigned int gid, const char *oid,
-                   const char *value)
-{
-    te_errno  rc = 0;
-#if __linux__
-    char     *tmp;
-    int       bmem[3] = { 0, };
-#endif
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-#if __linux__
-    rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
-    if (rc != 0)
-        return rc;
-
-    bmem[2] = strtol(value, &tmp, 10);
-    if (tmp == value || *tmp != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
-    if (rc != 0)
-        return rc;
-#elif defined(__sun)
-    rc = sun_ioctl("tcp", "tcp_max_buf", ND_SET, (char *)value);
-#else
-    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
-#endif
-    return rc;
-}
-
-/**
- * Get TCP receive buffer max size.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be get as rcvbuf max size
- *
- * @return              Status code
- */
-static te_errno
-tcp_rcvbuf_max_get(unsigned int gid, const char *oid,
-                   char *value)
-{
-    te_errno  rc = 0;
-#if __linux__
-    int       bmem[3] = { 0, };
-#endif
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-#if __linux__
-    rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
-    if (rc != 0)
-        return rc;
-
-    sprintf(value,"%d", bmem[2]);
-
-#elif defined(__sun)
-    rc = sun_ioctl("tcp", "tcp_max_buf", ND_GET, value);
-#else
-    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
-#endif
-    return rc;
-}
-
-/**
- * Set TCP receive buffer default size.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be set as rcvbuf default size
- *
- * @return              Status code
- */
-static te_errno
-tcp_rcvbuf_def_set(unsigned int gid, const char *oid,
-                   const char *value)
-{
-    te_errno  rc = 0;
-#if __linux__
-    char     *tmp;
-    int       bmem[3] = { 0, };
-#endif
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-#if __linux__
-    rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
-    if (rc != 0)
-        return rc;
-
-    bmem[1] = strtol(value, &tmp, 10);
-    if (tmp == value || *tmp != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
-    if (rc != 0)
-        return rc;
-#elif defined(__sun)
-    rc = sun_ioctl("tcp", "tcp_recv_hiwat", ND_SET, (char *)value);
-#else
-    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
-#endif
-    return rc;
-}
-
-/**
- * Get TCP receive buffer default size.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be get as rcvbuf default size
- *
- * @return              Status code
- */
-static te_errno
-tcp_rcvbuf_def_get(unsigned int gid, const char *oid,
-                   char *value)
-{
-    te_errno  rc = 0;
-#if __linux__
-    int       bmem[3] = { 0, };
-#endif
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-#if __linux__
-    rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
-    if (rc != 0)
-        return rc;
-
-    sprintf(value,"%d", bmem[1]);
-#elif defined(__sun)
-    rc = sun_ioctl("tcp", "tcp_recv_hiwat", ND_GET, value);
-#else
-    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
-#endif
-    return rc;
-}
-
-/**
- * Common function to set a value in /proc/sys.
- * Supported nodes: tcp_timestamps, tcp_syncookies, tcp_keepalive_time,
- * tcp_keepalive_probes, tcp_keepalive_intvl, tcp_retries2,
- * tcp_orphan_retries, tcp_fin_timeout, tcp_syn_retries, tcp_synack_retries,
- * tcp_max_syn_backlog,
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         string with a new value
- *
- * @return              Status code
- */
-static te_errno
-proc_sys_common_set(unsigned int gid, const char *oid,
-                    const char *value)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-#if __linux__
-#define ELSE_IF_IPV4_FIELD(_field) \
-    else if (strstr(oid, "/" #_field ":") != NULL) \
-        return proc_sys_set_value("/proc/sys/net/ipv4/" #_field, value);
-
-    if (strstr(oid, "/tcp_timestamps:") != NULL)
-        return proc_sys_set_value("/proc/sys/net/ipv4/tcp_timestamps",
-                                  value);
-    else if (strstr(oid, "/busy_read:") != NULL)
-        return proc_sys_set_value("/proc/sys/net/core/busy_read",
-                                  value);
-    else if (strstr(oid, "/busy_poll:") != NULL)
-        return proc_sys_set_value("/proc/sys/net/core/busy_poll",
-                                  value);
-    else if (strstr(oid, "/somaxconn:") != NULL)
-        return proc_sys_set_value("/proc/sys/net/core/somaxconn",
-                                  value);
-    else if (strstr(oid, "/optmem_max:") != NULL)
-        return proc_sys_set_value("/proc/sys/net/core/optmem_max",
-                                  value);
-    else if (strstr(oid, "/neigh_gc_thresh3:") != NULL)
-        return proc_sys_set_value("/proc/sys/net/ipv4/neigh/default/"
-                                  "gc_thresh3", value);
-    else if (strstr(oid, "/route_mtu_expires:") != NULL)
-        return proc_sys_set_value("/proc/sys/net/ipv4/route/mtu_expires",
-                                  value);
-    ELSE_IF_IPV4_FIELD(tcp_syncookies)
-    ELSE_IF_IPV4_FIELD(tcp_keepalive_time)
-    ELSE_IF_IPV4_FIELD(tcp_keepalive_probes)
-    ELSE_IF_IPV4_FIELD(tcp_keepalive_intvl)
-    ELSE_IF_IPV4_FIELD(tcp_retries2)
-    ELSE_IF_IPV4_FIELD(tcp_orphan_retries)
-    ELSE_IF_IPV4_FIELD(tcp_fin_timeout)
-    ELSE_IF_IPV4_FIELD(tcp_syn_retries)
-    ELSE_IF_IPV4_FIELD(tcp_synack_retries)
-    ELSE_IF_IPV4_FIELD(igmp_max_memberships)
-    ELSE_IF_IPV4_FIELD(tcp_max_syn_backlog)
-#undef ELSE_IF_IPV4_FIELD
-
-    return TE_RC(TE_TA_UNIX, TE_ENOENT);
-#else
-    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
-#endif
-}
-
-/**
- * Common function to get a value from /proc/sys.
- * Supported nodes: tcp_timestamps, tcp_syncookies, tcp_keepalive_time,
- * tcp_keepalive_probes, tcp_keepalive_intvl, tcp_retries2,
- * tcp_orphan_retries, tcp_fin_timeout, tcp_syn_retries, tcp_synack_retries,
- * tcp_max_syn_backlog,
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         location for obtained value
- *
- * @return              Status code
- */
-static te_errno
-proc_sys_common_get(unsigned int gid, const char *oid,
-                    char *value)
-{
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-#if __linux__
-#define ELSE_IF_IPV4_FIELD(_field) \
-    else if (strstr(oid, "/" #_field ":") != NULL) \
-        return proc_sys_get_value("/proc/sys/net/ipv4/" #_field, value);
-
-    if (strstr(oid, "/tcp_timestamps:") != NULL)
-        return proc_sys_get_value("/proc/sys/net/ipv4/tcp_timestamps",
-                                  value);
-    else if (strstr(oid, "/busy_read:") != NULL)
-        return proc_sys_get_value("/proc/sys/net/core/busy_read", value);
-    else if (strstr(oid, "/busy_poll:") != NULL)
-        return proc_sys_get_value("/proc/sys/net/core/busy_poll", value);
-    else if (strstr(oid, "/somaxconn:") != NULL)
-        return proc_sys_get_value("/proc/sys/net/core/somaxconn", value);
-    else if (strstr(oid, "/optmem_max:") != NULL)
-        return proc_sys_get_value("/proc/sys/net/core/optmem_max",
-                                  value);
-    else if (strstr(oid, "/neigh_gc_thresh3:") != NULL)
-        return proc_sys_get_value("/proc/sys/net/ipv4/neigh/default/"
-                                  "gc_thresh3", value);
-    else if (strstr(oid, "/route_mtu_expires:") != NULL)
-        return proc_sys_get_value("/proc/sys/net/ipv4/route/mtu_expires",
-                                  value);
-    ELSE_IF_IPV4_FIELD(tcp_syncookies)
-    ELSE_IF_IPV4_FIELD(tcp_keepalive_time)
-    ELSE_IF_IPV4_FIELD(tcp_keepalive_probes)
-    ELSE_IF_IPV4_FIELD(tcp_keepalive_intvl)
-    ELSE_IF_IPV4_FIELD(tcp_retries2)
-    ELSE_IF_IPV4_FIELD(tcp_orphan_retries)
-    ELSE_IF_IPV4_FIELD(tcp_fin_timeout)
-    ELSE_IF_IPV4_FIELD(tcp_syn_retries)
-    ELSE_IF_IPV4_FIELD(tcp_synack_retries)
-    ELSE_IF_IPV4_FIELD(igmp_max_memberships)
-    ELSE_IF_IPV4_FIELD(tcp_max_syn_backlog)
-#undef ELSE_IF_IPV4_FIELD
-#endif
-
-    return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
 /**
  * Set socket send buffer max size.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be set as sndbuf max size
+ * @param ctx           request context (unused)
+ * @param val           to be set as sndbuf max size
  *
  * @return              Status code
  */
 static te_errno
-sndbuf_max_set(unsigned int gid, const char *oid,
-               const char *value)
+sndbuf_max_set(const ta_conf_ctx *ctx, int32_t val)
 {
     te_errno  rc = 0;
 #if __linux__
-    char     *tmp;
-    int       bmem = 0;
+    int       bmem;
 #endif
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
 #if __linux__
-    rc = tcp_mem_get("/proc/sys/net/core/wmem_max", &bmem, 1);
-    if (rc != 0)
-        return rc;
-
-    bmem = strtol(value, &tmp, 10);
-    if (tmp == value || *tmp != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
+    bmem = val;
     rc = tcp_mem_set("/proc/sys/net/core/wmem_max", &bmem, 1);
-    if (rc != 0)
-        return rc;
-#else
-    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
-#endif
-    return rc;
-}
-
-/**
- * Get socket send buffer max size.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be get as sndbuf max size
- *
- * @return              Status code
- */
-static te_errno
-sndbuf_max_get(unsigned int gid, const char *oid,
-               char *value)
-{
-    te_errno  rc = 0;
-#if __linux__
-    int       bmem = 0;
-#endif
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-#if __linux__
-    rc = tcp_mem_get("/proc/sys/net/core/wmem_max", &bmem, 1);
-    if (rc != 0)
-        return rc;
-
-    sprintf(value, "%d", bmem);
-#else
-    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
-#endif
-    return rc;
-}
-
-/**
- * Set socket send buffer default size.
- *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be set as sndbuf default size
- *
- * @return              Status code
- */
-static te_errno
-sndbuf_def_set(unsigned int gid, const char *oid,
-               const char *value)
-{
-    te_errno  rc = 0;
-#if __linux__
-    char     *tmp;
-    int       bmem = 0;
-#endif
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-#if __linux__
-    rc = tcp_mem_get("/proc/sys/net/core/wmem_default", &bmem, 1);
-    if (rc != 0)
-        return rc;
-
-    bmem = strtol(value, &tmp, 10);
-    if (tmp == value || *tmp != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    rc = tcp_mem_set("/proc/sys/net/core/wmem_default", &bmem, 1);
-    if (rc != 0)
-        return rc;
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
@@ -1138,34 +434,26 @@ sndbuf_def_set(unsigned int gid, const char *oid,
 /**
  * Get socket send buffer default size.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be get as sndbuf default size
+ * @param ctx           request context (unused)
+ * @param val           to be got as sndbuf default size
  *
  * @return              Status code
  */
 static te_errno
-sndbuf_def_get(unsigned int gid, const char *oid,
-               char *value)
+sndbuf_def_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     te_errno  rc = 0;
 #if __linux__
     int       bmem = 0;
 #endif
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/core/wmem_default", &bmem, 1);
     if (rc != 0)
         return rc;
 
-    sprintf(value, "%d", bmem);
+    *val = bmem;
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
@@ -1173,43 +461,26 @@ sndbuf_def_get(unsigned int gid, const char *oid,
 }
 
 /**
- * Set socket receive buffer max size.
+ * Set socket send buffer default size.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be set as rcvbuf max size
+ * @param ctx           request context (unused)
+ * @param val           to be set as sndbuf default size
  *
  * @return              Status code
  */
 static te_errno
-rcvbuf_max_set(unsigned int gid, const char *oid,
-               const char *value)
+sndbuf_def_set(const ta_conf_ctx *ctx, int32_t val)
 {
     te_errno  rc = 0;
 #if __linux__
-    char     *tmp;
-    int       bmem = 0;
+    int       bmem;
 #endif
-    UNUSED(gid);
-    UNUSED(oid);
 
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
+    UNUSED(ctx);
+
 #if __linux__
-    rc = tcp_mem_get("/proc/sys/net/core/rmem_max", &bmem, 1);
-    if (rc != 0)
-        return rc;
-
-    bmem = strtol(value, &tmp, 10);
-    if (tmp == value || *tmp != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    rc = tcp_mem_set("/proc/sys/net/core/rmem_max", &bmem, 1);
-    if (rc != 0)
-        return rc;
+    bmem = val;
+    rc = tcp_mem_set("/proc/sys/net/core/wmem_default", &bmem, 1);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
@@ -1219,34 +490,26 @@ rcvbuf_max_set(unsigned int gid, const char *oid,
 /**
  * Get socket receive buffer max size.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be get as rcvbuf max size
+ * @param ctx           request context (unused)
+ * @param val           to be got as rcvbuf max size
  *
  * @return              Status code
  */
 static te_errno
-rcvbuf_max_get(unsigned int gid, const char *oid,
-               char *value)
+rcvbuf_max_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     te_errno  rc = 0;
 #if __linux__
     int       bmem = 0;
 #endif
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/core/rmem_max", &bmem, 1);
     if (rc != 0)
         return rc;
 
-    sprintf(value, "%d", bmem);
+    *val = bmem;
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
@@ -1254,44 +517,25 @@ rcvbuf_max_get(unsigned int gid, const char *oid,
 }
 
 /**
- * Set socket receive buffer default size.
+ * Set socket receive buffer max size.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be set as rcvbuf default size
+ * @param ctx           request context (unused)
+ * @param val           to be set as rcvbuf max size
  *
  * @return              Status code
  */
 static te_errno
-rcvbuf_def_set(unsigned int gid, const char *oid,
-               const char *value)
+rcvbuf_max_set(const ta_conf_ctx *ctx, int32_t val)
 {
     te_errno  rc = 0;
 #if __linux__
-    char     *tmp;
-    int       bmem = 0;
+    int       bmem;
 #endif
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
+    UNUSED(ctx);
 
 #if __linux__
-    rc = tcp_mem_get("/proc/sys/net/core/rmem_default", &bmem, 1);
-    if (rc != 0)
-        return rc;
-
-    bmem = strtol(value, &tmp, 10);
-    if (tmp == value || *tmp != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    rc = tcp_mem_set("/proc/sys/net/core/rmem_default", &bmem, 1);
-    if (rc != 0)
-        return rc;
+    bmem = val;
+    rc = tcp_mem_set("/proc/sys/net/core/rmem_max", &bmem, 1);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
@@ -1301,34 +545,26 @@ rcvbuf_def_set(unsigned int gid, const char *oid,
 /**
  * Get socket receive buffer default size.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be get as rcvbuf default size
+ * @param ctx           request context (unused)
+ * @param val           to be got as rcvbuf default size
  *
  * @return              Status code
  */
 static te_errno
-rcvbuf_def_get(unsigned int gid, const char *oid,
-               char *value)
+rcvbuf_def_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     te_errno  rc = 0;
 #if __linux__
     int       bmem = 0;
 #endif
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/core/rmem_default", &bmem, 1);
     if (rc != 0)
         return rc;
 
-    sprintf(value, "%d", bmem);
+    *val = bmem;
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
@@ -1336,32 +572,25 @@ rcvbuf_def_get(unsigned int gid, const char *oid,
 }
 
 /**
- * Set UDP send buffer max size.
+ * Set socket receive buffer default size.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be set as sndbuf max size
+ * @param ctx           request context (unused)
+ * @param val           to be set as rcvbuf default size
  *
  * @return              Status code
  */
 static te_errno
-udp_sndbuf_max_set(unsigned int gid, const char *oid,
-                   const char *value)
+rcvbuf_def_set(const ta_conf_ctx *ctx, int32_t val)
 {
     te_errno  rc = 0;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
 #if __linux__
-    rc = sndbuf_max_set(gid, oid, value);
-#elif defined(__sun)
-    rc = sun_ioctl("udp", "udp_max_buf", ND_SET, (char *)value);
+    int       bmem;
+#endif
+    UNUSED(ctx);
+
+#if __linux__
+    bmem = val;
+    rc = tcp_mem_set("/proc/sys/net/core/rmem_default", &bmem, 1);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
@@ -1369,33 +598,31 @@ udp_sndbuf_max_set(unsigned int gid, const char *oid,
 }
 
 /**
- * Get UDP send buffer max size.
+ * Get TCP send buffer max size.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be get as sndbuf max size
+ * @param ctx           request context (unused)
+ * @param val           to be got as sndbuf max size
  *
  * @return              Status code
  */
 static te_errno
-udp_sndbuf_max_get(unsigned int gid, const char *oid,
-                   char *value)
+tcp_sndbuf_max_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     te_errno  rc = 0;
+#if __linux__
+    int       bmem[3] = { 0, };
+#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
+    UNUSED(ctx);
 
 #if __linux__
-    rc = sndbuf_max_get(gid, oid, value);
+    rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
+    if (rc != 0)
+        return rc;
+
+    *val = bmem[2];
 #elif defined(__sun)
-    rc = sun_ioctl("udp", "udp_max_buf", ND_GET, value);
+    rc = sun_ioctl_get_int("tcp", "tcp_max_buf", val);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
@@ -1403,32 +630,33 @@ udp_sndbuf_max_get(unsigned int gid, const char *oid,
 }
 
 /**
- * Set UDP send buffer default size.
+ * Set TCP send buffer max size.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be set as sndbuf default size
+ * @param ctx           request context (unused)
+ * @param val           to be set as sndbuf max size
  *
  * @return              Status code
  */
 static te_errno
-udp_sndbuf_def_set(unsigned int gid, const char *oid,
-                   const char *value)
+tcp_sndbuf_max_set(const ta_conf_ctx *ctx, int32_t val)
 {
     te_errno  rc = 0;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
 #if __linux__
-    rc = sndbuf_def_set(gid, oid, value);
+    int       bmem[3] = { 0, };
+#endif
+
+    UNUSED(ctx);
+
+#if __linux__
+    rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
+    if (rc != 0)
+        return rc;
+
+    bmem[2] = val;
+
+    rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
 #elif defined(__sun)
-    rc = sun_ioctl("udp", "udp_xmit_hiwat", ND_SET, (char *)value);
+    rc = sun_ioctl_set_int("tcp", "tcp_max_buf", val);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
@@ -1436,32 +664,31 @@ udp_sndbuf_def_set(unsigned int gid, const char *oid,
 }
 
 /**
- * Get UDP send buffer default size.
+ * Get TCP send buffer default size.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be get as sndbuf default size
+ * @param ctx           request context (unused)
+ * @param val           to be got as sndbuf default size
  *
  * @return              Status code
  */
 static te_errno
-udp_sndbuf_def_get(unsigned int gid, const char *oid,
-                   char *value)
+tcp_sndbuf_def_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     te_errno  rc = 0;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
 #if __linux__
-    rc = sndbuf_def_get(gid, oid, value);
+    int       bmem[3] = { 0, };
+#endif
+
+    UNUSED(ctx);
+
+#if __linux__
+    rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
+    if (rc != 0)
+        return rc;
+
+    *val = bmem[1];
 #elif defined(__sun)
-    rc = sun_ioctl("udp", "udp_xmit_hiwat", ND_GET, value);
+    rc = sun_ioctl_get_int("tcp", "tcp_xmit_hiwat", val);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
@@ -1469,32 +696,33 @@ udp_sndbuf_def_get(unsigned int gid, const char *oid,
 }
 
 /**
- * Set UDP receive buffer max size.
+ * Set TCP send buffer default size.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be set as rcvbuf max size
+ * @param ctx           request context (unused)
+ * @param val           to be set as sndbuf default size
  *
  * @return              Status code
  */
 static te_errno
-udp_rcvbuf_max_set(unsigned int gid, const char *oid,
-                   const char *value)
+tcp_sndbuf_def_set(const ta_conf_ctx *ctx, int32_t val)
 {
     te_errno  rc = 0;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
 #if __linux__
-    rc = rcvbuf_max_set(gid, oid, value);
+    int       bmem[3] = { 0, };
+#endif
+
+    UNUSED(ctx);
+
+#if __linux__
+    rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
+    if (rc != 0)
+        return rc;
+
+    bmem[1] = val;
+
+    rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
 #elif defined(__sun)
-    rc = sun_ioctl("udp", "udp_max_buf", ND_SET, (char *)value);
+    rc = sun_ioctl_set_int("tcp", "tcp_xmit_hiwat", val);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
@@ -1502,32 +730,31 @@ udp_rcvbuf_max_set(unsigned int gid, const char *oid,
 }
 
 /**
- * Get UDP receive buffer max size.
+ * Get TCP receive buffer max size.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be get as rcvbuf max size
+ * @param ctx           request context (unused)
+ * @param val           to be got as rcvbuf max size
  *
  * @return              Status code
  */
 static te_errno
-udp_rcvbuf_max_get(unsigned int gid, const char *oid,
-                   char *value)
+tcp_rcvbuf_max_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     te_errno  rc = 0;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
 #if __linux__
-    rc = rcvbuf_max_get(gid, oid, value);
+    int       bmem[3] = { 0, };
+#endif
+
+    UNUSED(ctx);
+
+#if __linux__
+    rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
+    if (rc != 0)
+        return rc;
+
+    *val = bmem[2];
 #elif defined(__sun)
-    rc = sun_ioctl("udp", "udp_max_buf", ND_GET, value);
+    rc = sun_ioctl_get_int("tcp", "tcp_max_buf", val);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
@@ -1535,33 +762,32 @@ udp_rcvbuf_max_get(unsigned int gid, const char *oid,
 }
 
 /**
- * Set UDP receive buffer default size.
+ * Set TCP receive buffer max size.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be set as rcvbuf default size
+ * @param ctx           request context (unused)
+ * @param val           to be set as rcvbuf max size
  *
  * @return              Status code
  */
 static te_errno
-udp_rcvbuf_def_set(unsigned int gid, const char *oid,
-                   const char *value)
+tcp_rcvbuf_max_set(const ta_conf_ctx *ctx, int32_t val)
 {
     te_errno  rc = 0;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
+#if __linux__
+    int       bmem[3] = { 0, };
+#endif
+    UNUSED(ctx);
 
 #if __linux__
-    rc = rcvbuf_def_set(gid, oid, value);
+    rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
+    if (rc != 0)
+        return rc;
+
+    bmem[2] = val;
+
+    rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
 #elif defined(__sun)
-    rc = sun_ioctl("udp", "udp_recv_hiwat", ND_SET, (char *)value);
+    rc = sun_ioctl_set_int("tcp", "tcp_max_buf", val);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
@@ -1569,36 +795,252 @@ udp_rcvbuf_def_set(unsigned int gid, const char *oid,
 }
 
 /**
- * Get UDP receive buffer default size.
+ * Get TCP receive buffer default size.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         to be get as rcvbuf default size
+ * @param ctx           request context (unused)
+ * @param val           to be got as rcvbuf default size
  *
  * @return              Status code
  */
 static te_errno
-udp_rcvbuf_def_get(unsigned int gid, const char *oid,
-                   char *value)
+tcp_rcvbuf_def_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     te_errno  rc = 0;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
 #if __linux__
-    rc = rcvbuf_def_get(gid, oid, value);
+    int       bmem[3] = { 0, };
+#endif
+
+    UNUSED(ctx);
+
+#if __linux__
+    rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
+    if (rc != 0)
+        return rc;
+
+    *val = bmem[1];
 #elif defined(__sun)
-    rc = sun_ioctl("udp", "udp_recv_hiwat", ND_GET, value);
+    rc = sun_ioctl_get_int("tcp", "tcp_recv_hiwat", val);
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
     return rc;
+}
+
+/**
+ * Set TCP receive buffer default size.
+ *
+ * @param ctx           request context (unused)
+ * @param val           to be set as rcvbuf default size
+ *
+ * @return              Status code
+ */
+static te_errno
+tcp_rcvbuf_def_set(const ta_conf_ctx *ctx, int32_t val)
+{
+    te_errno  rc = 0;
+#if __linux__
+    int       bmem[3] = { 0, };
+#endif
+    UNUSED(ctx);
+
+#if __linux__
+    rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
+    if (rc != 0)
+        return rc;
+
+    bmem[1] = val;
+
+    rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
+#elif defined(__sun)
+    rc = sun_ioctl_set_int("tcp", "tcp_recv_hiwat", val);
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+    return rc;
+}
+
+/**
+ * Get UDP send buffer max size (same underlying value as sndbuf_max
+ * on Linux).
+ *
+ * @param ctx           request context
+ * @param val           to be got as sndbuf max size
+ *
+ * @return              Status code
+ */
+static te_errno
+udp_sndbuf_max_get(const ta_conf_ctx *ctx, int32_t *val)
+{
+#if __linux__
+    return sndbuf_max_get(ctx, val);
+#elif defined(__sun)
+    UNUSED(ctx);
+    return sun_ioctl_get_int("udp", "udp_max_buf", val);
+#else
+    UNUSED(ctx);
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+/**
+ * Set UDP send buffer max size (same underlying value as sndbuf_max
+ * on Linux).
+ *
+ * @param ctx           request context
+ * @param val           to be set as sndbuf max size
+ *
+ * @return              Status code
+ */
+static te_errno
+udp_sndbuf_max_set(const ta_conf_ctx *ctx, int32_t val)
+{
+#if __linux__
+    return sndbuf_max_set(ctx, val);
+#elif defined(__sun)
+    UNUSED(ctx);
+    return sun_ioctl_set_int("udp", "udp_max_buf", val);
+#else
+    UNUSED(ctx);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Get UDP send buffer default size (same underlying value as
+ * sndbuf_def on Linux).
+ *
+ * @param ctx           request context
+ * @param val           to be got as sndbuf default size
+ *
+ * @return              Status code
+ */
+static te_errno
+udp_sndbuf_def_get(const ta_conf_ctx *ctx, int32_t *val)
+{
+#if __linux__
+    return sndbuf_def_get(ctx, val);
+#elif defined(__sun)
+    UNUSED(ctx);
+    return sun_ioctl_get_int("udp", "udp_xmit_hiwat", val);
+#else
+    UNUSED(ctx);
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+/**
+ * Set UDP send buffer default size (same underlying value as
+ * sndbuf_def on Linux).
+ *
+ * @param ctx           request context
+ * @param val           to be set as sndbuf default size
+ *
+ * @return              Status code
+ */
+static te_errno
+udp_sndbuf_def_set(const ta_conf_ctx *ctx, int32_t val)
+{
+#if __linux__
+    return sndbuf_def_set(ctx, val);
+#elif defined(__sun)
+    UNUSED(ctx);
+    return sun_ioctl_set_int("udp", "udp_xmit_hiwat", val);
+#else
+    UNUSED(ctx);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Get UDP receive buffer max size (same underlying value as
+ * rcvbuf_max on Linux).
+ *
+ * @param ctx           request context
+ * @param val           to be got as rcvbuf max size
+ *
+ * @return              Status code
+ */
+static te_errno
+udp_rcvbuf_max_get(const ta_conf_ctx *ctx, int32_t *val)
+{
+#if __linux__
+    return rcvbuf_max_get(ctx, val);
+#elif defined(__sun)
+    UNUSED(ctx);
+    return sun_ioctl_get_int("udp", "udp_max_buf", val);
+#else
+    UNUSED(ctx);
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+/**
+ * Set UDP receive buffer max size (same underlying value as
+ * rcvbuf_max on Linux).
+ *
+ * @param ctx           request context
+ * @param val           to be set as rcvbuf max size
+ *
+ * @return              Status code
+ */
+static te_errno
+udp_rcvbuf_max_set(const ta_conf_ctx *ctx, int32_t val)
+{
+#if __linux__
+    return rcvbuf_max_set(ctx, val);
+#elif defined(__sun)
+    UNUSED(ctx);
+    return sun_ioctl_set_int("udp", "udp_max_buf", val);
+#else
+    UNUSED(ctx);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Get UDP receive buffer default size (same underlying value as
+ * rcvbuf_def on Linux).
+ *
+ * @param ctx           request context
+ * @param val           to be got as rcvbuf default size
+ *
+ * @return              Status code
+ */
+static te_errno
+udp_rcvbuf_def_get(const ta_conf_ctx *ctx, int32_t *val)
+{
+#if __linux__
+    return rcvbuf_def_get(ctx, val);
+#elif defined(__sun)
+    UNUSED(ctx);
+    return sun_ioctl_get_int("udp", "udp_recv_hiwat", val);
+#else
+    UNUSED(ctx);
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+/**
+ * Set UDP receive buffer default size (same underlying value as
+ * rcvbuf_def on Linux).
+ *
+ * @param ctx           request context
+ * @param val           to be set as rcvbuf default size
+ *
+ * @return              Status code
+ */
+static te_errno
+udp_rcvbuf_def_set(const ta_conf_ctx *ctx, int32_t val)
+{
+#if __linux__
+    return rcvbuf_def_set(ctx, val);
+#elif defined(__sun)
+    UNUSED(ctx);
+    return sun_ioctl_set_int("udp", "udp_recv_hiwat", val);
+#else
+    UNUSED(ctx);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
 }
 
 /**
@@ -1629,15 +1071,14 @@ try_open_file_rw(const char *pn)
  * Set core pattern used when dumpling a core (because of segmentation
  * fault or something alike).
  *
- * @param gid          Group identifier (unused)
- * @param oid          Full object instance identifier (unused)
- * @param value        The pattern
+ * @param ctx          request context (unused)
+ * @param val          The pattern
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-core_pattern_set(unsigned int gid, const char *oid, const char *value)
+core_pattern_set(const ta_conf_ctx *ctx, const char *val)
 {
 #ifdef __linux__
     int rc = 0;
@@ -1645,14 +1086,7 @@ core_pattern_set(unsigned int gid, const char *oid, const char *value)
     int fd;
 #endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
+    UNUSED(ctx);
 
 #ifdef __linux__
 
@@ -1675,13 +1109,13 @@ core_pattern_set(unsigned int gid, const char *oid, const char *value)
         ERROR("open(/proc/sys/kernel/core_pattern) failed: %s", strerror(error));
         return TE_OS_RC(TE_TA_UNIX, error);
     }
-    rc = write(fd, value, strlen(value) + 1);
+    rc = write(fd, val, strlen(val) + 1);
     error = errno;
     close(fd);
     if (rc < 0)
     {
         ERROR("write failed to write %d bytes: rc=%d %s",
-              strlen(value) + 1, rc, strerror(error));
+              strlen(val) + 1, rc, strerror(error));
         return TE_OS_RC(TE_TA_UNIX, error);
     }
     return 0;
@@ -1699,15 +1133,14 @@ core_pattern_set(unsigned int gid, const char *oid, const char *value)
  * Get core pattern used when dumpling a core (because of segmentation
  * fault or something alike).
  *
- * @param gid          Group identifier (unused)
- * @param oid          Full object instance identifier (unused)
- * @param value        The pattern
+ * @param ctx          request context (unused)
+ * @param val          The pattern
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-core_pattern_get(unsigned int gid, const char *oid, char *value)
+core_pattern_get(const ta_conf_ctx *ctx, te_string *val)
 {
 #ifdef __linux__
     int  rc = 0;
@@ -1716,14 +1149,8 @@ core_pattern_get(unsigned int gid, const char *oid, char *value)
     size_t len;
 #endif
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
-    if (value == NULL)
-    {
-        ERROR("A value to set is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
 #ifdef __linux__
 
     /*
@@ -1758,11 +1185,157 @@ core_pattern_get(unsigned int gid, const char *oid, char *value)
     len = strnlen(trash, rc);
     if (trash[len - 1] == '\n' || (int)len == rc)
         trash[len - 1] = '\0';
-    assert(len < RCF_MAX_VAL);
-    memcpy(value, trash, len + 1);
+    te_string_append(val, "%s", trash);
     return 0;
 #else
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
+/**
+ * Set console log level.
+ *
+ * @param ctx          request context (unused)
+ * @param val          Value of the log level
+ *
+ * @return Status code
+ * @retval 0        Success
+ */
+static te_errno
+console_loglevel_set(const ta_conf_ctx *ctx, const char *val)
+{
+    int     fd;
+    int     rc;
+    int     error;
+
+    UNUSED(ctx);
+
+    fd = open("/proc/sys/kernel/printk", O_WRONLY);
+    if (fd < 0)
+    {
+        error = errno;
+        ERROR("open failed: %s", strerror(error));
+        return TE_OS_RC(TE_TA_UNIX, error);
+    }
+    rc = write(fd, val, strlen(val));
+    error = errno;
+    close(fd);
+    if (rc < 0)
+    {
+        ERROR("write failed to write %d bytes: rc=%d %s",
+              strlen(val), rc, strerror(error));
+        return TE_OS_RC(TE_TA_UNIX, error);
+    }
+    return 0;
+}
+
+/**
+ * Get console log level.
+ *
+ * @param ctx          request context (unused)
+ * @param val          Value of the log level
+ *
+ * @return Status code
+ * @retval 0        Success
+ */
+static te_errno
+console_loglevel_get(const ta_conf_ctx *ctx, te_string *val)
+{
+    int     level = 0;
+    int     fd;
+    ssize_t res;
+    int     error;
+
+    UNUSED(ctx);
+
+    fd = open("/proc/sys/kernel/printk", O_RDONLY);
+    if (fd < 0)
+    {
+        int error = errno;
+        ERROR("open failed: %s", strerror(error));
+        return TE_OS_RC(TE_TA_UNIX, error);
+    }
+
+    res = read(fd, trash, sizeof(trash) - 1);
+    error = errno;
+    close(fd);
+    if (res < 0)
+    {
+        ERROR("read failed: %s", strerror(error));
+        return TE_OS_RC(TE_TA_UNIX, error);
+    }
+
+    trash[sizeof(trash) - 1] = '\0';
+    level = atoi(trash);
+
+    te_string_append(val, "%d", level);
+    return 0;
+}
+
+static const ta_conf_node *const node_sys =
+    TA_CONF_NA("sys",
+        TA_CONF_RW_INT32("sndbuf_max", sndbuf_max_get, sndbuf_max_set),
+        TA_CONF_RW_INT32("sndbuf_def", sndbuf_def_get, sndbuf_def_set),
+        TA_CONF_RW_INT32("rcvbuf_max", rcvbuf_max_get, rcvbuf_max_set),
+        TA_CONF_RW_INT32("rcvbuf_def", rcvbuf_def_get, rcvbuf_def_set),
+        TA_CONF_RW_INT32("route_mtu_expires", route_mtu_expires_get,
+                       route_mtu_expires_set),
+        TA_CONF_RW_INT32("tcp_timestamps",
+                       tcp_timestamps_get, tcp_timestamps_set),
+        TA_CONF_RW_INT32("tcp_syncookies",
+                       tcp_syncookies_get, tcp_syncookies_set),
+        TA_CONF_RW_INT32("tcp_fin_timeout", tcp_fin_timeout_get,
+                       tcp_fin_timeout_set),
+        TA_CONF_RW_INT32("tcp_orphan_retries", tcp_orphan_retries_get,
+                       tcp_orphan_retries_set),
+        TA_CONF_RW_INT32("tcp_retries2", tcp_retries2_get, tcp_retries2_set),
+        TA_CONF_RW_INT32("tcp_keepalive_intvl", tcp_keepalive_intvl_get,
+                       tcp_keepalive_intvl_set),
+        TA_CONF_RW_INT32("tcp_keepalive_probes", tcp_keepalive_probes_get,
+                       tcp_keepalive_probes_set),
+        TA_CONF_RW_INT32("tcp_keepalive_time", tcp_keepalive_time_get,
+                       tcp_keepalive_time_set),
+        TA_CONF_RW_INT32("tcp_syn_retries", tcp_syn_retries_get,
+                       tcp_syn_retries_set),
+        TA_CONF_RW_INT32("tcp_synack_retries", tcp_synack_retries_get,
+                       tcp_synack_retries_set),
+        TA_CONF_RW_INT32("igmp_max_memberships", igmp_max_memberships_get,
+                       igmp_max_memberships_set),
+        TA_CONF_RW_INT32("optmem_max", optmem_max_get, optmem_max_set),
+        TA_CONF_RW_INT32("somaxconn", somaxconn_get, somaxconn_set),
+        TA_CONF_RW_INT32("busy_poll", busy_poll_get, busy_poll_set),
+        TA_CONF_RW_INT32("busy_read", busy_read_get, busy_read_set),
+        TA_CONF_RW_INT32("neigh_gc_thresh3", neigh_gc_thresh3_get,
+                       neigh_gc_thresh3_set),
+        TA_CONF_RW_INT32("tcp_max_syn_backlog", tcp_max_syn_backlog_get,
+                       tcp_max_syn_backlog_set),
+        TA_CONF_RW_INT32("tcp_sndbuf_max",
+                       tcp_sndbuf_max_get, tcp_sndbuf_max_set),
+        TA_CONF_RW_INT32("tcp_sndbuf_def",
+                       tcp_sndbuf_def_get, tcp_sndbuf_def_set),
+        TA_CONF_RW_INT32("tcp_rcvbuf_max",
+                       tcp_rcvbuf_max_get, tcp_rcvbuf_max_set),
+        TA_CONF_RW_INT32("tcp_rcvbuf_def",
+                       tcp_rcvbuf_def_get, tcp_rcvbuf_def_set),
+        TA_CONF_RW_INT32("udp_sndbuf_max",
+                       udp_sndbuf_max_get, udp_sndbuf_max_set),
+        TA_CONF_RW_INT32("udp_sndbuf_def",
+                       udp_sndbuf_def_get, udp_sndbuf_def_set),
+        TA_CONF_RW_INT32("udp_rcvbuf_max",
+                       udp_rcvbuf_max_get, udp_rcvbuf_max_set),
+        TA_CONF_RW_STR("core_pattern", core_pattern_get, core_pattern_set),
+        TA_CONF_RW_STR("console_loglevel", console_loglevel_get,
+                       console_loglevel_set),
+        TA_CONF_RW_INT32("udp_rcvbuf_def",
+                       udp_rcvbuf_def_get, udp_rcvbuf_def_set));
+
+te_errno
+ta_unix_conf_sys_init(void)
+{
+#if 0
+    /* disable code was disabled as normal linux is a prio */
+    /* Temporarily disable to be able to run on openvz host */
+    return 0;
+#endif
+    return ta_conf_register("/agent", node_sys);
+}
