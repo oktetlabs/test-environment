@@ -22,6 +22,7 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch_ta_cfg.h"
 #include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 #include "logger_api.h"
 #include "ta_common.h"
 #include "unix_internal.h"
@@ -35,8 +36,6 @@
 #if HAVE_LINUX_SOCKIOS_H
 #include <linux/sockios.h>
 #endif
-
-static char buf[4096];
 
 /**
  * Type of link aggregations. This enum should be synchronized with
@@ -577,51 +576,43 @@ aggregation_find(const char *name)
 /**
  * Get aggregation value (i.e. type of aggregation)
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         aggregation type to get
- * @param aggr_name     name of aggregation
+ * @param ctx           request context
+ * @param val           location for the aggregation type
  *
  * @return              Status code
  */
 static te_errno
-aggregation_get(unsigned int gid, const char *oid, char *value,
-                const char *aggr_name)
+aggregation_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    aggregation *a = aggregation_find(ta_conf_ctx_inst(ctx, "aggregation"));
 
-    TE_STRLCPY(value,
-               aggr_type_to_value(aggregation_find(aggr_name)->type),
-	       RCF_MAX_VAL);
+    if (a == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    te_string_append(val, "%s", aggr_type_to_value(a->type));
     return 0;
 }
 
 /**
  * Create a new aggregation
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         aggregation type to get
- * @param aggr_name     name of aggregation
+ * @param ctx           request context
+ * @param val           aggregation type to create
  *
  * @return              Status code
  */
 static te_errno
-aggregation_add(unsigned int gid, const char *oid, char *value,
-                const char *aggr_name)
+aggregation_add(const ta_conf_ctx *ctx, const char *val)
 {
+    const char  *aggr_name = ta_conf_ctx_inst(ctx, "aggregation");
     aggregation *a = aggregation_find(aggr_name);
     aggr_mode    mode;
-    aggr_type    type = aggr_value_to_type(value, &mode);
+    aggr_type    type = aggr_value_to_type(val, &mode);
     te_errno     rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if (type == AGGREGATION_INVALID)
     {
-        ERROR("Can't aggregation aggregation with type \"%s\"", value);
+        ERROR("Can't aggregation aggregation with type \"%s\"", val);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     if (a != NULL)
@@ -652,23 +643,20 @@ aggregation_add(unsigned int gid, const char *oid, char *value,
 }
 
 /**
- * Create a new aggregation
+ * Delete an aggregation
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param aggr_name      name of aggregation
+ * @param ctx           request context
  *
  * @return              Status code
  */
 static te_errno
-aggregation_del(unsigned int gid, const char *oid, const char *aggr_name)
+aggregation_del(const ta_conf_ctx *ctx)
 {
-    aggregation *a = aggregation_find(aggr_name);
+    aggregation *a = aggregation_find(ta_conf_ctx_inst(ctx, "aggregation"));
     te_errno     rc;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    assert(a != NULL);
+    if (a == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     /* Do the real actions */
     rc = aggr_types_data[a->type].destroy(a);
@@ -698,35 +686,24 @@ aggregation_del(unsigned int gid, const char *oid, const char *aggr_name)
 /**
  * List all aggregations
  *
- * @param gid           group identifier (unused)
- * @param oid           full parent object instance identifier (unused)
- * @param sub_id        ID of the object to be listed (unused)
- * @param aggr_list     Location for the list pointer
+ * @param ctx           request context
+ * @param names         vector of heap-allocated names to append to
  *
  * @return              Status code
  */
 static te_errno
-aggregation_list(unsigned int gid, const char *oid,
-                 const char *sub_id, char **aggr_list)
+aggregation_list(const ta_conf_ctx *ctx, te_vec *names)
 {
     aggregation *a;
-    char        *ptr = buf;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    UNUSED(ctx);
 
-    for (a = aggregation_list_head; a != NULL; a = a->next, *(ptr++) = ' ')
+    for (a = aggregation_list_head; a != NULL; a = a->next)
     {
-        size_t len = strlen(a->name);
+        char *name = TE_STRDUP(a->name);
 
-        memcpy(ptr, a->name, len);
-        ptr += len;
+        TE_VEC_APPEND(names, name);
     }
-    *ptr = '\0';
-
-    if ((*aggr_list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     return 0;
 }
@@ -734,119 +711,116 @@ aggregation_list(unsigned int gid, const char *oid,
 /**
  * Get interface name of the aggregation
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         name of interface to return
- * @param aggr_name     name of aggregation
+ * @param ctx           request context
+ * @param val           location for the interface name
  *
  * @return              status code
  */
 static te_errno
-aggr_interface_get(unsigned int gid, const char *oid, char *value,
-                   const char *aggr_name)
+aggr_interface_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    aggregation *a = aggregation_find(ta_conf_ctx_inst(ctx, "aggregation"));
 
-    TE_STRLCPY(value, aggregation_find(aggr_name)->ifname,
-	       MIN(IFNAMSIZ, RCF_MAX_VAL));
+    if (a == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    te_string_append(val, "%s", a->ifname);
     return 0;
 }
 
 /**
  * Add a member to the aggregation
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         unused value
- * @param aggr_name     name of aggregation
- * @param member_name   interface name to add
+ * @param ctx           request context
  *
  * @return              status code
  */
 static te_errno
-aggr_member_add(unsigned int gid, const char *oid, char *value,
-                const char *aggr_name, const char *member_name)
+aggr_member_add(const ta_conf_ctx *ctx)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
+    aggregation *a = aggregation_find(ta_conf_ctx_inst(ctx, "aggregation"));
+    const char  *member_name = ta_conf_ctx_inst(ctx, "member");
 
-    aggregation *a = aggregation_find(aggr_name);
+    if (a == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
     return aggr_types_data[a->type].add(a, member_name);
 }
 
 /**
- * Add a member to the aggregation
+ * Delete a member from the aggregation
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param aggr_name     name of aggregation
- * @param member_name   interface name to add
+ * @param ctx           request context
  *
  * @return              status code
  */
 static te_errno
-aggr_member_del(unsigned int gid, const char *oid,
-                const char *aggr_name, const char *member_name)
+aggr_member_del(const ta_conf_ctx *ctx)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    aggregation *a = aggregation_find(ta_conf_ctx_inst(ctx, "aggregation"));
+    const char  *member_name = ta_conf_ctx_inst(ctx, "member");
 
-    aggregation *a = aggregation_find(aggr_name);
+    if (a == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
     return aggr_types_data[a->type].del(a, member_name);
 }
 
 /**
  * List all members of the aggregation
  *
- * @param gid           group identifier (unused)
- * @param oid           full parent object instance identifier (unused)
- * @param sub_id        ID of the object to be listed (unused)
- * @param member_list   Location for the list pointer
- * @param aggr_name     name of aggregation
+ * @param ctx           request context
+ * @param names         vector of heap-allocated names to append to
  *
  * @return              status code
  */
 static te_errno
-aggr_member_list(unsigned int gid, const char *oid,
-                 const char *sub_id, char **member_list,
-                 const char *aggr_name)
+aggr_member_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
+    const char  *aggr_name = ta_conf_ctx_inst(ctx, "aggregation");
     aggregation *a = aggregation_find(aggr_name);
+    char        *member_list;
+    char        *copy;
+    char        *saveptr;
+    char        *tok;
+    te_errno     rc;
+
     if (a == NULL)
     {
         ERROR("Failed to find aggregation %s", aggr_name);
-        return TE_ENOENT;
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
-    return aggr_types_data[a->type].list(a, member_list);
+    rc = aggr_types_data[a->type].list(a, &member_list);
+    if (rc != 0)
+        return rc;
+
+    copy = TE_STRDUP(member_list);
+    for (tok = strtok_r(copy, " ", &saveptr); tok != NULL;
+         tok = strtok_r(NULL, " ", &saveptr))
+    {
+        char *name = TE_STRDUP(tok);
+
+        TE_VEC_APPEND(names, name);
+    }
+    free(copy);
+    free(member_list);
+
+    return 0;
 }
 
-RCF_PCH_CFG_NODE_RO(node_aggr_interface, "interface", NULL, NULL,
-                    aggr_interface_get);
+static const ta_conf_node *const node_aggr =
+    TA_CONF_COLL_STR("aggregation",
+                     aggregation_get, aggregation_add,
+                     aggregation_del, aggregation_list,
 
-RCF_PCH_CFG_NODE_COLLECTION(node_aggr_member, "member",
-                            NULL, &node_aggr_interface,
-                            aggr_member_add, aggr_member_del,
-                            aggr_member_list, NULL);
-
-static rcf_pch_cfg_object node_aggr =
-    { "aggregation", 0, &node_aggr_member, NULL,
-      (rcf_ch_cfg_get)aggregation_get,
-      NULL,
-      (rcf_ch_cfg_add)aggregation_add,
-      (rcf_ch_cfg_del)aggregation_del,
-      (rcf_ch_cfg_list)aggregation_list,
-      NULL, NULL, NULL };
+        TA_CONF_COLL("member", aggr_member_add, aggr_member_del,
+                     aggr_member_list),
+        TA_CONF_RO_STR("interface", aggr_interface_get));
 
 te_errno
 ta_unix_conf_aggr_init(void)
 {
-    return rcf_pch_add_node("/agent", &node_aggr);
+    return ta_conf_register("/agent", node_aggr);
 }
 
