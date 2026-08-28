@@ -12,13 +12,15 @@
 #include "te_config.h"
 #include "config.h"
 
+#include <limits.h>
+
 #include "te_defs.h"
 
 #include "te_errno.h"
-#include "conf_oid.h"
 #include "logger_api.h"
 #include "te_str.h"
-#include "rcf_pch.h"
+#include "te_alloc.h"
+#include "rcf_pch_tree.h"
 #include "unix_internal.h"
 #include "te_vector.h"
 #include "te_enum.h"
@@ -85,21 +87,18 @@ find_key(const char *id)
 }
 
 static te_errno
-key_get(unsigned int gid, const char *oid, char *value, const char *id)
+key_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    const key_info *key = find_key(id);
+    const key_info *key = find_key(ta_conf_ctx_inst(ctx, "key"));
 
     if (key == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    return TE_RC_UPSTREAM(TE_TA_UNIX,
-                          te_strlcpy_safe(value,
-                                          te_enum_map_from_value(
-                                              key_managers,
-                                              AGENT_KEY_MANAGER_SSH),
-                                          RCF_MAX_VAL));
+    te_string_append(val, "%s",
+                     te_enum_map_from_value(key_managers,
+                                            AGENT_KEY_MANAGER_SSH));
+    return 0;
 }
-
 
 /*
  * This function is intentionally a no-op, it only checks the correctness of
@@ -107,32 +106,29 @@ key_get(unsigned int gid, const char *oid, char *value, const char *id)
  * behave well if they have no set method as well
  */
 static te_errno
-key_set(unsigned int gid, const char *oid, const char *value, const char *id)
+key_set(const ta_conf_ctx *ctx, const char *val)
 {
-    const key_info *key = find_key(id);
+    const key_info *key = find_key(ta_conf_ctx_inst(ctx, "key"));
 
     if (key == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if (te_enum_map_from_str(key_managers, value, -1) != AGENT_KEY_MANAGER_SSH)
+    if (te_enum_map_from_str(key_managers, val, -1) != AGENT_KEY_MANAGER_SSH)
         return TE_RC(TE_TA_UNIX, TE_EPROTONOSUPPORT);
 
     return 0;
 }
 
-
 static te_errno
-key_add(unsigned int gid, const char *oid, const char *value, const char *id)
+key_add(const ta_conf_ctx *ctx, const char *val)
 {
+    const char *id = ta_conf_ctx_inst(ctx, "key");
     te_errno rc;
     key_info new_key = {
         .need_generation = false
     };
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (te_enum_map_from_str(key_managers, value, -1) < 0)
+    if (te_enum_map_from_str(key_managers, val, -1) < 0)
         return TE_RC(TE_TA_UNIX, TE_EPROTONOSUPPORT);
     if (find_key(id) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
@@ -158,9 +154,9 @@ key_add(unsigned int gid, const char *oid, const char *value, const char *id)
 }
 
 static te_errno
-key_del(unsigned int gid, const char *oid, const char *id)
+key_del(const ta_conf_ctx *ctx)
 {
-    key_info *found = find_key(id);
+    key_info *found = find_key(ta_conf_ctx_inst(ctx, "key"));
 
     if (found == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -170,31 +166,27 @@ key_del(unsigned int gid, const char *oid, const char *id)
 }
 
 static te_errno
-key_list(unsigned int gid, const char *oid, const char *sub_id, char **list)
+key_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string buf = TE_STRING_INIT;
     const key_info *iter;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    UNUSED(ctx);
 
     TE_VEC_FOREACH(&known_keys, iter)
     {
-        te_string_append(&buf, "%s%s", buf.len == 0 ? "" : " ", iter->name);
+        char *name = TE_STRDUP(iter->name);
+
+        TE_VEC_APPEND(names, name);
     }
 
-    te_string_move(list, &buf);
     return 0;
 }
 
 static te_errno
-key_commit(unsigned int gid, const cfg_oid *p_oid)
+key_commit(const ta_conf_ctx *ctx)
 {
-    key_info *key = find_key(CFG_OID_GET_INST_NAME(p_oid, 2));
+    key_info *key = find_key(ta_conf_ctx_inst(ctx, "key"));
     te_errno rc;
-
-    UNUSED(gid);
 
     /* if the key is not found, it has been deleted, nothing to commit */
     if (key == NULL)
@@ -234,146 +226,105 @@ key_commit(unsigned int gid, const cfg_oid *p_oid)
 }
 
 static te_errno
-key_type_get(unsigned int gid, const char *oid, char *value, const char *id)
+key_type_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    const key_info *key = find_key(id);
-
-    UNUSED(gid);
-    UNUSED(oid);
+    const key_info *key = find_key(ta_conf_ctx_inst(ctx, "key"));
 
     if (key == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    return TE_RC_UPSTREAM(TE_TA_UNIX,
-                          te_strlcpy_safe(value, key->type == NULL ? "" :
-                                          key->type, RCF_MAX_VAL));
+    te_string_append(val, "%s", key->type == NULL ? "" : key->type);
+    return 0;
 }
 
 static te_errno
-key_type_set(unsigned int gid, const char *oid, const char *value,
-             const char *id)
+key_type_set(const ta_conf_ctx *ctx, const char *val)
 {
-    key_info *key = find_key(id);
-
-    UNUSED(gid);
-    UNUSED(oid);
+    key_info *key = find_key(ta_conf_ctx_inst(ctx, "key"));
 
     if (key == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if (key->type != NULL && strcmp(key->type, value) == 0)
+    if (key->type != NULL && strcmp(key->type, val) == 0)
         return 0;
 
     free(key->type);
-    key->type = strdup(value);
+    key->type = strdup(val);
     key->need_generation = true;
 
     return 0;
 }
 
 static te_errno
-key_bitsize_get(unsigned int gid, const char *oid, char *value, const char *id)
+key_bitsize_get(const ta_conf_ctx *ctx, int32_t *val)
 {
-    const key_info *key = find_key(id);
-
-    UNUSED(gid);
-    UNUSED(oid);
+    const key_info *key = find_key(ta_conf_ctx_inst(ctx, "key"));
 
     if (key == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    TE_SNPRINTF(value, RCF_MAX_VAL, "%u", key->bitsize);
+    *val = key->bitsize;
     return 0;
 }
 
 static te_errno
-key_bitsize_set(unsigned int gid, const char *oid, const char *value,
-                const char *id)
+key_bitsize_set(const ta_conf_ctx *ctx, int32_t val)
 {
-    key_info *key = find_key(id);
-    unsigned new_bitsize;
-    te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
+    key_info *key = find_key(ta_conf_ctx_inst(ctx, "key"));
 
     if (key == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    rc = te_strtoui(value, 10, &new_bitsize);
-    if (rc != 0)
-        return TE_RC_UPSTREAM(TE_TA_UNIX, rc);
+    if (val < 0 || val > UINT_MAX)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    key->need_generation = (key->bitsize != new_bitsize);
-    key->bitsize = new_bitsize;
+    key->need_generation = (key->bitsize != val);
+    key->bitsize = val;
 
     return 0;
 }
 
 static te_errno
-key_private_file_get(unsigned int gid, const char *oid, char *value,
-                     const char *id)
+key_private_file_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    const key_info *key = find_key(id);
-
-    UNUSED(gid);
-    UNUSED(oid);
+    const key_info *key = find_key(ta_conf_ctx_inst(ctx, "key"));
 
     if (key == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     assert(key->private_file != NULL);
-    return TE_RC_UPSTREAM(TE_TA_UNIX,
-                          te_strlcpy_safe(value, key->private_file,
-                                          RCF_MAX_VAL));
+    te_string_append(val, "%s", key->private_file);
+    return 0;
 }
 
 static te_errno
-key_public_get(unsigned int gid, const char *oid, char *value,
-               const char *id)
+key_public_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    const key_info *key = find_key(id);
+    const key_info *key = find_key(ta_conf_ctx_inst(ctx, "key"));
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if (key == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     assert(key->public_file != NULL);
-    rc = te_file_read_text(key->public_file, value, RCF_MAX_VAL);
+    rc = te_file_read_string(val, false, RCF_MAX_VAL - 1, "%s",
+                             key->public_file);
 
     return TE_RC_UPSTREAM(TE_TA_UNIX, rc);
 }
 
-RCF_PCH_CFG_NODE_RO(node_key_public, "public",
-                    NULL, NULL,
-                    key_public_get);
-
-RCF_PCH_CFG_NODE_RO(node_key_private_file, "private_file",
-                    NULL, &node_key_public,
-                    key_private_file_get);
-
-
-RCF_PCH_CFG_NODE_RW(node_key_bitsize, "bitsize",
-                    NULL, &node_key_private_file,
-                    key_bitsize_get, key_bitsize_set);
-
-RCF_PCH_CFG_NODE_RW(node_key_type, "type",
-                    NULL, &node_key_bitsize,
-                    key_type_get, key_type_set);
-
-
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_key, "key",
-                               &node_key_type, NULL,
-                               key_get, key_set, key_add, key_del,
-                               key_list, key_commit);
+static const ta_conf_node *const node_key =
+    TA_CONF_COLL_STR_RW_COMMIT("key", key_get, key_set, key_add,
+                               key_del, key_list, key_commit,
+        TA_CONF_RW_STR("type", key_type_get, key_type_set),
+        TA_CONF_RW_INT32("bitsize", key_bitsize_get, key_bitsize_set),
+        TA_CONF_RO_STR("private_file", key_private_file_get),
+        TA_CONF_RO_STR("public", key_public_get));
 
 te_errno
 ta_unix_conf_key_init()
 {
-    return rcf_pch_add_node("/agent", &node_key);
+    return ta_conf_register("/agent", node_key);
 }
 
 void
