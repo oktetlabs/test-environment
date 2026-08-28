@@ -16,9 +16,7 @@
 #include "te_errno.h"
 #include "logger_api.h"
 #include "te_defs.h"
-#include "te_str.h"
-#include "rcf_pch.h"
-#include "rcf_pch_ta_cfg.h"
+#include "rcf_pch_tree.h"
 #include "conf_ethtool.h"
 
 #ifdef HAVE_SYS_IOCTL_H
@@ -64,14 +62,14 @@ get_field(struct ethtool_pauseparam *val, te_if_pause_param field)
 
 /* Common function for getting pause parameter value */
 static te_errno
-process_get_command(unsigned int gid, const char *if_name,
-                    te_if_pause_param field, char *value)
+process_get_command(const ta_conf_ctx *ctx, te_if_pause_param field, bool *val)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
     struct ethtool_pauseparam *eptr;
     uint32_t *param_val;
     te_errno rc;
 
-    rc = get_ethtool_value(if_name, gid, TA_ETHTOOL_PAUSEPARAM,
+    rc = get_ethtool_value(if_name, ta_conf_ctx_gid(ctx), TA_ETHTOOL_PAUSEPARAM,
                            (void **)&eptr);
     if (rc != 0)
     {
@@ -92,64 +90,41 @@ process_get_command(unsigned int gid, const char *if_name,
     if (param_val == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    rc = te_snprintf(value, RCF_MAX_VAL, "%u", *param_val);
-    if (rc != 0)
-    {
-        ERROR("%s(): te_snprintf() failed", __FUNCTION__);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
-
+    *val = (*param_val != 0);
     return 0;
 }
 
 /* Get pause autonegotiation state */
 static te_errno
-autoneg_get(unsigned int gid, const char *oid,
-            char *value, const char *if_name)
+autoneg_get(const ta_conf_ctx *ctx, bool *val)
 {
-    UNUSED(oid);
-
-    return process_get_command(gid, if_name, PAUSE_AUTONEG, value);
+    return process_get_command(ctx, PAUSE_AUTONEG, val);
 }
 
 /* Get Rx pause state */
 static te_errno
-rx_get(unsigned int gid, const char *oid,
-       char *value, const char *if_name)
+rx_get(const ta_conf_ctx *ctx, bool *val)
 {
-    UNUSED(oid);
-
-    return process_get_command(gid, if_name, PAUSE_RX, value);
+    return process_get_command(ctx, PAUSE_RX, val);
 }
 
 /* Get Tx pause state */
 static te_errno
-tx_get(unsigned int gid, const char *oid,
-       char *value, const char *if_name)
+tx_get(const ta_conf_ctx *ctx, bool *val)
 {
-    UNUSED(oid);
-
-    return process_get_command(gid, if_name, PAUSE_TX, value);
+    return process_get_command(ctx, PAUSE_TX, val);
 }
 
 /* Common function for setting pause parameter value */
 static te_errno
-process_set_command(unsigned int gid, const char *if_name,
-                    te_if_pause_param field, const char *value)
+process_set_command(const ta_conf_ctx *ctx, te_if_pause_param field, bool val)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
     struct ethtool_pauseparam *eptr;
-    unsigned long int parsed_val;
     uint32_t *param_val;
     te_errno rc;
 
-    rc = te_strtoul(value, 10, &parsed_val);
-    if (rc != 0 || (parsed_val != 0 && parsed_val != 1))
-    {
-        ERROR("%s(): invalid value '%s'", __FUNCTION__, value);
-        return (rc != 0 ? rc : TE_RC(TE_TA_UNIX, TE_EINVAL));
-    }
-
-    rc = get_ethtool_value(if_name, gid, TA_ETHTOOL_PAUSEPARAM,
+    rc = get_ethtool_value(if_name, ta_conf_ctx_gid(ctx), TA_ETHTOOL_PAUSEPARAM,
                            (void **)&eptr);
     if (rc != 0)
         return rc;
@@ -158,66 +133,46 @@ process_set_command(unsigned int gid, const char *if_name,
     if (param_val == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    *param_val = parsed_val;
+    *param_val = val ? 1 : 0;
     return 0;
 }
 
 /* Set pause autonegotiation state */
 static te_errno
-autoneg_set(unsigned int gid, const char *oid,
-            const char *value, const char *if_name)
+autoneg_set(const ta_conf_ctx *ctx, bool val)
 {
-    UNUSED(oid);
-
-    return process_set_command(gid, if_name, PAUSE_AUTONEG, value);
+    return process_set_command(ctx, PAUSE_AUTONEG, val);
 }
 
 /* Set Rx pause state */
 static te_errno
-rx_set(unsigned int gid, const char *oid,
-       const char *value, const char *if_name)
+rx_set(const ta_conf_ctx *ctx, bool val)
 {
-    UNUSED(oid);
-
-    return process_set_command(gid, if_name, PAUSE_RX, value);
+    return process_set_command(ctx, PAUSE_RX, val);
 }
 
 /* Set Tx pause state */
 static te_errno
-tx_set(unsigned int gid, const char *oid,
-       const char *value, const char *if_name)
+tx_set(const ta_conf_ctx *ctx, bool val)
 {
-    UNUSED(oid);
-
-    return process_set_command(gid, if_name, PAUSE_TX, value);
+    return process_set_command(ctx, PAUSE_TX, val);
 }
 
 /* Commit changes to flow control parameters */
 static te_errno
-flow_ctrl_commit(unsigned int gid, const cfg_oid *p_oid)
+flow_ctrl_commit(const ta_conf_ctx *ctx)
 {
-    char *if_name;
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
 
-    UNUSED(gid);
-    if_name = CFG_OID_GET_INST_NAME(p_oid, 2);
-
-    return commit_ethtool_value(if_name, gid, TA_ETHTOOL_PAUSEPARAM);
+    return commit_ethtool_value(if_name, ta_conf_ctx_gid(ctx),
+                                TA_ETHTOOL_PAUSEPARAM);
 }
 
-
-static rcf_pch_cfg_object node_flow_control;
-
-RCF_PCH_CFG_NODE_RWC(node_autoneg, "autoneg", NULL,
-                     NULL, autoneg_get, autoneg_set, &node_flow_control);
-
-RCF_PCH_CFG_NODE_RWC(node_rx, "rx", NULL,
-                     &node_autoneg, rx_get, rx_set, &node_flow_control);
-
-RCF_PCH_CFG_NODE_RWC(node_tx, "tx", NULL,
-                     &node_rx, tx_get, tx_set, &node_flow_control);
-
-RCF_PCH_CFG_NODE_NA_COMMIT(node_flow_control, "flow_control", &node_tx,
-                           NULL, &flow_ctrl_commit);
+static const ta_conf_node *const node_flow_control =
+    TA_CONF_NA_COMMIT("flow_control", flow_ctrl_commit,
+        TA_CONF_RW_BOOL("tx", tx_get, tx_set),
+        TA_CONF_RW_BOOL("rx", rx_get, rx_set),
+        TA_CONF_RW_BOOL("autoneg", autoneg_get, autoneg_set));
 
 /**
  * Add a child node for flow control parameters to the interface object.
@@ -227,7 +182,7 @@ RCF_PCH_CFG_NODE_NA_COMMIT(node_flow_control, "flow_control", &node_tx,
 extern te_errno
 ta_unix_conf_if_flow_ctrl_init(void)
 {
-    return rcf_pch_add_node("/agent/interface", &node_flow_control);
+    return ta_conf_register("/agent/interface", node_flow_control);
 }
 
 #else
