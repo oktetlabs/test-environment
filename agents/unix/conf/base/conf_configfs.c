@@ -17,12 +17,13 @@
 #include "te_errno.h"
 #include "te_defs.h"
 #include "te_str.h"
+#include "te_alloc.h"
+#include "te_vector.h"
 #include "rcf_common.h"
 #include "logger_api.h"
 #include "unix_internal.h"
-#include "rcf_ch_api.h"
-#include "rcf_pch_ta_cfg.h"
 #include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 
 /**
  * Configfs mounting point.
@@ -61,25 +62,21 @@ static char configfs_name[RCF_MAX_NAME];
 /**
  * Mount configfs.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         Value (unused)
- * @param name          Instance name
+ * @param ctx           Request context
+ * @param val           Value (unused)
  *
  * @return              Status code
  */
 static te_errno
-configfs_add(unsigned int gid, const char *oid, char *value,
-             const char *name)
+configfs_add(const ta_conf_ctx *ctx, const char *val)
 {
 #ifdef HAVE_MKDTEMP
+    const char *name = ta_conf_ctx_inst(ctx, "configfs");
     char    tmp[RCF_MAX_PATH] = "/tmp/te_configfs_mp_XXXXXX";
     char    cmd[RCF_MAX_PATH];
     int     tmp_err;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
+    UNUSED(val);
 
     if (strlen(configfs_mount_point) != 0)
     {
@@ -111,10 +108,8 @@ configfs_add(unsigned int gid, const char *oid, char *value,
 
     return 0;
 #else
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(name);
-    UNUSED(value);
+    UNUSED(ctx);
+    UNUSED(val);
 
     ERROR("%s(): not compiled due to lack of system functionality",
           __FUNCTION__);
@@ -125,20 +120,16 @@ configfs_add(unsigned int gid, const char *oid, char *value,
 /**
  * Unmount configfs.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param name          Instance name (unused)
+ * @param ctx           Request context (unused)
  *
  * @return              Status code
  */
 static te_errno
-configfs_del(unsigned int gid, const char *oid, const char *name)
+configfs_del(const ta_conf_ctx *ctx)
 {
     char    cmd[RCF_MAX_PATH];
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(name);
+    UNUSED(ctx);
 
     SNPRINTF(cmd, RCF_MAX_PATH,
              "failed to compose unmounting command",
@@ -170,22 +161,17 @@ configfs_del(unsigned int gid, const char *oid, const char *name)
 /**
  * Get configfs mounting point
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         where to store obtained value
- * @param name          name (unused)
+ * @param ctx           Request context (unused)
+ * @param val           Location for the retrieved value
  *
  * @return              Status code
  */
 static te_errno
-configfs_get(unsigned int gid, const char *oid, char *value,
-             const char *name)
+configfs_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(name);
+    UNUSED(ctx);
 
-    te_strlcpy(value, configfs_mount_point, RCF_MAX_VAL);
+    te_string_append(val, "%s", configfs_mount_point);
 
     return 0;
 }
@@ -193,43 +179,29 @@ configfs_get(unsigned int gid, const char *oid, char *value,
 /**
  * Get instance list for object "agent/configfs".
  *
- * @param gid           group identifier (unused)
- * @param oid           full identifier of the father instance
- * @param sub_id        ID of the object to be listed (unused)
- * @param list          location for the list pointer
+ * @param ctx           Request context (unused)
+ * @param names         Vector of heap-allocated names to append to
  *
  * @return              Status code
  */
 static te_errno
-configfs_list(unsigned int gid, const char *oid,
-              const char *sub_id, char **list)
+configfs_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    char *name = TE_STRDUP(configfs_name);
 
-    if (list == NULL)
-    {
-        ERROR("%s(): null list argument", __FUNCTION__);
-        return TE_EINVAL;
-    }
+    UNUSED(ctx);
 
-    if ((*list = strdup(configfs_name)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    TE_VEC_APPEND(names, name);
 
     return 0;
 }
+
 /*
  * Configfs configuration tree node.
  */
-static rcf_pch_cfg_object node_configfs =
-    { "configfs", 0, NULL, NULL,
-      (rcf_ch_cfg_get)configfs_get,
-      NULL,
-      (rcf_ch_cfg_add)configfs_add,
-      (rcf_ch_cfg_del)configfs_del,
-      (rcf_ch_cfg_list)configfs_list,
-      NULL, NULL, NULL };
+static const ta_conf_node *const node_configfs =
+    TA_CONF_COLL_STR("configfs", configfs_get, configfs_add,
+                     configfs_del, configfs_list);
 
 /*
  * Initializing configfs configuration subtree.
@@ -237,5 +209,5 @@ static rcf_pch_cfg_object node_configfs =
 te_errno
 ta_unix_conf_configfs_init(void)
 {
-    return rcf_pch_add_node("/agent", &node_configfs);
+    return ta_conf_register("/agent", node_configfs);
 }
