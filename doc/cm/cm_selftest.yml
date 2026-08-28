@@ -84,3 +84,248 @@
          The second property
          Name: None
          Value: Some number
+
+    - oid: "/agent/ta_conf_demo"
+      access: read_only
+      type: none
+      d: |
+         Demo subtree for the declarative ta_conf tree framework.
+         Exercises every leaf type, every collection shape (unvalued,
+         string, typed read-only, typed read-write with no add/del,
+         fully read-write, and staged-commit), fixed/list-only
+         instances, instance lookup at depth, and commit grouping.
+         Name: none
+         Value: none
+
+    - oid: "/agent/ta_conf_demo/ro_val"
+      access: read_only
+      type: string
+      d: |
+         Constant string leaf, always "ro"
+         Name: none
+         Value: The constant string "ro"
+
+    - oid: "/agent/ta_conf_demo/str_val"
+      access: read_write
+      type: string
+      d: |
+         Free-form string leaf
+         Name: none
+         Value: Arbitrary string
+
+    - oid: "/agent/ta_conf_demo/int_val"
+      access: read_write
+      type: int32
+      d: |
+         Signed integer leaf
+         Name: none
+         Value: Signed decimal number
+
+    - oid: "/agent/ta_conf_demo/uint_val"
+      access: read_write
+      type: uint32
+      d: |
+         Unsigned integer leaf
+         Name: none
+         Value: Unsigned decimal number
+
+    - oid: "/agent/ta_conf_demo/i32_val"
+      access: read_write
+      type: int32
+      d: |
+         Signed 32-bit leaf exercising the int32 accessor
+         Name: none
+         Value: Signed 32-bit number
+
+    - oid: "/agent/ta_conf_demo/u16_val"
+      access: read_write
+      type: uint16
+      d: |
+         Unsigned 16-bit leaf exercising the uint16 accessor
+         Name: none
+         Value: Unsigned 16-bit number
+
+    - oid: "/agent/ta_conf_demo/u8_val"
+      access: read_write
+      type: uint8
+      d: |
+         Unsigned 8-bit leaf exercising the uint8 accessor
+         Name: none
+         Value: Unsigned 8-bit number
+
+    - oid: "/agent/ta_conf_demo/narrowing_u8"
+      access: read_write
+      type: uint16
+      d: |
+         Object DELIBERATELY wider than the node implementing it: the
+         node is declared uint8, this object uint16. Do not "fix" the
+         mismatch -- it is the point. An object of the node's own
+         width would be range-checked by the engine, so a value the
+         node cannot hold would never reach the agent; declaring the
+         object wider lets the selftest drive such a value into the
+         framework's codec and check that it is refused with ERANGE
+         rather than truncated
+         Name: none
+         Value: Unsigned 16-bit number, of which only 0..255 is
+                accepted by the node behind it
+
+    - oid: "/agent/ta_conf_demo/narrowing_i8"
+      access: read_write
+      type: int16
+      d: |
+         Signed counterpart of narrowing_u8: the node is declared
+         int8, this object int16, DELIBERATELY. Do not "fix" the
+         mismatch -- it lets the selftest check that a value below
+         the node's lower bound is refused with ERANGE
+         Name: none
+         Value: Signed 16-bit number, of which only -128..127 is
+                accepted by the node behind it
+
+    - oid: "/agent/ta_conf_demo/bool_val"
+      access: read_write
+      type: string
+      d: |
+         Boolean leaf, wire value is "0" or "1"
+         Name: none
+         Value: "0" or "1"
+
+    - oid: "/agent/ta_conf_demo/color"
+      access: read_write
+      type: string
+      d: |
+         Enumerated leaf mapped through a name/value table
+         Name: none
+         Value: One of "red", "green", "blue"
+
+    - oid: "/agent/ta_conf_demo/item"
+      access: read_create
+      type: string
+      d: |
+         Fully read-write string-valued collection instance
+         Name: Item identifier
+         Value: Arbitrary string
+
+    - oid: "/agent/ta_conf_demo/item/depth"
+      access: read_only
+      type: string
+      d: |
+         Echoes the enclosing item instance's own name, to check
+         instance lookup at depth
+         Name: none
+         Value: Same as the enclosing item's name
+
+    - oid: "/agent/ta_conf_demo/fixed"
+      access: read_only
+      type: none
+      d: |
+         List-only collection of three statically named instances
+         Name: One of "one", "two", "three"
+         Value: none
+
+    - oid: "/agent/ta_conf_demo/fixed/index"
+      access: read_only
+      type: uint32
+      d: |
+         Position of the enclosing fixed instance in the static set
+         Name: none
+         Value: 0 for "one", 1 for "two", 2 for "three"
+
+    - oid: "/agent/ta_conf_demo/cell"
+      access: read_only
+      type: int32
+      d: |
+         Read-only signed integer-valued collection with fixed
+         instances, to check the signed get/list path
+         Name: One of "neg", "zero", "pos"
+         Value: -5, 0 and 7 respectively
+
+    - oid: "/agent/ta_conf_demo/dial"
+      access: read_write
+      type: uint32
+      d: |
+         Read-write unsigned integer-valued collection with a fixed
+         2-entry table (no add/del)
+         Name: One of "x", "y"
+         Value: Unsigned decimal number
+
+    - oid: "/agent/ta_conf_demo/citem"
+      access: read_create
+      type: string
+      d: |
+         String-valued collection like "item", but set() stages the
+         new value per instance; the subtree commit applies every
+         staged value and bumps "citem_commits"
+         Name: Citem identifier
+         Value: Arbitrary string, last APPLIED (committed) value
+
+    - oid: "/agent/ta_conf_demo/citem_commits"
+      access: read_only
+      type: uint32
+      volatile: true
+      d: |
+         Number of times the citem subtree has been committed. It is
+         volatile since it only ever increases (including as a side
+         effect of restoring citem values via configuration history)
+         and should not result in configuration restore failure.
+         Name: none
+         Value: Unsigned decimal number
+
+    - oid: "/agent/ta_conf_demo/batch"
+      access: read_create
+      type: none
+      unit: true
+      d: |
+         Unvalued collection (add/del/list, no value), same shape as
+         rx_rules's "rule" node; commit bumps "batch_commits"
+         Name: Batch identifier
+         Value: none
+
+    - oid: "/agent/ta_conf_demo/batch_commits"
+      access: read_only
+      type: uint32
+      volatile: true
+      d: |
+         Number of times the batch subtree has been committed. It is
+         volatile since it only ever increases (including as a side
+         effect of restoring batch instances via configuration
+         history) and should not result in configuration restore
+         failure.
+         Name: none
+         Value: Unsigned decimal number
+
+    - oid: "/agent/ta_conf_demo/grp"
+      access: read_only
+      type: none
+      unit: true
+      d: |
+         Named subtree whose properties are staged until commit
+         Name: none
+         Value: none
+
+    - oid: "/agent/ta_conf_demo/grp/a"
+      access: read_write
+      type: uint32
+      d: |
+         The first property, staged until commit
+         Name: none
+         Value: Unsigned decimal number
+
+    - oid: "/agent/ta_conf_demo/grp/b"
+      access: read_write
+      type: uint32
+      d: |
+         The second property, staged until commit
+         Name: none
+         Value: Unsigned decimal number
+
+    - oid: "/agent/ta_conf_demo/grp/commits"
+      access: read_only
+      type: uint32
+      volatile: true
+      d: |
+         Number of times the grp subtree has been committed. It is
+         volatile since it only ever increases (including as a side
+         effect of restoring a/b via configuration history) and
+         should not result in configuration restore failure.
+         Name: none
+         Value: Unsigned decimal number
