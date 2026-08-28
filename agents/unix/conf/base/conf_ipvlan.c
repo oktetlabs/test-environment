@@ -14,8 +14,7 @@
 #include "config.h"
 #endif
 #include "logger_api.h"
-#include "rcf_ch_api.h"
-#include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_string.h"
@@ -179,27 +178,22 @@ ipvlan_flag_val2str(uint32_t val, const char **str)
 /**
  * Add a new IP VLAN interface or modify existing one.
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
+ * @param ctx       Request context
  * @param values    IP VLAN mode and flag (separated by ':')
- * @param link      Parent (link) interface name
- * @param ifname    The interface name
  * @param cmd       Command to execute: NETCONF_CMD_ADD or NETCONF_CMD_CHANGE
  *
  * @return          Status code
  */
 static te_errno
-ipvlan_modify(unsigned int gid, const char *oid, const char *values,
-              const char *link, const char *ifname, netconf_cmd cmd)
+ipvlan_modify(const ta_conf_ctx *ctx, const char *values, netconf_cmd cmd)
 {
+    const char *link = ta_conf_ctx_inst(ctx, "interface");
+    const char *ifname = ta_conf_ctx_inst(ctx, "ipvlan");
     uint32_t    mode = 0;
     uint32_t    flag = 0;
     char        str[RCF_MAX_VAL] = {0};
     char       *val = NULL;
     te_errno    rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if (values == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -227,41 +221,32 @@ ipvlan_modify(unsigned int gid, const char *oid, const char *values,
     return netconf_ipvlan_modify(nh, cmd, link, ifname, mode, flag);
 }
 
-
 /**
- * Add a new IP VLAN interface
+ * Add a new IP VLAN interface.
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param values    IP VLAN mode and flag (separated by ':')
- * @param link      Parent (link) interface name
- * @param ifname    The interface name
+ * @param ctx       Request context
+ * @param val       IP VLAN mode and flag (separated by ':')
  *
  * @return          Status code
  */
 static te_errno
-ipvlan_add(unsigned int gid, const char *oid, const char *values,
-           const char *link, const char *ifname)
+ipvlan_add(const ta_conf_ctx *ctx, const char *val)
 {
-    return ipvlan_modify(gid, oid, values, link, ifname, NETCONF_CMD_ADD);
+    return ipvlan_modify(ctx, val, NETCONF_CMD_ADD);
 }
 
 /**
- * Delete a IP VLAN interface.
+ * Delete an IP VLAN interface.
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param link      Parent (link) interface name
- * @param ifname    The interface name
+ * @param ctx       Request context
  *
  * @return          Status code
  */
 static te_errno
-ipvlan_del(unsigned int gid, const char *oid, const char *link,
-           const char *ifname)
+ipvlan_del(const ta_conf_ctx *ctx)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    const char *link = ta_conf_ctx_inst(ctx, "interface");
+    const char *ifname = ta_conf_ctx_inst(ctx, "ipvlan");
 
     return netconf_ipvlan_modify(nh, NETCONF_CMD_DEL, link, ifname, 0, 0);
 }
@@ -269,46 +254,34 @@ ipvlan_del(unsigned int gid, const char *oid, const char *link,
 /**
  * Set IP VLAN interface mode.
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param values    IP VLAN mode and flag (separated by ':')
- * @param link      Parent (link) interface name
- * @param ifname    The interface name
+ * @param ctx       Request context
+ * @param val       IP VLAN mode and flag (separated by ':')
  *
  * @return          Status code
  */
 static te_errno
-ipvlan_set(unsigned int gid, const char *oid, const char *values,
-           const char *link, const char *ifname)
+ipvlan_set(const ta_conf_ctx *ctx, const char *val)
 {
-    return ipvlan_modify(gid, oid, values, link, ifname, NETCONF_CMD_CHANGE);
+    return ipvlan_modify(ctx, val, NETCONF_CMD_CHANGE);
 }
 
 /**
  * Get IP VLAN interface mode.
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param values    IP VLAN mode and flag (separated by ':')
- * @param link      Parent (link) interface name
- * @param ifname    The interface name
+ * @param ctx   Request context
+ * @param val   Location for the mode:flag string
  *
- * @return          Status code
+ * @return      Status code
  */
 static te_errno
-ipvlan_get(unsigned int gid, const char *oid, char *values,
-           const char *link, const char *ifname)
+ipvlan_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "ipvlan");
     uint32_t    mode;
     uint32_t    flag;
     const char *mode_str;
     const char *flag_str;
     te_errno    rc;
-    te_string   str = TE_STRING_EXT_BUF_INIT(values, RCF_MAX_VAL);
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(link);
 
     if ((rc = netconf_ipvlan_get_mode(nh, ifname, &mode, &flag)) != 0)
         return rc;
@@ -319,57 +292,35 @@ ipvlan_get(unsigned int gid, const char *oid, char *values,
         return rc;
 
     /* Build string, for example "l2:private" */
-    te_string_append(&str, "%s:%s", mode_str, flag_str);
+    te_string_append(val, "%s:%s", mode_str, flag_str);
     return 0;
 }
 
 /**
  * Get IP VLAN interfaces list.
  *
- * @param gid     Group identifier (unused)
- * @param oid     Full identifier of the father instance (unused)
- * @param sub_id  ID of the object to be listed (unused)
- * @param list    Location for the list pointer
- * @param link    Parent (link) interface name
+ * @param ctx     Request context (parent instance OID)
+ * @param names   Vector of heap-allocated names to append to
  *
  * @return        Status code
  */
 static te_errno
-ipvlan_list(unsigned int gid, const char *oid,
-             const char *sub_id, char **list,
-             const char *link)
+ipvlan_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_vec        names = TE_VEC_INIT_AUTOPTR(char *);
-    te_string     str = TE_STRING_INIT;
-    te_errno      rc;
+    const char *link = ta_conf_ctx_inst(ctx, "interface");
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-    rc = netconf_ipvlan_list(nh, link, &names);
-    if (rc == 0)
-    {
-        te_string_join_vec(&str, &names, " ");
-        *list = str.ptr;
-    }
-
-    te_vec_free(&names);
-
-    return rc;
+    return netconf_ipvlan_list(nh, link, names);
 }
 
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_ipvlan, "ipvlan",
-                               NULL, NULL,
-                               ipvlan_get, ipvlan_set,
-                               ipvlan_add, ipvlan_del,
-                               ipvlan_list, NULL);
+static const ta_conf_node *const node_ipvlan =
+    TA_CONF_COLL_STR_RW("ipvlan", ipvlan_get, ipvlan_set,
+                        ipvlan_add, ipvlan_del, ipvlan_list);
 
 /* See the description in conf_rule.h */
 te_errno
 ta_unix_conf_ipvlan_init(void)
 {
-    return rcf_pch_add_node("/agent/interface/", &node_ipvlan);
+    return ta_conf_register("/agent/interface", node_ipvlan);
 }
 
 #else /* USE_LIBNETCONF */
@@ -380,4 +331,3 @@ ta_unix_conf_ipvlan_init(void)
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 }
 #endif /* !USE_LIBNETCONF */
-
