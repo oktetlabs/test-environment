@@ -33,6 +33,7 @@
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 #include "logger_api.h"
 #include "unix_internal.h"
 #include "te_shell_cmd.h"
@@ -461,259 +462,221 @@ cleanup:
     return 0;
 }
 
-#define STATS_IFTABLE_COUNTER_GET(_counter_, _field_) \
-static te_errno net_if_stats_##_counter_##_get(unsigned int gid_,       \
-                                               const char  *oid_,       \
-                                               char        *value_,     \
-                                               const char  *dev_name_)  \
-{                                                                       \
-    int        rc = 0;                                                  \
-    if_stats   stats;                                                   \
-                                                                        \
-    UNUSED(gid_);                                                       \
-    UNUSED(oid_);                                                       \
-                                                                        \
-    memset(&stats, 0, sizeof(if_stats));                                \
-                                                                        \
-    if ((rc = dev_stats_get((dev_name_), &stats)) != 0)                 \
-    {                                                                   \
-        ERROR("Cannot get statistics for interface %s", (dev_name_));   \
-    }                                                                   \
-                                                                        \
-    snprintf((value_), RCF_MAX_VAL, U64_FMT, stats. _field_);           \
-                                                                        \
-    VERB("dev_counter_get(dev_name=%s, counter=%s) returns %s",         \
-         dev_name_, #_counter_, value_);                                \
-                                                                        \
-    return 0;                                                           \
+#define STATS_IFTABLE_COUNTER_GET(_name_) \
+static te_errno                                                       \
+net_if_stats_##_name_##_get(const ta_conf_ctx *ctx, uint64_t *val)          \
+{                                                                     \
+    const char *dev_name_ = ta_conf_ctx_inst(ctx, "interface");       \
+    int         rc = 0;                                               \
+    if_stats    stats;                                                \
+                                                                      \
+    memset(&stats, 0, sizeof(if_stats));                              \
+                                                                      \
+    if ((rc = dev_stats_get((dev_name_), &stats)) != 0)               \
+    {                                                                 \
+        ERROR("Cannot get statistics for interface %s", (dev_name_)); \
+    }                                                                 \
+                                                                      \
+    *(val) = stats. _name_;                                           \
+                                                                      \
+    VERB("dev_counter_get(dev_name=%s, counter=%s) returns %ju",      \
+         dev_name_, #_name_, *(val));                                 \
+                                                                      \
+    return 0;                                                         \
 }
 
 
-STATS_IFTABLE_COUNTER_GET(in_octets, in_octets);
-STATS_IFTABLE_COUNTER_GET(in_ucast_pkts, in_ucast_pkts);
-STATS_IFTABLE_COUNTER_GET(in_nucast_pkts, in_nucast_pkts);
-STATS_IFTABLE_COUNTER_GET(in_discards, in_discards);
-STATS_IFTABLE_COUNTER_GET(in_errors, in_errors);
-STATS_IFTABLE_COUNTER_GET(in_unknown_protos, in_unknown_protos);
-STATS_IFTABLE_COUNTER_GET(out_octets, out_octets);
-STATS_IFTABLE_COUNTER_GET(out_ucast_pkts, out_ucast_pkts);
-STATS_IFTABLE_COUNTER_GET(out_nucast_pkts, out_nucast_pkts);
-STATS_IFTABLE_COUNTER_GET(out_discards, out_discards);
-STATS_IFTABLE_COUNTER_GET(out_errors, out_errors);
+/*
+ * Single source list of ifTable counter names: expanded below to
+ * generate the getters, and again further down to generate the
+ * matching tree leaves.
+ */
+#define STATS_NET_IF_COUNTERS(X_) \
+X_(out_errors)        \
+X_(out_discards)      \
+X_(out_nucast_pkts)   \
+X_(out_ucast_pkts)    \
+X_(out_octets)        \
+X_(in_unknown_protos) \
+X_(in_errors)         \
+X_(in_discards)       \
+X_(in_nucast_pkts)    \
+X_(in_ucast_pkts)     \
+X_(in_octets)
 
+
+#define STATS_IFTABLE_COUNTER_GET_X_(n_) \
+    STATS_IFTABLE_COUNTER_GET(n_)
+
+STATS_NET_IF_COUNTERS(STATS_IFTABLE_COUNTER_GET_X_)
+
+#undef STATS_IFTABLE_COUNTER_GET_X_
 #undef STATS_IFTABLE_COUNTER_GET
 
 
-#define STATS_NET_SNMP_IPV4_COUNTER_GET(_counter_, _field_)     \
-static te_errno                                                 \
-net_snmp_ipv4_stats_##_counter_##_get(unsigned int gid_,        \
-                                      const char  *oid_,        \
-                                      char        *value_)      \
-{                                                               \
-    int         rc = 0;                                         \
-    net_stats   net_stats;                                      \
-                                                                \
-    UNUSED(gid_);                                               \
-    UNUSED(oid_);                                               \
-                                                                \
-    memset(&net_stats, 0, sizeof(net_stats));                   \
-                                                                \
-    if ((rc = net_stats_get(&net_stats)) != 0)                  \
-    {                                                           \
-        ERROR("Cannot get network statistics for system");      \
-    }                                                           \
-                                                                \
-    snprintf((value_), RCF_MAX_VAL, U64_FMT,                    \
-             net_stats.ipv4._field_);                           \
-                                                                \
-    VERB("net_snmp_ipv4_counter_get(counter=%s) returns %s",    \
-         #_counter_, value_);                                   \
-                                                                \
-    return 0;                                                   \
+#define STATS_NET_SNMP_IPV4_COUNTER_GET(_name_) \
+static te_errno                                               \
+net_snmp_ipv4_stats_##_name_##_get(const ta_conf_ctx *ctx,          \
+                                    uint64_t    *val)         \
+{                                                             \
+    int         rc = 0;                                       \
+    net_stats   net_stats;                                    \
+                                                              \
+    UNUSED(ctx);                                              \
+                                                              \
+    memset(&net_stats, 0, sizeof(net_stats));                 \
+                                                              \
+    if ((rc = net_stats_get(&net_stats)) != 0)                \
+    {                                                         \
+        ERROR("Cannot get network statistics for system");    \
+    }                                                         \
+                                                              \
+    *(val) = net_stats.ipv4._name_;                           \
+                                                              \
+    VERB("net_snmp_ipv4_counter_get(counter=%s) returns %ju", \
+         #_name_, *(val));                                    \
+                                                              \
+    return 0;                                                 \
 }
 
-STATS_NET_SNMP_IPV4_COUNTER_GET(in_recvs, in_recvs);
-STATS_NET_SNMP_IPV4_COUNTER_GET(in_hdr_errs, in_hdr_errs);
-STATS_NET_SNMP_IPV4_COUNTER_GET(in_addr_errs, in_addr_errs);
-STATS_NET_SNMP_IPV4_COUNTER_GET(forw_dgrams, forw_dgrams);
-STATS_NET_SNMP_IPV4_COUNTER_GET(in_unknown_protos, in_unknown_protos);
-STATS_NET_SNMP_IPV4_COUNTER_GET(in_discards, in_discards);
-STATS_NET_SNMP_IPV4_COUNTER_GET(in_delivers, in_delivers);
-STATS_NET_SNMP_IPV4_COUNTER_GET(out_requests, out_requests);
-STATS_NET_SNMP_IPV4_COUNTER_GET(out_discards, out_discards);
-STATS_NET_SNMP_IPV4_COUNTER_GET(out_no_routes, out_no_routes);
-STATS_NET_SNMP_IPV4_COUNTER_GET(reasm_timeout, reasm_timeout);
-STATS_NET_SNMP_IPV4_COUNTER_GET(reasm_reqds, reasm_reqds);
-STATS_NET_SNMP_IPV4_COUNTER_GET(reasm_oks, reasm_oks);
-STATS_NET_SNMP_IPV4_COUNTER_GET(reasm_fails, reasm_fails);
-STATS_NET_SNMP_IPV4_COUNTER_GET(frag_oks, frag_oks);
-STATS_NET_SNMP_IPV4_COUNTER_GET(frag_fails, frag_fails);
-STATS_NET_SNMP_IPV4_COUNTER_GET(frag_creates, frag_creates);
 
+/*
+ * Single source list of /proc/net/snmp ipv4 counter names:
+ * expanded below to generate the getters, and again further
+ * down to generate the matching tree leaves.
+ */
+#define STATS_NET_SNMP_IPV4_COUNTERS(X_) \
+X_(frag_creates)      \
+X_(frag_fails)        \
+X_(frag_oks)          \
+X_(reasm_fails)       \
+X_(reasm_oks)         \
+X_(reasm_reqds)       \
+X_(reasm_timeout)     \
+X_(out_no_routes)     \
+X_(out_discards)      \
+X_(out_requests)      \
+X_(in_delivers)       \
+X_(in_discards)       \
+X_(in_unknown_protos) \
+X_(forw_dgrams)       \
+X_(in_addr_errs)      \
+X_(in_hdr_errs)       \
+X_(in_recvs)
+
+
+#define STATS_NET_SNMP_IPV4_COUNTER_GET_X_(n_) \
+    STATS_NET_SNMP_IPV4_COUNTER_GET(n_)
+
+STATS_NET_SNMP_IPV4_COUNTERS(STATS_NET_SNMP_IPV4_COUNTER_GET_X_)
+
+#undef STATS_NET_SNMP_IPV4_COUNTER_GET_X_
 #undef STATS_NET_SNMP_IPV4_COUNTER_GET
 
 
-#define STATS_NET_SNMP_ICMP_COUNTER_GET(_counter_, _field_) \
-static te_errno                                                 \
-net_snmp_icmp_stats_ ## _counter_ ## _get(unsigned int gid_,    \
-                                          const char  *oid_,    \
-                                          char        *value_)  \
-{                                                               \
-    int         rc = 0;                                         \
-    net_stats   net_stats;                                      \
-                                                                \
-    UNUSED(gid_);                                               \
-    UNUSED(oid_);                                               \
-                                                                \
-    memset(&net_stats, 0, sizeof(net_stats));                   \
-                                                                \
-    if ((rc = net_stats_get(&net_stats)) != 0)                  \
-    {                                                           \
-        ERROR("Cannot get network statistics for system");      \
-    }                                                           \
-                                                                \
-    snprintf((value_), RCF_MAX_VAL, U64_FMT,                    \
-             net_stats.icmp._field_);                           \
-                                                                \
-    VERB("net_snmp_icmp_counter_get(counter=%s) returns %s",    \
-         #_counter_, value_);                                   \
-                                                                \
-    return 0;                                                   \
+#define STATS_NET_SNMP_ICMP_COUNTER_GET(_name_) \
+static te_errno                                               \
+net_snmp_icmp_stats_##_name_##_get(const ta_conf_ctx *ctx,          \
+                                    uint64_t    *val)         \
+{                                                             \
+    int         rc = 0;                                       \
+    net_stats   net_stats;                                    \
+                                                              \
+    UNUSED(ctx);                                              \
+                                                              \
+    memset(&net_stats, 0, sizeof(net_stats));                 \
+                                                              \
+    if ((rc = net_stats_get(&net_stats)) != 0)                \
+    {                                                         \
+        ERROR("Cannot get network statistics for system");    \
+    }                                                         \
+                                                              \
+    *(val) = net_stats.icmp._name_;                           \
+                                                              \
+    VERB("net_snmp_icmp_counter_get(counter=%s) returns %ju", \
+         #_name_, *(val));                                    \
+                                                              \
+    return 0;                                                 \
 }
 
-STATS_NET_SNMP_ICMP_COUNTER_GET(in_msgs, in_msgs);
-STATS_NET_SNMP_ICMP_COUNTER_GET(in_errs, in_errs);
-STATS_NET_SNMP_ICMP_COUNTER_GET(in_dest_unreachs, in_dest_unreachs);
-STATS_NET_SNMP_ICMP_COUNTER_GET(in_time_excds, in_time_excds);
-STATS_NET_SNMP_ICMP_COUNTER_GET(in_parm_probs, in_parm_probs);
-STATS_NET_SNMP_ICMP_COUNTER_GET(in_src_quenchs, in_src_quenchs);
-STATS_NET_SNMP_ICMP_COUNTER_GET(in_redirects, in_redirects);
-STATS_NET_SNMP_ICMP_COUNTER_GET(in_echos, in_echos);
-STATS_NET_SNMP_ICMP_COUNTER_GET(in_echo_reps, in_echo_reps);
-STATS_NET_SNMP_ICMP_COUNTER_GET(in_timestamps, in_timestamps);
-STATS_NET_SNMP_ICMP_COUNTER_GET(in_timestamp_reps, in_timestamp_reps);
-STATS_NET_SNMP_ICMP_COUNTER_GET(in_addr_masks, in_addr_masks);
-STATS_NET_SNMP_ICMP_COUNTER_GET(in_addr_mask_reps, in_addr_mask_reps);
 
-STATS_NET_SNMP_ICMP_COUNTER_GET(out_msgs, out_msgs);
-STATS_NET_SNMP_ICMP_COUNTER_GET(out_errs, out_errs);
-STATS_NET_SNMP_ICMP_COUNTER_GET(out_dest_unreachs, out_dest_unreachs);
-STATS_NET_SNMP_ICMP_COUNTER_GET(out_time_excds, out_time_excds);
-STATS_NET_SNMP_ICMP_COUNTER_GET(out_parm_probs, out_parm_probs);
-STATS_NET_SNMP_ICMP_COUNTER_GET(out_src_quenchs, out_src_quenchs);
-STATS_NET_SNMP_ICMP_COUNTER_GET(out_redirects, out_redirects);
-STATS_NET_SNMP_ICMP_COUNTER_GET(out_echos, out_echos);
-STATS_NET_SNMP_ICMP_COUNTER_GET(out_echo_reps, out_echo_reps);
-STATS_NET_SNMP_ICMP_COUNTER_GET(out_timestamps, out_timestamps);
-STATS_NET_SNMP_ICMP_COUNTER_GET(out_timestamp_reps, out_timestamp_reps);
-STATS_NET_SNMP_ICMP_COUNTER_GET(out_addr_masks, out_addr_masks);
-STATS_NET_SNMP_ICMP_COUNTER_GET(out_addr_mask_reps, out_addr_mask_reps);
+/*
+ * Single source list of /proc/net/snmp icmp counter names:
+ * expanded below to generate the getters, and again further
+ * down to generate the matching tree leaves.
+ */
+#define STATS_NET_SNMP_ICMP_COUNTERS(X_) \
+X_(out_addr_mask_reps) \
+X_(out_addr_masks)     \
+X_(out_timestamp_reps) \
+X_(out_timestamps)     \
+X_(out_echo_reps)      \
+X_(out_echos)          \
+X_(out_redirects)      \
+X_(out_src_quenchs)    \
+X_(out_parm_probs)     \
+X_(out_time_excds)     \
+X_(out_dest_unreachs)  \
+X_(out_errs)           \
+X_(out_msgs)           \
+X_(in_addr_mask_reps)  \
+X_(in_addr_masks)      \
+X_(in_timestamp_reps)  \
+X_(in_timestamps)      \
+X_(in_echo_reps)       \
+X_(in_echos)           \
+X_(in_redirects)       \
+X_(in_src_quenchs)     \
+X_(in_parm_probs)      \
+X_(in_time_excds)      \
+X_(in_dest_unreachs)   \
+X_(in_errs)            \
+X_(in_msgs)
 
+
+#define STATS_NET_SNMP_ICMP_COUNTER_GET_X_(n_) \
+    STATS_NET_SNMP_ICMP_COUNTER_GET(n_)
+
+STATS_NET_SNMP_ICMP_COUNTERS(STATS_NET_SNMP_ICMP_COUNTER_GET_X_)
+
+#undef STATS_NET_SNMP_ICMP_COUNTER_GET_X_
 #undef STATS_NET_SNMP_ICMP_COUNTER_GET
-
-
-/* ifTable counters */
-
-RCF_PCH_CFG_NODE_RO(node_stats_net_if_in_octets, "in_octets",
-                    NULL, NULL, net_if_stats_in_octets_get);
-
-#define STATS_NET_IF_ATTR(_name_, _next) \
-    RCF_PCH_CFG_NODE_RO(node_stats_net_if_##_name_, #_name_, \
-                        NULL, &node_stats_net_if_##_next,    \
-                        net_if_stats_##_name_##_get);
-
-STATS_NET_IF_ATTR(in_ucast_pkts, in_octets);
-STATS_NET_IF_ATTR(in_nucast_pkts, in_ucast_pkts);
-STATS_NET_IF_ATTR(in_discards, in_nucast_pkts);
-STATS_NET_IF_ATTR(in_errors, in_discards);
-STATS_NET_IF_ATTR(in_unknown_protos, in_errors);
-STATS_NET_IF_ATTR(out_octets, in_unknown_protos);
-STATS_NET_IF_ATTR(out_ucast_pkts, out_octets);
-STATS_NET_IF_ATTR(out_nucast_pkts, out_ucast_pkts);
-STATS_NET_IF_ATTR(out_discards, out_nucast_pkts);
-STATS_NET_IF_ATTR(out_errors, out_discards);
-
-
-/* /proc/net/snmp/ipv4 counters */
-
-RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_ipv4_in_recvs, "ipv4_in_recvs",
-                    NULL, NULL, net_snmp_ipv4_stats_in_recvs_get);
-
-#define STATS_NET_SNMP_IPV4_ATTR(_name_, _next) \
-    RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_ipv4_##_name_,          \
-                        "ipv4_" #_name_,                            \
-                        NULL, &node_stats_net_snmp_ipv4_##_next,    \
-                        net_snmp_ipv4_stats_##_name_##_get);
-
-STATS_NET_SNMP_IPV4_ATTR(in_hdr_errs, in_recvs);
-STATS_NET_SNMP_IPV4_ATTR(in_addr_errs, in_hdr_errs);
-STATS_NET_SNMP_IPV4_ATTR(forw_dgrams, in_addr_errs);
-STATS_NET_SNMP_IPV4_ATTR(in_unknown_protos, forw_dgrams);
-STATS_NET_SNMP_IPV4_ATTR(in_discards, in_unknown_protos);
-STATS_NET_SNMP_IPV4_ATTR(in_delivers, in_discards);
-STATS_NET_SNMP_IPV4_ATTR(out_requests, in_delivers);
-STATS_NET_SNMP_IPV4_ATTR(out_discards, out_requests);
-STATS_NET_SNMP_IPV4_ATTR(out_no_routes, out_discards);
-STATS_NET_SNMP_IPV4_ATTR(reasm_timeout, out_no_routes);
-STATS_NET_SNMP_IPV4_ATTR(reasm_reqds, reasm_timeout);
-STATS_NET_SNMP_IPV4_ATTR(reasm_oks, reasm_reqds);
-STATS_NET_SNMP_IPV4_ATTR(reasm_fails, reasm_oks);
-STATS_NET_SNMP_IPV4_ATTR(frag_oks, reasm_fails);
-STATS_NET_SNMP_IPV4_ATTR(frag_fails, frag_oks);
-STATS_NET_SNMP_IPV4_ATTR(frag_creates, frag_fails);
-
-
-/* /proc/net/snmp/icmp counters */
-
-RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_icmp_in_msgs, "icmp_in_msgs",
-                    NULL, &node_stats_net_snmp_ipv4_frag_creates,
-                    net_snmp_icmp_stats_in_msgs_get);
-
-#define STATS_NET_SNMP_ICMP_ATTR(_name_, _next) \
-    RCF_PCH_CFG_NODE_RO(node_stats_net_snmp_icmp_##_name_,          \
-                        "icmp_" #_name_,                            \
-                        NULL, &node_stats_net_snmp_icmp_##_next,    \
-                        net_snmp_icmp_stats_##_name_##_get);
-
-STATS_NET_SNMP_ICMP_ATTR(in_errs, in_msgs);
-STATS_NET_SNMP_ICMP_ATTR(in_dest_unreachs, in_errs);
-STATS_NET_SNMP_ICMP_ATTR(in_time_excds, in_dest_unreachs);
-STATS_NET_SNMP_ICMP_ATTR(in_parm_probs, in_time_excds);
-STATS_NET_SNMP_ICMP_ATTR(in_src_quenchs, in_parm_probs);
-STATS_NET_SNMP_ICMP_ATTR(in_redirects, in_src_quenchs);
-STATS_NET_SNMP_ICMP_ATTR(in_echos, in_redirects);
-STATS_NET_SNMP_ICMP_ATTR(in_echo_reps, in_echos);
-STATS_NET_SNMP_ICMP_ATTR(in_timestamps, in_echo_reps);
-STATS_NET_SNMP_ICMP_ATTR(in_timestamp_reps, in_timestamps);
-STATS_NET_SNMP_ICMP_ATTR(in_addr_masks, in_timestamp_reps);
-STATS_NET_SNMP_ICMP_ATTR(in_addr_mask_reps, in_addr_masks);
-
-STATS_NET_SNMP_ICMP_ATTR(out_msgs, in_addr_mask_reps);
-STATS_NET_SNMP_ICMP_ATTR(out_errs, out_msgs);
-STATS_NET_SNMP_ICMP_ATTR(out_dest_unreachs, out_errs);
-STATS_NET_SNMP_ICMP_ATTR(out_time_excds, out_dest_unreachs);
-STATS_NET_SNMP_ICMP_ATTR(out_parm_probs, out_time_excds);
-STATS_NET_SNMP_ICMP_ATTR(out_src_quenchs, out_parm_probs);
-STATS_NET_SNMP_ICMP_ATTR(out_redirects, out_src_quenchs);
-STATS_NET_SNMP_ICMP_ATTR(out_echos, out_redirects);
-STATS_NET_SNMP_ICMP_ATTR(out_echo_reps, out_echos);
-STATS_NET_SNMP_ICMP_ATTR(out_timestamps, out_echo_reps);
-STATS_NET_SNMP_ICMP_ATTR(out_timestamp_reps, out_timestamps);
-STATS_NET_SNMP_ICMP_ATTR(out_addr_masks, out_timestamp_reps);
-STATS_NET_SNMP_ICMP_ATTR(out_addr_mask_reps, out_addr_masks);
 
 
 /*
  * Unix Test Agent network statistics configuration tree.
+ *
+ * Children are listed in the order the legacy brother chains produced
+ * them (ifTable: out-to-in descending; snmp: all ICMP counters
+ * out-to-in descending, followed by all IPv4 counters out-to-in
+ * descending).
  */
 
-RCF_PCH_CFG_NODE_NA(node_net_if_stats, "stats",
-                    &node_stats_net_if_out_errors,
-                    NULL);
+#define STATS_NET_IF_NODE_(n_) \
+    TA_CONF_RO_UINT64(#n_, net_if_stats_##n_##_get),
 
-RCF_PCH_CFG_NODE_NA(node_net_snmp_stats, "stats",
-                    &node_stats_net_snmp_icmp_out_addr_mask_reps,
-                    NULL);
+static const ta_conf_node *const node_net_if_stats =
+    TA_CONF_NA("stats", STATS_NET_IF_COUNTERS(STATS_NET_IF_NODE_) NULL);
+
+#undef STATS_NET_IF_NODE_
+#undef STATS_NET_IF_COUNTERS
+
+
+#define STATS_NET_SNMP_ICMP_NODE_(n_) \
+    TA_CONF_RO_UINT64("icmp_" #n_, net_snmp_icmp_stats_##n_##_get),
+
+#define STATS_NET_SNMP_IPV4_NODE_(n_) \
+    TA_CONF_RO_UINT64("ipv4_" #n_, net_snmp_ipv4_stats_##n_##_get),
+
+static const ta_conf_node *const node_net_snmp_stats =
+    TA_CONF_NA("stats",
+        STATS_NET_SNMP_ICMP_COUNTERS(STATS_NET_SNMP_ICMP_NODE_)
+        STATS_NET_SNMP_IPV4_COUNTERS(STATS_NET_SNMP_IPV4_NODE_) NULL);
+
+#undef STATS_NET_SNMP_ICMP_NODE_
+#undef STATS_NET_SNMP_IPV4_NODE_
+#undef STATS_NET_SNMP_ICMP_COUNTERS
+#undef STATS_NET_SNMP_IPV4_COUNTERS
 
 
 /* See the description in conf_stats.h */
@@ -726,7 +689,7 @@ ta_unix_conf_net_snmp_stats_init(void)
         return 0;
     close(fd);
 
-    return rcf_pch_add_node("/agent", &node_net_snmp_stats);
+    return ta_conf_register("/agent", node_net_snmp_stats);
 }
 
 /* See the description in conf_stats.h */
@@ -739,5 +702,5 @@ ta_unix_conf_net_if_stats_init(void)
         return 0;
     close(fd);
 
-    return rcf_pch_add_node("/agent/interface", &node_net_if_stats);
+    return ta_conf_register("/agent/interface", node_net_if_stats);
 }
