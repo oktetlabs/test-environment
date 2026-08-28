@@ -1447,7 +1447,7 @@ extern int rpc_remove_dir_with_files(rcf_rpc_server *rpcs, const char *path);
  *
  * @return Status code.
  *
- * @note If @p path doesn't start with @c / or @c ./ or @c ../
+ * @note If @p path doesn't start with `/` or `./` or `../`
  *       then @p path is searched in directories from the remote @c PATH.
  *       Otherwise, only the path itself is checked.
  *

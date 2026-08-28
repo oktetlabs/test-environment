@@ -488,7 +488,7 @@ extern te_errno tapi_job_opt_create_enum_bool3(const void *value,
 
 /**
  * Bind @ref char * argument (formatted as
- * @c <quotation_mark>string<quotation_mark>).
+ * `<quotation_mark>string<quotation_mark>`).
  *
  * @param[in] prefix_            Argument prefix.
  * @param[in] quotation_mark_    Quote symbol.

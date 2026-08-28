@@ -168,7 +168,7 @@ extern te_errno te_string_expand_env_vars(const char *src,
  *     @c -1 refers to the last associated value;
  *   + otherwise the expanded index is treated as a separator and
  *     all values associated with the @c NAME are output separated
- *     by the given separator. Note that literal @c | and @c : cannot
+ *     by the given separator. Note that literal `|` and `:` cannot
  *     be used as separators, because they would be processed by the
  *     general syntax.
  * - `NAME*EXPR` is a loop construct. @c EXPR is recursively expanded

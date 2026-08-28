@@ -411,7 +411,7 @@ typedef te_errno te_file_scandir_callback(const char *pattern,
 /**
  * Call @p callback for each file in @p dirname matching a pattern.
  *
- * Special entries @c . and @c .. are always skipped.
+ * Special entries `.` and `..` are always skipped.
  *
  * The callback is passed a concatenation of a @p dirname and the basename
  * of the current file, not just the basename as scandir() would do.

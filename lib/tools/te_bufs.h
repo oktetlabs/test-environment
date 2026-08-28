@@ -63,7 +63,7 @@ typedef struct te_buf_pattern {
  * Convert a textual pattern spec into a compiled pattern.
  *
  * The pattern spec is a string consisting of three parts:
- * @e prefix @c ( @e repeat @c ) @e suffix,
+ * @e prefix `(` @e repeat `)` @e suffix,
  * where both @e prefix and @e suffix are optional.
  *
  * The resulting byte sequence is produced as follows:
@@ -128,7 +128,7 @@ typedef struct te_buf_pattern {
  *                        this function)
  * @return status code
  * @retval TE_ENOBUFS  There is not enough room in @p storage to hold the data.
- * @retval TE_EILSEQ   An unmatched @c [ or @c ( is found.
+ * @retval TE_EILSEQ   An unmatched `[` or `(` is found.
  * @retval TE_ENODATA  The spec contains no actual byte specs.
  * @retval TE_EINVAL   The spec contains multiple repeat sections.
  */
