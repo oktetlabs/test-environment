@@ -19,8 +19,8 @@
 
 #include "conf_netconf.h"
 #include "logger_api.h"
-#include "rcf_ch_api.h"
 #include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_string.h"
@@ -31,37 +31,30 @@
 /**
  * Add a new veth interface.
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param peer      Peer interface name
- * @param ifname    The interface name
+ * @param ctx       Request context
+ * @param val       Peer interface name
  *
  * @return      Status code
  */
 static te_errno
-veth_add(unsigned int gid, const char *oid, const char *peer,
-            const char *ifname)
+veth_add(const ta_conf_ctx *ctx, const char *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    const char *ifname = ta_conf_ctx_inst(ctx, "veth");
 
-    return netconf_veth_add(nh, ifname, peer);
+    return netconf_veth_add(nh, ifname, val);
 }
 
 /**
  * Delete a veth interface.
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param ifname    The interface name
+ * @param ctx       Request context
  *
  * @return      Status code
  */
 static te_errno
-veth_del(unsigned int gid, const char *oid, const char *ifname)
+veth_del(const ta_conf_ctx *ctx)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    const char *ifname = ta_conf_ctx_inst(ctx, "veth");
 
     return netconf_veth_del(nh, ifname);
 }
@@ -69,20 +62,24 @@ veth_del(unsigned int gid, const char *oid, const char *ifname)
 /**
  * Get veth peer interface name.
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param peer      Peer interface name
- * @param ifname    The interface name
+ * @param ctx       Request context
+ * @param val       Location for the peer interface name
  *
  * @return      Status code
  */
 static te_errno
-veth_get(unsigned int gid, const char *oid, char *peer, const char *ifname)
+veth_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    const char *ifname = ta_conf_ctx_inst(ctx, "veth");
+    char peer[RCF_MAX_VAL];
+    te_errno rc;
 
-    return netconf_veth_get_peer(nh, ifname, peer, RCF_MAX_VAL);
+    rc = netconf_veth_get_peer(nh, ifname, peer, sizeof(peer));
+    if (rc != 0)
+        return rc;
+
+    te_string_append(val, "%s", peer);
+    return 0;
 }
 
 /**
@@ -105,42 +102,21 @@ veth_list_include_cb(const char *ifname, void *data)
 /**
  * Get veth interfaces list.
  *
- * @param gid     Group identifier (unused)
- * @param oid     Full identifier of the father instance (unused)
- * @param sub_id  ID of the object to be listed (unused)
- * @param list    Location for the list pointer
+ * @param ctx       Request context (unused)
+ * @param names     Vector of heap-allocated names to append to
  *
  * @return      Status code
  */
 static te_errno
-veth_list(unsigned int gid, const char *oid,
-          const char *sub_id, char **list)
+veth_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_vec        names = TE_VEC_INIT_AUTOPTR(char *);
-    te_string     str = TE_STRING_INIT;
-    te_errno      rc;
+    UNUSED(ctx);
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-    rc = netconf_veth_list(nh, veth_list_include_cb, NULL, &names);
-    if (rc == 0)
-    {
-        te_string_join_vec(&str, &names, " ");
-        *list = str.ptr;
-    }
-
-    te_vec_free(&names);
-
-    return rc;
+    return netconf_veth_list(nh, veth_list_include_cb, NULL, names);
 }
 
-static rcf_pch_cfg_object node_veth =
-    { "veth", 0, NULL, NULL,
-      (rcf_ch_cfg_get)veth_get, NULL,
-      (rcf_ch_cfg_add)veth_add, (rcf_ch_cfg_del)veth_del,
-      (rcf_ch_cfg_list)veth_list, NULL, NULL, NULL };
+static const ta_conf_node *const node_veth =
+    TA_CONF_COLL_STR("veth", veth_get, veth_add, veth_del, veth_list);
 
 /* See the description in conf_rule.h */
 te_errno
@@ -148,7 +124,7 @@ ta_unix_conf_veth_init(void)
 {
     te_errno rc;
 
-    rc = rcf_pch_add_node("/agent/", &node_veth);
+    rc = ta_conf_register("/agent", node_veth);
     if (rc != 0)
         return rc;
 
