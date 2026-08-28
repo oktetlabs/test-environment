@@ -14,3 +14,10 @@ def on_builder_inited(app):
 
 def setup(app):
     app.connect('builder-inited', on_builder_inited)
+
+    # The extension registers one stylesheet once and keeps no per-document
+    # state, so it does not stop Sphinx from reading sources in parallel.
+    return {
+        'parallel_read_safe': True,
+        'parallel_write_safe': True,
+    }
