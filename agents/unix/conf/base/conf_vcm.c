@@ -25,11 +25,11 @@
 #include "te_str.h"
 #include "logger_api.h"
 #include "comm_agent.h"
-#include "rcf_ch_api.h"
-#include "rcf_pch.h"
-#include "logger_api.h"
+#include "rcf_pch_tree.h"
 #include "unix_internal.h"
 #include "te_shell_cmd.h"
+#include "te_alloc.h"
+#include "te_vector.h"
 
 
 
@@ -42,22 +42,17 @@ static char vcmconn_path[500];
 static char java_command_base[] = "/usr/bin/java -cp <my_path> com.tilgin.vcm.connector.client.VoodTerminalServicesTestClient";
 
 /**
- * Get route value.
+ * Get software version of a VCM box.
  *
- * @param  gid          Group identifier (unused)
- * @param  oid          Object identifier (unused)
- * @param  value        Place for route value (gateway address
- *                      or zero if it is a direct route)
- * @param route_name    Name of the route
+ * @param ctx           Request context
+ * @param val           Location for the value
  *
  * @return              Status code
  */
 static te_errno
-vcm_swversion_get(unsigned int gid, const char *oid,
-          char *value, const char *box_name)
+vcm_swversion_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(oid);
-    UNUSED(gid);
+    const char *box_name = ta_conf_ctx_inst(ctx, "box");
     char buffer[1000];
     char java_command[2000];
 
@@ -83,19 +78,23 @@ vcm_swversion_get(unsigned int gid, const char *oid,
     ta_waitpid(java_cmd_pid, &status, 0);
     RING("%s: status of java command: %d", __FUNCTION__, status);
 
-    strcpy(value, "aa");
+    te_string_append(val, "aa");
     return 0;
 }
 
+/**
+ * Set software version of a VCM box.
+ *
+ * @param ctx           Request context
+ * @param val           New value
+ *
+ * @return              Status code
+ */
 static te_errno
-vcm_swversion_set(unsigned int gid, const char *oid,
-                  char *value, const char *name)
+vcm_swversion_set(const ta_conf_ctx *ctx, const char *val)
 {
-    UNUSED(oid);
-    UNUSED(gid);
-    UNUSED(name);
-    char box_name[100];
-    char *p;
+    const char *box_name = ta_conf_ctx_inst(ctx, "box");
+    const char *oid = ta_conf_ctx_oid(ctx);
     char out_buffer[1000];
     char err_buffer[1000];
     char java_command[2000];
@@ -105,19 +104,12 @@ vcm_swversion_set(unsigned int gid, const char *oid,
 
     pid_t java_cmd_pid;
 
-    p = strstr(oid, "box:");
-    p += 4;
-    te_strlcpy(box_name, p, sizeof(box_name));
-
-    p = strchr(box_name, '/');
-    *p = 0;
-
     RING("%s: called for oid <%s> , box_name <%s>, value <%s>",
-        __FUNCTION__, oid, box_name, value);
+        __FUNCTION__, oid, box_name, val);
 
     snprintf(java_command, sizeof(java_command),
              "%s --setSoftwareRevision %s %s %s",
-             java_command_base, vcm_address, box_name, value);
+             java_command_base, vcm_address, box_name, val);
 
     RING("%s: prepared java command: <%s>",  __FUNCTION__, java_command);
     java_cmd_pid = te_shell_cmd(java_command, -1, NULL, &out_fd, &err_fd);
@@ -143,28 +135,37 @@ vcm_swversion_set(unsigned int gid, const char *oid,
 }
 
 
+/**
+ * Get a VCM box parameter.
+ *
+ * @param ctx           Request context
+ * @param val           Location for the value
+ *
+ * @return              Status code
+ */
 static te_errno
-vcm_parameter_get(unsigned int gid, const char *oid,
-          char *value, const char *name)
+vcm_parameter_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(oid);
-    UNUSED(gid);
-    UNUSED(name);
+    UNUSED(ctx);
+    UNUSED(val);
 
-    strcpy(value, "");
     return 0;
 }
 
 
+/**
+ * Set a VCM box parameter.
+ *
+ * @param ctx           Request context
+ * @param val           New value
+ *
+ * @return              Status code
+ */
 static te_errno
-vcm_parameter_set(unsigned int gid, const char *oid,
-          char *value, const char *name)
+vcm_parameter_set(const ta_conf_ctx *ctx, const char *val)
 {
-    UNUSED(oid);
-    UNUSED(gid);
-    UNUSED(name);
-    char box_name[100];
-    char *p;
+    const char *box_name = ta_conf_ctx_inst(ctx, "box");
+    const char *oid = ta_conf_ctx_oid(ctx);
     char out_buffer[1000];
     char err_buffer[1000];
     char java_command[2000];
@@ -174,19 +175,12 @@ vcm_parameter_set(unsigned int gid, const char *oid,
 
     pid_t java_cmd_pid;
 
-    p = strstr(oid, "box:");
-    p += 4;
-    te_strlcpy(box_name, p, sizeof(box_name));
-
-    p = strchr(box_name, '/');
-    *p = 0;
-
     RING("%s: called for oid <%s> , box_name <%s>, value <%s>",
-        __FUNCTION__, oid, box_name, value);
+        __FUNCTION__, oid, box_name, val);
 
     snprintf(java_command, sizeof(java_command),
              "%s --setSoftwareRevision %s %s %s",
-             java_command_base, vcm_address, box_name, value);
+             java_command_base, vcm_address, box_name, val);
 
     RING("%s: prepared java comand: <%s>",  __FUNCTION__, java_command);
     java_cmd_pid = te_shell_cmd(java_command, -1, NULL, &out_fd, &err_fd);
@@ -212,75 +206,58 @@ vcm_parameter_set(unsigned int gid, const char *oid,
 }
 
 /**
- * Get route value.
+ * Get VCM address (that is, IP address to connect to).
  *
- * @param  gid          Group identifier (unused)
- * @param  oid          Object identifier (unused)
- * @param  value        Place for route value (gateway address
- *                      or zero if it is a direct route)
- * @param route_name    Name of the route
+ * @param ctx           Request context
+ * @param val           Location for the value
  *
  * @return              Status code
  */
 static te_errno
-vcm_get(unsigned int gid, const char *oid,
-          char *value, const char *vcm_name)
+vcm_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(oid);
-    UNUSED(gid);
-    UNUSED(vcm_name);
+    UNUSED(ctx);
 
-    strcpy(value, vcm_address);
+    te_string_append(val, "%s", vcm_address);
 
     return 0;
 }
 
 /**
- * Set VCM  value (that is, IP address to connect)
+ * Set VCM address (that is, IP address to connect to).
  *
- * @param       gid        Group identifier (unused)
- * @param       oid        Object identifier
- * @param       value      New value for the route
- * @param       route_name Name of the route
+ * @param ctx           Request context
+ * @param val           New value
  *
- * @return      Status code.
+ * @return              Status code.
  */
 static te_errno
-vcm_set(unsigned int gid, const char *oid, const char *value,
-          const char *vcm_name)
+vcm_set(const ta_conf_ctx *ctx, const char *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(vcm_name);
+    UNUSED(ctx);
 
-    te_strlcpy(vcm_address, value, sizeof(vcm_address));
+    te_strlcpy(vcm_address, val, sizeof(vcm_address));
 
     return 0;
 }
 
 
 static te_errno
-vcmconn_path_get(unsigned int gid, const char *oid,
-          char *value, const char *vcm_name)
+vcmconn_path_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(oid);
-    UNUSED(gid);
-    UNUSED(vcm_name);
+    UNUSED(ctx);
 
-    strcpy(value, vcmconn_path);
+    te_string_append(val, "%s", vcmconn_path);
 
     return 0;
 }
 
 static te_errno
-vcmconn_path_set(unsigned int gid, const char *oid,
-          char *value, const char *vcm_name)
+vcmconn_path_set(const ta_conf_ctx *ctx, const char *val)
 {
-    UNUSED(oid);
-    UNUSED(gid);
-    UNUSED(vcm_name);
+    UNUSED(ctx);
 
-    te_strlcpy(vcmconn_path, value, sizeof(vcmconn_path));
+    te_strlcpy(vcmconn_path, val, sizeof(vcmconn_path));
 
     return 0;
 }
@@ -288,49 +265,45 @@ vcmconn_path_set(unsigned int gid, const char *oid,
 /**
  * Determine list of VCM boxes.
  *
- * @param gid     group identifier (unused)
- * @param oid     full parent object instance identifier (unused)
- * @param sub_id  ID of the object to be listed (unused)
- * @param list    location for the list pointer
- * @param name    interface name
+ * @param ctx     Request context
+ * @param names   Vector of heap-allocated names to append to
  *
  * @return error code
  */
 static te_errno
-vcm_box_list(unsigned int gid, const char *oid,
-             const char *sub_id, char **list,
-             const char *name)
+vcm_box_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(name);
-
     /* TODO get from VCM */
-    *list = strdup("V303L622R1A0-0001742121 V403L5155B10-0001553123 V601L622R1A0-1000000001");
+    static const char boxes[] =
+        "V303L622R1A0-0001742121 V403L5155B10-0001553123 "
+        "V601L622R1A0-1000000001";
+    char *copy = TE_STRDUP(boxes);
+    char *saveptr;
+    char *tok;
+
+    UNUSED(ctx);
+
+    for (tok = strtok_r(copy, " ", &saveptr); tok != NULL;
+         tok = strtok_r(NULL, " ", &saveptr))
+    {
+        char *name = TE_STRDUP(tok);
+
+        TE_VEC_APPEND(names, name);
+    }
+    free(copy);
 
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RW(node_vcm_parameter, "parameter", NULL, NULL,
-                    vcm_parameter_get, vcm_parameter_set);
-
-RCF_PCH_CFG_NODE_RW(node_vcm_swversion, "swversion",
-                    NULL, &node_vcm_parameter,
-                    vcm_swversion_get, vcm_swversion_set);
-
-RCF_PCH_CFG_NODE_RW(node_vcmconn_path, "vcmconn_path", NULL, NULL,
-                    vcmconn_path_get, vcmconn_path_set);
-
-
-RCF_PCH_CFG_NODE_COLLECTION(node_vcm_box, "box",
-                            &node_vcm_swversion, &node_vcmconn_path,
-                            NULL, NULL,
-                            vcm_box_list, NULL);
-
-RCF_PCH_CFG_NODE_RW(node_vcm, "vcm",
-                    &node_vcm_box, NULL,
-                    vcm_get, vcm_set);
+static const ta_conf_node *const node_vcm =
+    TA_CONF_RW_STR("vcm", vcm_get, vcm_set,
+        TA_CONF_LIST("box", vcm_box_list,
+            TA_CONF_RW_STR("swversion", vcm_swversion_get,
+                           vcm_swversion_set),
+            TA_CONF_RW_STR("parameter", vcm_parameter_get,
+                           vcm_parameter_set)),
+        TA_CONF_RW_STR("vcmconn_path", vcmconn_path_get,
+                       vcmconn_path_set));
 
 /**
  * Initializes ta_unix_conf_vcm support.
@@ -340,5 +313,5 @@ RCF_PCH_CFG_NODE_RW(node_vcm, "vcm",
 te_errno
 ta_unix_conf_vcm_init()
 {
-    return rcf_pch_add_node("/agent", &node_vcm);
+    return ta_conf_register("/agent", node_vcm);
 }
