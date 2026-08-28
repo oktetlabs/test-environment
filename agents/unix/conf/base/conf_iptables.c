@@ -28,10 +28,12 @@
 #include "te_defs.h"
 #include "te_str.h"
 #include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 #include "unix_internal.h"
 #include "te_shell_cmd.h"
 #include "ta_common.h"
 #include "te_string.h"
+#include "te_vector.h"
 
 #if __linux__
 
@@ -53,106 +55,46 @@ static char iptables_tool_options[RCF_MAX_VAL];
  * Methods
  */
 
-static te_errno iptables_iptables_list(unsigned int, const char *,
-                                       const char *, char **,
-                                       const char *);
-
-static te_errno iptables_table_list(unsigned int, const char *,
-                                    const char *, char **,
-                                    const char *, const char *);
-
-static te_errno iptables_chain_get(unsigned int, const char *, char *,
-                                   const char *, const char *, const char *,
-                                   const char *);
-
-static te_errno iptables_chain_set(unsigned int, const char *, const char *,
-                                   const char *, const char *, const char *,
-                                   const char *);
-
-static te_errno iptables_chain_add(unsigned int, const char *, const char *,
-                                   const char *, const char *, const char *,
-                                   const char *);
-
-static te_errno iptables_chain_del(unsigned int, const char *, const char *,
-                                   const char *, const char *,
-                                   const char *);
-
-static te_errno iptables_chain_list(unsigned int, const char *, const char *,
-                                    char **, const char *, const char *,
-                                    const char *);
-
-static te_errno iptables_rules_get(unsigned int, const char *, char *,
-                                   const char *, const char *, const char *,
-                                   const char *);
-
-static te_errno iptables_rules_set(unsigned int, const char *, const char *,
-                                   const char *, const char *, const char *,
-                                   const char *);
-
-static te_errno iptables_cmd_get(unsigned int, const char *, char *,
-                                 const char *, const char *, const char *,
-                                 const char *);
-
-static te_errno iptables_cmd_set(unsigned int, const char *, const char *,
-                                 const char *, const char *, const char *,
-                                 const char *);
-
-
-/*
- * Nodes
+/**
+ * Split a space-separated list produced in-place in @p buf_in into
+ * individual heap-allocated names appended to @p names.
+ *
+ * @param buf_in        Space-separated names (modified in place)
+ * @param names         Vector of heap-allocated names to append to
  */
+static void
+buf_append_names(char *buf_in, te_vec *names)
+{
+    char *saveptr;
+    char *tok;
 
-RCF_PCH_CFG_NODE_RW(node_iptables_rules, "rules",
-                    NULL, NULL,
-                    iptables_rules_get,
-                    iptables_rules_set);
+    for (tok = strtok_r(buf_in, " ", &saveptr); tok != NULL;
+         tok = strtok_r(NULL, " ", &saveptr))
+    {
+        char *name = TE_STRDUP(tok);
 
-RCF_PCH_CFG_NODE_RW(node_iptables_cmd, "cmd",
-                    NULL, &node_iptables_rules,
-                    iptables_cmd_get,
-                    iptables_cmd_set);
-
-static rcf_pch_cfg_object node_iptables_chain =
-{ "chain", 0, &node_iptables_cmd, NULL,
-      (rcf_ch_cfg_get)iptables_chain_get,
-      (rcf_ch_cfg_set)iptables_chain_set,
-      (rcf_ch_cfg_add)iptables_chain_add,
-      (rcf_ch_cfg_del)iptables_chain_del,
-      (rcf_ch_cfg_list)iptables_chain_list,
-      NULL, NULL, NULL};
-
-RCF_PCH_CFG_NODE_COLLECTION(node_iptables_table, "table",
-                            &node_iptables_chain, NULL,
-                            NULL, NULL,
-                            iptables_table_list, NULL);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_iptables, "iptables",
-                            &node_iptables_table, NULL,
-                            NULL, NULL,
-                            iptables_iptables_list, NULL);
+        TE_VEC_APPEND(names, name);
+    }
+}
 
 /**
  * Obtain list of supported IP versions.
  *
- * @param gid           group identifier (unused)
- * @param oid           full parent object instance identifier (unused)
- * @param sub_id        ID of the object to be listed (unused)
- * @param list          location for the list pointer
- * @param ifname        interface name (unused)
+ * @param ctx           request context (unused, interface is irrelevant)
+ * @param names         vector of heap-allocated names to append to
  *
  * @return              Status code
  */
 static te_errno
-iptables_iptables_list(unsigned int gid, const char *oid,
-                       const char *sub_id, char **list,
-                       const char *ifname)
+iptables_iptables_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(sub_id);
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(ifname);
+    char *ip4 = TE_STRDUP("4");
+    char *ip6 = TE_STRDUP("6");
 
-    *list = strdup("4 6");
+    UNUSED(ctx);
+
+    TE_VEC_APPEND(names, ip4);
+    TE_VEC_APPEND(names, ip6);
 
     return 0;
 }
@@ -208,27 +150,19 @@ iptables_obtain_table_list(te_string *table_list)
 /**
  * Obtain list of built-in iptables tables.
  *
- * @param gid           group identifier (unused)
- * @param oid           full parent object instance identifier (unused)
- * @param sub_id        ID of the object to be listed (unused)
- * @param list          location for the list pointer
- * @param ifname        interface name (unused)
+ * @param ctx           request context (unused, interface/IP version
+ *                      are irrelevant)
+ * @param names         vector of heap-allocated names to append to
  *
  * @return              Status code
  */
 static te_errno
-iptables_table_list(unsigned int  gid, const char *oid,
-                    const char *sub_id, char **list,
-                    const char *ifname, const char *ip)
+iptables_table_list(const ta_conf_ctx *ctx, te_vec *names)
 {
     static te_string table_list = TE_STRING_INIT;
+    char *copy;
 
-    UNUSED(sub_id);
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(ifname);
-    UNUSED(ip);
-
+    UNUSED(ctx);
 
     if (table_list.len == 0)
     {
@@ -247,10 +181,13 @@ iptables_table_list(unsigned int  gid, const char *oid,
         }
     }
 
-    if (table_list.ptr != NULL)
-        *list = strdup(table_list.ptr);
-    else
-        *list = NULL;
+    if (table_list.ptr == NULL)
+        return 0;
+
+    /* Tokenize a copy: table_list is a persistent cache. */
+    copy = TE_STRDUP(table_list.ptr);
+    buf_append_names(copy, names);
+    free(copy);
 
     return 0;
 }
@@ -375,27 +312,21 @@ iptables_perif_chain_set(const char *ifname,
 /**
  * Add per-interface chain and install jumping rule if required
  *
- * @param gid           group identifier (unused)
- * @param oid           full identifier of the father instance
- * @param value         boolean value, if we should install jumping rule
- * @param ifname        interface name to operate the chain linked to
- * @param ip            IP version
- * @param table         table name to operate chains in
- * @param chain         chain name to add (without ifname prefix)
+ * @param ctx           request context
+ * @param val           any nonzero value enables the jumping rule
  *
  * @return              Status code
  */
 static te_errno
-iptables_chain_add(unsigned int  gid, const char *oid,
-                   const char   *value, const char *ifname,
-                   const char   *ip, const char *table, const char *chain)
+iptables_chain_add(const ta_conf_ctx *ctx, int32_t val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *ip = ta_conf_ctx_inst(ctx, "iptables");
+    const char *table = ta_conf_ctx_inst(ctx, "table");
+    const char *chain = ta_conf_ctx_inst(ctx, "chain");
     char        cmd_buf[IPTABLES_CMD_BUF_SIZE];
-    int         enable = atoi(value);
+    int         enable = (val != 0);
     te_errno    rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     INFO("%s(%s, %s, %s, %s) started", __FUNCTION__, ifname, ip, table, chain);
 
@@ -432,26 +363,19 @@ iptables_chain_add(unsigned int  gid, const char *oid,
 /**
  * Delete per-interface chain and remove jumping rule
  *
- * @param gid           group identifier (unused)
- * @param oid           full identifier of the father instance
- * @param value         boolean value, if we should install jumping rule
- * @param ifname        interface name to operate the chain linked to
- * @param ip            IP version
- * @param table         table name to operate chains in
- * @param chain         chain name to delete (without ifname prefix)
+ * @param ctx           request context
  *
  * @return              Status code
  */
 static te_errno
-iptables_chain_del(unsigned int  gid, const char *oid,
-                   const char   *ifname, const char *ip,
-                   const char   *table, const char *chain)
+iptables_chain_del(const ta_conf_ctx *ctx)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *ip = ta_conf_ctx_inst(ctx, "iptables");
+    const char *table = ta_conf_ctx_inst(ctx, "table");
+    const char *chain = ta_conf_ctx_inst(ctx, "chain");
     char        cmd_buf[IPTABLES_CMD_BUF_SIZE];
     te_errno    rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     INFO("%s(%s, %s, %s, %s) started", __FUNCTION__, ifname, ip, table, chain);
 
@@ -522,27 +446,20 @@ iptables_chain_del(unsigned int  gid, const char *oid,
 /**
  * Install/remove per-interface chain jumping rule
  *
- * @param gid           group identifier (unused)
- * @param oid           full identifier of the father instance
- * @param value         boolean value, if the jumping rule should be
- *                      installed (1) or removed (0)
- * @param ifname        interface name to operate the chain linked to
- * @param ip            IP version
- * @param table         table name to operate chains in
- * @param chain         chain name (without ifname prefix)
+ * @param ctx           request context
+ * @param val           any nonzero value installs the jumping rule,
+ *                      zero removes it
  *
  * @return              Status code
  */
 static te_errno
-iptables_chain_set(unsigned int  gid, const char *oid,
-                   const char   *value, const char *ifname,
-                   const char   *ip, const char *table,
-                   const char   *chain)
+iptables_chain_set(const ta_conf_ctx *ctx, int32_t val)
 {
-    int enable = atoi(value);
-
-    UNUSED(gid);
-    UNUSED(oid);
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *ip = ta_conf_ctx_inst(ctx, "iptables");
+    const char *table = ta_conf_ctx_inst(ctx, "table");
+    const char *chain = ta_conf_ctx_inst(ctx, "chain");
+    int enable = (val != 0);
 
     return iptables_perif_chain_set(ifname, ip, table, chain, enable);
 }
@@ -550,35 +467,25 @@ iptables_chain_set(unsigned int  gid, const char *oid,
 /**
  * Get the status of per-interface chain jumping rule (installed or not)
  *
- * @param gid           group identifier (unused)
- * @param oid           full identifier of the father instance
- * @param value         location to returned status of jumping rule
- * @param ifname        interface name to operate the chain linked to
- * @param ip            IP version
- * @param table         table name to operate chains in
- * @param chain         chain name to check (without ifname prefix)
+ * @param ctx           request context
+ * @param val           location to returned status of jumping rule
  *
  * @return              Status code
  */
 static te_errno
-iptables_chain_get(unsigned int  gid, const char *oid,
-                   char   *value, const char *ifname,
-                   const char *ip, const char *table,
-                   const char *chain)
+iptables_chain_get(const ta_conf_ctx *ctx, int32_t *val)
 {
-    te_errno rc;
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *ip = ta_conf_ctx_inst(ctx, "iptables");
+    const char *table = ta_conf_ctx_inst(ctx, "table");
+    const char *chain = ta_conf_ctx_inst(ctx, "chain");
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    rc = te_snprintf(value, RCF_MAX_VAL,
-                     iptables_perif_chain_is_enabled(ifname, ip, table, chain) ?
-                     "1" : "0");
+    *val = iptables_perif_chain_is_enabled(ifname, ip, table, chain) ? 1 : 0;
 
     INFO("%s(): ip %p, table %p chain %p", __FUNCTION__,
          ip, table, chain);
 
-    return rc;
+    return 0;
 }
 
 /**
@@ -603,39 +510,26 @@ chomp(char *buf)
 /**
  * Get the list of per-interface chains.
  *
- * @param gid           group identifier (unused)
- * @param oid           full identifier of the father instance
- * @param sub_id        ID of the object to be listed (unused)
- * @param list          location of the chains list
- * @param ifname        interface name to operate the chain linked to
- * @param ip            IP version
- * @param table         table name to look for chains in
+ * @param ctx           request context (parent instance is the table)
+ * @param names         vector of heap-allocated names to append to
  *
  * @return              Status code
  */
 static te_errno
-iptables_chain_list(unsigned int  gid, const char *oid,
-                    const char *sub_id, char **list,
-                    const char *ifname, const char *ip,
-                    const char *table)
+iptables_chain_list(const ta_conf_ctx *ctx, te_vec *names)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *ip = ta_conf_ctx_inst(ctx, "iptables");
+    const char *table = ta_conf_ctx_inst(ctx, "table");
     int       rc        = 0;
     FILE     *fp;
     int       out_fd;
     char      buf[IPTABLES_CMD_BUF_SIZE];
-    uint32_t  list_size = 0;
-    uint32_t  list_len  = 0;
     pid_t     pid;
     int       status;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
     INFO("%s started, ifname=%s, ip=%s, table=%s", __FUNCTION__,
          ifname, ip, table);
-
-    *list = NULL;
 
     rc = te_snprintf(buf, sizeof(buf),
                      "%s %s -t %s -S | grep '^-N .*_%s' | "
@@ -660,28 +554,18 @@ iptables_chain_list(unsigned int  gid, const char *oid,
         goto cleanup;
     }
 
-    list_size = IPTABLES_CMD_BUF_SIZE;
-    *list     = TE_ALLOC(list_size);
-    list_len = 0;
-
     while (fgets(buf, sizeof(buf), fp) != NULL)
     {
+        char *name;
+
         /* Remove trailing newline */
         chomp(buf);
 
-        if (list_len + strlen(buf) + 1 >= list_size)
-        {
-            list_size *= 2;
-            TE_REALLOC(*list, list_size);
-        }
-
-        list_len += sprintf(*list + list_len, "%s ", buf);
+        name = TE_STRDUP(buf);
+        TE_VEC_APPEND(names, name);
 
         INFO("Found chain %s", buf);
     }
-
-    if (strlen(*list) > 0)
-        INFO("Chains list for %s table on %s: %s", table, ifname, *list);
 
 cleanup:
     if (fp != NULL)
@@ -697,34 +581,33 @@ extern void **konst_susp_ptr;
 /**
  * Get the list of rules in the per-interface chain as a single value.
  *
- * @param gid           group identifier (unused)
- * @param oid           full identifier of the father instance
- * @param value         location for the rules list
- * @param ifname        interface name to operate the chain linked to
- * @param ip            IP version
- * @param table         table name to operate with chains in
- * @param chain         chain name to get the list of rules in
+ * @param ctx           request context
+ * @param val           location for the rules list
  *
  * @return              Status code
  */
 static te_errno
-iptables_rules_get(unsigned int  gid, const char *oid,
-                   char         *value, const char *ifname,
-                   const char   *ip, const char *table,
-                   const char   *chain)
+iptables_rules_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *ip = ta_conf_ctx_inst(ctx, "iptables");
+    const char *table = ta_conf_ctx_inst(ctx, "table");
+    const char *chain = ta_conf_ctx_inst(ctx, "chain");
     int   rc = 0;
     FILE *fp = NULL;
     int   out_fd;
     char  buf[IPTABLES_CMD_BUF_SIZE] = {0, };
     pid_t pid;
     int   status;
+    /*
+     * Written into directly (bypassing te_string bookkeeping) to
+     * preserve the legacy graceful truncation below: overflowing a
+     * te_string external buffer via te_string_append() is fatal.
+     */
+    char *value = val->ptr;
 
     size_t rest_value_space = RCF_MAX_VAL;
     size_t sz;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
 #if 0
     fprintf(stderr,"%p:%s(ifname=%s, table=%s, chain=%s) started, "
@@ -793,22 +676,18 @@ cleanup:
 /**
  * Flush and setup the list of rules for the per-interface chain.
  *
- * @param gid           group identifier (unused)
- * @param oid           full identifier of the father instance
+ * @param ctx           request context
  * @param value         rules list without chain name and delimited by '|'
- * @param ifname        interface name to operate the chain linked to
- * @param ip            IP version
- * @param table         table name to operate with chain in
- * @param chain         chain name to update the list of rules in
  *
  * @return              Status code
  */
 static te_errno
-iptables_rules_set(unsigned int  gid, const char *oid,
-                   const char   *value, const char *ifname,
-                   const char   *ip, const char *table,
-                   const char   *chain)
+iptables_rules_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *ip = ta_conf_ctx_inst(ctx, "iptables");
+    const char *table = ta_conf_ctx_inst(ctx, "table");
+    const char *chain = ta_conf_ctx_inst(ctx, "chain");
     int   rc = 0;
     FILE *fp = NULL;
     int   in_fd;
@@ -816,9 +695,6 @@ iptables_rules_set(unsigned int  gid, const char *oid,
     const char *p = NULL;
     pid_t pid;
     int   status;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     INFO("%s started, ifname=%s, ip=%s, table=%s", __FUNCTION__,
          ifname, ip, table);
@@ -887,23 +763,19 @@ cleanup:
 /**
  * Add/Delete/Insert iptables rule into the specific per-interface chain.
  *
- * @param gid           group identifier (unused)
- * @param oid           full identifier of the father instance
+ * @param ctx           request context
  * @param value         iptables command to execute, chain name in the
  *                      command should be omitted to avoid ambiguity
- * @param ifname        interface name to operate the chain linked to
- * @param ip            IP version
- * @param table         table name to operate with chain in
- * @param chain         chain name to operate with
  *
  * @return              Status code
  */
 static te_errno
-iptables_cmd_set(unsigned int  gid, const char *oid,
-                 const char   *value, const char *ifname,
-                 const char   *ip, const char *table,
-                 const char   *chain)
+iptables_cmd_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *ip = ta_conf_ctx_inst(ctx, "iptables");
+    const char *table = ta_conf_ctx_inst(ctx, "table");
+    const char *chain = ta_conf_ctx_inst(ctx, "chain");
     int         rc = 0;
     char        command;
     const char *val_p;
@@ -911,9 +783,6 @@ iptables_cmd_set(unsigned int  gid, const char *oid,
     te_string   buf = TE_STRING_INIT;
 
     static const char *parameter_j = " -j";
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     INFO("%s(ifname=%s, ip=%s, table=%s, chain=%s): %s", __FUNCTION__,
          ifname, ip, table, chain, value);
@@ -1018,30 +887,16 @@ iptables_cmd_set(unsigned int  gid, const char *oid,
 /**
  * Dummy get method for volatile write-only object.
  *
- * @param gid           group identifier (unused)
- * @param oid           full identifier of the father instance
- * @param value         location to the returned empty value
- * @param ifname        interface name to operate the chain linked to
- * @param ip            IP version
- * @param table         table name to operate with chain in
- * @param chain         chain name to operate with
+ * @param ctx           request context
+ * @param val           location to the returned empty value
  *
  * @return              Status code
  */
 static te_errno
-iptables_cmd_get(unsigned int  gid, const char *oid,
-                 char   *value, const char *ifname,
-                 const char   *ip, const char *table,
-                 const char *chain)
+iptables_cmd_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(ifname);
-    UNUSED(ip);
-    UNUSED(table);
-    UNUSED(chain);
-
-    *value = '\0';
+    UNUSED(ctx);
+    UNUSED(val);
 
     return 0;
 }
@@ -1049,23 +904,20 @@ iptables_cmd_get(unsigned int  gid, const char *oid,
 /**
  * Set the extra options for iptables tool.
  *
- * @param gid           Group identifier (unused).
- * @param oid           Full object instance identifier.
+ * @param ctx           Request context.
  * @param value         New value.
  *
  * @return Status code.
  */
 static te_errno
-iptables_tool_opts_set(unsigned int gid, const char *oid, const char *value)
+iptables_tool_opts_set(const ta_conf_ctx *ctx, const char *value)
 {
-    UNUSED(gid);
-
-    INFO("%s, %s = %s", __FUNCTION__, oid, value);
+    INFO("%s, %s = %s", __FUNCTION__, ta_conf_ctx_oid(ctx), value);
 
     if (strlen(value) >= RCF_MAX_VAL)
     {
         ERROR("A buffer to save the \"%s\" variable value is too small.",
-              oid);
+              ta_conf_ctx_oid(ctx));
         return TE_RC(TE_TA_UNIX, TE_EOVERFLOW);
     }
     strcpy(iptables_tool_options, value);
@@ -1076,30 +928,36 @@ iptables_tool_opts_set(unsigned int gid, const char *oid, const char *value)
 /**
  * Get the extra options for iptables tool.
  *
- * @param gid           Group identifier (unused).
- * @param oid           Full object instance identifier.
- * @param value         Obtained value.
+ * @param ctx           Request context.
+ * @param val           Obtained value.
  *
  * @return Status code.
  */
 static te_errno
-iptables_tool_opts_get(unsigned int gid, const char *oid, char *value)
+iptables_tool_opts_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
+    INFO("%s, %s = %s", __FUNCTION__, ta_conf_ctx_oid(ctx),
+        iptables_tool_options);
 
-    INFO("%s, %s = %s", __FUNCTION__, oid, iptables_tool_options);
-
-    strcpy(value, iptables_tool_options);
+    te_string_append(val, "%s", iptables_tool_options);
 
     return 0;
 }
 
-/* iptables tool options Configurator node */
-RCF_PCH_CFG_NODE_RW(node_iptables_tool_opts, "iptables_tool_opts",
-                    NULL, NULL,
-                    iptables_tool_opts_get,
-                    iptables_tool_opts_set);
+static const ta_conf_node *const node_iptables =
+    TA_CONF_LIST("iptables", iptables_iptables_list,
+        TA_CONF_LIST("table", iptables_table_list,
+            TA_CONF_COLL_INT32_RW("chain", iptables_chain_get,
+                                iptables_chain_set, iptables_chain_add,
+                                iptables_chain_del, iptables_chain_list,
+                TA_CONF_RW_STR("cmd", iptables_cmd_get,
+                               iptables_cmd_set),
+                TA_CONF_RW_STR("rules", iptables_rules_get,
+                               iptables_rules_set))));
 
+static const ta_conf_node *const node_iptables_tool_opts =
+    TA_CONF_RW_STR("iptables_tool_opts", iptables_tool_opts_get,
+                   iptables_tool_opts_set);
 
 /**
  * Initialize iptables subtree
@@ -1109,8 +967,13 @@ RCF_PCH_CFG_NODE_RW(node_iptables_tool_opts, "iptables_tool_opts",
 extern te_errno
 ta_unix_conf_iptables_init(void)
 {
-    rcf_pch_add_node("/agent", &node_iptables_tool_opts);
-    return rcf_pch_add_node("/agent/interface", &node_iptables);
+    te_errno rc;
+
+    rc = ta_conf_register("/agent", node_iptables_tool_opts);
+    if (rc != 0)
+        return rc;
+
+    return ta_conf_register("/agent/interface", node_iptables);
 }
 
 #else
