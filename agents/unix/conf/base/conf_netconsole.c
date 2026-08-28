@@ -19,11 +19,14 @@
 #include "te_queue.h"
 #include "te_alloc.h"
 #include "te_str.h"
+#include "te_string.h"
+#include "te_vector.h"
 #include "logger_api.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch_ta_cfg.h"
 #include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 #include "logger_api.h"
 #include "ta_common.h"
 #include "unix_internal.h"
@@ -400,17 +403,15 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
 /**
  * Load netconsole module with specified parameters
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context
  * @param value         module parameters
- * @param name          Instance name (unused)
  *
  * @return              Status code
  */
 static te_errno
-netconsole_add(unsigned int gid, const char *oid, char *value,
-               const char *name)
+netconsole_add(const ta_conf_ctx *ctx, const char *value)
 {
+    const char          *name = ta_conf_ctx_inst(ctx, "netconsole");
     netconsole_target   *new_target;
 
     char        *colon = NULL;
@@ -423,9 +424,6 @@ netconsole_add(unsigned int gid, const char *oid, char *value,
     in_port_t    remote_port;
     te_errno     rc;
     char        *tmp_path = NULL;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if (name == NULL)
     {
@@ -494,19 +492,15 @@ netconsole_add(unsigned int gid, const char *oid, char *value,
 /**
  * Unload netconsole kernel module
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param name          Instance name (unused)
+ * @param ctx           request context
  *
  * @return              Status code
  */
 static te_errno
-netconsole_del(unsigned int gid, const char *oid, const char *name)
+netconsole_del(const ta_conf_ctx *ctx)
 {
+    const char         *name = ta_conf_ctx_inst(ctx, "netconsole");
     netconsole_target  *target;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if (name == NULL)
     {
@@ -577,21 +571,16 @@ netconsole_del(unsigned int gid, const char *oid, const char *name)
 /**
  * Get netconsole value (i.e. its parameters)
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         where to store obtained value
- * @param name          name of netconsole node
+ * @param ctx           request context
+ * @param val           where to store obtained value
  *
  * @return              Status code
  */
 static te_errno
-netconsole_get(unsigned int gid, const char *oid, char *value,
-               const char *name)
+netconsole_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char          *name = ta_conf_ctx_inst(ctx, "netconsole");
     netconsole_target   *target;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     SLIST_FOREACH(target, &targets, links)
         if (strcmp(target->name, name) == 0)
@@ -603,7 +592,7 @@ netconsole_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
-    te_strlcpy(value, target->value, RCF_MAX_VAL);
+    te_string_append(val, "%s", target->value);
 
     return 0;
 }
@@ -611,74 +600,31 @@ netconsole_get(unsigned int gid, const char *oid, char *value,
 /**
  * Get instance list for object "agent/netconsole".
  *
- * @param gid           group identifier (unused)
- * @param oid           full identifier of the father instance
- * @param sub_id        ID of the object to be listed (unused)
- * @param list          location for the list pointer
+ * @param ctx           request context
+ * @param names         vector of heap-allocated names to append to
  *
  * @return              Status code
  */
 static te_errno
-netconsole_list(unsigned int gid, const char *oid,
-                const char *sub_id, char **list)
+netconsole_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-#define BUF_SIZE    2048
-    char buf[BUF_SIZE] = "";
-    int  n = 0;
-    int  rc = 0;
-    int  tmp_err;
+    netconsole_target   *target;
 
-    netconsole_target   *target = NULL;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-    if (list == NULL)
-    {
-        ERROR("%s(): null list argument", __FUNCTION__);
-        return TE_EINVAL;
-    }
+    UNUSED(ctx);
 
     SLIST_FOREACH(target, &targets, links)
     {
-        rc = snprintf(buf + n, BUF_SIZE - n, "%s ", target->name);
-        if (rc > 0 && rc < BUF_SIZE - n)
-            n += rc;
-        else if (rc < 0)
-        {
-            tmp_err = errno;
-            ERROR("%s(): snprintf() failed", __FUNCTION__);
-            return te_rc_os2te(tmp_err);
-        }
-        else
-        {
+        char *name = TE_STRDUP(target->name);
 
-            ERROR("%s(): not enough space in buffer", __FUNCTION__);
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        }
+        TE_VEC_APPEND(names, name);
     }
-    if (strlen(buf) > 0)
-        buf[strlen(buf) - 1] = '\0';
-
-    if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     return 0;
-#undef BUF_SIZE
 }
 
-/*
- * Netconsole configuration tree node.
- */
-static rcf_pch_cfg_object node_netconsole =
-    { "netconsole", 0, NULL, NULL,
-      (rcf_ch_cfg_get)netconsole_get,
-      NULL,
-      (rcf_ch_cfg_add)netconsole_add,
-      (rcf_ch_cfg_del)netconsole_del,
-      (rcf_ch_cfg_list)netconsole_list,
-      NULL, NULL, NULL };
+static const ta_conf_node *const node_netconsole =
+    TA_CONF_COLL_STR("netconsole", netconsole_get, netconsole_add,
+                     netconsole_del, netconsole_list);
 
 /*
  * Initializing netconsole configuration subtree.
@@ -688,5 +634,5 @@ ta_unix_conf_netconsole_init(void)
 {
     SLIST_INIT(&targets);
 
-    return rcf_pch_add_node("/agent", &node_netconsole);
+    return ta_conf_register("/agent", node_netconsole);
 }
