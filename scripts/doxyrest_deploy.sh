@@ -19,12 +19,30 @@ Usage: doxyrest_deploy.sh [options]
 EOF
 }
 
+# GitHub answers a release download with a redirect to a signed, short-lived
+# URL, so the address cannot be pinned here -- it expires within the hour.
+# Set DOXYREST_URL to fetch the same tarball from somewhere else instead,
+# a local mirror for example.
+DOXYREST_URL=${DOXYREST_URL:-https://github.com/vovkos/doxyrest/releases/download/doxyrest-2.1.3/doxyrest-2.1.3-linux-amd64.tar.xz}
+
 doxyrest_put() {
     action=$1
 
-    ${action} pushd ${TE_BASE}/..
-    ${action} wget https://github.com/vovkos/doxyrest/releases/download/doxyrest-2.1.3/doxyrest-2.1.3-linux-amd64.tar.xz
-    ${action} tar -xf doxyrest-2.1.3-linux-amd64.tar.xz
+    ${action} pushd ${TE_BASE}/.. || return 1
+
+    # That redirected transfer sometimes stalls, and wget waits forever by
+    # default.  Time the connection out and retry, so a bad moment costs a
+    # minute instead of hanging the build, and resume rather than restart.
+    ${action} wget --timeout=30 --tries=3 --continue "${DOXYREST_URL}" || {
+        echo "Failed to download ${DOXYREST_URL}" >&2
+        return 1
+    }
+
+    ${action} tar -xf doxyrest-2.1.3-linux-amd64.tar.xz || {
+        echo "Downloaded archive is not readable" >&2
+        return 1
+    }
+
     ${action} export DOXYREST_PREFIX=${TE_BASE}/../doxyrest-2.1.3-linux-amd64
     ${action} popd
 }
@@ -39,7 +57,7 @@ while test -n "$1" ; do
             ;;
         --put)
             echo "Putting doxyrest"
-            doxyrest_put
+            doxyrest_put || exit 1
             ;;
         --help)
             help
