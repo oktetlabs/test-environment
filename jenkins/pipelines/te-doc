@@ -10,7 +10,7 @@
 //  - Pipeline: Stage Step
 //  - Timestamper
 
-def DOXYREST_VER = '2.1.2'
+def DOXYREST_VER = '2.1.3'
 def DOXYREST_BUILD = '-linux-amd64'
 def DOXYREST = 'doxyrest-' + DOXYREST_VER + DOXYREST_BUILD
 def DOXYREST_FILE = DOXYREST + '.tar.xz'
