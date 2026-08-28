@@ -20,9 +20,11 @@
 
 #include "conf_netconf.h"
 #include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 #include "te_defs.h"
 #include "te_alloc.h"
-#include "te_str.h"
+#include "te_string.h"
+#include "te_vector.h"
 #include "unix_internal.h"
 #include "netconf.h"
 
@@ -65,26 +67,6 @@ udp_tunnel_get_generic(const udp_tunnel_entry *udp_tunnel_e)
     }
 }
 
-static udp_tunnel_entry_type
-udp_tunnel_discover_type(const char *oid)
-{
-    const cfg_oid  *p_oid = cfg_convert_oid_str(oid);
-    const size_t    index = 3;
-    const char     *subid;
-
-    if (p_oid != NULL && p_oid->len >= index + 1)
-    {
-        subid = ((cfg_inst_subid *)(p_oid->ids))[index].subid;
-        if (strcmp(subid, "geneve") == 0)
-            return UDP_TUNNEL_ENTRY_GENEVE;
-        if (strcmp(subid, "vxlan") == 0)
-            return UDP_TUNNEL_ENTRY_VXLAN;
-    }
-
-    ERROR("Failed to discover UDP Tunnel type of oid %s", oid);
-    return UDP_TUNNEL_ENTRY_NONE;
-}
-
 static struct udp_tunnel_entry *
 udp_tunnel_find(const char *ifname, udp_tunnel_entry_type type)
 {
@@ -107,23 +89,12 @@ udp_tunnel_entry_valid(const udp_tunnel_entry *udp_tunnel_e)
 }
 
 static te_errno
-udp_tunnel_commit(unsigned int gid, const cfg_oid *p_oid)
+udp_tunnel_commit_core(const char *ifname, udp_tunnel_entry_type type)
 {
     udp_tunnel_entry       *udp_tunnel_e;
-    const char             *ifname;
-    char                   *oid;
-    udp_tunnel_entry_type   type;
     const char             *tunnel;
     te_errno                rc = 0;
     void                   *target_data;
-
-    UNUSED(gid);
-
-    ifname = ((cfg_inst_subid *)(p_oid->ids))[p_oid->len - 1].name;
-
-    oid = cfg_convert_oid(p_oid);
-    type = udp_tunnel_discover_type(oid);
-    free(oid);
 
     ENTRY("%s", ifname);
 
@@ -226,6 +197,20 @@ udp_tunnel_commit(unsigned int gid, const cfg_oid *p_oid)
 }
 
 static te_errno
+vxlan_commit(const ta_conf_ctx *ctx)
+{
+    return udp_tunnel_commit_core(ta_conf_ctx_inst(ctx, "vxlan"),
+                                  UDP_TUNNEL_ENTRY_VXLAN);
+}
+
+static te_errno
+geneve_commit(const ta_conf_ctx *ctx)
+{
+    return udp_tunnel_commit_core(ta_conf_ctx_inst(ctx, "geneve"),
+                                  UDP_TUNNEL_ENTRY_GENEVE);
+}
+
+static te_errno
 udp_tunnel_generic_init(netconf_udp_tunnel *generic, const char *ifname,
                         uint16_t default_port)
 {
@@ -242,35 +227,26 @@ udp_tunnel_generic_init(netconf_udp_tunnel *generic, const char *ifname,
 /**
  * Add a new UDP Tunnel interface.
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
  * @param ifname    The interface name
+ * @param type      Tunnel type
+ * @param val       Whether the tunnel should be enabled (0 or 1)
  *
  * @return      Status code
  */
 static te_errno
-udp_tunnel_add(unsigned int gid, const char *oid, const char *value,
-               const char *tunnelname, const char *ifname)
+udp_tunnel_add_core(const char *ifname, udp_tunnel_entry_type type,
+                    int32_t val)
 {
     udp_tunnel_entry       *udp_tunnel_e;
-    udp_tunnel_entry_type   type = udp_tunnel_discover_type(oid);
-    unsigned int            uint_value;
     uint16_t                default_port;
     void                   *target_data;
-    te_errno                rc = 0;
-
-    UNUSED(gid);
-    UNUSED(tunnelname);
 
     ENTRY("%s", ifname);
 
     if (udp_tunnel_find(ifname, type) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    rc = te_strtoui(value, 0, &uint_value);
-    if (rc != 0)
-        return rc;
-    if (uint_value > 1)
+    if (val < 0 || val > 1)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     udp_tunnel_e = TE_ALLOC(sizeof(udp_tunnel_entry));
@@ -279,8 +255,8 @@ udp_tunnel_add(unsigned int gid, const char *oid, const char *value,
     {
         case UDP_TUNNEL_ENTRY_GENEVE:
             default_port = 6081;
-            target_data = udp_tunnel_e->data.geneve;
             udp_tunnel_e->data.geneve = TE_ALLOC(sizeof(netconf_geneve));
+            target_data = udp_tunnel_e->data.geneve;
 
             if (udp_tunnel_generic_init(&(udp_tunnel_e->data.geneve->generic),
                                         ifname, default_port) != 0)
@@ -290,8 +266,8 @@ udp_tunnel_add(unsigned int gid, const char *oid, const char *value,
 
         case UDP_TUNNEL_ENTRY_VXLAN:
             default_port = 4789;
-            target_data = udp_tunnel_e->data.vxlan;
             udp_tunnel_e->data.vxlan = TE_ALLOC(sizeof(netconf_vxlan));
+            target_data = udp_tunnel_e->data.vxlan;
 
             if (udp_tunnel_generic_init(&(udp_tunnel_e->data.vxlan->generic),
                                         ifname, default_port) != 0)
@@ -307,7 +283,7 @@ udp_tunnel_add(unsigned int gid, const char *oid, const char *value,
     }
 
     udp_tunnel_e->type = type;
-    udp_tunnel_e->enabled = (uint_value == 1);
+    udp_tunnel_e->enabled = (val == 1);
     udp_tunnel_e->added = false;
     udp_tunnel_e->to_be_deleted = false;
     SLIST_INSERT_HEAD(&udp_tunnels, udp_tunnel_e, links);
@@ -321,24 +297,32 @@ fail_strdup_ifname:
     return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 }
 
+static te_errno
+vxlan_add(const ta_conf_ctx *ctx, int32_t val)
+{
+    return udp_tunnel_add_core(ta_conf_ctx_inst(ctx, "vxlan"),
+                               UDP_TUNNEL_ENTRY_VXLAN, val);
+}
+
+static te_errno
+geneve_add(const ta_conf_ctx *ctx, int32_t val)
+{
+    return udp_tunnel_add_core(ta_conf_ctx_inst(ctx, "geneve"),
+                               UDP_TUNNEL_ENTRY_GENEVE, val);
+}
+
 /**
  * Delete a UDP Tunnel interface.
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
  * @param ifname    The interface name
+ * @param type      Tunnel type
  *
  * @return      Status code
  */
 static te_errno
-udp_tunnel_del(unsigned int gid, const char *oid, const char *tunnelname,
-               const char *ifname)
+udp_tunnel_del_core(const char *ifname, udp_tunnel_entry_type type)
 {
     udp_tunnel_entry       *udp_tunnel_e;
-    udp_tunnel_entry_type   type = udp_tunnel_discover_type(oid);
-
-    UNUSED(gid);
-    UNUSED(tunnelname);
 
     ENTRY("%s", ifname);
 
@@ -350,6 +334,20 @@ udp_tunnel_del(unsigned int gid, const char *oid, const char *tunnelname,
     udp_tunnel_e->to_be_deleted = true;
 
     return 0;
+}
+
+static te_errno
+vxlan_del(const ta_conf_ctx *ctx)
+{
+    return udp_tunnel_del_core(ta_conf_ctx_inst(ctx, "vxlan"),
+                               UDP_TUNNEL_ENTRY_VXLAN);
+}
+
+static te_errno
+geneve_del(const ta_conf_ctx *ctx)
+{
+    return udp_tunnel_del_core(ta_conf_ctx_inst(ctx, "geneve"),
+                               UDP_TUNNEL_ENTRY_GENEVE);
 }
 
 /**
@@ -370,10 +368,8 @@ udp_tunnel_list_include_cb(const char *ifname, void *data)
 }
 
 static te_errno
-udp_tunnel_list(char **list, udp_tunnel_entry_type type)
+udp_tunnel_list(te_vec *names, udp_tunnel_entry_type type)
 {
-    te_vec          names = TE_VEC_INIT_AUTOPTR(char *);
-    te_string       str = TE_STRING_INIT;
     te_errno        rc;
     ENTRY();
 
@@ -381,16 +377,15 @@ udp_tunnel_list(char **list, udp_tunnel_entry_type type)
     {
         case UDP_TUNNEL_ENTRY_GENEVE:
             rc = netconf_geneve_list(nh, udp_tunnel_list_include_cb, NULL,
-                                     &names);
+                                     names);
             break;
 
         case UDP_TUNNEL_ENTRY_VXLAN:
             rc = netconf_vxlan_list(nh, udp_tunnel_list_include_cb, NULL,
-                                    &names);
+                                    names);
             break;
 
         default:
-            te_vec_free(&names);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
@@ -398,77 +393,58 @@ udp_tunnel_list(char **list, udp_tunnel_entry_type type)
     {
         struct udp_tunnel_entry    *p;
 
-        te_string_join_vec(&str, &names, " ");
-
         SLIST_FOREACH(p, &udp_tunnels, links)
         {
             if (p->type == type && !p->added)
             {
-                te_string_append(&str, "%s%s", str.len == 0 ? "" : " ",
-                                 udp_tunnel_get_generic(p)->ifname);
+                char *name = TE_STRDUP(udp_tunnel_get_generic(p)->ifname);
+
+                TE_VEC_APPEND(names, name);
             }
         }
-        *list = str.ptr;
     }
 
-    te_vec_free(&names);
-
-    VERB("%s: rc=%r list=%s", __func__, rc, rc == 0 ? *list : "");
+    VERB("%s: rc=%r", __func__, rc);
     return rc;
 }
 
 /**
- * Get Geneve interfaces list.
+ * List Geneve interfaces.
  *
- * @param gid     Group identifier (unused)
- * @param oid     Full identifier of the father instance (unused)
- * @param sub_id  ID of the object to be listed (unused)
- * @param list    Location for the list pointer
+ * @param ctx     Request context (parent instance OID)
+ * @param names   Vector of heap-allocated names to append to
  *
  * @return      Status code
  */
 static te_errno
-geneve_list(unsigned int gid, const char *oid,
-            const char *sub_id, char **list)
+geneve_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    UNUSED(ctx);
 
-    return udp_tunnel_list(list, UDP_TUNNEL_ENTRY_GENEVE);
+    return udp_tunnel_list(names, UDP_TUNNEL_ENTRY_GENEVE);
 }
 
 /**
- * Get VXLAN interfaces list.
+ * List VXLAN interfaces.
  *
- * @param gid     Group identifier (unused)
- * @param oid     Full identifier of the father instance (unused)
- * @param sub_id  ID of the object to be listed (unused)
- * @param list    Location for the list pointer
+ * @param ctx     Request context (parent instance OID)
+ * @param names   Vector of heap-allocated names to append to
  *
  * @return      Status code
  */
 static te_errno
-vxlan_list(unsigned int gid, const char *oid,
-           const char *sub_id, char **list)
+vxlan_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    UNUSED(ctx);
 
-    return udp_tunnel_list(list, UDP_TUNNEL_ENTRY_VXLAN);
+    return udp_tunnel_list(names, UDP_TUNNEL_ENTRY_VXLAN);
 }
 
 static te_errno
-udp_tunnel_vni_get(unsigned int gid, const char *oid, char *value,
-                   const char *tunnel, const char *ifname)
+udp_tunnel_vni_get_core(const char *ifname, udp_tunnel_entry_type type,
+                        int32_t *val)
 {
     udp_tunnel_entry       *udp_tunnel_e;
-    udp_tunnel_entry_type   type = udp_tunnel_discover_type(oid);
-    uint32_t                vni;
-
-    UNUSED(gid);
-    UNUSED(tunnel);
 
     ENTRY("%s", ifname);
 
@@ -476,24 +452,16 @@ udp_tunnel_vni_get(unsigned int gid, const char *oid, char *value,
     if (!udp_tunnel_entry_valid(udp_tunnel_e))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    vni = udp_tunnel_get_generic(udp_tunnel_e)->vni;
-
-    sprintf(value, "%u", vni);
+    *val = udp_tunnel_get_generic(udp_tunnel_e)->vni;
     return 0;
 }
 
 static te_errno
-udp_tunnel_vni_set(unsigned int gid, const char *oid, char *value,
-                   const char *tunnel, const char *ifname)
+udp_tunnel_vni_set_core(const char *ifname, udp_tunnel_entry_type type,
+                        int32_t val)
 {
     udp_tunnel_entry       *udp_tunnel_e;
-    udp_tunnel_entry_type   type = udp_tunnel_discover_type(oid);
-    uint32_t                vni;
     uint32_t               *target;
-    te_errno                rc = 0;
-
-    UNUSED(gid);
-    UNUSED(tunnel);
 
     ENTRY("%s", ifname);
 
@@ -503,14 +471,39 @@ udp_tunnel_vni_set(unsigned int gid, const char *oid, char *value,
 
     target = &(udp_tunnel_get_generic(udp_tunnel_e)->vni);
 
-    rc = te_strtoui(value, 0, &vni);
-    if (rc != 0)
-        return rc;
-    if (vni >= (1U << 24))
+    if (val < 0 || val >= (1U << 24))
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    *target = vni;
+    *target = val;
     return 0;
+}
+
+static te_errno
+vxlan_vni_get(const ta_conf_ctx *ctx, int32_t *val)
+{
+    return udp_tunnel_vni_get_core(ta_conf_ctx_inst(ctx, "vxlan"),
+                                   UDP_TUNNEL_ENTRY_VXLAN, val);
+}
+
+static te_errno
+vxlan_vni_set(const ta_conf_ctx *ctx, int32_t val)
+{
+    return udp_tunnel_vni_set_core(ta_conf_ctx_inst(ctx, "vxlan"),
+                                   UDP_TUNNEL_ENTRY_VXLAN, val);
+}
+
+static te_errno
+geneve_vni_get(const ta_conf_ctx *ctx, int32_t *val)
+{
+    return udp_tunnel_vni_get_core(ta_conf_ctx_inst(ctx, "geneve"),
+                                   UDP_TUNNEL_ENTRY_GENEVE, val);
+}
+
+static te_errno
+geneve_vni_set(const ta_conf_ctx *ctx, int32_t val)
+{
+    return udp_tunnel_vni_set_core(ta_conf_ctx_inst(ctx, "geneve"),
+                                   UDP_TUNNEL_ENTRY_GENEVE, val);
 }
 
 static te_errno
@@ -563,16 +556,14 @@ udp_tunnel_set_addr(const char *value, uint8_t *addr, size_t *addr_size)
 }
 
 static te_errno
-udp_tunnel_remote_get(unsigned int gid, const char *oid, char *value,
-                      const char *tunnel, const char *ifname)
+udp_tunnel_remote_get_core(const char *ifname, udp_tunnel_entry_type type,
+                           te_string *val)
 {
     udp_tunnel_entry       *udp_tunnel_e;
-    udp_tunnel_entry_type   type = udp_tunnel_discover_type(oid);
     uint8_t                *target;
     size_t                  target_len;
-
-    UNUSED(gid);
-    UNUSED(tunnel);
+    char                    buf[RCF_MAX_VAL] = {0};
+    te_errno                rc;
 
     ENTRY("%s", ifname);
 
@@ -583,20 +574,21 @@ udp_tunnel_remote_get(unsigned int gid, const char *oid, char *value,
     target = udp_tunnel_get_generic(udp_tunnel_e)->remote;
     target_len = udp_tunnel_get_generic(udp_tunnel_e)->remote_len;
 
-    return udp_tunnel_get_addr(value, target, target_len);
+    rc = udp_tunnel_get_addr(buf, target, target_len);
+    if (rc != 0)
+        return rc;
+
+    te_string_append(val, "%s", buf);
+    return 0;
 }
 
 static te_errno
-udp_tunnel_remote_set(unsigned int gid, const char *oid, const char *value,
-                      const char *tunnel, const char *ifname)
+udp_tunnel_remote_set_core(const char *ifname, udp_tunnel_entry_type type,
+                           const char *val)
 {
     udp_tunnel_entry       *udp_tunnel_e;
-    udp_tunnel_entry_type   type = udp_tunnel_discover_type(oid);
     uint8_t                *target;
     size_t                 *target_len;
-
-    UNUSED(gid);
-    UNUSED(tunnel);
 
     ENTRY("%s", ifname);
 
@@ -607,18 +599,44 @@ udp_tunnel_remote_set(unsigned int gid, const char *oid, const char *value,
     target = udp_tunnel_get_generic(udp_tunnel_e)->remote;
     target_len = &(udp_tunnel_get_generic(udp_tunnel_e)->remote_len);
 
-    return udp_tunnel_set_addr(value, target, target_len);
+    return udp_tunnel_set_addr(val, target, target_len);
 }
 
 static te_errno
-vxlan_local_get(unsigned int gid, const char *oid, char *value,
-                const char *tunnel, const char *ifname)
+vxlan_remote_get(const ta_conf_ctx *ctx, te_string *val)
+{
+    return udp_tunnel_remote_get_core(ta_conf_ctx_inst(ctx, "vxlan"),
+                                      UDP_TUNNEL_ENTRY_VXLAN, val);
+}
+
+static te_errno
+vxlan_remote_set(const ta_conf_ctx *ctx, const char *val)
+{
+    return udp_tunnel_remote_set_core(ta_conf_ctx_inst(ctx, "vxlan"),
+                                      UDP_TUNNEL_ENTRY_VXLAN, val);
+}
+
+static te_errno
+geneve_remote_get(const ta_conf_ctx *ctx, te_string *val)
+{
+    return udp_tunnel_remote_get_core(ta_conf_ctx_inst(ctx, "geneve"),
+                                      UDP_TUNNEL_ENTRY_GENEVE, val);
+}
+
+static te_errno
+geneve_remote_set(const ta_conf_ctx *ctx, const char *val)
+{
+    return udp_tunnel_remote_set_core(ta_conf_ctx_inst(ctx, "geneve"),
+                                      UDP_TUNNEL_ENTRY_GENEVE, val);
+}
+
+static te_errno
+vxlan_local_get(const ta_conf_ctx *ctx, te_string *val)
 {
     struct udp_tunnel_entry    *udp_tunnel_e;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(tunnel);
+    const char                 *ifname = ta_conf_ctx_inst(ctx, "vxlan");
+    char                        buf[RCF_MAX_VAL] = {0};
+    te_errno                    rc;
 
     ENTRY("%s", ifname);
 
@@ -626,19 +644,20 @@ vxlan_local_get(unsigned int gid, const char *oid, char *value,
     if (!udp_tunnel_entry_valid(udp_tunnel_e))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    return udp_tunnel_get_addr(value, udp_tunnel_e->data.vxlan->local,
-                               udp_tunnel_e->data.vxlan->local_len);
+    rc = udp_tunnel_get_addr(buf, udp_tunnel_e->data.vxlan->local,
+                             udp_tunnel_e->data.vxlan->local_len);
+    if (rc != 0)
+        return rc;
+
+    te_string_append(val, "%s", buf);
+    return 0;
 }
 
 static te_errno
-vxlan_local_set(unsigned int gid, const char *oid, const char *value,
-                const char *tunnel, const char *ifname)
+vxlan_local_set(const ta_conf_ctx *ctx, const char *val)
 {
     struct udp_tunnel_entry    *udp_tunnel_e;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(tunnel);
+    const char                 *ifname = ta_conf_ctx_inst(ctx, "vxlan");
 
     ENTRY("%s", ifname);
 
@@ -646,20 +665,15 @@ vxlan_local_set(unsigned int gid, const char *oid, const char *value,
     if (!udp_tunnel_entry_valid(udp_tunnel_e))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    return udp_tunnel_set_addr(value, udp_tunnel_e->data.vxlan->local,
+    return udp_tunnel_set_addr(val, udp_tunnel_e->data.vxlan->local,
                                &(udp_tunnel_e->data.vxlan->local_len));
 }
 
 static te_errno
-udp_tunnel_port_get(unsigned int gid, const char *oid, char *value,
-                    const char *tunnel, const char *ifname)
+udp_tunnel_port_get_core(const char *ifname, udp_tunnel_entry_type type,
+                         int32_t *val)
 {
     udp_tunnel_entry       *udp_tunnel_e;
-    udp_tunnel_entry_type   type = udp_tunnel_discover_type(oid);
-    uint16_t                port;
-
-    UNUSED(gid);
-    UNUSED(tunnel);
 
     ENTRY("%s", ifname);
 
@@ -667,24 +681,16 @@ udp_tunnel_port_get(unsigned int gid, const char *oid, char *value,
     if (!udp_tunnel_entry_valid(udp_tunnel_e))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    port = udp_tunnel_get_generic(udp_tunnel_e)->port;
-
-    sprintf(value, "%u", port);
+    *val = udp_tunnel_get_generic(udp_tunnel_e)->port;
     return 0;
 }
 
 static te_errno
-udp_tunnel_port_set(unsigned int gid, const char *oid, const char *value,
-                    const char *tunnel, const char *ifname)
+udp_tunnel_port_set_core(const char *ifname, udp_tunnel_entry_type type,
+                         int32_t val)
 {
     udp_tunnel_entry       *udp_tunnel_e;
-    udp_tunnel_entry_type   type = udp_tunnel_discover_type(oid);
-    unsigned int            port;
     uint16_t               *target;
-    te_errno                rc = 0;
-
-    UNUSED(gid);
-    UNUSED(tunnel);
 
     ENTRY("%s", ifname);
 
@@ -694,25 +700,46 @@ udp_tunnel_port_set(unsigned int gid, const char *oid, const char *value,
 
     target = &(udp_tunnel_get_generic(udp_tunnel_e)->port);
 
-    rc = te_strtoui(value, 0, &port);
-    if (rc != 0)
-        return rc;
-    if (port >= UINT16_MAX)
+    if (val < 0 || val >= UINT16_MAX)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    *target = port;
+    *target = val;
     return 0;
 }
 
 static te_errno
-vxlan_dev_get(unsigned int gid, const char *oid, char *value,
-              const char *tunnel, const char *ifname)
+vxlan_port_get(const ta_conf_ctx *ctx, int32_t *val)
+{
+    return udp_tunnel_port_get_core(ta_conf_ctx_inst(ctx, "vxlan"),
+                                    UDP_TUNNEL_ENTRY_VXLAN, val);
+}
+
+static te_errno
+vxlan_port_set(const ta_conf_ctx *ctx, int32_t val)
+{
+    return udp_tunnel_port_set_core(ta_conf_ctx_inst(ctx, "vxlan"),
+                                    UDP_TUNNEL_ENTRY_VXLAN, val);
+}
+
+static te_errno
+geneve_port_get(const ta_conf_ctx *ctx, int32_t *val)
+{
+    return udp_tunnel_port_get_core(ta_conf_ctx_inst(ctx, "geneve"),
+                                    UDP_TUNNEL_ENTRY_GENEVE, val);
+}
+
+static te_errno
+geneve_port_set(const ta_conf_ctx *ctx, int32_t val)
+{
+    return udp_tunnel_port_set_core(ta_conf_ctx_inst(ctx, "geneve"),
+                                    UDP_TUNNEL_ENTRY_GENEVE, val);
+}
+
+static te_errno
+vxlan_dev_get(const ta_conf_ctx *ctx, te_string *val)
 {
     struct udp_tunnel_entry    *udp_tunnel_e;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(tunnel);
+    const char                 *ifname = ta_conf_ctx_inst(ctx, "vxlan");
 
     ENTRY("%s", ifname);
 
@@ -722,27 +749,19 @@ vxlan_dev_get(unsigned int gid, const char *oid, char *value,
 
     if (udp_tunnel_e->data.vxlan->dev != NULL)
     {
-        snprintf(value, RCF_MAX_VAL, "/agent:%s/interface:%s", ta_name,
-                 udp_tunnel_e->data.vxlan->dev);
-    }
-    else
-    {
-        value[0] = '\0';
+        te_string_append(val, "/agent:%s/interface:%s", ta_name,
+                         udp_tunnel_e->data.vxlan->dev);
     }
     return 0;
 }
 
 static te_errno
-vxlan_dev_set(unsigned int gid, const char *oid, const char *value,
-              const char *tunnel, const char *ifname)
+vxlan_dev_set(const ta_conf_ctx *ctx, const char *val)
 {
     struct udp_tunnel_entry    *udp_tunnel_e;
+    const char                 *ifname = ta_conf_ctx_inst(ctx, "vxlan");
     cfg_oid                    *tmp_oid;
     char                       *tmp_dev;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(tunnel);
 
     ENTRY("%s", ifname);
 
@@ -750,12 +769,12 @@ vxlan_dev_set(unsigned int gid, const char *oid, const char *value,
     if (!udp_tunnel_entry_valid(udp_tunnel_e))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if (value[0] != '\0')
+    if (val[0] != '\0')
     {
-        if (!rcf_pch_rsrc_accessible(value))
+        if (!rcf_pch_rsrc_accessible(val))
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-        tmp_oid = cfg_convert_oid_str(value);
+        tmp_oid = cfg_convert_oid_str(val);
         if (tmp_oid == NULL)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
@@ -782,91 +801,92 @@ vxlan_dev_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-udp_tunnel_get(unsigned int gid, const char *oid, char *value,
-               const char *tunnel, const char *ifname)
+udp_tunnel_get_core(const char *ifname, udp_tunnel_entry_type type,
+                    int32_t *val)
 {
     udp_tunnel_entry   *udp_tunnel_e;
 
-    UNUSED(gid);
-    UNUSED(tunnel);
-
     ENTRY("%s", ifname);
 
-    udp_tunnel_e = udp_tunnel_find(ifname, udp_tunnel_discover_type(oid));
+    udp_tunnel_e = udp_tunnel_find(ifname, type);
     if (!udp_tunnel_entry_valid(udp_tunnel_e))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    sprintf(value, "%u", udp_tunnel_e->enabled);
+    *val = udp_tunnel_e->enabled;
     return 0;
 }
 
 static te_errno
-udp_tunnel_set(unsigned int gid, const char *oid, const char *value,
-               const char *tunnel, const char *ifname)
+udp_tunnel_set_core(const char *ifname, udp_tunnel_entry_type type,
+                    int32_t val)
 {
     udp_tunnel_entry   *udp_tunnel_e;
-    uint32_t            enabled;
-    te_errno            rc = 0;
-
-    UNUSED(gid);
-    UNUSED(tunnel);
 
     ENTRY("%s", ifname);
 
-    udp_tunnel_e = udp_tunnel_find(ifname, udp_tunnel_discover_type(oid));
+    udp_tunnel_e = udp_tunnel_find(ifname, type);
     if (!udp_tunnel_entry_valid(udp_tunnel_e))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    rc = te_strtoui(value, 0, &enabled);
-    if (rc != 0)
-        return rc;
-    if (enabled > 1)
+    if (val < 0 || val > 1)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    udp_tunnel_e->enabled = enabled;
+    udp_tunnel_e->enabled = val;
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RW(node_geneve_vni, "vni", NULL, NULL,
-                    udp_tunnel_vni_get, udp_tunnel_vni_set);
+static te_errno
+vxlan_get(const ta_conf_ctx *ctx, int32_t *val)
+{
+    return udp_tunnel_get_core(ta_conf_ctx_inst(ctx, "vxlan"),
+                               UDP_TUNNEL_ENTRY_VXLAN, val);
+}
 
-RCF_PCH_CFG_NODE_RW(node_geneve_remote, "remote", NULL, &node_geneve_vni,
-                    udp_tunnel_remote_get, udp_tunnel_remote_set);
+static te_errno
+vxlan_set(const ta_conf_ctx *ctx, int32_t val)
+{
+    return udp_tunnel_set_core(ta_conf_ctx_inst(ctx, "vxlan"),
+                               UDP_TUNNEL_ENTRY_VXLAN, val);
+}
 
-RCF_PCH_CFG_NODE_RW(node_geneve_port, "port", NULL, &node_geneve_remote,
-                    udp_tunnel_port_get, udp_tunnel_port_set);
+static te_errno
+geneve_get(const ta_conf_ctx *ctx, int32_t *val)
+{
+    return udp_tunnel_get_core(ta_conf_ctx_inst(ctx, "geneve"),
+                               UDP_TUNNEL_ENTRY_GENEVE, val);
+}
 
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_geneve, "geneve", &node_geneve_port, NULL,
-                               udp_tunnel_get, udp_tunnel_set, udp_tunnel_add,
-                               udp_tunnel_del, geneve_list, udp_tunnel_commit);
+static te_errno
+geneve_set(const ta_conf_ctx *ctx, int32_t val)
+{
+    return udp_tunnel_set_core(ta_conf_ctx_inst(ctx, "geneve"),
+                               UDP_TUNNEL_ENTRY_GENEVE, val);
+}
 
-RCF_PCH_CFG_NODE_RW(node_vxlan_vni, "vni", NULL, NULL,
-                    udp_tunnel_vni_get, udp_tunnel_vni_set);
-
-RCF_PCH_CFG_NODE_RW(node_vxlan_remote, "remote", NULL, &node_vxlan_vni,
-                    udp_tunnel_remote_get, udp_tunnel_remote_set);
-
-RCF_PCH_CFG_NODE_RW(node_vxlan_local, "local", NULL, &node_vxlan_remote,
-                    vxlan_local_get, vxlan_local_set);
-
-RCF_PCH_CFG_NODE_RW(node_vxlan_port, "port", NULL, &node_vxlan_local,
-                    udp_tunnel_port_get, udp_tunnel_port_set);
-
-RCF_PCH_CFG_NODE_RW(node_vxlan_dev, "dev", NULL, &node_vxlan_port,
-                    vxlan_dev_get, vxlan_dev_set);
-
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_vxlan, "vxlan", &node_vxlan_dev,
-                               &node_geneve, udp_tunnel_get, udp_tunnel_set,
-                               udp_tunnel_add, udp_tunnel_del, vxlan_list,
-                               udp_tunnel_commit);
-
-RCF_PCH_CFG_NODE_NA(node_tunnel, "tunnel", &node_vxlan, NULL);
+static const ta_conf_node *const node_tunnel =
+    TA_CONF_NA("tunnel",
+        TA_CONF_COLL_INT32_RW_COMMIT("vxlan", vxlan_get, vxlan_set,
+                                     vxlan_add, vxlan_del, vxlan_list,
+                                     vxlan_commit,
+            TA_CONF_RW_STR("dev", vxlan_dev_get, vxlan_dev_set),
+            TA_CONF_RW_INT32("port", vxlan_port_get, vxlan_port_set),
+            TA_CONF_RW_STR("local", vxlan_local_get, vxlan_local_set),
+            TA_CONF_RW_STR("remote", vxlan_remote_get,
+                           vxlan_remote_set),
+            TA_CONF_RW_INT32("vni", vxlan_vni_get, vxlan_vni_set)),
+        TA_CONF_COLL_INT32_RW_COMMIT("geneve", geneve_get, geneve_set,
+                                     geneve_add, geneve_del, geneve_list,
+                                     geneve_commit,
+            TA_CONF_RW_INT32("port", geneve_port_get, geneve_port_set),
+            TA_CONF_RW_STR("remote", geneve_remote_get,
+                           geneve_remote_set),
+            TA_CONF_RW_INT32("vni", geneve_vni_get, geneve_vni_set)));
 
 /* See the description in conf_rule.h */
 te_errno
 ta_unix_conf_udp_tunnel_init(void)
 {
-    return rcf_pch_add_node("/agent", &node_tunnel);
+    return ta_conf_register("/agent", node_tunnel);
 }
 
 #else /* USE_LIBNETCONF */
@@ -877,4 +897,3 @@ ta_unix_conf_udp_tunnel_init(void)
     return 0;
 }
 #endif /* !USE_LIBNETCONF */
-
