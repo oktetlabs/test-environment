@@ -17,10 +17,11 @@
 #include "te_alloc.h"
 #include "te_defs.h"
 #include "te_errno.h"
-#include "te_string.h"
+#include "te_vector.h"
 
 #include "logger_api.h"
 #include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 #include "ta_common.h"
 #include "unix_internal.h"
 
@@ -74,16 +75,12 @@ tap_entry_free(struct tap_entry *tap)
 }
 
 static te_errno
-tap_add(unsigned int gid, const char *oid, const char *value,
-        const char *ifname)
+tap_add(const ta_conf_ctx *ctx)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "tap");
     int fd;
     struct ifreq ifr;
     int rc = 0;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
 
     if (tap_list_find(ifname) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
@@ -133,15 +130,13 @@ out:
 }
 
 static te_errno
-tap_del(unsigned int gid, const char *oid, const char *ifname)
+tap_del(const ta_conf_ctx *ctx)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "tap");
     int fd;
     struct ifreq ifr;
     struct tap_entry *tap;
     int rc = 0;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     tap = tap_list_find(ifname);
     if (tap == NULL)
@@ -183,33 +178,29 @@ out:
 }
 
 static te_errno
-tap_list(unsigned int gid, const char *oid, const char *sub_id, char **list)
+tap_list(const ta_conf_ctx *ctx, te_vec *names)
 {
     struct tap_entry *tap;
-    te_string te_str = TE_STRING_INIT;
-    bool first = true;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    UNUSED(ctx);
 
     SLIST_FOREACH(tap, &taps, links)
     {
+        char *name;
+
         if (!rcf_pch_rsrc_accessible("/agent:%s/interface:%s",
                                      ta_name, tap->name))
             continue;
 
-        te_string_append(&te_str, "%s%s", first ? "" : " ", tap->name);
-        first = false;
+        name = TE_STRDUP(tap->name);
+        TE_VEC_APPEND(names, name);
     }
-
-    *list = te_str.ptr;
 
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_tap, "tap", NULL, NULL,
-                               NULL, NULL, tap_add, tap_del, tap_list, NULL);
+static const ta_conf_node *const node_tap =
+    TA_CONF_COLL("tap", tap_add, tap_del, tap_list);
 
 /* See the description in conf_rule.h */
 te_errno
@@ -217,7 +208,7 @@ ta_unix_conf_tap_init(void)
 {
     te_errno rc;
 
-    rc = rcf_pch_add_node("/agent/", &node_tap);
+    rc = ta_conf_register("/agent", node_tap);
     if (rc != 0)
         return rc;
 
