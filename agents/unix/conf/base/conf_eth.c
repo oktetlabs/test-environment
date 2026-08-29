@@ -38,7 +38,9 @@
 #include "te_alloc.h"
 #include "te_str.h"
 #include "te_string.h"
+#include "te_vector.h"
 #include "te_queue.h"
+#include "rcf_pch_tree.h"
 
 #if HAVE_LINUX_ETHTOOL_H
 #include "te_ethtool.h"
@@ -283,50 +285,24 @@ eth_feature_iface_context(const char *ifname)
 
 /* 'list' method implementation */
 static te_errno
-eth_feature_list(unsigned int    gid,
-                 const char     *oid_str,
-                 const char     *sub_id,
-                 char          **list_out)
+eth_feature_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_errno                    rc;
-    cfg_oid                    *oid = NULL;
-    const char                 *ifname;
-    struct eth_if_context     *if_context;
-    te_string                   list_container = TE_STRING_INIT;
-    unsigned int                i;
-
-    UNUSED(gid);
-    UNUSED(sub_id);
-
-    oid = cfg_convert_oid_str(oid_str);
-    if (oid == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    ifname = CFG_OID_GET_INST_NAME(oid, 2);
+    const char             *ifname = ta_conf_ctx_inst(ctx, "interface");
+    struct eth_if_context  *if_context;
+    unsigned int             i;
 
     if_context = eth_feature_iface_context(ifname);
     if (if_context == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto fail;
-    }
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     for (i = 0; if_context->valid && (i < if_context->nb_features); ++i)
     {
-        te_string_append(&list_container, "%s ", if_context->features[i].name);
+        char *name = TE_STRDUP(if_context->features[i].name);
+
+        TE_VEC_APPEND(names, name);
     }
 
-    *list_out = list_container.ptr;
-
-    cfg_free_oid(oid);
-
     return 0;
-
-fail:
-    cfg_free_oid(oid);
-    te_string_free(&list_container);
-
-    return TE_RC(TE_TA_UNIX, rc);
 }
 
 /* Determine the feature index by its name */
@@ -376,63 +352,35 @@ eth_feature_get_by_name(const char *ifname,
 
 /* 'get' method implementation */
 static te_errno
-eth_feature_get(unsigned int    gid,
-                const char     *oid_str,
-                char           *value,
-                const char     *ifname,
-                const char     *feature_name)
+eth_feature_get(const ta_conf_ctx *ctx, bool *val)
 {
-    te_errno rc;
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *feature_name = ta_conf_ctx_inst(ctx, "feature");
     eth_feature_entry *feature;
-
-    UNUSED(gid);
-    UNUSED(oid_str);
-
-    if (feature_name[0] == '\0')
-    {
-        memset(value, 0, RCF_MAX_VAL);
-        return 0;
-    }
+    te_errno rc;
 
     rc = eth_feature_get_by_name(ifname, feature_name, &feature);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    value[0] = (feature->enabled) ? '1' : '0';
-    value[1] = '\0';
-
+    *val = feature->enabled;
     return 0;
 }
 
 /* 'set' method implementation */
 static te_errno
-eth_feature_set(unsigned int    gid,
-                const char     *oid_str,
-                char           *value,
-                const char     *ifname,
-                const char     *feature_name)
+eth_feature_set(const ta_conf_ctx *ctx, bool val)
 {
-    int                         feature_value;
-    te_errno                    rc;
-    char                       *endp;
-
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *feature_name = ta_conf_ctx_inst(ctx, "feature");
     eth_feature_entry *feature;
-
-    UNUSED(gid);
-    UNUSED(oid_str);
-
-    if (feature_name[0] == '\0')
-        return 0;
+    te_errno rc;
 
     rc = eth_feature_get_by_name(ifname, feature_name, &feature);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    feature_value = strtol(value, &endp, 10);
-    if (*endp != '\0')
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    if (feature->enabled == (feature_value == 1))
+    if (feature->enabled == val)
         return 0;
 
     if (feature->readonly)
@@ -442,7 +390,7 @@ eth_feature_set(unsigned int    gid,
         return TE_RC(TE_TA_UNIX, TE_EACCES);
     }
 
-    feature->enabled = (feature_value == 1);
+    feature->enabled = val;
     feature->need_update = true;
 
     return 0;
@@ -488,16 +436,11 @@ eth_feature_set_values(struct eth_if_context *if_context)
 
 /* 'commit' method implementation */
 static te_errno
-eth_feature_commit(unsigned int    gid,
-                   const cfg_oid  *oid)
+eth_feature_commit(const ta_conf_ctx *ctx)
 {
-    const char             *ifname;
-    struct eth_if_context *if_context;
+    const char             *ifname = ta_conf_ctx_inst(ctx, "interface");
+    struct eth_if_context  *if_context;
     te_errno                rc;
-
-    UNUSED(gid);
-
-    ifname = CFG_OID_GET_INST_NAME(oid, 2);
 
     if_context = eth_feature_iface_context(ifname);
     if ((if_context == NULL) || !if_context->valid)
@@ -510,42 +453,30 @@ eth_feature_commit(unsigned int    gid,
 
 /** 'get' method implementation for interface/feature/readonly */
 static te_errno
-eth_feature_readonly_get(unsigned int gid,
-                         const char *oid_str,
-                         char *value,
-                         const char *ifname,
-                         const char *feature_name,
-                         const char *inst_name)
+eth_feature_readonly_get(const ta_conf_ctx *ctx, bool *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *feature_name = ta_conf_ctx_inst(ctx, "feature");
     eth_feature_entry *feature;
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid_str);
-    UNUSED(inst_name);
 
     rc = eth_feature_get_by_name(ifname, feature_name, &feature);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    value[0] = (feature->readonly ? '1' : '0');
-    value[1] = '\0';
-
+    *val = feature->readonly;
     return 0;
 }
 
 /* list all private flags */
 static te_errno
-eth_priv_flags_list(unsigned int gid, const char *oid_str,
-                    const char *sub_id, char **list_out,
-                    const char *if_name)
+eth_priv_flags_list(const ta_conf_ctx *ctx, te_vec *names)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
     te_errno rc;
     int failed_ethtool_cmd;
     struct ethtool_value *pflags = NULL;
-
-    UNUSED(oid_str);
-    UNUSED(sub_id);
+    char *list_str = NULL;
 
     /*
      * Check whether private flags values may be obtained.
@@ -555,11 +486,10 @@ eth_priv_flags_list(unsigned int gid, const char *oid_str,
      * flag names in configuration tree to avoid breaking tree
      * synchronization.
      */
-    rc = get_ethtool_value(if_name, gid, TA_ETHTOOL_PFLAGS,
+    rc = get_ethtool_value(if_name, ta_conf_ctx_gid(ctx), TA_ETHTOOL_PFLAGS,
                            (void **)&pflags);
     if (rc == TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP))
     {
-        *list_out = NULL;
         return 0;
     }
     else if (rc != 0)
@@ -571,8 +501,8 @@ eth_priv_flags_list(unsigned int gid, const char *oid_str,
     }
 
     ta_ethtool_reset_failed_cmd();
-    rc = ta_ethtool_get_strings_list(gid, if_name,
-                                     ETH_SS_PRIV_FLAGS, list_out);
+    rc = ta_ethtool_get_strings_list(ta_conf_ctx_gid(ctx), if_name,
+                                     ETH_SS_PRIV_FLAGS, &list_str);
     failed_ethtool_cmd = ta_ethtool_failed_cmd();
 
     if (rc != 0)
@@ -600,26 +530,38 @@ eth_priv_flags_list(unsigned int gid, const char *oid_str,
              * If private flags are not supported, let Configurator
              * think they are not present to avoid error messages.
              */
-            *list_out = NULL;
             rc = 0;
         }
+
+        return rc;
     }
 
-    return rc;
+    if (list_str != NULL)
+    {
+        char *saveptr;
+        char *tok;
+
+        for (tok = strtok_r(list_str, " ", &saveptr); tok != NULL;
+             tok = strtok_r(NULL, " ", &saveptr))
+        {
+            char *name = TE_STRDUP(tok);
+
+            TE_VEC_APPEND(names, name);
+        }
+        free(list_str);
+    }
+
+    return 0;
 }
 
 /* common code for getting and setting private flag */
 static te_errno
-eth_priv_flags_common(unsigned int gid, const char *oid_str,
-                      const char *if_name, const char *flags_name,
+eth_priv_flags_common(unsigned int gid, const char *if_name,
                       const char *flag_name, unsigned int *idx,
                       uint32_t **data)
 {
     te_errno rc;
     struct ethtool_value *pflags = NULL;
-
-    UNUSED(oid_str);
-    UNUSED(flags_name);
 
     rc = ta_ethtool_get_string_idx(gid, if_name, ETH_SS_PRIV_FLAGS,
                                    flag_name, idx);
@@ -637,46 +579,35 @@ eth_priv_flags_common(unsigned int gid, const char *oid_str,
 
 /* get state of private flag */
 static te_errno
-eth_priv_flags_get(unsigned int gid, const char *oid_str,
-                   char *value, const char *if_name,
-                   const char *flags_name, const char *flag_name)
+eth_priv_flags_get(const ta_conf_ctx *ctx, bool *val)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *flag_name = ta_conf_ctx_inst(ctx, "flag");
     te_errno rc;
     unsigned int idx;
     uint32_t *data;
 
-    te_string str_val = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
-
-    rc = eth_priv_flags_common(gid, oid_str, if_name, flags_name,
-                               flag_name, &idx, &data);
+    rc = eth_priv_flags_common(ta_conf_ctx_gid(ctx), if_name, flag_name,
+                               &idx, &data);
     if (rc != 0)
         return rc;
 
-    te_string_append_chk(&str_val, "%u", (*data & (1 << idx)) ? 1 : 0);
+    *val = (*data & (1 << idx)) != 0;
     return 0;
 }
 
 /* set state of private flag */
 static te_errno
-eth_priv_flags_set(unsigned int gid, const char *oid_str,
-                   const char *value, const char *if_name,
-                   const char *flags_name, const char *flag_name)
+eth_priv_flags_set(const ta_conf_ctx *ctx, bool val)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *flag_name = ta_conf_ctx_inst(ctx, "flag");
     te_errno rc;
     unsigned int idx;
     uint32_t *data;
-    unsigned int int_val;
 
-    rc = te_strtoui(value, 10, &int_val);
-    if (rc != 0 || (int_val != 0 && int_val != 1))
-    {
-        ERROR("%s(): cannot parse private flag value '%s'", __FUNCTION__,
-              value);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    rc = eth_priv_flags_common(gid, oid_str, if_name, flags_name,
-                               flag_name, &idx, &data);
+    rc = eth_priv_flags_common(ta_conf_ctx_gid(ctx), if_name, flag_name,
+                               &idx, &data);
     if (rc != 0)
         return rc;
 
@@ -687,7 +618,7 @@ eth_priv_flags_set(unsigned int gid, const char *oid_str,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    if (int_val == 1)
+    if (val)
         *data = *data | (1 << idx);
     else
         *data = *data & ~(1 << idx);
@@ -697,38 +628,32 @@ eth_priv_flags_set(unsigned int gid, const char *oid_str,
 
 /* commit private flags */
 static te_errno
-eth_priv_flags_commit(unsigned int gid, const cfg_oid *oid)
+eth_priv_flags_commit(const ta_conf_ctx *ctx)
 {
-    const char *if_name;
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
 
-    if_name = CFG_OID_GET_INST_NAME(oid, 2);
-
-    return commit_ethtool_value(if_name, gid, TA_ETHTOOL_PFLAGS);
+    return commit_ethtool_value(if_name, ta_conf_ctx_gid(ctx),
+                                TA_ETHTOOL_PFLAGS);
 }
 
 /**
  * Reset ethernet interface.
  *
- * @param gid          Group identifier
- * @param oid          Full object instance identifier
- * @param value        New value
- * @param ifname       Interface name
+ * @param ctx          Request context
+ * @param val          New value
  *
  * @return Status code
  */
 static te_errno
-eth_reset_set(unsigned int gid, const char *oid, char *value,
-              const char *ifname)
+eth_reset_set(const ta_conf_ctx *ctx, const char *val)
 {
 #ifdef ETHTOOL_RESET
+    const char              *ifname = ta_conf_ctx_inst(ctx, "interface");
     struct ethtool_value    eval = {.cmd = ETHTOOL_RESET,
                                     .data = ETH_RESET_ALL};
     struct ifreq            ifr = {.ifr_data = (void *)&eval};
 
-    UNUSED(oid);
-    UNUSED(gid);
-
-    if (strcmp(value, "0") == 0)
+    if (strcmp(val, "0") == 0)
         return 0;
 
     te_strlcpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name));
@@ -741,10 +666,8 @@ eth_reset_set(unsigned int gid, const char *oid, char *value,
 
     return 0;
 #else
-    UNUSED(oid);
-    UNUSED(gid);
-    UNUSED(value);
-    UNUSED(ifname);
+    UNUSED(ctx);
+    UNUSED(val);
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif
 }
@@ -752,22 +675,16 @@ eth_reset_set(unsigned int gid, const char *oid, char *value,
 /**
  * Get reset value (dummy)
  *
- * @param gid          Group identifier
- * @param oid          Full object instance identifier
- * @param value        Location to save value
- * @param ifname       Interface name
+ * @param ctx          Request context
+ * @param val          Location to save value
  *
  * @return Status code
  */
 static te_errno
-eth_reset_get(unsigned int gid, const char *oid, char *value,
-                 const char *ifname)
+eth_reset_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(ifname);
-
-    *value = 0;
+    UNUSED(ctx);
+    UNUSED(val);
 
     return 0;
 }
@@ -784,14 +701,12 @@ typedef enum {
  *
  * @param ifname    Interface name
  * @param parameter Requested parameter
- * @param val       Buffer to save the parameter value
- * @param len       The buffer length
+ * @param val       Location to append the parameter value to
  *
  * @return Status code
  */
 static te_errno
-eth_drvinfo_get(const char *ifname, eth_drvinfo parameter, char *val,
-                size_t len)
+eth_drvinfo_get(const char *ifname, eth_drvinfo parameter, te_string *val)
 {
     struct ethtool_drvinfo  drvinfo = {.cmd = ETHTOOL_GDRVINFO};
     te_errno                rc = 0;
@@ -805,120 +720,78 @@ eth_drvinfo_get(const char *ifname, eth_drvinfo parameter, char *val,
     else if (rc != 0)
         return rc;
 
-#define CHECK_LEN(_str) \
-    do {                                                        \
-        if (strlen(_str) >= len)                                \
-        {                                                       \
-            ERROR("%s,%d: returned %s value is too long",       \
-                  __FUNCTION__, __LINE__, #_str);               \
-            return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);             \
-        }                                                       \
-    } while (0)
-
     switch (parameter)
     {
         case ETH_DRVINFO_DRIVER:
-            CHECK_LEN(drvinfo.driver);
-            strcpy(val, drvinfo.driver);
-            break;
+            return te_string_append_chk(val, "%s", drvinfo.driver);
 
         case ETH_DRVINFO_VERSION:
-            CHECK_LEN(drvinfo.version);
-            strcpy(val, drvinfo.version);
-            break;
+            return te_string_append_chk(val, "%s", drvinfo.version);
 
         case ETH_DRVINFO_FW_VERSION:
-            CHECK_LEN(drvinfo.fw_version);
-            strcpy(val, drvinfo.fw_version);
-            break;
+            return te_string_append_chk(val, "%s", drvinfo.fw_version);
 
         default:
             ERROR("Unknown parameter value %d", parameter);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-
-#undef CHECK_LEN
-
-    return 0;
 }
 
 /**
  * Get firmware version using ioctl(SIOCETHTOOL).
  *
- * @param gid          Group identifier
- * @param oid          Full object instance identifier
- * @param value        Location to save value
- * @param ifname       Interface name
- * @param deviceinfo   deviceinfo instance name
+ * @param ctx          Request context
+ * @param val          Location to save value
  *
  * @return Status code
  */
 static te_errno
-eth_firmwareversion_get(unsigned int gid, const char *oid, char *value,
-                        const char *ifname, const char *deviceinfo)
+eth_firmwareversion_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(deviceinfo);
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 
-    return eth_drvinfo_get(ifname, ETH_DRVINFO_FW_VERSION, value,
-                           RCF_MAX_VAL);
+    return eth_drvinfo_get(ifname, ETH_DRVINFO_FW_VERSION, val);
 }
 
 /**
  * Get driver version using ioctl(SIOCETHTOOL).
  *
- * @param gid          Group identifier
- * @param oid          Full object instance identifier
- * @param value        Location to save value
- * @param ifname       Interface name
- * @param deviceinfo   deviceinfo instance name
+ * @param ctx          Request context
+ * @param val          Location to save value
  *
  * @return Status code
  */
 static te_errno
-eth_driverversion_get(unsigned int gid, const char *oid, char *value,
-                      const char *ifname, const char *deviceinfo)
+eth_driverversion_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(deviceinfo);
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 
-    return eth_drvinfo_get(ifname, ETH_DRVINFO_VERSION, value, RCF_MAX_VAL);
+    return eth_drvinfo_get(ifname, ETH_DRVINFO_VERSION, val);
 }
 
 /**
  * Get driver name using ioctl(SIOCETHTOOL).
  *
- * @param gid          Group identifier
- * @param oid          Full object instance identifier
- * @param value        Location to save value
- * @param ifname       Interface name
- * @param deviceinfo   deviceinfo instance name
+ * @param ctx          Request context
+ * @param val          Location to save value
  *
  * @return Status code
  */
 static te_errno
-eth_drivername_get(unsigned int gid, const char *oid, char *value,
-                   const char *ifname, const char *deviceinfo)
+eth_drivername_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(deviceinfo);
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 
-    return eth_drvinfo_get(ifname, ETH_DRVINFO_DRIVER, value, RCF_MAX_VAL);
+    return eth_drvinfo_get(ifname, ETH_DRVINFO_DRIVER, val);
 }
 
 /* Get driver message level */
 static te_errno
-eth_msglvl_get(unsigned int gid, const char *oid_str,
-               char *value, const char *ifname)
+eth_msglvl_get(const ta_conf_ctx *ctx, uint64_t *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     struct ethtool_value eval;
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid_str);
 
     memset(&eval, 0, sizeof(eval));
     eval.cmd = ETHTOOL_GMSGLVL;
@@ -936,29 +809,20 @@ eth_msglvl_get(unsigned int gid, const char *oid_str,
         return TE_RC(TE_TA_UNIX, rc);
     }
 
-    rc = te_snprintf(value, RCF_MAX_VAL, "%u", eval.data);
-    if (rc != 0)
-    {
-        ERROR("%s(): te_snprintf() failed: %r", __FUNCTION__, rc);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
+    *val = eval.data;
     return 0;
 }
 
 static te_errno
-eth_ring_size_get(unsigned int  gid,
-                  const char   *oid,
-                  char         *value,
-                  const char   *ifname,
+eth_ring_size_get(const ta_conf_ctx  *ctx,
                   bool          is_rx,
-                  bool          get_maximum)
+                  bool          get_maximum,
+                  int64_t      *val)
 {
+    const char               *ifname = ta_conf_ctx_inst(ctx, "interface");
     struct eth_if_context    *if_context;
     struct ethtool_ringparam  ethtool_ringparam = { .cmd = ETHTOOL_GRINGPARAM };
     te_errno                  rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if_context = eth_feature_iface_context(ifname);
     if (if_context == NULL || !if_context->valid)
@@ -966,112 +830,90 @@ eth_ring_size_get(unsigned int  gid,
 
     rc = eth_feature_ioctl_send(ifname, &ethtool_ringparam);
     if (rc == TE_EOPNOTSUPP)
-        snprintf(value, RCF_MAX_VAL, "%d", -1);
+    {
+        *val = -1;
+    }
     else if (rc != 0)
+    {
         return TE_RC(TE_TA_UNIX, rc);
+    }
     else if (get_maximum)
     {
-        snprintf(value, RCF_MAX_VAL, "%u", (is_rx ?
-                 ethtool_ringparam.rx_max_pending :
-                 ethtool_ringparam.tx_max_pending));
+        *val = is_rx ? ethtool_ringparam.rx_max_pending :
+                       ethtool_ringparam.tx_max_pending;
     }
     else
     {
-        snprintf(value, RCF_MAX_VAL, "%u", (is_rx ?
-                 ethtool_ringparam.rx_pending :
-                 ethtool_ringparam.tx_pending));
+        *val = is_rx ? ethtool_ringparam.rx_pending :
+                       ethtool_ringparam.tx_pending;
     }
 
     return 0;
 }
 
 static te_errno
-eth_ring_tx_max_get(unsigned int  gid,
-                    const char   *oid,
-                    char         *value,
-                    const char   *ifname)
+eth_ring_tx_max_get(const ta_conf_ctx *ctx, int64_t *val)
 {
-    return eth_ring_size_get(gid, oid, value, ifname, false, true);
+    return eth_ring_size_get(ctx, false, true, val);
 }
 
 static te_errno
-eth_ring_rx_max_get(unsigned int  gid,
-                    const char   *oid,
-                    char         *value,
-                    const char   *ifname)
+eth_ring_rx_max_get(const ta_conf_ctx *ctx, int64_t *val)
 {
-    return eth_ring_size_get(gid, oid, value, ifname, true, true);
+    return eth_ring_size_get(ctx, true, true, val);
 }
 
 static te_errno
-eth_ring_tx_current_get(unsigned int  gid,
-                        const char   *oid,
-                        char         *value,
-                        const char   *ifname)
+eth_ring_tx_current_get(const ta_conf_ctx *ctx, int64_t *val)
 {
-    return eth_ring_size_get(gid, oid, value, ifname, false, false);
+    return eth_ring_size_get(ctx, false, false, val);
 }
 
 static te_errno
-eth_ring_rx_current_get(unsigned int  gid,
-                        const char   *oid,
-                        char         *value,
-                        const char   *ifname)
+eth_ring_rx_current_get(const ta_conf_ctx *ctx, int64_t *val)
 {
-    return eth_ring_size_get(gid, oid, value, ifname, true, false);
+    return eth_ring_size_get(ctx, true, false, val);
 }
 
 /* Set driver message level */
 static te_errno
-eth_msglvl_set(unsigned int gid, const char *oid_str,
-               char *value, const char *ifname)
+eth_msglvl_set(const ta_conf_ctx *ctx, uint64_t val)
 {
-    unsigned long int parsed_val;
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     struct ethtool_value eval;
     te_errno rc;
 
-    UNUSED(gid);
-    UNUSED(oid_str);
-
-    rc = te_strtoul(value, 0, &parsed_val);
-    if (rc != 0)
+    if (val > UINT_MAX)
     {
-        ERROR("%s(): invalid value '%s': %r", __FUNCTION__, value, rc);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
-    else if (parsed_val > UINT_MAX)
-    {
-        ERROR("%s(): too big value '%s'", __FUNCTION__, value);
+        ERROR("%s(): too big value '%" PRIu64 "'", __FUNCTION__, val);
         return TE_RC(TE_TA_UNIX, TE_ERANGE);
     }
 
     memset(&eval, 0, sizeof(eval));
     eval.cmd = ETHTOOL_SMSGLVL;
-    eval.data = parsed_val;
+    eval.data = val;
 
     rc = eth_feature_ioctl_send(ifname, &eval);
     return TE_RC(TE_TA_UNIX, rc);
 }
 
 static te_errno
-eth_ring_size_set(unsigned int gid, const char *oid,
-                  char *value, const char *ifname, bool is_rx)
+eth_ring_size_set(const ta_conf_ctx *ctx, bool is_rx, int64_t val)
 {
+    const char               *ifname = ta_conf_ctx_inst(ctx, "interface");
     struct eth_if_context    *if_context;
     struct ethtool_ringparam  ethtool_ringparam = { .cmd = ETHTOOL_GRINGPARAM };
-    unsigned long int         value_ul;
     te_errno                  rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if_context = eth_feature_iface_context(ifname);
     if (if_context == NULL || !if_context->valid)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    rc = te_strtoul(value, 10, &value_ul);
-    if (rc != 0)
-        return TE_RC(TE_TA_UNIX, rc);
+    if (val < 0)
+    {
+        ERROR("%s(): invalid value '%" PRId64 "'", __FUNCTION__, val);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
 
     rc = eth_feature_ioctl_send(ifname, &ethtool_ringparam);
     if (rc != 0)
@@ -1081,15 +923,15 @@ eth_ring_size_set(unsigned int gid, const char *oid,
 
     if (is_rx)
     {
-        if (value_ul > ethtool_ringparam.rx_max_pending)
+        if ((uint64_t)val > ethtool_ringparam.rx_max_pending)
             return TE_RC(TE_TA_UNIX, TE_ERANGE);
-        ethtool_ringparam.rx_pending = value_ul;
+        ethtool_ringparam.rx_pending = val;
     }
     else
     {
-        if (value_ul > ethtool_ringparam.tx_max_pending)
+        if ((uint64_t)val > ethtool_ringparam.tx_max_pending)
             return TE_RC(TE_TA_UNIX, TE_ERANGE);
-        ethtool_ringparam.tx_pending = value_ul;
+        ethtool_ringparam.tx_pending = val;
     }
 
     rc = eth_feature_ioctl_send(ifname, &ethtool_ringparam);
@@ -1100,21 +942,15 @@ eth_ring_size_set(unsigned int gid, const char *oid,
 }
 
 static te_errno
-eth_ring_rx_current_set(unsigned int  gid,
-                        const char   *oid,
-                        char         *value,
-                        const char   *ifname)
+eth_ring_rx_current_set(const ta_conf_ctx *ctx, int64_t val)
 {
-    return eth_ring_size_set(gid, oid, value, ifname, true);
+    return eth_ring_size_set(ctx, true, val);
 }
 
 static te_errno
-eth_ring_tx_current_set(unsigned int  gid,
-                        const char   *oid,
-                        char         *value,
-                        const char   *ifname)
+eth_ring_tx_current_set(const ta_conf_ctx *ctx, int64_t val)
 {
-    return eth_ring_size_set(gid, oid, value, ifname, false);
+    return eth_ring_size_set(ctx, false, val);
 }
 
 static te_errno
@@ -1164,38 +1000,31 @@ eth_channels_ofst_get(cfg_oid  *oid,
 }
 
 static te_errno
-eth_channels_get(unsigned int  *gid,
-                 const char    *oid,
-                 char          *value,
-                 const char    *iface)
+eth_channels_get(const ta_conf_ctx *ctx, int32_t *val)
 {
-    struct ethtool_channels   channels = { .cmd = ETHTOOL_GCHANNELS };
-    struct eth_if_context    *iface_ctx;
-    uint32_t                 *vp = NULL;
-    te_errno                  rc;
-
-    UNUSED(gid);
+    const char                *iface = ta_conf_ctx_inst(ctx, "interface");
+    struct ethtool_channels    channels = { .cmd = ETHTOOL_GCHANNELS };
+    struct eth_if_context     *iface_ctx;
+    uint32_t                  *vp = NULL;
+    te_errno                   rc;
 
     iface_ctx = eth_feature_iface_context(iface);
     if (iface_ctx == NULL || !iface_ctx->valid)
     {
         ERROR("%s(): interface context not found", __FUNCTION__);
-        rc = TE_ENOENT;
-        goto exit;
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
     rc = eth_feature_ioctl_send(iface, &channels);
     if (rc == 0)
     {
-        cfg_oid  *oid_parsed = NULL;
+        cfg_oid  *oid_parsed = cfg_convert_oid_str(ta_conf_ctx_oid(ctx));
         size_t    ofst;
 
-        oid_parsed = cfg_convert_oid_str(oid);
         if (oid_parsed == NULL)
         {
             ERROR("%s(): OID parsing failed", __FUNCTION__);
-            rc = TE_EFAULT;
-            goto exit;
+            return TE_RC(TE_TA_UNIX, TE_EFAULT);
         }
 
         rc = eth_channels_ofst_get(oid_parsed, &ofst);
@@ -1205,7 +1034,7 @@ eth_channels_get(unsigned int  *gid,
         if (rc != 0)
         {
             ERROR("%s(): offset search failed: %r", __FUNCTION__, rc);
-            goto exit;
+            return TE_RC(TE_TA_UNIX, rc);
         }
 
         vp = (uint32_t *)((uint8_t *)&channels + ofst);
@@ -1213,57 +1042,55 @@ eth_channels_get(unsigned int  *gid,
     else if (rc != TE_EOPNOTSUPP)
     {
         ERROR("%s(): ioctl failed: %r", __FUNCTION__, rc);
-        goto exit;
+        return TE_RC(TE_TA_UNIX, rc);
     }
 
-    rc = (vp != NULL) ?
-         te_snprintf(value, RCF_MAX_VAL, "%u", *vp) :
-         te_snprintf(value, RCF_MAX_VAL, "%d", -1);
+    *val = (vp != NULL) ? (int32_t)*vp : -1;
 
-    if (rc != 0)
-        ERROR("%s(): te_snprintf() failed: %r", __FUNCTION__, rc);
-
-exit:
-    return TE_RC(TE_TA_UNIX, rc);
+    return 0;
 }
 
 static te_errno
-eth_channels_set(unsigned int  *gid,
-                 const char    *oid,
-                 const char    *value,
-                 const char    *iface)
+eth_channels_set(const ta_conf_ctx *ctx, int32_t val)
 {
-    struct ethtool_channels   channels = { .cmd = ETHTOOL_GCHANNELS };
-    unsigned long             value_parsed;
-    cfg_oid                  *oid_parsed;
-    struct eth_if_context    *iface_ctx;
-    uint32_t                 *vp = NULL;
-    size_t                    ofst;
-    te_errno                  rc;
-
-    UNUSED(gid);
+    const char                *iface = ta_conf_ctx_inst(ctx, "interface");
+    struct ethtool_channels    channels = { .cmd = ETHTOOL_GCHANNELS };
+    cfg_oid                   *oid_parsed;
+    struct eth_if_context     *iface_ctx;
+    uint32_t                  *vp = NULL;
+    size_t                     ofst;
+    te_errno                   rc;
 
     iface_ctx = eth_feature_iface_context(iface);
     if (iface_ctx == NULL || !iface_ctx->valid)
     {
         ERROR("%s(): interface context not found", __FUNCTION__);
-        rc = TE_ENOENT;
-        goto exit;
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (val < 0)
+    {
+        ERROR("%s(): invalid value '%" PRId32 "'", __FUNCTION__, val);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    if (val > UINT32_MAX)
+    {
+        ERROR("%s(): too big value '%" PRId32 "'", __FUNCTION__, val);
+        return TE_RC(TE_TA_UNIX, TE_ERANGE);
     }
 
     rc = eth_feature_ioctl_send(iface, &channels);
     if (rc != 0)
     {
         ERROR("%s(): ioctl failed: %r", __FUNCTION__, rc);
-        goto exit;
+        return TE_RC(TE_TA_UNIX, rc);
     }
 
-    oid_parsed = cfg_convert_oid_str(oid);
+    oid_parsed = cfg_convert_oid_str(ta_conf_ctx_oid(ctx));
     if (oid_parsed == NULL)
     {
         ERROR("%s(): OID parsing failed", __FUNCTION__);
-        rc = TE_EFAULT;
-        goto exit;
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
     }
 
     rc = eth_channels_ofst_get(oid_parsed, &ofst);
@@ -1273,26 +1100,13 @@ eth_channels_set(unsigned int  *gid,
     if (rc != 0)
     {
         ERROR("%s(): offset search failed: %r", __FUNCTION__, rc);
-        goto exit;
+        return TE_RC(TE_TA_UNIX, rc);
     }
 
     vp = (uint32_t *)((uint8_t *)&channels + ofst);
 
-    rc = te_strtoul(value, 0, &value_parsed);
-    if (rc != 0)
-    {
-        ERROR("%s(): invalid value '%s': %r", __FUNCTION__, value, rc);
-        goto exit;
-    }
-    else if (value_parsed > UINT32_MAX)
-    {
-        ERROR("%s(): too big value '%s'", __FUNCTION__, value);
-        rc = TE_ERANGE;
-        goto exit;
-    }
-
     channels.cmd = ETHTOOL_SCHANNELS;
-    *vp = value_parsed;
+    *vp = (uint32_t)val;
 
     rc = eth_feature_ioctl_send(iface, &channels);
     if (rc != 0)
@@ -1306,121 +1120,62 @@ eth_channels_set(unsigned int  *gid,
               channels.max_other, channels.max_combined, channels.rx_count,
               channels.tx_count, channels.other_count,
               channels.combined_count, rc);
-        goto exit;
+        return TE_RC(TE_TA_UNIX, rc);
     }
 
-exit:
-    return TE_RC(TE_TA_UNIX, rc);
+    return 0;
 }
 
-RCF_PCH_CFG_NODE_RO(firmwareversion, "firmwareversion", NULL, NULL,
-                    eth_firmwareversion_get);
+static const ta_conf_node *const node_deviceinfo =
+    TA_CONF_NA("deviceinfo",
+        TA_CONF_RO_STR("drivername", eth_drivername_get),
+        TA_CONF_RO_STR("driverversion", eth_driverversion_get),
+        TA_CONF_RO_STR("firmwareversion", eth_firmwareversion_get));
 
-RCF_PCH_CFG_NODE_RO(driverversion, "driverversion", NULL, &firmwareversion,
-                    eth_driverversion_get);
+static const ta_conf_node *const node_feature =
+    TA_CONF_NODE((.name = "feature", .type = CVT_BOOL,
+                  .get = { .as_bool = eth_feature_get },
+                  .set = { .as_bool = eth_feature_set },
+                  .list = eth_feature_list,
+                  .commit = eth_feature_commit),
+        TA_CONF_RO_BOOL("readonly", eth_feature_readonly_get));
 
-RCF_PCH_CFG_NODE_RO(drivername, "drivername", NULL, &driverversion,
-                    eth_drivername_get);
+static const ta_conf_node *const node_private =
+    TA_CONF_NA_COMMIT("private", eth_priv_flags_commit,
+        TA_CONF_RW_COLL_BOOL("flag", eth_priv_flags_get,
+                             eth_priv_flags_set, eth_priv_flags_list));
 
-RCF_PCH_CFG_NODE_NA(deviceinfo, "deviceinfo", &drivername, NULL);
+static const ta_conf_node *const node_ring =
+    TA_CONF_NA("ring",
+        TA_CONF_NA("rx",
+            TA_CONF_RW_INT64("current", eth_ring_rx_current_get,
+                           eth_ring_rx_current_set),
+            TA_CONF_RO_INT64("max", eth_ring_rx_max_get)),
+        TA_CONF_NA("tx",
+            TA_CONF_RW_INT64("current", eth_ring_tx_current_get,
+                           eth_ring_tx_current_set),
+            TA_CONF_RO_INT64("max", eth_ring_tx_max_get)));
 
-RCF_PCH_CFG_NODE_RO(eth_feature_readonly, "readonly", NULL, NULL,
-                    eth_feature_readonly_get);
+static const ta_conf_node *const node_channels =
+    TA_CONF_NA("channels",
+        TA_CONF_NA("combined",
+            TA_CONF_RW_INT32("current", eth_channels_get, eth_channels_set),
+            TA_CONF_RO_INT32("maximum", eth_channels_get)),
+        TA_CONF_NA("other",
+            TA_CONF_RW_INT32("current", eth_channels_get, eth_channels_set),
+            TA_CONF_RO_INT32("maximum", eth_channels_get)),
+        TA_CONF_NA("rx",
+            TA_CONF_RW_INT32("current", eth_channels_get, eth_channels_set),
+            TA_CONF_RO_INT32("maximum", eth_channels_get)),
+        TA_CONF_NA("tx",
+            TA_CONF_RW_INT32("current", eth_channels_get, eth_channels_set),
+            TA_CONF_RO_INT32("maximum", eth_channels_get)));
 
-static rcf_pch_cfg_object eth_feature = {
-    "feature", 0, &eth_feature_readonly, &deviceinfo,
-    (rcf_ch_cfg_get)eth_feature_get, (rcf_ch_cfg_set)eth_feature_set,
-    NULL, NULL, (rcf_ch_cfg_list)eth_feature_list,
-    (rcf_ch_cfg_commit)eth_feature_commit, NULL, NULL
-};
+static const ta_conf_node *const node_msglvl =
+    TA_CONF_RW_UINT64("msglvl", eth_msglvl_get, eth_msglvl_set);
 
-static rcf_pch_cfg_object eth_priv_flags;
-
-static rcf_pch_cfg_object eth_priv_flag = {
-    .sub_id = "flag",
-    .get = (rcf_ch_cfg_get)eth_priv_flags_get,
-    .set = (rcf_ch_cfg_set)eth_priv_flags_set,
-    .list = (rcf_ch_cfg_list)eth_priv_flags_list,
-    .commit_parent = &eth_priv_flags
-};
-
-static rcf_pch_cfg_object eth_priv_flags = {
-    .sub_id = "private",
-    .son = &eth_priv_flag,
-    .brother = &eth_feature,
-    .commit = (rcf_ch_cfg_commit)eth_priv_flags_commit
-};
-
-RCF_PCH_CFG_NODE_RO(eth_ring_tx_max, "max", NULL, NULL,
-                    eth_ring_tx_max_get);
-
-RCF_PCH_CFG_NODE_RW(eth_ring_tx_current, "current", NULL, &eth_ring_tx_max,
-                    eth_ring_tx_current_get, eth_ring_tx_current_set);
-
-RCF_PCH_CFG_NODE_NA(eth_ring_tx, "tx", &eth_ring_tx_current, NULL);
-
-RCF_PCH_CFG_NODE_RO(eth_ring_rx_max, "max", NULL, NULL,
-                    eth_ring_rx_max_get);
-
-RCF_PCH_CFG_NODE_RW(eth_ring_rx_current, "current", NULL, &eth_ring_rx_max,
-                    eth_ring_rx_current_get, eth_ring_rx_current_set);
-
-RCF_PCH_CFG_NODE_NA(eth_ring_rx, "rx", &eth_ring_rx_current, &eth_ring_tx);
-
-RCF_PCH_CFG_NODE_NA(eth_ring, "ring", &eth_ring_rx, &eth_priv_flags);
-
-RCF_PCH_CFG_NODE_RO(eth_channels_tx_maximum, "maximum",
-                    NULL, NULL, eth_channels_get);
-
-RCF_PCH_CFG_NODE_RW(eth_channels_tx_current, "current",
-                    NULL, &eth_channels_tx_maximum,
-                    eth_channels_get,
-                    eth_channels_set);
-
-RCF_PCH_CFG_NODE_NA(eth_channels_tx, "tx", &eth_channels_tx_current, NULL);
-
-RCF_PCH_CFG_NODE_RO(eth_channels_rx_maximum, "maximum",
-                    NULL, NULL, eth_channels_get);
-
-RCF_PCH_CFG_NODE_RW(eth_channels_rx_current, "current",
-                    NULL, &eth_channels_rx_maximum,
-                    eth_channels_get,
-                    eth_channels_set);
-
-RCF_PCH_CFG_NODE_NA(eth_channels_rx, "rx", &eth_channels_rx_current,
-                    &eth_channels_tx);
-
-RCF_PCH_CFG_NODE_RO(eth_channels_other_maximum, "maximum",
-                    NULL, NULL, eth_channels_get);
-
-RCF_PCH_CFG_NODE_RW(eth_channels_other_current, "current",
-                    NULL, &eth_channels_other_maximum,
-                    eth_channels_get, eth_channels_set);
-
-RCF_PCH_CFG_NODE_NA(eth_channels_other, "other",
-                    &eth_channels_other_current,
-                    &eth_channels_rx);
-
-RCF_PCH_CFG_NODE_RO(eth_channels_combined_maximum, "maximum",
-                    NULL, NULL, eth_channels_get);
-
-RCF_PCH_CFG_NODE_RW(eth_channels_combined_current, "current",
-                    NULL, &eth_channels_combined_maximum,
-                    eth_channels_get, eth_channels_set);
-
-RCF_PCH_CFG_NODE_NA(eth_channels_combined, "combined",
-                    &eth_channels_combined_current,
-                    &eth_channels_other);
-
-RCF_PCH_CFG_NODE_NA(eth_channels, "channels",
-                    &eth_channels_combined,
-                    &eth_ring);
-
-RCF_PCH_CFG_NODE_RW(eth_msglvl, "msglvl", NULL, &eth_channels,
-                    eth_msglvl_get, eth_msglvl_set);
-
-RCF_PCH_CFG_NODE_RW(eth_reset, "reset", NULL, &eth_msglvl,
-                    eth_reset_get, eth_reset_set);
+static const ta_conf_node *const node_reset =
+    TA_CONF_RW_STR("reset", eth_reset_get, eth_reset_set);
 
 /**
  * Initialize ethernet interface configuration nodes
@@ -1428,9 +1183,43 @@ RCF_PCH_CFG_NODE_RW(eth_reset, "reset", NULL, &eth_msglvl,
 te_errno
 ta_unix_conf_eth_init(void)
 {
+    te_errno rc;
+
     SLIST_INIT(&if_contexts);
 
-    return rcf_pch_add_node("/agent/interface", &eth_reset);
+    /*
+     * Each ta_conf_register() call prepends its node at the head of
+     * "/agent/interface"'s children, exactly like the legacy single
+     * rcf_pch_add_node() call used to prepend the whole reset->msglvl->
+     * channels->ring->private->feature->deviceinfo chain at once.  To
+     * reproduce that order, register in reverse: the last call here
+     * (reset) ends up first in the resulting sibling order.
+     */
+    rc = ta_conf_register("/agent/interface", node_deviceinfo);
+    if (rc != 0)
+        return rc;
+
+    rc = ta_conf_register("/agent/interface", node_feature);
+    if (rc != 0)
+        return rc;
+
+    rc = ta_conf_register("/agent/interface", node_private);
+    if (rc != 0)
+        return rc;
+
+    rc = ta_conf_register("/agent/interface", node_ring);
+    if (rc != 0)
+        return rc;
+
+    rc = ta_conf_register("/agent/interface", node_channels);
+    if (rc != 0)
+        return rc;
+
+    rc = ta_conf_register("/agent/interface", node_msglvl);
+    if (rc != 0)
+        return rc;
+
+    return ta_conf_register("/agent/interface", node_reset);
 }
 #else
 te_errno
@@ -1440,4 +1229,3 @@ ta_unix_conf_eth_init(void)
     return 0;
 }
 #endif /* !HAVE_LINUX_ETHTOOL_H */
-
