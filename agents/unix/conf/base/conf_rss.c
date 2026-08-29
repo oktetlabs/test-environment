@@ -17,8 +17,12 @@
 #include "te_errno.h"
 #include "logger_api.h"
 #include "te_defs.h"
+#include "te_str.h"
+#include "te_alloc.h"
+#include "te_vector.h"
 #include "rcf_pch.h"
 #include "rcf_pch_ta_cfg.h"
+#include "rcf_pch_tree.h"
 #include "unix_internal.h"
 
 #ifdef HAVE_SYS_IOCTL_H
@@ -43,23 +47,17 @@
 
 /* Get number of RX queues */
 static te_errno
-rx_queues_get(unsigned int gid, const char *oid,
-              char *value, const char *if_name)
+rx_queues_get(const ta_conf_ctx *ctx, int32_t *val)
 {
 #ifndef ETHTOOL_GRXRINGS
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    UNUSED(if_name);
+    UNUSED(ctx);
+    UNUSED(val);
 
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #else
-    te_string str_val = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
-
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
     struct ethtool_rxnfc rxnfc;
     te_errno rc;
-
-    UNUSED(oid);
 
     memset(&rxnfc, 0, sizeof(rxnfc));
 
@@ -72,212 +70,153 @@ rx_queues_get(unsigned int gid, const char *oid,
         return rc;
     }
 
-    te_string_append(&str_val, "%u", (unsigned int)(rxnfc.data));
+    *val = rxnfc.data;
     return 0;
 #endif
 }
 
 /* Get RSS hash key */
 static te_errno
-hash_key_get(unsigned int gid, const char *oid,
-             char *value, const char *if_name,
-             const char *unused, const char *rss_ctx)
+hash_key_get(const ta_conf_ctx *ctx, te_string *val)
 {
 #ifndef ETHTOOL_GRSSH
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    UNUSED(if_name);
-    UNUSED(unused);
-    UNUSED(rss_ctx);
+    UNUSED(ctx);
+    UNUSED(val);
 
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #else
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
     ta_ethtool_rxfh *rxfh;
-    te_string str_val = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
     te_errno rc;
 
-    UNUSED(oid);
-    UNUSED(unused);
-    UNUSED(rss_ctx);
-
-    rc = ta_ethtool_get_rssh(gid, if_name, 0, &rxfh);
+    rc = ta_ethtool_get_rssh(ta_conf_ctx_gid(ctx), if_name, 0, &rxfh);
     if (rc != 0)
         return rc;
 
     return te_str_hex_raw2str(RSS_HASH_KEY(rxfh->rxfh),
-                              rxfh->rxfh->key_size,
-                              &str_val);
+                              rxfh->rxfh->key_size, val);
 #endif
 }
 
 /* Set RSS hash key */
 static te_errno
-hash_key_set(unsigned int gid, const char *oid,
-             char *value, const char *if_name,
-             const char *unused, const char *rss_ctx)
+hash_key_set(const ta_conf_ctx *ctx, const char *val)
 {
 #ifndef ETHTOOL_SRSSH
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    UNUSED(if_name);
-    UNUSED(unused);
-    UNUSED(rss_ctx);
+    UNUSED(ctx);
+    UNUSED(val);
 
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #else
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
     ta_ethtool_rxfh *rxfh;
     te_errno rc;
 
-    UNUSED(oid);
-    UNUSED(unused);
-    UNUSED(rss_ctx);
-
-    rc = ta_ethtool_get_rssh(gid, if_name, 0, &rxfh);
+    rc = ta_ethtool_get_rssh(ta_conf_ctx_gid(ctx), if_name, 0, &rxfh);
     if (rc != 0)
         return rc;
 
     rxfh->hash_key_change = true;
-    return te_str_hex_str2raw(value, RSS_HASH_KEY(rxfh->rxfh),
+    return te_str_hex_str2raw(val, RSS_HASH_KEY(rxfh->rxfh),
                               rxfh->rxfh->key_size);
 #endif
 }
 
-/* Get list of supported hash functions */
+/* List of supported hash functions */
 static te_errno
-hash_func_list(unsigned int gid,
-               const char *oid,
-               const char *sub_id,
-               char **list_out,
-               const char *if_name)
+hash_func_list(const ta_conf_ctx *ctx, te_vec *names)
 {
 #if !HAVE_DECL_ETH_SS_RSS_HASH_FUNCS || !defined(ETHTOOL_GRSSH)
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(list_out);
-    UNUSED(if_name);
+    UNUSED(ctx);
+    UNUSED(names);
 
-    *list_out = NULL;
     return 0;
 #else
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
     const struct ta_ethtool_strings *func_names = NULL;
     unsigned int i;
-    te_string str = TE_STRING_INIT;
     te_errno rc;
 
-    rc = ta_ethtool_get_strings(gid, if_name, ETH_SS_RSS_HASH_FUNCS,
-                                &func_names);
+    rc = ta_ethtool_get_strings(ta_conf_ctx_gid(ctx), if_name,
+                                ETH_SS_RSS_HASH_FUNCS, &func_names);
     if (rc != 0)
         return rc;
 
     for (i = 0; i < func_names->num; i++)
-        te_string_append(&str, "%s ", func_names->strings[i]);
+    {
+        char *name = TE_STRDUP(func_names->strings[i]);
 
-    *list_out = str.ptr;
+        TE_VEC_APPEND(names, name);
+    }
+
     return 0;
 #endif
 }
 
 /* Get state of a specific hash function (is it enabled?) */
 static te_errno
-hash_func_get(unsigned int gid, const char *oid,
-              char *value, const char *if_name,
-              const char *unused1, const char *rss_ctx,
-              const char *unused2, const char *func_name)
+hash_func_get(const ta_conf_ctx *ctx, bool *val)
 {
 #ifndef ETHTOOL_GRSSH
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    UNUSED(if_name);
-    UNUSED(unused1);
-    UNUSED(rss_ctx);
-    UNUSED(unused2);
-    UNUSED(func_name);
+    UNUSED(ctx);
+    UNUSED(val);
 
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #else
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *func_name = ta_conf_ctx_inst(ctx, "hash_func");
     ta_ethtool_rxfh *rxfh;
     const ta_ethtool_strings *func_names;
-    te_string str_val = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
     unsigned int i;
-    unsigned int result = 0;
     te_errno rc;
 
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(rss_ctx);
-    UNUSED(unused2);
-
-    rc = ta_ethtool_get_rssh(gid, if_name, 0, &rxfh);
+    rc = ta_ethtool_get_rssh(ta_conf_ctx_gid(ctx), if_name, 0, &rxfh);
     if (rc != 0)
         return rc;
 
-    rc = ta_ethtool_get_strings(gid, if_name, ETH_SS_RSS_HASH_FUNCS,
-                                &func_names);
+    rc = ta_ethtool_get_strings(ta_conf_ctx_gid(ctx), if_name,
+                                ETH_SS_RSS_HASH_FUNCS, &func_names);
     if (rc != 0)
         return rc;
 
+    *val = false;
     for (i = 0; i < func_names->num; i++)
     {
         if (strcmp(func_names->strings[i], func_name) == 0)
         {
-            result = ((rxfh->rxfh->hfunc & (1 << i)) ? 1 : 0);
+            *val = ((rxfh->rxfh->hfunc & (1 << i)) != 0);
             break;
         }
     }
 
-    te_string_append(&str_val, "%u", result);
     return 0;
 #endif
 }
 
 /* Set state of a specific hash function (is it enabled?) */
 static te_errno
-hash_func_set(unsigned int gid, const char *oid,
-              char *value, const char *if_name,
-              const char *unused1, const char *rss_ctx,
-              const char *unused2, const char *func_name)
+hash_func_set(const ta_conf_ctx *ctx, bool val)
 {
 #ifndef ETHTOOL_SRSSH
-    unused(gid);
-    unused(oid);
-    unused(value);
-    unused(if_name);
-    unused(unused1);
-    unused(rss_ctx);
-    unused(unused2);
-    unused(func_name);
+    UNUSED(ctx);
+    UNUSED(val);
 
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #else
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *func_name = ta_conf_ctx_inst(ctx, "hash_func");
     ta_ethtool_rxfh *rxfh;
     const ta_ethtool_strings *func_names;
     unsigned int i;
     unsigned int flag = 0;
-    int parsed_val;
     te_errno rc;
 
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(rss_ctx);
-    UNUSED(unused2);
-
-    rc = te_strtoi(value, 0, &parsed_val);
-    if (rc != 0 || (parsed_val != 0 && parsed_val != 1))
-    {
-        ERROR("%s(): incorrect value '%s'", __FUNCTION__, value);
-        return TE_EINVAL;
-    }
-
-    rc = ta_ethtool_get_rssh(gid, if_name, 0, &rxfh);
+    rc = ta_ethtool_get_rssh(ta_conf_ctx_gid(ctx), if_name, 0, &rxfh);
     if (rc != 0)
         return rc;
 
-    rc = ta_ethtool_get_strings(gid, if_name, ETH_SS_RSS_HASH_FUNCS,
-                                &func_names);
+    rc = ta_ethtool_get_strings(ta_conf_ctx_gid(ctx), if_name,
+                                ETH_SS_RSS_HASH_FUNCS, &func_names);
     if (rc != 0)
         return rc;
 
@@ -296,7 +235,7 @@ hash_func_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
-    if (parsed_val == 1)
+    if (val)
         rxfh->rxfh->hfunc |= flag;
     else
         rxfh->rxfh->hfunc &= ~flag;
@@ -307,85 +246,63 @@ hash_func_set(unsigned int gid, const char *oid,
 
 /* List entries of indirection table */
 static te_errno
-indir_list(unsigned int gid, const char *oid,
-           const char *sub_id, char **list_out,
-           const char *if_name, const char *unused1,
-           const char *rss_ctx, const char *unused2)
+indir_list(const ta_conf_ctx *ctx, te_vec *names)
 {
 #ifndef ETHTOOL_GRSSH
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(if_name);
-    UNUSED(unused1);
-    UNUSED(rss_ctx);
-    UNUSED(unused2);
+    UNUSED(ctx);
+    UNUSED(names);
 
-    *list_out = NULL;
     return 0;
 #else
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
     ta_ethtool_rxfh *rxfh = NULL;
-    te_string str = TE_STRING_INIT;
     unsigned int i;
     te_errno rc;
 
-    UNUSED(unused1);
-    UNUSED(rss_ctx);
-    UNUSED(unused2);
-
-    rc = ta_ethtool_get_rssh(gid, if_name, 0, &rxfh);
+    rc = ta_ethtool_get_rssh(ta_conf_ctx_gid(ctx), if_name, 0, &rxfh);
     if (rc != 0)
     {
         if (TE_RC_GET_ERROR(rc) == TE_EOPNOTSUPP)
-        {
-            *list_out = NULL;
             return 0;
-        }
 
         return rc;
     }
 
     for (i = 0; i < rxfh->rxfh->indir_size; i++)
-        te_string_append(&str, "%u ", i);
+    {
+        char buf[sizeof("4294967295")];
+        char *name;
 
-    *list_out = str.ptr;
+        te_snprintf(buf, sizeof(buf), "%u", i);
+        name = TE_STRDUP(buf);
+        TE_VEC_APPEND(names, name);
+    }
+
     return 0;
 #endif
 }
 
 /* Get value of an indirection table entry */
 static te_errno
-indir_get(unsigned int gid, const char *oid,
-          char *value, const char *if_name,
-          const char *unused1, const char *rss_ctx,
-          const char *unused2, const char *indir_name)
+indir_get(const ta_conf_ctx *ctx, int32_t *val)
 {
 #ifndef ETHTOOL_GRSSH
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    UNUSED(if_name);
-    UNUSED(unused1);
-    UNUSED(rss_ctx);
-    UNUSED(unused2);
-    UNUSED(indir_name);
+    UNUSED(ctx);
+    UNUSED(val);
 
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #else
-    te_string str_val = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *indir_name = ta_conf_ctx_inst(ctx, "indir");
     ta_ethtool_rxfh *rxfh;
     unsigned int idx;
     te_errno rc;
-
-    UNUSED(unused1);
-    UNUSED(rss_ctx);
-    UNUSED(unused2);
 
     rc = te_strtoui(indir_name, 0, &idx);
     if (rc != 0)
         return rc;
 
-    rc = ta_ethtool_get_rssh(gid, if_name, 0, &rxfh);
+    rc = ta_ethtool_get_rssh(ta_conf_ctx_gid(ctx), if_name, 0, &rxfh);
     if (rc != 0)
         return rc;
 
@@ -395,48 +312,32 @@ indir_get(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    te_string_append(&str_val, "%u", rxfh->rxfh->rss_config[idx]);
+    *val = rxfh->rxfh->rss_config[idx];
     return 0;
 #endif
 }
 
 /* Set value of an indirection table entry */
 static te_errno
-indir_set(unsigned int gid, const char *oid,
-          char *value, const char *if_name,
-          const char *unused1, const char *rss_ctx,
-          const char *unused2, const char *indir_name)
+indir_set(const ta_conf_ctx *ctx, int32_t val)
 {
 #ifndef ETHTOOL_SRSSH
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    UNUSED(if_name);
-    UNUSED(unused1);
-    UNUSED(rss_ctx);
-    UNUSED(unused2);
-    UNUSED(indir_name);
+    UNUSED(ctx);
+    UNUSED(val);
 
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #else
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *indir_name = ta_conf_ctx_inst(ctx, "indir");
     ta_ethtool_rxfh *rxfh;
     unsigned int idx;
-    unsigned int value_int;
     te_errno rc;
-
-    UNUSED(unused1);
-    UNUSED(rss_ctx);
-    UNUSED(unused2);
 
     rc = te_strtoui(indir_name, 0, &idx);
     if (rc != 0)
         return rc;
 
-    rc = te_strtoui(value, 0, &value_int);
-    if (rc != 0)
-        return rc;
-
-    rc = ta_ethtool_get_rssh(gid, if_name, 0, &rxfh);
+    rc = ta_ethtool_get_rssh(ta_conf_ctx_gid(ctx), if_name, 0, &rxfh);
     if (rc != 0)
         return rc;
 
@@ -446,9 +347,9 @@ indir_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    if (value_int != rxfh->rxfh->rss_config[idx])
+    if (val != rxfh->rxfh->rss_config[idx])
     {
-        rxfh->rxfh->rss_config[idx] = value_int;
+        rxfh->rxfh->rss_config[idx] = val;
         rxfh->indir_change = true;
     }
 
@@ -458,26 +359,19 @@ indir_set(unsigned int gid, const char *oid,
 
 /* Get value of indir_default node */
 static te_errno
-indir_default_get(unsigned int gid, const char *oid,
-                  char *value, const char *if_name,
-                  const char *unused1, const char *rss_ctx)
+indir_default_get(const ta_conf_ctx *ctx, bool *val)
 {
 #ifndef ETHTOOL_SRSSH
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    UNUSED(if_name);
-    UNUSED(unused1);
-    UNUSED(rss_ctx);
+    UNUSED(ctx);
+    UNUSED(val);
 
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #else
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *rss_ctx = ta_conf_ctx_inst(ctx, "context");
     ta_ethtool_rxfh *rxfh;
     unsigned int rss_ctx_id;
     te_errno rc;
-
-    UNUSED(oid);
-    UNUSED(unused1);
 
     rc = te_strtoui(rss_ctx, 0, &rss_ctx_id);
     if (rc != 0)
@@ -487,38 +381,30 @@ indir_default_get(unsigned int gid, const char *oid,
     if (rss_ctx_id != 0)
         return TE_RC(TE_TAPI, TE_ENOENT);
 
-    rc = ta_ethtool_get_rssh(gid, if_name, 0, &rxfh);
+    rc = ta_ethtool_get_rssh(ta_conf_ctx_gid(ctx), if_name, 0, &rxfh);
     if (rc != 0)
         return rc;
 
-    TE_STRLCPY(value, "0", RCF_MAX_VAL);
+    *val = 0;
     return 0;
 #endif
 }
 
 /* Set value of indir_default node */
 static te_errno
-indir_default_set(unsigned int gid, const char *oid,
-                  const char *value, const char *if_name,
-                  const char *unused1, const char *rss_ctx)
+indir_default_set(const ta_conf_ctx *ctx, bool val)
 {
 #ifndef ETHTOOL_SRSSH
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    UNUSED(if_name);
-    UNUSED(unused1);
-    UNUSED(rss_ctx);
+    UNUSED(ctx);
+    UNUSED(val);
 
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #else
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *rss_ctx = ta_conf_ctx_inst(ctx, "context");
     ta_ethtool_rxfh *rxfh;
     unsigned int rss_ctx_id;
-    unsigned int value_int;
     te_errno rc;
-
-    UNUSED(oid);
-    UNUSED(unused1);
 
     rc = te_strtoui(rss_ctx, 0, &rss_ctx_id);
     if (rc != 0)
@@ -531,13 +417,10 @@ indir_default_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
-    rc = te_strtoui(value, 0, &value_int);
-    if (rc != 0)
-        return rc;
-    if (value_int == 0)
+    if (val == 0)
         return 0;
 
-    rc = ta_ethtool_get_rssh(gid, if_name, 0, &rxfh);
+    rc = ta_ethtool_get_rssh(ta_conf_ctx_gid(ctx), if_name, 0, &rxfh);
     if (rc != 0)
         return rc;
 
@@ -548,58 +431,43 @@ indir_default_set(unsigned int gid, const char *oid,
 
 /* Commit all changes to hash_indir object (via ETHTOOL_SRSSH) */
 static te_errno
-hash_indir_commit(unsigned int gid, const cfg_oid *p_oid)
+hash_indir_commit(const ta_conf_ctx *ctx)
 {
 #ifndef ETHTOOL_SRSSH
-    UNUSED(gid);
-    UNUSED(p_oid);
+    UNUSED(ctx);
 
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #else
-    char *if_name;
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
 
-    UNUSED(gid);
-
-    if_name = CFG_OID_GET_INST_NAME(p_oid, 2);
-
-    return ta_ethtool_commit_rssh(gid, if_name, 0);
+    return ta_ethtool_commit_rssh(ta_conf_ctx_gid(ctx), if_name, 0);
 #endif
 }
 
 /* List known RSS contexts */
 static te_errno
-rss_ctx_list(unsigned int gid,
-             const char *oid,
-             const char *sub_id,
-             char **list_out,
-             const char *if_name)
+rss_ctx_list(const ta_conf_ctx *ctx, te_vec *names)
 {
 #ifndef ETHTOOL_GRSSH
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(if_name);
+    UNUSED(ctx);
+    UNUSED(names);
 
-    *list_out = NULL;
     return 0;
 #else
-    te_string str = TE_STRING_INIT;
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
     ta_ethtool_rxfh *rxfh = NULL;
+    char *name;
     te_errno rc;
-
-    UNUSED(oid);
-    UNUSED(sub_id);
 
     /*
      * Check whether ETHTOOL_GRSSH is supported.
      */
-    rc = ta_ethtool_get_rssh(gid, if_name, 0, &rxfh);
+    rc = ta_ethtool_get_rssh(ta_conf_ctx_gid(ctx), if_name, 0, &rxfh);
     if (rc != 0)
     {
         if (TE_RC_GET_ERROR(rc) == TE_EOPNOTSUPP ||
             TE_RC_GET_ERROR(rc) == TE_ENOENT)
         {
-            *list_out = NULL;
             return 0;
         }
 
@@ -607,59 +475,26 @@ rss_ctx_list(unsigned int gid,
     }
 
     /* TODO: support not default RSS contexts. */
-    te_string_append(&str, "0");
+    name = TE_STRDUP("0");
+    TE_VEC_APPEND(names, name);
 
-    *list_out = str.ptr;
     return 0;
 #endif
 }
 
-
-static rcf_pch_cfg_object node_hash_indir;
-
-static rcf_pch_cfg_object node_indir_default = {
-    .sub_id = "indir_default",
-    .get = (rcf_ch_cfg_get)indir_default_get,
-    .set = (rcf_ch_cfg_set)indir_default_set,
-    .commit_parent = &node_hash_indir
-};
-
-static rcf_pch_cfg_object node_indir = {
-    .sub_id = "indir",
-    .brother = &node_indir_default,
-    .get = (rcf_ch_cfg_get)indir_get,
-    .set = (rcf_ch_cfg_set)indir_set,
-    .list = (rcf_ch_cfg_list)indir_list,
-    .commit_parent = &node_hash_indir
-};
-
-static rcf_pch_cfg_object node_hash_func = {
-    .sub_id = "hash_func",
-    .brother = &node_indir,
-    .get = (rcf_ch_cfg_get)hash_func_get,
-    .set = (rcf_ch_cfg_set)hash_func_set,
-    .list = (rcf_ch_cfg_list)hash_func_list,
-    .commit_parent = &node_hash_indir
-};
-
-static rcf_pch_cfg_object node_hash_key = {
-    .sub_id = "hash_key",
-    .brother = &node_hash_func,
-    .get = (rcf_ch_cfg_get)hash_key_get,
-    .set = (rcf_ch_cfg_set)hash_key_set,
-    .commit_parent = &node_hash_indir
-};
-
-RCF_PCH_CFG_NODE_NA_COMMIT(node_hash_indir, "hash_indir", &node_hash_key,
-                           NULL, &hash_indir_commit);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_rss_ctx, "context", &node_hash_indir,
-                            NULL, NULL, NULL, &rss_ctx_list, NULL);
-
-RCF_PCH_CFG_NODE_RO(node_rx_queues, "rx_queues", NULL, &node_rss_ctx,
-                    &rx_queues_get);
-
-RCF_PCH_CFG_NODE_NA(node_rss, "rss", &node_rx_queues, NULL);
+/** Common node for RSS settings */
+static const ta_conf_node *const node_rss =
+    TA_CONF_NA("rss",
+        TA_CONF_RO_INT32("rx_queues", rx_queues_get),
+        TA_CONF_LIST("context", rss_ctx_list,
+            TA_CONF_NA_COMMIT("hash_indir", hash_indir_commit,
+                TA_CONF_RW_STR("hash_key", hash_key_get, hash_key_set),
+                TA_CONF_RW_COLL_BOOL("hash_func", hash_func_get,
+                                     hash_func_set, hash_func_list),
+                TA_CONF_RW_COLL_INT32("indir", indir_get, indir_set,
+                                     indir_list),
+                TA_CONF_RW_BOOL("indir_default", indir_default_get,
+                                indir_default_set))));
 
 /**
  * Add a child node for RSS settings to the interface object.
@@ -669,7 +504,7 @@ RCF_PCH_CFG_NODE_NA(node_rss, "rss", &node_rx_queues, NULL);
 extern te_errno
 ta_unix_conf_if_rss_init(void)
 {
-    return rcf_pch_add_node("/agent/interface", &node_rss);
+    return ta_conf_register("/agent/interface", node_rss);
 }
 
 #else
