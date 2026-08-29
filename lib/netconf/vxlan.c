@@ -174,8 +174,8 @@ netconf_vxlan_add(netconf_handle nh, const netconf_vxlan *vxlan)
 te_errno
 netconf_vxlan_list(netconf_handle nh,
                    netconf_udp_tunnel_list_filter_func filter_cb,
-		   void *filter_opaque, char **list)
+                   void *filter_opaque, te_vec *names)
 {
-    return netconf_udp_tunnel_list(nh, filter_cb, filter_opaque, list,
+    return netconf_udp_tunnel_list(nh, filter_cb, filter_opaque, names,
                                    NETCONF_LINK_KIND_VXLAN);
 }

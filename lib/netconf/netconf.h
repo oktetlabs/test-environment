@@ -25,6 +25,7 @@
 
 #include "conf_ip_rule.h"
 #include "te_queue.h"
+#include "te_vector.h"
 
 /** Invalid netconf session handle */
 #define NETCONF_HANDLE_INVALID NULL
@@ -789,12 +790,16 @@ extern te_errno netconf_macvlan_modify(netconf_handle nh, netconf_cmd cmd,
  *
  * @param nh        Netconf session handle
  * @param link      Link (main) interface name
- * @param list      Space separated list of MAC VLAN interfaces names
+ * @param names     Vector of MAC VLAN interface names; heap-allocated
+ *                  names are appended to it, the caller owns them.
+ *                  It must be a vector of @c char* elements, e.g. one
+ *                  created with TE_VEC_INIT_AUTOPTR(char *); on error
+ *                  it is left untouched
  *
  * @return Status code
  */
 extern te_errno netconf_macvlan_list(netconf_handle nh, const char *link,
-                                     char **list);
+                                     te_vec *names);
 
 /**
  * Get MAC VLAN interface mode.
@@ -830,12 +835,16 @@ extern te_errno netconf_ipvlan_modify(netconf_handle nh, netconf_cmd cmd,
  *
  * @param nh        Netconf session handle
  * @param link      Link (main) interface name
- * @param list      Space separated list of IP VLAN interfaces names
+ * @param names     Vector of IP VLAN interface names; heap-allocated
+ *                  names are appended to it, the caller owns them.
+ *                  It must be a vector of @c char* elements, e.g. one
+ *                  created with TE_VEC_INIT_AUTOPTR(char *); on error
+ *                  it is left untouched
  *
  * @return Status code
  */
 extern te_errno netconf_ipvlan_list(netconf_handle nh, const char *link,
-                                    char **list);
+                                    te_vec *names);
 
 /**
  * Get IP VLAN interface mode.
@@ -871,12 +880,16 @@ extern te_errno netconf_vlan_modify(netconf_handle nh, netconf_cmd cmd,
  *
  * @param nh        Netconf session handle
  * @param link      Link (main) interface name
- * @param list      Space separated list of VLAN interfaces IDs
+ * @param names     Vector of VLAN IDs rendered as strings; heap-allocated
+ *                  names are appended to it, the caller owns them.
+ *                  It must be a vector of @c char* elements, e.g. one
+ *                  created with TE_VEC_INIT_AUTOPTR(char *); on error
+ *                  it is left untouched
  *
  * @return Status code
  */
 extern te_errno netconf_vlan_list(netconf_handle nh, const char *link,
-                                  char **list);
+                                  te_vec *names);
 
 /**
  * Get name of a VLAN interface by its VLAN ID.
@@ -946,13 +959,17 @@ typedef bool (*netconf_veth_list_filter_func)(const char *ifname,
  * @param nh            Netconf session handle
  * @param filter_cb     Filtering callback function or @c NULL
  * @param filter_opaque Opaque data to pass to the filtering function
- * @param list          Space-separated interfaces list (allocated from the heap)
+ * @param names         Vector of interface names; heap-allocated names are
+ *                      appended to it, the caller owns them. It must be a
+ *                      vector of @c char* elements, e.g. one created with
+ *                      TE_VEC_INIT_AUTOPTR(char *); on error it is left
+ *                      untouched
  *
  * @return Status code.
  */
 extern te_errno netconf_veth_list(netconf_handle nh,
                                   netconf_veth_list_filter_func filter_cb,
-                                  void *filter_opaque, char **list);
+                                  void *filter_opaque, te_vec *names);
 
 /**
  * Type of callback function to pass to netconf_udp_tunnel_list(). It is used to
@@ -982,7 +999,11 @@ extern te_errno netconf_udp_tunnel_del(netconf_handle nh, const char *ifname);
  * @param nh            Netconf session handle
  * @param filter_cb     Filtering callback function or @c NULL
  * @param filter_opaque Opaque data to pass to the filtering function
- * @param list          Space-separated interfaces list (allocated from the heap)
+ * @param names         Vector of interface names; heap-allocated names are
+ *                      appended to it, the caller owns them. It must be a
+ *                      vector of @c char* elements, e.g. one created with
+ *                      TE_VEC_INIT_AUTOPTR(char *); on error it is left
+ *                      untouched
  * @param link_kind     Link kind name to specify behavior
  *
  * @return Status code.
@@ -990,7 +1011,7 @@ extern te_errno netconf_udp_tunnel_del(netconf_handle nh, const char *ifname);
 extern te_errno netconf_udp_tunnel_list(netconf_handle nh,
                                         netconf_udp_tunnel_list_filter_func
                                             filter_cb,
-                                        void *filter_opaque, char **list,
+                                        void *filter_opaque, te_vec *names,
                                         char *link_kind);
 
 /**
@@ -1009,14 +1030,18 @@ extern te_errno netconf_geneve_add(netconf_handle nh, const netconf_geneve *gene
  * @param nh            Netconf session handle
  * @param filter_cb     Filtering callback function or @c NULL
  * @param filter_opaque Opaque data to pass to the filtering function
- * @param list          Space-separated interfaces list (allocated from the heap)
+ * @param names         Vector of interface names; heap-allocated names are
+ *                      appended to it, the caller owns them. It must be a
+ *                      vector of @c char* elements, e.g. one created with
+ *                      TE_VEC_INIT_AUTOPTR(char *); on error it is left
+ *                      untouched
  *
  * @return Status code.
  */
 extern te_errno netconf_geneve_list(netconf_handle nh,
                                     netconf_udp_tunnel_list_filter_func
                                         filter_cb,
-                                    void *filter_opaque, char **list);
+                                    void *filter_opaque, te_vec *names);
 
 /**
  * Add new VXLAN interface.
@@ -1034,14 +1059,18 @@ extern te_errno netconf_vxlan_add(netconf_handle nh, const netconf_vxlan *vxlan)
  * @param nh            Netconf session handle
  * @param filter_cb     Filtering callback function or @c NULL
  * @param filter_opaque Opaque data to pass to the filtering function
- * @param list          Space-separated interfaces list (allocated from the heap)
+ * @param names         Vector of interface names; heap-allocated names are
+ *                      appended to it, the caller owns them. It must be a
+ *                      vector of @c char* elements, e.g. one created with
+ *                      TE_VEC_INIT_AUTOPTR(char *); on error it is left
+ *                      untouched
  *
  * @return Status code.
  */
 extern te_errno netconf_vxlan_list(netconf_handle nh,
                                    netconf_udp_tunnel_list_filter_func
                                        filter_cb,
-                                   void *filter_opaque, char **list);
+                                   void *filter_opaque, te_vec *names);
 
 /**
  * Add new bridge interface.
@@ -1081,13 +1110,17 @@ typedef bool (*netconf_bridge_list_filter_func)(const char *ifname,
  * @param nh            Netconf session handle
  * @param filter_cb     Filtering callback function or @c NULL
  * @param filter_opaque Opaque data to pass to the filtering function
- * @param list          Space-separated interfaces list (allocated from the heap)
+ * @param names         Vector of interface names; heap-allocated names are
+ *                      appended to it, the caller owns them. It must be a
+ *                      vector of @c char* elements, e.g. one created with
+ *                      TE_VEC_INIT_AUTOPTR(char *); on error it is left
+ *                      untouched
  *
  * @return Status code.
  */
 extern te_errno netconf_bridge_list(netconf_handle nh,
                                     netconf_bridge_list_filter_func filter_cb,
-                                    void *filter_opaque, char **list);
+                                    void *filter_opaque, te_vec *names);
 
 /**
  * Type of callback function to pass to netconf_port_list(). It is used to
@@ -1108,13 +1141,17 @@ typedef bool (*netconf_port_list_filter_func)(const char *ifname,
  * @param brname        The bridge name
  * @param filter_cb     Filtering callback function or @c NULL
  * @param filter_opaque Opaque data to pass to the filtering function
- * @param list          Space-separated interfaces list (allocated from the heap)
+ * @param names         Vector of port interface names; heap-allocated names
+ *                      are appended to it, the caller owns them. It must be
+ *                      a vector of @c char* elements, e.g. one created with
+ *                      TE_VEC_INIT_AUTOPTR(char *); on error it is left
+ *                      untouched
  *
  * @return Status code.
  */
 extern te_errno netconf_port_list(netconf_handle nh, const char *brname,
                                   netconf_port_list_filter_func filter_cb,
-                                  void *filter_opaque, char **list);
+                                  void *filter_opaque, te_vec *names);
 
 /**
  * Add new bridge port interface.

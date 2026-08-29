@@ -172,11 +172,10 @@ netconf_port_del(netconf_handle nh, const char *ifname)
 te_errno
 netconf_port_list(netconf_handle nh, const char *brname,
                   netconf_port_list_filter_func filter_cb,
-                  void *filter_opaque, char **list)
+                  void *filter_opaque, te_vec *names)
 {
     netconf_list *nlist;
     netconf_node *node;
-    te_string     str = TE_STRING_INIT;
     uint32_t      br_ifind;
 
     IFNAME_TO_INDEX(brname, br_ifind);
@@ -191,16 +190,18 @@ netconf_port_list(netconf_handle nh, const char *brname,
     {
         if (node->data.bridge_port.name != NULL)
         {
+            char *name;
+
             if (filter_cb != NULL &&
                 filter_cb(node->data.bridge_port.name, filter_opaque) == true)
                 continue;
-            te_string_append(&str, "%s ", node->data.bridge_port.name);
+
+            name = TE_STRDUP(node->data.bridge_port.name);
+            TE_VEC_APPEND(names, name);
         }
     }
 
     netconf_list_free(nlist);
-
-    *list = str.ptr;
 
     return 0;
 }
@@ -374,11 +375,10 @@ netconf_bridge_del(netconf_handle nh, const char *ifname)
 /* See netconf.h */
 te_errno
 netconf_bridge_list(netconf_handle nh, netconf_bridge_list_filter_func filter_cb,
-                  void *filter_opaque, char **list)
+                    void *filter_opaque, te_vec *names)
 {
     netconf_list *nlist;
     netconf_node *node;
-    te_string     str = TE_STRING_INIT;
 
     nlist = netconf_dump_request(nh, RTM_GETLINK, AF_UNSPEC,
                                  bridge_list_cb, NULL);
@@ -392,16 +392,18 @@ netconf_bridge_list(netconf_handle nh, netconf_bridge_list_filter_func filter_cb
     {
         if (node->data.bridge.ifname != NULL)
         {
+            char *name;
+
             if (filter_cb != NULL &&
                 filter_cb(node->data.bridge.ifname, filter_opaque) == false)
                 continue;
-            te_string_append(&str, "%s ", node->data.bridge.ifname);
+
+            name = TE_STRDUP(node->data.bridge.ifname);
+            TE_VEC_APPEND(names, name);
         }
     }
 
     netconf_list_free(nlist);
-
-    *list = str.ptr;
 
     return 0;
 }

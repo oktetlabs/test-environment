@@ -14,6 +14,7 @@
 #include "logger_api.h"
 #include "netconf.h"
 #include "netconf_internal.h"
+#include "te_alloc.h"
 
 /* See netconf_internal.h */
 void
@@ -47,11 +48,10 @@ netconf_udp_tunnel_del(netconf_handle nh, const char *ifname)
 te_errno
 netconf_udp_tunnel_list(netconf_handle nh,
                         netconf_udp_tunnel_list_filter_func filter_cb,
-                        void *filter_opaque, char **list, char *link_kind)
+                        void *filter_opaque, te_vec *names, char *link_kind)
 {
     netconf_list   *nlist;
     netconf_node   *node;
-    te_string       str = TE_STRING_INIT;
     char           *ifname;
 
     if (strcmp(link_kind, "geneve") == 0)
@@ -80,17 +80,18 @@ netconf_udp_tunnel_list(netconf_handle nh,
 
         if (ifname != NULL)
         {
+            char *name;
+
             if (filter_cb != NULL &&
                 filter_cb(ifname, filter_opaque) == false)
                 continue;
 
-            te_string_append(&str, "%s ", ifname);
+            name = TE_STRDUP(ifname);
+            TE_VEC_APPEND(names, name);
         }
     }
 
     netconf_list_free(nlist);
-
-    *list = str.ptr;
 
     return 0;
 }

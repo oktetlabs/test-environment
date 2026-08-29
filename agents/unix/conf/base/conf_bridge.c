@@ -56,14 +56,27 @@ static te_errno
 port_list(unsigned int gid, const char *oid,
           const char *sub_id, char **list)
 {
-    const char *brname;
+    te_vec        names = TE_VEC_INIT_AUTOPTR(char *);
+    te_string     str = TE_STRING_INIT;
+    const char   *brname;
+    te_errno      rc;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(sub_id);
 
     brname = CFG_OID_GET_INST_NAME(cfg_convert_oid_str(oid), 2);
-    return netconf_port_list(nh, brname, port_list_include_cb, NULL, list);
+
+    rc = netconf_port_list(nh, brname, port_list_include_cb, NULL, &names);
+    if (rc == 0)
+    {
+        te_string_join_vec(&str, &names, " ");
+        *list = str.ptr;
+    }
+
+    te_vec_free(&names);
+
+    return rc;
 }
 
 /**
@@ -221,11 +234,24 @@ static te_errno
 bridge_list(unsigned int gid, const char *oid,
             const char *sub_id, char **list)
 {
+    te_vec        names = TE_VEC_INIT_AUTOPTR(char *);
+    te_string     str = TE_STRING_INIT;
+    te_errno      rc;
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(sub_id);
 
-    return netconf_bridge_list(nh, bridge_list_include_cb, NULL, list);
+    rc = netconf_bridge_list(nh, bridge_list_include_cb, NULL, &names);
+    if (rc == 0)
+    {
+        te_string_join_vec(&str, &names, " ");
+        *list = str.ptr;
+    }
+
+    te_vec_free(&names);
+
+    return rc;
 }
 
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_bridge, "bridge", &node_port, NULL,

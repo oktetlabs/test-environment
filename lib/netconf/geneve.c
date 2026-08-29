@@ -14,7 +14,6 @@
 #include "logger_api.h"
 #include "netconf.h"
 #include "netconf_internal.h"
-#include "te_alloc.h"
 
 /* Geneve link kind to pass in IFLA_INFO_KIND. */
 #define NETCONF_LINK_KIND_GENEVE "geneve"
@@ -143,18 +142,16 @@ netconf_geneve_add(netconf_handle nh, const netconf_geneve *geneve)
 te_errno
 netconf_geneve_list(netconf_handle nh,
                     netconf_udp_tunnel_list_filter_func filter_cb,
-                    void *filter_opaque, char **list)
+                    void *filter_opaque, te_vec *names)
 {
 #if HAVE_DECL_IFLA_GENEVE_ID
-    return netconf_udp_tunnel_list(nh, filter_cb, filter_opaque, list,
+    return netconf_udp_tunnel_list(nh, filter_cb, filter_opaque, names,
                                    NETCONF_LINK_KIND_GENEVE);
 #else
     UNUSED(nh);
     UNUSED(filter_cb);
     UNUSED(filter_opaque);
-
-    *list = TE_ALLOC(sizeof(char));
-    **list = '\0';
+    UNUSED(names);
 
     return 0;
 #endif

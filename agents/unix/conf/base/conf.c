@@ -2868,11 +2868,24 @@ vlans_list(unsigned int gid, const char *oid,
            const char *ifname)
 {
 #ifdef USE_LIBNETCONF
+    te_vec        names = TE_VEC_INIT_AUTOPTR(char *);
+    te_string     str = TE_STRING_INIT;
+    te_errno      rc;
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(sub_id);
 
-    return netconf_vlan_list(nh, ifname, list);
+    rc = netconf_vlan_list(nh, ifname, &names);
+    if (rc == 0)
+    {
+        te_string_join_vec(&str, &names, " ");
+        *list = str.ptr;
+    }
+
+    te_vec_free(&names);
+
+    return rc;
 #else
     size_t n_vlans = MAX_VLANS;
     size_t i;

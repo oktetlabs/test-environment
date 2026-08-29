@@ -339,11 +339,24 @@ ipvlan_list(unsigned int gid, const char *oid,
              const char *sub_id, char **list,
              const char *link)
 {
+    te_vec        names = TE_VEC_INIT_AUTOPTR(char *);
+    te_string     str = TE_STRING_INIT;
+    te_errno      rc;
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(sub_id);
 
-    return netconf_ipvlan_list(nh, link, list);
+    rc = netconf_ipvlan_list(nh, link, &names);
+    if (rc == 0)
+    {
+        te_string_join_vec(&str, &names, " ");
+        *list = str.ptr;
+    }
+
+    te_vec_free(&names);
+
+    return rc;
 }
 
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_ipvlan, "ipvlan",

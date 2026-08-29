@@ -372,42 +372,46 @@ udp_tunnel_list_include_cb(const char *ifname, void *data)
 static te_errno
 udp_tunnel_list(char **list, udp_tunnel_entry_type type)
 {
+    te_vec          names = TE_VEC_INIT_AUTOPTR(char *);
+    te_string       str = TE_STRING_INIT;
     te_errno        rc;
     ENTRY();
 
     switch (type)
     {
         case UDP_TUNNEL_ENTRY_GENEVE:
-            rc = netconf_geneve_list(nh, udp_tunnel_list_include_cb, NULL, list);
+            rc = netconf_geneve_list(nh, udp_tunnel_list_include_cb, NULL,
+                                     &names);
             break;
 
         case UDP_TUNNEL_ENTRY_VXLAN:
-            rc = netconf_vxlan_list(nh, udp_tunnel_list_include_cb, NULL, list);
+            rc = netconf_vxlan_list(nh, udp_tunnel_list_include_cb, NULL,
+                                    &names);
             break;
 
         default:
+            te_vec_free(&names);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
     if (rc == 0)
     {
         struct udp_tunnel_entry    *p;
-        te_string                   str;
 
-        memset(&str, 0, sizeof(str));
-        str.ptr = *list;
-        str.len = (*list == NULL) ? 0 : strlen(*list);
-        str.size = str.len + 1;
+        te_string_join_vec(&str, &names, " ");
+
         SLIST_FOREACH(p, &udp_tunnels, links)
         {
             if (p->type == type && !p->added)
             {
-                te_string_append(&str, "%s ",
+                te_string_append(&str, "%s%s", str.len == 0 ? "" : " ",
                                  udp_tunnel_get_generic(p)->ifname);
             }
         }
         *list = str.ptr;
     }
+
+    te_vec_free(&names);
 
     VERB("%s: rc=%r list=%s", __func__, rc, rc == 0 ? *list : "");
     return rc;

@@ -10,6 +10,7 @@
 
 #include "te_config.h"
 #include "te_str.h"
+#include "te_string.h"
 #include "conf_ip_rule.h"
 #include "logger_api.h"
 #include "netconf.h"
@@ -192,14 +193,13 @@ vlan_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 
 /* See description in netconf.h */
 te_errno
-netconf_vlan_list(netconf_handle nh, const char *link, char **list)
+netconf_vlan_list(netconf_handle nh, const char *link, te_vec *names)
 {
     netconf_list *nlist;
     netconf_node *node;
-    te_string     str = TE_STRING_INIT;
     int           index;
 
-    if (link == NULL || list == NULL)
+    if (link == NULL || names == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     IFNAME_TO_INDEX(link, index);
@@ -215,13 +215,15 @@ netconf_vlan_list(netconf_handle nh, const char *link, char **list)
     for (node = nlist->head; node != NULL; node = node->next)
     {
         if (node->data.vlan.link == index)
-            te_string_append(&str, "%u ",
-                             (unsigned int)node->data.vlan.vid);
+        {
+            char *name = te_string_fmt("%u",
+                                       (unsigned int)node->data.vlan.vid);
+
+            TE_VEC_APPEND(names, name);
+        }
     }
 
     netconf_list_free(nlist);
-
-    *list = str.ptr;
 
     return 0;
 }

@@ -137,11 +137,24 @@ macvlan_list(unsigned int gid, const char *oid,
              const char *sub_id, char **list,
              const char *link)
 {
+    te_vec        names = TE_VEC_INIT_AUTOPTR(char *);
+    te_string     str = TE_STRING_INIT;
+    te_errno      rc;
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(sub_id);
 
-    return netconf_macvlan_list(nh, link, list);
+    rc = netconf_macvlan_list(nh, link, &names);
+    if (rc == 0)
+    {
+        te_string_join_vec(&str, &names, " ");
+        *list = str.ptr;
+    }
+
+    te_vec_free(&names);
+
+    return rc;
 }
 
 static rcf_pch_cfg_object node_macvlan =

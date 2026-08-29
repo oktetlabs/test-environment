@@ -12,6 +12,7 @@
 #include "logger_api.h"
 #include "netconf.h"
 #include "netconf_internal.h"
+#include "te_alloc.h"
 #include "te_config.h"
 
 #define NETCONF_LINK_KIND_MACVLAN "macvlan"
@@ -223,14 +224,13 @@ netconf_macvlan_node_free(netconf_node *node)
 }
 
 te_errno
-netconf_macvlan_list(netconf_handle nh, const char *link, char **list)
+netconf_macvlan_list(netconf_handle nh, const char *link, te_vec *names)
 {
     netconf_list *nlist;
     netconf_node *node;
-    te_string     str = TE_STRING_INIT;
     int           index;
 
-    if (link == NULL || list == NULL)
+    if (link == NULL || names == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     IFNAME_TO_INDEX(link, index);
@@ -246,12 +246,14 @@ netconf_macvlan_list(netconf_handle nh, const char *link, char **list)
     for (node = nlist->head; node != NULL; node = node->next)
     {
         if (node->data.macvlan.link == index)
-            te_string_append(&str, "%s ", node->data.macvlan.ifname);
+        {
+            char *name = TE_STRDUP(node->data.macvlan.ifname);
+
+            TE_VEC_APPEND(names, name);
+        }
     }
 
     netconf_list_free(nlist);
-
-    *list = str.ptr;
 
     return 0;
 }

@@ -335,11 +335,10 @@ netconf_veth_get_peer(netconf_handle nh, const char *ifname, char *peer,
 /* See netconf.h */
 te_errno
 netconf_veth_list(netconf_handle nh, netconf_veth_list_filter_func filter_cb,
-                  void *filter_opaque, char **list)
+                  void *filter_opaque, te_vec *names)
 {
     netconf_list *nlist;
     netconf_node *node;
-    te_string     str = TE_STRING_INIT;
 
     nlist = netconf_dump_request(nh, RTM_GETLINK, AF_UNSPEC,
                                  veth_list_cb, NULL);
@@ -353,17 +352,18 @@ netconf_veth_list(netconf_handle nh, netconf_veth_list_filter_func filter_cb,
     {
         if (node->data.veth.ifname != NULL)
         {
+            char *name;
+
             if (filter_cb != NULL &&
                 filter_cb(node->data.veth.ifname, filter_opaque) == false)
                 continue;
 
-            te_string_append(&str, "%s ", node->data.veth.ifname);
+            name = TE_STRDUP(node->data.veth.ifname);
+            TE_VEC_APPEND(names, name);
         }
     }
 
     netconf_list_free(nlist);
-
-    *list = str.ptr;
 
     return 0;
 }
