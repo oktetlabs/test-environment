@@ -59,11 +59,13 @@
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 #include "logger_api.h"
 #include "unix_internal.h"
 #include "conf_common.h"
 #include "te_str.h"
 #include "te_alloc.h"
+#include "te_vector.h"
 
 #include "te_intset.h"
 
@@ -1007,21 +1009,18 @@ update_cpu_info(void)
 }
 
 static te_errno
-cpu_thread_isolated_get(unsigned int gid, const char *oid, char *value,
-                        const char *unused1, const char *node_str,
-                        const char *package_str, const char *core_str,
-                        const char *thread_str)
+cpu_thread_isolated_get(const ta_conf_ctx *ctx, bool *val)
 {
+    const char *node_str = ta_conf_ctx_inst(ctx, "node");
+    const char *package_str = ta_conf_ctx_inst(ctx, "cpu");
+    const char *core_str = ta_conf_ctx_inst(ctx, "core");
+    const char *thread_str = ta_conf_ctx_inst(ctx, "thread");
     unsigned long node_id;
     unsigned long package_id;
     unsigned long core_id;
     unsigned long thread_id;
     cpu_item *thread = NULL;
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
 
     if ((rc = get_index(node_str, &node_id)) != 0)
         return rc;
@@ -1041,7 +1040,7 @@ cpu_thread_isolated_get(unsigned int gid, const char *oid, char *value,
     if (thread == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%u", thread->prop.thread.isolated);
+    *val = thread->prop.thread.isolated;
 
     return 0;
 }
@@ -1097,240 +1096,204 @@ find_cache(const char *node_id_str, const char *package_id_str,
 }
 
 static void
-copy_cache_item_field(cache_item *cache, char *value, cache_item_field field)
+copy_cache_item_field(cache_item *cache, uintmax_t *val, cache_item_field field)
 {
-    uintmax_t numval;
-
     switch (field)
     {
         case CACHE_ITEM_LEVEL:
-            numval = cache->level;
+            *val = cache->level;
             break;
 
         case CACHE_ITEM_LINESIZE:
-            numval = cache->linesize;
+            *val = cache->linesize;
             break;
 
         case CACHE_ITEM_SIZE:
-            numval = cache->size;
+            *val = cache->size;
             break;
 
         case CACHE_ITEM_ASSOC:
-            numval = cache->assoc;
+            *val = cache->assoc;
             break;
 
         default:
             TE_FATAL_ERROR("No such field in cache_item structure");
             break;
     }
-
-    snprintf(value, RCF_MAX_VAL, "%ju", numval);
 }
 
 static te_errno
 cpu_cache_get_value(const char *node_str, const char *package_str,
                     const char *core_str, const char *cache_str,
-                    char *value, cache_item_field field)
+                    int32_t *val, cache_item_field field)
 {
     cache_item *cache = NULL;
+    uintmax_t raw;
 
     cache = find_cache(node_str, package_str, core_str, cache_str);
     if (cache == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    copy_cache_item_field(cache, value, field);
+    copy_cache_item_field(cache, &raw, field);
+    if (raw > INT32_MAX)
+        return TE_RC(TE_TA_UNIX, TE_ERANGE);
+    *val = raw;
 
     return 0;
 }
 #endif
 
 static te_errno
-cpu_core_cache_level_get(unsigned int gid, const char *oid, char *value,
-                         const char *unused1, const char *node_str,
-                         const char *package_str, const char *core_str,
-                         const char *cache_str)
+cpu_core_cache_level_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     te_errno rc = TE_EOPNOTSUPP;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-
 #if SUPPORT_CACHES
-    rc = cpu_cache_get_value(node_str, package_str, core_str, cache_str, value,
+    const char *node_str = ta_conf_ctx_inst(ctx, "node");
+    const char *package_str = ta_conf_ctx_inst(ctx, "cpu");
+    const char *core_str = ta_conf_ctx_inst(ctx, "core");
+    const char *cache_str = ta_conf_ctx_inst(ctx, "cache");
+
+    rc = cpu_cache_get_value(node_str, package_str, core_str, cache_str, val,
                              CACHE_ITEM_LEVEL);
 #else
-    UNUSED(node_str);
-    UNUSED(package_str);
-    UNUSED(core_str);
-    UNUSED(cache_str);
+    UNUSED(ctx);
 #endif
 
     return rc;
 }
 
 static te_errno
-cpu_package_cache_level_get(unsigned int gid, const char *oid, char *value,
-                         const char *unused1, const char *node_str,
-                         const char *package_str, const char *cache_str)
+cpu_package_cache_level_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     te_errno rc = TE_EOPNOTSUPP;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-
 #if SUPPORT_CACHES
-    rc = cpu_cache_get_value(node_str, package_str, NULL, cache_str, value,
+    const char *node_str = ta_conf_ctx_inst(ctx, "node");
+    const char *package_str = ta_conf_ctx_inst(ctx, "cpu");
+    const char *cache_str = ta_conf_ctx_inst(ctx, "cache");
+
+    rc = cpu_cache_get_value(node_str, package_str, NULL, cache_str, val,
                              CACHE_ITEM_LEVEL);
 #else
-    UNUSED(node_str);
-    UNUSED(package_str);
-    UNUSED(cache_str);
+    UNUSED(ctx);
 #endif
 
     return rc;
 }
 
 static te_errno
-cpu_core_cache_linesize_get(unsigned int gid, const char *oid, char *value,
-                            const char *unused1, const char *node_str,
-                            const char *package_str, const char *core_str,
-                            const char *cache_str)
+cpu_core_cache_linesize_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     te_errno rc = TE_EOPNOTSUPP;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-
 #if SUPPORT_CACHES
-    rc = cpu_cache_get_value(node_str, package_str, core_str, cache_str, value,
+    const char *node_str = ta_conf_ctx_inst(ctx, "node");
+    const char *package_str = ta_conf_ctx_inst(ctx, "cpu");
+    const char *core_str = ta_conf_ctx_inst(ctx, "core");
+    const char *cache_str = ta_conf_ctx_inst(ctx, "cache");
+
+    rc = cpu_cache_get_value(node_str, package_str, core_str, cache_str, val,
                              CACHE_ITEM_LINESIZE);
 #else
-    UNUSED(node_str);
-    UNUSED(package_str);
-    UNUSED(core_str);
-    UNUSED(cache_str);
+    UNUSED(ctx);
 #endif
 
     return rc;
 }
 
 static te_errno
-cpu_package_cache_linesize_get(unsigned int gid, const char *oid, char *value,
-                               const char *unused1, const char *node_str,
-                               const char *package_str, const char *cache_str)
+cpu_package_cache_linesize_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     te_errno rc = TE_EOPNOTSUPP;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-
 #if SUPPORT_CACHES
-    rc = cpu_cache_get_value(node_str, package_str, NULL, cache_str, value,
+    const char *node_str = ta_conf_ctx_inst(ctx, "node");
+    const char *package_str = ta_conf_ctx_inst(ctx, "cpu");
+    const char *cache_str = ta_conf_ctx_inst(ctx, "cache");
+
+    rc = cpu_cache_get_value(node_str, package_str, NULL, cache_str, val,
                              CACHE_ITEM_LINESIZE);
 #else
-    UNUSED(node_str);
-    UNUSED(package_str);
-    UNUSED(cache_str);
+    UNUSED(ctx);
 #endif
 
     return rc;
 }
 
 static te_errno
-cpu_core_cache_size_get(unsigned int gid, const char *oid, char *value,
-                        const char *unused1, const char *node_str,
-                        const char *package_str, const char *core_str,
-                        const char *cache_str)
+cpu_core_cache_size_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     te_errno rc = TE_EOPNOTSUPP;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-
 #if SUPPORT_CACHES
-    rc = cpu_cache_get_value(node_str, package_str, core_str, cache_str, value,
+    const char *node_str = ta_conf_ctx_inst(ctx, "node");
+    const char *package_str = ta_conf_ctx_inst(ctx, "cpu");
+    const char *core_str = ta_conf_ctx_inst(ctx, "core");
+    const char *cache_str = ta_conf_ctx_inst(ctx, "cache");
+
+    rc = cpu_cache_get_value(node_str, package_str, core_str, cache_str, val,
                              CACHE_ITEM_SIZE);
 #else
-    UNUSED(node_str);
-    UNUSED(package_str);
-    UNUSED(core_str);
-    UNUSED(cache_str);
+    UNUSED(ctx);
 #endif
 
     return rc;
 }
 
 static te_errno
-cpu_package_cache_size_get(unsigned int gid, const char *oid, char *value,
-                           const char *unused1, const char *node_str,
-                           const char *package_str, const char *cache_str)
+cpu_package_cache_size_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     te_errno rc = TE_EOPNOTSUPP;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-
 #if SUPPORT_CACHES
-    rc = cpu_cache_get_value(node_str, package_str, NULL, cache_str, value,
+    const char *node_str = ta_conf_ctx_inst(ctx, "node");
+    const char *package_str = ta_conf_ctx_inst(ctx, "cpu");
+    const char *cache_str = ta_conf_ctx_inst(ctx, "cache");
+
+    rc = cpu_cache_get_value(node_str, package_str, NULL, cache_str, val,
                              CACHE_ITEM_SIZE);
 #else
-    UNUSED(node_str);
-    UNUSED(package_str);
-    UNUSED(cache_str);
+    UNUSED(ctx);
 #endif
 
     return rc;
 }
 
 static te_errno
-cpu_core_cache_assoc_get(unsigned int gid, const char *oid, char *value,
-                         const char *unused1, const char *node_str,
-                         const char *package_str, const char *core_str,
-                         const char *cache_str)
+cpu_core_cache_assoc_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     te_errno rc = TE_EOPNOTSUPP;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-
 #if SUPPORT_CACHES
-    rc = cpu_cache_get_value(node_str, package_str, core_str, cache_str, value,
+    const char *node_str = ta_conf_ctx_inst(ctx, "node");
+    const char *package_str = ta_conf_ctx_inst(ctx, "cpu");
+    const char *core_str = ta_conf_ctx_inst(ctx, "core");
+    const char *cache_str = ta_conf_ctx_inst(ctx, "cache");
+
+    rc = cpu_cache_get_value(node_str, package_str, core_str, cache_str, val,
                              CACHE_ITEM_ASSOC);
 #else
-    UNUSED(node_str);
-    UNUSED(package_str);
-    UNUSED(core_str);
-    UNUSED(cache_str);
+    UNUSED(ctx);
 #endif
 
     return rc;
 }
 
 static te_errno
-cpu_package_cache_assoc_get(unsigned int gid, const char *oid, char *value,
-                            const char *unused1, const char *node_str,
-                            const char *package_str, const char *cache_str)
+cpu_package_cache_assoc_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     te_errno rc = TE_EOPNOTSUPP;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-
 #if SUPPORT_CACHES
-    rc = cpu_cache_get_value(node_str, package_str, NULL, cache_str, value,
+    const char *node_str = ta_conf_ctx_inst(ctx, "node");
+    const char *package_str = ta_conf_ctx_inst(ctx, "cpu");
+    const char *cache_str = ta_conf_ctx_inst(ctx, "cache");
+
+    rc = cpu_cache_get_value(node_str, package_str, NULL, cache_str, val,
                              CACHE_ITEM_ASSOC);
 #else
-    UNUSED(node_str);
-    UNUSED(package_str);
-    UNUSED(cache_str);
+    UNUSED(ctx);
 #endif
 
     return rc;
@@ -1338,7 +1301,7 @@ cpu_package_cache_assoc_get(unsigned int gid, const char *oid, char *value,
 
 #if SUPPORT_CACHES
 static te_errno
-cpu_cache_type_get(char *value, const char *node_id_str,
+cpu_cache_type_get(te_string *val, const char *node_id_str,
                    const char *package_id_str, const char *core_id_str,
                    const char *cache_id_str)
 {
@@ -1348,78 +1311,63 @@ cpu_cache_type_get(char *value, const char *node_id_str,
     if (cache == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    strcpy(value, cache->type);
+    te_string_append(val, "%s", cache->type);
 
     return 0;
 }
 #endif
 
 static te_errno
-cpu_core_cache_type_get(unsigned int gid, const char *oid, char *value,
-                        const char *unused1, const char *node_id_str,
-                        const char *package_id_str, const char *core_id_str,
-                        const char *cache_id_str)
+cpu_core_cache_type_get(const ta_conf_ctx *ctx, te_string *val)
 {
     te_errno rc = TE_EOPNOTSUPP;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-
 #if SUPPORT_CACHES
-    rc = cpu_cache_type_get(value, node_id_str, package_id_str, core_id_str,
+    const char *node_id_str = ta_conf_ctx_inst(ctx, "node");
+    const char *package_id_str = ta_conf_ctx_inst(ctx, "cpu");
+    const char *core_id_str = ta_conf_ctx_inst(ctx, "core");
+    const char *cache_id_str = ta_conf_ctx_inst(ctx, "cache");
+
+    rc = cpu_cache_type_get(val, node_id_str, package_id_str, core_id_str,
                             cache_id_str);
 #else
-    UNUSED(node_id_str);
-    UNUSED(package_id_str);
-    UNUSED(core_id_str);
-    UNUSED(cache_id_str);
+    UNUSED(ctx);
 #endif
 
     return rc;
 }
 
 static te_errno
-cpu_package_cache_type_get(unsigned int gid, const char *oid, char *value,
-                           const char *unused1, const char *node_id_str,
-                           const char *package_id_str, const char *cache_id_str)
+cpu_package_cache_type_get(const ta_conf_ctx *ctx, te_string *val)
 {
     te_errno rc = TE_EOPNOTSUPP;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-
 #if SUPPORT_CACHES
-    rc = cpu_cache_type_get(value, node_id_str, package_id_str, NULL,
+    const char *node_id_str = ta_conf_ctx_inst(ctx, "node");
+    const char *package_id_str = ta_conf_ctx_inst(ctx, "cpu");
+    const char *cache_id_str = ta_conf_ctx_inst(ctx, "cache");
+
+    rc = cpu_cache_type_get(val, node_id_str, package_id_str, NULL,
                             cache_id_str);
 #else
-    UNUSED(node_id_str);
-    UNUSED(package_id_str);
-    UNUSED(cache_id_str);
+    UNUSED(ctx);
 #endif
 
     return rc;
 }
 
 static te_errno
-cpu_core_cache_list(unsigned int gid, const char *oid, const char *sub_id,
-                    char **list, const char *unused1, const char *node_str,
-                    const char *package_str, const char *core_str)
+cpu_core_cache_list(const ta_conf_ctx *ctx, te_vec *names)
 {
     te_errno rc = 0;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(unused1);
-
 #if SUPPORT_CACHES
-    te_string result = TE_STRING_INIT;
+    const char *node_str = ta_conf_ctx_inst(ctx, "node");
+    const char *package_str = ta_conf_ctx_inst(ctx, "cpu");
+    const char *core_str = ta_conf_ctx_inst(ctx, "core");
     unsigned long node_id;
     unsigned long package_id;
     unsigned long core_id;
-    bool first = true;
     cpu_item *core = NULL;
     cache_item *cache;
 
@@ -1437,39 +1385,31 @@ cpu_core_cache_list(unsigned int gid, const char *oid, const char *sub_id,
 
     LIST_FOREACH(cache, &core->cache_list, next)
     {
-        te_string_append(&result, "%s%u", first ? "" : " ", cache->id);
-        first = false;
+        char buf[sizeof("4294967295")];
+        char *name;
+
+        te_snprintf(buf, sizeof(buf), "%u", cache->id);
+        name = TE_STRDUP(buf);
+        TE_VEC_APPEND(names, name);
     }
-
-    *list = result.ptr;
 #else
-    UNUSED(node_str);
-    UNUSED(package_str);
-    UNUSED(core_str);
-
-    rc = string_empty_list(list);
+    UNUSED(ctx);
+    UNUSED(names);
 #endif
 
     return rc;
 }
 
 static te_errno
-cpu_package_cache_list(unsigned int gid, const char *oid, const char *sub_id,
-                       char **list, const char *unused1, const char *node_str,
-                       const char *package_str)
+cpu_package_cache_list(const ta_conf_ctx *ctx, te_vec *names)
 {
     te_errno rc = 0;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(unused1);
-
 #if SUPPORT_CACHES
-    te_string result = TE_STRING_INIT;
+    const char *node_str = ta_conf_ctx_inst(ctx, "node");
+    const char *package_str = ta_conf_ctx_inst(ctx, "cpu");
     unsigned long node_id;
     unsigned long package_id;
-    bool first = true;
     cpu_item *package = NULL;
     cache_item *cache;
 
@@ -1485,58 +1425,49 @@ cpu_package_cache_list(unsigned int gid, const char *oid, const char *sub_id,
 
     LIST_FOREACH(cache, &package->cache_list, next)
     {
-        te_string_append(&result, "%s%u", first ? "" : " ", cache->id);
-        first = false;
+        char buf[sizeof("4294967295")];
+        char *name;
+
+        te_snprintf(buf, sizeof(buf), "%u", cache->id);
+        name = TE_STRDUP(buf);
+        TE_VEC_APPEND(names, name);
     }
-
-    *list = result.ptr;
 #else
-    UNUSED(node_str);
-    UNUSED(package_str);
-
-    rc = string_empty_list(list);
+    UNUSED(ctx);
+    UNUSED(names);
 #endif
 
     return rc;
 }
 
 static te_errno
-numa_list(unsigned int gid, const char *oid, const char *sub_id,
-               char **list)
+numa_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string result = TE_STRING_INIT;
-    bool first = true;
     cpu_item *node;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    UNUSED(ctx);
 
     LIST_FOREACH(node, &global_cpu_item_root, next)
     {
-        te_string_append(&result, "%s%u", first ? "" : " ", node->id);
-        first = false;
+        char buf[sizeof("4294967295")];
+        char *name;
+
+        te_snprintf(buf, sizeof(buf), "%u", node->id);
+        name = TE_STRDUP(buf);
+        TE_VEC_APPEND(names, name);
     }
 
-    *list = result.ptr;
     return 0;
 }
 
 static te_errno
-cpu_list(unsigned int gid, const char *oid, const char *sub_id,
-         char **list, const char *unused1, const char *node_str)
+cpu_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string result = TE_STRING_INIT;
+    const char *node_str = ta_conf_ctx_inst(ctx, "node");
     unsigned long node_id;
-    bool first = true;
     cpu_item *node = NULL;
     cpu_item *package;
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(unused1);
 
     if ((rc = get_index(node_str, &node_id)) != 0)
         return rc;
@@ -1551,31 +1482,27 @@ cpu_list(unsigned int gid, const char *oid, const char *sub_id,
 
     LIST_FOREACH(package, &node->children, next)
     {
-        te_string_append(&result, "%s%u", first ? "" : " ", package->id);
-        first = false;
+        char buf[sizeof("4294967295")];
+        char *name;
+
+        te_snprintf(buf, sizeof(buf), "%u", package->id);
+        name = TE_STRDUP(buf);
+        TE_VEC_APPEND(names, name);
     }
 
-    *list = result.ptr;
     return 0;
 }
 
 static te_errno
-cpu_core_list(unsigned int gid, const char *oid, const char *sub_id,
-              char **list, const char *unused1, const char *node_str,
-              const char *package_str)
+cpu_core_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string result = TE_STRING_INIT;
+    const char *node_str = ta_conf_ctx_inst(ctx, "node");
+    const char *package_str = ta_conf_ctx_inst(ctx, "cpu");
     unsigned long node_id;
     unsigned long package_id;
-    bool first = true;
     cpu_item *package = NULL;
     cpu_item *core;
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(unused1);
 
     if ((rc = get_index(node_str, &node_id)) != 0)
         return rc;
@@ -1591,32 +1518,29 @@ cpu_core_list(unsigned int gid, const char *oid, const char *sub_id,
 
     LIST_FOREACH(core, &package->children, next)
     {
-        te_string_append(&result, "%s%u", first ? "" : " ", core->id);
-        first = false;
+        char buf[sizeof("4294967295")];
+        char *name;
+
+        te_snprintf(buf, sizeof(buf), "%u", core->id);
+        name = TE_STRDUP(buf);
+        TE_VEC_APPEND(names, name);
     }
 
-    *list = result.ptr;
     return 0;
 }
 
 static te_errno
-cpu_thread_list(unsigned int gid, const char *oid, const char *sub_id,
-                char **list, const char *unused1, const char *node_str,
-                const char *package_str, const char *core_str)
+cpu_thread_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string result = TE_STRING_INIT;
+    const char *node_str = ta_conf_ctx_inst(ctx, "node");
+    const char *package_str = ta_conf_ctx_inst(ctx, "cpu");
+    const char *core_str = ta_conf_ctx_inst(ctx, "core");
     unsigned long node_id;
     unsigned long package_id;
     unsigned long core_id;
-    bool first = true;
     cpu_item *core = NULL;
     cpu_item *thread;
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(unused1);
 
     if ((rc = get_index(node_str, &node_id)) != 0)
         return rc;
@@ -1634,11 +1558,14 @@ cpu_thread_list(unsigned int gid, const char *oid, const char *sub_id,
 
     LIST_FOREACH(thread, &core->children, next)
     {
-        te_string_append(&result, "%s%u", first ? "" : " ", thread->id);
-        first = false;
+        char buf[sizeof("4294967295")];
+        char *name;
+
+        te_snprintf(buf, sizeof(buf), "%u", thread->id);
+        name = TE_STRDUP(buf);
+        TE_VEC_APPEND(names, name);
     }
 
-    *list = result.ptr;
     return 0;
 }
 
@@ -1686,131 +1613,98 @@ out:
 }
 
 static te_errno
-memory_get(unsigned int gid, const char *oid, char *value)
+memory_get(const ta_conf_ctx *ctx, uint64_t *val)
 {
-  UNUSED(gid);
-  UNUSED(oid);
-  uint64_t mem = 0;
+    uint64_t mem = 0;
+
+    UNUSED(ctx);
 
 #ifdef _SC_PHYS_PAGES
-  long n_pages, page_size;
+    long n_pages, page_size;
 
-  errno = 0;
+    errno = 0;
 
-  n_pages = sysconf(_SC_PHYS_PAGES);
-  if (n_pages == -1)
-  {
-      ERROR("Failed to get sysconf number of memory pages");
-      return TE_OS_RC(TE_TA_UNIX, errno);
-  }
+    n_pages = sysconf(_SC_PHYS_PAGES);
+    if (n_pages == -1)
+    {
+        ERROR("Failed to get sysconf number of memory pages");
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
 
-  page_size = sysconf(_SC_PAGESIZE);
-  if (page_size == -1)
-  {
-      ERROR("Failed to get sysconf memory page size");
-      return TE_OS_RC(TE_TA_UNIX, errno);
-  }
+    page_size = sysconf(_SC_PAGESIZE);
+    if (page_size == -1)
+    {
+        ERROR("Failed to get sysconf memory page size");
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
 
-  /* Total memory in bytes */
-  mem = (uint64_t)n_pages * (uint64_t)page_size;
+    /* Total memory in bytes */
+    mem = (uint64_t)n_pages * (uint64_t)page_size;
 #endif
 
-  snprintf(value, RCF_MAX_VAL, "%" PRIu64, mem);
-  return 0;
+    *val = mem;
+    return 0;
 }
 
 static te_errno
-avail_memory_get(unsigned int gid, const char *oid, char *value)
+avail_memory_get(const ta_conf_ctx *ctx, uint64_t *val)
 {
-  UNUSED(gid);
-  UNUSED(oid);
-  uint64_t avail_mem = 0;
+    uint64_t avail_mem = 0;
+
+    UNUSED(ctx);
 
 #ifdef _SC_AVPHYS_PAGES
-  long avail_pages, page_size;
+    long avail_pages, page_size;
 
-  errno = 0;
+    errno = 0;
 
-  avail_pages = sysconf(_SC_AVPHYS_PAGES);
-  if (avail_pages == -1)
-  {
-      ERROR("Failed to get sysconf number of available pages");
-      return TE_OS_RC(TE_TA_UNIX, errno);
-  }
+    avail_pages = sysconf(_SC_AVPHYS_PAGES);
+    if (avail_pages == -1)
+    {
+        ERROR("Failed to get sysconf number of available pages");
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
 
-  page_size = sysconf(_SC_PAGESIZE);
-  if (page_size == -1)
-  {
-      ERROR("Failed to get sysconf memory page size");
-      return TE_OS_RC(TE_TA_UNIX, errno);
-  }
+    page_size = sysconf(_SC_PAGESIZE);
+    if (page_size == -1)
+    {
+        ERROR("Failed to get sysconf memory page size");
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
 
-  /* Available memory in bytes */
-  avail_mem = (uint64_t)avail_pages * (uint64_t)page_size;
+    /* Available memory in bytes */
+    avail_mem = (uint64_t)avail_pages * (uint64_t)page_size;
 #endif
 
-  snprintf(value, RCF_MAX_VAL, "%" PRIu64, avail_mem);
-  return 0;
+    *val = avail_mem;
+    return 0;
 }
 
-
-RCF_PCH_CFG_NODE_RO(node_thread_isolated, "isolated",
-                    NULL, NULL, cpu_thread_isolated_get);
-
-RCF_PCH_CFG_NODE_RO(node_cpu_core_cache_assoc, "assoc", NULL, NULL,
-                    cpu_core_cache_assoc_get);
-
-RCF_PCH_CFG_NODE_RO(node_cpu_core_cache_size, "size", NULL,
-                    &node_cpu_core_cache_assoc, cpu_core_cache_size_get);
-
-RCF_PCH_CFG_NODE_RO(node_cpu_core_cache_linesize, "linesize", NULL,
-                    &node_cpu_core_cache_size, cpu_core_cache_linesize_get);
-
-RCF_PCH_CFG_NODE_RO(node_cpu_core_cache_level, "level", NULL,
-                    &node_cpu_core_cache_linesize, cpu_core_cache_level_get);
-
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu_core_cache, "cache",
-                               &node_cpu_core_cache_level, NULL,
-                               cpu_core_cache_type_get, cpu_core_cache_list);
-
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu_thread, "thread", &node_thread_isolated,
-                               &node_cpu_core_cache, NULL, cpu_thread_list);
-
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu_core, "core",
-                               &node_cpu_thread, NULL,
-                               NULL, cpu_core_list);
-
-RCF_PCH_CFG_NODE_RO(node_cpu_package_cache_assoc, "assoc", NULL, NULL,
-                    cpu_package_cache_assoc_get);
-
-RCF_PCH_CFG_NODE_RO(node_cpu_package_cache_size, "size", NULL,
-                    &node_cpu_package_cache_assoc, cpu_package_cache_size_get);
-
-RCF_PCH_CFG_NODE_RO(node_cpu_package_cache_linesize, "linesize", NULL,
-                    &node_cpu_package_cache_size,
-                    cpu_package_cache_linesize_get);
-
-RCF_PCH_CFG_NODE_RO(node_cpu_package_cache_level, "level", NULL,
-                    &node_cpu_package_cache_linesize,
-                    cpu_package_cache_level_get);
-
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu_package_cache, "cache",
-                               &node_cpu_package_cache_level, &node_cpu_core,
-                               cpu_package_cache_type_get,
-                               cpu_package_cache_list);
-
-RCF_PCH_CFG_NODE_RO(node_avail_memory, "free", NULL, NULL,
-                    avail_memory_get);
-
-RCF_PCH_CFG_NODE_RO(node_memory, "memory", &node_avail_memory, NULL,
-                    memory_get);
-
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_cpu, "cpu", &node_cpu_package_cache,
-                               &node_memory, NULL, cpu_list);
-
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_numa_node, "node",
-                               &node_cpu, NULL,
-                               NULL, numa_list);
+/*
+ * Children are indented one level (4 spaces) per tree depth so that
+ * the source layout mirrors the configuration tree; handler argument
+ * continuations align under the opening parenthesis as usual.
+ */
+static const ta_conf_node *const node_numa_node =
+    TA_CONF_LIST("node", numa_list,
+        TA_CONF_LIST("cpu", cpu_list,
+            TA_CONF_RO_COLL("cache", cpu_package_cache_type_get,
+                            cpu_package_cache_list,
+                TA_CONF_RO_INT32("level", cpu_package_cache_level_get),
+                TA_CONF_RO_INT32("linesize", cpu_package_cache_linesize_get),
+                TA_CONF_RO_INT32("size", cpu_package_cache_size_get),
+                TA_CONF_RO_INT32("assoc", cpu_package_cache_assoc_get)),
+            TA_CONF_LIST("core", cpu_core_list,
+                TA_CONF_LIST("thread", cpu_thread_list,
+                    TA_CONF_RO_BOOL("isolated", cpu_thread_isolated_get)),
+                TA_CONF_RO_COLL("cache", cpu_core_cache_type_get,
+                                cpu_core_cache_list,
+                    TA_CONF_RO_INT32("level", cpu_core_cache_level_get),
+                    TA_CONF_RO_INT32("linesize", cpu_core_cache_linesize_get),
+                    TA_CONF_RO_INT32("size", cpu_core_cache_size_get),
+                    TA_CONF_RO_INT32("assoc", cpu_core_cache_assoc_get)))),
+        TA_CONF_RO_UINT64("memory", memory_get,
+            TA_CONF_RO_UINT64("free", avail_memory_get)));
 
 te_errno
 ta_unix_conf_cpu_init(void)
@@ -1819,7 +1713,7 @@ ta_unix_conf_cpu_init(void)
     if (rc != 0)
         return rc;
 
-    rc = rcf_pch_add_node("/agent/hardware", &node_numa_node);
+    rc = ta_conf_register("/agent/hardware", node_numa_node);
 
     if (rc != 0)
         return rc;
