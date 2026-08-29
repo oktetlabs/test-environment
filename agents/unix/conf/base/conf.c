@@ -1837,22 +1837,17 @@ read_sys_value(char *value, size_t len, bool ignore_eaccess,
 
 /* See the description in conf_common.h */
 te_errno
-get_dir_list(const char *path, char *buffer, size_t length,
-             bool ignore_absence,
-             include_callback_func include_callback,
-             void *callback_data,
-             int (*compar)(const struct dirent **,
-                           const struct dirent **))
+get_dir_list_vec(const char *path, te_vec *names,
+                 bool ignore_absence,
+                 include_callback_func include_callback,
+                 void *callback_data,
+                 int (*compar)(const struct dirent **,
+                               const struct dirent **))
 {
     struct dirent  **namelist = NULL;
     struct dirent   *de = NULL;
     int              n;
     int              i;
-    size_t           off = 0;
-    int              rc;
-    te_errno         ret = 0;
-
-    buffer[0] = '\0';
 
     n = scandir(path, &namelist, NULL, compar);
     if (n < 0)
@@ -1877,31 +1872,76 @@ get_dir_list(const char *path, char *buffer, size_t length,
             !include_callback(de->d_name, callback_data))
             continue;
 
-        rc = snprintf(buffer + off, length - off, "%s ", de->d_name);
-        if (rc < 0)
         {
-            ret = TE_OS_RC(TE_TA_UNIX, errno);
-            ERROR("%s(): snprintf() failed", __FUNCTION__);
-            goto cleanup;
-        }
-        else if ((size_t)rc >= length - off)
-        {
-            ret = TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
-            ERROR("%s(): not enough space for all names from %s",
-                  __FUNCTION__, path);
-            goto cleanup;
-        }
+            char *name = TE_STRDUP(de->d_name);
 
-        off += rc;
+            TE_VEC_APPEND(names, name);
+        }
     }
-
-cleanup:
 
     for (i = 0; i < n; i++)
     {
         free(namelist[i]);
     }
     free(namelist);
+
+    return 0;
+}
+
+/* See the description in conf_common.h */
+te_errno
+get_dir_list(const char *path, char *buffer, size_t length,
+             bool ignore_absence,
+             include_callback_func include_callback,
+             void *callback_data,
+             int (*compar)(const struct dirent **,
+                           const struct dirent **))
+{
+    te_vec    names = TE_VEC_INIT_AUTOPTR(char *);
+    te_string str = TE_STRING_INIT;
+    te_errno  ret;
+    int       rc;
+
+    buffer[0] = '\0';
+
+    ret = get_dir_list_vec(path, &names, ignore_absence, include_callback,
+                           callback_data, compar);
+    if (ret != 0)
+    {
+        te_vec_free(&names);
+        return ret;
+    }
+
+    /*
+     * Every name is followed by a single space, including the last one:
+     * that is the encoding the legacy rcf_pch list callbacks and their
+     * callers expect.
+     */
+    te_string_join_vec(&str, &names, " ");
+    if (str.len > 0)
+        te_string_append(&str, " ");
+
+    te_vec_free(&names);
+
+    /*
+     * snprintf() truncates exactly like the previous per-name loop did,
+     * so a caller inspecting the buffer after TE_ESMALLBUF still sees
+     * the same bytes.
+     */
+    rc = snprintf(buffer, length, "%s", te_string_value(&str));
+    if (rc < 0)
+    {
+        ret = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("%s(): snprintf() failed", __FUNCTION__);
+    }
+    else if ((size_t)rc >= length)
+    {
+        ret = TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+        ERROR("%s(): not enough space for all names from %s",
+              __FUNCTION__, path);
+    }
+
+    te_string_free(&str);
 
     return ret;
 }
