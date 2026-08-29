@@ -171,6 +171,7 @@ typedef struct pam_message const pam_message_t;
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 #include "rcf_pch_ta_cfg.h"
+#include "rcf_pch_tree.h"
 #include "logger_api.h"
 #include "unix_internal.h"
 #include "conf_ovs.h"
@@ -183,6 +184,7 @@ typedef struct pam_message const pam_message_t;
 #include "te_shell_cmd.h"
 #include "te_string.h"
 #include "te_alloc.h"
+#include "te_vector.h"
 
 #include "conf_daemons.h"
 
@@ -464,16 +466,11 @@ int cfg6_socket = -1;
  * Access routines prototypes (comply to procedure types
  * specified in rcf_ch_api.h).
  */
-static te_errno env_get(unsigned int, const char *, char *,
-                   const char *);
-static te_errno env_set(unsigned int, const char *, const char *,
-                   const char *);
-static te_errno env_add(unsigned int, const char *, const char *,
-                   const char *);
-static te_errno env_del(unsigned int, const char *,
-                   const char *);
-static te_errno env_list(unsigned int, const char *,
-                         const char *, char **);
+static te_errno env_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno env_set(const ta_conf_ctx *ctx, const char *val);
+static te_errno env_add(const ta_conf_ctx *ctx, const char *val);
+static te_errno env_del(const ta_conf_ctx *ctx);
+static te_errno env_list(const ta_conf_ctx *ctx, te_vec *names);
 
 /* routines to make substitutions */
 static te_errno env_subst_path_process(te_string *value, const char *subst,
@@ -505,16 +502,16 @@ static const char * const env_prefix_hidden[] = {
     "BASH_FUNC_",
 };
 
-static te_errno uname_get(unsigned int, const char *, char *);
-static te_errno uname_version_get(unsigned int, const char *, char *);
-static te_errno uname_release_get(unsigned int, const char *, char *);
-static te_errno uname_machine_get(unsigned int, const char *, char *);
+static te_errno uname_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno uname_version_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno uname_release_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno uname_machine_get(const ta_conf_ctx *ctx, te_string *val);
 
-static te_errno ip4_fw_get(unsigned int, const char *, char *);
-static te_errno ip4_fw_set(unsigned int, const char *, const char *);
+static te_errno ip4_fw_get(const ta_conf_ctx *ctx, bool *val);
+static te_errno ip4_fw_set(const ta_conf_ctx *ctx, bool val);
 
-static te_errno ip6_fw_get(unsigned int, const char *, char *);
-static te_errno ip6_fw_set(unsigned int, const char *, const char *);
+static te_errno ip6_fw_get(const ta_conf_ctx *ctx, bool *val);
+static te_errno ip6_fw_set(const ta_conf_ctx *ctx, bool val);
 
 static te_errno iface_ip4_fw_get(unsigned int, const char *, char *,
                                  const char *);
@@ -551,10 +548,8 @@ static te_errno iface_hwtstamp_rx_filter_get(unsigned int, const char *, char *,
 static te_errno iface_hwtstamp_rx_filter_set(unsigned int, const char *,
                                              const char *, const char *);
 
-static te_errno switchdev_name_get(unsigned int, const char *, char *,
-                                   const char *);
-static te_errno switchdev_name_list(unsigned int, const char *,
-                                    const char *, char **);
+static te_errno switchdev_name_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno switchdev_name_list(const ta_conf_ctx *ctx, te_vec *names);
 
 static te_errno interface_list(unsigned int, const char *,
                                const char *, char **);
@@ -643,16 +638,16 @@ static te_errno rp_filter_get(unsigned int, const char *, char *,
 static te_errno rp_filter_set(unsigned int, const char *, const char *,
                               const char *);
 
-static te_errno rp_filter_all_get(unsigned int, const char *, char *);
-static te_errno rp_filter_all_set(unsigned int, const char *, const char *);
+static te_errno rp_filter_all_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno rp_filter_all_set(const ta_conf_ctx *ctx, const char *val);
 
 static te_errno arp_ignore_get(unsigned int, const char *, char *,
                                const char *);
 static te_errno arp_ignore_set(unsigned int, const char *, const char *,
                                const char *);
 
-static te_errno arp_ignore_all_get(unsigned int, const char *, char *);
-static te_errno arp_ignore_all_set(unsigned int, const char *, const char *);
+static te_errno arp_ignore_all_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno arp_ignore_all_set(const ta_conf_ctx *ctx, const char *val);
 
 static te_errno promisc_get(unsigned int, const char *, char *,
                             const char *);
@@ -693,29 +688,21 @@ static te_errno neigh_list(unsigned int, const char *,
                            const char *, char **,
                            const char *);
 
-static te_errno agent_platform_get(unsigned int, const char *, char *,
-                                   const char *, ...);
+static te_errno agent_platform_get(const ta_conf_ctx *ctx, te_string *val);
 
-static te_errno agent_dir_get(unsigned int, const char *, char *,
-                              const char *, ...);
+static te_errno agent_dir_get(const ta_conf_ctx *ctx, te_string *val);
 
-static te_errno agent_tmp_dir_get(unsigned int, const char *, char *,
-                                  const char *, ...);
+static te_errno agent_tmp_dir_get(const ta_conf_ctx *ctx, te_string *val);
 
-static te_errno agent_lib_mod_dir_get(unsigned int, const char *, char *,
-                                      const char *, ...);
+static te_errno agent_lib_mod_dir_get(const ta_conf_ctx *ctx, te_string *val);
 
-static te_errno agent_lib_bin_dir_get(unsigned int, const char *, char *,
-                                      const char *, ...);
+static te_errno agent_lib_bin_dir_get(const ta_conf_ctx *ctx, te_string *val);
 
-static te_errno nameserver_get(unsigned int, const char *, char *,
-                               const char *, ...);
+static te_errno nameserver_get(const ta_conf_ctx *ctx, te_string *val);
 
-static te_errno user_list(unsigned int, const char *,
-                          const char *, char **);
-static te_errno user_add(unsigned int, const char *, const char *,
-                         const char *);
-static te_errno user_del(unsigned int, const char *, const char *);
+static te_errno user_list(const ta_conf_ctx *ctx, te_vec *names);
+static te_errno user_add(const ta_conf_ctx *ctx);
+static te_errno user_del(const ta_conf_ctx *ctx);
 
 te_errno ta_vlan_get_children(const char *, size_t *, int *);
 te_errno ta_vlan_get_parent(const char *, char *);
@@ -856,37 +843,29 @@ static te_errno dom_u_migrate_kind_set(unsigned int, char const *,
  * Unix Test Agent basic configuration tree.
  */
 
-RCF_PCH_CFG_NODE_RO(node_platform, "platform",
-                    NULL, NULL,
-                    (rcf_ch_cfg_get)agent_platform_get);
+static const ta_conf_node *const node_platform =
+    TA_CONF_RO_STR("platform", agent_platform_get);
 
-RCF_PCH_CFG_NODE_RO(node_dir, "dir",
-                    NULL, &node_platform,
-                    (rcf_ch_cfg_get)agent_dir_get);
+static const ta_conf_node *const node_dir =
+    TA_CONF_RO_STR("dir", agent_dir_get);
 
-RCF_PCH_CFG_NODE_RO(node_tmp_dir, "tmp_dir",
-                    NULL, &node_dir,
-                    (rcf_ch_cfg_get)agent_tmp_dir_get);
+static const ta_conf_node *const node_tmp_dir =
+    TA_CONF_RO_STR("tmp_dir", agent_tmp_dir_get);
 
-RCF_PCH_CFG_NODE_RO(node_lib_mod_dir, "lib_mod_dir",
-                    NULL, &node_tmp_dir,
-                    (rcf_ch_cfg_get)agent_lib_mod_dir_get);
+static const ta_conf_node *const node_lib_mod_dir =
+    TA_CONF_RO_STR("lib_mod_dir", agent_lib_mod_dir_get);
 
-RCF_PCH_CFG_NODE_RO(node_lib_bin_dir, "lib_bin_dir",
-                    NULL, &node_lib_mod_dir,
-                    (rcf_ch_cfg_get)agent_lib_bin_dir_get);
+static const ta_conf_node *const node_lib_bin_dir =
+    TA_CONF_RO_STR("lib_bin_dir", agent_lib_bin_dir_get);
 
-RCF_PCH_CFG_NODE_RO(node_dns, "dns",
-                    NULL, &node_lib_bin_dir,
-                    (rcf_ch_cfg_get)nameserver_get);
+static const ta_conf_node *const node_dns =
+    TA_CONF_RO_STR("dns", nameserver_get);
 
-RCF_PCH_CFG_NODE_RW(node_rp_filter_all, "rp_filter_all",
-                    NULL, &node_dns,
-                    rp_filter_all_get, rp_filter_all_set);
+static const ta_conf_node *const node_rp_filter_all =
+    TA_CONF_RW_STR("rp_filter_all", rp_filter_all_get, rp_filter_all_set);
 
-RCF_PCH_CFG_NODE_RW(node_arp_ignore_all, "arp_ignore_all",
-                    NULL, &node_rp_filter_all,
-                    arp_ignore_all_get, arp_ignore_all_set);
+static const ta_conf_node *const node_arp_ignore_all =
+    TA_CONF_RW_STR("arp_ignore_all", arp_ignore_all_get, arp_ignore_all_set);
 
 RCF_PCH_CFG_NODE_RO(node_neigh_state, "state",
                     NULL, NULL,
@@ -1018,18 +997,18 @@ RCF_PCH_CFG_NODE_NA(node_iface_hwtstamp, "hwtstamp",
                     &node_iface_hwtstamp_tx_type, &node_iface_switch_id);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
-                            &node_iface_hwtstamp, &node_arp_ignore_all,
+                            &node_iface_hwtstamp, NULL,
                             NULL, NULL, interface_list, NULL);
 
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_switchdev_name, "switchdev_name",
-                            NULL, &node_interface,
-                            switchdev_name_get, switchdev_name_list);
+static const ta_conf_node *const node_switchdev_name =
+    TA_CONF_RO_COLL("switchdev_name", switchdev_name_get,
+                    switchdev_name_list);
 
-RCF_PCH_CFG_NODE_RW(node_ip4_fw, "ip4_fw", NULL, &node_switchdev_name,
-                    ip4_fw_get, ip4_fw_set);
+static const ta_conf_node *const node_ip4_fw =
+    TA_CONF_RW_BOOL("ip4_fw", ip4_fw_get, ip4_fw_set);
 
-RCF_PCH_CFG_NODE_RW(node_ip6_fw, "ip6_fw", NULL, &node_ip4_fw,
-                    ip6_fw_get, ip6_fw_set);
+static const ta_conf_node *const node_ip6_fw =
+    TA_CONF_RW_BOOL("ip6_fw", ip6_fw_get, ip6_fw_set);
 
 static const rcf_pch_cfg_substitution env_subst[] = RCF_PCH_CFG_SUBST_SET(
     { "PATH", "/agent/dir", env_subst_path_process },
@@ -1037,30 +1016,29 @@ static const rcf_pch_cfg_substitution env_subst[] = RCF_PCH_CFG_SUBST_SET(
     { "_", "/agent/dir", env_subst_underscore_process}
 );
 
-RCF_PCH_CFG_NODE_RW_COLLECTION_WITH_SUBST(node_env, "env", NULL, &node_ip6_fw,
-                                          env_get, env_set, env_add, env_del,
-                                          env_list, NULL, env_subst);
+static const ta_conf_node *const node_env =
+    TA_CONF_NODE((.name = "env", .type = CVT_STRING,
+                  .get = { .as_str = env_get },
+                  .set = { .as_str = env_set },
+                  .add = { .as_str = env_add },
+                  .del = env_del,
+                  .list = env_list,
+                  .subst = env_subst));
 
-RCF_PCH_CFG_NODE_RO(node_uname_machine, "machine", NULL, NULL,
-                    uname_machine_get);
+static const ta_conf_node *const node_uname =
+    TA_CONF_RO_STR("uname", uname_get,
+        TA_CONF_RO_STR("version", uname_version_get),
+        TA_CONF_RO_STR("release", uname_release_get),
+        TA_CONF_RO_STR("machine", uname_machine_get));
 
-RCF_PCH_CFG_NODE_RO(node_uname_release, "release", NULL, &node_uname_machine,
-                    uname_release_get);
+static const ta_conf_node *const node_user =
+    TA_CONF_COLL("user", user_add, user_del, user_list);
 
-RCF_PCH_CFG_NODE_RO(node_uname_version, "version", NULL, &node_uname_release,
-                    uname_version_get);
+static const ta_conf_node *const node_namespace =
+    TA_CONF_NA("namespace");
 
-RCF_PCH_CFG_NODE_RO(node_uname, "uname", &node_uname_version, &node_env,
-                    uname_get);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_user, "user",
-                            NULL, &node_uname,
-                            user_add, user_del,
-                            user_list, NULL);
-
-RCF_PCH_CFG_NODE_NA(node_namespace, "namespace", NULL, &node_user);
-
-RCF_PCH_CFG_NODE_NA(node_hardware, "hardware", NULL, &node_namespace);
+static const ta_conf_node *const node_hardware =
+    TA_CONF_NA("hardware");
 
 /* XEN stuff tree */
 RCF_PCH_CFG_NODE_RW(node_dom_u_migrate_kind, "kind",
@@ -1169,7 +1147,7 @@ RCF_PCH_CFG_NODE_RW(node_subpath, "subpath",
                     &xen_subpath_get, &xen_subpath_set);
 
 RCF_PCH_CFG_NODE_RW(node_xen, "xen",
-                    &node_subpath, &node_hardware,
+                    &node_subpath, &node_interface,
                     &xen_path_get, &xen_path_set);
 
 #ifndef USE_LIBNETCONF
@@ -1314,7 +1292,46 @@ interface_release(const char *name)
 static inline te_errno
 ta_unix_conf_base_init(void)
 {
-    return rcf_pch_add_node("/agent", &node_xen);
+    te_errno rc;
+
+    if ((rc = ta_conf_register("/agent", node_platform)) != 0)
+        return rc;
+    if ((rc = ta_conf_register("/agent", node_dir)) != 0)
+        return rc;
+    if ((rc = ta_conf_register("/agent", node_tmp_dir)) != 0)
+        return rc;
+    if ((rc = ta_conf_register("/agent", node_lib_mod_dir)) != 0)
+        return rc;
+    if ((rc = ta_conf_register("/agent", node_lib_bin_dir)) != 0)
+        return rc;
+    if ((rc = ta_conf_register("/agent", node_dns)) != 0)
+        return rc;
+    if ((rc = ta_conf_register("/agent", node_rp_filter_all)) != 0)
+        return rc;
+    if ((rc = ta_conf_register("/agent", node_arp_ignore_all)) != 0)
+        return rc;
+
+    /* Remaining legacy subtrees: xen (with the interface collection
+     * still attached as its brother, see the node_xen declaration). */
+    if ((rc = rcf_pch_add_node("/agent", &node_xen)) != 0)
+        return rc;
+
+    if ((rc = ta_conf_register("/agent", node_switchdev_name)) != 0)
+        return rc;
+    if ((rc = ta_conf_register("/agent", node_ip4_fw)) != 0)
+        return rc;
+    if ((rc = ta_conf_register("/agent", node_ip6_fw)) != 0)
+        return rc;
+    if ((rc = ta_conf_register("/agent", node_env)) != 0)
+        return rc;
+    if ((rc = ta_conf_register("/agent", node_uname)) != 0)
+        return rc;
+    if ((rc = ta_conf_register("/agent", node_user)) != 0)
+        return rc;
+    if ((rc = ta_conf_register("/agent", node_namespace)) != 0)
+        return rc;
+
+    return ta_conf_register("/agent", node_hardware);
 }
 
 /* See the description in lib/rcfpch/rcf_ch_api.h */
@@ -2077,14 +2094,13 @@ ipforward_bsd(bool ip6, int *p_val)
 /**
  * Obtain value of the IPv4 forwarding sustem variable.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         value location
+ * @param ctx           request context (unused)
+ * @param val           value location
  *
  * @return              Status code
  */
 static te_errno
-ip4_fw_get(unsigned int gid, const char *oid, char *value)
+ip4_fw_get(const ta_conf_ctx *ctx, bool *val)
 {
 #if __linux__
     char c = '0';
@@ -2094,8 +2110,7 @@ ip4_fw_get(unsigned int gid, const char *oid, char *value)
     te_errno    rc;
     int         ival;
 #endif
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
 #if __linux__
     if ((fd = open("/proc/sys/net/ipv4/ip_forward", O_RDONLY)) < 0)
@@ -2108,25 +2123,25 @@ ip4_fw_get(unsigned int gid, const char *oid, char *value)
     }
     close(fd);
 
-    sprintf(value, "%d", c == '0' ? 0 : 1);
+    *val = (c != '0');
 
 #elif SOLARIS_IP_FW
     ival = 2; /* anything except 0|1 is read */
     rc = ipforward_solaris("ip_forwarding", &ival);
     if (rc != 0)
         return rc;
-    sprintf(value, "%d", ival);
+    *val = (ival != 0);
 
 #elif BSD_IP_FW
     ival = 2;
     rc = ipforward_bsd(false, &ival); /* @c false if not ip6 */
     if (rc != 0)
         return rc;
-    sprintf(value, "%d", ival);
+    *val = (ival != 0);
 
 #else
     /* Assume that forwarding is disabled */
-    sprintf(value, "%d", 0);
+    *val = false;
 #endif
 
     return 0;
@@ -2135,15 +2150,13 @@ ip4_fw_get(unsigned int gid, const char *oid, char *value)
 /**
  * Enable/disable IPv4 forwarding.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         pointer to new value of IPv4 forwarding system
- *                      variable
+ * @param ctx           request context (unused)
+ * @param val           new value of IPv4 forwarding system variable
  *
  * @return              Status code
  */
 static te_errno
-ip4_fw_set(unsigned int gid, const char *oid, const char *value)
+ip4_fw_set(const ta_conf_ctx *ctx, bool val)
 {
 #if __linux__
     int fd;
@@ -2152,11 +2165,10 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
     te_errno rc;
     int ival;
 #endif
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if ((*value != '0' && *value != '1') || *(value + 1) != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    UNUSED(ctx);
+#if !defined(__linux__) && !defined(SOLARIS_IP_FW) && !defined(BSD_IP_FW)
+    UNUSED(val);
+#endif
 
 #if __linux__
     fd = open("/proc/sys/net/ipv4/ip_forward",
@@ -2164,7 +2176,7 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
     if (fd < 0)
         return TE_OS_RC(TE_TA_UNIX, errno);
 
-    if (write(fd, *value == '0' ? "0\n" : "1\n", 2) < 0)
+    if (write(fd, val ? "1\n" : "0\n", 2) < 0)
     {
         close(fd);
         return TE_OS_RC(TE_TA_UNIX, errno);
@@ -2172,13 +2184,13 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
     close(fd);
 
 #elif SOLARIS_IP_FW
-    ival = atoi(value);
+    ival = val ? 1 : 0;
     rc = ipforward_solaris("ip_forwarding", &ival);
     if (rc != 0)
         return rc;
 
 #elif BSD_IP_FW
-    ival = atoi(value);
+    ival = val ? 1 : 0;
     rc = ipforward_bsd(false, &ival); /* @c false if not ip6 */
     if (rc != 0)
         return rc;
@@ -2193,14 +2205,13 @@ ip4_fw_set(unsigned int gid, const char *oid, const char *value)
 /**
  * Obtain value of the IPv6 forwarding sustem variable.
  *
- * @param gid           group identifier (unused)
- * @param oid           full instance identifier (unused)
- * @param value         value location
+ * @param ctx           request context (unused)
+ * @param val           value location
  *
  * @return              Status code
  */
 static te_errno
-ip6_fw_get(unsigned int gid, const char *oid, char *value)
+ip6_fw_get(const ta_conf_ctx *ctx, bool *val)
 {
 #if __linux__
     int  fd;
@@ -2210,8 +2221,7 @@ ip6_fw_get(unsigned int gid, const char *oid, char *value)
     te_errno    rc;
     int         ival;
 #endif
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
 #if __linux__
     if ((fd = open("/proc/sys/net/ipv6/conf/all/forwarding",
@@ -2225,25 +2235,25 @@ ip6_fw_get(unsigned int gid, const char *oid, char *value)
     }
     close(fd);
 
-    sprintf(value, "%d", c == '0' ? 0 : 1);
+    *val = (c != '0');
 
 #elif SOLARIS_IP_FW
     ival = 2; /* anything except 0|1 is read */
     rc = ipforward_solaris("ip6_forwarding", &ival);
     if (rc != 0)
         return rc;
-    sprintf(value, "%d", ival);
+    *val = (ival != 0);
 
 #elif BSD_IP_FW
     ival = 2;
     rc = ipforward_bsd(true, &ival); /* @c false if not ip6 */
     if (rc != 0)
         return rc;
-    sprintf(value, "%d", ival);
+    *val = (ival != 0);
 
 #else
     /* Assume that forwarding is disabled */
-    sprintf(value, "%d", 0);
+    *val = false;
 #endif
 
     return 0;
@@ -2252,15 +2262,13 @@ ip6_fw_get(unsigned int gid, const char *oid, char *value)
 /**
  * Enable/disable IPv6 forwarding.
  *
- * @param gid           group identifier (unused)
- * @param oid           full instance identifier (unused)
- * @param value         pointer to new value of IPv6 forwarding system
- *                      variable
+ * @param ctx           request context (unused)
+ * @param val           new value of IPv6 forwarding system variable
  *
  * @return              Status code
  */
 static te_errno
-ip6_fw_set(unsigned int gid, const char *oid, const char *value)
+ip6_fw_set(const ta_conf_ctx *ctx, bool val)
 {
 #if __linux__
     int fd;
@@ -2269,12 +2277,10 @@ ip6_fw_set(unsigned int gid, const char *oid, const char *value)
     te_errno rc;
     int ival;
 #endif
-    UNUSED(gid);
-    UNUSED(oid);
-
-
-    if ((*value != '0' && *value != '1') || *(value + 1) != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    UNUSED(ctx);
+#if !defined(__linux__) && !defined(SOLARIS_IP_FW) && !defined(BSD_IP_FW)
+    UNUSED(val);
+#endif
 
 #if __linux__
     fd = open("/proc/sys/net/ipv6/conf/all/forwarding",
@@ -2282,7 +2288,7 @@ ip6_fw_set(unsigned int gid, const char *oid, const char *value)
     if (fd < 0)
         return TE_OS_RC(TE_TA_UNIX, errno);
 
-    if (write(fd, *value == '0' ? "0\n" : "1\n", 2) < 0)
+    if (write(fd, val ? "1\n" : "0\n", 2) < 0)
     {
         close(fd);
         return TE_OS_RC(TE_TA_UNIX, errno);
@@ -2290,13 +2296,13 @@ ip6_fw_set(unsigned int gid, const char *oid, const char *value)
     close(fd);
 
 #elif SOLARIS_IP_FW
-    ival = atoi(value);
+    ival = val ? 1 : 0;
     rc = ipforward_solaris("ip6_forwarding", &ival);
     if (rc != 0)
         return rc;
 
 #elif BSD_IP_FW
-    ival = atoi(value);
+    ival = val ? 1 : 0;
     rc = ipforward_bsd(true, &ival); /* @c false if not ip6 */
     if (rc != 0)
         return rc;
@@ -3223,29 +3229,29 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
 /**
  * Get instance value for object "agent/switchdev_name".
  *
- * @param gid           Group identifier (unused).
- * @param oid           Full identifier of the father instance.
- * @param value         Location for the interface name.
- * @param id            (switch ID, port name) pair.
+ * @param ctx           Request context; its instance name is the
+ *                       (switch ID, port name) pair.
+ * @param val           Location for the interface name.
  *
  * @return              Status code.
  */
 static te_errno
-switchdev_name_get(unsigned int gid, const char *oid, char *value,
-                   const char *id)
+switchdev_name_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    const char *id = ta_conf_ctx_inst(ctx, "switchdev_name");
+    const char *sep;
+    char *switch_id;
+    char *port_name;
 
-    if (id == NULL || *id == '\0')
+    if (*id == '\0')
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    const char *sep = strchr(id, ':');
+    sep = strchr(id, ':');
     if (sep == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    char *switch_id = strndup(id, sep - id);
-    char *port_name = strdup(sep + 1);
+    switch_id = strndup(id, sep - id);
+    port_name = strdup(sep + 1);
 
 #ifdef USE_LIBNETCONF
     {
@@ -3255,11 +3261,9 @@ switchdev_name_get(unsigned int gid, const char *oid, char *value,
         links = netconf_link_dump(nh);
         if (links == NULL)
         {
-            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
-
             free(switch_id);
             free(port_name);
-            return rc;
+            return TE_OS_RC(TE_TA_UNIX, errno);
         }
 
         for (node = links->head; node != NULL; node = node->next)
@@ -3270,20 +3274,12 @@ switchdev_name_get(unsigned int gid, const char *oid, char *value,
                 strcmp(link->switch_id, switch_id) == 0 &&
                 strcmp(link->port_name, port_name) == 0)
             {
-                te_errno rc = 0;
-                size_t   ret;
-
-                ret = te_strlcpy(value, link->ifname, RCF_MAX_VAL);
-                if (ret == RCF_MAX_VAL)
-                {
-                    ERROR("Failed to copy interface's base name");
-                    rc = TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
-                }
+                te_string_append(val, "%s", link->ifname);
 
                 free(switch_id);
                 free(port_name);
                 netconf_list_free(links);
-                return rc;
+                return 0;
             }
         }
         netconf_list_free(links);
@@ -3295,7 +3291,8 @@ switchdev_name_get(unsigned int gid, const char *oid, char *value,
 
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #else
-    value[0] = '\0';
+    free(switch_id);
+    free(port_name);
 
     return 0;
 #endif
@@ -3304,21 +3301,15 @@ switchdev_name_get(unsigned int gid, const char *oid, char *value,
 /**
  * Get instance list for object "agent/switchdev_name".
  *
- * @param gid           Group identifier (unused).
- * @param oid           Full identifier of the father instance.
- * @param sub_id        ID of the object to be listed (unused).
- * @param list          Location for the list pointer.
+ * @param ctx           Request context (unused).
+ * @param names         Vector of heap-allocated names to append to.
  *
  * @return              Status code.
  */
 static te_errno
-switchdev_name_list(unsigned int gid, const char *oid,
-                    const char *sub_id, char **list)
+switchdev_name_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
-    te_string buffer = TE_STRING_INIT;
+    UNUSED(ctx);
 
 #ifdef USE_LIBNETCONF
     {
@@ -3335,21 +3326,17 @@ switchdev_name_list(unsigned int gid, const char *oid,
 
             if (link->switch_id != NULL && link->port_name != NULL)
             {
-                te_string_append(&buffer, "%s:%s ", link->switch_id,
-                                 link->port_name);
+                char *name = te_string_fmt("%s:%s", link->switch_id,
+                                           link->port_name);
+
+                TE_VEC_APPEND(names, name);
             }
         }
         netconf_list_free(links);
     }
-
-    *list = buffer.ptr;
-
-    return 0;
-#else
-    value[0] = '\0';
-
-    return 0;
 #endif
+
+    return 0;
 }
 
 /**
@@ -7075,31 +7062,39 @@ rp_filter_set(unsigned int gid, const char *oid, const char *value,
 /**
  * Get RPF filtering value for interface "all"
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         value location
+ * @param ctx           request context (unused)
+ * @param val           value location
  *
  * @return              Status code
  */
 static te_errno
-rp_filter_all_get(unsigned int gid, const char *oid, char *value)
+rp_filter_all_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    return rp_filter_get(gid, oid, value, "all");
+    char     value[RCF_MAX_VAL];
+    te_errno rc;
+
+    UNUSED(ctx);
+
+    rc = rp_filter_get(0, NULL, value, "all");
+    if (rc == 0)
+        te_string_append(val, "%s", value);
+
+    return rc;
 }
 
 /**
  * Set RPF filtering value for interface "all"
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         new value pointer
+ * @param ctx           request context (unused)
+ * @param val           new value
  *
  * @return              Status code
  */
 static te_errno
-rp_filter_all_set(unsigned int gid, const char *oid, const char *value)
+rp_filter_all_set(const ta_conf_ctx *ctx, const char *val)
 {
-    return rp_filter_set(gid, oid, value, "all");
+    UNUSED(ctx);
+    return rp_filter_set(0, NULL, val, "all");
 }
 
 /**
@@ -7170,31 +7165,39 @@ arp_ignore_set(unsigned int gid, const char *oid, const char *value,
 /**
  * Get arp_ignore value for interface "all"
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         value location
+ * @param ctx           request context (unused)
+ * @param val           value location
  *
  * @return              Status code
  */
 static te_errno
-arp_ignore_all_get(unsigned int gid, const char *oid, char *value)
+arp_ignore_all_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    return arp_ignore_get(gid, oid, value, "all");
+    char     value[RCF_MAX_VAL];
+    te_errno rc;
+
+    UNUSED(ctx);
+
+    rc = arp_ignore_get(0, NULL, value, "all");
+    if (rc == 0)
+        te_string_append(val, "%s", value);
+
+    return rc;
 }
 
 /**
  * Set arp_ignore value for interface "all"
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         new value pointer
+ * @param ctx           request context (unused)
+ * @param val           new value
  *
  * @return              Status code
  */
 static te_errno
-arp_ignore_all_set(unsigned int gid, const char *oid, const char *value)
+arp_ignore_all_set(const ta_conf_ctx *ctx, const char *val)
 {
-    return arp_ignore_set(gid, oid, value, "all");
+    UNUSED(ctx);
+    return arp_ignore_set(0, NULL, val, "all");
 }
 
 /**
@@ -7944,67 +7947,51 @@ neigh_list(unsigned int gid, const char *oid,
 }
 
 static te_errno
-agent_platform_get(unsigned int gid, const char *oid, char *result,
-                   const char *instance, ...)
+agent_platform_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
+    UNUSED(ctx);
 #ifdef TE_AGT_PLATFORM
-    memcpy(result, TE_AGT_PLATFORM, sizeof(TE_AGT_PLATFORM));
+    te_string_append(val, "%s", TE_AGT_PLATFORM);
 #else
-    memcpy(result, "default", sizeof("default"));
+    te_string_append(val, "%s", "default");
 #endif
     return 0;
 }
 
 static te_errno
-agent_dir_get(unsigned int gid, const char *oid, char *result,
-              const char *instance, ...)
+agent_dir_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
-    te_strlcpy(result, ta_dir, RCF_MAX_VAL);
+    UNUSED(ctx);
+    te_string_append(val, "%s", ta_dir);
     return 0;
 }
 
 static te_errno
-agent_tmp_dir_get(unsigned int gid, const char *oid, char *result,
-                  const char *instance, ...)
+agent_tmp_dir_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
-    te_strlcpy(result, ta_tmp_dir, RCF_MAX_VAL);
+    UNUSED(ctx);
+    te_string_append(val, "%s", ta_tmp_dir);
     return 0;
 }
 
 static te_errno
-agent_lib_mod_dir_get(unsigned int gid, const char *oid, char *result,
-                      const char *instance, ...)
+agent_lib_mod_dir_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
-    te_strlcpy(result, ta_lib_mod_dir, RCF_MAX_VAL);
+    UNUSED(ctx);
+    te_string_append(val, "%s", ta_lib_mod_dir);
     return 0;
 }
 
 static te_errno
-agent_lib_bin_dir_get(unsigned int gid, const char *oid, char *result,
-                  const char *instance, ...)
+agent_lib_bin_dir_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
-    te_strlcpy(result, ta_lib_bin_dir, RCF_MAX_VAL);
+    UNUSED(ctx);
+    te_string_append(val, "%s", ta_lib_bin_dir);
     return 0;
 }
 
 static te_errno
-nameserver_get(unsigned int gid, const char *oid, char *result,
-               const char *instance, ...)
+nameserver_get(const ta_conf_ctx *ctx, te_string *val)
 {
     FILE    *resolver = NULL;
     char     buf[256] = { 0, };
@@ -8013,11 +8000,8 @@ nameserver_get(unsigned int gid, const char *oid, char *result,
 
     static const char ip_symbols[] = "0123456789.";
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(instance);
+    UNUSED(ctx);
 
-    *result = '\0';
     resolver = fopen("/etc/resolv.conf", "r");
     if (!resolver)
     {
@@ -8042,7 +8026,7 @@ nameserver_get(unsigned int gid, const char *oid, char *result,
                 else
                 {
                     rc = 0;
-                    memcpy(result, found, endaddr - found);
+                    te_string_append(val, "%s", found);
                 }
                 break;
             }
@@ -8085,56 +8069,52 @@ env_is_hidden(const char *name, int name_len)
 /**
  * Get Environment variable value.
  *
- * @param gid       Request's group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param value     Location for the value (OUT)
- * @param name      Variable name
+ * @param ctx       Request context; its instance name is the
+ *                  variable name
+ * @param val       Location for the value (OUT)
  *
  * @return Status code
  */
 static te_errno
-env_get(unsigned int gid, const char *oid, char *value,
-        const char *name)
+env_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *name = ta_conf_ctx_inst(ctx, "env");
     const char *tmp = getenv(name);
 
-    UNUSED(gid);
-    UNUSED(oid);
+    if (env_is_hidden(name, -1) || tmp == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if (!env_is_hidden(name, -1) && (tmp != NULL))
+    if (strlen(tmp) >= RCF_MAX_VAL)
     {
-        if (strlen(tmp) >= RCF_MAX_VAL)
-            WARN("Environment variable '%s' value truncated", name);
-        snprintf(value, RCF_MAX_VAL, "%s", tmp);
-        return 0;
+        WARN("Environment variable '%s' value truncated", name);
+        te_string_append(val, "%.*s", RCF_MAX_VAL - 1, tmp);
     }
     else
     {
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        te_string_append(val, "%s", tmp);
     }
+
+    return 0;
 }
 
 /**
  * Change already existing Environment variable.
  *
- * @param gid       Request's group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param value     New value to set
- * @param name      Variable name
+ * @param ctx       Request context; its instance name is the
+ *                  variable name
+ * @param val       New value to set
  *
  * @return Status code
  */
 static te_errno
-env_set(unsigned int gid, const char *oid, const char *value,
-        const char *name)
+env_set(const ta_conf_ctx *ctx, const char *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    const char *name = ta_conf_ctx_inst(ctx, "env");
 
     if (env_is_hidden(name, -1))
         return TE_RC(TE_TA_UNIX, TE_EPERM);
 
-    if (setenv(name, value, true) == 0)
+    if (setenv(name, val, true) == 0)
     {
         return 0;
     }
@@ -8143,7 +8123,7 @@ env_set(unsigned int gid, const char *oid, const char *value,
         te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
         ERROR("Failed to set Environment variable '%s' to '%s'; errno %r",
-              name, value, rc);
+              name, val, rc);
         return rc;
     }
 }
@@ -8151,26 +8131,23 @@ env_set(unsigned int gid, const char *oid, const char *value,
 /**
  * Add a new Environment variable.
  *
- * @param gid       Request's group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param value     Value
- * @param name      Variable name
+ * @param ctx       Request context; its instance name is the
+ *                  variable name
+ * @param val       Value
  *
  * @return Status code
  */
 static te_errno
-env_add(unsigned int gid, const char *oid, const char *value,
-        const char *name)
+env_add(const ta_conf_ctx *ctx, const char *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    const char *name = ta_conf_ctx_inst(ctx, "env");
 
     if (env_is_hidden(name, -1))
         return TE_RC(TE_TA_UNIX, TE_EPERM);
 
     if (getenv(name) == NULL)
     {
-        if (setenv(name, value, false) == 0)
+        if (setenv(name, val, false) == 0)
         {
             return 0;
         }
@@ -8179,7 +8156,7 @@ env_add(unsigned int gid, const char *oid, const char *value,
             te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
 
             ERROR("Failed to add Environment variable '%s=%s'",
-                  name, value);
+                  name, val);
             return rc;
         }
     }
@@ -8192,17 +8169,15 @@ env_add(unsigned int gid, const char *oid, const char *value,
 /**
  * Delete Environment variable.
  *
- * @param gid       Request's group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param name      Variable name
+ * @param ctx       Request context; its instance name is the
+ *                  variable name
  *
  * @return Status code
  */
 static te_errno
-env_del(unsigned int gid, const char *oid, const char *name)
+env_del(const ta_conf_ctx *ctx)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    const char *name = ta_conf_ctx_inst(ctx, "env");
 
     if (env_is_hidden(name, -1))
         return TE_RC(TE_TA_UNIX, TE_EPERM);
@@ -8221,34 +8196,26 @@ env_del(unsigned int gid, const char *oid, const char *name)
 /**
  * Get instance list for object "/agent/env".
  *
- * @param gid       Request's group identifier (unused)
- * @param oid       Full parent object instance identifier (unused)
- * @param sub_id    ID of the object to be listed (unused)
- * @param list      Location for the list pointer
+ * @param ctx       Request context (unused)
+ * @param names     Vector of heap-allocated names to append to
  *
  * @return Status code
  */
 static te_errno
-env_list(unsigned int gid, const char *oid,
-         const char *sub_id, char **list)
+env_list(const ta_conf_ctx *ctx, te_vec *names)
 {
     char * const *env;
 
-    char   *ptr = buf;
-    char   *buf_end = buf + sizeof(buf);
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    UNUSED(ctx);
 
     if (environ == NULL)
         return 0;
 
-    *ptr = '\0';
     for (env = environ; *env != NULL; ++env)
     {
         char    *s = strchr(*env, '=');
         ssize_t  name_len;
+        char    *name;
 
         if (s == NULL)
         {
@@ -8259,21 +8226,11 @@ env_list(unsigned int gid, const char *oid,
         if (env_is_hidden(*env, name_len))
             continue;
 
-        if (ptr != buf)
-            *ptr++ = ' ';
-        if ((buf_end - ptr) <= name_len)
-        {
-            ERROR("Too small buffer for the list of Environment "
-                  "variables");
-            return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
-        }
-        memcpy(ptr, *env, name_len);
-        ptr += name_len;
-        *ptr = '\0';
+        name = TE_ALLOC(name_len + 1);
+        memcpy(name, *env, name_len);
+        name[name_len] = '\0';
+        TE_VEC_APPEND(names, name);
     }
-
-    if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     return 0;
 }
@@ -8339,14 +8296,14 @@ env_subst_underscore_process(te_string *value, const char *subst,
 /**
  * Retrieve an uname string.
  *
- * @param[out] value  resulting buffer
+ * @param[out] val    resulting value
  * @param[in]  field  the offset of a field in `struct utsname`
  *                    (expected to be a string pointer field)
  *
  * @return status code
  */
 static te_errno
-uname_string_get(char *value, size_t field)
+uname_string_get(te_string *val, size_t field)
 {
 #if HAVE_SYS_UTSNAME_H
     struct utsname uts;
@@ -8359,73 +8316,65 @@ uname_string_get(char *value, size_t field)
         return rc;
     }
 
-    return te_strlcpy_safe(value, (char *)&uts + field, RCF_MAX_VAL);
+    te_string_append(val, "%s", (char *)&uts + field);
+
+    return 0;
 #else
     /* In this extremely unlikely case just return empty string */
     UNUSED(field);
-    *value = '\0';
+    UNUSED(val);
 
     return 0;
 #endif /* HAVE_SYS_UTSNAME_H */
 }
 
 static te_errno
-uname_get(unsigned int gid, const char *oid, char *value)
+uname_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
-    return uname_string_get(value, offsetof(struct utsname, sysname));
+    return uname_string_get(val, offsetof(struct utsname, sysname));
 }
 
 static te_errno
-uname_version_get(unsigned int gid, const char *oid, char *value)
+uname_version_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
-    return uname_string_get(value, offsetof(struct utsname, version));
+    return uname_string_get(val, offsetof(struct utsname, version));
 }
 
 static te_errno
-uname_release_get(unsigned int gid, const char *oid, char *value)
+uname_release_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
-    return uname_string_get(value, offsetof(struct utsname, release));
+    return uname_string_get(val, offsetof(struct utsname, release));
 }
 
 static te_errno
-uname_machine_get(unsigned int gid, const char *oid, char *value)
+uname_machine_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
-    return uname_string_get(value, offsetof(struct utsname, machine));
+    return uname_string_get(val, offsetof(struct utsname, machine));
 }
 
 /**
  * Get instance list for object "agent/user".
  *
- * @param gid           group ID
- * @param oid           full identifier of the father instance
- * @param sub_id        ID of the object to be listed
- * @param list          location for the list pointer
+ * @param ctx           request context (unused)
+ * @param names         vector of heap-allocated names to append to
  *
  * @return              Status code:
  * @retval 0                success
  */
 static te_errno
-user_list(unsigned int gid, const char *oid,
-          const char *sub_id, char **list)
+user_list(const ta_conf_ctx *ctx, te_vec *names)
 {
     FILE *f;
-    char *s = buf;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    UNUSED(ctx);
 
     if ((f = fopen("/etc/passwd", "r")) == NULL)
     {
@@ -8435,12 +8384,11 @@ user_list(unsigned int gid, const char *oid,
         return rc;
     }
 
-    buf[0] = 0;
-
     while (fgets(trash, sizeof(trash), f) != NULL)
     {
         char *tmp = strstr(trash, TE_USER_PREFIX);
         char *tmp1;
+        char *name;
 
         unsigned int uid;
 
@@ -8451,12 +8399,11 @@ user_list(unsigned int gid, const char *oid,
         uid = strtol(tmp, &tmp1, 10);
         if (tmp1 == tmp || *tmp1 != ':')
             continue;
-        s += sprintf(s, TE_USER_PREFIX "%u ", uid);
+
+        name = te_string_fmt(TE_USER_PREFIX "%u", uid);
+        TE_VEC_APPEND(names, name);
     }
     fclose(f);
-
-    if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     return 0;
 }
@@ -8606,19 +8553,53 @@ set_change_passwd(char const *user, char const *passwd)
 #endif /* TA_USE_PAM */
 
 /**
- * Add tester user.
+ * Delete tester user.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         value string (unused)
- * @param user          user name: te_tester_<uid>
+ * @param user          user name
  *
  * @return              Status code
  */
 static te_errno
-user_add(unsigned int gid, const char *oid, const char *value,
-         const char *user)
+user_del_core(const char *user)
 {
+    te_errno rc;
+
+    if (!user_exists(user))
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+
+    sprintf(buf, "/usr/bin/killall -u %s", user);
+    ta_system(buf); /* Ignore rc */
+    sprintf(buf, "/usr/sbin/userdel -r %s", user);
+    if ((rc = ta_system(buf)) != 0)
+    {
+        ERROR("\"%s\" command failed with %d", buf, rc);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+    sprintf(buf, "/usr/sbin/groupdel %s", user);
+    if ((rc = ta_system(buf)) != 0)
+    {
+        /* Yes, we ignore rc, as group may be deleted by userdel */
+        VERB("\"%s\" command failed with %d", buf, rc);
+    }
+
+    /* Fedora has very aggressive nscd cache */
+    /* https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=134323 */
+    ta_system("/usr/sbin/nscd -i group && /usr/sbin/nscd -i passwd");
+
+    return 0;
+}
+
+/**
+ * Add tester user.
+ *
+ * @param ctx           request context
+ *
+ * @return              Status code
+ */
+static te_errno
+user_add(const ta_conf_ctx *ctx)
+{
+    const char *user = ta_conf_ctx_inst(ctx, "user");
 #if TA_USE_PAM || defined(__linux__)
     char *tmp;
     char *tmp1;
@@ -8628,12 +8609,7 @@ user_add(unsigned int gid, const char *oid, const char *value,
     te_errno     rc;
 #endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-
 #if !TA_USE_PAM && !defined(__linux__)
-    UNUSED(user);
     ERROR("user_add failed (no user management facilities available)");
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #else
@@ -8682,7 +8658,7 @@ user_add(unsigned int gid, const char *oid, const char *value,
 #endif
     {
         ERROR("change_passwd failed");
-        user_del(gid, oid, user);
+        user_del_core(user);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
@@ -8698,7 +8674,7 @@ user_add(unsigned int gid, const char *oid, const char *value,
     if (rc != 0)
     {
         ERROR("Cannot create ssh key: %r", rc);
-        user_del(gid, oid, user);
+        user_del_core(user);
         return rc;
     }
 
@@ -8709,43 +8685,14 @@ user_add(unsigned int gid, const char *oid, const char *value,
 /**
  * Delete tester user.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param user          user name
+ * @param ctx           request context
  *
  * @return              Status code
  */
 static te_errno
-user_del(unsigned int gid, const char *oid, const char *user)
+user_del(const ta_conf_ctx *ctx)
 {
-    te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (!user_exists(user))
-        return TE_RC(TE_TA_UNIX, TE_EEXIST);
-
-    sprintf(buf, "/usr/bin/killall -u %s", user);
-    ta_system(buf); /* Ignore rc */
-    sprintf(buf, "/usr/sbin/userdel -r %s", user);
-    if ((rc = ta_system(buf)) != 0)
-    {
-        ERROR("\"%s\" command failed with %d", buf, rc);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
-    sprintf(buf, "/usr/sbin/groupdel %s", user);
-    if ((rc = ta_system(buf)) != 0)
-    {
-        /* Yes, we ignore rc, as group may be deleted by userdel */
-        VERB("\"%s\" command failed with %d", buf, rc);
-    }
-
-    /* Fedora has very aggressive nscd cache */
-    /* https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=134323 */
-    ta_system("/usr/sbin/nscd -i group && /usr/sbin/nscd -i passwd");
-
-    return 0;
+    return user_del_core(ta_conf_ctx_inst(ctx, "user"));
 }
 
 /* XEN stuff implementation */
