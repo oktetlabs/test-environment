@@ -50,6 +50,8 @@
 #include <search.h>
 #endif
 
+#include <limits.h>
+
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
@@ -57,10 +59,12 @@
 #include "te_string.h"
 #include "te_str.h"
 #include "te_file.h"
+#include "te_vector.h"
 #include "logger_api.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 #include "logger_api.h"
 #include "unix_internal.h"
 #include "conf_common.h"
@@ -709,35 +713,30 @@ is_vendor_accessible(const pci_vendor *vendor)
 
 
 static te_errno
-pci_device_list(unsigned int gid, const char *oid,
-                const char *sub_id, char **list)
+pci_device_list(const ta_conf_ctx *ctx, te_vec *names)
 {
     unsigned int i;
     const pci_device *iter = all_devices;
-    te_string result = TE_STRING_INIT;
     te_errno rc;
-    bool first = true;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    UNUSED(ctx);
 
     for (i = 0; i < n_all_devices; i++, iter++)
     {
-        if (is_device_accessible(iter))
+        te_string addr = TE_STRING_INIT;
+
+        if (!is_device_accessible(iter))
+            continue;
+
+        rc = format_device_address(&addr, &iter->address);
+        if (rc != 0)
         {
-            if (!first)
-                te_string_append(&result, " ");
-            rc = format_device_address(&result, &iter->address);
-            if (rc != 0)
-            {
-                te_string_free(&result);
-                return rc;
-            }
-            first = false;
+            te_string_free(&addr);
+            return rc;
         }
+        TE_VEC_APPEND(names, addr.ptr);
     }
-    *list = result.ptr;
+
     return 0;
 }
 
@@ -766,22 +765,16 @@ get_devno(const char *id)
 }
 
 static te_errno
-pci_device_instance_get(unsigned int gid, const char *oid, char *value,
-                        const char *unused1, const char *unused2,
-                        const char *venid, const char *devid,
-                        const char *inst)
+pci_device_instance_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    te_string result = TE_STRING_INIT;
+    const char *venid = ta_conf_ctx_inst(ctx, "vendor");
+    const char *devid = ta_conf_ctx_inst(ctx, "device");
+    const char *inst = ta_conf_ctx_inst(ctx, "instance");
     unsigned int vendor_id = get_hex_id(venid);
     unsigned int device_id = get_hex_id(devid);
     unsigned int devno = get_devno(inst);
     te_errno rc;
     const pci_device *dev;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(unused2);
 
     if (vendor_id == 0 || device_id == 0 || devno == (unsigned int)(-1))
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -792,38 +785,24 @@ pci_device_instance_get(unsigned int gid, const char *oid, char *value,
     if (!is_device_accessible(dev))
         return TE_RC(TE_TA_UNIX, TE_EPERM);
 
-    te_string_append(&result, "/agent:%s/hardware:/pci:/device:", ta_name);
-
-    rc = format_device_address(&result, &dev->address);
+    rc = te_string_append_chk(val, "/agent:%s/hardware:/pci:/device:",
+                              ta_name);
     if (rc != 0)
-    {
-        te_string_free(&result);
         return rc;
-    }
-    strcpy(value, result.ptr);
-    te_string_free(&result);
-    return 0;
+
+    return format_device_address(val, &dev->address);
 }
 
 static te_errno
-pci_device_instance_list(unsigned int gid, const char *oid,
-                         const char *sub_id, char **list,
-                         const char *unused1, const char *unused2,
-                         const char *venid, const char *devid)
+pci_device_instance_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string result = TE_STRING_INIT;
+    const char *venid = ta_conf_ctx_inst(ctx, "vendor");
+    const char *devid = ta_conf_ctx_inst(ctx, "device");
     unsigned int vendor_id = get_hex_id(venid);
     unsigned int device_id = get_hex_id(devid);
     pci_vendor *vendor;
     pci_vendor_device *vd;
     pci_device *dev;
-    bool first = true;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(unused1);
-    UNUSED(unused2);
 
     if (vendor_id == 0 || device_id == 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -838,34 +817,24 @@ pci_device_instance_list(unsigned int gid, const char *oid,
 
     TAILQ_FOREACH(dev, &vd->devices, next)
     {
-        if (is_device_accessible(dev))
-        {
-            te_string_append(&result, "%s%u", first ? "" : " ", dev->devno);
-            first = false;
-        }
+        if (!is_device_accessible(dev))
+            continue;
+
+        char *name = te_string_fmt("%u", dev->devno);
+
+        TE_VEC_APPEND(names, name);
     }
 
-    *list = result.ptr;
     return 0;
 }
 
 static te_errno
-pci_vendor_device_list(unsigned int gid, const char *oid,
-                       const char *sub_id, char **list,
-                       const char *unused1, const char *unused2,
-                       const char *venid)
+pci_vendor_device_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string result = TE_STRING_INIT;
+    const char *venid = ta_conf_ctx_inst(ctx, "vendor");
     unsigned int vendor_id = get_hex_id(venid);
     pci_vendor *vendor;
     pci_vendor_device *vd;
-    bool first = true;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(unused1);
-    UNUSED(unused2);
 
     if (vendor_id == 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -876,44 +845,34 @@ pci_vendor_device_list(unsigned int gid, const char *oid,
 
     LIST_FOREACH(vd, &vendor->vendor_devices, next)
     {
-        if (is_vendor_device_accessible(vd))
-        {
-            te_string_append(&result, "%s%04x", first ? "" : " ",
-                             vd->id);
-            first = false;
-        }
+        if (!is_vendor_device_accessible(vd))
+            continue;
+
+        char *name = te_string_fmt("%04x", vd->id);
+
+        TE_VEC_APPEND(names, name);
     }
 
-    *list = result.ptr;
     return 0;
 }
 
 static te_errno
-pci_vendor_list(unsigned int gid, const char *oid,
-                const char *sub_id, char **list,
-                const char *unused1, const char *unused2)
+pci_vendor_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string result = TE_STRING_INIT;
     pci_vendor *vendor;
-    bool first = true;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(unused1);
-    UNUSED(unused2);
+    UNUSED(ctx);
 
     LIST_FOREACH(vendor, vendor_list, next)
     {
-        if (is_vendor_accessible(vendor))
-        {
-            te_string_append(&result, "%s%04x", first ? "" : " ",
-                             vendor->id);
-            first = false;
-        }
+        if (!is_vendor_accessible(vendor))
+            continue;
+
+        char *name = te_string_fmt("%04x", vendor->id);
+
+        TE_VEC_APPEND(names, name);
     }
 
-    *list = result.ptr;
     return 0;
 }
 
@@ -1314,21 +1273,6 @@ pci_device_release(const char *name)
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_device_instance, "instance",
-                               NULL, NULL,
-                               pci_device_instance_get,
-                               pci_device_instance_list);
-
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_vendor_device, "device",
-                               &node_pci_device_instance, NULL,
-                               NULL, pci_vendor_device_list);
-
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_vendor, "vendor",
-                               &node_pci_vendor_device, NULL,
-                               NULL, pci_vendor_list);
-
-
-
 static te_errno
 find_device_by_addr_str_ignore_permission(const char *addr_str,
                                           pci_device **devp)
@@ -1426,24 +1370,22 @@ get_driver_name(const pci_device *dev, char *name, size_t namesize)
 }
 
 static te_errno
-pci_driver_get(unsigned int gid, const char *oid, char *value,
-               const char *unused1, const char *unused2,
-               const char *addr_str)
+pci_driver_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
     const pci_device *dev;
+    char name[RCF_MAX_VAL];
     te_errno rc;
-
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(unused2);
 
     rc = find_device_by_addr_str(addr_str, (pci_device **)&dev);
     if (rc != 0)
         return rc;
 
-    return get_driver_name(dev, value, RCF_MAX_VAL);
+    rc = get_driver_name(dev, name, sizeof(name));
+    if (rc != 0)
+        return rc;
+
+    return te_string_append_chk(val, "%s", name);
 }
 
 static te_errno
@@ -2026,19 +1968,13 @@ try_override(const pci_device *dev, const char *drv)
 }
 
 static te_errno
-pci_driver_set(unsigned int gid, const char *oid, const char *value,
-               const char *unused1, const char *unused2,
-               const char *addr_str)
+pci_driver_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
     const pci_device *dev;
     te_errno rc;
     char driver_name[PATH_MAX];
     unsigned int n_vfs;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(unused2);
 
     rc = find_device_by_addr_str(addr_str, (pci_device **)&dev);
     if (rc != 0)
@@ -2126,31 +2062,25 @@ static te_errno
 append_list_callback(const pci_device *pci_dev, const char *subdir,
                         const char *device, void *user)
 {
-    te_string *list = (te_string*)user;
+    te_vec *names = user;
+    char *name;
 
     UNUSED(pci_dev);
     UNUSED(subdir);
 
-    te_string_append(list, "%s ", device);
+    name = TE_STRDUP(device);
+    TE_VEC_APPEND(names, name);
     return 0;
 }
 
 static te_errno
-pci_dev_list(unsigned int gid, const char *oid, const char *sub_id,
-             char **list, const char *unused1, const char *unused2,
-             const char *addr_str)
+pci_dev_list(const ta_conf_ctx *ctx, te_vec *names)
 {
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
     te_errno rc;
     const pci_driver_dev_list_helper *dlh;
     const pci_device *dev;
     char driver_name[PATH_MAX];
-    te_string result = TE_STRING_INIT;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(unused1);
-    UNUSED(unused2);
 
     rc = find_device_by_addr_str(addr_str, (pci_device **)&dev);
     if (rc != 0)
@@ -2164,40 +2094,25 @@ pci_dev_list(unsigned int gid, const char *oid, const char *sub_id,
                                   TE_ARRAY_LEN(dev_list_helper), driver_name);
 
     if (dlh == NULL)
-        return string_empty_list(list);
+        return 0;
 
-    rc = pci_driver_dev_list_for_each(dlh, dev, append_list_callback, &result);
-    if (rc != 0)
-        return rc;
-
-    if (result.ptr == NULL)
-        return string_empty_list(list);
-
-    te_string_cut(&result, 1);
-    *list = result.ptr;
-
-    return 0;
+    return pci_driver_dev_list_for_each(dlh, dev, append_list_callback, names);
 }
 
 static te_errno
-pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
-             char **list, const char *unused1, const char *unused2,
-             const char *addr_str)
+pci_net_list(const ta_conf_ctx *ctx, te_vec *names)
 {
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
     te_string buf = TE_STRING_INIT;
+    te_vec net_names = TE_VEC_INIT_AUTOPTR(char *);
+    te_string net_list = TE_STRING_INIT;
     pci_device *dev;
-    char *net_list = NULL;
     te_errno rc;
     char driver_name[PATH_MAX];
     struct dirent **namelist;
     unsigned int i;
-    int n;
-
-    UNUSED(sub_id);
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(unused2);
+    size_t base;
+    size_t n;
 
     rc = find_device_by_addr_str(addr_str, &dev);
     if (rc != 0)
@@ -2216,9 +2131,9 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
 
     if (strcmp_start("virtio-pci", driver_name) == 0)
     {
-        n = scandir(buf.ptr, &namelist, filter_virtio, alphasort);
+        int nvirtio = scandir(buf.ptr, &namelist, filter_virtio, alphasort);
 
-        if (n < 0)
+        if (nvirtio < 0)
         {
             te_string_free(&buf);
             ERROR("Failed to scan directory '%s': %s",
@@ -2226,12 +2141,9 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
             return TE_OS_RC(TE_TA_UNIX, errno);
         }
 
-        if (n == 0)
+        if (nvirtio == 0)
         {
             te_string_free(&buf);
-            *list = strdup("");
-            if (*list == NULL)
-                return TE_OS_RC(TE_TA_UNIX, TE_ENOMEM);
 
             free(dev->net_list);
             dev->net_list = NULL;
@@ -2240,84 +2152,84 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
 
         te_string_append(&buf, "%s", namelist[0]->d_name);
 
-        while (n--)
-            free(namelist[n]);
+        while (nvirtio--)
+            free(namelist[nvirtio]);
 
         free(namelist);
     }
 
     te_string_append(&buf, "%s", "/net");
 
-    net_list = TE_ALLOC(RCF_MAX_VAL);
-
-    rc = get_dir_list(buf.ptr, net_list, RCF_MAX_VAL, true, NULL, NULL,
-                      alphasort);
-    te_string_reset(&buf);
+    rc = get_dir_list_vec(buf.ptr, &net_names, true, NULL, NULL, alphasort);
+    te_string_free(&buf);
     if (rc != 0)
     {
-        te_string_free(&buf);
-        free(net_list);
+        te_vec_free(&net_names);
         return rc;
     }
 
-    if (*net_list == '\0')
+    n = te_vec_size(&net_names);
+    if (n == 0)
     {
-        free(net_list);
-        net_list = NULL;
-    }
+        te_vec_free(&net_names);
 
-    rc = string_replace(&dev->net_list, net_list);
-    if (rc != 0)
-    {
-        te_string_free(&buf);
-        free(net_list);
-        return rc;
-    }
-
-    if (net_list == NULL)
-    {
-        te_string_free(&buf);
-        *list = NULL;
+        free(dev->net_list);
+        dev->net_list = NULL;
         return 0;
     }
 
-    for (n = 0, i = 0; i < strlen(net_list); i++)
-    {
-        if (net_list[i] != ' ')
-            continue;
+    /*
+     * dev->net_list caches the interface names in the space-separated
+     * form pci_net_get() parses: every name is followed by a single
+     * space, including the last one.
+     */
+    te_string_join_vec(&net_list, &net_names, " ");
+    te_string_append(&net_list, " ");
+    te_vec_free(&net_names);
 
-        te_string_append(&buf, "%u ", n++);
+    rc = string_replace(&dev->net_list, net_list.ptr);
+    te_string_free(&net_list);
+    if (rc != 0)
+        return rc;
+
+    base = te_vec_size(names);
+    for (i = 0; i < n; i++)
+    {
+        char buf_idx[sizeof("4294967295")];
+        char *name;
+
+        te_snprintf(buf_idx, sizeof(buf_idx), "%u", i);
+        name = TE_STRDUP(buf_idx);
+        TE_VEC_APPEND(names, name);
     }
-    free(net_list);
 
     if (n == 1)
     {
-        te_string_reset(&buf);
-        /* The string must contain at least 2 chars */
-        te_string_append(&buf, " ");
+        /*
+         * Per doc/cm/cm_pci.yml: a device with a single network
+         * interface names that instance with an empty string
+         * instead of a sequence number. The ta_conf list encoding
+         * can carry an empty instance name, so the lone sequence
+         * number is simply replaced by one.
+         */
+        free(TE_VEC_GET(char *, names, base));
+        TE_VEC_GET(char *, names, base) = TE_STRDUP("");
     }
-
-    *list = buf.ptr;
 
     return 0;
 }
 
 static te_errno
-pci_net_get(unsigned int gid, const char *oid, char *value,
-            const char *unused1, const char *unused2,
-            const char *addr_str, const char *net_id_str)
+pci_net_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
+    const char *net_id_str = ta_conf_ctx_inst(ctx, "net");
     const pci_device *dev;
     unsigned int net_id;
     const char *next;
     unsigned int n;
     unsigned int i;
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(unused2);
 
     if (*net_id_str == '\0')
     {
@@ -2352,82 +2264,59 @@ pci_net_get(unsigned int gid, const char *oid, char *value,
     if (next == NULL)
         next = &dev->net_list[strlen(dev->net_list)];
 
-    snprintf(value, RCF_MAX_VAL, "%.*s", (int)(next - &dev->net_list[i]),
-             &dev->net_list[i]);
-
-    return 0;
+    return te_string_append_chk(val, "%.*s", (int)(next - &dev->net_list[i]),
+                                &dev->net_list[i]);
 }
 
 static te_errno
-pci_numa_node_get(unsigned int gid, const char *oid, char *value,
-               const char *unused1, const char *unused2,
-               const char *addr_str)
+pci_numa_node_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
     te_errno rc;
     int result;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(unused2);
 
     rc = read_pci_int_attr(addr_str, "numa_node", &result);
     if (rc != 0 || result < 0)
     {
         /* Default to empty value (no defined NUMA node) on failure */
-        value[0] = '\0';
         return 0;
     }
 
-    snprintf(value, RCF_MAX_VAL, "/agent:%s/hardware:/node:%d", ta_name,
-             result);
-    return 0;
+    return te_string_append_chk(val, "/agent:%s/hardware:/node:%d", ta_name,
+                                result);
 }
 
 static te_errno
-pci_sriov_num_vfs_get(unsigned int gid, const char *oid, char *value,
-                      const char *unused1, const char *unused2,
-                      const char *addr_str)
+pci_sriov_num_vfs_get(const ta_conf_ctx *ctx, int32_t *val)
 {
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
     te_errno rc;
     int result;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(unused2);
 
     rc = read_pci_int_attr(addr_str, "sriov_numvfs", &result);
     if (rc != 0)
         return rc;
 
-    snprintf(value, RCF_MAX_VAL, "%d", result);
+    *val = result;
     return 0;
 }
 
 static te_errno
-pci_sriov_num_vfs_set(unsigned int gid, const char *oid, char *value,
-                      const char *unused1, const char *unused2,
-                      const char *addr_str)
+pci_sriov_num_vfs_set(const ta_conf_ctx *ctx, int32_t val)
 {
-    te_errno rc;
-    unsigned int n_vfs;
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
     const pci_device *dev;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(unused2);
+    te_errno rc;
 
     rc = find_device_by_addr_str(addr_str, (pci_device **)&dev);
     if (rc != 0)
         return rc;
 
-    rc = te_strtoui(value, 10, &n_vfs);
-    if (rc != 0)
-        return rc;
+    /* Match te_strtoui()'s base-10, unsigned int range. */
+    if (val < 0 || val > UINT_MAX)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    rc = pci_current_num_vfs_set(dev, n_vfs);
+    rc = pci_current_num_vfs_set(dev, (unsigned int)val);
     if (rc != 0)
         return rc;
 
@@ -2441,10 +2330,9 @@ pci_sriov_num_vfs_set(unsigned int gid, const char *oid, char *value,
 }
 
 static te_errno
-pci_sriov_pf_get(unsigned int gid, const char *oid, char *value,
-                 const char *unused1, const char *unused2,
-                 const char *addr_str)
+pci_sriov_pf_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
     char *base;
     te_errno rc;
     te_string buf = TE_STRING_INIT;
@@ -2464,16 +2352,14 @@ pci_sriov_pf_get(unsigned int gid, const char *oid, char *value,
 
     if (readlink(buf.ptr, link, sizeof(link) - 1) < 0)
     {
-        int rc = errno;
+        int err = errno;
+
         te_string_free(&buf);
 
-        if (rc == ENOENT)
-        {
-            *value = '\0';
+        if (err == ENOENT)
             return 0;
-        }
 
-        return TE_OS_RC(TE_TA_UNIX, rc);
+        return TE_OS_RC(TE_TA_UNIX, err);
     }
     te_string_free(&buf);
 
@@ -2483,20 +2369,15 @@ pci_sriov_pf_get(unsigned int gid, const char *oid, char *value,
     else
         base++;
 
-    rc = te_snprintf(value, RCF_MAX_VAL, "/agent:%s/hardware:/pci:/device:%s",
-                     ta_name, base);
-    if (rc != 0)
-        return TE_OS_RC(TE_TA_UNIX, rc);
-
-    return 0;
+    return te_string_append_chk(val, "/agent:%s/hardware:/pci:/device:%s",
+                                ta_name, base);
 }
 
 static te_errno
-pci_sriov_vf_get(unsigned int gid, const char *oid, char *value,
-                 const char *unused1, const char *unused2,
-                 const char *addr_str, const char *unused3,
-                 const char *virtfn_id)
+pci_sriov_vf_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
+    const char *virtfn_id = ta_conf_ctx_inst(ctx, "vf");
     te_string buf = TE_STRING_INIT;
     char link[PATH_MAX] = "";
     char *vf_addr;
@@ -2504,12 +2385,7 @@ pci_sriov_vf_get(unsigned int gid, const char *oid, char *value,
     const pci_device *vf;
     te_errno rc;
     char *agent;
-    int n;
-
-    UNUSED(gid);
-    UNUSED(unused1);
-    UNUSED(unused2);
-    UNUSED(unused3);
+    ssize_t n;
 
     rc = find_device_by_addr_str(addr_str, (pci_device **)&dev);
     if (rc != 0)
@@ -2524,9 +2400,9 @@ pci_sriov_vf_get(unsigned int gid, const char *oid, char *value,
 
     te_string_append(&buf, PCI_VIRTFN_PREFIX "%s", virtfn_id);
 
-    rc = readlink(buf.ptr, link, sizeof(link) - 1);
+    n = readlink(buf.ptr, link, sizeof(link) - 1);
     te_string_free(&buf);
-    if (rc < 0)
+    if (n < 0)
         return TE_RC(TE_TA_UNIX, TE_EFAIL);
 
     vf_addr = te_basename(link);
@@ -2546,18 +2422,16 @@ pci_sriov_vf_get(unsigned int gid, const char *oid, char *value,
     }
     free(vf_addr);
 
-    agent = cfg_oid_str_get_inst_name(oid, 1);
+    agent = cfg_oid_str_get_inst_name(ta_conf_ctx_oid(ctx), 1);
     if (agent == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
-    n = snprintf(value, RCF_MAX_VAL,
-                 "/agent:%s/hardware:/pci:/vendor:%04x/device:%04x/instance:%u",
-                 agent, vf->vendor_id, vf->device_id, vf->devno);
+    rc = te_string_append_chk(val,
+             "/agent:%s/hardware:/pci:/vendor:%04x/device:%04x/instance:%u",
+             agent, vf->vendor_id, vf->device_id, vf->devno);
     free(agent);
-    if (n < 0 || n >= RCF_MAX_VAL)
-        return TE_RC(TE_TA_UNIX, TE_EFAIL);
 
-    return 0;
+    return rc;
 }
 
 static int
@@ -2567,25 +2441,15 @@ filter_virtfn(const struct dirent *de)
 }
 
 static te_errno
-pci_sriov_vf_list(unsigned int gid, const char *oid, const char *sub_id,
-                  char **list, const char *unused1, const char *unused2,
-                  const char *addr_str)
+pci_sriov_vf_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    size_t result_size = RCF_MAX_VAL;
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
     te_string buf = TE_STRING_INIT;
     const pci_device *dev;
-    struct dirent **names = NULL;
-    char *result = NULL;
+    struct dirent **namelist = NULL;
     te_errno rc = 0;
-    size_t off;
     int n = 0;
     int i;
-
-    UNUSED(sub_id);
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(unused2);
 
     rc = find_device_by_addr_str(addr_str, (pci_device **)&dev);
     if (rc != 0)
@@ -2595,7 +2459,7 @@ pci_sriov_vf_list(unsigned int gid, const char *oid, const char *sub_id,
     if (rc != 0)
         goto out;
 
-    n = scandir(buf.ptr, &names, filter_virtfn, alphasort);
+    n = scandir(buf.ptr, &namelist, filter_virtfn, alphasort);
     if (n < 0)
     {
         rc = TE_OS_RC(TE_TA_UNIX, errno);
@@ -2603,57 +2467,36 @@ pci_sriov_vf_list(unsigned int gid, const char *oid, const char *sub_id,
         goto out;
     }
 
-    result = TE_ALLOC(result_size);
-
-    for (off = 0, i = 0; i < n; i++)
+    for (i = 0; i < n; i++)
     {
-        int ret;
+        char *name;
 
-        if (strlen(names[i]->d_name) <= strlen(PCI_VIRTFN_PREFIX))
+        if (strlen(namelist[i]->d_name) <= strlen(PCI_VIRTFN_PREFIX))
         {
             ERROR("Malformed virtfn link");
             rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
             goto out;
         }
 
-        ret = snprintf(result + off, result_size - off, "%s ",
-                       names[i]->d_name + strlen(PCI_VIRTFN_PREFIX));
-        if (ret < 0 || (size_t)ret >= result_size - off)
-        {
-            rc = TE_OS_RC(TE_TA_UNIX, errno);
-            ERROR("snprintf() failed or string truncated");
-            goto out;
-        }
-
-        off += ret;
+        name = TE_STRDUP(namelist[i]->d_name + strlen(PCI_VIRTFN_PREFIX));
+        TE_VEC_APPEND(names, name);
     }
-
-    *list = result;
 
 out:
     te_string_free(&buf);
     for (i = 0; i < n; i++)
-        free(names[i]);
-    free(names);
-
-    if (rc != 0)
-        free(result);
+        free(namelist[i]);
+    free(namelist);
 
     return rc;
 }
 
 static te_errno
-pci_sriov_get(unsigned int gid, const char *oid, char *value,
-              const char *unused1, const char *unused2,
-              const char *addr_str)
+pci_sriov_get(const ta_conf_ctx *ctx, int32_t *val)
 {
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
     te_errno rc;
     int result;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(unused2);
 
     rc = read_pci_int_attr(addr_str, "sriov_totalvfs", &result);
     if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
@@ -2661,62 +2504,38 @@ pci_sriov_get(unsigned int gid, const char *oid, char *value,
     else if (rc != 0)
         return rc;
 
-    snprintf(value, RCF_MAX_VAL, "%d", result);
+    *val = result;
     return 0;
 }
 
 /* Obtain PCI device serial number */
 static te_errno
-pci_serialno_get(unsigned int gid, const char *oid, char *value,
-                 const char *unused1, const char *unused2,
-                 const char *addr_str)
+pci_serialno_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(unused2);
-
 #ifndef USE_LIBNETCONF
-    UNUSED(gid);
-    UNUSED(addr_str);
+    UNUSED(ctx);
+    UNUSED(val);
 
-    *value = '\0';
     return 0;
 #else
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
     te_errno rc = 0;
     netconf_list *list = NULL;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(unused2);
 
     rc = netconf_devlink_get_info(nh_genl, "pci", addr_str, &list);
     if (rc != 0)
     {
         if (rc == TE_ENODEV || rc == TE_ENOENT || rc == TE_EOPNOTSUPP)
-        {
-            *value = '\0';
             return 0;
-        }
 
         return TE_RC(TE_TA_UNIX, rc);
     }
 
-    if (list->length == 0)
+    if (list->length != 0)
     {
-        *value = '\0';
-        goto out;
+        rc = te_string_append_chk(val, "%s",
+                 list->tail->data.devlink_info.serial_number);
     }
-
-    rc = te_snprintf(value, RCF_MAX_VAL, "%s",
-                     list->tail->data.devlink_info.serial_number);
-    if (rc != 0)
-    {
-        ERROR("%s(): te_snprintf() failed, rc=%r", __FUNCTION__, rc);
-        rc = TE_RC(TE_TA_UNIX, rc);
-    }
-
-out:
 
     netconf_list_free(list);
     return rc;
@@ -2725,21 +2544,15 @@ out:
 
 /* Get PCI device eswitch mode */
 static te_errno
-pci_eswitch_mode_get(unsigned int gid, const char *oid, char *value,
-                     const char *unused1, const char *unused2,
-                     const char *addr_str)
+pci_eswitch_mode_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(unused2);
-
 #ifndef USE_LIBNETCONF
-    UNUSED(addr_str);
+    UNUSED(ctx);
+    UNUSED(val);
 
-    *value = '\0';
     return 0;
 #else
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
     te_errno rc = 0;
     netconf_list *list = NULL;
 
@@ -2748,52 +2561,34 @@ pci_eswitch_mode_get(unsigned int gid, const char *oid, char *value,
     {
         if (rc == TE_ENODEV || rc == TE_ENOENT || rc == TE_EOPNOTSUPP ||
             rc == TE_EPERM)
-        {
-            *value = '\0';
             return 0;
-        }
 
         return TE_RC(TE_TA_UNIX, rc);
     }
 
-    if (list->length == 0)
+    if (list->length != 0)
     {
-        *value = '\0';
-        netconf_list_free(list);
-        return 0;
+        rc = te_string_append_chk(val, "%s",
+                 netconf_devlink_eswitch_mode_netconf2str(
+                     list->tail->data.devlink_eswitch.mode));
     }
 
-    rc = te_snprintf(value, RCF_MAX_VAL, "%s",
-                     netconf_devlink_eswitch_mode_netconf2str(
-                                        list->tail->data.devlink_eswitch.mode));
     netconf_list_free(list);
-    if (rc != 0)
-    {
-        ERROR("%s(): te_snprintf() failed, rc=%r", __FUNCTION__, rc);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
-
-    return 0;
+    return rc;
 #endif
 }
 
 /* Set PCI device eswitch mode */
 static te_errno
-pci_eswitch_mode_set(unsigned int gid, const char *oid, const char *value,
-                     const char *unused1, const char *unused2,
-                     const char *addr_str)
+pci_eswitch_mode_set(const ta_conf_ctx *ctx, const char *value)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(unused2);
-
 #ifndef USE_LIBNETCONF
-    UNUSED(addr_str);
+    UNUSED(ctx);
+    UNUSED(value);
 
-    *value = '\0';
     return 0;
 #else
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
     te_errno rc = 0;
     netconf_devlink_eswitch_mode mode;
 
@@ -2808,87 +2603,66 @@ pci_eswitch_mode_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 #endif
 }
+
 /* Get PCI device eswitch support */
 static te_errno
-pci_eswitch_get(unsigned int gid, const char *oid, char *value,
-                 const char *unused1, const char *unused2,
-                 const char *addr_str)
+pci_eswitch_get(const ta_conf_ctx *ctx, bool *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(unused2);
-
 #ifndef USE_LIBNETCONF
-    UNUSED(addr_str);
+    UNUSED(ctx);
 
-    *value = '\0';
+    *val = false;
     return 0;
 #else
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
     te_errno rc = 0;
     netconf_list *list = NULL;
 
     rc = netconf_devlink_get_eswitch(nh_genl, "pci", addr_str, &list);
     netconf_list_free(list);
 
-    rc = te_snprintf(value, RCF_MAX_VAL, "%u", (rc == 0) ? 1 : 0);
-    if (rc != 0)
-    {
-        ERROR("%s(): te_snprintf() failed, rc=%r", __FUNCTION__, rc);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
-
+    *val = (rc == 0);
     return 0;
 #endif
 }
 
 /* List parameter names of a PCI device */
 static te_errno
-pci_param_list(unsigned int gid, const char *oid,
-               const char *sub_id, char **list,
-               const char *unused1, const char *unused2,
-               const char *addr_str)
+pci_param_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(unused1);
-    UNUSED(unused2);
-
 #ifndef USE_LIBNETCONF
-    UNUSED(gid);
-    UNUSED(addr_str);
+    UNUSED(ctx);
+    UNUSED(names);
 
-    *list = NULL;
     return 0;
 #else
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
+    unsigned int gid = ta_conf_ctx_gid(ctx);
     te_errno rc = 0;
     netconf_node *node;
     netconf_devlink_param *param;
-    te_string str = TE_STRING_INIT;
 
     rc = update_dev_params(gid);
     if (rc != 0)
     {
         if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
-        {
-            *list = NULL;
             return 0;
-        }
 
         return TE_RC(TE_TA_UNIX, rc);
     }
 
     for (node = dev_params->head; node != NULL; node = node->next)
     {
+        char *name;
+
         param = &node->data.devlink_param;
         if (strcmp(param->bus_name, "pci") != 0 ||
             strcmp(param->dev_name, addr_str) != 0)
             continue;
 
-        te_string_append(&str, "%s ", param->name);
+        name = TE_STRDUP(param->name);
+        TE_VEC_APPEND(names, name);
     }
-
-    *list = str.ptr;
 
     return 0;
 #endif
@@ -2896,22 +2670,16 @@ pci_param_list(unsigned int gid, const char *oid,
 
 /* Show whether device parameter is driver-specific or generic */
 static te_errno
-param_drv_specific_get(unsigned int gid, const char *oid, char *value,
-                       const char *unused1, const char *unused2,
-                       const char *addr_str, const char *param_name)
+param_drv_specific_get(const ta_conf_ctx *ctx, int32_t *val)
 {
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(unused2);
-
 #ifndef USE_LIBNETCONF
-    UNUSED(gid);
-    UNUSED(value);
-    UNUSED(addr_str);
-    UNUSED(param_name);
+    UNUSED(ctx);
 
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #else
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
+    const char *param_name = ta_conf_ctx_inst(ctx, "param");
+    unsigned int gid = ta_conf_ctx_gid(ctx);
     te_errno rc;
     netconf_devlink_param *param;
 
@@ -2919,36 +2687,23 @@ param_drv_specific_get(unsigned int gid, const char *oid, char *value,
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    rc = te_snprintf(value, RCF_MAX_VAL, "%d",
-                     (param->generic ? 0 : 1));
-    if (rc != 0)
-    {
-        ERROR("%s(): te_snprintf() failed, rc=%r", __FUNCTION__, rc);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
-
+    *val = param->generic ? 0 : 1;
     return 0;
 #endif
 }
 
 /* Get type of device parameter */
 static te_errno
-param_type_get(unsigned int gid, const char *oid, char *value,
-               const char *unused1, const char *unused2,
-               const char *addr_str, const char *param_name)
+param_type_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(unused2);
-
 #ifndef USE_LIBNETCONF
-    UNUSED(gid);
-    UNUSED(value);
-    UNUSED(addr_str);
-    UNUSED(param_name);
+    UNUSED(ctx);
 
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #else
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
+    const char *param_name = ta_conf_ctx_inst(ctx, "param");
+    unsigned int gid = ta_conf_ctx_gid(ctx);
     te_errno rc;
     netconf_devlink_param *param;
 
@@ -2956,15 +2711,7 @@ param_type_get(unsigned int gid, const char *oid, char *value,
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    rc = te_snprintf(value, RCF_MAX_VAL, "%s",
-                     netconf_nla_type2str(param->type));
-    if (rc != 0)
-    {
-        ERROR("%s(): te_snprintf() failed, rc=%r", __FUNCTION__, rc);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
-
-    return 0;
+    return te_string_append_chk(val, "%s", netconf_nla_type2str(param->type));
 #endif
 }
 
@@ -2973,26 +2720,19 @@ param_type_get(unsigned int gid, const char *oid, char *value,
  * Such as "runtime", "driverinit" and "permanent".
  */
 static te_errno
-param_value_list(unsigned int gid, const char *oid,
-                 const char *sub_id, char **list,
-                 const char *unused1, const char *unused2,
-                 const char *addr_str, const char *param_name)
+param_value_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(unused1);
-    UNUSED(unused2);
-
 #ifndef USE_LIBNETCONF
-    UNUSED(gid);
-    UNUSED(addr_str);
-    UNUSED(param_name);
+    UNUSED(ctx);
+    UNUSED(names);
 
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #else
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
+    const char *param_name = ta_conf_ctx_inst(ctx, "param");
+    unsigned int gid = ta_conf_ctx_gid(ctx);
     te_errno rc;
     netconf_devlink_param *param;
-    te_string str = TE_STRING_INIT;
     int i;
 
     rc = find_dev_param(gid, addr_str, param_name, &param);
@@ -3002,10 +2742,12 @@ param_value_list(unsigned int gid, const char *oid,
     for (i = 0; i < NETCONF_DEVLINK_PARAM_CMODES; i++)
     {
         if (param->values[i].defined)
-            te_string_append(&str, "%s ", devlink_param_cmode_netconf2str(i));
-    }
+        {
+            char *name = TE_STRDUP(devlink_param_cmode_netconf2str(i));
 
-    *list = str.ptr;
+            TE_VEC_APPEND(names, name);
+        }
+    }
 
     return 0;
 #endif
@@ -3013,23 +2755,17 @@ param_value_list(unsigned int gid, const char *oid,
 
 /* Get device parameter value stored in specified configuration mode */
 static te_errno
-param_value_get(unsigned int gid, const char *oid, char *value,
-                const char *unused1, const char *unused2,
-                const char *addr_str, const char *param_name,
-                const char *cmode_name)
+param_value_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(unused2);
-
 #ifndef USE_LIBNETCONF
-    UNUSED(gid);
-    UNUSED(addr_str);
-    UNUSED(param_name);
-    UNUSED(cmode_name);
+    UNUSED(ctx);
 
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #else
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
+    const char *param_name = ta_conf_ctx_inst(ctx, "param");
+    const char *cmode_name = ta_conf_ctx_inst(ctx, "value");
+    unsigned int gid = ta_conf_ctx_gid(ctx);
     te_errno rc;
     netconf_devlink_param *param;
     netconf_devlink_param_value *param_value;
@@ -3051,69 +2787,49 @@ param_value_get(unsigned int gid, const char *oid, char *value,
     switch (param->type)
     {
         case NETCONF_NLA_FLAG:
-            rc = te_snprintf(value, RCF_MAX_VAL, "%d",
-                             param_value->data.flag ? 1 : 0);
-            break;
+            return te_string_append_chk(val, "%d",
+                                        param_value->data.flag ? 1 : 0);
 
         case NETCONF_NLA_U8:
-            rc = te_snprintf(value, RCF_MAX_VAL, "%u",
-                             (unsigned int)(param_value->data.u8));
-            break;
+            return te_string_append_chk(val, "%u",
+                     (unsigned int)(param_value->data.u8));
 
         case NETCONF_NLA_U16:
-            rc = te_snprintf(value, RCF_MAX_VAL, "%u",
-                             (unsigned int)(param_value->data.u16));
-            break;
+            return te_string_append_chk(val, "%u",
+                     (unsigned int)(param_value->data.u16));
 
         case NETCONF_NLA_U32:
-            rc = te_snprintf(value, RCF_MAX_VAL, "%u",
-                             (unsigned int)(param_value->data.u32));
-            break;
+            return te_string_append_chk(val, "%u",
+                     (unsigned int)(param_value->data.u32));
 
         case NETCONF_NLA_U64:
-            rc = te_snprintf(
-                     value, RCF_MAX_VAL, "%llu",
+            return te_string_append_chk(
+                     val, "%llu",
                      (long long unsigned int)(param_value->data.u64));
-            break;
 
         case NETCONF_NLA_STRING:
-            rc = te_snprintf(value, RCF_MAX_VAL, "%s",
-                             param_value->data.str);
-            break;
+            return te_string_append_chk(val, "%s", param_value->data.str);
 
         default:
             return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
-
-    if (rc != 0)
-    {
-        ERROR("%s(): te_snprintf() failed, rc=%r", __FUNCTION__, rc);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
-
-    return 0;
 #endif
 }
 
 /* Set parameter value in specified configuration mode */
 static te_errno
-param_value_set(unsigned int gid, const char *oid, const char *value,
-                const char *unused1, const char *unused2,
-                const char *addr_str, const char *param_name,
-                const char *cmode_name)
+param_value_set(const ta_conf_ctx *ctx, const char *value)
 {
-    UNUSED(oid);
-    UNUSED(unused1);
-    UNUSED(unused2);
-
 #ifndef USE_LIBNETCONF
-    UNUSED(gid);
-    UNUSED(addr_str);
-    UNUSED(param_name);
-    UNUSED(cmode_name);
+    UNUSED(ctx);
+    UNUSED(value);
 
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #else
+    const char *addr_str = ta_conf_ctx_inst(ctx, "device");
+    const char *param_name = ta_conf_ctx_inst(ctx, "param");
+    const char *cmode_name = ta_conf_ctx_inst(ctx, "value");
+    unsigned int gid = ta_conf_ctx_gid(ctx);
     te_errno rc;
     netconf_devlink_param *param;
     netconf_devlink_param_cmode cmode;
@@ -3220,18 +2936,13 @@ param_value_set(unsigned int gid, const char *oid, const char *value,
     ta_tmp_dir, (_pci_addr), (_cfg_name)
 
 static te_errno
-pci_spdk_config_add(unsigned int gid, const char *oid, const char *value,
-                    const char *unused, const char *unused2,
-                    const char *pci_addr, const char *cfg_name)
+pci_spdk_config_add(const ta_conf_ctx *ctx)
 {
+    const char *pci_addr = ta_conf_ctx_inst(ctx, "device");
+    const char *cfg_name = ta_conf_ctx_inst(ctx, "spdk_config");
     te_errno rc = 0;
     const pci_device *dev = NULL;
     FILE *json_file;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused);
-    UNUSED(unused2);
 
     rc = find_device_by_addr_str(pci_addr, (pci_device **)&dev);
     if (rc != 0)
@@ -3280,15 +2991,11 @@ pci_spdk_config_add(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-pci_spdk_config_del(unsigned int gid, const char *oid,
-                    const char *unused, const char *unused2,
-                    const char *pci_addr, const char *cfg_name)
+pci_spdk_config_del(const ta_conf_ctx *ctx)
 {
+    const char *pci_addr = ta_conf_ctx_inst(ctx, "device");
+    const char *cfg_name = ta_conf_ctx_inst(ctx, "spdk_config");
     te_errno rc;
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused);
-    UNUSED(unused2);
 
     rc = te_unlink_fmt(PCI_SPDK_CONFIG_NAME_FMT,
                        PCI_SPDK_CONFIG_NAME_ARGS(pci_addr, cfg_name));
@@ -3299,52 +3006,31 @@ static te_file_scandir_callback add_spdk_config;
 static te_errno add_spdk_config(const char *pattern, const char *pathname,
                                 void *data)
 {
-    te_string *dest = data;
+    te_vec *names = data;
     char *base = te_file_extract_glob(pathname, pattern, true);
 
     if (base == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    te_string_append(dest, "%s%s", dest->len > 0 ? " " : "", base);
-    free(base);
+    TE_VEC_APPEND(names, base);
 
     return 0;
 }
 
 static te_errno
-pci_spdk_config_list(unsigned int gid, const char *oid,
-                     const char *sub_id, char **list,
-                     const char *unused, const char *unused2,
-                     const char *pci_addr, const char *cfg_name)
+pci_spdk_config_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string items = TE_STRING_INIT;
-    te_errno rc;
+    const char *pci_addr = ta_conf_ctx_inst(ctx, "device");
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(unused);
-    UNUSED(unused2);
-
-    rc = te_file_scandir(ta_tmp_dir, add_spdk_config, &items,
-                         PCI_SPDK_CONFIG_PATTERN_FMT, pci_addr);
-
-    if (rc == 0)
-        te_string_move(list, &items);
-
-    te_string_free(&items);
-    return rc;
+    return te_file_scandir(ta_tmp_dir, add_spdk_config, names,
+                           PCI_SPDK_CONFIG_PATTERN_FMT, pci_addr);
 }
 
 static te_errno
-pci_spdk_config_filename_get(unsigned int gid, const char *oid, char *value,
-                             const char *unused, const char *unused2,
-                             const char *pci_addr, const char *cfg_name)
+pci_spdk_config_filename_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(unused);
-    UNUSED(unused2);
+    const char *pci_addr = ta_conf_ctx_inst(ctx, "device");
+    const char *cfg_name = ta_conf_ctx_inst(ctx, "spdk_config");
 
     if (te_access_fmt(R_OK, PCI_SPDK_CONFIG_NAME_FMT,
                       PCI_SPDK_CONFIG_NAME_ARGS(pci_addr, cfg_name)) != 0)
@@ -3354,125 +3040,83 @@ pci_spdk_config_filename_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
-    TE_SNPRINTF(value, RCF_MAX_VAL,
-                PCI_SPDK_CONFIG_NAME_FMT,
-                PCI_SPDK_CONFIG_NAME_ARGS(pci_addr, cfg_name));
-
-    return 0;
+    return te_string_append_chk(val, PCI_SPDK_CONFIG_NAME_FMT,
+                                PCI_SPDK_CONFIG_NAME_ARGS(pci_addr, cfg_name));
 }
 
-RCF_PCH_CFG_NODE_RO(node_pci_spdk_config_filename, "filename",
-                    NULL, NULL, pci_spdk_config_filename_get);
+/*
+ * The 9 PCI id leaves print unpadded/padded hex or plain decimal with
+ * no "0x" prefix, matching the raw sysfs attributes byte for byte;
+ * hence they stay string-typed instead of using a fixed-width numeric
+ * type.
+ */
+#define PCI_ID_GET(_name, _field, _fmt)                              \
+    static te_errno                                                      \
+    pci_##_name##_get(const ta_conf_ctx *ctx, te_string *val)                  \
+    {                                                                    \
+        const char *addr_str = ta_conf_ctx_inst(ctx, "device");          \
+        const pci_device *dev;                                           \
+        te_errno rc;                                                     \
+                                                                         \
+        rc = find_device_by_addr_str(addr_str, (pci_device **)&dev);     \
+        if (rc != 0)                                                     \
+            return rc;                                                   \
+                                                                         \
+        return te_string_append_chk(val, _fmt, dev->_field);             \
+    }
 
-RCF_PCH_CFG_NODE_COLLECTION(node_pci_spdk_config, "spdk_config",
-                            &node_pci_spdk_config_filename, NULL,
-                            pci_spdk_config_add,
-                            pci_spdk_config_del,
-                            pci_spdk_config_list, NULL);
+PCI_ID_GET(domain, address.domain, "%04x");
+PCI_ID_GET(bus, address.bus, "%02x");
+PCI_ID_GET(slot, address.slot, "%02x");
+PCI_ID_GET(fn, address.fn, "%u");
+PCI_ID_GET(vendor_id, vendor_id, "%04x");
+PCI_ID_GET(device_id, device_id, "%04x");
+PCI_ID_GET(subsystem_vendor, subsystem_vendor, "%04x");
+PCI_ID_GET(subsystem_device, subsystem_device, "%04x");
+PCI_ID_GET(class, device_class, "%08x");
 
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_pci_param_value, "value",
-                               NULL, NULL,
-                               param_value_get,
-                               param_value_set,
-                               NULL, NULL, param_value_list,
-                               NULL);
+#undef PCI_ID_GET
 
-RCF_PCH_CFG_NODE_RO(node_pci_param_type, "type",
-                    NULL, &node_pci_param_value, param_type_get);
+/* PCI id leaf: RO_STR node on the matching PCI_ID_GET() handler */
+#define PCI_ID_NODE_RO(_name) TA_CONF_RO_STR(#_name, pci_##_name##_get)
 
-RCF_PCH_CFG_NODE_RO(node_pci_param_drv_spec, "driver_specific",
-                    NULL, &node_pci_param_type,
-                    param_drv_specific_get);
-
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_param, "param",
-                               &node_pci_param_drv_spec, &node_pci_spdk_config,
-                               NULL, pci_param_list);
-
-RCF_PCH_CFG_NODE_RO(node_pci_serialno, "serialno",
-                    NULL, &node_pci_param, pci_serialno_get);
-
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_dev, "dev",
-                               NULL, &node_pci_serialno,
-                               NULL, pci_dev_list);
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_net, "net",
-                               NULL, &node_pci_dev,
-                               pci_net_get, pci_net_list);
-RCF_PCH_CFG_NODE_RO(node_pci_numa_node, "node",
-                    NULL, &node_pci_net,
-                    pci_numa_node_get);
-RCF_PCH_CFG_NODE_RW(node_pci_driver, "driver",
-                    NULL, &node_pci_numa_node,
-                    pci_driver_get, pci_driver_set);
-
-RCF_PCH_CFG_NODE_RW(node_pci_sriov_numvfs, "num_vfs",
-                    NULL, NULL,
-                    pci_sriov_num_vfs_get, pci_sriov_num_vfs_set);
-RCF_PCH_CFG_NODE_RO(node_pci_sriov_pf, "pf",
-                    NULL, &node_pci_sriov_numvfs,
-                    pci_sriov_pf_get);
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_sriov_vf, "vf",
-                               NULL, &node_pci_sriov_pf,
-                               pci_sriov_vf_get, pci_sriov_vf_list);
-RCF_PCH_CFG_NODE_RO(node_pci_sriov, "sriov",
-                    &node_pci_sriov_vf, &node_pci_driver,
-                    pci_sriov_get);
-
-RCF_PCH_CFG_NODE_RW(node_pci_eswitch_mode, "mode",
-                    NULL, NULL, pci_eswitch_mode_get, pci_eswitch_mode_set);
-
-RCF_PCH_CFG_NODE_RO(node_pci_eswitch, "eswitch",
-                    &node_pci_eswitch_mode, &node_pci_sriov, pci_eswitch_get);
+static const ta_conf_node *const node_pci =
+    TA_CONF_NA("pci",
+        TA_CONF_LIST("device", pci_device_list,
+            PCI_ID_NODE_RO(domain), PCI_ID_NODE_RO(bus),
+            PCI_ID_NODE_RO(slot), PCI_ID_NODE_RO(fn),
+            PCI_ID_NODE_RO(vendor_id), PCI_ID_NODE_RO(device_id),
+            PCI_ID_NODE_RO(subsystem_vendor),
+            PCI_ID_NODE_RO(subsystem_device), PCI_ID_NODE_RO(class),
+            TA_CONF_RO_BOOL("eswitch", pci_eswitch_get,
+                TA_CONF_RW_STR("mode", pci_eswitch_mode_get,
+                               pci_eswitch_mode_set)),
+            TA_CONF_RO_INT32("sriov", pci_sriov_get,
+                TA_CONF_RO_COLL("vf", pci_sriov_vf_get, pci_sriov_vf_list),
+                TA_CONF_RO_STR("pf", pci_sriov_pf_get),
+                TA_CONF_RW_INT32("num_vfs", pci_sriov_num_vfs_get,
+                               pci_sriov_num_vfs_set)),
+            TA_CONF_RW_STR("driver", pci_driver_get, pci_driver_set),
+            TA_CONF_RO_STR("node", pci_numa_node_get),
+            TA_CONF_RO_COLL("net", pci_net_get, pci_net_list),
+            TA_CONF_LIST("dev", pci_dev_list),
+            TA_CONF_RO_STR("serialno", pci_serialno_get),
+            TA_CONF_LIST("param", pci_param_list,
+                TA_CONF_RO_INT32("driver_specific", param_drv_specific_get),
+                TA_CONF_RO_STR("type", param_type_get),
+                TA_CONF_RW_COLL_STR("value", param_value_get,
+                                    param_value_set, param_value_list)),
+            TA_CONF_COLL("spdk_config", pci_spdk_config_add,
+                         pci_spdk_config_del, pci_spdk_config_list,
+                TA_CONF_RO_STR("filename",
+                               pci_spdk_config_filename_get))),
+        TA_CONF_LIST("vendor", pci_vendor_list,
+            TA_CONF_LIST("device", pci_vendor_device_list,
+                TA_CONF_RO_COLL("instance", pci_device_instance_get,
+                                pci_device_instance_list))));
 
 
-#define PCI_ID_NODE_RO(_name, _field, _fmt, _sibling)                   \
-    static te_errno                                                     \
-    pci_##_name##_get(unsigned int gid, const char *oid, char *value,   \
-                      const char *unused1, const char *unused2,         \
-                      const char *addr_str)                             \
-    {                                                                   \
-        const pci_device *dev;                                          \
-        te_errno rc;                                                    \
-                                                                        \
-        UNUSED(gid);                                                    \
-        UNUSED(oid);                                                    \
-        UNUSED(unused1);                                                \
-        UNUSED(unused2);                                                \
-                                                                        \
-        rc = find_device_by_addr_str(addr_str, (pci_device **)&dev);    \
-        if (rc != 0)                                                    \
-            return rc;                                                  \
-                                                                        \
-        sprintf(value, _fmt, dev->_field);                              \
-        return 0;                                                       \
-    }                                                                   \
-                                                                        \
-    RCF_PCH_CFG_NODE_RO(node_pci_##_name, #_name, NULL,                 \
-                        (_sibling),                                     \
-                        pci_##_name##_get)
-
-PCI_ID_NODE_RO(class, device_class, "%08x", &node_pci_eswitch);
-PCI_ID_NODE_RO(subsystem_device, subsystem_device, "%04x", &node_pci_class);
-PCI_ID_NODE_RO(subsystem_vendor, subsystem_vendor, "%04x",
-               &node_pci_subsystem_device);
-PCI_ID_NODE_RO(device_id, device_id, "%04x",
-               &node_pci_subsystem_vendor);
-PCI_ID_NODE_RO(vendor_id, vendor_id, "%04x",
-               &node_pci_device_id);
-PCI_ID_NODE_RO(fn, address.fn, "%u",
-               &node_pci_vendor_id);
-PCI_ID_NODE_RO(slot, address.slot, "%02x",
-               &node_pci_fn);
-PCI_ID_NODE_RO(bus, address.bus, "%02x",
-               &node_pci_slot);
-PCI_ID_NODE_RO(domain, address.domain, "%04x",
-               &node_pci_bus);
-
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_device, "device",
-                               &node_pci_domain, &node_pci_vendor,
-                               NULL, pci_device_list);
-
-RCF_PCH_CFG_NODE_NA(node_pci, "pci", &node_pci_device, NULL);
-
+#undef PCI_ID_NODE_RO
 
 te_errno
 ta_unix_conf_pci_init()
@@ -3512,7 +3156,7 @@ ta_unix_conf_pci_init()
                       pci_device_grab,
                       pci_device_release);
 
-    return rcf_pch_add_node("/agent/hardware", &node_pci);
+    return ta_conf_register("/agent/hardware", node_pci);
 }
 
 /* Release resources */
