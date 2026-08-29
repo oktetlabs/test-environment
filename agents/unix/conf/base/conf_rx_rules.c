@@ -14,8 +14,12 @@
 #include "te_errno.h"
 #include "logger_api.h"
 #include "te_defs.h"
+#include "te_str.h"
+#include "te_alloc.h"
+#include "te_vector.h"
 #include "rcf_pch.h"
 #include "rcf_pch_ta_cfg.h"
+#include "rcf_pch_tree.h"
 #include "unix_internal.h"
 
 #ifdef HAVE_SYS_IOCTL_H
@@ -46,73 +50,57 @@ static char last_rule_if_name[RCF_MAX_VAL] = "";
 
 /* List existing Rx rules */
 static te_errno
-rules_list(unsigned int gid,
-           const char *oid,
-           const char *sub_id,
-           char **list_out,
-           const char *if_name)
+rules_list(const ta_conf_ctx *ctx, te_vec *names)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
     ta_ethtool_rx_cls_rules *rules = NULL;
     unsigned int i;
-    te_string str = TE_STRING_INIT;
     te_errno rc;
 
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-    rc = ta_ethtool_get_rx_cls_rules(gid, if_name, &rules);
+    rc = ta_ethtool_get_rx_cls_rules(ta_conf_ctx_gid(ctx), if_name, &rules);
     if (rc != 0)
     {
         if (TE_RC_GET_ERROR(rc) == TE_EOPNOTSUPP)
-        {
-            *list_out = NULL;
             return 0;
-        }
+
         return rc;
     }
 
     for (i = 0; i < rules->rule_cnt; i++)
     {
-        rc = te_string_append_chk(&str, "%u ", rules->locs[i]);
-        if (rc != 0)
-        {
-            te_string_free(&str);
-            return rc;
-        }
+        char buf[sizeof("4294967295")];
+        char *name;
+
+        te_snprintf(buf, sizeof(buf), "%u", rules->locs[i]);
+        name = TE_STRDUP(buf);
+        TE_VEC_APPEND(names, name);
     }
 
-    *list_out = str.ptr;
     return 0;
 }
 
 /* Get location of Rx rule added the last time for a given interface */
 static te_errno
-rules_last_added_get(unsigned int gid, const char *oid,
-                     char *value, const char *if_name)
+rules_last_added_get(const ta_conf_ctx *ctx, int64_t *val)
 {
-    te_string str_val = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
-
-    UNUSED(gid);
-    UNUSED(oid);
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
 
     if (last_rule_added < 0 || strcmp(if_name, last_rule_if_name) != 0)
         return TE_ENOENT;
 
-    return te_string_append_chk(&str_val, "%ld", last_rule_added);
+    *val = last_rule_added;
+    return 0;
 }
 
 /* Get size of Rx classification rules table */
 static te_errno
-rules_table_size_get(unsigned int gid, const char *oid,
-                     char *value, const char *if_name)
+rules_table_size_get(const ta_conf_ctx *ctx, uint32_t *val)
 {
-    te_string str_val = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
     ta_ethtool_rx_cls_rules *rules = NULL;
     te_errno rc;
 
-    UNUSED(oid);
-
-    rc = ta_ethtool_get_rx_cls_rules(gid, if_name, &rules);
+    rc = ta_ethtool_get_rx_cls_rules(ta_conf_ctx_gid(ctx), if_name, &rules);
     if (rc != 0)
     {
         if (TE_RC_GET_ERROR(rc) == TE_EOPNOTSUPP)
@@ -121,7 +109,8 @@ rules_table_size_get(unsigned int gid, const char *oid,
         return rc;
     }
 
-    return te_string_append_chk(&str_val, "%u", rules->table_size);
+    *val = rules->table_size;
+    return 0;
 }
 
 /*
@@ -129,16 +118,13 @@ rules_table_size_get(unsigned int gid, const char *oid,
  * classification rules
  */
 static te_errno
-rules_spec_loc_get(unsigned int gid, const char *oid,
-                   char *value, const char *if_name)
+rules_spec_loc_get(const ta_conf_ctx *ctx, bool *val)
 {
-    te_string str_val = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
     ta_ethtool_rx_cls_rules *rules = NULL;
     te_errno rc;
 
-    UNUSED(oid);
-
-    rc = ta_ethtool_get_rx_cls_rules(gid, if_name, &rules);
+    rc = ta_ethtool_get_rx_cls_rules(ta_conf_ctx_gid(ctx), if_name, &rules);
     if (rc != 0)
     {
         if (TE_RC_GET_ERROR(rc) == TE_EOPNOTSUPP)
@@ -147,8 +133,8 @@ rules_spec_loc_get(unsigned int gid, const char *oid,
         return rc;
     }
 
-    return te_string_append_chk(&str_val, "%u",
-                                (rules->spec_loc_flag ? 1 : 0));
+    *val = rules->spec_loc_flag;
+    return 0;
 }
 
 /* Get string name of network flow type */
@@ -355,16 +341,12 @@ get_rule(unsigned int gid, const char *if_name, const char *loc_str,
 
 /* Start adding a new Rx rule (it will have to be committed) */
 static te_errno
-rule_add(unsigned int gid, const char *oid,
-         const char *value, const char *if_name,
-         const char *rules_name, const char *loc_str)
+rule_add(const ta_conf_ctx *ctx)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *loc_str = ta_conf_ctx_inst(ctx, "rule");
     unsigned int location;
     te_errno rc;
-
-    UNUSED(oid);
-    UNUSED(value);
-    UNUSED(rules_name);
 
     if (rule_add_started)
     {
@@ -377,7 +359,8 @@ rule_add(unsigned int gid, const char *oid,
     if (rc != 0)
         return rc;
 
-    rc = ta_ethtool_add_rx_cls_rule(gid, if_name, location, NULL);
+    rc = ta_ethtool_add_rx_cls_rule(ta_conf_ctx_gid(ctx), if_name, location,
+                                    NULL);
     if (rc == 0)
     {
         rule_add_started = true;
@@ -390,16 +373,12 @@ rule_add(unsigned int gid, const char *oid,
 
 /* Remove existing Rx rule */
 static te_errno
-rule_del(unsigned int gid, const char *oid,
-         const char *if_name, const char *rules_name,
-         const char *loc_str)
+rule_del(const ta_conf_ctx *ctx)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *loc_str = ta_conf_ctx_inst(ctx, "rule");
     unsigned int location;
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(rules_name);
 
     rc = te_strtoui(loc_str, 10, &location);
     if (rc != 0)
@@ -410,29 +389,20 @@ rule_del(unsigned int gid, const char *oid,
 
 /* Commit changes to Rx rule */
 static te_errno
-rule_commit(unsigned int gid, const cfg_oid *p_oid)
+rule_commit(const ta_conf_ctx *ctx)
 {
-    char *if_name = NULL;
-    char *rule_loc = NULL;
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *rule_loc = ta_conf_ctx_inst(ctx, "rule");
     unsigned int location;
     unsigned int ret_location;
     te_errno rc;
-
-    if (p_oid->len <= 4)
-    {
-        ERROR("%s(): committed OID is too short", __FUNCTION__);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    if_name = CFG_OID_GET_INST_NAME(p_oid, 2);
-    rule_loc = CFG_OID_GET_INST_NAME(p_oid, 4);
 
     rc = parse_rule_location(rule_loc, &location);
     if (rc != 0)
         return rc;
 
-    rc = ta_ethtool_commit_rx_cls_rule(gid, if_name, location,
-                                       &ret_location);
+    rc = ta_ethtool_commit_rx_cls_rule(ta_conf_ctx_gid(ctx), if_name,
+                                       location, &ret_location);
     if (rc == 0 && rule_add_started)
         last_rule_added = ret_location;
 
@@ -443,105 +413,76 @@ rule_commit(unsigned int gid, const cfg_oid *p_oid)
 
 /* Get RSS context of Rx rule */
 static te_errno
-rule_rss_context_get(unsigned int gid, const char *oid,
-                     char *value, const char *if_name,
-                     const char *rules_name,
-                     const char *loc_str)
+rule_rss_context_get(const ta_conf_ctx *ctx, int64_t *val)
 {
-    te_string str_val = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
-
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *loc_str = ta_conf_ctx_inst(ctx, "rule");
     ta_ethtool_rx_cls_rule *rule = NULL;
     te_errno rc;
 
-    UNUSED(oid);
-    UNUSED(rules_name);
-
-    rc = get_rule(gid, if_name, loc_str, &rule);
+    rc = get_rule(ta_conf_ctx_gid(ctx), if_name, loc_str, &rule);
     if (rc != 0)
         return rc;
 
-    return te_string_append_chk(&str_val, "%jd", rule->rss_context);
+    *val = rule->rss_context;
+    return 0;
 }
 
 /* Set RSS context of Rx rule */
 static te_errno
-rule_rss_context_set(unsigned int gid, const char *oid,
-                     const char *value, const char *if_name,
-                     const char *rules_name, const char *loc_str)
+rule_rss_context_set(const ta_conf_ctx *ctx, int64_t val)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *loc_str = ta_conf_ctx_inst(ctx, "rule");
     ta_ethtool_rx_cls_rule *rule = NULL;
-    intmax_t rss_ctx = 0;
     te_errno rc;
 
-    UNUSED(oid);
-    UNUSED(rules_name);
-
-    rc = get_rule(gid, if_name, loc_str, &rule);
+    rc = get_rule(ta_conf_ctx_gid(ctx), if_name, loc_str, &rule);
     if (rc != 0)
         return rc;
 
-    rc = te_strtoimax(value, 10, &rss_ctx);
-    if (rc != 0)
-        return rc;
-
-    rule->rss_context = rss_ctx;
+    rule->rss_context = val;
     return 0;
 }
 
 /* Get RSS queue Id of Rx rule */
 static te_errno
-rule_rx_queue_get(unsigned int gid, const char *oid,
-                  char *value, const char *if_name,
-                  const char *rules_name, const char *loc_str)
+rule_rx_queue_get(const ta_conf_ctx *ctx, int64_t *val)
 {
-    te_string str_val = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
-
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *loc_str = ta_conf_ctx_inst(ctx, "rule");
     ta_ethtool_rx_cls_rule *rule = NULL;
     te_errno rc;
 
-    UNUSED(oid);
-    UNUSED(rules_name);
-
-    rc = get_rule(gid, if_name, loc_str, &rule);
+    rc = get_rule(ta_conf_ctx_gid(ctx), if_name, loc_str, &rule);
     if (rc != 0)
         return rc;
 
     if (rule->rx_queue == RX_CLS_FLOW_DISC)
-    {
-        return te_string_append_chk(&str_val, "%d", -1);
-    }
+        *val = -1;
     else
-    {
-        return te_string_append_chk(
-                        &str_val, "%ju", rule->rx_queue);
-    }
+        *val = rule->rx_queue;
+
+    return 0;
 }
 
 /* Set RSS queue Id of Rx rule */
 static te_errno
-rule_rx_queue_set(unsigned int gid, const char *oid,
-                  const char *value, const char *if_name,
-                  const char *rules_name, const char *loc_str)
+rule_rx_queue_set(const ta_conf_ctx *ctx, int64_t val)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *loc_str = ta_conf_ctx_inst(ctx, "rule");
     ta_ethtool_rx_cls_rule *rule = NULL;
-    intmax_t rx_queue = 0;
     te_errno rc;
 
-    UNUSED(oid);
-    UNUSED(rules_name);
-
-    rc = get_rule(gid, if_name, loc_str, &rule);
+    rc = get_rule(ta_conf_ctx_gid(ctx), if_name, loc_str, &rule);
     if (rc != 0)
         return rc;
 
-    rc = te_strtoimax(value, 10, &rx_queue);
-    if (rc != 0)
-        return rc;
+    if (val == -1)
+        val = RX_CLS_FLOW_DISC;
 
-    if (rx_queue == -1)
-        rx_queue = RX_CLS_FLOW_DISC;
-
-    rule->rx_queue = rx_queue;
+    rule->rx_queue = val;
     return 0;
 }
 
@@ -549,43 +490,35 @@ rule_rx_queue_set(unsigned int gid, const char *oid,
  * Get value stored in flow_spec configuration node (flow type of Rx rule)
  */
 static te_errno
-rule_flow_spec_get(unsigned int gid, const char *oid,
-                   char *value, const char *if_name,
-                   const char *rules_name, const char *loc_str)
+rule_flow_spec_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    te_string str_val = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
-
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *loc_str = ta_conf_ctx_inst(ctx, "rule");
     ta_ethtool_rx_cls_rule *rule = NULL;
     te_errno rc;
 
-    UNUSED(oid);
-    UNUSED(rules_name);
-
-    rc = get_rule(gid, if_name, loc_str, &rule);
+    rc = get_rule(ta_conf_ctx_gid(ctx), if_name, loc_str, &rule);
     if (rc != 0)
         return rc;
 
-    return flow_type2str(rule->flow_type, &str_val);
+    return flow_type2str(rule->flow_type, val);
 }
 
 /* Set value stored in flow_spec node (flow type of Rx rule) */
 static te_errno
-rule_flow_spec_set(unsigned int gid, const char *oid,
-                   const char *value, const char *if_name,
-                   const char *rules_name, const char *loc_str)
+rule_flow_spec_set(const ta_conf_ctx *ctx, const char *val)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *loc_str = ta_conf_ctx_inst(ctx, "rule");
     ta_ethtool_rx_cls_rule *rule = NULL;
     unsigned int type;
     te_errno rc;
 
-    UNUSED(oid);
-    UNUSED(rules_name);
-
-    rc = get_rule(gid, if_name, loc_str, &rule);
+    rc = get_rule(ta_conf_ctx_gid(ctx), if_name, loc_str, &rule);
     if (rc != 0)
         return rc;
 
-    rc = str2flow_type(value, &type);
+    rc = str2flow_type(val, &type);
     if (rc != 0)
         return rc;
 
@@ -656,8 +589,9 @@ print_mac_addr(uint8_t *addr, te_string *str)
 
 /* Print IP address to string */
 static te_errno
-print_ip_addr(ta_ethtool_rx_cls_rule *rule, uint8_t *addr, char *value)
+print_ip_addr(ta_ethtool_rx_cls_rule *rule, uint8_t *addr, te_string *str)
 {
+    char buf[INET6_ADDRSTRLEN];
     const char *result;
     int af;
 
@@ -682,83 +616,11 @@ print_ip_addr(ta_ethtool_rx_cls_rule *rule, uint8_t *addr, char *value)
             af = AF_INET;
     }
 
-    result = inet_ntop(af, addr, value, RCF_MAX_VAL);
+    result = inet_ntop(af, addr, buf, sizeof(buf));
     if (result == NULL)
         return TE_OS_RC(TE_TA_UNIX, errno);
 
-    return 0;
-}
-
-/* Common method for getting field value and mask */
-static te_errno
-rule_field_get(unsigned int gid, const char *oid,
-               char *value, const char *if_name,
-               const char *rules_name, const char *loc_str)
-{
-    ta_ethtool_rx_cls_rule *rule = NULL;
-    ta_ethtool_rx_cls_rule_fields *fields = NULL;
-    te_string str_val = TE_STRING_EXT_BUF_INIT(value, RCF_MAX_VAL);
-    te_string field_name_str = TE_STRING_INIT_STATIC(CFG_SUBID_MAX);
-    const char *field_name = te_string_value(&field_name_str);
-    bool mask;
-    te_errno rc;
-
-    UNUSED(rules_name);
-
-    rc = get_rule(gid, if_name, loc_str, &rule);
-    if (rc != 0)
-        return rc;
-
-    rc = rule_field_from_oid(oid, &field_name_str, &mask);
-    if (rc != 0)
-        return rc;
-
-    if (mask)
-        fields = &rule->field_masks;
-    else
-        fields = &rule->field_values;
-
-#define CHECK_PRINT_UINT(_field) \
-    do {                                                                  \
-        if (strcmp(field_name, #_field) == 0)                             \
-        {                                                                 \
-            return te_string_append_chk(&str_val, "%u", fields->_field);  \
-        }                                                                 \
-    } while (0)
-
-    CHECK_PRINT_UINT(ether_type);
-    CHECK_PRINT_UINT(vlan_tpid);
-    CHECK_PRINT_UINT(vlan_tci);
-    CHECK_PRINT_UINT(data0);
-    CHECK_PRINT_UINT(data1);
-    CHECK_PRINT_UINT(src_port);
-    CHECK_PRINT_UINT(dst_port);
-    CHECK_PRINT_UINT(tos_or_tclass);
-    CHECK_PRINT_UINT(spi);
-    CHECK_PRINT_UINT(l4_4_bytes);
-    CHECK_PRINT_UINT(l4_proto);
-
-#undef CHECK_PRINT_UINT
-
-    if (strcmp(field_name, "src_mac") == 0)
-    {
-        return print_mac_addr(fields->src_mac, &str_val);
-    }
-    else if (strcmp(field_name, "dst_mac") == 0)
-    {
-        return print_mac_addr(fields->dst_mac, &str_val);
-    }
-    else if (strcmp(field_name, "src_l3_addr") == 0)
-    {
-        return print_ip_addr(rule, fields->src_l3_addr, value);
-    }
-    else if (strcmp(field_name, "dst_l3_addr") == 0)
-    {
-        return print_ip_addr(rule, fields->dst_l3_addr, value);
-    }
-
-    ERROR("%s(): unknown field '%s'", __FUNCTION__, field_name);
-    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    return te_string_append_chk(str, "%s", buf);
 }
 
 /* Parse MAC address */
@@ -798,12 +660,13 @@ parse_ip_addr(const char *value, uint8_t *addr)
     return 0;
 }
 
-/* Common method for setting field value and mask */
+/* Common method for getting field value and mask */
 static te_errno
-rule_field_set(unsigned int gid, const char *oid,
-               const char *value, const char *if_name,
-               const char *rules_name, const char *loc_str)
+rule_field_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *loc_str = ta_conf_ctx_inst(ctx, "rule");
+    const char *oid = ta_conf_ctx_oid(ctx);
     ta_ethtool_rx_cls_rule *rule = NULL;
     ta_ethtool_rx_cls_rule_fields *fields = NULL;
     te_string field_name_str = TE_STRING_INIT_STATIC(CFG_SUBID_MAX);
@@ -811,9 +674,77 @@ rule_field_set(unsigned int gid, const char *oid,
     bool mask;
     te_errno rc;
 
-    UNUSED(rules_name);
+    rc = get_rule(ta_conf_ctx_gid(ctx), if_name, loc_str, &rule);
+    if (rc != 0)
+        return rc;
 
-    rc = get_rule(gid, if_name, loc_str, &rule);
+    rc = rule_field_from_oid(oid, &field_name_str, &mask);
+    if (rc != 0)
+        return rc;
+
+    if (mask)
+        fields = &rule->field_masks;
+    else
+        fields = &rule->field_values;
+
+#define CHECK_PRINT_UINT(_field) \
+    do {                                                                  \
+        if (strcmp(field_name, #_field) == 0)                             \
+        {                                                                 \
+            return te_string_append_chk(val, "%u", fields->_field);       \
+        }                                                                 \
+    } while (0)
+
+    CHECK_PRINT_UINT(ether_type);
+    CHECK_PRINT_UINT(vlan_tpid);
+    CHECK_PRINT_UINT(vlan_tci);
+    CHECK_PRINT_UINT(data0);
+    CHECK_PRINT_UINT(data1);
+    CHECK_PRINT_UINT(src_port);
+    CHECK_PRINT_UINT(dst_port);
+    CHECK_PRINT_UINT(tos_or_tclass);
+    CHECK_PRINT_UINT(spi);
+    CHECK_PRINT_UINT(l4_4_bytes);
+    CHECK_PRINT_UINT(l4_proto);
+
+#undef CHECK_PRINT_UINT
+
+    if (strcmp(field_name, "src_mac") == 0)
+    {
+        return print_mac_addr(fields->src_mac, val);
+    }
+    else if (strcmp(field_name, "dst_mac") == 0)
+    {
+        return print_mac_addr(fields->dst_mac, val);
+    }
+    else if (strcmp(field_name, "src_l3_addr") == 0)
+    {
+        return print_ip_addr(rule, fields->src_l3_addr, val);
+    }
+    else if (strcmp(field_name, "dst_l3_addr") == 0)
+    {
+        return print_ip_addr(rule, fields->dst_l3_addr, val);
+    }
+
+    ERROR("%s(): unknown field '%s'", __FUNCTION__, field_name);
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+}
+
+/* Common method for setting field value and mask */
+static te_errno
+rule_field_set(const ta_conf_ctx *ctx, const char *val)
+{
+    const char *if_name = ta_conf_ctx_inst(ctx, "interface");
+    const char *loc_str = ta_conf_ctx_inst(ctx, "rule");
+    const char *oid = ta_conf_ctx_oid(ctx);
+    ta_ethtool_rx_cls_rule *rule = NULL;
+    ta_ethtool_rx_cls_rule_fields *fields = NULL;
+    te_string field_name_str = TE_STRING_INIT_STATIC(CFG_SUBID_MAX);
+    const char *field_name = te_string_value(&field_name_str);
+    bool mask;
+    te_errno rc;
+
+    rc = get_rule(ta_conf_ctx_gid(ctx), if_name, loc_str, &rule);
     if (rc != 0)
         return rc;
 
@@ -830,8 +761,8 @@ rule_field_set(unsigned int gid, const char *oid,
     do {                                                        \
         if (strcmp(field_name, #_field) == 0)                   \
         {                                                       \
-            return te_strtou_size(value, 10, &fields->_field,   \
-                                  sizeof(fields->_field));      \
+            return te_strtou_size(val, 10, &fields->_field,     \
+                                  sizeof(fields->_field));       \
         }                                                       \
     } while (0)
 
@@ -851,115 +782,56 @@ rule_field_set(unsigned int gid, const char *oid,
 
     if (strcmp(field_name, "src_mac") == 0)
     {
-       return parse_mac_addr(value, fields->src_mac);
+       return parse_mac_addr(val, fields->src_mac);
     }
     else if (strcmp(field_name, "dst_mac") == 0)
     {
-       return parse_mac_addr(value, fields->dst_mac);
+       return parse_mac_addr(val, fields->dst_mac);
     }
     else if (strcmp(field_name, "src_l3_addr") == 0)
     {
-       return parse_ip_addr(value, fields->src_l3_addr);
+       return parse_ip_addr(val, fields->src_l3_addr);
     }
     else if (strcmp(field_name, "dst_l3_addr") == 0)
     {
-       return parse_ip_addr(value, fields->dst_l3_addr);
+       return parse_ip_addr(val, fields->dst_l3_addr);
     }
 
     ERROR("%s(): unknown field '%s'", __FUNCTION__, field_name);
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
-static rcf_pch_cfg_object node_rule;
-
-/* Define objects for rule field and its mask */
+/* Node for a rule flow_spec field with its "mask" child */
 #define RULE_FIELD(name_) \
-{                                                             \
-    .sub_id = #name_,                                         \
-    .get = (rcf_ch_cfg_get)rule_field_get,                    \
-    .set = (rcf_ch_cfg_set)rule_field_set,                    \
-    .commit_parent = &node_rule                               \
-},                                                            \
-{                                                             \
-    .sub_id = "mask",                                         \
-    .get = (rcf_ch_cfg_get)rule_field_get,                    \
-    .set = (rcf_ch_cfg_set)rule_field_set,                    \
-    .commit_parent = &node_rule                               \
-}
+    TA_CONF_RW_STR(#name_, rule_field_get, rule_field_set, \
+                   TA_CONF_RW_STR("mask", rule_field_get, rule_field_set))
 
-/* Flow specification fields for Rx rule */
-static rcf_pch_cfg_object rule_fields[] = {
-    RULE_FIELD(src_mac),
-    RULE_FIELD(dst_mac),
-    RULE_FIELD(ether_type),
-    RULE_FIELD(vlan_tpid),
-    RULE_FIELD(vlan_tci),
-    RULE_FIELD(data0),
-    RULE_FIELD(data1),
-    RULE_FIELD(src_l3_addr),
-    RULE_FIELD(dst_l3_addr),
-    RULE_FIELD(src_port),
-    RULE_FIELD(dst_port),
-    RULE_FIELD(tos_or_tclass),
-    RULE_FIELD(spi),
-    RULE_FIELD(l4_4_bytes),
-    RULE_FIELD(l4_proto),
-};
+static const ta_conf_node *const node_rules =
+    TA_CONF_NA("rx_rules",
+        TA_CONF_RO_UINT32("table_size", rules_table_size_get),
+        TA_CONF_RO_BOOL("spec_loc", rules_spec_loc_get),
+        TA_CONF_RO_INT64("last_added", rules_last_added_get),
+        TA_CONF_NODE((.name = "rule",
+                      .add = { .as_none = rule_add },
+                      .del = rule_del,
+                      .list = rules_list,
+                      .commit = rule_commit),
+            TA_CONF_RW_INT64("rx_queue", rule_rx_queue_get,
+                           rule_rx_queue_set),
+            TA_CONF_RW_INT64("rss_context", rule_rss_context_get,
+                           rule_rss_context_set),
+            TA_CONF_RW_STR("flow_spec", rule_flow_spec_get,
+                           rule_flow_spec_set,
+                RULE_FIELD(src_mac), RULE_FIELD(dst_mac),
+                RULE_FIELD(ether_type), RULE_FIELD(vlan_tpid),
+                RULE_FIELD(vlan_tci), RULE_FIELD(data0),
+                RULE_FIELD(data1), RULE_FIELD(src_l3_addr),
+                RULE_FIELD(dst_l3_addr), RULE_FIELD(src_port),
+                RULE_FIELD(dst_port), RULE_FIELD(tos_or_tclass),
+                RULE_FIELD(spi), RULE_FIELD(l4_4_bytes),
+                RULE_FIELD(l4_proto))));
 
-static rcf_pch_cfg_object node_rule_flow_spec = {
-    .sub_id = "flow_spec",
-    .get = (rcf_ch_cfg_get)rule_flow_spec_get,
-    .set = (rcf_ch_cfg_set)rule_flow_spec_set,
-    .commit_parent = &node_rule
-};
-
-static rcf_pch_cfg_object node_rule_rss_context = {
-    .sub_id = "rss_context",
-    .brother = &node_rule_flow_spec,
-    .get = (rcf_ch_cfg_get)rule_rss_context_get,
-    .set = (rcf_ch_cfg_set)rule_rss_context_set,
-    .commit_parent = &node_rule
-};
-
-static rcf_pch_cfg_object node_rule_rx_queue = {
-    .sub_id = "rx_queue",
-    .brother = &node_rule_rss_context,
-    .get = (rcf_ch_cfg_get)rule_rx_queue_get,
-    .set = (rcf_ch_cfg_set)rule_rx_queue_set,
-    .commit_parent = &node_rule
-};
-
-static rcf_pch_cfg_object node_rule = {
-    .sub_id = "rule",
-    .son = &node_rule_rx_queue,
-    .list = (rcf_ch_cfg_list)rules_list,
-    .add = (rcf_ch_cfg_add)rule_add,
-    .del = (rcf_ch_cfg_del)rule_del,
-    .commit = (rcf_ch_cfg_commit)rule_commit,
-};
-
-static rcf_pch_cfg_object node_rules_last_added = {
-    .sub_id = "last_added",
-    .brother = &node_rule,
-    .get = (rcf_ch_cfg_get)rules_last_added_get,
-};
-
-static rcf_pch_cfg_object node_rules_spec_loc = {
-    .sub_id = "spec_loc",
-    .brother = &node_rules_last_added,
-    .get = (rcf_ch_cfg_get)rules_spec_loc_get,
-};
-
-static rcf_pch_cfg_object node_rules_table_size = {
-    .sub_id = "table_size",
-    .brother = &node_rules_spec_loc,
-    .get = (rcf_ch_cfg_get)rules_table_size_get,
-};
-
-static rcf_pch_cfg_object node_rules = {
-    .sub_id = "rx_rules",
-    .son = &node_rules_table_size,
-};
+#undef RULE_FIELD
 
 /**
  * Add a child node for Rx classification rules to the interface object.
@@ -969,23 +841,7 @@ static rcf_pch_cfg_object node_rules = {
 extern te_errno
 ta_unix_conf_if_rx_rules_init(void)
 {
-    int i;
-    te_errno rc;
-
-    rc = rcf_pch_add_node("/agent/interface/", &node_rules);
-    if (rc != 0)
-        return rc;
-
-    for (i = TE_ARRAY_LEN(rule_fields) / 2; i > 0; i--)
-    {
-        rule_fields[i * 2 - 2].son = &rule_fields[i * 2 - 1];
-        rc = rcf_pch_add_node("/agent/interface/rx_rules/rule/flow_spec",
-                              &rule_fields[i * 2 - 2]);
-        if (rc != 0)
-            return rc;
-    }
-
-    return 0;
+    return ta_conf_register("/agent/interface/", node_rules);
 }
 
 #else /* ETHTOOL_GRXCLSRLALL is not defined */
