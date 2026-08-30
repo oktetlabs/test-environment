@@ -3254,7 +3254,13 @@ switchdev_name_get(unsigned int gid, const char *oid, char *value,
 
         links = netconf_link_dump(nh);
         if (links == NULL)
-            return TE_OS_RC(TE_TA_UNIX, errno);
+        {
+            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+
+            free(switch_id);
+            free(port_name);
+            return rc;
+        }
 
         for (node = links->head; node != NULL; node = node->next)
         {
