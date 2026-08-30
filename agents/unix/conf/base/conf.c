@@ -1771,16 +1771,8 @@ switchdev_name_list(const ta_conf_ctx *ctx, te_vec *names)
 static te_errno
 rp_filter_all_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    char     value[RCF_MAX_VAL];
-    te_errno rc;
-
     UNUSED(ctx);
-
-    rc = rp_filter_get(0, NULL, value, "all");
-    if (rc == 0)
-        te_string_append(val, "%s", value);
-
-    return rc;
+    return rp_filter_get_core("all", val);
 }
 
 /**
@@ -1795,7 +1787,7 @@ static te_errno
 rp_filter_all_set(const ta_conf_ctx *ctx, const char *val)
 {
     UNUSED(ctx);
-    return rp_filter_set(0, NULL, val, "all");
+    return rp_filter_set_core("all", val);
 }
 
 /**
@@ -1809,16 +1801,8 @@ rp_filter_all_set(const ta_conf_ctx *ctx, const char *val)
 static te_errno
 arp_ignore_all_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    char     value[RCF_MAX_VAL];
-    te_errno rc;
-
     UNUSED(ctx);
-
-    rc = arp_ignore_get(0, NULL, value, "all");
-    if (rc == 0)
-        te_string_append(val, "%s", value);
-
-    return rc;
+    return arp_ignore_get_core("all", val);
 }
 
 /**
@@ -1833,7 +1817,7 @@ static te_errno
 arp_ignore_all_set(const ta_conf_ctx *ctx, const char *val)
 {
     UNUSED(ctx);
-    return arp_ignore_set(0, NULL, val, "all");
+    return arp_ignore_set_core("all", val);
 }
 
 static te_errno

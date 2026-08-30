@@ -29,6 +29,7 @@
 
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_string.h"
 #include "te_vector.h"
 
 /* UNIX branching heritage: PATH_MAX can still be undefined here yet */
@@ -202,60 +203,48 @@ extern te_errno ta_unix_conf_xen_init(void);
 extern bool ta_interface_is_mine(const char *ifname);
 
 /**
- * Get RPF filtering value; shared by the per-interface "rp_filter"
- * node and the top-level "rp_filter_all" node (which passes "all"
- * as @p ifname).
+ * Get RPF filtering value; shared core for the per-interface
+ * "rp_filter" node and the top-level "rp_filter_all" node (which
+ * hardcodes @p ifname to "all").
  *
- * @param gid         Group identifier (unused).
- * @param oid         Full object instance identifier (unused).
- * @param value       Value location.
  * @param ifname      Name of the interface (or "all").
+ * @param val         Value location.
  *
  * @return Status code.
  */
-extern te_errno rp_filter_get(unsigned int gid, const char *oid,
-                              char *value, const char *ifname);
+extern te_errno rp_filter_get_core(const char *ifname, te_string *val);
 
 /**
- * Set RPF filtering value; shared, see rp_filter_get().
+ * Set RPF filtering value; shared core, see rp_filter_get_core().
  *
- * @param gid         Group identifier (unused).
- * @param oid         Full object instance identifier (unused).
+ * @param ifname      Name of the interface (or "all").
  * @param value       New value pointer.
- * @param ifname      Name of the interface (or "all").
  *
  * @return Status code.
  */
-extern te_errno rp_filter_set(unsigned int gid, const char *oid,
-                              const char *value, const char *ifname);
+extern te_errno rp_filter_set_core(const char *ifname, const char *value);
 
 /**
- * Get arp_ignore value; shared by the per-interface "arp_ignore"
- * node and the top-level "arp_ignore_all" node (which passes "all"
- * as @p ifname).
+ * Get arp_ignore value; shared core for the per-interface
+ * "arp_ignore" node and the top-level "arp_ignore_all" node (which
+ * hardcodes @p ifname to "all").
  *
- * @param gid         Group identifier (unused).
- * @param oid         Full object instance identifier (unused).
- * @param value       Value location.
  * @param ifname      Name of the interface (or "all").
+ * @param val         Value location.
  *
  * @return Status code.
  */
-extern te_errno arp_ignore_get(unsigned int gid, const char *oid,
-                               char *value, const char *ifname);
+extern te_errno arp_ignore_get_core(const char *ifname, te_string *val);
 
 /**
- * Set arp_ignore value; shared, see arp_ignore_get().
+ * Set arp_ignore value; shared core, see arp_ignore_get_core().
  *
- * @param gid         Group identifier (unused).
- * @param oid         Full object instance identifier (unused).
+ * @param ifname      Name of the interface (or "all").
  * @param value       New value pointer.
- * @param ifname      Name of the interface (or "all").
  *
  * @return Status code.
  */
-extern te_errno arp_ignore_set(unsigned int gid, const char *oid,
-                               const char *value, const char *ifname);
+extern te_errno arp_ignore_set_core(const char *ifname, const char *value);
 
 /**
  * Initialize the interface configuration subtree support.

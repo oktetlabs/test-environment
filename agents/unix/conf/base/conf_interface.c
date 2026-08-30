@@ -220,59 +220,39 @@ static struct my_ifreq req;
 static char buf[4096];
 static char trash[128];
 
-static te_errno iface_ip4_fw_get(unsigned int, const char *, char *,
-                                 const char *);
-static te_errno iface_ip4_fw_set(unsigned int, const char *, const char *,
-                                 const char *);
+static te_errno iface_ip4_fw_get(const ta_conf_ctx *ctx, bool *val);
+static te_errno iface_ip4_fw_set(const ta_conf_ctx *ctx, bool val);
 
-static te_errno iface_ip6_fw_get(unsigned int, const char *, char *,
-                                 const char *);
-static te_errno iface_ip6_fw_set(unsigned int, const char *, const char *,
-                                 const char *);
+static te_errno iface_ip6_fw_get(const ta_conf_ctx *ctx, bool *val);
+static te_errno iface_ip6_fw_set(const ta_conf_ctx *ctx, bool val);
 
-static te_errno iface_ip6_accept_ra_get(unsigned int, const char *, char *,
-                                const char *);
-static te_errno iface_ip6_accept_ra_set(unsigned int, const char *,
-                                const char *, const char *);
+static te_errno iface_ip6_accept_ra_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno iface_ip6_accept_ra_set(const ta_conf_ctx *ctx, const char *val);
 
-static te_errno iface_parent_get(unsigned int, const char *, char *,
-                                 const char *);
-static te_errno iface_kind_get(unsigned int, const char *, char *,
-                               const char *);
-static te_errno iface_switch_id_get(unsigned int, const char *, char *,
-                                    const char *);
-static te_errno iface_port_id_get(unsigned int, const char *, char *,
-                                  const char *);
-static te_errno iface_port_name_get(unsigned int, const char *, char *,
-                                    const char *);
+static te_errno iface_parent_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno iface_kind_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno iface_switch_id_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno iface_port_id_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno iface_port_name_get(const ta_conf_ctx *ctx, te_string *val);
 
-static te_errno iface_hwtstamp_tx_type_get(unsigned int, const char *, char *,
-                                           const char *);
-static te_errno iface_hwtstamp_tx_type_set(unsigned int, const char *,
-                                           const char *, const char *);
-static te_errno iface_hwtstamp_rx_filter_get(unsigned int, const char *, char *,
-                                             const char *);
-static te_errno iface_hwtstamp_rx_filter_set(unsigned int, const char *,
-                                             const char *, const char *);
+static te_errno iface_hwtstamp_tx_type_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno iface_hwtstamp_tx_type_set(const ta_conf_ctx *ctx,
+                                           const char *val);
+static te_errno iface_hwtstamp_rx_filter_get(const ta_conf_ctx *ctx,
+                                             te_string *val);
+static te_errno iface_hwtstamp_rx_filter_set(const ta_conf_ctx *ctx,
+                                             const char *val);
 
-static te_errno interface_list(unsigned int, const char *,
-                               const char *, char **);
+static te_errno interface_list(const ta_conf_ctx *ctx, te_vec *names);
 
-static te_errno vlans_list(unsigned int, const char *,
-                           const char *, char **, const char *);
-static te_errno vlans_add(unsigned int, const char *, const char *,
-                              const char *, const char *);
-static te_errno vlans_del(unsigned int, const char *, const char *,
-                          const char *);
+static te_errno vlans_list(const ta_conf_ctx *ctx, te_vec *names);
+static te_errno vlans_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno vlans_add(const ta_conf_ctx *ctx, const char *val);
+static te_errno vlans_del(const ta_conf_ctx *ctx);
 
-static te_errno mcast_link_addr_add(unsigned int, const char *,
-                                    const char *, const char *,
-                                    const char *);
-static te_errno mcast_link_addr_del(unsigned int, const char *,
-                                    const char *, const char *);
-static te_errno mcast_link_addr_list(unsigned int, const char *,
-                                     const char *, char **,
-                                     const char *);
+static te_errno mcast_link_addr_add(const ta_conf_ctx *ctx);
+static te_errno mcast_link_addr_del(const ta_conf_ctx *ctx);
+static te_errno mcast_link_addr_list(const ta_conf_ctx *ctx, te_vec *names);
 
 #ifndef __linux__
 typedef struct mma_list_el {
@@ -288,235 +268,160 @@ typedef struct ifs_list_el {
 static struct ifs_list_el *interface_stream_list = NULL;
 #endif
 
-static te_errno net_addr_add(unsigned int, const char *, const char *,
-                             const char *, const char *);
-static te_errno net_addr_del(unsigned int, const char *,
-                             const char *, const char *);
-static te_errno net_addr_list(unsigned int, const char *,
-                              const char *, char **,
-                              const char *);
+static te_errno net_addr_add(const ta_conf_ctx *ctx, const char *val);
+static te_errno net_addr_del(const ta_conf_ctx *ctx);
+static te_errno net_addr_list(const ta_conf_ctx *ctx, te_vec *names);
 
-static te_errno prefix_get(unsigned int, const char *, char *,
-                           const char *, const char *);
-static te_errno prefix_set(unsigned int, const char *, const char *,
-                           const char *, const char *);
+static te_errno prefix_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno prefix_set(const ta_conf_ctx *ctx, const char *val);
 
-static te_errno broadcast_get(unsigned int, const char *, char *,
-                              const char *, const char *);
-static te_errno broadcast_set(unsigned int, const char *, const char *,
-                              const char *, const char *);
+static te_errno broadcast_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno broadcast_set(const ta_conf_ctx *ctx, const char *val);
 
-static te_errno link_addr_get(unsigned int, const char *, char *,
-                              const char *);
+static te_errno link_addr_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno link_addr_set(const ta_conf_ctx *ctx, const char *val);
 
-static te_errno link_addr_set(unsigned int, const char *, const char *,
-                              const char *);
+static te_errno bcast_link_addr_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno bcast_link_addr_set(const ta_conf_ctx *ctx, const char *val);
 
-static te_errno bcast_link_addr_set(unsigned int, const char *,
-                                    const char *, const char *);
-
-static te_errno bcast_link_addr_get(unsigned int, const char *,
-                                    char *, const char *);
-
-static te_errno vlan_ifname_get(unsigned int , const char *,
-                                char *, const char *, const char *);
+static te_errno vlan_ifname_get(const ta_conf_ctx *ctx, te_string *val);
 
 #ifndef USE_LIBNETCONF
 static te_errno vlan_ifname_get_internal(const char *ifname, int vlan_id,
                                          char *v_ifname);
 #endif
 
-static te_errno ifindex_get(unsigned int, const char *, char *,
-                            const char *);
+static te_errno ifindex_get(const ta_conf_ctx *ctx, int32_t *val);
 
-static te_errno oper_status_get(unsigned int, const char *, char *,
-                                const char *);
+static te_errno oper_status_get(const ta_conf_ctx *ctx, bool *val);
 
-static te_errno status_get(unsigned int, const char *, char *,
-                           const char *);
-static te_errno status_set(unsigned int, const char *, const char *,
-                           const char *);
+static te_errno status_get(const ta_conf_ctx *ctx, bool *val);
+static te_errno status_set(const ta_conf_ctx *ctx, bool val);
 
-static te_errno promisc_get(unsigned int, const char *, char *,
-                            const char *);
-static te_errno promisc_set(unsigned int, const char *, const char *,
-                            const char *);
+static te_errno rp_filter_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno rp_filter_set(const ta_conf_ctx *ctx, const char *val);
 
-static te_errno allmulti_get(unsigned int, const char *, char *,
-                             const char *);
-static te_errno allmulti_set(unsigned int, const char *, const char *,
-                             const char *);
+static te_errno arp_ignore_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno arp_ignore_set(const ta_conf_ctx *ctx, const char *val);
 
-static te_errno arp_get(unsigned int, const char *, char *,
-                        const char *);
-static te_errno arp_set(unsigned int, const char *, const char *,
-                        const char *);
+static te_errno promisc_get(const ta_conf_ctx *ctx, bool *val);
+static te_errno promisc_set(const ta_conf_ctx *ctx, bool val);
 
-static te_errno min_mtu_get(unsigned int, const char *, char *,
-                            const char *);
-static te_errno max_mtu_get(unsigned int, const char *, char *,
-                            const char *);
-static te_errno mtu_get(unsigned int, const char *, char *,
-                        const char *);
-static te_errno mtu_set(unsigned int, const char *, const char *,
-                        const char *);
+static te_errno allmulti_get(const ta_conf_ctx *ctx, bool *val);
+static te_errno allmulti_set(const ta_conf_ctx *ctx, bool val);
 
-static te_errno neigh_state_get(unsigned int, const char *, char *,
-                                const char *, const char *);
-static te_errno neigh_get(unsigned int, const char *, char *,
-                          const char *, const char *);
+static te_errno arp_get(const ta_conf_ctx *ctx, bool *val);
+static te_errno arp_set(const ta_conf_ctx *ctx, bool val);
 
-static te_errno neigh_set(unsigned int, const char *, const char *,
-                          const char *, const char *);
-static te_errno neigh_add(unsigned int, const char *, const char *,
-                          const char *, const char *);
-static te_errno neigh_del(unsigned int, const char *,
-                          const char *, const char *);
-static te_errno neigh_list(unsigned int, const char *,
-                           const char *, char **,
-                           const char *);
+static te_errno min_mtu_get(const ta_conf_ctx *ctx, uint16_t *val);
+static te_errno max_mtu_get(const ta_conf_ctx *ctx, uint16_t *val);
+static te_errno mtu_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno mtu_set(const ta_conf_ctx *ctx, const char *val);
+
+/*
+ * neigh_dynamic/neigh_static/neigh_proxy share the get/set/add/del/list
+ * business logic below (H1): a *_core function takes the flavor
+ * explicitly instead of pattern-matching the request OID, and each
+ * node gets its own thin wrapper that resolves its instance names via
+ * ta_conf_ctx_inst() and calls the shared core.
+ */
+typedef enum neigh_flavor {
+    NEIGH_DYNAMIC,
+    NEIGH_STATIC,
+    NEIGH_PROXY,
+} neigh_flavor;
+
+static te_errno neigh_find_core(neigh_flavor flavor, const char *ifname,
+                                const char *addr, char *mac_p,
+                                unsigned int *state_p);
+static te_errno neigh_get_core(neigh_flavor flavor, const char *ifname,
+                               const char *addr, char *value);
+static te_errno neigh_set_core(neigh_flavor flavor, const char *ifname,
+                               const char *addr, const char *value);
+static te_errno neigh_add_core(neigh_flavor flavor, const char *ifname,
+                               const char *addr, const char *value);
+static te_errno neigh_del_core(neigh_flavor flavor, const char *ifname,
+                               const char *addr);
+static te_errno neigh_list_core(neigh_flavor flavor, const char *ifname,
+                                te_vec *names);
+
+static te_errno neigh_state_get(const ta_conf_ctx *ctx, int32_t *val);
+
+static te_errno neigh_dynamic_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno neigh_dynamic_set(const ta_conf_ctx *ctx, const char *val);
+static te_errno neigh_dynamic_add(const ta_conf_ctx *ctx, const char *val);
+static te_errno neigh_dynamic_del(const ta_conf_ctx *ctx);
+static te_errno neigh_dynamic_list(const ta_conf_ctx *ctx, te_vec *names);
+
+static te_errno neigh_static_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno neigh_static_set(const ta_conf_ctx *ctx, const char *val);
+static te_errno neigh_static_add(const ta_conf_ctx *ctx, const char *val);
+static te_errno neigh_static_del(const ta_conf_ctx *ctx);
+static te_errno neigh_static_list(const ta_conf_ctx *ctx, te_vec *names);
+
+static te_errno neigh_proxy_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno neigh_proxy_add(const ta_conf_ctx *ctx, const char *val);
+static te_errno neigh_proxy_del(const ta_conf_ctx *ctx);
+static te_errno neigh_proxy_list(const ta_conf_ctx *ctx, te_vec *names);
 
 te_errno ta_vlan_get_children(const char *, size_t *, int *);
 te_errno ta_vlan_get_parent(const char *, char *);
 
-RCF_PCH_CFG_NODE_RO(node_neigh_state, "state",
-                    NULL, NULL,
-                    (rcf_ch_cfg_get)neigh_state_get);
-
-static rcf_pch_cfg_object node_neigh_dynamic =
-    { "neigh_dynamic", 0, &node_neigh_state, NULL,
-      (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)neigh_set,
-      (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
-      (rcf_ch_cfg_list)neigh_list, NULL, NULL, NULL};
-
-static rcf_pch_cfg_object node_neigh_static =
-    { "neigh_static", 0, NULL, &node_neigh_dynamic,
-      (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)neigh_set,
-      (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
-      (rcf_ch_cfg_list)neigh_list, NULL, NULL, NULL};
-
-static rcf_pch_cfg_object node_neigh_proxy =
-    { "neigh_proxy", 0, NULL, &node_neigh_static,
-      (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)NULL,
-      (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
-      (rcf_ch_cfg_list)neigh_list, NULL, NULL};
-
-RCF_PCH_CFG_NODE_RW(node_broadcast, "broadcast", NULL, NULL,
-                    broadcast_get, broadcast_set);
-
-static rcf_pch_cfg_object node_net_addr =
-    { "net_addr", 0, &node_broadcast, &node_neigh_proxy,
-      (rcf_ch_cfg_get)prefix_get, (rcf_ch_cfg_set)prefix_set,
-      (rcf_ch_cfg_add)net_addr_add, (rcf_ch_cfg_del)net_addr_del,
-      (rcf_ch_cfg_list)net_addr_list, NULL, NULL, NULL };
-
-static rcf_pch_cfg_object node_mcast_link_addr =
-    { "mcast_link_addr", 0, NULL, &node_net_addr,
-      NULL, NULL, (rcf_ch_cfg_add)mcast_link_addr_add,
-      (rcf_ch_cfg_del)mcast_link_addr_del,
-      (rcf_ch_cfg_list)mcast_link_addr_list, NULL, NULL, NULL };
-
-RCF_PCH_CFG_NODE_RO(node_vl_ifname, "ifname", NULL, NULL,
-                    vlan_ifname_get);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_vlans, "vlans",
-                            &node_vl_ifname, &node_mcast_link_addr,
-                            vlans_add, vlans_del,
-                            vlans_list, NULL);
-
-RCF_PCH_CFG_NODE_RW(node_rp_filter, "rp_filter", NULL, &node_vlans,
-                    rp_filter_get, rp_filter_set);
-
-RCF_PCH_CFG_NODE_RW(node_arp_ignore, "arp_ignore", NULL, &node_rp_filter,
-                    arp_ignore_get, arp_ignore_set);
-
-RCF_PCH_CFG_NODE_RW(node_allmulti, "allmulti", NULL, &node_arp_ignore,
-                    allmulti_get, allmulti_set);
-
-RCF_PCH_CFG_NODE_RW(node_promisc, "promisc", NULL, &node_allmulti,
-                    promisc_get, promisc_set);
-
-RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_promisc,
-                    status_get, status_set);
-
-RCF_PCH_CFG_NODE_RO(node_oper_status, "oper_status", NULL,
-                    &node_status, oper_status_get);
-
-RCF_PCH_CFG_NODE_RO(node_max_mtu, "max_mtu", NULL, &node_oper_status,
-                    max_mtu_get);
-
-RCF_PCH_CFG_NODE_RO(node_min_mtu, "min_mtu", NULL, &node_max_mtu,
-                    min_mtu_get);
-
-RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_min_mtu,
-                    mtu_get, mtu_set);
-
-RCF_PCH_CFG_NODE_RW(node_arp, "arp", NULL, &node_mtu,
-                    arp_get, arp_set);
-
-RCF_PCH_CFG_NODE_RW(node_link_addr, "link_addr", NULL, &node_arp,
-                    link_addr_get, link_addr_set);
-
-RCF_PCH_CFG_NODE_RW(node_bcast_link_addr, "bcast_link_addr", NULL,
-                    &node_link_addr,
-                    bcast_link_addr_get, bcast_link_addr_set);
-
-RCF_PCH_CFG_NODE_RW(node_iface_ip4_fw, "iface_ip4_fw", NULL,
-                    &node_bcast_link_addr, iface_ip4_fw_get,
-                    iface_ip4_fw_set);
-
-RCF_PCH_CFG_NODE_RW(node_iface_ip6_fw, "iface_ip6_fw", NULL,
-                    &node_iface_ip4_fw, iface_ip6_fw_get, iface_ip6_fw_set);
-
-RCF_PCH_CFG_NODE_RW(node_iface_ip6_accept_ra, "iface_ip6_accept_ra", NULL,
-                    &node_iface_ip6_fw,
-                    iface_ip6_accept_ra_get, iface_ip6_accept_ra_set);
-
-RCF_PCH_CFG_NODE_RO(node_iface_parent, "parent", NULL,
-                    &node_iface_ip6_accept_ra,
-                    iface_parent_get);
-
-RCF_PCH_CFG_NODE_RO(node_iface_kind, "kind", NULL,
-                    &node_iface_parent,
-                    iface_kind_get);
-
-RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_iface_kind,
-                    ifindex_get);
-
-RCF_PCH_CFG_NODE_RO(node_iface_port_name, "port_name",
-                    NULL, &node_ifindex,
-                    iface_port_name_get);
-
-RCF_PCH_CFG_NODE_RO(node_iface_port_id, "port_id",
-                    NULL, &node_iface_port_name,
-                    iface_port_id_get);
-
-RCF_PCH_CFG_NODE_RO(node_iface_switch_id, "switch_id",
-                    NULL, &node_iface_port_id,
-                    iface_switch_id_get);
-
-RCF_PCH_CFG_NODE_RW(node_iface_hwtstamp_rx_filter, "rx_filter",
-                    NULL, NULL,
-                    iface_hwtstamp_rx_filter_get,
-                    iface_hwtstamp_rx_filter_set);
-
-RCF_PCH_CFG_NODE_RW(node_iface_hwtstamp_tx_type, "tx_type",
-                    NULL, &node_iface_hwtstamp_rx_filter,
-                    iface_hwtstamp_tx_type_get,
-                    iface_hwtstamp_tx_type_set);
-
-RCF_PCH_CFG_NODE_NA(node_iface_hwtstamp, "hwtstamp",
-                    &node_iface_hwtstamp_tx_type, &node_iface_switch_id);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
-                            &node_iface_hwtstamp, NULL,
-                            NULL, NULL, interface_list, NULL);
+static const ta_conf_node *const node_interface =
+    TA_CONF_LIST("interface", interface_list,
+        TA_CONF_NA("hwtstamp",
+            TA_CONF_RW_STR("tx_type", iface_hwtstamp_tx_type_get,
+                           iface_hwtstamp_tx_type_set),
+            TA_CONF_RW_STR("rx_filter", iface_hwtstamp_rx_filter_get,
+                           iface_hwtstamp_rx_filter_set)),
+        TA_CONF_RO_STR("switch_id", iface_switch_id_get),
+        TA_CONF_RO_STR("port_id", iface_port_id_get),
+        TA_CONF_RO_STR("port_name", iface_port_name_get),
+        TA_CONF_RO_INT32("index", ifindex_get),
+        TA_CONF_RO_STR("kind", iface_kind_get),
+        TA_CONF_RO_STR("parent", iface_parent_get),
+        TA_CONF_RW_STR("iface_ip6_accept_ra", iface_ip6_accept_ra_get,
+                       iface_ip6_accept_ra_set),
+        TA_CONF_RW_BOOL("iface_ip6_fw", iface_ip6_fw_get,
+                        iface_ip6_fw_set),
+        TA_CONF_RW_BOOL("iface_ip4_fw", iface_ip4_fw_get,
+                        iface_ip4_fw_set),
+        TA_CONF_RW_STR("bcast_link_addr", bcast_link_addr_get,
+                       bcast_link_addr_set),
+        TA_CONF_RW_STR("link_addr", link_addr_get, link_addr_set),
+        TA_CONF_RW_BOOL("arp", arp_get, arp_set),
+        TA_CONF_RW_STR("mtu", mtu_get, mtu_set),
+        TA_CONF_RO_UINT16("min_mtu", min_mtu_get),
+        TA_CONF_RO_UINT16("max_mtu", max_mtu_get),
+        TA_CONF_RO_BOOL("oper_status", oper_status_get),
+        TA_CONF_RW_BOOL("status", status_get, status_set),
+        TA_CONF_RW_BOOL("promisc", promisc_get, promisc_set),
+        TA_CONF_RW_BOOL("allmulti", allmulti_get, allmulti_set),
+        TA_CONF_RW_STR("arp_ignore", arp_ignore_get, arp_ignore_set),
+        TA_CONF_RW_STR("rp_filter", rp_filter_get, rp_filter_set),
+        TA_CONF_COLL_STR("vlans", vlans_get, vlans_add, vlans_del,
+                         vlans_list,
+            TA_CONF_RO_STR("ifname", vlan_ifname_get)),
+        TA_CONF_COLL("mcast_link_addr", mcast_link_addr_add,
+                    mcast_link_addr_del, mcast_link_addr_list),
+        TA_CONF_COLL_STR_RW("net_addr", prefix_get, prefix_set,
+                            net_addr_add, net_addr_del, net_addr_list,
+            TA_CONF_RW_STR("broadcast", broadcast_get, broadcast_set)),
+        TA_CONF_COLL_STR("neigh_proxy", neigh_proxy_get, neigh_proxy_add,
+                         neigh_proxy_del, neigh_proxy_list),
+        TA_CONF_COLL_STR_RW("neigh_static", neigh_static_get,
+                            neigh_static_set, neigh_static_add,
+                            neigh_static_del, neigh_static_list),
+        TA_CONF_COLL_STR_RW("neigh_dynamic", neigh_dynamic_get,
+                            neigh_dynamic_set, neigh_dynamic_add,
+                            neigh_dynamic_del, neigh_dynamic_list,
+            TA_CONF_RO_INT32("state", neigh_state_get)));
 
 /* See the description in conf_common.h */
 te_errno
 ta_unix_conf_interface_init(void)
 {
-    return rcf_pch_add_node("/agent", &node_interface);
+    return ta_conf_register("/agent", node_interface);
 }
 
 #ifndef USE_LIBNETCONF
@@ -1082,122 +987,113 @@ vlan_ifname_get_internal(const char *ifname, int vlan_id,
 /**
  * Get VLAN ifname
  *
- * @param gid           request group identifier (unused)
- * @param oid           full object instance identifier
- * @param value         location for interface name
- * @param ifname        name of the interface
- * @param vid           name of the vlan (decimal integer)
+ * @param ctx           request context
+ * @param val           location for interface name
  *
  * @return status
  */
 static te_errno
-vlan_ifname_get(unsigned int gid, const char *oid, char *value,
-                const char *ifname, const char *vid)
+vlan_ifname_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *vid = ta_conf_ctx_inst(ctx, "vlans");
     int vlan_id = atoi(vid);
+    char value[RCF_MAX_VAL];
+    te_errno rc;
 
-    VERB("%s: gid=%u oid='%s', ifname = '%s', vid %d",
-         __FUNCTION__, gid, oid, ifname,  vlan_id);
+    VERB("%s: ifname = '%s', vid %d", __FUNCTION__, ifname, vlan_id);
 
 #ifdef USE_LIBNETCONF
-    return netconf_vlan_get_ifname(nh, ifname, (unsigned int)vlan_id,
-                                   value, RCF_MAX_VAL);
+    rc = netconf_vlan_get_ifname(nh, ifname, (unsigned int)vlan_id,
+                                 value, sizeof(value));
 #else
-    return vlan_ifname_get_internal(ifname, vlan_id, value);
+    rc = vlan_ifname_get_internal(ifname, vlan_id, value);
 #endif
+    if (rc == 0)
+        te_string_append(val, "%s", value);
+
+    return rc;
 }
 
 /**
  * Get instance list for object "agent/interface/vlans".
  *
- * @param gid           group identifier (unused)
- * @param oid           full identifier of the father instance
- * @param sub_id        ID of the object to be listed (unused)
- * @param list          location for the list pointer
+ * @param ctx           request context (parent instance OID)
+ * @param names         vector of heap-allocated names to append to
  *
  * @return              Status code
  * @retval 0            success
  */
 static te_errno
-vlans_list(unsigned int gid, const char *oid,
-           const char *sub_id, char **list,
-           const char *ifname)
+vlans_list(const ta_conf_ctx *ctx, te_vec *names)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+
 #ifdef USE_LIBNETCONF
-    te_vec        names = TE_VEC_INIT_AUTOPTR(char *);
-    te_string     str = TE_STRING_INIT;
-    te_errno      rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-    rc = netconf_vlan_list(nh, ifname, &names);
-    if (rc == 0)
-    {
-        te_string_join_vec(&str, &names, " ");
-        *list = str.ptr;
-    }
-
-    te_vec_free(&names);
-
-    return rc;
+    return netconf_vlan_list(nh, ifname, names);
 #else
     size_t n_vlans = MAX_VLANS;
     size_t i;
     te_errno rc;
 
-    char *b;
-
-    UNUSED(sub_id);
-
     rc = ta_vlan_get_children(ifname, &n_vlans, vlans_buffer);
     if (rc != 0)
         return rc;
 
-    VERB("%s: gid=%u oid='%s', ifname %s, num vlans %d",
-         __FUNCTION__, gid, oid, ifname, n_vlans);
-
-    if (n_vlans == 0)
-    {
-        *list = NULL;
-        return 0;
-    }
-
-    b = *list = TE_ALLOC(n_vlans * 5 /* max digits in VLAN id + space */ + 1);
+    VERB("%s: ifname %s, num vlans %d", __FUNCTION__, ifname, n_vlans);
 
     for (i = 0; i < n_vlans; i++)
-        b += sprintf(b, "%d ", vlans_buffer[i]);
+    {
+        char *name = te_string_fmt("%d", vlans_buffer[i]);
 
-    VERB("VLAN list: '%s'", *list);
+        TE_VEC_APPEND(names, name);
+    }
+
     return 0;
 #endif
 }
 
 /**
- * Add VLAN Ethernet device.
+ * Get instance value for object "agent/interface/vlans".
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier
- * @param value         value string
- * @param ifname        device name, over it VLAN should be added
- * @param vid_str       VLAN id string, decimal notation
+ * The legacy tree never implemented a get for this node either
+ * (RCF_PCH_CFG_NODE_COLLECTION() leaves .get unset); rcf_pch_conf.c
+ * answers such a get with a bare success and an empty value, so this
+ * is a dummy get reproducing that, same as conf_iptables.c's
+ * iptables_cmd_get.
+ *
+ * @param ctx           request context (unused)
+ * @param val           value location (unused)
  *
  * @return              Status code
  */
 static te_errno
-vlans_add(unsigned int gid, const char *oid, const char *value,
-          const char *ifname, const char *vid_str)
+vlans_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    UNUSED(ctx);
+    UNUSED(val);
+
+    return 0;
+}
+
+/**
+ * Add VLAN Ethernet device.
+ *
+ * @param ctx           request context
+ * @param value         VLAN interface name (used only on creation; if
+ *                      empty, "[parent_if].[vlan_id]" is used)
+ *
+ * @return              Status code
+ */
+static te_errno
+vlans_add(const ta_conf_ctx *ctx, const char *value)
+{
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *vid_str = ta_conf_ctx_inst(ctx, "vlans");
     te_errno rc;
     int      vid = atoi(vid_str);
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-
-    VERB("%s: gid=%u oid='%s', vid %s, ifname %s",
-         __FUNCTION__, gid, oid, vid_str, ifname);
+    VERB("%s: vid %s, ifname %s", __FUNCTION__, vid_str, ifname);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
@@ -1350,22 +1246,17 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
 /**
  * Delete VLAN Ethernet device.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param ifname        parent interface name
- * @param vid_str       VLAN ID
+ * @param ctx           request context
  *
  * @return              Status code
  */
 static te_errno
-vlans_del(unsigned int gid, const char *oid, const char *ifname,
-          const char *vid_str)
+vlans_del(const ta_conf_ctx *ctx)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *vid_str = ta_conf_ctx_inst(ctx, "vlans");
     te_errno rc;
     int      vid = atoi(vid_str);
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
@@ -1439,25 +1330,20 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
 /**
  * Get instance list for object "agent/interface".
  *
- * @param gid           group identifier (unused)
- * @param oid           full identifier of the father instance
- * @param sub_id        ID of the object to be listed (unused)
- * @param list          location for the list pointer
+ * @param ctx           request context (unused)
+ * @param names         vector of heap-allocated names to append to
  *
  * @return              Status code
  * @retval 0            success
  */
 static te_errno
-interface_list(unsigned int gid, const char *oid,
-               const char *sub_id, char **list)
+interface_list(const ta_conf_ctx *ctx, te_vec *names)
 {
     size_t off = 0;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    UNUSED(ctx);
 
-    ENTRY("gid=%u oid='%s'", gid, oid);
+    ENTRY("%s", "");
 
     buf[0] = '\0';
 
@@ -1544,10 +1430,20 @@ interface_list(unsigned int gid, const char *oid,
     if (off >= sizeof(buf))
         return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
 
-    if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    {
+        char *saveptr;
+        char *tok;
 
-    EXIT("list='%s'", *list);
+        for (tok = strtok_r(buf, " ", &saveptr); tok != NULL;
+             tok = strtok_r(NULL, " ", &saveptr))
+        {
+            char *name = TE_STRDUP(tok);
+
+            TE_VEC_APPEND(names, name);
+        }
+    }
+
+    EXIT("%s", "");
 
     return 0;
 }
@@ -1640,22 +1536,17 @@ aliases_list()
 /**
  * Get index of the interface.
  *
- * @param gid           request group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         location for interface index
- * @param ifname        name of the interface (like "eth0")
+ * @param ctx           request context
+ * @param val           location for interface index
  *
  * @return              Status code
  */
 static te_errno
-ifindex_get(unsigned int gid, const char *oid, char *value,
-            const char *ifname)
+ifindex_get(const ta_conf_ctx *ctx, int32_t *val)
 {
-    unsigned int ifindex = if_nametoindex(ifname);;
+    const char  *ifname = ta_conf_ctx_inst(ctx, "interface");
+    unsigned int ifindex = if_nametoindex(ifname);
     te_errno     rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
@@ -1663,7 +1554,7 @@ ifindex_get(unsigned int gid, const char *oid, char *value,
     if (ifindex == 0)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    sprintf(value, "%u", ifindex);
+    *val = ifindex;
 
     return 0;
 }
@@ -1900,27 +1791,34 @@ iface_get_property_netconf(const char *ifname,
  * If the given interface is not based on anything else (it is not VLAN,
  * MAC VLAN, IP VLAN etc), then empty string is returned.
  *
- * @param gid           Group identifier (unused).
- * @param oid           Full object instance identifier (unused).
- * @param value         Value location.
- * @param ifname        Name of the interface (like "eth0").
+ * @param ctx           Request context.
+ * @param val           Value location.
  *
  * @return              Status code.
  */
 static te_errno
-iface_parent_get(unsigned int gid, const char *oid, char *value,
-                 const char *ifname)
+iface_parent_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     te_errno    rc = 0;
-
-    UNUSED(gid);
-    UNUSED(oid);
+#ifdef USE_LIBNETCONF
+    char        value[RCF_MAX_VAL];
+#endif
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
 #ifdef USE_LIBNETCONF
-    return iface_get_property_netconf(ifname, value, IF_PROP_PARENT);
+    /*
+     * IF_PROP_PARENT leaves value untouched when the interface has no
+     * parent; the legacy handler relied on the framework's buffer
+     * starting out empty for that case, so reproduce that here.
+     */
+    value[0] = '\0';
+    rc = iface_get_property_netconf(ifname, value, IF_PROP_PARENT);
+    if (rc == 0)
+        te_string_append(val, "%s", value);
+    return rc;
 #else
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
@@ -1942,28 +1840,29 @@ get_interface_kind(const char *ifname, char *value)
 /**
  * Get instance value for object "agent/interface/switch_id".
  *
- * @param gid           Group identifier (unused).
- * @param oid           Full identifier of the father instance (unused).
- * @param value         Location for the switch ID.
- * @param ifname        Interface name.
+ * @param ctx           Request context.
+ * @param val           Location for the switch ID.
  *
  * @return              Status code.
  */
 static te_errno
-iface_switch_id_get(unsigned int gid, const char *oid, char *value,
-                    const char *ifname)
+iface_switch_id_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
+#ifdef USE_LIBNETCONF
+    char value[RCF_MAX_VAL];
+#endif
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
 #ifdef USE_LIBNETCONF
-    *value = '\0';
-    return iface_get_property_netconf(ifname, value, IF_PROP_SWITCH_ID);
+    value[0] = '\0';
+    rc = iface_get_property_netconf(ifname, value, IF_PROP_SWITCH_ID);
+    if (rc == 0)
+        te_string_append(val, "%s", value);
+    return rc;
 #else
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
@@ -1972,28 +1871,29 @@ iface_switch_id_get(unsigned int gid, const char *oid, char *value,
 /**
  * Get instance value for object "agent/interface/port_id".
  *
- * @param gid           Group identifier (unused).
- * @param oid           Full identifier of the father instance (unused).
- * @param value         Location for the port id.
- * @param ifname        Interface name.
+ * @param ctx           Request context.
+ * @param val           Location for the port id.
  *
  * @return              Status code.
  */
 static te_errno
-iface_port_id_get(unsigned int gid, const char *oid, char *value,
-                  const char *ifname)
+iface_port_id_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
+#ifdef USE_LIBNETCONF
+    char value[RCF_MAX_VAL];
+#endif
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
 #ifdef USE_LIBNETCONF
-    *value = '\0';
-    return iface_get_property_netconf(ifname, value, IF_PROP_PORT_ID);
+    value[0] = '\0';
+    rc = iface_get_property_netconf(ifname, value, IF_PROP_PORT_ID);
+    if (rc == 0)
+        te_string_append(val, "%s", value);
+    return rc;
 #else
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
@@ -2002,28 +1902,29 @@ iface_port_id_get(unsigned int gid, const char *oid, char *value,
 /**
  * Get instance value for object "agent/interface/port_name".
  *
- * @param gid           Group identifier (unused).
- * @param oid           Full identifier of the father instance (unused).
- * @param value         Location for the port name.
- * @param ifname        Interface name.
+ * @param ctx           Request context.
+ * @param val           Location for the port name.
  *
  * @return              Status code.
  */
 static te_errno
-iface_port_name_get(unsigned int gid, const char *oid, char *value,
-                    const char *ifname)
+iface_port_name_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
+#ifdef USE_LIBNETCONF
+    char value[RCF_MAX_VAL];
+#endif
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
 #ifdef USE_LIBNETCONF
-    *value = '\0';
-    return iface_get_property_netconf(ifname, value, IF_PROP_PORT_NAME);
+    value[0] = '\0';
+    rc = iface_get_property_netconf(ifname, value, IF_PROP_PORT_NAME);
+    if (rc == 0)
+        te_string_append(val, "%s", value);
+    return rc;
 #else
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
@@ -2105,18 +2006,23 @@ iface_hwtstamp_set_cfg(const char *ifname, struct hwtstamp_config *cfg)
 }
 #endif
 
+/*
+ * te_enum_map_from_any_value() falls back to a literal "UNKNOWN" string
+ * for a raw hardware value not present in the map; the ta_conf ENUM
+ * codec has no equivalent (an unmapped get value is a hard error), so
+ * these two nodes keep type STR with the original formatting/parsing
+ * code instead of becoming an enumerated node, to preserve that
+ * fallback exactly.
+ */
 static te_errno
-iface_hwtstamp_tx_type_get(unsigned int gid, const char *oid, char *value,
-                           const char *ifname)
+iface_hwtstamp_tx_type_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 #ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
     struct hwtstamp_config cfg;
+    const char *s;
 #endif
-    const char *val;
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
@@ -2126,30 +2032,25 @@ iface_hwtstamp_tx_type_get(unsigned int gid, const char *oid, char *value,
     if (rc != 0)
         return rc;
 
-    val = te_enum_map_from_any_value(hwtstamp_tx_type_map, cfg.tx_type,
-                                     "UNKNOWN");
-    sprintf(value, "%s", val);
+    s = te_enum_map_from_any_value(hwtstamp_tx_type_map, cfg.tx_type,
+                                   "UNKNOWN");
+    te_string_append(val, "%s", s);
 
     return 0;
 #else
-    UNUSED(value);
-
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
 }
 
 static te_errno
-iface_hwtstamp_tx_type_set(unsigned int gid, const char *oid,
-                           const char *value, const char *ifname)
+iface_hwtstamp_tx_type_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 #ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
     struct hwtstamp_config cfg;
+    int val;
 #endif
     te_errno rc;
-    int val;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
@@ -2179,17 +2080,14 @@ iface_hwtstamp_tx_type_set(unsigned int gid, const char *oid,
 }
 
 static te_errno
-iface_hwtstamp_rx_filter_get(unsigned int gid, const char *oid, char *value,
-                             const char *ifname)
+iface_hwtstamp_rx_filter_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 #ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
     struct hwtstamp_config cfg;
+    const char *s;
 #endif
-    const char *val;
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
@@ -2199,30 +2097,25 @@ iface_hwtstamp_rx_filter_get(unsigned int gid, const char *oid, char *value,
     if (rc != 0)
         return rc;
 
-    val = te_enum_map_from_any_value(hwtstamp_rx_filter_map, cfg.tx_type,
-                                     "UNKNOWN");
-    sprintf(value, "%s", val);
+    s = te_enum_map_from_any_value(hwtstamp_rx_filter_map, cfg.tx_type,
+                                   "UNKNOWN");
+    te_string_append(val, "%s", s);
 
     return 0;
 #else
-    UNUSED(value);
-
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
 }
 
 static te_errno
-iface_hwtstamp_rx_filter_set(unsigned int gid, const char *oid,
-                             const char *value, const char *ifname)
+iface_hwtstamp_rx_filter_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 #ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
     struct hwtstamp_config cfg;
+    int val;
 #endif
     te_errno rc;
-    int val;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
@@ -2254,26 +2147,25 @@ iface_hwtstamp_rx_filter_set(unsigned int gid, const char *oid,
 /**
  * Get kind of an interface (whether it is vlan, macvlan, ipvlan, etc).
  *
- * @param gid           Group identifier (unused).
- * @param oid           Full object instance identifier (unused).
- * @param value         Value location.
- * @param ifname        Name of the interface (like "eth0").
+ * @param ctx           Request context.
+ * @param val           Value location.
  *
  * @return              Status code.
  */
 static te_errno
-iface_kind_get(unsigned int gid, const char *oid, char *value,
-               const char *ifname)
+iface_kind_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     te_errno    rc = 0;
-
-    UNUSED(gid);
-    UNUSED(oid);
+    char        value[RCF_MAX_VAL];
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    return get_interface_kind(ifname, value);
+    rc = get_interface_kind(ifname, value);
+    if (rc == 0)
+        te_string_append(val, "%s", value);
+    return rc;
 }
 
 static te_errno
@@ -2324,18 +2216,15 @@ mcast_link_addr_change_ioctl(const char *ifname, const char *addr, int op)
 }
 
 static te_errno
-mcast_link_addr_add(unsigned int gid, const char *oid,
-                    const char *value, const char *ifname, const char *addr)
+mcast_link_addr_add(const ta_conf_ctx *ctx)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *addr = ta_conf_ctx_inst(ctx, "mcast_link_addr");
     te_errno rc = 0;
 #ifndef __linux__
     ifs_list_el *p = interface_stream_list;
     mma_list_el *q;
 #endif
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
 
 #ifdef __linux__
     rc = mcast_link_addr_change_ioctl(ifname, addr, SIOCADDMULTI);
@@ -2366,17 +2255,16 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
 }
 
 static te_errno
-mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
-                    const char *addr)
+mcast_link_addr_del(const ta_conf_ctx *ctx)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *addr = ta_conf_ctx_inst(ctx, "mcast_link_addr");
     te_errno rc;
 #ifndef __linux__
     ifs_list_el *p;
     mma_list_el *q;
 #endif
 
-    UNUSED(gid);
-    UNUSED(oid);
 #ifdef __linux__
     rc = mcast_link_addr_change_ioctl(ifname, addr, SIOCDELMULTI);
 /* there are problems with deleting neighbour discovery multicast addresses,
@@ -2442,43 +2330,24 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
 }
 
 static te_errno
-mcast_link_addr_list(unsigned int gid, const char *oid,
-                     const char *sub_id, char **list,
-                     const char *ifname)
+mcast_link_addr_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    char       *s = NULL;
-    int         sp = 0;         /* String Pointer */
-    int         buf_segs = 1;
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 
-    UNUSED(sub_id);
-
-#define MMAC_ADDR_BUF_SIZE 16384
 #ifndef __linux__
     ifs_list_el *p = interface_stream_list;
     mma_list_el *tmp;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(ifname);
-
-    s = TE_ALLOC(MMAC_ADDR_BUF_SIZE);
-    *s = '\0';
     for (p = interface_stream_list;
          (p != NULL) && (strcmp(p->ifname, ifname)) != 0; p = p->next);
     if (p != NULL)
     {
         for (tmp = p->mcast_addresses; tmp != NULL; tmp = tmp->next)
         {
-            if (sp >= MMAC_ADDR_BUF_SIZE - ETHER_ADDR_LEN * 3)
-            {
-                TE_REALLOC(s, (++buf_segs) * MMAC_ADDR_BUF_SIZE);
-            }
-            sp += sprintf(&s[sp], "%s ", tmp->value);
+            char *name = TE_STRDUP(tmp->value);
+
+            TE_VEC_APPEND(names, name);
         }
-    }
-    else
-    {
-        return 0;
     }
 #else
 /* It should be big enough to hold 20-octet IPoIB link-layer address. */
@@ -2490,25 +2359,22 @@ mcast_link_addr_list(unsigned int gid, const char *oid,
 #define DEFAULT_MULTICAST_ETHER_ADDR_IPV4 "01005e000001"
 #define DEFAULT_MULTICAST_ETHER_ADDR_IPV6 "333300000001"
 
-    UNUSED(gid);
-    UNUSED(oid);
     if ((fd = fopen("/proc/net/dev_mcast", "r")) == NULL)
         return TE_OS_RC(TE_TA_UNIX, errno);
-
-    s = TE_ALLOC(MMAC_ADDR_BUF_SIZE);
-    *s = '\0';
 
     while (fscanf(fd, "%*d %s %*d %*d %s\n", ifn, addrstr) > 0)
     {
         /*
-         * Read file and copy items with appropriate interface name
-         * to the buffer, adding colons to MAC addresses.
+         * Read file and, for entries with the appropriate interface
+         * name, append the address with colons added.
          */
 
         if (strcmp(ifn, ifname) == 0)
         {
             int i;
             size_t octet_num = strlen(addrstr) / 2;
+            char addrbuf[MCAST_LINK_ADDR_LEN_MAX];
+            size_t sp = 0;
 
             /* exclude `default' addresses */
             if (strcmp(addrstr, DEFAULT_MULTICAST_ETHER_ADDR_IPV4) == 0 ||
@@ -2517,21 +2383,23 @@ mcast_link_addr_list(unsigned int gid, const char *oid,
 
             for (i = 0; i < octet_num; i++)
             {
-                if (sp >= MMAC_ADDR_BUF_SIZE - MCAST_LINK_ADDR_LEN_MAX)
-                {
-                    TE_REALLOC(s, (++buf_segs) * MMAC_ADDR_BUF_SIZE);
-                }
-                strncpy(&s[sp], &addrstr[i * 2], 2);
+                strncpy(&addrbuf[sp], &addrstr[i * 2], 2);
                 sp += 2;
-                s[sp++] = (i < octet_num - 1) ? ':' : ' ';
-                s[sp] = '\0';
+                if (i < (int)octet_num - 1)
+                    addrbuf[sp++] = ':';
+            }
+            addrbuf[sp] = '\0';
+
+            {
+                char *name = TE_STRDUP(addrbuf);
+
+                TE_VEC_APPEND(names, name);
             }
         }
     }
     fclose(fd);
 #undef MCAST_LINK_ADDR_LEN_MAX
 #endif
-    *list = s;
     return 0;
 }
 
@@ -2539,19 +2407,17 @@ mcast_link_addr_list(unsigned int gid, const char *oid,
  * Configure IPv4/IPv6 address for the interface.
  * If the address does not exist, alias interface is created.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         value string (unused)
- * @param ifname        name of the interface (like "eth0")
- * @param addr          IPv4 address in dotted notation
+ * @param ctx           request context
+ * @param value         prefix length (may be empty)
  *
  * @return              Status code
  */
 #ifdef USE_IOCTL
 static te_errno
-net_addr_add(unsigned int gid, const char *oid, const char *value,
-             const char *ifname, const char *addr)
+net_addr_add(const ta_conf_ctx *ctx, const char *value)
 {
+    const char     *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char     *addr = ta_conf_ctx_inst(ctx, "net_addr");
     gen_ip_address  new_addr;
     te_errno        rc;
     sa_family_t     family = str_addr_family(addr);
@@ -2565,10 +2431,6 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 #ifdef __linux__
     char            slots[32] = { 0, };
 #endif
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
 
     if (strlen(ifname) >= IF_NAMESIZE)
         return TE_RC(TE_TA_UNIX, TE_E2BIG);
@@ -2736,9 +2598,9 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     /* SIOCLIFADDIF case sets prefix itself, so no need for this */
     if (*value != '\0')
     {
-        if ((rc = prefix_set(gid, oid, value, ifname, addr)) != 0)
+        if ((rc = prefix_set(ctx, value)) != 0)
         {
-            net_addr_del(gid, oid, ifname, addr);
+            net_addr_del(ctx);
             ERROR("prefix_set failure");
             return rc;
         }
@@ -2756,9 +2618,10 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 #define AF_INET6_DEFAULT_BITLEN  (AF_INET6_DEFAULT_BYTELEN << 3)
 
 static te_errno
-net_addr_add(unsigned int gid, const char *oid, const char *value,
-             const char *ifname, const char *addr)
+net_addr_add(const ta_conf_ctx *ctx, const char *value)
 {
+    const char     *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char     *addr = ta_conf_ctx_inst(ctx, "net_addr");
     unsigned int    prefix;
     char           *end;
     in_addr_t       mask;
@@ -2768,9 +2631,6 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
     gen_ip_address  ip_addr;
     struct in6_addr zero_ip6_addr;
     te_errno        rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
@@ -2968,21 +2828,17 @@ find_net_addr(const char *ifname, const char *addr)
 /**
  * Clear interface address of the down interface.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param ifname        name of the interface (like "eth0")
- * @param addr          IPv4 address in dotted notation
+ * @param ctx           request context
  *
  * @return              Status code
  */
 static te_errno
-net_addr_del(unsigned int gid, const char *oid,
-             const char *ifname, const char *addr)
+net_addr_del(const ta_conf_ctx *ctx)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *addr = ta_conf_ctx_inst(ctx, "net_addr");
     te_errno    rc;
 
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
@@ -3112,37 +2968,21 @@ net_addr_del(unsigned int gid, const char *oid,
 /**
  * Get instance list for object "agent/interface/net_addr".
  *
- * @param id            full identifier of the father instance
- * @param oid           OID of the parent instance
- * @param sub_id        ID of the object to be listed
- * @param list          location for the list pointer
- * @param ifname        interface name
+ * @param ctx           request context (parent instance OID)
+ * @param names         vector of heap-allocated names to append to
  *
  * @return              Status code:
  * @retval 0                success
  * @retval TE_ENOENT        no such instance
  */
 static te_errno
-net_addr_list(unsigned int gid, const char *oid,
-              const char *sub_id, char **list,
-              const char *ifname)
+net_addr_list(const ta_conf_ctx *ctx, te_vec *names)
 {
+    const char         *ifname = ta_conf_ctx_inst(ctx, "interface");
     te_errno            rc;
     unsigned int        ifindex;
     netconf_list       *nlist;
     netconf_node       *t;
-    unsigned int        len;
-    char               *cur_ptr;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-    if (list == NULL)
-    {
-        ERROR("%s(): Invalid value for 'list' argument", __FUNCTION__);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
     {
@@ -3164,42 +3004,24 @@ net_addr_list(unsigned int gid, const char *oid,
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-    /* Calculate maximum space needed by list */
-    len = nlist->length * (INET6_ADDRSTRLEN + 1);
-
-    if (len == 0)
-    {
-        netconf_list_free(nlist);
-        *list = NULL;
-        return 0;
-    }
-
-    *list = TE_ALLOC(len);
-
-    cur_ptr = *list;
     for (t = nlist->head; t != NULL; t = t->next)
     {
         const netconf_net_addr *net_addr = &(t->data.net_addr);
+        char addrstr[INET6_ADDRSTRLEN];
 
-        assert(cur_ptr >= *list);
-        assert((unsigned int)(cur_ptr - *list) <= len);
-
-        if (cur_ptr != *list)
-        {
-            snprintf(cur_ptr, len - (cur_ptr - *list), " ");
-            cur_ptr += strlen(cur_ptr);
-        }
-
-        if (inet_ntop(net_addr->family, net_addr->address, cur_ptr,
-                      *list + len - cur_ptr) == NULL)
+        if (inet_ntop(net_addr->family, net_addr->address, addrstr,
+                      sizeof(addrstr)) == NULL)
         {
             ERROR("%s(): Cannot save network address", __FUNCTION__);
-            free(*list);
             netconf_list_free(nlist);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
 
-        cur_ptr += strlen(cur_ptr);
+        {
+            char *name = TE_STRDUP(addrstr);
+
+            TE_VEC_APPEND(names, name);
+        }
     }
 
     netconf_list_free(nlist);
@@ -3265,20 +3087,15 @@ net_addr_list_ifreq_cb(struct my_ifreq *ifr, void *opaque)
 }
 
 static te_errno
-net_addr_list(unsigned int gid, const char *oid,
-              const char *sub_id, char **list,
-              const char *ifname)
+net_addr_list(const ta_conf_ctx *ctx, te_vec *names)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     struct net_addr_list_ifreq_cb_data  cb_data;
 
     struct my_ifreq    *req;
     void               *ifconf_buf = NULL;
     size_t              ifconf_len;
     te_errno            rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
     {
@@ -3300,14 +3117,20 @@ net_addr_list(unsigned int gid, const char *oid,
 
     rc = ifconf_foreach_ifreq(req, ifconf_len, net_addr_list_ifreq_cb,
                               &cb_data);
-    if (rc != 0)
+    if (rc == 0)
     {
-        free(cb_data.buf);
+        char *saveptr;
+        char *tok;
+
+        for (tok = strtok_r(cb_data.buf, " ", &saveptr); tok != NULL;
+             tok = strtok_r(NULL, " ", &saveptr))
+        {
+            char *name = TE_STRDUP(tok);
+
+            TE_VEC_APPEND(names, name);
+        }
     }
-    else
-    {
-        *list = cb_data.buf;
-    }
+    free(cb_data.buf);
 
     free(ifconf_buf);
 
@@ -3359,23 +3182,17 @@ ta_unix_conf_netaddr2ifname(const struct sockaddr *addr, char *ifname)
 /**
  * Get prefix of the interface.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         prefix location (prefix is presented in dotted
- *                      notation)
- * @param ifname        name of the interface (like "eth0")
- * @param addr          IPv4 address in dotted notation
+ * @param ctx           request context
+ * @param val           prefix location (decimal)
  *
  * @return              Status code
  */
 static te_errno
-prefix_get(unsigned int gid, const char *oid, char *value,
-           const char *ifname, const char *addr)
+prefix_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *addr = ta_conf_ctx_inst(ctx, "net_addr");
     unsigned int prefix = 0;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
 #if defined(USE_LIBNETCONF)
     {
@@ -3490,7 +3307,7 @@ prefix_get(unsigned int gid, const char *oid, char *value,
 #error Way to work with network addresses is not defined.
 #endif
 
-    sprintf(value, "%u", prefix);
+    te_string_append(val, "%u", prefix);
 
     return 0;
 }
@@ -3498,23 +3315,18 @@ prefix_get(unsigned int gid, const char *oid, char *value,
 /**
  * Change prefix of the interface.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         pointer to the new network mask in dotted notation
- * @param ifname        name of the interface (like "eth0")
- * @param addr          IPv4 address in dotted notation
+ * @param ctx           request context
+ * @param value         new prefix length (decimal)
  *
  * @return              Status code
  */
 static te_errno
-prefix_set(unsigned int gid, const char *oid, const char *value,
-           const char *ifname, const char *addr)
+prefix_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char     *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char     *addr = ta_conf_ctx_inst(ctx, "net_addr");
     te_errno        rc;
     unsigned int    prefix;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     rc = prefix_check(value, str_addr_family(addr), &prefix);
     if (rc != 0)
@@ -3634,23 +3446,19 @@ prefix_set(unsigned int gid, const char *oid, const char *value,
 /**
  * Get broadcast of the interface.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         broadcast address location (in dotted notation)
- * @param ifname        name of the interface (like "eth0")
- * @param addr          IP address in human notation
+ * @param ctx           request context
+ * @param val           broadcast address location (in dotted notation)
  *
  * @return              Status code
  */
 static te_errno
-broadcast_get(unsigned int gid, const char *oid, char *value,
-            const char *ifname, const char *addr)
+broadcast_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char     *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char     *addr = ta_conf_ctx_inst(ctx, "net_addr");
     gen_ip_address  bcast;
     sa_family_t     family = str_addr_family(addr);
-
-    UNUSED(gid);
-    UNUSED(oid);
+    char            value[RCF_MAX_VAL];
 
     if (family == AF_INET6)
     {
@@ -3767,30 +3575,27 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
+    te_string_append(val, "%s", value);
+
     return 0;
 }
 
 /**
  * Change broadcast of the interface.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context
  * @param value         pointer to the new broadcast address in dotted
  *                      notation
- * @param ifname        name of the interface (like "eth0")
- * @param addr          IP address in human notation
  *
  * @return              Status code
  */
 static te_errno
-broadcast_set(unsigned int gid, const char *oid, const char *value,
-            const char *ifname, const char *addr)
+broadcast_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char     *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char     *addr = ta_conf_ctx_inst(ctx, "net_addr");
     gen_ip_address  bcast;
     sa_family_t     family = str_addr_family(addr);
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if (family != AF_INET)
     {
@@ -3979,23 +3784,18 @@ link_addr_a2n(uint8_t *lladdr, int len, const char *str)
  * Get hardware address of the interface.
  * Only MAC addresses are supported now.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         location for hardware address (address is returned
- *                      as XX:XX:XX:XX:XX:XX)
- * @param ifname        name of the interface (like "eth0")
+ * @param ctx           request context
+ * @param val           location for hardware address (address is
+ *                      returned as XX:XX:XX:XX:XX:XX)
  *
  * @return              Status code
  */
 static te_errno
-link_addr_get(unsigned int gid, const char *oid, char *value,
-              const char *ifname)
+link_addr_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char     *ifname = ta_conf_ctx_inst(ctx, "interface");
     te_errno        rc;
     const uint8_t  *ptr = NULL;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
@@ -4073,8 +3873,8 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
     if (ptr == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%02x:%02x:%02x:%02x:%02x:%02x",
-             ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]);
+    te_string_append(val, "%02x:%02x:%02x:%02x:%02x:%02x",
+                     ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]);
     return 0;
 }
 
@@ -4083,23 +3883,18 @@ link_addr_get(unsigned int gid, const char *oid, char *value,
  * Set hardware address of the interface.
  * Only MAC addresses are supported now.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context
  * @param value         hardware address (address should be
  *                      provided as XX:XX:XX:XX:XX:XX)
- * @param ifname        name of the interface (like "eth0")
  *
  * @return              Status code
  */
 static te_errno
-link_addr_set(unsigned int gid, const char *oid, const char *value,
-              const char *ifname)
+link_addr_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     te_errno rc = 0;
     uint8_t  link_addr[ETHER_ADDR_LEN];
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
@@ -4133,22 +3928,17 @@ link_addr_set(unsigned int gid, const char *oid, const char *value,
  * Set broadcast hardware address of the interface.
  * Only MAC addresses are supported now.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context
  * @param value         broadcast hardware address (it should be
  *                      provided as XX:XX:XX:XX:XX:XX string)
- * @param ifname        name of the interface (like "eth0")
  *
  * @return              Status code
  */
 static te_errno
-bcast_link_addr_set(unsigned int gid, const char *oid,
-                    const char *value, const char *ifname)
+bcast_link_addr_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     te_errno rc = 0;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
@@ -4182,34 +3972,25 @@ bcast_link_addr_set(unsigned int gid, const char *oid,
 
 
 /**
- * Set broadcast hardware address of the interface.
+ * Get broadcast hardware address of the interface.
  * Only MAC addresses are supported now.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         broadcast hardware address (it should be
- *                      provided as XX:XX:XX:XX:XX:XX string)
- * @param ifname        name of the interface (like "eth0")
+ * @param ctx           request context
+ * @param val           broadcast hardware address location
  *
  * @return              Status code
  */
 static te_errno
-bcast_link_addr_get(unsigned int gid, const char *oid,
-                    char *value, const char *ifname)
+bcast_link_addr_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     te_errno rc = 0;
-
-    UNUSED(gid);
-    UNUSED(oid);
+#if defined(USE_LIBNETCONF)
+    char value[RCF_MAX_VAL];
+#endif
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
-
-    if (value == NULL)
-    {
-       ERROR("A buffer for broadcast link layer address is not provided");
-       return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
 
     /*
      * In case of point-to-point protocol there is no broadcast
@@ -4217,13 +3998,15 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
      */
     if (strstr(ifname, "ppp") != NULL)
     {
-        strcpy(value, "00:00:00:00:00:00");
+        te_string_append(val, "%s", "00:00:00:00:00:00");
         return 0;
     }
 
 #if defined(USE_LIBNETCONF)
-    return iface_get_property_netconf(ifname, value,
-                                      IF_PROP_BCAST_ADDR);
+    rc = iface_get_property_netconf(ifname, value, IF_PROP_BCAST_ADDR);
+    if (rc == 0)
+        te_string_append(val, "%s", value);
+    return rc;
 #else
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
@@ -4232,25 +4015,20 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
 /**
  * Get minimum allowed MTU of the interface.
  *
- * @param gid           Group identifier (unused).
- * @param oid           Full object instance identifier (unused).
- * @param value         Value location.
- * @param ifname        Name of the interface (like "eth0").
+ * @param ctx           Request context.
+ * @param val           Value location.
  *
  * @return              Status code.
  */
 static te_errno
-min_mtu_get(unsigned int gid, const char *oid, char *value,
-            const char *ifname)
+min_mtu_get(const ta_conf_ctx *ctx, uint16_t *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     te_errno    rc;
 #ifdef USE_LIBNETCONF
     netconf_list *links;
     const netconf_node *node;
 #endif
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     rc = CHECK_INTERFACE(ifname);
     if (rc != 0)
@@ -4270,8 +4048,7 @@ min_mtu_get(unsigned int gid, const char *oid, char *value,
         {
             if (link->min_mtu_set)
             {
-                te_snprintf(value, RCF_MAX_VAL, "%" TE_PRINTF_16 "u",
-                            link->min_mtu);
+                *val = link->min_mtu;
                 rc = 0;
             }
             break;
@@ -4288,25 +4065,20 @@ min_mtu_get(unsigned int gid, const char *oid, char *value,
 /**
  * Get maximum allowed MTU of the interface.
  *
- * @param gid           Group identifier (unused).
- * @param oid           Full object instance identifier (unused).
- * @param value         Value location.
- * @param ifname        Name of the interface (like "eth0").
+ * @param ctx           Request context.
+ * @param val           Value location.
  *
  * @return              Status code.
  */
 static te_errno
-max_mtu_get(unsigned int gid, const char *oid, char *value,
-            const char *ifname)
+max_mtu_get(const ta_conf_ctx *ctx, uint16_t *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     te_errno    rc;
 #ifdef USE_LIBNETCONF
     netconf_list *links;
     const netconf_node *node;
 #endif
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     rc = CHECK_INTERFACE(ifname);
     if (rc != 0)
@@ -4326,8 +4098,7 @@ max_mtu_get(unsigned int gid, const char *oid, char *value,
         {
             if (link->max_mtu_set)
             {
-                te_snprintf(value, RCF_MAX_VAL, "%" TE_PRINTF_16 "u",
-                            link->max_mtu);
+                *val = link->max_mtu;
                 rc = 0;
             }
             break;
@@ -4344,21 +4115,16 @@ max_mtu_get(unsigned int gid, const char *oid, char *value,
 /**
  * Get MTU of the interface.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         value location
- * @param ifname        name of the interface (like "eth0")
+ * @param ctx           request context
+ * @param val           value location
  *
  * @return              Status code
  */
 static te_errno
-mtu_get(unsigned int gid, const char *oid, char *value,
-        const char *ifname)
+mtu_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     te_errno    rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
@@ -4370,7 +4136,7 @@ mtu_get(unsigned int gid, const char *oid, char *value,
 
         te_strlcpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
         CFG_IOCTL(cfg_socket, MY_SIOCGIFMTU, &req);
-        sprintf(value, "%d", req.my_ifr_mtu);
+        te_string_append(val, "%d", req.my_ifr_mtu);
     }
 #endif
     return 0;
@@ -4440,13 +4206,10 @@ change_mtu(const char *ifname, int mtu)
  * @return              Status code
  */
 static te_errno
-mtu_set(unsigned int gid, const char *oid, const char *value,
-        const char *ifname)
+mtu_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     te_errno  rc = 0;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
@@ -4490,30 +4253,6 @@ iff_flag_get(const char *ifname, int flag, bool *value)
 }
 
 /**
- * Get interface flag value as string in CS value.
- *
- * @param ifname        name of the interface (like "eth0")
- * @param flag          flag to get
- * @param value         value location
- *
- * @return              Status code
- */
-static te_errno
-iff_flag_get_str(const char *ifname, int flag, char *value)
-{
-    te_errno rc;
-    bool flag_set;
-
-    rc = iff_flag_get(ifname, flag, &flag_set);
-    if (rc != 0)
-        return rc;
-
-    sprintf(value, "%d", flag_set);
-
-    return 0;
-}
-
-/**
  * Change interface flag value.
  *
  * @param ifname        name of the interface (like "eth0")
@@ -4544,86 +4283,45 @@ iff_flag_set(const char *ifname, int flag, bool set)
 }
 
 /**
- * Change interface flag value specified in string.
- *
- * @param ifname        name of the interface (like "eth0")
- * @param flag          flag to set or clear
- * @param value         set (1) or clear (0) the flag
- *
- * @return              Status code
- */
-static te_errno
-iff_flag_set_str(const char *ifname, int flag, const char *value)
-{
-    bool flag_set;
-
-    if (strcmp(value, "0") == 0)
-        flag_set = false;
-    else if (strcmp(value, "1") == 0)
-        flag_set = true;
-    else
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    return iff_flag_set(ifname, flag, flag_set);
-}
-
-/**
  * Check if ARP is enabled on the interface
- * ("0" - arp disable, "1" - arp enable).
+ * (@c false - arp disable, @c true - arp enable).
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         value location
- * @param ifname        name of the interface (like "eth0")
+ * @param ctx           request context
+ * @param val           value location
  *
  * @return              Status code
  */
 static te_errno
-arp_get(unsigned int gid, const char *oid, char *value, const char *ifname)
+arp_get(const ta_conf_ctx *ctx, bool *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     te_errno rc;
     bool flag_set;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     rc = iff_flag_get(ifname, IFF_NOARP, &flag_set);
     if (rc != 0)
         return rc;
 
-    sprintf(value, "%d", !flag_set);
+    *val = !flag_set;
 
     return 0;
 }
 
 /**
  * Enable/disable ARP on the interface
- * ("0" - arp disable, "1" - arp enable).
+ * (@c false - arp disable, @c true - arp enable).
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         value location
- * @param ifname        name of the interface (like "eth0")
+ * @param ctx           request context
+ * @param val           new value
  *
  * @return              Status code
  */
 static te_errno
-arp_set(unsigned int gid, const char *oid, const char *value,
-        const char *ifname)
+arp_set(const ta_conf_ctx *ctx, bool val)
 {
-    bool flag_set;
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (strcmp(value, "0") == 0)
-        flag_set = true;
-    else if (strcmp(value, "1") == 0)
-        flag_set = false;
-    else
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    return iff_flag_set(ifname, IFF_NOARP, flag_set);
+    return iff_flag_set(ifname, IFF_NOARP, !val);
 }
 
 /**
@@ -4722,59 +4420,35 @@ ta_interface_status_set(const char *ifname, bool status)
 }
 
 /**
- * Get oper status of the interface ("1" - RUNNING).
+ * Get oper status of the interface (@c true - RUNNING).
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         value location
- * @param ifname        name of the interface (like "eth0")
+ * @param ctx           request context
+ * @param val           value location
  *
  * @return              Status code
  */
 static te_errno
-oper_status_get(unsigned int gid, const char *oid, char *value,
-                const char *ifname)
+oper_status_get(const ta_conf_ctx *ctx, bool *val)
 {
-    te_errno rc;
-    bool status;
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    rc = ta_interface_oper_status_get(ifname, &status);
-    if (rc != 0)
-        return rc;
-    sprintf(value, "%d", status);
-
-    return 0;
+    return ta_interface_oper_status_get(ifname, val);
 }
 
 /**
- * Get status of the interface ("0" - down or "1" - up).
+ * Get status of the interface (@c false - down, @c true - up).
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         value location
- * @param ifname        name of the interface (like "eth0")
+ * @param ctx           request context
+ * @param val           value location
  *
  * @return              Status code
  */
 static te_errno
-status_get(unsigned int gid, const char *oid, char *value,
-           const char *ifname)
+status_get(const ta_conf_ctx *ctx, bool *val)
 {
-    te_errno rc;
-    bool status;
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    rc = ta_interface_status_get(ifname, &status);
-    if (rc != 0)
-        return rc;
-    sprintf(value, "%d", status);
-
-    return 0;
+    return ta_interface_status_get(ifname, val);
 }
 
 /**
@@ -4782,56 +4456,36 @@ status_get(unsigned int gid, const char *oid, char *value,
  * state,it is de-installed and information about it is stored in the list
  * of down interfaces.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         new value pointer
- * @param ifname        name of the interface (like "eth0")
+ * @param ctx           request context
+ * @param val           new value
  *
  * @return              Status code
  */
 static te_errno
-status_set(unsigned int gid, const char *oid, const char *value,
-           const char *ifname)
+status_set(const ta_conf_ctx *ctx, bool val)
 {
-    bool status;
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if (strcmp(value, "0") == 0)
-        status = false;
-    else if (strcmp(value, "1") == 0)
-        status = true;
-    else
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    return ta_interface_status_set(ifname, status);
+    return ta_interface_status_set(ifname, val);
 }
 
 /**
  * Get IP4 forwarding state of the interface.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         value location
- * @param ifname        name of the interface (like "eth0")
+ * @param ctx           request context
+ * @param val           value location
  *
  * @return              Status code
  */
 static te_errno
-iface_ip4_fw_get(unsigned int gid, const char *oid, char *value,
-                 const char *ifname)
+iface_ip4_fw_get(const ta_conf_ctx *ctx, bool *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 #if __linux__
     char    c = '0';
     int     fd;
     char    filename[128];
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-#if __linux__
     sprintf(filename, "/proc/sys/net/ipv4/conf/%s/forwarding", ifname);
     if ((fd = open(filename, O_RDONLY)) < 0)
         return TE_OS_RC(TE_TA_UNIX, errno);
@@ -4843,10 +4497,11 @@ iface_ip4_fw_get(unsigned int gid, const char *oid, char *value,
     }
     close(fd);
 
-    sprintf(value, "%d", c == '0' ? 0 : 1);
+    *val = (c != '0');
 #else
+    UNUSED(ifname);
     /* FIXME Add implementation in SOLARIS and(or) BSD if necessary */
-    sprintf(value, "%d", 0);
+    *val = false;
 #endif
 
     return 0;
@@ -4855,34 +4510,24 @@ iface_ip4_fw_get(unsigned int gid, const char *oid, char *value,
 /**
  * Change IP4 forwarding state of the interface.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         new value pointer
- * @param ifname        name of the interface (like "eth0")
+ * @param ctx           request context
+ * @param val           new value
  *
  * @return              Status code
  */
 static te_errno
-iface_ip4_fw_set(unsigned int gid, const char *oid, const char *value,
-                 const char *ifname)
+iface_ip4_fw_set(const ta_conf_ctx *ctx, bool val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 #if __linux__
     int     fd;
     char    filename[128];
-#endif
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-#if __linux__
-    if ((*value != '0' && *value != '1') || *(value + 1) != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     sprintf(filename, "/proc/sys/net/ipv4/conf/%s/forwarding", ifname);
     if ((fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0)
         return TE_OS_RC(TE_TA_UNIX, errno);
 
-    if (write(fd, *value == '0' ? "0\n" : "1\n", 2) < 0)
+    if (write(fd, val ? "1\n" : "0\n", 2) < 0)
     {
         close(fd);
         return TE_OS_RC(TE_TA_UNIX, errno);
@@ -4890,6 +4535,8 @@ iface_ip4_fw_set(unsigned int gid, const char *oid, const char *value,
 
     close(fd);
 #else
+    UNUSED(ifname);
+    UNUSED(val);
     /* FIXME Add implementation in SOLARIS and(or) BSD if necessary */
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
@@ -4900,27 +4547,20 @@ iface_ip4_fw_set(unsigned int gid, const char *oid, const char *value,
 /**
  * Get IP6 forwarding state of the interface.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         value location
- * @param ifname        name of the interface (like "eth0")
+ * @param ctx           request context
+ * @param val           value location
  *
  * @return              Status code
  */
 static te_errno
-iface_ip6_fw_get(unsigned int gid, const char *oid, char *value,
-                 const char *ifname)
+iface_ip6_fw_get(const ta_conf_ctx *ctx, bool *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 #if __linux__
     char    c = '0';
     int     fd;
     char    filename[128];
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-#if __linux__
     sprintf(filename, "/proc/sys/net/ipv6/conf/%s/forwarding", ifname);
     if ((fd = open(filename, O_RDONLY)) < 0)
         return TE_OS_RC(TE_TA_UNIX, errno);
@@ -4932,10 +4572,11 @@ iface_ip6_fw_get(unsigned int gid, const char *oid, char *value,
     }
     close(fd);
 
-    sprintf(value, "%d", c == '0' ? 0 : 1);
+    *val = (c != '0');
 #else
+    UNUSED(ifname);
     /* FIXME Add implementation in SOLARIS and(or) BSD if necessary */
-    sprintf(value, "%d", 0);
+    *val = false;
 #endif
 
     return 0;
@@ -4944,34 +4585,24 @@ iface_ip6_fw_get(unsigned int gid, const char *oid, char *value,
 /**
  * Change IP6 forwarding state of the interface.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         new value pointer
- * @param ifname        name of the interface (like "eth0")
+ * @param ctx           request context
+ * @param val           new value
  *
  * @return              Status code
  */
 static te_errno
-iface_ip6_fw_set(unsigned int gid, const char *oid, const char *value,
-                 const char *ifname)
+iface_ip6_fw_set(const ta_conf_ctx *ctx, bool val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 #if __linux__
     int     fd;
     char    filename[128];
-#endif
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-#if __linux__
-    if ((*value != '0' && *value != '1') || *(value + 1) != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     sprintf(filename, "/proc/sys/net/ipv6/conf/%s/forwarding", ifname);
     if ((fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0)
         return TE_OS_RC(TE_TA_UNIX, errno);
 
-    if (write(fd, *value == '0' ? "0\n" : "1\n", 2) < 0)
+    if (write(fd, val ? "1\n" : "0\n", 2) < 0)
     {
         close(fd);
         return TE_OS_RC(TE_TA_UNIX, errno);
@@ -4979,6 +4610,8 @@ iface_ip6_fw_set(unsigned int gid, const char *oid, const char *value,
 
     close(fd);
 #else
+    UNUSED(ifname);
+    UNUSED(val);
     /* FIXME Add implementation in SOLARIS and(or) BSD if necessary */
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
@@ -4989,24 +4622,19 @@ iface_ip6_fw_set(unsigned int gid, const char *oid, const char *value,
 /**
  * Get IP6 'accept_ra' state of the interface.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         value location
- * @param ifname        name of the interface (like "eth0")
+ * @param ctx           request context
+ * @param val           value location
  *
  * @return              Status code
  */
 static te_errno
-iface_ip6_accept_ra_get(unsigned int gid, const char *oid, char *value,
-                 const char *ifname)
+iface_ip6_accept_ra_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 #if __linux__
     char    c[2];
     int     fd;
     char    filename[128];
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     sprintf(filename, "/proc/sys/net/ipv6/conf/%s/accept_ra", ifname);
     if ((fd = open(filename, O_RDONLY)) < 0)
@@ -5020,14 +4648,12 @@ iface_ip6_accept_ra_get(unsigned int gid, const char *oid, char *value,
     close(fd);
 
     c[1] = '\0';
-    sprintf(value, "%s", c);
+    te_string_append(val, "%s", c);
 #else
-    UNUSED(gid);
-    UNUSED(oid);
     UNUSED(ifname);
 
     /* FIXME Add implementation in SOLARIS and(or) BSD if necessary */
-    sprintf(value, "%d", 0);
+    te_string_append(val, "%d", 0);
 #endif
 
     return 0;
@@ -5036,24 +4662,19 @@ iface_ip6_accept_ra_get(unsigned int gid, const char *oid, char *value,
 /**
  * Change IP6 'accept_ra' state of the interface.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         new value pointer
- * @param ifname        name of the interface (like "eth0")
+ * @param ctx           request context
+ * @param value          new value pointer
  *
  * @return              Status code
  */
 static te_errno
-iface_ip6_accept_ra_set(unsigned int gid, const char *oid,
-                const char *value, const char *ifname)
+iface_ip6_accept_ra_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 #if __linux__
     int     fd;
     char    filename[128];
     int     accept_ra_val = -1; /* Invalid value */
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if (sscanf(value, "%d", &accept_ra_val) != 1 ||
         accept_ra_val < 0 ||
@@ -5079,10 +4700,8 @@ iface_ip6_accept_ra_set(unsigned int gid, const char *oid,
 
     close(fd);
 #else
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
     UNUSED(ifname);
+    UNUSED(value);
 
     /* FIXME Add implementation in SOLARIS and(or) BSD if necessary */
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -5093,34 +4712,29 @@ iface_ip6_accept_ra_set(unsigned int gid, const char *oid,
 
 /* See the description in conf_common.h */
 te_errno
-rp_filter_get(unsigned int gid, const char *oid, char *value,
-              const char *ifname)
+rp_filter_get_core(const char *ifname, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
 #if __linux__
-    return read_sys_value(value, RCF_MAX_VAL, false,
-                          "/proc/sys/net/ipv4/conf/%s/rp_filter",
-                          ifname);
+    char value[RCF_MAX_VAL];
+    te_errno rc;
+
+    rc = read_sys_value(value, sizeof(value), false,
+                        "/proc/sys/net/ipv4/conf/%s/rp_filter",
+                        ifname);
+    if (rc == 0)
+        te_string_append(val, "%s", value);
+    return rc;
 #else
-    UNUSED(value);
     UNUSED(ifname);
 
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
-
-    return 0;
 }
 
 /* See the description in conf_common.h */
 te_errno
-rp_filter_set(unsigned int gid, const char *oid, const char *value,
-              const char *ifname)
+rp_filter_set_core(const char *ifname, const char *value)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
 #if __linux__
     if (*value < '0' || *value > '2' || *(value + 1) != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -5134,40 +4748,61 @@ rp_filter_set(unsigned int gid, const char *oid, const char *value,
 
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
+}
 
-    return 0;
+/**
+ * Get RPF filtering value.
+ *
+ * @param ctx           request context
+ * @param val           value location
+ *
+ * @return              Status code
+ */
+static te_errno
+rp_filter_get(const ta_conf_ctx *ctx, te_string *val)
+{
+    return rp_filter_get_core(ta_conf_ctx_inst(ctx, "interface"), val);
+}
+
+/**
+ * Set RPF filtering value.
+ *
+ * @param ctx           request context
+ * @param value         new value pointer
+ *
+ * @return              Status code
+ */
+static te_errno
+rp_filter_set(const ta_conf_ctx *ctx, const char *value)
+{
+    return rp_filter_set_core(ta_conf_ctx_inst(ctx, "interface"), value);
 }
 
 /* See the description in conf_common.h */
 te_errno
-arp_ignore_get(unsigned int gid, const char *oid, char *value,
-               const char *ifname)
+arp_ignore_get_core(const char *ifname, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
 #if __linux__
-    return read_sys_value(value, RCF_MAX_VAL, false,
-                          "/proc/sys/net/ipv4/conf/%s/arp_ignore",
-                          ifname);
+    char value[RCF_MAX_VAL];
+    te_errno rc;
+
+    rc = read_sys_value(value, sizeof(value), false,
+                        "/proc/sys/net/ipv4/conf/%s/arp_ignore",
+                        ifname);
+    if (rc == 0)
+        te_string_append(val, "%s", value);
+    return rc;
 #else
-    UNUSED(value);
     UNUSED(ifname);
 
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
-
-    return 0;
 }
 
 /* See the description in conf_common.h */
 te_errno
-arp_ignore_set(unsigned int gid, const char *oid, const char *value,
-               const char *ifname)
+arp_ignore_set_core(const char *ifname, const char *value)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
 #if __linux__
     if (*value < '0' || *value > '8' || *(value + 1) != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -5181,91 +4816,100 @@ arp_ignore_set(unsigned int gid, const char *oid, const char *value,
 
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
-
-    return 0;
 }
 
 /**
- * Get promiscuous mode of the interface ("0" - normal or "1" - promiscuous)
+ * Get arp_ignore value.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         value location
- * @param ifname        name of the interface (like "eth0")
+ * @param ctx           request context
+ * @param val           value location
  *
  * @return              Status code
  */
 static te_errno
-promisc_get(unsigned int gid, const char *oid, char *value,
-            const char *ifname)
+arp_ignore_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
-    return iff_flag_get_str(ifname, IFF_PROMISC, value);
+    return arp_ignore_get_core(ta_conf_ctx_inst(ctx, "interface"), val);
 }
 
 /**
- * Change the promiscuous mode of the interface
- * ("1" - enable, "0" - disable)
+ * Set arp_ignore value.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context
  * @param value         new value pointer
- * @param ifname        name of the interface (like "eth0")
  *
  * @return              Status code
  */
 static te_errno
-promisc_set(unsigned int gid, const char *oid, const char *value,
-           const char *ifname)
+arp_ignore_set(const ta_conf_ctx *ctx, const char *value)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
-    return iff_flag_set_str(ifname, IFF_PROMISC, value);
+    return arp_ignore_set_core(ta_conf_ctx_inst(ctx, "interface"), value);
 }
 
 /**
- * Get all-multicast mode of the interface ("0" - normal or "1" -
- * all-multicast)
+ * Get promiscuous mode of the interface (@c false - normal,
+ * @c true - promiscuous).
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         value location
- * @param ifname        name of the interface (like "eth0")
+ * @param ctx           request context
+ * @param val           value location
  *
  * @return              Status code
  */
 static te_errno
-allmulti_get(unsigned int gid, const char *oid, char *value,
-             const char *ifname)
+promisc_get(const ta_conf_ctx *ctx, bool *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 
-    return iff_flag_get_str(ifname, IFF_ALLMULTI, value);
+    return iff_flag_get(ifname, IFF_PROMISC, val);
 }
 
 /**
- * Change the all-multicast mode of the interface
- * ("1" - enable, "0" - disable)
+ * Change the promiscuous mode of the interface.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         new value pointer
- * @param ifname        name of the interface (like "eth0")
+ * @param ctx           request context
+ * @param val           new value
  *
  * @return              Status code
  */
 static te_errno
-allmulti_set(unsigned int gid, const char *oid, const char *value,
-             const char *ifname)
+promisc_set(const ta_conf_ctx *ctx, bool val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 
-    return iff_flag_set_str(ifname, IFF_ALLMULTI, value);
+    return iff_flag_set(ifname, IFF_PROMISC, val);
+}
+
+/**
+ * Get all-multicast mode of the interface (@c false - normal,
+ * @c true - all-multicast).
+ *
+ * @param ctx           request context
+ * @param val           value location
+ *
+ * @return              Status code
+ */
+static te_errno
+allmulti_get(const ta_conf_ctx *ctx, bool *val)
+{
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+
+    return iff_flag_get(ifname, IFF_ALLMULTI, val);
+}
+
+/**
+ * Change the all-multicast mode of the interface.
+ *
+ * @param ctx           request context
+ * @param val           new value
+ *
+ * @return              Status code
+ */
+static te_errno
+allmulti_set(const ta_conf_ctx *ctx, bool val)
+{
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+
+    return iff_flag_set(ifname, IFF_ALLMULTI, val);
 }
 
 #if defined(USE_LIBNETCONF)
@@ -5296,9 +4940,18 @@ neigh_netconf_dynamic_state2te(unsigned int state)
 }
 #endif
 
+/*
+ * neigh_dynamic/neigh_static/neigh_proxy share this get/set/add/del/list
+ * business logic (H1). The legacy code discriminated which of the
+ * three collections a request targeted via strstr() on the raw OID
+ * string; every *_core function below takes that discrimination as an
+ * explicit neigh_flavor argument instead, and each node gets its own
+ * thin wrapper (below neigh_list_core) that resolves its instance
+ * names via ta_conf_ctx_inst() and calls the shared core.
+ */
 static te_errno
-neigh_find(const char *oid, const char *ifname, const char *addr,
-           char *mac_p, unsigned int *state_p)
+neigh_find_core(neigh_flavor flavor, const char *ifname, const char *addr,
+                char *mac_p, unsigned int *state_p)
 {
 #if defined(USE_LIBNETCONF)
     te_errno            rc;
@@ -5312,7 +4965,7 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
     bool found;
 
     family = str_addr_family(addr);
-    dynamic = (strstr(oid, "dynamic") != NULL);
+    dynamic = (flavor == NEIGH_DYNAMIC);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
     {
@@ -5381,7 +5034,7 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
 
     return 0;
 #else
-    UNUSED(oid);
+    UNUSED(flavor);
     UNUSED(ifname);
     {
         struct arpreq arp_req;
@@ -5444,31 +5097,27 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
 
 
 /**
- * Get neighbour entry state.
+ * Get neighbour entry state; only node_neigh_dynamic has a "state"
+ * child, so this always looks up a dynamic entry.
  *
- * @param gid            group identifier (unused)
- * @param oid            full object instance identifier (unused)
- * @param value          location for the value
- *                       (XX:XX:XX:XX:XX:XX is returned)
- * @param ifname         interface name
- * @param addr           IP address in human notation
+ * @param ctx            request context
+ * @param val            location for the value
  *
  * @return Status code
  */
-int
-neigh_state_get(unsigned int gid, const char *oid, char *value,
-                const char *ifname, const char *addr)
+static te_errno
+neigh_state_get(const ta_conf_ctx *ctx, int32_t *val)
 {
+    const char  *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char  *addr = ta_conf_ctx_inst(ctx, "neigh_dynamic");
     unsigned int state;
     te_errno     rc;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if ((rc = neigh_find("dynamic", ifname, addr, NULL, &state)) != 0)
+    if ((rc = neigh_find_core(NEIGH_DYNAMIC, ifname, addr, NULL,
+                              &state)) != 0)
         return rc;
 
-    sprintf(value, "%u", state);
+    *val = state;
 
     return 0;
 }
@@ -5476,62 +5125,56 @@ neigh_state_get(unsigned int gid, const char *oid, char *value,
 /**
  * Get neighbour entry value (hardware address corresponding to IP).
  *
- * @param gid            group identifier (unused)
- * @param oid            full object instance identifier or NULL for
- *                       dynamic entries (hack)
- * @param value          location for the value
- *                       (XX:XX:XX:XX:XX:XX is returned)
+ * @param flavor         which of the three collections this is for
  * @param ifname         interface name
  * @param addr           IP address in human notation
+ * @param value          location for the value
+ *                       (XX:XX:XX:XX:XX:XX is returned)
  *
  * @return Status code
  */
 static te_errno
-neigh_get(unsigned int gid, const char *oid, char *value,
-          const char *ifname, const char *addr)
+neigh_get_core(neigh_flavor flavor, const char *ifname, const char *addr,
+              char *value)
 {
-    UNUSED(gid);
-
-    return neigh_find(oid, ifname, addr, value, NULL);
+    return neigh_find_core(flavor, ifname, addr, value, NULL);
 }
 
 /**
  * Change already existing neighbour entry.
  *
- * @param gid            group identifier
- * @param oid            full object instance identifier (unused)
- * @param value          new value pointer ("XX:XX:XX:XX:XX:XX")
+ * @param flavor         which of the three collections this is for
  * @param ifname         interface name
  * @param addr           IP address in human notation
+ * @param value          new value pointer ("XX:XX:XX:XX:XX:XX")
  *
  * @return Status code
  */
 static te_errno
-neigh_set(unsigned int gid, const char *oid, const char *value,
-          const char *ifname, const char *addr)
+neigh_set_core(neigh_flavor flavor, const char *ifname, const char *addr,
+              const char *value)
 {
-    if (neigh_find(oid, ifname, addr, NULL, NULL) != 0)
+    if (neigh_find_core(flavor, ifname, addr, NULL, NULL) != 0)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    return neigh_add(gid, oid, value, ifname, addr);
+    return neigh_add_core(flavor, ifname, addr, value);
 }
 
 /**
  * Add a new neighbour entry.
  *
- * @param gid            group identifier (unused)
- * @param oid            full object instance identifier (unused)
- * @param value          new entry value pointer ("XX:XX:XX:XX:XX:XX")
+ * @param flavor         which of the three collections this is for
  * @param ifname         interface name
  * @param addr           IP address in human notation
+ * @param value          new entry value pointer ("XX:XX:XX:XX:XX:XX")
  *
  * @return Status code
  */
 static te_errno
-neigh_add(unsigned int gid, const char *oid, const char *value,
-          const char *ifname, const char *addr)
+neigh_add_core(neigh_flavor flavor, const char *ifname, const char *addr,
+              const char *value)
 {
-    bool proxy = (strstr(oid, "proxy") != NULL);
+    bool proxy = (flavor == NEIGH_PROXY);
 
 #if defined(USE_LIBNETCONF)
     te_errno            rc;
@@ -5542,10 +5185,8 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
     netconf_neigh       neigh;
     uint8_t             raw_addr[ETHER_ADDR_LEN];
 
-    UNUSED(gid);
-
     family = str_addr_family(addr);
-    dynamic = (strstr(oid, "dynamic") != NULL);
+    dynamic = (flavor == NEIGH_DYNAMIC);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
     {
@@ -5606,8 +5247,6 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
     int           int_addr[ETHER_ADDR_LEN];
     int           res;
 
-    UNUSED(gid);
-
     if (proxy)
     {
         ERROR("%s(): adding of neighbor proxy is not implemented via "
@@ -5640,7 +5279,7 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
         (arp_req.arp_ha.sa_data)[i] = (unsigned char)(int_addr[i]);
 
     arp_req.arp_flags = ATF_COM;
-    if (strstr(oid, "dynamic") == NULL)
+    if (flavor != NEIGH_DYNAMIC)
     {
         VERB("%s(): Add permanent ARP entry", __FUNCTION__);
         arp_req.arp_flags |= ATF_PERM;
@@ -5662,23 +5301,19 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
 /**
  * Delete neighbour entry.
  *
- * @param gid            group identifier (unused)
- * @param oid            full object instance identifier (unused)
+ * @param flavor         which of the three collections this is for
  * @param ifname         interface name
  * @param addr           IP address in human notation
  *
  * @return Status code
  */
 static te_errno
-neigh_del(unsigned int gid, const char *oid, const char *ifname,
-          const char *addr)
+neigh_del_core(neigh_flavor flavor, const char *ifname, const char *addr)
 {
     te_errno      rc;
-    bool proxy = (strstr(oid, "proxy") != NULL);
+    bool proxy = (flavor == NEIGH_PROXY);
 
-    UNUSED(gid);
-
-    if ((rc = neigh_find(oid, ifname, addr, NULL, NULL)) != 0)
+    if ((rc = neigh_find_core(flavor, ifname, addr, NULL, NULL)) != 0)
     {
         if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
         {
@@ -5759,7 +5394,7 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
         {
             te_errno rc = te_rc_os2te(errno);
 
-            if ((rc != TE_ENXIO) || (strstr(oid, "dynamic") == NULL))
+            if ((rc != TE_ENXIO) || (flavor != NEIGH_DYNAMIC))
             {
                 ERROR("line %u: ioctl(SIOCDARP) failed: %r", __LINE__, rc);
             }
@@ -5777,23 +5412,26 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
 #endif
 }
 
+/**
+ * List neighbour entries; shared core for the per-node list handlers,
+ * see the neigh_flavor comment above neigh_find_core().
+ *
+ * @param flavor        which of the three collections this is for
+ * @param ifname        interface name
+ * @param names         vector of heap-allocated names to append to
+ *
+ * @return Status code
+ */
 #if defined(USE_LIBNETCONF)
 static te_errno
-ta_unix_conf_neigh_list(const char *ifname, bool is_static,
-                        bool is_proxy, char **list)
+neigh_list_core(neigh_flavor flavor, const char *ifname, te_vec *names)
 {
+    bool                is_static = (flavor != NEIGH_DYNAMIC);
+    bool                is_proxy = (flavor == NEIGH_PROXY);
     te_errno            rc;
     unsigned int        ifindex;
     netconf_list       *nlist;
     netconf_node       *t;
-    unsigned int        len;
-    char               *cur_ptr;
-
-    if (list == NULL)
-    {
-        ERROR("%s(): Invalid value for 'list' argument", __FUNCTION__);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
     {
@@ -5818,29 +5456,10 @@ ta_unix_conf_neigh_list(const char *ifname, bool is_static,
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-    /* Calculate maximum space needed by the list */
-    len = nlist->length * (INET6_ADDRSTRLEN + 1);
-
-    if (len == 0)
-    {
-        *list = NULL;
-        return 0;
-    }
-
-    *list = TE_ALLOC(len);
-    if (len == 0)
-    {
-        *list = NULL;
-        return 0;
-    }
-
-    cur_ptr = *list;
     for (t = nlist->head; t != NULL; t = t->next)
     {
         const netconf_neigh *neigh = &(t->data.neigh);
-
-        assert(cur_ptr >= *list);
-        assert((unsigned int)(cur_ptr - *list) <= len);
+        char addrstr[INET6_ADDRSTRLEN];
 
         if ((unsigned int)(neigh->ifindex) != ifindex)
             continue;
@@ -5863,23 +5482,20 @@ ta_unix_conf_neigh_list(const char *ifname, bool is_static,
 
         /* Neighbour is ok, save it to the list */
 
-        if (cur_ptr != *list)
-        {
-            snprintf(cur_ptr, len - (cur_ptr - *list), " ");
-            cur_ptr += strlen(cur_ptr);
-        }
-
-        if (inet_ntop(neigh->family, neigh->dst, cur_ptr,
-                      len - (cur_ptr - *list)) == NULL)
+        if (inet_ntop(neigh->family, neigh->dst, addrstr,
+                      sizeof(addrstr)) == NULL)
         {
             ERROR("%s(): Cannot save destination address",
                   __FUNCTION__);
-            free(*list);
             netconf_list_free(nlist);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
 
-        cur_ptr += strlen(cur_ptr);
+        {
+            char *name = TE_STRDUP(addrstr);
+
+            TE_VEC_APPEND(names, name);
+        }
     }
 
     netconf_list_free(nlist);
@@ -5888,45 +5504,184 @@ ta_unix_conf_neigh_list(const char *ifname, bool is_static,
 }
 #else
 static te_errno
-ta_unix_conf_neigh_list(const char *ifname, bool is_static,
-                        bool is_proxy, char **list)
+neigh_list_core(neigh_flavor flavor, const char *ifname, te_vec *names)
 {
-    UNUSED(ifname);
-    UNUSED(is_static);
-
-    *list = NULL;
+    bool is_static = (flavor != NEIGH_DYNAMIC);
+    bool is_proxy = (flavor == NEIGH_PROXY);
 
 #if HAVE_INET_MIB2_H
     if (!is_proxy)
     {
-        return ta_unix_conf_neigh_list_getmsg(ifname, is_static, list);
+        te_errno rc;
+        char *list = NULL;
+        char *copy;
+        char *saveptr;
+        char *tok;
+
+        rc = ta_unix_conf_neigh_list_getmsg(ifname, is_static, &list);
+        if (rc != 0)
+            return rc;
+
+        if (list == NULL)
+            return 0;
+
+        copy = TE_STRDUP(list);
+        for (tok = strtok_r(copy, " ", &saveptr); tok != NULL;
+             tok = strtok_r(NULL, " ", &saveptr))
+        {
+            char *name = TE_STRDUP(tok);
+
+            TE_VEC_APPEND(names, name);
+        }
+        free(copy);
+        free(list);
     }
+#else
+    UNUSED(ifname);
+    UNUSED(is_static);
+    UNUSED(is_proxy);
 #endif
     return 0;
 }
 #endif
 
-/**
- * Get instance list for object "agent/arp" and "agent/volatile/arp".
- *
- * @param gid           group identifier (unused)
- * @param oid           full parent object instance identifier
- * @param sub_id        ID of the object to be listed
- * @param list          location for the list pointer
- * @param ifname        interface name
- *
- * @return Status code
- */
 static te_errno
-neigh_list(unsigned int gid, const char *oid,
-           const char *sub_id, char **list,
-           const char *ifname)
+neigh_dynamic_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(oid);
-    UNUSED(gid);
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *addr = ta_conf_ctx_inst(ctx, "neigh_dynamic");
+    char value[RCF_MAX_VAL];
+    te_errno rc;
 
-    return ta_unix_conf_neigh_list(ifname,
-                                   strstr(sub_id, "dynamic") == NULL,
-                                   strstr(sub_id, "proxy") != NULL,
-                                   list);
+    rc = neigh_get_core(NEIGH_DYNAMIC, ifname, addr, value);
+    if (rc == 0)
+        te_string_append(val, "%s", value);
+
+    return rc;
+}
+
+static te_errno
+neigh_dynamic_set(const ta_conf_ctx *ctx, const char *val)
+{
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *addr = ta_conf_ctx_inst(ctx, "neigh_dynamic");
+
+    return neigh_set_core(NEIGH_DYNAMIC, ifname, addr, val);
+}
+
+static te_errno
+neigh_dynamic_add(const ta_conf_ctx *ctx, const char *val)
+{
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *addr = ta_conf_ctx_inst(ctx, "neigh_dynamic");
+
+    return neigh_add_core(NEIGH_DYNAMIC, ifname, addr, val);
+}
+
+static te_errno
+neigh_dynamic_del(const ta_conf_ctx *ctx)
+{
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *addr = ta_conf_ctx_inst(ctx, "neigh_dynamic");
+
+    return neigh_del_core(NEIGH_DYNAMIC, ifname, addr);
+}
+
+static te_errno
+neigh_dynamic_list(const ta_conf_ctx *ctx, te_vec *names)
+{
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+
+    return neigh_list_core(NEIGH_DYNAMIC, ifname, names);
+}
+
+static te_errno
+neigh_static_get(const ta_conf_ctx *ctx, te_string *val)
+{
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *addr = ta_conf_ctx_inst(ctx, "neigh_static");
+    char value[RCF_MAX_VAL];
+    te_errno rc;
+
+    rc = neigh_get_core(NEIGH_STATIC, ifname, addr, value);
+    if (rc == 0)
+        te_string_append(val, "%s", value);
+
+    return rc;
+}
+
+static te_errno
+neigh_static_set(const ta_conf_ctx *ctx, const char *val)
+{
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *addr = ta_conf_ctx_inst(ctx, "neigh_static");
+
+    return neigh_set_core(NEIGH_STATIC, ifname, addr, val);
+}
+
+static te_errno
+neigh_static_add(const ta_conf_ctx *ctx, const char *val)
+{
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *addr = ta_conf_ctx_inst(ctx, "neigh_static");
+
+    return neigh_add_core(NEIGH_STATIC, ifname, addr, val);
+}
+
+static te_errno
+neigh_static_del(const ta_conf_ctx *ctx)
+{
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *addr = ta_conf_ctx_inst(ctx, "neigh_static");
+
+    return neigh_del_core(NEIGH_STATIC, ifname, addr);
+}
+
+static te_errno
+neigh_static_list(const ta_conf_ctx *ctx, te_vec *names)
+{
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+
+    return neigh_list_core(NEIGH_STATIC, ifname, names);
+}
+
+static te_errno
+neigh_proxy_get(const ta_conf_ctx *ctx, te_string *val)
+{
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *addr = ta_conf_ctx_inst(ctx, "neigh_proxy");
+    char value[RCF_MAX_VAL];
+    te_errno rc;
+
+    rc = neigh_get_core(NEIGH_PROXY, ifname, addr, value);
+    if (rc == 0)
+        te_string_append(val, "%s", value);
+
+    return rc;
+}
+
+static te_errno
+neigh_proxy_add(const ta_conf_ctx *ctx, const char *val)
+{
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *addr = ta_conf_ctx_inst(ctx, "neigh_proxy");
+
+    return neigh_add_core(NEIGH_PROXY, ifname, addr, val);
+}
+
+static te_errno
+neigh_proxy_del(const ta_conf_ctx *ctx)
+{
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *addr = ta_conf_ctx_inst(ctx, "neigh_proxy");
+
+    return neigh_del_core(NEIGH_PROXY, ifname, addr);
+}
+
+static te_errno
+neigh_proxy_list(const ta_conf_ctx *ctx, te_vec *names)
+{
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+
+    return neigh_list_core(NEIGH_PROXY, ifname, names);
 }
