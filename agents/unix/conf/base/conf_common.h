@@ -184,6 +184,13 @@ extern te_errno get_interface_kind(const char *ifname, char *value);
  */
 extern te_errno ta_unix_conf_selftest_init(void);
 
+/**
+ * Initialize the XEN configuration subtree support.
+ *
+ * @return Status code.
+ */
+extern te_errno ta_unix_conf_xen_init(void);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
