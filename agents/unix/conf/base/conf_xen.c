@@ -44,8 +44,11 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_str.h"
+#include "te_string.h"
+#include "te_vector.h"
 #include "logger_api.h"
 #include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 #include "te_shell_cmd.h"
 #include "unix_internal.h"
 #include "conf_common.h"
@@ -53,251 +56,138 @@
 static char buf[4096];
 
 /* XEN stuff interface */
-static te_errno xen_path_get(unsigned int, char const *, char *);
-static te_errno xen_path_set(unsigned int, char const *, char const *);
+static te_errno xen_path_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno xen_path_set(const ta_conf_ctx *ctx, const char *value);
 
-static te_errno xen_subpath_get(unsigned int, char const *, char *);
-static te_errno xen_subpath_set(unsigned int, char const *, char const *);
+static te_errno xen_subpath_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno xen_subpath_set(const ta_conf_ctx *ctx, const char *value);
 
-static te_errno xen_kernel_get(unsigned int, char const *, char *);
-static te_errno xen_kernel_set(unsigned int, char const *, char const *);
+static te_errno xen_kernel_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno xen_kernel_set(const ta_conf_ctx *ctx, const char *value);
 
-static te_errno xen_initrd_get(unsigned int, char const *, char *);
-static te_errno xen_initrd_set(unsigned int, char const *, char const *);
+static te_errno xen_initrd_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno xen_initrd_set(const ta_conf_ctx *ctx, const char *value);
 
-static te_errno xen_dsktpl_get(unsigned int, char const *, char *);
-static te_errno xen_dsktpl_set(unsigned int, char const *, char const *);
+static te_errno xen_dsktpl_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno xen_dsktpl_set(const ta_conf_ctx *ctx, const char *value);
 
-static te_errno xen_rcf_port_get(unsigned int, char const *, char *);
-static te_errno xen_rcf_port_set(unsigned int, char const *,
-                                 char const *);
+static te_errno xen_rcf_port_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno xen_rcf_port_set(const ta_conf_ctx *ctx, const char *value);
 
-static te_errno xen_rpc_br_get(unsigned int, char const *, char *);
-static te_errno xen_rpc_br_set(unsigned int, char const *, char const *);
+static te_errno xen_rpc_br_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno xen_rpc_br_set(const ta_conf_ctx *ctx, const char *value);
 
-static te_errno xen_rpc_if_get(unsigned int, char const *, char *);
-static te_errno xen_rpc_if_set(unsigned int, char const *, char const *);
+static te_errno xen_rpc_if_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno xen_rpc_if_set(const ta_conf_ctx *ctx, const char *value);
 
-static te_errno xen_base_mac_addr_get(unsigned int, char const *, char *);
-static te_errno xen_base_mac_addr_set(unsigned int, char const *,
-                                      char const *);
+static te_errno xen_base_mac_addr_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno xen_base_mac_addr_set(const ta_conf_ctx *ctx, const char *value);
 
-static te_errno xen_accel_get(unsigned int, char const *, char *);
-static te_errno xen_accel_set(unsigned int, char const *, char const *);
+static te_errno xen_accel_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno xen_accel_set(const ta_conf_ctx *ctx, const char *value);
 
-static te_errno xen_init_set(unsigned int, char const *, char const *);
+static te_errno xen_init_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno xen_init_set(const ta_conf_ctx *ctx, const char *value);
 
-static te_errno xen_interface_add(unsigned int, char const *, char const *,
-                                  char const *, char const *);
-static te_errno xen_interface_del(unsigned int, char const *, char const *,
-                                  char const *);
-static te_errno xen_interface_list(unsigned int, char const *,
-                                   const char *, char **);
-static te_errno xen_interface_get(unsigned int, char const *, char *,
-                                  char const *, char const *);
-static te_errno xen_interface_set(unsigned int, char const *, char const *,
-                                  char const *, char const *);
+static te_errno xen_interface_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno xen_interface_set(const ta_conf_ctx *ctx, const char *value);
+static te_errno xen_interface_add(const ta_conf_ctx *ctx, const char *value);
+static te_errno xen_interface_del(const ta_conf_ctx *ctx);
+static te_errno xen_interface_list(const ta_conf_ctx *ctx, te_vec *names);
 
-static te_errno xen_interface_bridge_get(unsigned int, char const *,
-                                         char *, char const *,
-                                         char const *);
-static te_errno xen_interface_bridge_set(unsigned int, char const *,
-                                         char const *, char const *,
-                                         char const *);
+static te_errno xen_interface_bridge_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno xen_interface_bridge_set(const ta_conf_ctx *ctx,
+                                         const char *value);
 
-static te_errno dom_u_add(unsigned int, char const *, char const *,
-                          char const *, char const *);
-static te_errno dom_u_del(unsigned int, char const *, char const *,
-                          char const *);
-static te_errno dom_u_list(unsigned int, char const *,
-                           const char *, char **);
-static te_errno dom_u_get(unsigned int, char const *, char *,
-                          char const *, char const *);
-static te_errno dom_u_set(unsigned int, char const *, char const *,
-                          char const *, char const *);
+static te_errno dom_u_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno dom_u_set(const ta_conf_ctx *ctx, const char *value);
+static te_errno dom_u_add(const ta_conf_ctx *ctx, const char *value);
+static te_errno dom_u_del(const ta_conf_ctx *ctx);
+static te_errno dom_u_list(const ta_conf_ctx *ctx, te_vec *names);
 
-static te_errno dom_u_status_get(unsigned int, char const *, char *,
-                                 char const *, char const *);
-static te_errno dom_u_status_set(unsigned int, char const *,
-                                 char const *, char const *,
-                                 char const *);
+static te_errno dom_u_status_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno dom_u_status_set(const ta_conf_ctx *ctx, const char *value);
 
-static te_errno dom_u_memory_get(unsigned int, char const *, char *,
-                                 char const *, char const *);
-static te_errno dom_u_memory_set(unsigned int, char const *,
-                                 char const *, char const *,
-                                 char const *);
+static te_errno dom_u_memory_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno dom_u_memory_set(const ta_conf_ctx *ctx, const char *value);
 
-static te_errno dom_u_ip_addr_get(unsigned int, char const *, char *,
-                                  char const *, char const *);
-static te_errno dom_u_ip_addr_set(unsigned int, char const *,
-                                  char const *, char const *,
-                                  char const *);
+static te_errno dom_u_ip_addr_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno dom_u_ip_addr_set(const ta_conf_ctx *ctx, const char *value);
 
-static te_errno dom_u_mac_addr_get(unsigned int, char const *, char *,
-                                   char const *, char const *);
-static te_errno dom_u_mac_addr_set(unsigned int, char const *,
-                                   char const *, char const *,
-                                   char const *);
+static te_errno dom_u_mac_addr_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno dom_u_mac_addr_set(const ta_conf_ctx *ctx, const char *value);
 
-static te_errno dom_u_bridge_add(unsigned int, char const *, char const *,
-                                 char const *, char const *, char const *);
-static te_errno dom_u_bridge_del(unsigned int, char const *, char const *,
-                                 char const *, char const *);
-static te_errno dom_u_bridge_list(unsigned int, char const *,
-                                  const char *, char **,
-                                  char const *, char const *);
-static te_errno dom_u_bridge_get(unsigned int, char const *, char *,
-                                 char const *, char const *, char const *);
-static te_errno dom_u_bridge_set(unsigned int, char const *, char const *,
-                                 char const *, char const *, char const *);
+static te_errno dom_u_bridge_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno dom_u_bridge_set(const ta_conf_ctx *ctx, const char *value);
+static te_errno dom_u_bridge_add(const ta_conf_ctx *ctx, const char *value);
+static te_errno dom_u_bridge_del(const ta_conf_ctx *ctx);
+static te_errno dom_u_bridge_list(const ta_conf_ctx *ctx, te_vec *names);
 
-static te_errno dom_u_bridge_ip_addr_get(unsigned int, char const *,
-                                         char *, char const *,
-                                         char const *, char const *);
-static te_errno dom_u_bridge_ip_addr_set(unsigned int, char const *,
-                                         char const *, char const *,
-                                         char const *, char const *);
+static te_errno dom_u_bridge_ip_addr_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno dom_u_bridge_ip_addr_set(const ta_conf_ctx *ctx,
+                                         const char *value);
 
-static te_errno dom_u_bridge_mac_addr_get(unsigned int, char const *,
-                                          char *, char const *,
-                                          char const *, char const *);
-static te_errno dom_u_bridge_mac_addr_set(unsigned int, char const *,
-                                          char const *, char const *,
-                                          char const *, char const *);
+static te_errno dom_u_bridge_mac_addr_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno dom_u_bridge_mac_addr_set(const ta_conf_ctx *ctx,
+                                          const char *value);
 
-static te_errno dom_u_bridge_accel_get(unsigned int, char const *,
-                                       char *, char const *,
-                                       char const *, char const *);
-static te_errno dom_u_bridge_accel_set(unsigned int, char const *,
-                                       char const *, char const *,
-                                       char const *, char const *);
+static te_errno dom_u_bridge_accel_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno dom_u_bridge_accel_set(const ta_conf_ctx *ctx, const char *value);
 
-static te_errno dom_u_migrate_set(unsigned int, char const *,
-                                  char const *, char const *,
-                                  char const *);
+static te_errno dom_u_migrate_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno dom_u_migrate_set(const ta_conf_ctx *ctx, const char *value);
 
-static te_errno dom_u_migrate_kind_get(unsigned int, char const *, char *,
-                                       char const *, char const *);
-static te_errno dom_u_migrate_kind_set(unsigned int, char const *,
-                                       char const *, char const *,
-                                       char const *);
+static te_errno dom_u_migrate_kind_get(const ta_conf_ctx *ctx, te_string *val);
+static te_errno dom_u_migrate_kind_set(const ta_conf_ctx *ctx, const char *value);
 
 /* XEN stuff tree */
-RCF_PCH_CFG_NODE_RW(node_dom_u_migrate_kind, "kind",
-                    NULL, NULL,
-                    &dom_u_migrate_kind_get, &dom_u_migrate_kind_set);
-
-RCF_PCH_CFG_NODE_RW(node_dom_u_migrate, "migrate",
-                    &node_dom_u_migrate_kind, NULL,
-                    NULL, &dom_u_migrate_set);
-
-RCF_PCH_CFG_NODE_RW(node_dom_u_bridge_accel, "accel",
-                    NULL, NULL,
-                    &dom_u_bridge_accel_get,
-                    &dom_u_bridge_accel_set);
-
-RCF_PCH_CFG_NODE_RW(node_dom_u_bridge_mac_addr, "mac_addr",
-                    NULL, &node_dom_u_bridge_accel,
-                    &dom_u_bridge_mac_addr_get,
-                    &dom_u_bridge_mac_addr_set);
-
-RCF_PCH_CFG_NODE_RW(node_dom_u_bridge_ip_addr, "ip_addr",
-                    NULL, &node_dom_u_bridge_mac_addr,
-                    &dom_u_bridge_ip_addr_get,
-                    &dom_u_bridge_ip_addr_set);
-
-static rcf_pch_cfg_object node_dom_u_bridge =
-    { "bridge", 0, &node_dom_u_bridge_ip_addr, &node_dom_u_migrate,
-      (rcf_ch_cfg_get)&dom_u_bridge_get,
-      (rcf_ch_cfg_set)&dom_u_bridge_set,
-      (rcf_ch_cfg_add)&dom_u_bridge_add,
-      (rcf_ch_cfg_del)&dom_u_bridge_del,
-      (rcf_ch_cfg_list)&dom_u_bridge_list, NULL, NULL, NULL };
-
-RCF_PCH_CFG_NODE_RW(node_dom_u_mac_addr, "mac_addr",
-                    NULL, &node_dom_u_bridge,
-                    &dom_u_mac_addr_get, &dom_u_mac_addr_set);
-
-RCF_PCH_CFG_NODE_RW(node_dom_u_ip_addr, "ip_addr",
-                    NULL, &node_dom_u_mac_addr,
-                    &dom_u_ip_addr_get, &dom_u_ip_addr_set);
-
-RCF_PCH_CFG_NODE_RW(node_dom_u_memory, "memory",
-                    NULL, &node_dom_u_ip_addr,
-                    &dom_u_memory_get, &dom_u_memory_set);
-
-RCF_PCH_CFG_NODE_RW(node_dom_u_status, "status",
-                    NULL, &node_dom_u_memory,
-                    &dom_u_status_get, &dom_u_status_set);
-
-static rcf_pch_cfg_object node_dom_u =
-    { "dom_u", 0, &node_dom_u_status, NULL,
-      (rcf_ch_cfg_get)&dom_u_get, (rcf_ch_cfg_set)&dom_u_set,
-      (rcf_ch_cfg_add)&dom_u_add, (rcf_ch_cfg_del)&dom_u_del,
-      (rcf_ch_cfg_list)&dom_u_list, NULL, NULL, NULL };
-
-RCF_PCH_CFG_NODE_RW(node_xen_interface_bridge, "bridge",
-                    NULL, NULL,
-                    &xen_interface_bridge_get, &xen_interface_bridge_set);
-
-static rcf_pch_cfg_object node_xen_interface =
-    { "interface", 0, &node_xen_interface_bridge, &node_dom_u,
-      (rcf_ch_cfg_get)&xen_interface_get,
-      (rcf_ch_cfg_set)&xen_interface_set,
-      (rcf_ch_cfg_add)&xen_interface_add,
-      (rcf_ch_cfg_del)&xen_interface_del,
-      (rcf_ch_cfg_list)&xen_interface_list, NULL, NULL, NULL };
-
-RCF_PCH_CFG_NODE_RW(node_xen_init, "init",
-                    NULL, &node_xen_interface,
-                    NULL, &xen_init_set);
-
-RCF_PCH_CFG_NODE_RW(node_xen_accel, "accel",
-                    NULL, &node_xen_init,
-                    &xen_accel_get, &xen_accel_set);
-
-RCF_PCH_CFG_NODE_RW(node_base_mac_addr, "base_mac_addr",
-                    NULL, &node_xen_accel,
-                    &xen_base_mac_addr_get, &xen_base_mac_addr_set);
-
-RCF_PCH_CFG_NODE_RW(node_rpc_if, "rpc_if",
-                    NULL, &node_base_mac_addr,
-                    &xen_rpc_if_get, &xen_rpc_if_set);
-
-RCF_PCH_CFG_NODE_RW(node_rpc_br, "rpc_br",
-                    NULL, &node_rpc_if,
-                    &xen_rpc_br_get, &xen_rpc_br_set);
-
-RCF_PCH_CFG_NODE_RW(node_rcf_port, "rcf_port",
-                    NULL, &node_rpc_br,
-                    &xen_rcf_port_get, &xen_rcf_port_set);
-
-RCF_PCH_CFG_NODE_RW(node_dsktpl, "dsktpl",
-                    NULL, &node_rcf_port,
-                    &xen_dsktpl_get, &xen_dsktpl_set);
-
-RCF_PCH_CFG_NODE_RW(node_initrd, "initrd",
-                    NULL, &node_dsktpl,
-                    &xen_initrd_get, &xen_initrd_set);
-
-RCF_PCH_CFG_NODE_RW(node_kernel, "kernel",
-                    NULL, &node_initrd,
-                    &xen_kernel_get, &xen_kernel_set);
-
-RCF_PCH_CFG_NODE_RW(node_subpath, "subpath",
-                    NULL, &node_kernel,
-                    &xen_subpath_get, &xen_subpath_set);
-
-RCF_PCH_CFG_NODE_RW(node_xen, "xen",
-                    &node_subpath, NULL,
-                    &xen_path_get, &xen_path_set);
+static const ta_conf_node *const node_xen =
+    TA_CONF_RW_STR("xen", xen_path_get, xen_path_set,
+        TA_CONF_RW_STR("subpath", xen_subpath_get, xen_subpath_set),
+        TA_CONF_RW_STR("kernel", xen_kernel_get, xen_kernel_set),
+        TA_CONF_RW_STR("initrd", xen_initrd_get, xen_initrd_set),
+        TA_CONF_RW_STR("dsktpl", xen_dsktpl_get, xen_dsktpl_set),
+        TA_CONF_RW_STR("rcf_port", xen_rcf_port_get, xen_rcf_port_set),
+        TA_CONF_RW_STR("rpc_br", xen_rpc_br_get, xen_rpc_br_set),
+        TA_CONF_RW_STR("rpc_if", xen_rpc_if_get, xen_rpc_if_set),
+        TA_CONF_RW_STR("base_mac_addr", xen_base_mac_addr_get,
+                       xen_base_mac_addr_set),
+        TA_CONF_RW_STR("accel", xen_accel_get, xen_accel_set),
+        TA_CONF_RW_STR("init", xen_init_get, xen_init_set),
+        TA_CONF_COLL_STR_RW("interface", xen_interface_get,
+                            xen_interface_set, xen_interface_add,
+                            xen_interface_del, xen_interface_list,
+            TA_CONF_RW_STR("bridge", xen_interface_bridge_get,
+                           xen_interface_bridge_set)),
+        TA_CONF_COLL_STR_RW("dom_u", dom_u_get, dom_u_set, dom_u_add,
+                            dom_u_del, dom_u_list,
+            TA_CONF_RW_STR("status", dom_u_status_get,
+                           dom_u_status_set),
+            TA_CONF_RW_STR("memory", dom_u_memory_get,
+                           dom_u_memory_set),
+            TA_CONF_RW_STR("ip_addr", dom_u_ip_addr_get,
+                           dom_u_ip_addr_set),
+            TA_CONF_RW_STR("mac_addr", dom_u_mac_addr_get,
+                           dom_u_mac_addr_set),
+            TA_CONF_COLL_STR_RW("bridge", dom_u_bridge_get,
+                                dom_u_bridge_set, dom_u_bridge_add,
+                                dom_u_bridge_del, dom_u_bridge_list,
+                TA_CONF_RW_STR("ip_addr", dom_u_bridge_ip_addr_get,
+                               dom_u_bridge_ip_addr_set),
+                TA_CONF_RW_STR("mac_addr", dom_u_bridge_mac_addr_get,
+                               dom_u_bridge_mac_addr_set),
+                TA_CONF_RW_STR("accel", dom_u_bridge_accel_get,
+                               dom_u_bridge_accel_set)),
+            TA_CONF_RW_STR("migrate", dom_u_migrate_get,
+                           dom_u_migrate_set,
+                TA_CONF_RW_STR("kind", dom_u_migrate_kind_get,
+                               dom_u_migrate_kind_set))));
 
 /* See the description in conf_common.h */
 te_errno
 ta_unix_conf_xen_init(void)
 {
-    return rcf_pch_add_node("/agent", &node_xen);
+    return ta_conf_register("/agent", node_xen);
 }
 
 /* XEN stuff implementation */
@@ -1093,23 +983,21 @@ prepare_network_interfaces_config(unsigned int u)
  * Get path to accessible across network storage for
  * XEN kernel and templates of XEN config/VBD images.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for path to be filled in
+ * @param ctx           request context (unused)
+ * @param val           storage for path to be filled in
  *
  * @return              Status code
  */
 static te_errno
-xen_path_get(unsigned int gid, char const *oid, char *value)
+xen_path_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
-    strcpy(value, xen_path);
+    te_string_append(val, "%s", xen_path);
     return 0;
 #else
+    UNUSED(val);
 #warning '/agent/xen' 'get' access method is not implemented
     ERROR("'/agent/xen' 'get' access method is not implemented");
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -1120,14 +1008,13 @@ xen_path_get(unsigned int gid, char const *oid, char *value)
  * Set path to accessible across network storage for
  * XEN kernel and templates of XEN config/VBD images.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context (unused)
  * @param value         path to set
  *
  * @return              Status code
  */
 static te_errno
-xen_path_set(unsigned int gid, char const *oid, char const *value)
+xen_path_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
     unsigned int u;
@@ -1135,8 +1022,7 @@ xen_path_set(unsigned int gid, char const *oid, char const *value)
     size_t       len   = strlen(value);
 #endif
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
     /* If value is not empty string then the agent must run within dom0 */
@@ -1200,23 +1086,21 @@ xen_path_set(unsigned int gid, char const *oid, char const *value)
  * Get subpath to accessible across network storage for
  * XEN config/VBD images.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for path to be filled in
+ * @param ctx           request context (unused)
+ * @param val           storage for path to be filled in
  *
  * @return              Status code
  */
 static te_errno
-xen_subpath_get(unsigned int gid, char const *oid, char *value)
+xen_subpath_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
-    strcpy(value, xen_subpath);
+    te_string_append(val, "%s", xen_subpath);
     return 0;
 #else
+    UNUSED(val);
 #warning '/agent/xen/subpath' 'get' access method is not implemented
     ERROR("'/agent/xen/subpath' 'get' access method is not implemented");
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -1227,21 +1111,19 @@ xen_subpath_get(unsigned int gid, char const *oid, char *value)
  * Set subpath to accessible across network storage for
  * XEN config/VBD images.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context (unused)
  * @param value         path to set
  *
  * @return              Status code
  */
 static te_errno
-xen_subpath_set(unsigned int gid, char const *oid, char const *value)
+xen_subpath_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
     size_t len = strlen(value);
 #endif
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
     /* Check whether XEN subpath fits XEN subpath storage */
@@ -1265,23 +1147,21 @@ xen_subpath_set(unsigned int gid, char const *oid, char const *value)
 /**
  * Get XEN kernel file name.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for kernel file name to be filled in
+ * @param ctx           request context (unused)
+ * @param val           storage for kernel file name to be filled in
  *
  * @return              Status code
  */
 static te_errno
-xen_kernel_get(unsigned int gid, char const *oid, char *value)
+xen_kernel_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
-    strcpy(value, xen_kernel);
+    te_string_append(val, "%s", xen_kernel);
     return 0;
 #else
+    UNUSED(val);
 #warning '/agent/xen/kernel' 'get' access method is not implemented
     ERROR("'/agent/xen/kernel' 'get' access method is not implemented");
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -1291,14 +1171,13 @@ xen_kernel_get(unsigned int gid, char const *oid, char *value)
 /**
  * Set XEN kernel file name (XEN path must be set properly previously).
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context (unused)
  * @param value         kernel file name to set
  *
  * @return              Status code
  */
 static te_errno
-xen_kernel_set(unsigned int gid, char const *oid, char const *value)
+xen_kernel_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
     unsigned int u;
@@ -1306,8 +1185,7 @@ xen_kernel_set(unsigned int gid, char const *oid, char const *value)
     size_t       len   = strlen(value);
 #endif
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
     /* If value is not empty string then the agent must run within dom0 */
@@ -1374,23 +1252,21 @@ xen_kernel_set(unsigned int gid, char const *oid, char const *value)
 /**
  * Get XEN initial ramdisk file name.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for initrd file name to be filled in
+ * @param ctx           request context (unused)
+ * @param val           storage for initrd file name to be filled in
  *
  * @return              Status code
  */
 static te_errno
-xen_initrd_get(unsigned int gid, char const *oid, char *value)
+xen_initrd_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
-    strcpy(value, xen_initrd);
+    te_string_append(val, "%s", xen_initrd);
     return 0;
 #else
+    UNUSED(val);
 #warning '/agent/xen/initrd' 'get' access method is not implemented
     ERROR("'/agent/xen/initrd' 'get' access method is not implemented");
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -1400,14 +1276,13 @@ xen_initrd_get(unsigned int gid, char const *oid, char *value)
 /**
  * Set XEN initrd file name (XEN path must be set properly previously).
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context (unused)
  * @param value         initrd file name to set
  *
  * @return              Status code
  */
 static te_errno
-xen_initrd_set(unsigned int gid, char const *oid, char const *value)
+xen_initrd_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
     unsigned int u;
@@ -1415,8 +1290,7 @@ xen_initrd_set(unsigned int gid, char const *oid, char const *value)
     size_t       len   = strlen(value);
 #endif
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
     /* If value is not empty string then the agent must run within dom0 */
@@ -1483,23 +1357,21 @@ xen_initrd_set(unsigned int gid, char const *oid, char const *value)
 /**
  * Get XEN dsktpl file name.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for dsktpl file name to be filled in
+ * @param ctx           request context (unused)
+ * @param val           storage for dsktpl file name to be filled in
  *
  * @return              Status code
  */
 static te_errno
-xen_dsktpl_get(unsigned int gid, char const *oid, char *value)
+xen_dsktpl_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
-    strcpy(value, xen_dsktpl);
+    te_string_append(val, "%s", xen_dsktpl);
     return 0;
 #else
+    UNUSED(val);
 #warning '/agent/xen/dsktpl' 'get' access method is not implemented
     ERROR("'/agent/xen/dsktpl' 'get' access method is not implemented");
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -1509,14 +1381,13 @@ xen_dsktpl_get(unsigned int gid, char const *oid, char *value)
 /**
  * Set XEN dsktpl file name (XEN path must be set properly previously).
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context (unused)
  * @param value         dsktpl file name to set
  *
  * @return              Status code
  */
 static te_errno
-xen_dsktpl_set(unsigned int gid, char const *oid, char const *value)
+xen_dsktpl_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
     unsigned int u;
@@ -1524,8 +1395,7 @@ xen_dsktpl_set(unsigned int gid, char const *oid, char const *value)
     size_t       len   = strlen(value);
 #endif
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
     /* If value is not empty string then the agent must run within dom0 */
@@ -1592,23 +1462,21 @@ xen_dsktpl_set(unsigned int gid, char const *oid, char const *value)
 /**
  * Get RCF port number.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for RCF port number to be filled in
+ * @param ctx           request context (unused)
+ * @param val           storage for RCF port number to be filled in
  *
  * @return              Status code
  */
 static te_errno
-xen_rcf_port_get(unsigned int gid, char const *oid, char *value)
+xen_rcf_port_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
-    sprintf(value, "%u", xen_rcf_port);
+    te_string_append(val, "%u", xen_rcf_port);
     return 0;
 #else
+    UNUSED(val);
 #warning '/agent/xen/rcf_port' 'get' access method is not implemented
     ERROR("'/agent/xen/rcf_port' 'get' access method is not implemented");
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -1618,14 +1486,13 @@ xen_rcf_port_get(unsigned int gid, char const *oid, char *value)
 /**
  * Set RCF port numer (restrictions are applied).
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context (unused)
  * @param value         RCF port number to set
  *
  * @return              Status code
  */
 static te_errno
-xen_rcf_port_set(unsigned int gid, char const *oid, char const *value)
+xen_rcf_port_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
     unsigned int u;
@@ -1633,8 +1500,7 @@ xen_rcf_port_set(unsigned int gid, char const *oid, char const *value)
     int          port  = atoi(value); /** Relying on value validity */
 #endif
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
     /* If value is not 0 then the agent must run within dom0 */
@@ -1673,23 +1539,21 @@ xen_rcf_port_set(unsigned int gid, char const *oid, char const *value)
 /**
  * Get XEN RPC bridge name.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for RPC bridge name to be filled in
+ * @param ctx           request context (unused)
+ * @param val           storage for RPC bridge name to be filled in
  *
  * @return              Status code
  */
 static te_errno
-xen_rpc_br_get(unsigned int gid, char const *oid, char *value)
+xen_rpc_br_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
-    strcpy(value, xen_rpc_br);
+    te_string_append(val, "%s", xen_rpc_br);
     return 0;
 #else
+    UNUSED(val);
 #warning '/agent/xen/rpc_br' 'get' access method is not implemented
     ERROR("'/agent/xen/rpc_br' 'get' access method is not implemented");
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -1699,14 +1563,13 @@ xen_rpc_br_get(unsigned int gid, char const *oid, char *value)
 /**
  * Set XEN RPC bridge name.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context (unused)
  * @param value         RPC bridge name to set
  *
  * @return              Status code
  */
 static te_errno
-xen_rpc_br_set(unsigned int gid, char const *oid, char const *value)
+xen_rpc_br_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
     unsigned int u;
@@ -1714,8 +1577,7 @@ xen_rpc_br_set(unsigned int gid, char const *oid, char const *value)
     size_t       len   = strlen(value);
 #endif
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
     /* If value is not empty string then the agent must run within dom0 */
@@ -1754,23 +1616,21 @@ xen_rpc_br_set(unsigned int gid, char const *oid, char const *value)
 /**
  * Get XEN RPC interface name.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for RPC interface name to be filled in
+ * @param ctx           request context (unused)
+ * @param val           storage for RPC interface name to be filled in
  *
  * @return              Status code
  */
 static te_errno
-xen_rpc_if_get(unsigned int gid, char const *oid, char *value)
+xen_rpc_if_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
-    strcpy(value, xen_rpc_if);
+    te_string_append(val, "%s", xen_rpc_if);
     return 0;
 #else
+    UNUSED(val);
 #warning '/agent/xen/rpc_if' 'get' access method is not implemented
     ERROR("'/agent/xen/rpc_if' 'get' access method is not implemented");
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -1780,14 +1640,13 @@ xen_rpc_if_get(unsigned int gid, char const *oid, char *value)
 /**
  * Set XEN RPC interface name.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context (unused)
  * @param value         RPC interface name to set
  *
  * @return              Status code
  */
 static te_errno
-xen_rpc_if_set(unsigned int gid, char const *oid, char const *value)
+xen_rpc_if_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
     unsigned int u;
@@ -1795,8 +1654,7 @@ xen_rpc_if_set(unsigned int gid, char const *oid, char const *value)
     size_t       len   = strlen(value);
 #endif
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
     /* If value is not empty string then the agent must run within dom0 */
@@ -1835,23 +1693,21 @@ xen_rpc_if_set(unsigned int gid, char const *oid, char const *value)
 /**
  * Get XEN domU base MAC address template.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for base MAC address to be filled in
+ * @param ctx           request context (unused)
+ * @param val           storage for base MAC address to be filled in
  *
  * @return              Status code
  */
 static te_errno
-xen_base_mac_addr_get(unsigned int gid, char const *oid, char *value)
+xen_base_mac_addr_get(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
-    strcpy(value, xen_base_mac_addr);
+    te_string_append(val, "%s", xen_base_mac_addr);
     return 0;
 #else
-    UNUSED(value);
+    UNUSED(val);
 #warning '/agent/xen/base_mac_addr' 'get' \
 access method is not implemented
     ERROR("'/agent/xen/base_mac_addr' 'get' "
@@ -1863,14 +1719,13 @@ access method is not implemented
 /**
  * Set XEN domU base MAC address template.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context (unused)
  * @param value         Base MAC address to set
  *
  * @return              Status code
  */
 static te_errno
-xen_base_mac_addr_set(unsigned int gid, char const *oid, char const *value)
+xen_base_mac_addr_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
     unsigned int u;
@@ -1878,8 +1733,7 @@ xen_base_mac_addr_set(unsigned int gid, char const *oid, char const *value)
     size_t       len   = strlen(value);
 #endif
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
     /* If value is not empty string then the agent must run within dom0 */
@@ -1961,37 +1815,32 @@ xen_accel_get_executive(bool *status)
 /**
  * Get XEN dom0 acceleration status
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for acceleration status
+ * @param ctx           request context (unused)
+ * @param val           storage for acceleration status
  *
  * @return              Status code
  */
 static te_errno
-xen_accel_get(unsigned int gid, char const *oid, char *value)
+xen_accel_get(const ta_conf_ctx *ctx, te_string *val)
 {
 #if XEN_SUPPORT
     bool status;
     te_errno rc;
 #endif
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
     /* The agent must run within dom0 */
     if (!is_within_dom0())
-    {
-        value = "0";
         return 0;
-    }
 
     if ((rc = xen_accel_get_executive(&status)) == 0)
-        strcpy(value, status ? "1" : "0");
+        te_string_append(val, "%s", status ? "1" : "0");
 
     return rc;
 #else
-    UNUSED(value);
+    UNUSED(val);
 #warning '/agent/xen/accel' 'get' \
 access method is not implemented
     ERROR("'/agent/xen/accel' 'get' "
@@ -2003,14 +1852,13 @@ access method is not implemented
 /**
  * Set XEN dom0 acceleration status
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context (unused)
  * @param value         acceleration status
  *
  * @return              Status code
  */
 static te_errno
-xen_accel_set(unsigned int gid, char const *oid, char const *value)
+xen_accel_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
     bool status;
@@ -2019,8 +1867,7 @@ xen_accel_set(unsigned int gid, char const *oid, char const *value)
     char const *cmd = NULL;
 #endif
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
 
 #if XEN_SUPPORT
     /* The agent must run within dom0 */
@@ -2074,16 +1921,33 @@ access method is not implemented
 }
 
 /**
+ * Dummy get method for the volatile write-only XEN dom0
+ * initialization/cleanup "command".
+ *
+ * @param ctx           request context (unused)
+ * @param val           location for the returned empty value (unused)
+ *
+ * @return              Status code
+ */
+static te_errno
+xen_init_get(const ta_conf_ctx *ctx, te_string *val)
+{
+    UNUSED(ctx);
+    UNUSED(val);
+
+    return 0;
+}
+
+/**
  * Perform XEN dom0 initialization/cleanup
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context (unused)
  * @param value         init "command"
  *
  * @return              Status code
  */
 static te_errno
-xen_init_set(unsigned int gid, char const *oid, char const *value)
+xen_init_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
     char const  *cmd_list = "/usr/sbin/xm list | awk '{print$1}' | "
@@ -2101,8 +1965,7 @@ xen_init_set(unsigned int gid, char const *oid, char const *value)
     unsigned int u;
 #endif
 
-    UNUSED(gid);
-    UNUSED(oid);
+    UNUSED(ctx);
     UNUSED(value);
 
 #if XEN_SUPPORT
@@ -2181,32 +2044,25 @@ init method is not implemented
 /**
  * Get real physical interface name by the name of the virtual one.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for real interface name to be filled in
- * @param xen           name of the XEN node (empty, unused)
- * @param interface     name of the virtual interface
+ * @param ctx           request context
+ * @param val           storage for real interface name to be filled in
  *
  * @return              Status code
  */
 static te_errno
-xen_interface_get(unsigned int gid, char const *oid, char *value,
-                  char const *xen, char const *interface)
+xen_interface_get(const ta_conf_ctx *ctx, te_string *val)
 {
 #if XEN_SUPPORT
+    const char  *interface = ta_conf_ctx_inst(ctx, "interface");
     unsigned int u;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_INTERFACE(interface, u);
 
-    strcpy(value, interface_slot[u].ph_name);
+    te_string_append(val, "%s", interface_slot[u].ph_name);
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(val);
 #warning '/agent/xen/interface' 'get' \
 access method is not implemented
     ERROR("'/agent/xen/interface' 'get' "
@@ -2218,29 +2074,20 @@ access method is not implemented
 /**
  * Set real physical interface name by the name of the virtual one.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context
  * @param value         real interface name to set
- * @param xen           name of the XEN node (empty, unused)
- * @param interface     name of the virtual interface
  *
  * @return              Status code
  */
 static te_errno
-xen_interface_set(unsigned int gid, char const *oid, char const *value,
-                  char const *xen, char const *interface)
+xen_interface_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
+    const char  *interface = ta_conf_ctx_inst(ctx, "interface");
     char const  *ph_name;
     unsigned int u;
     unsigned int limit = dom_u_limit();
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     /* Check whether domUs exist */
     for (u = 0; u < limit; u++)
         if (dom_u_slot[u].name != NULL)
@@ -2259,6 +2106,8 @@ xen_interface_set(unsigned int gid, char const *oid, char const *value,
     interface_slot[u].ph_name = ph_name;
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(value);
 #warning '/agent/xen/interface' 'set' \
 access method is not implemented
     ERROR("'/agent/xen/interface' 'set' "
@@ -2270,28 +2119,19 @@ access method is not implemented
 /**
  * Add new XEN virtual tested interface.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context
  * @param value         initializing value (not used)
- * @param xen           name of the XEN node (empty, unused)
- * @param interface     name of the XEN virtual tested interface to add
  *
  * @return              Status code
  */
 static te_errno
-xen_interface_add(unsigned int gid, char const *oid, char const *value,
-                  char const *xen, char const *interface)
+xen_interface_add(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
+    const char  *interface = ta_conf_ctx_inst(ctx, "interface");
     unsigned int u;
     unsigned int limit = dom_u_limit();
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     if (!is_within_dom0())
     {
         ERROR("Agent runs NOT within dom0");
@@ -2344,6 +2184,8 @@ xen_interface_add(unsigned int gid, char const *oid, char const *value,
 
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(value);
 #warning '/agent/xen/interface' 'add' \
 access method is not implemented
     ERROR("'/agent/xen/interface' 'add' "
@@ -2355,27 +2197,18 @@ access method is not implemented
 /**
  * Delete XEN virtual tested interface.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param xen           name of the XEN node (empty, unused)
- * @param interface     name of the XEN virtual tested interface to delete
+ * @param ctx           request context
  *
  * @return              Status code
  */
 static te_errno
-xen_interface_del(unsigned int gid, char const *oid, char const *xen,
-                  char const *interface)
+xen_interface_del(const ta_conf_ctx *ctx)
 {
 #if XEN_SUPPORT
+    const char  *interface = ta_conf_ctx_inst(ctx, "interface");
     unsigned int u;
     unsigned int limit = dom_u_limit();
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     /* Check whether domUs exist */
     for (u = 0; u < limit; u++)
         if (dom_u_slot[u].name != NULL)
@@ -2393,6 +2226,7 @@ xen_interface_del(unsigned int gid, char const *oid, char const *xen,
     interface_slot[u].if_name = NULL;
     return 0;
 #else
+    UNUSED(ctx);
 #warning '/agent/xen/interface' 'del' i\
 access method is not implemented
     ERROR("'/agent/xen/interface' 'del' "
@@ -2404,68 +2238,33 @@ access method is not implemented
 /**
  * List XEN virtual tested interfaces.
  *
- * @param gid           group identifier (unused)
- * @param oid           full parent object instance identifier (unused)
- * @param sub_id        ID of the object to be listed (unused)
- * @param list          address of a pointer to storage allocated
- *                      for the list pointer is initialized with
+ * @param ctx           request context (unused)
+ * @param names         vector of heap-allocated names to append to
  *
  * @return              Status code
  */
 static te_errno
-xen_interface_list(unsigned int gid, char const *oid,
-                   const char *sub_id, char **list)
+xen_interface_list(const ta_conf_ctx *ctx, te_vec *names)
 {
+    UNUSED(ctx);
+
 #if XEN_SUPPORT
     unsigned int u;
     unsigned int limit = interface_limit();
-    unsigned int len = 0;
-    char        *ptr;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-#if XEN_SUPPORT
-    /* Count the whole length of interface names plus one per name */
     for (u = 0; u < limit; u++)
+    {
         if (interface_slot[u].if_name != NULL)
-            len += strlen(interface_slot[u].if_name) + 1;
-
-    if (len == 0)
-    {
-        *list = NULL;
-        return 0;
-    }
-
-    ptr = TE_ALLOC(len);
-
-    if (list != NULL)
-        *(*list = ptr) = '\0';
-
-    /**
-     * Fill in the list with existing domU names
-     * separated with spaces except the last one
-     */
-    for (u = 0; u < limit; u++)
-    {
-        char const *name = interface_slot[u].if_name;
-
-        if (name != NULL)
         {
-            size_t len = strlen(name);
+            char *name = TE_STRDUP(interface_slot[u].if_name);
 
-            if (ptr != *list)
-                *ptr++ = ' ';
-
-            memcpy(ptr, name, len);
-            *(ptr += len) = '\0';
+            TE_VEC_APPEND(names, name);
         }
     }
 
     return 0;
 #else
+    UNUSED(names);
 #warning '/agent/xen/interface' 'list' \
 access method is not implemented
     ERROR("'/agent/xen/interface' 'list' "
@@ -2478,32 +2277,25 @@ access method is not implemented
  * Get the name of the XEN bridge, which
  * virtual tested interface is connected to.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for XEN bridge name to be filled in
- * @param interface     virtual tested interface name
+ * @param ctx           request context
+ * @param val           storage for XEN bridge name to be filled in
  *
  * @return              Status code
  */
 static te_errno
-xen_interface_bridge_get(unsigned int gid, char const *oid, char *value,
-                         char const *xen, char const *interface)
+xen_interface_bridge_get(const ta_conf_ctx *ctx, te_string *val)
 {
 #if XEN_SUPPORT
+    const char  *interface = ta_conf_ctx_inst(ctx, "interface");
     unsigned int u;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_INTERFACE(interface, u);
 
-    strcpy(value, interface_slot[u].br_name);
+    te_string_append(val, "%s", interface_slot[u].br_name);
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(val);
 #warning '/agent/xen/interface/bridge' 'get' \
 access method is not implemented
     ERROR("'/agent/xen/interface/bridge' 'get' "
@@ -2516,29 +2308,20 @@ access method is not implemented
  * Set the name of the XEN bridge, which
  * virtual tested interface is connected to.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context
  * @param value         XEN bridge name to set
- * @param interface     virtual tested interface name
  *
  * @return              Status code
  */
 static te_errno
-xen_interface_bridge_set(unsigned int gid, char const *oid,
-                         char const *value, char const *xen,
-                         char const *interface)
+xen_interface_bridge_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
+    const char  *interface = ta_conf_ctx_inst(ctx, "interface");
     char const  *br_name;
     unsigned int u;
     unsigned int limit = dom_u_limit();
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     /* Check whether domUs exist */
     for (u = 0; u < limit; u++)
         if (dom_u_slot[u].name != NULL)
@@ -2557,10 +2340,10 @@ xen_interface_bridge_set(unsigned int gid, char const *oid,
     interface_slot[u].br_name = br_name;
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(value);
 #warning '/agent/xen/interface/bridge' 'set' \
 access method is not implemented
-    UNUSED(value);
-    UNUSED(interface);
     ERROR("'/agent/xen/interface/bridge' 'set' "
           "access method is not implemented");
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -2570,33 +2353,27 @@ access method is not implemented
 /**
  * Get presence of directory/images state of domU.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for status to be filled in
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to get status of
+ * @param ctx           request context
+ * @param val           storage for status to be filled in
  *
  * @return              Status code
  */
 static te_errno
-dom_u_get(unsigned int gid, char const *oid, char *value,
-          char const *xen, char const *dom_u)
+dom_u_get(const ta_conf_ctx *ctx, te_string *val)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
     unsigned int u;
     struct stat  st;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
 
-    strcpy(value, stat(get_dom_u_path(dom_u), &st) == 0 ? "1" : "0");
+    te_string_append(val, "%s",
+                     stat(get_dom_u_path(dom_u), &st) == 0 ? "1" : "0");
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(val);
 #warning '/agent/xen/dom_u' 'get' access method is not implemented
     ERROR("'/agent/xen/dom_u' 'get' access method is not implemented");
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -2606,19 +2383,16 @@ dom_u_get(unsigned int gid, char const *oid, char *value,
 /**
  * Set (change) presence of directory/images state of domU.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context
  * @param value         status to set
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to set status of
  *
  * @return              Status code
  */
 static te_errno
-dom_u_set(unsigned int gid, char const *oid, char const *value,
-           char const *xen, char const *dom_u)
+dom_u_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
     unsigned int u;
     struct stat  st;
     int          sys;
@@ -2627,13 +2401,7 @@ dom_u_set(unsigned int gid, char const *oid, char const *value,
     te_errno     rc = 0;
 
     char const *const dom_u_path = get_dom_u_path(dom_u);
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
 
     is_set = stat(dom_u_path, &st) == 0;
@@ -2727,6 +2495,8 @@ cleanup1:
 cleanup0:
     return rc;
 #else
+    UNUSED(ctx);
+    UNUSED(value);
 #warning '/agent/xen/dom_u' 'set' access method is not implemented
     ERROR("'/agent/xen/dom_u' 'set' access method is not implemented");
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -2736,30 +2506,21 @@ cleanup0:
 /**
  * Add new domU.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context
  * @param value         initializing value (not used)
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to add
  *
  * @return              Status code
  */
 static te_errno
-dom_u_add(unsigned int gid, char const *oid, char const *value,
-          char const *xen, char const *dom_u)
+dom_u_add(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
     unsigned int u;
     unsigned int v;
     unsigned int limit = dom_u_limit();
     te_errno     rc    = 0;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     if (!is_within_dom0())
     {
         ERROR("Agent runs NOT within dom0");
@@ -2814,13 +2575,15 @@ dom_u_add(unsigned int gid, char const *oid, char const *value,
     dom_u_slot[u].migrate_kind = 0;
 
     /* Try to set requested presence of directory/images state of domU */
-    if ((rc = dom_u_set(gid, oid, value, xen, dom_u)) == 0)
+    if ((rc = dom_u_set(ctx, value)) == 0)
         return 0;
 
     free((void *)dom_u_slot[u].name);
     dom_u_slot[u].name = NULL;
     return rc;
 #else
+    UNUSED(ctx);
+    UNUSED(value);
 #warning '/agent/xen/dom_u' 'add' access method is not implemented
     ERROR("'/agent/xen/dom_u' 'add' access method is not implemented");
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -2830,28 +2593,19 @@ dom_u_add(unsigned int gid, char const *oid, char const *value,
 /**
  * Delete domU.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to delete
+ * @param ctx           request context
  *
  * @return              Status code
  */
 static te_errno
-dom_u_del(unsigned int gid, char const *oid, char const *xen,
-          char const *dom_u)
+dom_u_del(const ta_conf_ctx *ctx)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
     unsigned int u;
     unsigned int v;
     unsigned int limit = bridge_limit();
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
 
     for (v = 0; v < limit; v++)
@@ -2867,6 +2621,7 @@ dom_u_del(unsigned int gid, char const *oid, char const *xen,
     dom_u_slot[u].name = NULL;
     return 0;
 #else
+    UNUSED(ctx);
 #warning '/agent/xen/dom_u' 'del' access method is not implemented
     ERROR("'/agent/xen/dom_u' 'del' access method is not implemented");
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -2876,68 +2631,33 @@ dom_u_del(unsigned int gid, char const *oid, char const *xen,
 /**
  * List domUs.
  *
- * @param gid           group identifier (unused)
- * @param oid           full parent object instance identifier (unused)
- * @param sub_id        ID of the object to be listed (unused)
- * @param list          address of a pointer to storage allocated
- *                      for the list pointer is initialized with
+ * @param ctx           request context (unused)
+ * @param names         vector of heap-allocated names to append to
  *
  * @return              Status code
  */
 static te_errno
-dom_u_list(unsigned int gid, char const *oid,
-           const char *sub_id, char **list)
+dom_u_list(const ta_conf_ctx *ctx, te_vec *names)
 {
+    UNUSED(ctx);
+
 #if XEN_SUPPORT
     unsigned int u;
     unsigned int limit = dom_u_limit();
-    unsigned int len = 0;
-    char        *ptr;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-#if XEN_SUPPORT
-    /* Count the whole length of domU names plus one per name */
     for (u = 0; u < limit; u++)
+    {
         if (dom_u_slot[u].name != NULL)
-            len += strlen(dom_u_slot[u].name) + 1;
-
-    if (len == 0)
-    {
-        *list = NULL;
-        return 0;
-    }
-
-    ptr = TE_ALLOC(len);
-
-    if (list != NULL)
-        *(*list = ptr) = '\0';
-
-    /**
-     * Fill in the list with existing domU names
-     * separated with spaces except the last one
-     */
-    for (u = 0; u < limit; u++)
-    {
-        char const *name = dom_u_slot[u].name;
-
-        if (name != NULL)
         {
-            size_t len = strlen(name);
+            char *name = TE_STRDUP(dom_u_slot[u].name);
 
-            if (ptr != *list)
-                *ptr++ = ' ';
-
-            memcpy(ptr, name, len);
-            *(ptr += len) = '\0';
+            TE_VEC_APPEND(names, name);
         }
     }
 
     return 0;
 #else
+    UNUSED(names);
 #warning '/agent/xen/dom_u' 'list' access method is not implemented
     ERROR("'/agent/xen/dom_u' 'list' access method is not implemented");
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
@@ -2947,36 +2667,29 @@ dom_u_list(unsigned int gid, char const *oid,
 /**
  * Get domU status.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for status to be filled in
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to get status of
+ * @param ctx           request context
+ * @param val           storage for status to be filled in
  *
  * @return              Status code
  */
 static te_errno
-dom_u_status_get(unsigned int gid, char const *oid, char *value,
-                 char const *xen, char const *dom_u)
+dom_u_status_get(const ta_conf_ctx *ctx, te_string *val)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
     char const  *s;
     unsigned int u;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
 
     if ((s = dom_u_status_to_string(dom_u_slot[u].status)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    strcpy(value, s);
+    te_string_append(val, "%s", s);
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(val);
 #warning '/agent/xen/dom_u/status' 'get' access method is not implemented
      ERROR("'/agent/xen/dom_u/status' 'get' access method is not " \
            "implemented");
@@ -2987,32 +2700,23 @@ dom_u_status_get(unsigned int gid, char const *oid, char *value,
 /**
  * Set (change) domU status; business logic is moved to TAPI.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context
  * @param value         status to set
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to set status of
  *
  * @return              Status code
  */
 static te_errno
-dom_u_status_set(unsigned int gid, char const *oid, char const *value,
-                 char const *xen, char const *dom_u)
+dom_u_status_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
     unsigned int u;
     FILE        *f;
     status_t     status = dom_u_status_string_to_status(value);
     te_errno     rc     = 0;
 
     char const *const dom_u_path = get_dom_u_path(dom_u);
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     if (status == DOM_U_STATUS_ERROR)
     {
         rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -3260,6 +2964,8 @@ cleanup1: /** This label is used in case of success */
 cleanup0: /** This label is used in case of an error */
     return rc;
 #else
+    UNUSED(ctx);
+    UNUSED(value);
 #warning '/agent/xen/dom_u_status' 'set' access method is not implemented
     ERROR("'/agent/xen/dom_u_status' 'set' access method is not " \
           "implemented");
@@ -3270,32 +2976,25 @@ cleanup0: /** This label is used in case of an error */
 /**
  * Get domU memory size.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for memory size to be filled in
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to get memory size of
+ * @param ctx           request context
+ * @param val           storage for memory size to be filled in
  *
  * @return              Status code
  */
 static te_errno
-dom_u_memory_get(unsigned int gid, char const *oid, char *value,
-                 char const *xen, char const *dom_u)
+dom_u_memory_get(const ta_conf_ctx *ctx, te_string *val)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
     unsigned int u;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
 
-    sprintf(value, "%u", dom_u_slot[u].memory);
+    te_string_append(val, "%u", dom_u_slot[u].memory);
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(val);
 #warning '/agent/xen/dom_u/memory' 'get' access method is not implemented
      ERROR("'/agent/xen/dom_u/memory' 'get' access method is not " \
            "implemented");
@@ -3306,28 +3005,19 @@ dom_u_memory_get(unsigned int gid, char const *oid, char *value,
 /**
  * Set (change) domU memory size.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context
  * @param value         memory size to set
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to set memory size of
  *
  * @return              Status code
  */
 static te_errno
-dom_u_memory_set(unsigned int gid, char const *oid, char const *value,
-                 char const *xen, char const *dom_u)
+dom_u_memory_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
     int          mem = atoi(value);
     unsigned int u;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
 
     if (mem < 0)
@@ -3339,6 +3029,8 @@ dom_u_memory_set(unsigned int gid, char const *oid, char const *value,
     dom_u_slot[u].memory = mem;
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(value);
 #warning '/agent/xen/dom_u/memory' 'get' access method is not implemented
      ERROR("'/agent/xen/dom_u/memory' 'get' access method is not " \
            "implemented");
@@ -3349,32 +3041,25 @@ dom_u_memory_set(unsigned int gid, char const *oid, char const *value,
 /**
  * Get domU IP address.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for IP address to be filled in
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to get IP address of
+ * @param ctx           request context
+ * @param val           storage for IP address to be filled in
  *
  * @return              Status code
  */
 static te_errno
-dom_u_ip_addr_get(unsigned int gid, char const *oid, char *value,
-                  char const *xen, char const *dom_u)
+dom_u_ip_addr_get(const ta_conf_ctx *ctx, te_string *val)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
     unsigned int u;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
 
-    strcpy(value, dom_u_slot[u].ip_addr);
+    te_string_append(val, "%s", dom_u_slot[u].ip_addr);
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(val);
 #warning '/agent/xen/dom_u/ip_addr' 'get' access method is not implemented
     ERROR("'/agent/xen/dom_u/ip_addr' 'get' access method is not " \
           "implemented");
@@ -3385,28 +3070,19 @@ dom_u_ip_addr_get(unsigned int gid, char const *oid, char *value,
 /**
  * Set (change) domU IP address (possible only in non-running state).
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context
  * @param value         status to set
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to set status of
  *
  * @return              Status code
  */
 static te_errno
-dom_u_ip_addr_set(unsigned int gid, char const *oid, char const *value,
-                  char const *xen, char const *dom_u)
+dom_u_ip_addr_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
     unsigned int u;
     size_t       len = strlen(value);
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
 
     if (len >= sizeof(dom_u_slot[u].ip_addr))
@@ -3422,6 +3098,8 @@ dom_u_ip_addr_set(unsigned int gid, char const *oid, char const *value,
     strcpy(dom_u_slot[u].ip_addr, value);
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(value);
 #warning '/agent/xen/dom_u/ip_addr' 'set' access method is not implemented
     ERROR("'/agent/xen/dom_u/ip_addr' 'set' access method is not " \
           "implemented");
@@ -3432,32 +3110,25 @@ dom_u_ip_addr_set(unsigned int gid, char const *oid, char const *value,
 /**
  * Get domU MAC address.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for status to be filled in
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to get status of
+ * @param ctx           request context
+ * @param val           storage for status to be filled in
  *
  * @return              Status code
  */
 static te_errno
-dom_u_mac_addr_get(unsigned int gid, char const *oid, char *value,
-                   char const *xen, char const *dom_u)
+dom_u_mac_addr_get(const ta_conf_ctx *ctx, te_string *val)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
     unsigned int u;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
 
-    strcpy(value, dom_u_slot[u].mac_addr);
+    te_string_append(val, "%s", dom_u_slot[u].mac_addr);
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(val);
 #warning '/agent/xen/dom_u/mac_addr' 'get' access method is not implemented
     ERROR("'/agent/xen/dom_u/mac_addr' 'get' access method is not " \
           "implemented");
@@ -3468,30 +3139,21 @@ dom_u_mac_addr_get(unsigned int gid, char const *oid, char *value,
 /**
  * Set (change) domU MAC address (possible only in non-running state).
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context
  * @param value         status to set
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to set status of
  *
  * @return              Status code
  */
 static te_errno
-dom_u_mac_addr_set(unsigned int gid, char const *oid, char const *value,
-                   char const *xen, char const *dom_u)
+dom_u_mac_addr_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
     enum { ether_bytes = 6 };
 
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
     unsigned int u;
     size_t       len = strlen(value);
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
 
     if (len >= sizeof(dom_u_slot[u].mac_addr))
@@ -3507,6 +3169,8 @@ dom_u_mac_addr_set(unsigned int gid, char const *oid, char const *value,
     strcpy(dom_u_slot[u].mac_addr, value);
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(value);
 #warning '/agent/xen/dom_u/mac_addr' 'set' access method is not implemented
     ERROR("'/agent/xen/dom_u/mac_addr' 'set' access method is not " \
           "implemented");
@@ -3517,35 +3181,28 @@ dom_u_mac_addr_set(unsigned int gid, char const *oid, char const *value,
 /**
  * Get presence of directory/images state of domU.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for status to be filled in
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to get status of
+ * @param ctx           request context
+ * @param val           storage for status to be filled in
  *
  * @return              Status code
  */
 static te_errno
-dom_u_bridge_get(unsigned int gid, char const *oid,
-                 char *value, char const *xen,
-                 char const *dom_u, char const *bridge)
+dom_u_bridge_get(const ta_conf_ctx *ctx, te_string *val)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
+    const char  *bridge = ta_conf_ctx_inst(ctx, "bridge");
     unsigned int u;
     unsigned int v;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
     FIND_BRIDGE(bridge, u, v);
 
-    strcpy(value, dom_u_slot[u].bridge_slot[v].if_name);
+    te_string_append(val, "%s", dom_u_slot[u].bridge_slot[v].if_name);
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(val);
 #warning '/agent/xen/dom_u/bridge' 'get' access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge' 'get' "
           "access method is not implemented");
@@ -3556,30 +3213,21 @@ dom_u_bridge_get(unsigned int gid, char const *oid,
 /**
  * Set (change) presence of directory/images state of domU.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context
  * @param value         status to set
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to set status of
  *
  * @return              Status code
  */
 static te_errno
-dom_u_bridge_set(unsigned int gid, char const *oid,
-                 char const *value, char const *xen,
-                 char const *dom_u, char const *bridge)
+dom_u_bridge_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
+    const char  *bridge = ta_conf_ctx_inst(ctx, "bridge");
     char const  *if_name;
     unsigned int u;
     unsigned int v;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
     FIND_BRIDGE(bridge, u, v);
 
@@ -3590,6 +3238,8 @@ dom_u_bridge_set(unsigned int gid, char const *oid,
     dom_u_slot[u].bridge_slot[v].if_name = if_name;
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(value);
 #warning '/agent/xen/dom_u/bridge' 'set' access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge' 'set' "
           "access method is not implemented");
@@ -3600,30 +3250,21 @@ dom_u_bridge_set(unsigned int gid, char const *oid,
 /**
  * Add new domU.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context
  * @param value         initializing value (not used)
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to add
  *
  * @return              Status code
  */
 static te_errno
-dom_u_bridge_add(unsigned int gid, char const *oid,
-                 char const *value, char const *xen,
-                 char const *dom_u, char const *bridge)
+dom_u_bridge_add(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
+    const char  *bridge = ta_conf_ctx_inst(ctx, "bridge");
     unsigned int u;
     unsigned int v;
     unsigned int limit = bridge_limit();
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
 
     if ((v = find_bridge(bridge, u)) < limit)
@@ -3660,6 +3301,8 @@ dom_u_bridge_add(unsigned int gid, char const *oid,
     dom_u_slot[u].bridge_slot[v].accel = false;
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(value);
 #warning '/agent/xen/dom_u/bridge' 'add' access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge' 'add' "
           "access method is not implemented");
@@ -3670,28 +3313,19 @@ dom_u_bridge_add(unsigned int gid, char const *oid,
 /**
  * Delete domU.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to delete
+ * @param ctx           request context
  *
  * @return              Status code
  */
 static te_errno
-dom_u_bridge_del(unsigned int gid, char const *oid,
-                 char const *xen, char const *dom_u,
-                 char const *bridge)
+dom_u_bridge_del(const ta_conf_ctx *ctx)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
+    const char  *bridge = ta_conf_ctx_inst(ctx, "bridge");
     unsigned int u;
     unsigned int v;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
     FIND_BRIDGE(bridge, u, v);
 
@@ -3700,6 +3334,7 @@ dom_u_bridge_del(unsigned int gid, char const *oid,
     dom_u_slot[u].bridge_slot[v].br_name = NULL;
     return 0;
 #else
+    UNUSED(ctx);
 #warning '/agent/xen/dom_u/bridge' 'del' access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge' 'del' "
           "access method is not implemented");
@@ -3710,73 +3345,38 @@ dom_u_bridge_del(unsigned int gid, char const *oid,
 /**
  * List domUs.
  *
- * @param gid           group identifier (unused)
- * @param oid           full parent object instance identifier (unused)
- * @param sub_id        ID of the object to be listed (unused)
- * @param list          address of a pointer to storage allocated
- *                      for the list pointer is initialized with
+ * @param ctx           request context
+ * @param names         vector of heap-allocated names to append to
  *
  * @return              Status code
  */
 static te_errno
-dom_u_bridge_list(unsigned int gid, char const *oid,
-                  const char *sub_id, char **list,
-                  char const *xen, char const *dom_u)
+dom_u_bridge_list(const ta_conf_ctx *ctx, te_vec *names)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
     unsigned int u;
     unsigned int v;
     unsigned int limit = bridge_limit();
-    unsigned int len = 0;
-    char        *ptr;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
 
-    /* Count the whole length of domU names plus one per name */
-    for (v = 0; v < limit; v++)
-        if (dom_u_slot[u].bridge_slot[v].br_name != NULL)
-            len += strlen(dom_u_slot[u].bridge_slot[v].br_name) + 1;
-
-    if (len == 0)
-    {
-        *list = NULL;
-        return 0;
-    }
-
-    ptr = TE_ALLOC(len);
-
-    if (list != NULL)
-        *(*list = ptr) = '\0';
-
-    /**
-     * Fill in the list with existing domU names
-     * separated with spaces except the last one
-     */
     for (v = 0; v < limit; v++)
     {
         char const *br_name = dom_u_slot[u].bridge_slot[v].br_name;
 
         if (br_name != NULL)
         {
-            size_t len = strlen(br_name);
+            char *name = TE_STRDUP(br_name);
 
-            if (ptr != *list)
-                *ptr++ = ' ';
-
-            memcpy(ptr, br_name, len);
-            *(ptr += len) = '\0';
+            TE_VEC_APPEND(names, name);
         }
     }
 
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(names);
 #warning '/agent/xen/dom_u/bridge' 'list' access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge' 'list' "
           "access method is not implemented");
@@ -3787,35 +3387,28 @@ dom_u_bridge_list(unsigned int gid, char const *oid,
 /**
  * Get domU IP address.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for IP address to be filled in
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to get IP address of
+ * @param ctx           request context
+ * @param val           storage for IP address to be filled in
  *
  * @return              Status code
  */
 static te_errno
-dom_u_bridge_ip_addr_get(unsigned int gid, char const *oid,
-                         char *value, char const *xen,
-                         char const *dom_u, char const *bridge)
+dom_u_bridge_ip_addr_get(const ta_conf_ctx *ctx, te_string *val)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
+    const char  *bridge = ta_conf_ctx_inst(ctx, "bridge");
     unsigned int u;
     unsigned int v;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
     FIND_BRIDGE(bridge, u, v);
 
-    strcpy(value, dom_u_slot[u].bridge_slot[v].ip_addr);
+    te_string_append(val, "%s", dom_u_slot[u].bridge_slot[v].ip_addr);
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(val);
 #warning '/agent/xen/dom_u/bridge/ip_addr' 'get' \
 access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge/ip_addr' 'get' "
@@ -3827,30 +3420,21 @@ access method is not implemented
 /**
  * Set (change) domU IP address (possible only in non-running state).
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context
  * @param value         status to set
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to set status of
  *
  * @return              Status code
  */
 static te_errno
-dom_u_bridge_ip_addr_set(unsigned int gid, char const *oid,
-                         char const *value, char const *xen,
-                         char const *dom_u, char const *bridge)
+dom_u_bridge_ip_addr_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
+    const char  *bridge = ta_conf_ctx_inst(ctx, "bridge");
     unsigned int u;
     unsigned int v;
     size_t       len = strlen(value);
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
     FIND_BRIDGE(bridge, u, v);
 
@@ -3867,6 +3451,8 @@ dom_u_bridge_ip_addr_set(unsigned int gid, char const *oid,
     strcpy(dom_u_slot[u].bridge_slot[v].ip_addr, value);
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(value);
 #warning '/agent/xen/dom_u/bridge/ip_addr' 'set' \
 access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge/ip_addr' 'set' "
@@ -3878,35 +3464,28 @@ access method is not implemented
 /**
  * Get domU MAC address.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for status to be filled in
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to get status of
+ * @param ctx           request context
+ * @param val           storage for status to be filled in
  *
  * @return              Status code
  */
 static te_errno
-dom_u_bridge_mac_addr_get(unsigned int gid, char const *oid,
-                          char *value, char const *xen,
-                          char const *dom_u, char const *bridge)
+dom_u_bridge_mac_addr_get(const ta_conf_ctx *ctx, te_string *val)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
+    const char  *bridge = ta_conf_ctx_inst(ctx, "bridge");
     unsigned int u;
     unsigned int v;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
     FIND_BRIDGE(bridge, u, v);
 
-    strcpy(value, dom_u_slot[u].bridge_slot[v].mac_addr);
+    te_string_append(val, "%s", dom_u_slot[u].bridge_slot[v].mac_addr);
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(val);
 #warning '/agent/xen/dom_u/bridge/mac_addr' 'get' \
 access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge/mac_addr' 'get' "
@@ -3918,30 +3497,21 @@ access method is not implemented
 /**
  * Set (change) domU MAC address (possible only in non-running state).
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context
  * @param value         status to set
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to set status of
  *
  * @return              Status code
  */
 static te_errno
-dom_u_bridge_mac_addr_set(unsigned int gid, char const *oid,
-                          char const *value, char const *xen,
-                          char const *dom_u, char const *bridge)
+dom_u_bridge_mac_addr_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
+    const char  *bridge = ta_conf_ctx_inst(ctx, "bridge");
     unsigned int u;
     unsigned int v;
     size_t       len = strlen(value);
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
     FIND_BRIDGE(bridge, u, v);
 
@@ -3958,6 +3528,8 @@ dom_u_bridge_mac_addr_set(unsigned int gid, char const *oid,
     strcpy(dom_u_slot[u].bridge_slot[v].mac_addr, value);
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(value);
 #warning '/agent/xen/dom_u/bridge/mac_addr' 'set' \
 access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge/mac_addr' 'set' "
@@ -3969,35 +3541,29 @@ access method is not implemented
 /**
  * Get domU acceleration sign.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         storage for acceleration sign to be filled in
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to get status of
+ * @param ctx           request context
+ * @param val           storage for acceleration sign to be filled in
  *
  * @return              Status code
  */
 static te_errno
-dom_u_bridge_accel_get(unsigned int gid, char const *oid,
-                       char *value, char const *xen,
-                       char const *dom_u, char const *bridge)
+dom_u_bridge_accel_get(const ta_conf_ctx *ctx, te_string *val)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
+    const char  *bridge = ta_conf_ctx_inst(ctx, "bridge");
     unsigned int u;
     unsigned int v;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
     FIND_BRIDGE(bridge, u, v);
 
-    strcpy(value, dom_u_slot[u].bridge_slot[v].accel ? "1" : "0");
+    te_string_append(val, "%s",
+                     dom_u_slot[u].bridge_slot[v].accel ? "1" : "0");
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(val);
 #warning '/agent/xen/dom_u/bridge/accel' 'get' \
 access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge/accel' 'get' "
@@ -4009,35 +3575,28 @@ access method is not implemented
 /**
  * Set (change) domU MAC address (possible only in non-running state).
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           request context
  * @param value         status to set
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to set status of
  *
  * @return              Status code
  */
 static te_errno
-dom_u_bridge_accel_set(unsigned int gid, char const *oid,
-                       char const *value, char const *xen,
-                       char const *dom_u, char const *bridge)
+dom_u_bridge_accel_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
+    const char  *bridge = ta_conf_ctx_inst(ctx, "bridge");
     unsigned int u;
     unsigned int v;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
     FIND_BRIDGE(bridge, u, v);
 
     dom_u_slot[u].bridge_slot[v].accel = *value != '0' ? true : false;
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(value);
 #warning '/agent/xen/dom_u/bridge/accel' 'set' \
 access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge/accel' 'set' "
@@ -4047,29 +3606,37 @@ access method is not implemented
 }
 
 /**
- * Migrate to another XEN dom0.
+ * Dummy get method for the volatile write-only domU migration trigger.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         name of the agent running within XEN dom0
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to migrate
+ * @param ctx           request context (unused)
+ * @param val           location for the returned empty value (unused)
  *
  * @return              Status code
  */
 static te_errno
-dom_u_migrate_set(unsigned int gid, char const *oid, char const *value,
-                  char const *xen, char const *dom_u)
+dom_u_migrate_get(const ta_conf_ctx *ctx, te_string *val)
+{
+    UNUSED(ctx);
+    UNUSED(val);
+
+    return 0;
+}
+
+/**
+ * Migrate to another XEN dom0.
+ *
+ * @param ctx           request context
+ * @param value         name of the agent running within XEN dom0
+ *
+ * @return              Status code
+ */
+static te_errno
+dom_u_migrate_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
     unsigned int u;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
 
     TE_SPRINTF(buf, "xm migrate %s %s %s",
@@ -4083,6 +3650,8 @@ dom_u_migrate_set(unsigned int gid, char const *oid, char const *value,
 
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(value);
 #warning '/agent/xen/dom_u/migrate' 'set' access method is not implemented
     ERROR("'/agent/xen/dom_u/migrate' 'set' access method is not " \
           "implemented");
@@ -4091,34 +3660,27 @@ dom_u_migrate_set(unsigned int gid, char const *oid, char const *value,
 }
 
 /**
- * Migrate to another XEN dom0.
+ * Get domU migration kind.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         name of the agent running within XEN dom0
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to migrate
+ * @param ctx           request context
+ * @param val           storage for migration kind to be filled in
  *
  * @return              Status code
  */
 static te_errno
-dom_u_migrate_kind_get(unsigned int gid, char const *oid, char *value,
-                       char const *xen, char const *dom_u)
+dom_u_migrate_kind_get(const ta_conf_ctx *ctx, te_string *val)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
     unsigned u;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
 
-    strcpy(value, dom_u_slot[u].migrate_kind ? "1" : "0");
+    te_string_append(val, "%s", dom_u_slot[u].migrate_kind ? "1" : "0");
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(val);
 #warning '/agent/xen/dom_u/migrate/kind' 'get' access method is not \
          implemented
     ERROR("'/agent/xen/dom_u/migrate/kind' 'get' access method is not " \
@@ -4128,35 +3690,27 @@ dom_u_migrate_kind_get(unsigned int gid, char const *oid, char *value,
 }
 
 /**
- * Migrate to another XEN dom0.
+ * Set domU migration kind.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param value         name of the agent running within XEN dom0
- * @param xen           name of the XEN node (empty, unused)
- * @param dom_u         name of the domU to migrate
+ * @param ctx           request context
+ * @param value         migration kind to set
  *
  * @return              Status code
  */
 static te_errno
-dom_u_migrate_kind_set(unsigned int gid, char const *oid,
-                       char const *value, char const *xen,
-                       char const *dom_u)
+dom_u_migrate_kind_set(const ta_conf_ctx *ctx, const char *value)
 {
 #if XEN_SUPPORT
+    const char  *dom_u = ta_conf_ctx_inst(ctx, "dom_u");
     unsigned u;
-#endif
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(xen);
-
-#if XEN_SUPPORT
     FIND_DOM_U(dom_u, u);
 
     dom_u_slot[u].migrate_kind = (strcmp(value, "0") == 0 ? 0 : 1);
     return 0;
 #else
+    UNUSED(ctx);
+    UNUSED(value);
 #warning '/agent/xen/dom_u/migrate/kind' 'set' access method is not \
          implemented
     ERROR("'/agent/xen/dom_u/migrate/kind' 'set' access method is not " \
