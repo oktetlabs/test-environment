@@ -191,6 +191,79 @@ extern te_errno ta_unix_conf_selftest_init(void);
  */
 extern te_errno ta_unix_conf_xen_init(void);
 
+/**
+ * Check whether a network interface is accessible to the agent
+ * (grabbed as a resource).
+ *
+ * @param ifname      Interface name.
+ *
+ * @return @c true if the interface belongs to the agent.
+ */
+extern bool ta_interface_is_mine(const char *ifname);
+
+/**
+ * Get RPF filtering value; shared by the per-interface "rp_filter"
+ * node and the top-level "rp_filter_all" node (which passes "all"
+ * as @p ifname).
+ *
+ * @param gid         Group identifier (unused).
+ * @param oid         Full object instance identifier (unused).
+ * @param value       Value location.
+ * @param ifname      Name of the interface (or "all").
+ *
+ * @return Status code.
+ */
+extern te_errno rp_filter_get(unsigned int gid, const char *oid,
+                              char *value, const char *ifname);
+
+/**
+ * Set RPF filtering value; shared, see rp_filter_get().
+ *
+ * @param gid         Group identifier (unused).
+ * @param oid         Full object instance identifier (unused).
+ * @param value       New value pointer.
+ * @param ifname      Name of the interface (or "all").
+ *
+ * @return Status code.
+ */
+extern te_errno rp_filter_set(unsigned int gid, const char *oid,
+                              const char *value, const char *ifname);
+
+/**
+ * Get arp_ignore value; shared by the per-interface "arp_ignore"
+ * node and the top-level "arp_ignore_all" node (which passes "all"
+ * as @p ifname).
+ *
+ * @param gid         Group identifier (unused).
+ * @param oid         Full object instance identifier (unused).
+ * @param value       Value location.
+ * @param ifname      Name of the interface (or "all").
+ *
+ * @return Status code.
+ */
+extern te_errno arp_ignore_get(unsigned int gid, const char *oid,
+                               char *value, const char *ifname);
+
+/**
+ * Set arp_ignore value; shared, see arp_ignore_get().
+ *
+ * @param gid         Group identifier (unused).
+ * @param oid         Full object instance identifier (unused).
+ * @param value       New value pointer.
+ * @param ifname      Name of the interface (or "all").
+ *
+ * @return Status code.
+ */
+extern te_errno arp_ignore_set(unsigned int gid, const char *oid,
+                               const char *value, const char *ifname);
+
+/**
+ * Initialize the interface configuration subtree support.
+ *
+ * @return Status code.
+ */
+extern te_errno ta_unix_conf_interface_init(void);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

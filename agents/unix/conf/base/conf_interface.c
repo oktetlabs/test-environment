@@ -1,0 +1,5932 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/** @file
+ * @brief Unix Test Agent
+ *
+ * Network interface configuration support
+ *
+ *
+ * Copyright (C) 2004-2022 OKTET Labs Ltd. All rights reserved.
+ */
+
+#define TE_LGR_USER     "Unix Conf Interface"
+
+#include "te_config.h"
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <limits.h>
+#include <stdio.h>
+#include <ctype.h>
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+#if HAVE_STRINGS_H
+#include <strings.h>
+#endif
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#if HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+#if HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#if HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
+#if HAVE_SYS_SOCKIO_H
+#include <sys/sockio.h>
+#endif
+#if HAVE_SYS_FILIO_H
+#include <sys/filio.h>
+#endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#if HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+#if HAVE_NET_IF_H
+#include <net/if.h>
+#endif
+#if HAVE_NET_IF_ARP_H
+#include <net/if_arp.h>
+#endif
+#if HAVE_NET_IF_DL_H
+#include <net/if_dl.h>
+#endif
+
+#if HAVE_LINUX_NET_TSTAMP_H
+#include <linux/net_tstamp.h>
+#endif
+
+#if HAVE_LINUX_IF_VLAN_H
+#include <linux/if_vlan.h>
+#define LINUX_VLAN_SUPPORT 1
+#else
+#define LINUX_VLAN_SUPPORT 0
+#endif
+
+#include "te_alloc.h"
+#include "te_stdint.h"
+#include "te_errno.h"
+#include "te_defs.h"
+#include "te_enum.h"
+#include "te_ethernet.h"
+#include "te_sockaddr.h"
+#include "te_str.h"
+#include "te_string.h"
+#include "te_vector.h"
+#include "te_shell_cmd.h"
+#include "cs_common.h"
+#include "logger_api.h"
+#include "rcf_ch_api.h"
+#include "rcf_pch.h"
+#include "rcf_pch_tree.h"
+#include "unix_internal.h"
+#include "conf_common.h"
+#include "conf_netconf.h"
+
+#if defined(__linux__)
+#include <linux/sockios.h>
+#endif
+
+#ifdef USE_LIBNETCONF
+#include "netconf.h"
+#endif
+
+#ifndef IF_NAMESIZE
+#define IF_NAMESIZE IFNAMSIZ
+#endif
+
+extern int link_addr_a2n(uint8_t *lladdr, int len, const char *str);
+
+/**
+ * Determine family of the address in string representation.
+ *
+ * @param str_addr      Address in string representation
+ *
+ * @return Address family.
+ * @retval AF_INET      IPv4
+ * @retval AF_INET6     IPv6
+ */
+static inline sa_family_t
+str_addr_family(const char *str_addr)
+{
+    return (strchr(str_addr, ':') == NULL) ? AF_INET : AF_INET6;
+}
+
+#define INTERFACE_IS_LOOPBACK(ifname) \
+     (strncmp(ifname, "lo", strlen("lo")) == 0)
+
+#define CHECK_INTERFACE(ifname) \
+    ((ifname == NULL) ? TE_EINVAL :                 \
+     (strlen(ifname) > IFNAMSIZ) ? TE_E2BIG :       \
+     (strchr(ifname, ':') != NULL ||                \
+      !ta_interface_is_mine(ifname)) ? TE_ENODEV : 0)
+
+/**
+ * Configuration IOCTL request.
+ * On failure, ERROR is logged and return with 'te_errno' status is done.
+ */
+#define CFG_IOCTL(_s, _id, _req) \
+    do {                                                    \
+        if (ioctl((_s), (_id), (caddr_t)(_req)) != 0)       \
+        {                                                   \
+            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);      \
+                                                            \
+            ERROR("line %u: ioctl(" #_id ") failed: %r",    \
+                  __LINE__, rc);                            \
+            return rc;                                      \
+        }                                                   \
+    } while (0)
+
+/**
+ * Type for both IPv4 and IPv6 address
+ */
+typedef union gen_ip_address {
+    struct in_addr  ip4_addr;  /** IPv4 address */
+    struct in6_addr ip6_addr;  /** IPv6 address */
+} gen_ip_address;
+
+/*
+ * To access attributes of a network interface we can use
+ * ioctl based interface available on most UNIX systems.
+ * Widely used data structure in interface-related ioctl calls
+ * is "struct ifreq", but on some systems (for example Solaris)
+ * this structure is obsoleted and "struct lifreq" is used
+ * instead.
+ *
+ * We try to avoid code duplication that only differs in
+ * structure and field names, which is why we try to use
+ * system independent names (prefixed with "my_").
+ */
+#ifdef HAVE_STRUCT_LIFREQ
+#define my_ifreq        lifreq
+#define my_ifr_name     lifr_name
+#define my_ifr_flags    lifr_flags
+#define my_ifr_addr     lifr_addr
+#define my_ifr_mtu      lifr_mtu
+#define my_ifr_hwaddr_data(req_)   \
+        ((struct sockaddr_dl *)&(req_).lifr_addr)->sdl_data
+#define my_ifr_hwaddr_family(req_) \
+        ((struct sockaddr_dl *)&(req_).lifr_addr)->sdl_family
+#define MY_SIOCGIFFLAGS     SIOCGLIFFLAGS
+#define MY_SIOCSIFFLAGS     SIOCSLIFFLAGS
+#define MY_SIOCGIFADDR      SIOCGLIFADDR
+#define MY_SIOCSIFADDR      SIOCSLIFADDR
+#define MY_SIOCGIFMTU       SIOCGLIFMTU
+#define MY_SIOCSIFMTU       SIOCSLIFMTU
+#define MY_SIOCGIFNETMASK   SIOCGLIFNETMASK
+#define MY_SIOCSIFNETMASK   SIOCSLIFNETMASK
+#define MY_SIOCGIFBRDADDR   SIOCGLIFBRDADDR
+#define MY_SIOCSIFBRDADDR   SIOCSLIFBRDADDR
+#define MY_SIOCGIFHWADDR    SIOCGLIFHWADDR
+#else
+#define my_ifreq        ifreq
+#define my_ifr_name     ifr_name
+#define my_ifr_flags    ifr_flags
+#define my_ifr_addr     ifr_addr
+#define my_ifr_mtu      ifr_mtu
+#define my_ifr_hwaddr_data(req_) (req_).ifr_hwaddr.sa_data
+#define my_ifr_hwaddr_family(req_) (req_).ifr_hwaddr.sa_family
+#define MY_SIOCGIFFLAGS     SIOCGIFFLAGS
+#define MY_SIOCSIFFLAGS     SIOCSIFFLAGS
+#define MY_SIOCGIFADDR      SIOCGIFADDR
+#define MY_SIOCSIFADDR      SIOCSIFADDR
+#define MY_SIOCGIFMTU       SIOCGIFMTU
+#define MY_SIOCSIFMTU       SIOCSIFMTU
+#define MY_SIOCGIFNETMASK   SIOCGIFNETMASK
+#define MY_SIOCSIFNETMASK   SIOCSIFNETMASK
+#define MY_SIOCGIFBRDADDR   SIOCGIFBRDADDR
+#define MY_SIOCSIFBRDADDR   SIOCSIFBRDADDR
+
+#if defined SIOCGIFHWADDR
+#define MY_SIOCGIFHWADDR    SIOCGIFHWADDR
+#endif
+
+#endif /* !HAVE_STRUCT_LIFREQ */
+
+static struct my_ifreq req;
+
+static char buf[4096];
+static char trash[128];
+
+static te_errno iface_ip4_fw_get(unsigned int, const char *, char *,
+                                 const char *);
+static te_errno iface_ip4_fw_set(unsigned int, const char *, const char *,
+                                 const char *);
+
+static te_errno iface_ip6_fw_get(unsigned int, const char *, char *,
+                                 const char *);
+static te_errno iface_ip6_fw_set(unsigned int, const char *, const char *,
+                                 const char *);
+
+static te_errno iface_ip6_accept_ra_get(unsigned int, const char *, char *,
+                                const char *);
+static te_errno iface_ip6_accept_ra_set(unsigned int, const char *,
+                                const char *, const char *);
+
+static te_errno iface_parent_get(unsigned int, const char *, char *,
+                                 const char *);
+static te_errno iface_kind_get(unsigned int, const char *, char *,
+                               const char *);
+static te_errno iface_switch_id_get(unsigned int, const char *, char *,
+                                    const char *);
+static te_errno iface_port_id_get(unsigned int, const char *, char *,
+                                  const char *);
+static te_errno iface_port_name_get(unsigned int, const char *, char *,
+                                    const char *);
+
+static te_errno iface_hwtstamp_tx_type_get(unsigned int, const char *, char *,
+                                           const char *);
+static te_errno iface_hwtstamp_tx_type_set(unsigned int, const char *,
+                                           const char *, const char *);
+static te_errno iface_hwtstamp_rx_filter_get(unsigned int, const char *, char *,
+                                             const char *);
+static te_errno iface_hwtstamp_rx_filter_set(unsigned int, const char *,
+                                             const char *, const char *);
+
+static te_errno interface_list(unsigned int, const char *,
+                               const char *, char **);
+
+static te_errno vlans_list(unsigned int, const char *,
+                           const char *, char **, const char *);
+static te_errno vlans_add(unsigned int, const char *, const char *,
+                              const char *, const char *);
+static te_errno vlans_del(unsigned int, const char *, const char *,
+                          const char *);
+
+static te_errno mcast_link_addr_add(unsigned int, const char *,
+                                    const char *, const char *,
+                                    const char *);
+static te_errno mcast_link_addr_del(unsigned int, const char *,
+                                    const char *, const char *);
+static te_errno mcast_link_addr_list(unsigned int, const char *,
+                                     const char *, char **,
+                                     const char *);
+
+#ifndef __linux__
+typedef struct mma_list_el {
+    char                value[ETHER_ADDR_LEN * 3];
+    struct mma_list_el *next;
+} mma_list_el;
+
+typedef struct ifs_list_el {
+    char                ifname[IFNAMSIZ];
+    struct mma_list_el *mcast_addresses;
+    struct ifs_list_el *next;
+} ifs_list_el;
+static struct ifs_list_el *interface_stream_list = NULL;
+#endif
+
+static te_errno net_addr_add(unsigned int, const char *, const char *,
+                             const char *, const char *);
+static te_errno net_addr_del(unsigned int, const char *,
+                             const char *, const char *);
+static te_errno net_addr_list(unsigned int, const char *,
+                              const char *, char **,
+                              const char *);
+
+static te_errno prefix_get(unsigned int, const char *, char *,
+                           const char *, const char *);
+static te_errno prefix_set(unsigned int, const char *, const char *,
+                           const char *, const char *);
+
+static te_errno broadcast_get(unsigned int, const char *, char *,
+                              const char *, const char *);
+static te_errno broadcast_set(unsigned int, const char *, const char *,
+                              const char *, const char *);
+
+static te_errno link_addr_get(unsigned int, const char *, char *,
+                              const char *);
+
+static te_errno link_addr_set(unsigned int, const char *, const char *,
+                              const char *);
+
+static te_errno bcast_link_addr_set(unsigned int, const char *,
+                                    const char *, const char *);
+
+static te_errno bcast_link_addr_get(unsigned int, const char *,
+                                    char *, const char *);
+
+static te_errno vlan_ifname_get(unsigned int , const char *,
+                                char *, const char *, const char *);
+
+#ifndef USE_LIBNETCONF
+static te_errno vlan_ifname_get_internal(const char *ifname, int vlan_id,
+                                         char *v_ifname);
+#endif
+
+static te_errno ifindex_get(unsigned int, const char *, char *,
+                            const char *);
+
+static te_errno oper_status_get(unsigned int, const char *, char *,
+                                const char *);
+
+static te_errno status_get(unsigned int, const char *, char *,
+                           const char *);
+static te_errno status_set(unsigned int, const char *, const char *,
+                           const char *);
+
+static te_errno promisc_get(unsigned int, const char *, char *,
+                            const char *);
+static te_errno promisc_set(unsigned int, const char *, const char *,
+                            const char *);
+
+static te_errno allmulti_get(unsigned int, const char *, char *,
+                             const char *);
+static te_errno allmulti_set(unsigned int, const char *, const char *,
+                             const char *);
+
+static te_errno arp_get(unsigned int, const char *, char *,
+                        const char *);
+static te_errno arp_set(unsigned int, const char *, const char *,
+                        const char *);
+
+static te_errno min_mtu_get(unsigned int, const char *, char *,
+                            const char *);
+static te_errno max_mtu_get(unsigned int, const char *, char *,
+                            const char *);
+static te_errno mtu_get(unsigned int, const char *, char *,
+                        const char *);
+static te_errno mtu_set(unsigned int, const char *, const char *,
+                        const char *);
+
+static te_errno neigh_state_get(unsigned int, const char *, char *,
+                                const char *, const char *);
+static te_errno neigh_get(unsigned int, const char *, char *,
+                          const char *, const char *);
+
+static te_errno neigh_set(unsigned int, const char *, const char *,
+                          const char *, const char *);
+static te_errno neigh_add(unsigned int, const char *, const char *,
+                          const char *, const char *);
+static te_errno neigh_del(unsigned int, const char *,
+                          const char *, const char *);
+static te_errno neigh_list(unsigned int, const char *,
+                           const char *, char **,
+                           const char *);
+
+te_errno ta_vlan_get_children(const char *, size_t *, int *);
+te_errno ta_vlan_get_parent(const char *, char *);
+
+RCF_PCH_CFG_NODE_RO(node_neigh_state, "state",
+                    NULL, NULL,
+                    (rcf_ch_cfg_get)neigh_state_get);
+
+static rcf_pch_cfg_object node_neigh_dynamic =
+    { "neigh_dynamic", 0, &node_neigh_state, NULL,
+      (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)neigh_set,
+      (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
+      (rcf_ch_cfg_list)neigh_list, NULL, NULL, NULL};
+
+static rcf_pch_cfg_object node_neigh_static =
+    { "neigh_static", 0, NULL, &node_neigh_dynamic,
+      (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)neigh_set,
+      (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
+      (rcf_ch_cfg_list)neigh_list, NULL, NULL, NULL};
+
+static rcf_pch_cfg_object node_neigh_proxy =
+    { "neigh_proxy", 0, NULL, &node_neigh_static,
+      (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)NULL,
+      (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
+      (rcf_ch_cfg_list)neigh_list, NULL, NULL};
+
+RCF_PCH_CFG_NODE_RW(node_broadcast, "broadcast", NULL, NULL,
+                    broadcast_get, broadcast_set);
+
+static rcf_pch_cfg_object node_net_addr =
+    { "net_addr", 0, &node_broadcast, &node_neigh_proxy,
+      (rcf_ch_cfg_get)prefix_get, (rcf_ch_cfg_set)prefix_set,
+      (rcf_ch_cfg_add)net_addr_add, (rcf_ch_cfg_del)net_addr_del,
+      (rcf_ch_cfg_list)net_addr_list, NULL, NULL, NULL };
+
+static rcf_pch_cfg_object node_mcast_link_addr =
+    { "mcast_link_addr", 0, NULL, &node_net_addr,
+      NULL, NULL, (rcf_ch_cfg_add)mcast_link_addr_add,
+      (rcf_ch_cfg_del)mcast_link_addr_del,
+      (rcf_ch_cfg_list)mcast_link_addr_list, NULL, NULL, NULL };
+
+RCF_PCH_CFG_NODE_RO(node_vl_ifname, "ifname", NULL, NULL,
+                    vlan_ifname_get);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_vlans, "vlans",
+                            &node_vl_ifname, &node_mcast_link_addr,
+                            vlans_add, vlans_del,
+                            vlans_list, NULL);
+
+RCF_PCH_CFG_NODE_RW(node_rp_filter, "rp_filter", NULL, &node_vlans,
+                    rp_filter_get, rp_filter_set);
+
+RCF_PCH_CFG_NODE_RW(node_arp_ignore, "arp_ignore", NULL, &node_rp_filter,
+                    arp_ignore_get, arp_ignore_set);
+
+RCF_PCH_CFG_NODE_RW(node_allmulti, "allmulti", NULL, &node_arp_ignore,
+                    allmulti_get, allmulti_set);
+
+RCF_PCH_CFG_NODE_RW(node_promisc, "promisc", NULL, &node_allmulti,
+                    promisc_get, promisc_set);
+
+RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_promisc,
+                    status_get, status_set);
+
+RCF_PCH_CFG_NODE_RO(node_oper_status, "oper_status", NULL,
+                    &node_status, oper_status_get);
+
+RCF_PCH_CFG_NODE_RO(node_max_mtu, "max_mtu", NULL, &node_oper_status,
+                    max_mtu_get);
+
+RCF_PCH_CFG_NODE_RO(node_min_mtu, "min_mtu", NULL, &node_max_mtu,
+                    min_mtu_get);
+
+RCF_PCH_CFG_NODE_RW(node_mtu, "mtu", NULL, &node_min_mtu,
+                    mtu_get, mtu_set);
+
+RCF_PCH_CFG_NODE_RW(node_arp, "arp", NULL, &node_mtu,
+                    arp_get, arp_set);
+
+RCF_PCH_CFG_NODE_RW(node_link_addr, "link_addr", NULL, &node_arp,
+                    link_addr_get, link_addr_set);
+
+RCF_PCH_CFG_NODE_RW(node_bcast_link_addr, "bcast_link_addr", NULL,
+                    &node_link_addr,
+                    bcast_link_addr_get, bcast_link_addr_set);
+
+RCF_PCH_CFG_NODE_RW(node_iface_ip4_fw, "iface_ip4_fw", NULL,
+                    &node_bcast_link_addr, iface_ip4_fw_get,
+                    iface_ip4_fw_set);
+
+RCF_PCH_CFG_NODE_RW(node_iface_ip6_fw, "iface_ip6_fw", NULL,
+                    &node_iface_ip4_fw, iface_ip6_fw_get, iface_ip6_fw_set);
+
+RCF_PCH_CFG_NODE_RW(node_iface_ip6_accept_ra, "iface_ip6_accept_ra", NULL,
+                    &node_iface_ip6_fw,
+                    iface_ip6_accept_ra_get, iface_ip6_accept_ra_set);
+
+RCF_PCH_CFG_NODE_RO(node_iface_parent, "parent", NULL,
+                    &node_iface_ip6_accept_ra,
+                    iface_parent_get);
+
+RCF_PCH_CFG_NODE_RO(node_iface_kind, "kind", NULL,
+                    &node_iface_parent,
+                    iface_kind_get);
+
+RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_iface_kind,
+                    ifindex_get);
+
+RCF_PCH_CFG_NODE_RO(node_iface_port_name, "port_name",
+                    NULL, &node_ifindex,
+                    iface_port_name_get);
+
+RCF_PCH_CFG_NODE_RO(node_iface_port_id, "port_id",
+                    NULL, &node_iface_port_name,
+                    iface_port_id_get);
+
+RCF_PCH_CFG_NODE_RO(node_iface_switch_id, "switch_id",
+                    NULL, &node_iface_port_id,
+                    iface_switch_id_get);
+
+RCF_PCH_CFG_NODE_RW(node_iface_hwtstamp_rx_filter, "rx_filter",
+                    NULL, NULL,
+                    iface_hwtstamp_rx_filter_get,
+                    iface_hwtstamp_rx_filter_set);
+
+RCF_PCH_CFG_NODE_RW(node_iface_hwtstamp_tx_type, "tx_type",
+                    NULL, &node_iface_hwtstamp_rx_filter,
+                    iface_hwtstamp_tx_type_get,
+                    iface_hwtstamp_tx_type_set);
+
+RCF_PCH_CFG_NODE_NA(node_iface_hwtstamp, "hwtstamp",
+                    &node_iface_hwtstamp_tx_type, &node_iface_switch_id);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
+                            &node_iface_hwtstamp, NULL,
+                            NULL, NULL, interface_list, NULL);
+
+/* See the description in conf_common.h */
+te_errno
+ta_unix_conf_interface_init(void)
+{
+    return rcf_pch_add_node("/agent", &node_interface);
+}
+
+#ifndef USE_LIBNETCONF
+#define MAX_VLANS 0xfff
+static int vlans_buffer[MAX_VLANS];
+#endif
+
+/**
+ * Convert and check address prefix value.
+ *
+ * @param value     Pointer to the new network mask in dotted notation
+ * @param family    Address family
+ *
+ * @return Status code.
+ */
+static te_errno
+prefix_check(const char *value, sa_family_t family, unsigned int *prefix)
+{
+    char *end;
+
+    if (family != AF_INET && family != AF_INET6)
+    {
+        ERROR("%s(): unsupported address family %d", __FUNCTION__,
+              (int)family);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    *prefix = strtoul(value, &end, 10);
+    if (value == end)
+    {
+        ERROR("Invalid value '%s' of prefix length", value);
+        return TE_RC(TE_TA_UNIX, TE_EFMT);
+    }
+    if (((family == AF_INET) &&
+         (*prefix > (sizeof(struct in_addr) << 3))) ||
+        ((family == AF_INET6) &&
+         (*prefix > (sizeof(struct in6_addr) << 3))))
+    {
+        ERROR("Invalid prefix '%s' to be set", value);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    return 0;
+}
+
+#ifdef USE_IOCTL
+te_errno
+ta_unix_conf_get_addr(const char *ifname, sa_family_t af, void **addr)
+{
+    te_strlcpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
+    CFG_IOCTL((af == AF_INET6) ? cfg6_socket : cfg_socket,
+              MY_SIOCGIFADDR, &req);
+    if (af == AF_INET)
+        *addr = &SIN(&req.my_ifr_addr)->sin_addr;
+    else
+        *addr = &SIN6(&req.my_ifr_addr)->sin6_addr;
+    return 0;
+}
+
+
+/* Check, if one interface is alias of other interface */
+static bool
+is_alias_of(const char *candidate, const char *master)
+{
+    char *tmp = strchr(candidate, ':');
+    int   len = strlen(master);
+
+    return !(tmp == NULL || tmp - candidate != len ||
+             strncmp(master, candidate, len) != 0);
+}
+
+/**
+ * Update IPv4 prefix length of the interface using ioctl.
+ *
+ * @param ifname        Interface name (like "eth0")
+ * @param prefix        Prefix length
+ *
+ * @return OS errno
+ */
+static te_errno
+set_prefix(const char *ifname, unsigned int prefix)
+{
+    in_addr_t mask = PREFIX2MASK(prefix);
+
+    memset(&req, 0, sizeof(req));
+
+    strcpy(req.my_ifr_name, ifname);
+
+    SA(&req.my_ifr_addr)->sa_family = AF_INET;
+    SIN(&(req.my_ifr_addr))->sin_addr.s_addr = htonl(mask);
+    CFG_IOCTL(cfg_socket, MY_SIOCSIFNETMASK, &req);
+    return 0;
+}
+#endif
+
+
+#ifdef USE_IOCTL
+
+/**
+ * Get interfaces configuration via SIOCGIFCONF/SIOCGLIFCONF to 'buf'.
+ * Be carefull, if HAVE_STRUCT_LIFREQ, 'buf' contains array of
+ * 'struct lifreq', otherwise - array of 'struct ifreq'.
+ *
+ * @param buf       Location for pointer to the allocated buffer.
+ * @param p_req     Location for pointer to the first interface data.
+ * @param p_len     Location for length of returned data
+ *
+ * @return Status code.
+ */
+static te_errno
+get_ifconf_to_buf(void **buf, void **p_req, size_t *p_len)
+{
+#if HAVE_STRUCT_LIFREQ
+    {
+        struct lifnum   ifnum;
+        struct lifconf  conf;
+
+        ifnum.lifn_family = conf.lifc_family = AF_UNSPEC;
+        ifnum.lifn_flags = conf.lifc_flags = 0;
+        CFG_IOCTL(cfg_socket, SIOCGLIFNUM, &ifnum);
+
+        *buf = TE_ALLOC((ifnum.lifn_count + 1) * sizeof(struct lifreq));
+
+        conf.lifc_len = sizeof(struct lifreq) * (ifnum.lifn_count + 1);
+        conf.lifc_buf = (caddr_t)*buf;
+
+        CFG_IOCTL(cfg_socket, SIOCGLIFCONF, &conf);
+
+        *p_req = conf.lifc_req;
+        *p_len = conf.lifc_len;
+    }
+#else /* !HAVE_STRUCT_LIFREQ */
+    {
+        struct ifconf   conf;
+
+        *buf = TE_ALLOC(32 * sizeof(struct ifreq));
+
+        conf.ifc_len = sizeof(struct ifreq) * 32;
+        conf.ifc_buf = (caddr_t)*buf;
+
+        CFG_IOCTL(cfg_socket, SIOCGIFCONF, &conf);
+
+        *p_req = conf.ifc_req;
+        *p_len = conf.ifc_len;
+    }
+#endif /* !HAVE_STRUCT_LIFREQ */
+    return 0;
+}
+
+/**
+ * Call function provided by user for each 'struct ifreq'-like entry
+ * in 'struct ifconf'-like buffer.
+ *
+ * @param ifr           Pointer to 'struct ifreq'-like structure to start
+ * @param length        Length of the 'struct ifconf'-like buffer
+ * @param ifreq_cb      Function to be called for each entry
+ * @param opaque        Opaque data to be passed in callback
+ *
+ * @return Status code.
+ */
+static te_errno
+ifconf_foreach_ifreq(struct my_ifreq *ifr, size_t length,
+                     te_errno (*ifreq_cb)(struct my_ifreq *, void *),
+                     void *opaque)
+{
+    te_errno    rc = 0;
+    size_t      step;
+
+    assert(ifr != NULL);
+    while (rc == 0 && length >= sizeof(struct my_ifreq))
+    {
+#ifdef _SIZEOF_ADDR_IFREQ
+        /*
+         * The check may be done, iff avaialbe length is greater or
+         * equal to minimum entry size which is checked by while
+         * condition.
+         */
+        step = _SIZEOF_ADDR_IFREQ(*ifr);
+#else
+        step = sizeof(struct my_ifreq);
+#endif
+        /* Re-check step vs length once more */
+        if (step > length)
+            break;
+
+        rc = ifreq_cb(ifr, opaque);
+
+        ifr = (struct my_ifreq *)((caddr_t)ifr + step);
+        length -= step;
+    }
+
+    return rc;
+}
+
+#endif /* USE_IOCTL */
+
+
+#if !defined(__linux__) && defined(SIOCGIFCONF)
+
+static te_errno
+ifreq_ifname_search_cb(struct my_ifreq *ifr, void *opaque)
+{
+    if (ifr == opaque)
+        return TE_ENOENT;
+    else if (strcmp(ifr->my_ifr_name,
+                    ((const struct my_ifreq *)opaque)->my_ifr_name) == 0)
+        return TE_EEXIST;
+    else
+        return 0;
+}
+
+/** Opaque data for interface_list_ifreq_cb() */
+struct interface_list_ifreq_cb_data {
+    struct my_ifreq    *first;      /**< First entry to check dups */
+    size_t              length;     /**< Total length to check dups */
+    char               *buf;        /**< Buffer to print names */
+    size_t              buf_len;    /**< Total length of the buffer */
+    size_t              buf_off;    /**< Current offset in the buffer */
+};
+
+static te_errno
+interface_list_ifreq_cb(struct my_ifreq *ifr, void *opaque)
+{
+    struct interface_list_ifreq_cb_data *data = opaque;
+
+    /* Aliases, logical and alien interfaces are skipped here */
+    if (CHECK_INTERFACE(ifr->my_ifr_name) != 0)
+        return 0;
+
+    /* Skip duplicates */
+    if (ifconf_foreach_ifreq(data->first, data->length,
+                             ifreq_ifname_search_cb, ifr) == TE_EEXIST)
+        return 0;
+
+    data->buf_off += snprintf(data->buf + data->buf_off,
+                              data->buf_len - data->buf_off,
+                              "%s ", ifr->my_ifr_name);
+
+    return 0;
+}
+
+#endif
+
+#if defined __sun__
+/**
+ * Callback function used in VLAN iteration procedure.
+ *
+ * @param ifname       Parent interface name
+ * @param vlan_id      VID value
+ * @param vlan_ifname  VLAN network interface name
+ * @param user_data    Opaque data pointer passed as the value
+ *                     of an argument to sun_iterate_vlans() function
+ *
+ * @return Directive to continue or to interrupt traveral
+ * @retval 0 - Stop VLAN traversal
+ * @retval 1 - Continue VLAN traversal
+ */
+typedef int (* sun_iterate_vlan_cb_f)(const char *ifname,
+                                      int vlan_id,
+                                      const char *vlan_ifname,
+                                      void *user_data);
+
+/**
+ * Iterate VLANs of the particular interface
+ *
+ * @param ifname     network interface name whose VLANs to iterate
+ * @param cb         callback function to use for each VLAN
+ * @param user_data  opaque data pointer passed to @p cb function
+ *
+ * @return Status of the operation
+ */
+static te_errno
+sun_iterate_vlans(const char *ifname,
+                  sun_iterate_vlan_cb_f cb, void *user_data)
+{
+    te_errno  rc = 0;
+    int       out_fd = -1;
+    FILE     *out_fp;
+    int       status;
+    char      f_buf[200];
+    pid_t     dladm_cmd_pid;
+
+    /*
+     * The name of VLAN interface can be an arbitrary string,
+     * so we need to use 'dladm' to detect it.
+     */
+    dladm_cmd_pid = te_shell_cmd(
+            "LANG=POSIX /usr/sbin/dladm show-vlan -p -o LINK,VID,OVER",
+            -1, NULL, &out_fd, NULL);
+
+    if (dladm_cmd_pid < 0)
+    {
+        ERROR("%s(): start of dladm failed", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+
+    if ((out_fp = fdopen(out_fd, "r")) == NULL)
+    {
+        ERROR("Failed to obtain file pointer for shell command output");
+        rc = TE_OS_RC(TE_TA_UNIX, te_rc_os2te(errno));
+        goto cleanup;
+    }
+
+    while (fgets(f_buf, sizeof(f_buf), out_fp) != NULL)
+    {
+        size_t  ofs;
+        char   *s = f_buf;
+        char   *vlan_str;
+        int     vlan_id;
+
+        VERB("%s(): read line: <%s>", __FUNCTION__, f_buf);
+        /* Find delimeters between LINK and VID fields */
+        s = strchr(s, ':');
+        if (s == NULL)
+        {
+            ERROR("%s() Unexpected format 'dladm' output: '%s'",
+                  __FUNCTION__, f_buf);
+            rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+            break;
+        }
+        *s++ = '\0';
+
+        /* Find delimeters between VID and OVER fields */
+        vlan_str = s;
+        s = strchr(vlan_str, ':');
+        if (s == NULL)
+        {
+            ERROR("%s() Unexpected format 'dladm' output: '%s'",
+                  __FUNCTION__, f_buf);
+            rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+            break;
+        }
+        *s++ = '\0';
+
+        /* Check if VLAN is OVER specified network interface */
+        ofs = strcspn(s," \n\r\t");
+        s[ofs] = '\0';
+
+        if (strcmp(s, ifname) != 0)
+            continue;
+
+        vlan_id = atoi(vlan_str);
+
+        /* Call user callback and check if we need to continue */
+        if (cb(ifname, vlan_id, f_buf, user_data) == 0)
+            break;
+    }
+
+    /*
+     * Read out all the command output, because otherwise we can have
+     * program killed by SIGPIPE signal, which will cause ta_waitpid
+     * return non-zero status.
+     */
+    while (fgets(f_buf, sizeof(f_buf), out_fp) != NULL)
+        ;
+
+cleanup:
+    if (out_fp != NULL)
+        fclose(out_fp);
+    close(out_fd);
+
+    ta_waitpid(dladm_cmd_pid, &status, 0);
+    if (status != 0)
+    {
+        ERROR("%s(): Non-zero status of dladm: %d",
+              __FUNCTION__, status);
+        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+
+    return rc;
+}
+
+/** Structure to save information about VLAN IDs */
+struct sun_vlan_list {
+    size_t  vlans_size; /**< The size of @p vlans array */
+    int    *vlans; /**< Array to fill in VID values */
+    size_t  vlans_num; /**< Number of filled entries in @p vlans array */
+    te_errno rc; /**< Processing result */
+};
+
+/** Callback function to register VID values. */
+static int
+sun_vlan_list(const char *ifname,
+              int vlan_id, const char *vlan_ifname, void *user_data)
+{
+    struct sun_vlan_list *vlan_info = (struct sun_vlan_list *)user_data;
+
+    UNUSED(vlan_ifname);
+
+    if (vlan_info->vlans_size <= vlan_info->vlans_num)
+    {
+        ERROR("Too many VLANs for %s interface", ifname);
+        vlan_info->rc = TE_RC(TE_TA_UNIX, TE_ENOSPC);
+        return 0; /* Interrupt VLAN traversal */
+    }
+
+    vlan_info->vlans[vlan_info->vlans_num] = vlan_id;
+    vlan_info->vlans_num++;
+
+    return 1; /* Continue VLAN traversal */
+}
+
+/** Structure to save VLAN interface name */
+struct sun_vlan_name {
+    int vlan_id; /**< VLAN ID whose name to get */
+    size_t vlan_ifname_size; /**< The size of @p vlan_ifname array */
+    char *vlan_ifname; /**< Array to fill in with interface name */
+};
+
+/** Callback function to get VLAN interface name */
+static int
+sun_vlan_find_name(const char *ifname,
+                   int vlan_id, const char *vlan_ifname, void *user_data)
+{
+    struct sun_vlan_name *vlan_name = (struct sun_vlan_name *)user_data;
+
+    UNUSED(ifname);
+
+    if (vlan_name->vlan_id == vlan_id)
+    {
+        snprintf(vlan_name->vlan_ifname, vlan_name->vlan_ifname_size,
+                 "%s", vlan_ifname);
+        return 0; /* Interrupt VLAN traversal */
+    }
+    return 1; /* Continue VLAN traversal */
+}
+#endif /* __sun__ */
+
+
+
+/**
+ * Get list of VLANs on particular physical device
+ *
+ * If there are no VLAN children under passed interface, 'n_vlans'
+ * set to zero.
+ *
+ * @param devname       name of network device
+ * @param n_vlans       number of vlans (IN/OUT)
+ * @param vlans         location for vlan IDs (OUT)
+ *
+ * @return status code
+ */
+te_errno
+ta_vlan_get_children(const char *devname, size_t *n_vlans, int *vlans)
+{
+    size_t   n_vlans_size;
+    te_errno rc = 0;
+
+    if (devname == NULL ||n_vlans == NULL || vlans == NULL)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    n_vlans_size = *n_vlans;
+
+    VERB("%s(): enter for device: <%s>", __FUNCTION__, devname);
+    *n_vlans = 0;
+#if defined __linux__
+    {
+        FILE *proc_vlans = fopen("/proc/net/vlan/config", "r");
+        int   vlan_id;
+        char  f_buf[200];
+
+        if (proc_vlans == NULL)
+        {
+            if (errno == ENOENT)
+            {
+                /*
+                 * No vlan support module loaded, empty list.
+                 * Do not RING() here -- do not spam into the log.
+                 */
+                VERB("%s: no proc vlan file", __FUNCTION__);
+                return 0;
+            }
+
+            ERROR("%s(): Failed to open /proc/net/vlan/config %s",
+                  __FUNCTION__, strerror(errno));
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+        while (fgets(f_buf, sizeof(f_buf), proc_vlans) != NULL)
+        {
+            char   *s = strchr(f_buf, '|');
+            size_t  space_ofs;
+
+            if (s == NULL)
+                continue;
+            s++;
+            while (isspace(*s)) s++;
+            if (!isdigit(*s))
+                continue;
+            vlan_id = atoi(s);
+
+            s = strchr(s, '|');
+            if (s == NULL)
+                continue;
+            s++;
+            while (isspace(*s)) s++;
+
+            space_ofs = strcspn(s, " \t\n\r");
+            s[space_ofs] = 0;
+
+            if (n_vlans_size <= *n_vlans)
+            {
+                ERROR("Too many VLANs for %s interface", devname);
+                rc = TE_RC(TE_TA_UNIX, TE_ENOSPC);
+                break;
+            }
+
+            if (strcmp(s, devname) == 0)
+                vlans[(*n_vlans)++] = vlan_id;
+        }
+        (void)fclose(proc_vlans);
+    }
+#elif defined __sun__
+    {
+        struct sun_vlan_list vlan_info = { n_vlans_size, vlans, 0, 0 };
+
+        rc = sun_iterate_vlans(devname, sun_vlan_list, &vlan_info);
+        if (rc == 0 && vlan_info.rc != 0)
+            rc = vlan_info.rc;
+        else
+            *n_vlans = vlan_info.vlans_num;
+    }
+#endif
+
+    return rc;
+}
+
+#ifndef USE_LIBNETCONF
+/**
+ * Get VLAN ifname
+ *
+ * @param devname       name of network device
+ * @param vlan_id       VLAN id
+ * @param v_ifname      location for VLAN ifname
+ *                      (for Solaris port this field will be set to
+ *                      an empty string in case there is no such VLAN
+ *                      interface configured in the system)
+ *
+ * @return status
+ */
+static te_errno
+vlan_ifname_get_internal(const char *ifname, int vlan_id,
+                         char *v_ifname)
+{
+    te_errno rc = 0;
+
+#if defined __linux__
+    sprintf(v_ifname, "%s.%d", ifname, vlan_id);
+#elif defined __sun__
+    {
+        struct sun_vlan_name vlan_name = { vlan_id, IF_NAMESIZE, v_ifname };
+
+        v_ifname[0] = '\0';
+        rc = sun_iterate_vlans(ifname, sun_vlan_find_name, &vlan_name);
+    }
+#else
+    ERROR("%s() Not supported", __FUNCTION__);
+    rc = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+    return rc;
+}
+#endif
+
+/**
+ * Get VLAN ifname
+ *
+ * @param gid           request group identifier (unused)
+ * @param oid           full object instance identifier
+ * @param value         location for interface name
+ * @param ifname        name of the interface
+ * @param vid           name of the vlan (decimal integer)
+ *
+ * @return status
+ */
+static te_errno
+vlan_ifname_get(unsigned int gid, const char *oid, char *value,
+                const char *ifname, const char *vid)
+{
+    int vlan_id = atoi(vid);
+
+    VERB("%s: gid=%u oid='%s', ifname = '%s', vid %d",
+         __FUNCTION__, gid, oid, ifname,  vlan_id);
+
+#ifdef USE_LIBNETCONF
+    return netconf_vlan_get_ifname(nh, ifname, (unsigned int)vlan_id,
+                                   value, RCF_MAX_VAL);
+#else
+    return vlan_ifname_get_internal(ifname, vlan_id, value);
+#endif
+}
+
+/**
+ * Get instance list for object "agent/interface/vlans".
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed (unused)
+ * @param list          location for the list pointer
+ *
+ * @return              Status code
+ * @retval 0            success
+ */
+static te_errno
+vlans_list(unsigned int gid, const char *oid,
+           const char *sub_id, char **list,
+           const char *ifname)
+{
+#ifdef USE_LIBNETCONF
+    te_vec        names = TE_VEC_INIT_AUTOPTR(char *);
+    te_string     str = TE_STRING_INIT;
+    te_errno      rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+
+    rc = netconf_vlan_list(nh, ifname, &names);
+    if (rc == 0)
+    {
+        te_string_join_vec(&str, &names, " ");
+        *list = str.ptr;
+    }
+
+    te_vec_free(&names);
+
+    return rc;
+#else
+    size_t n_vlans = MAX_VLANS;
+    size_t i;
+    te_errno rc;
+
+    char *b;
+
+    UNUSED(sub_id);
+
+    rc = ta_vlan_get_children(ifname, &n_vlans, vlans_buffer);
+    if (rc != 0)
+        return rc;
+
+    VERB("%s: gid=%u oid='%s', ifname %s, num vlans %d",
+         __FUNCTION__, gid, oid, ifname, n_vlans);
+
+    if (n_vlans == 0)
+    {
+        *list = NULL;
+        return 0;
+    }
+
+    b = *list = TE_ALLOC(n_vlans * 5 /* max digits in VLAN id + space */ + 1);
+
+    for (i = 0; i < n_vlans; i++)
+        b += sprintf(b, "%d ", vlans_buffer[i]);
+
+    VERB("VLAN list: '%s'", *list);
+    return 0;
+#endif
+}
+
+/**
+ * Add VLAN Ethernet device.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier
+ * @param value         value string
+ * @param ifname        device name, over it VLAN should be added
+ * @param vid_str       VLAN id string, decimal notation
+ *
+ * @return              Status code
+ */
+static te_errno
+vlans_add(unsigned int gid, const char *oid, const char *value,
+          const char *ifname, const char *vid_str)
+{
+    te_errno rc;
+    int      vid = atoi(vid_str);
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+
+    VERB("%s: gid=%u oid='%s', vid %s, ifname %s",
+         __FUNCTION__, gid, oid, vid_str, ifname);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#if defined USE_LIBNETCONF
+
+    return netconf_vlan_modify(nh, NETCONF_CMD_ADD, ifname, value,
+                               (unsigned int)vid);
+
+#elif LINUX_VLAN_SUPPORT
+    {
+        struct vlan_ioctl_args  if_request;
+        struct ifreq            ifr;
+        bool try_restore_ip_addr = true;
+
+        if (cfg_socket < 0)
+        {
+            ERROR("%s: non-init cfg socket", cfg_socket);
+            return TE_RC(TE_TA_UNIX, TE_EFAULT);
+        }
+
+        /*
+         * On old CentOS kernels existing IP address
+         * is removed from parent interface when VLAN
+         * is created - so we try to save it and restore
+         * after creating VLAN.
+         */
+        ifr.ifr_addr.sa_family = AF_INET;
+        te_strlcpy(ifr.ifr_name, ifname, IFNAMSIZ);
+        if (ioctl(cfg_socket, SIOCGIFADDR, &ifr) != 0)
+            try_restore_ip_addr = false;
+
+        if_request.cmd = ADD_VLAN_CMD;
+        strcpy(if_request.device1, ifname);
+        if_request.u.VID = vid;
+
+        /*
+         * Creating VLAN.
+         */
+        if (ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
+            rc = te_rc_os2te(errno);
+
+        /*
+         * Restoring IP address on parent interface.
+         */
+        if (try_restore_ip_addr &&
+            ((struct sockaddr_in *)
+                        &ifr.ifr_addr)->sin_addr.s_addr != 0)
+        {
+            struct ifreq    ifr_aux;
+            int             rc_aux;
+
+            /*
+             * IP address disappears on parent interface not
+             * instantly.
+             */
+            usleep(500000);
+
+            memcpy(&ifr_aux, &ifr, sizeof(ifr));
+            if (ioctl(cfg_socket, SIOCGIFADDR, &ifr_aux) != 0 ||
+                ((struct sockaddr_in *)
+                        &ifr_aux.ifr_addr)->sin_addr.s_addr !=
+                ((struct sockaddr_in *)
+                        &ifr.ifr_addr)->sin_addr.s_addr)
+            {
+                rc_aux = ioctl(cfg_socket, SIOCSIFADDR, &ifr);
+                if (rc_aux == 0)
+                    RING("IP address %s was restored on "
+                         "parent interface %s",
+                         inet_ntoa(((struct sockaddr_in *)
+                                      &ifr.ifr_addr)->sin_addr),
+                         ifname);
+                else
+                    ERROR("Failed to restore IP address on "
+                          "parent interface: %s",
+                          strerror(errno));
+            }
+        }
+#if 0
+    {
+        char vlan_if_name[IFNAMSIZ];
+
+        vlan_ifname_get_internal(ifname, vid, vlan_if_name);
+
+        sprintf(buf, "ifconfig %s up > /dev/null",
+                vlan_if_name);
+
+        if (ta_system(buf) != 0)
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+    }
+#endif
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+#elif defined __sun__
+    {
+        char vlan_if_name[IFNAMSIZ];
+
+        rc = vlan_ifname_get_internal(ifname, vid, vlan_if_name);
+        if (rc != 0)
+            return rc;
+
+        /* Check if there is no VLAN with the same VID in the system */
+        if (vlan_if_name[0] != '\0')
+            return TE_RC(TE_TA_UNIX, TE_EEXIST);
+
+        snprintf(buf, sizeof(buf),
+                 "LANG=POSIX /usr/sbin/dladm create-vlan -l %s -v %d",
+                 ifname, vid);
+        if (ta_system(buf) != 0)
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+
+        /* Get VLAN interface name assigned by the system */
+        rc = vlan_ifname_get_internal(ifname, vid, vlan_if_name);
+        if (rc != 0)
+            return rc;
+        if (vlan_if_name[0] == '\0')
+        {
+            ERROR("Unexpected error happened while adding VLAN interface "
+                  "OVER '%s' with VID '%d'", ifname, vid);
+            return TE_RC(TE_TA_UNIX, TE_EFAULT);
+        }
+
+        /* Now we need to create a network interface associated with VLAN */
+        snprintf(buf, sizeof(buf),
+                 "LANG=POSIX /usr/sbin/ipadm create-ip %s", vlan_if_name);
+        if (ta_system(buf) != 0)
+        {
+            ERROR("Failed to create a network interface associated with "
+                  "VLAN interface '%s'", vlan_if_name);
+
+            snprintf(buf, sizeof(buf),
+                     "LANG=POSIX /usr/sbin/dladm delete-vlan %s",
+                     vlan_if_name);
+            ta_system(buf);
+
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
+
+        RING("VLAN interface '%s' added: VID '%d' OVER '%s'",
+             vlan_if_name, vid, ifname);
+
+        return 0;
+    }
+#else
+    ERROR("This test agent does not support VLANs");
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+}
+
+/**
+ * Delete VLAN Ethernet device.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param ifname        parent interface name
+ * @param vid_str       VLAN ID
+ *
+ * @return              Status code
+ */
+static te_errno
+vlans_del(unsigned int gid, const char *oid, const char *ifname,
+          const char *vid_str)
+{
+    te_errno rc;
+    int      vid = atoi(vid_str);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#if defined USE_LIBNETCONF
+    return netconf_vlan_modify(nh, NETCONF_CMD_DEL, ifname, NULL,
+                               (unsigned int)vid);
+#elif LINUX_VLAN_SUPPORT
+    {
+        struct vlan_ioctl_args if_request;
+
+        if (cfg_socket < 0)
+        {
+            ERROR("%s: non-init cfg socket", cfg_socket);
+            return TE_RC(TE_TA_UNIX, TE_EFAULT);
+        }
+        if_request.cmd = DEL_VLAN_CMD;
+        vlan_ifname_get_internal(ifname, vid, if_request.device1);
+        if_request.u.VID = vid;
+
+        if (ioctl(cfg_socket, SIOCSIFVLAN, &if_request) < 0)
+            rc = te_rc_os2te(errno);
+
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+#elif defined __sun__
+    {
+        char vlan_if_name[IFNAMSIZ];
+
+        /*
+         * Check if VLAN with specific VID and
+         * OVER specified interface exists.
+         */
+        rc = vlan_ifname_get_internal(ifname, vid, vlan_if_name);
+        if (rc != 0)
+            return rc;
+
+        if (vlan_if_name[0] == '\0')
+        {
+            ERROR("Can't find VLAN OVER '%s' with VID '%d'",
+                  ifname, vid);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        /* First we need to delete an interface */
+        snprintf(buf, sizeof(buf),
+                "LANG=POSIX /usr/sbin/ipadm delete-ip %s", vlan_if_name);
+        if (ta_system(buf) != 0)
+            WARN("Failed to delete network interface '%s'", vlan_if_name);
+
+        /* Now delete VLAN link */
+        snprintf(buf, sizeof(buf),
+                 "LANG=POSIX /usr/sbin/dladm delete-vlan %s", vlan_if_name);
+        if (ta_system(buf) != 0)
+        {
+            rc = TE_ESHCMD;
+            ERROR("Failed to delete VLAN link '%s'", vlan_if_name);
+        }
+        else
+            RING("VLAN interface '%s' deleted: VID '%d' OVER '%s'",
+                 vlan_if_name, vid, ifname);
+
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+#else
+    ERROR("This test agent does not support VLANs");
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+}
+
+/**
+ * Get instance list for object "agent/interface".
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed (unused)
+ * @param list          location for the list pointer
+ *
+ * @return              Status code
+ * @retval 0            success
+ */
+static te_errno
+interface_list(unsigned int gid, const char *oid,
+               const char *sub_id, char **list)
+{
+    size_t off = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+
+    ENTRY("gid=%u oid='%s'", gid, oid);
+
+    buf[0] = '\0';
+
+#ifdef __linux__
+    {
+        FILE *f;
+
+        if ((f = fopen("/proc/net/dev", "r")) == NULL)
+        {
+            ERROR("%s(): Failed to open /proc/net/dev for reading: %s",
+                  __FUNCTION__, strerror(errno));
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        while (fgets(trash, sizeof(trash), f) != NULL)
+        {
+            char *s = strchr(trash, ':');
+
+            if (s == NULL)
+                continue;
+
+            for (*s-- = 0; s != trash && *s != ' '; s--);
+
+            if (*s == ' ')
+                s++;
+
+            if (CHECK_INTERFACE(s) != 0)
+                continue;
+
+            off += snprintf(buf + off, sizeof(buf) - off, "%s ", s);
+        }
+
+        fclose(f);
+    }
+#elif defined(SIOCGIFCONF)
+    {
+        te_errno                                rc;
+        void                                   *ifconf_buf = NULL;
+        size_t                                  ifconf_len;
+        struct my_ifreq                        *first_req;
+        struct interface_list_ifreq_cb_data     data;
+
+        rc = get_ifconf_to_buf(&ifconf_buf, (void **)&first_req,
+                               &ifconf_len);
+        if (rc != 0)
+        {
+            free(ifconf_buf);
+            return rc;
+        }
+
+        data.first = first_req;
+        data.length = ifconf_len;
+        data.buf = buf;
+        data.buf_len = sizeof(buf);
+        data.buf_off = 0;
+        rc = ifconf_foreach_ifreq(first_req, ifconf_len,
+                                  interface_list_ifreq_cb, &data);
+        free(ifconf_buf);
+    }
+#else
+    {
+        /*
+         * This branch does not show interfaces in down state, be
+         * carefull.
+         */
+        struct if_nameindex *ifs = if_nameindex();
+        struct if_nameindex *p;
+
+        if (ifs != NULL)
+        {
+            for (p = ifs; (p->if_name != NULL) && (off < sizeof(buf)); ++p)
+            {
+                if (CHECK_INTERFACE(p->if_name) != 0)
+                    continue;
+
+                off += snprintf(buf + off, sizeof(buf) - off,
+                                "%s ", p->if_name);
+            }
+
+            if_freenameindex(ifs);
+        }
+    }
+#endif
+    if (off >= sizeof(buf))
+        return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+
+    if ((*list = strdup(buf)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    EXIT("list='%s'", *list);
+
+    return 0;
+}
+
+#ifdef USE_IOCTL
+/** List both devices and interfaces */
+static int
+aliases_list()
+{
+    te_errno            rc;
+    void               *ifconf_buf = NULL;
+    size_t              ifconf_len;
+    struct my_ifreq    *req;
+
+    bool first = true;
+    char       *name = NULL;
+    char       *ptr = buf;
+
+    rc = get_ifconf_to_buf(&ifconf_buf, (void **)&req, &ifconf_len);
+    if (rc != 0)
+    {
+        free(ifconf_buf);
+        return rc;
+    }
+
+    for (; *(req->my_ifr_name) != 0; req++)
+    {
+        if (name != NULL && strcmp(req->my_ifr_name, name) == 0)
+            continue;
+
+        name = req->my_ifr_name;
+
+        if (first)
+        {
+            buf[0] = 0;
+            first = false;
+        }
+        ptr += sprintf(ptr, "%s ", name);
+    }
+    free(ifconf_buf);
+
+#ifdef __linux__
+    {
+        FILE         *f;
+
+        if ((f = fopen("/proc/net/dev", "r")) == NULL)
+        {
+            ERROR("%s(): Failed to open /proc/net/dev for reading: %s",
+                  __FUNCTION__, strerror(errno));
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        while (fgets(trash, sizeof(trash), f) != NULL)
+        {
+            char *name = strchr(trash, ':');
+            char *tmp;
+            int   n;
+
+            if (name == NULL)
+                continue;
+
+            for (*name-- = 0; name != trash && *name != ' '; name--);
+
+            if (*name == ' ')
+                name++;
+
+            n = strlen(name);
+            for (tmp = strstr(buf, name);
+                 tmp != NULL;
+                 tmp = strstr(tmp, name))
+            {
+                tmp += n;
+                if (*tmp == ' ')
+                    break;
+            }
+
+            if (tmp == NULL)
+                ptr += sprintf(ptr, "%s ", name);
+        }
+
+        fclose(f);
+    }
+#endif
+
+    return 0;
+}
+#endif
+
+
+/**
+ * Get index of the interface.
+ *
+ * @param gid           request group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         location for interface index
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+ifindex_get(unsigned int gid, const char *oid, char *value,
+            const char *ifname)
+{
+    unsigned int ifindex = if_nametoindex(ifname);;
+    te_errno     rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    if (ifindex == 0)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    sprintf(value, "%u", ifindex);
+
+    return 0;
+}
+
+#if (defined(USE_LIBNETCONF))
+/*
+ * Next functions are pulled out from iproute internals
+ * to be accessible here and renamed.
+ */
+
+/**
+ * Get string representation of MAC address.
+ *
+ * @param addr    MAC address.
+ * @param alen    Address length.
+ * @param buf     Buffer where to save string representation.
+ * @param blen    Buffer length.
+ *
+ * @return Pointer to buffer provided.
+ */
+static const char *
+link_addr_n2a(const uint8_t *addr, size_t alen,
+              char *buf, size_t blen)
+{
+    size_t i;
+    size_t l;
+
+    l = 0;
+    for (i = 0; i < alen; i++)
+    {
+        if (i == 0)
+        {
+            snprintf(buf + l, blen, "%02x", addr[i]);
+            if (blen < 2)
+                return buf;
+            blen -= 2;
+            l += 2;
+        }
+        else
+        {
+            snprintf(buf + l, blen, ":%02x", addr[i]);
+            if (blen < 3)
+                return buf;
+            blen -= 3;
+            l += 3;
+        }
+    }
+    return buf;
+}
+#endif
+
+#ifdef USE_LIBNETCONF
+
+/**
+ * Interface properties.
+ */
+typedef enum {
+    IF_PROP_PARENT = 0, /**< Parent interface. */
+    IF_PROP_BCAST_ADDR, /**< Broadcast address. */
+    IF_PROP_KIND,       /**< Interface kind (vlan, macvlan, ipvlan, etc). */
+    IF_PROP_SWITCH_ID,  /**< Switchdev switch ID */
+    IF_PROP_PORT_ID,    /**< Switchdev port ID */
+    IF_PROP_PORT_NAME,  /**< Switchdev port name */
+} if_property;
+
+/**
+ * Get a propery of the interface (using libnetconf).
+ *
+ * @param ifname        Name of the interface (like "eth0").
+ * @param value         Where to save an answer.
+ * @param prop          Which property to get.
+ *
+ * @return              Status code.
+ */
+static te_errno
+iface_get_property_netconf(const char *ifname,
+                           char *value,
+                           if_property prop)
+{
+    netconf_list    *list = NULL;
+    netconf_node    *node = NULL;
+    unsigned int     ifindex = 0;
+    te_errno         rc = 0;
+
+    if ((ifindex = if_nametoindex(ifname)) == 0)
+    {
+        rc = te_rc_os2te(errno);
+        ERROR("%s(): cannot obtain interface index for '%s'",
+              __FUNCTION__, ifname);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if ((list = netconf_link_dump(nh)) == NULL)
+    {
+        ERROR("%s(): Cannot get list of interfaces",
+              __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    for (node = list->head; node != NULL; node = node->next)
+    {
+        const netconf_link *link = &(node->data.link);
+
+        if (ifindex == (unsigned int)(link->ifindex))
+        {
+            rc = 0;
+
+            switch (prop)
+            {
+                case IF_PROP_PARENT:
+
+                    if (link->link != (int)ifindex &&
+                        link->link != 0)
+                    {
+                        if (if_indextoname(link->link, value) == NULL)
+                        {
+                            /* No such device in the current namespace -
+                             * return empty string but don't fail. */
+                            if (errno == ENXIO)
+                            {
+                                *value = '\0';
+                            }
+                            else
+                            {
+                                rc = te_rc_os2te(errno);
+                                ERROR("%s(): cannot obtain interface "
+                                      "name for index %d",
+                                      __FUNCTION__, link->link);
+                            }
+                        }
+                    }
+
+                    break;
+
+                case IF_PROP_KIND:
+
+                    if (link->info_kind != NULL)
+                    {
+                        size_t length;
+
+                        /* 1 is for terminating '\0'. */
+                        length = strlen(link->info_kind) + 1;
+                        if (length <= RCF_MAX_VAL)
+                        {
+                            memcpy(value, link->info_kind, length);
+                        }
+                        else
+                        {
+                            ERROR("%s(): too long interface type",
+                                  __FUNCTION__);
+                            rc = TE_ESMALLBUF;
+                        }
+                    }
+
+                    break;
+
+                case IF_PROP_BCAST_ADDR:
+
+                    link_addr_n2a(link->broadcast, link->addrlen,
+                                  value, RCF_MAX_VAL);
+                    break;
+
+                case IF_PROP_SWITCH_ID:
+                    if (link->switch_id != NULL)
+                    {
+                        size_t ret;
+                        ret = te_strlcpy(value, link->switch_id, RCF_MAX_VAL);
+                        if (ret == RCF_MAX_VAL)
+                        {
+                            ERROR("%s(): switch_id was too long",
+                                  __FUNCTION__);
+                            rc = TE_ESMALLBUF;
+                        }
+                    }
+                    break;
+
+                case IF_PROP_PORT_ID:
+                    if (link->port_id != NULL)
+                    {
+                        size_t ret;
+                        ret = te_strlcpy(value, link->port_id, RCF_MAX_VAL);
+                        if (ret == RCF_MAX_VAL)
+                        {
+                            ERROR("%s(): port_id was too long",
+                                  __FUNCTION__);
+                            rc = TE_ESMALLBUF;
+                        }
+                    }
+                    break;
+
+                case IF_PROP_PORT_NAME:
+                    if (link->port_name != NULL)
+                    {
+                        size_t ret;
+                        ret = te_strlcpy(value, link->port_name, RCF_MAX_VAL);
+                        if (ret == RCF_MAX_VAL)
+                        {
+                            ERROR("%s(): port_name was too long",
+                                  __FUNCTION__);
+                            rc = TE_ESMALLBUF;
+                        }
+                    }
+                    break;
+
+                default:
+
+                    ERROR("%s(): unknown interface property requested",
+                          __FUNCTION__);
+                    rc = TE_EINVAL;
+            }
+
+            break;
+        }
+    }
+
+    netconf_list_free(list);
+
+    if (node == NULL)
+    {
+        ERROR("%s(): cannot find interface '%s'",
+              __FUNCTION__, ifname);
+        rc = TE_ENOENT;
+    }
+
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    return 0;
+}
+#endif
+
+/**
+ * Get name of an interface on which the given interface is based.
+ * If the given interface is not based on anything else (it is not VLAN,
+ * MAC VLAN, IP VLAN etc), then empty string is returned.
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full object instance identifier (unused).
+ * @param value         Value location.
+ * @param ifname        Name of the interface (like "eth0").
+ *
+ * @return              Status code.
+ */
+static te_errno
+iface_parent_get(unsigned int gid, const char *oid, char *value,
+                 const char *ifname)
+{
+    te_errno    rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef USE_LIBNETCONF
+    return iface_get_property_netconf(ifname, value, IF_PROP_PARENT);
+#else
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+/* See description in conf_common.h */
+te_errno
+get_interface_kind(const char *ifname, char *value)
+{
+    *value = '\0';
+
+#ifdef USE_LIBNETCONF
+    return iface_get_property_netconf(ifname, value, IF_PROP_KIND);
+#else
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+/**
+ * Get instance value for object "agent/interface/switch_id".
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full identifier of the father instance (unused).
+ * @param value         Location for the switch ID.
+ * @param ifname        Interface name.
+ *
+ * @return              Status code.
+ */
+static te_errno
+iface_switch_id_get(unsigned int gid, const char *oid, char *value,
+                    const char *ifname)
+{
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef USE_LIBNETCONF
+    *value = '\0';
+    return iface_get_property_netconf(ifname, value, IF_PROP_SWITCH_ID);
+#else
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+/**
+ * Get instance value for object "agent/interface/port_id".
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full identifier of the father instance (unused).
+ * @param value         Location for the port id.
+ * @param ifname        Interface name.
+ *
+ * @return              Status code.
+ */
+static te_errno
+iface_port_id_get(unsigned int gid, const char *oid, char *value,
+                  const char *ifname)
+{
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef USE_LIBNETCONF
+    *value = '\0';
+    return iface_get_property_netconf(ifname, value, IF_PROP_PORT_ID);
+#else
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+/**
+ * Get instance value for object "agent/interface/port_name".
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full identifier of the father instance (unused).
+ * @param value         Location for the port name.
+ * @param ifname        Interface name.
+ *
+ * @return              Status code.
+ */
+static te_errno
+iface_port_name_get(unsigned int gid, const char *oid, char *value,
+                    const char *ifname)
+{
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef USE_LIBNETCONF
+    *value = '\0';
+    return iface_get_property_netconf(ifname, value, IF_PROP_PORT_NAME);
+#else
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+#ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
+const te_enum_map hwtstamp_tx_type_map[] = {
+    {.name = "OFF",          .value = HWTSTAMP_TX_OFF},
+    {.name = "ON",           .value = HWTSTAMP_TX_ON},
+    {.name = "ONESTEP_SYNC", .value = HWTSTAMP_TX_ONESTEP_SYNC},
+#ifdef HAVE_HWTSTAMP_TX_ONESTEP_P2P
+    {.name = "ONESTEP_P2P",  .value = HWTSTAMP_TX_ONESTEP_P2P},
+#endif
+    TE_ENUM_MAP_END
+};
+
+const te_enum_map hwtstamp_rx_filter_map[] = {
+    {.name = "NONE",                .value = HWTSTAMP_FILTER_NONE},
+    {.name = "ALL",                 .value = HWTSTAMP_FILTER_ALL},
+    {.name = "SOME",                .value = HWTSTAMP_FILTER_SOME},
+    {.name = "PTP_V1_L4_EVENT",     .value = HWTSTAMP_FILTER_PTP_V1_L4_EVENT},
+    {.name = "PTP_V1_L4_SYNC",      .value = HWTSTAMP_FILTER_PTP_V1_L4_SYNC},
+    {.name = "PTP_V1_L4_DELAY_REQ", .value = HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ},
+    {.name = "PTP_V2_L4_EVENT",     .value = HWTSTAMP_FILTER_PTP_V2_L4_EVENT},
+    {.name = "PTP_V2_L4_SYNC",      .value = HWTSTAMP_FILTER_PTP_V2_L4_SYNC},
+    {.name = "PTP_V2_L4_DELAY_REQ", .value = HWTSTAMP_FILTER_PTP_V2_L4_DELAY_REQ},
+    {.name = "PTP_V2_L2_EVENT",     .value = HWTSTAMP_FILTER_PTP_V2_L2_EVENT},
+    {.name = "PTP_V2_L2_SYNC",      .value = HWTSTAMP_FILTER_PTP_V2_L2_SYNC},
+    {.name = "PTP_V2_L2_DELAY_REQ", .value = HWTSTAMP_FILTER_PTP_V2_L2_DELAY_REQ},
+    {.name = "PTP_V2_EVENT",        .value = HWTSTAMP_FILTER_PTP_V2_EVENT},
+    {.name = "PTP_V2_SYNC",         .value = HWTSTAMP_FILTER_PTP_V2_SYNC},
+    {.name = "PTP_V2_DELAY_REQ",    .value = HWTSTAMP_FILTER_PTP_V2_DELAY_REQ},
+#ifdef HAVE_HWTSTAMP_FILTER_NTP_ALL
+    {.name = "NTP_ALL",             .value = HWTSTAMP_FILTER_NTP_ALL},
+#endif
+    TE_ENUM_MAP_END
+};
+
+static te_errno
+iface_hwtstamp_get_cfg(const char *ifname, struct hwtstamp_config *cfg)
+{
+    struct ifreq ifr;
+
+    memset(&ifr, 0, sizeof(ifr));
+    memset(cfg, 0, sizeof(*cfg));
+
+    te_strlcpy(ifr.ifr_name, ifname, IFNAMSIZ);
+    ifr.ifr_data = (void *)cfg;
+
+    if (ioctl(cfg_socket, SIOCGHWTSTAMP, &ifr) != 0)
+    {
+        /*
+         * Drivers may return EINVAL when an interface is down.
+         * ENODEV is expected when a Linux kernel doesn't support PTP.
+         */
+        if (errno == EOPNOTSUPP || errno == EINVAL || errno == ENODEV)
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    return 0;
+}
+
+static te_errno
+iface_hwtstamp_set_cfg(const char *ifname, struct hwtstamp_config *cfg)
+{
+    struct ifreq ifr;
+
+    memset(&ifr, 0, sizeof(ifr));
+
+    te_strlcpy(ifr.ifr_name, ifname, IFNAMSIZ);
+    ifr.ifr_data = (void *)cfg;
+
+    if (ioctl(cfg_socket, SIOCSHWTSTAMP, &ifr) != 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    return 0;
+}
+#endif
+
+static te_errno
+iface_hwtstamp_tx_type_get(unsigned int gid, const char *oid, char *value,
+                           const char *ifname)
+{
+#ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
+    struct hwtstamp_config cfg;
+#endif
+    const char *val;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
+    rc = iface_hwtstamp_get_cfg(ifname, &cfg);
+    if (rc != 0)
+        return rc;
+
+    val = te_enum_map_from_any_value(hwtstamp_tx_type_map, cfg.tx_type,
+                                     "UNKNOWN");
+    sprintf(value, "%s", val);
+
+    return 0;
+#else
+    UNUSED(value);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+static te_errno
+iface_hwtstamp_tx_type_set(unsigned int gid, const char *oid,
+                           const char *value, const char *ifname)
+{
+#ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
+    struct hwtstamp_config cfg;
+#endif
+    te_errno rc;
+    int val;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
+    val = te_enum_map_from_str(hwtstamp_tx_type_map, value, INT_MIN);
+    if (val == INT_MIN)
+        return TE_RC(TE_TA_UNIX, EINVAL);
+
+    rc = iface_hwtstamp_get_cfg(ifname, &cfg);
+    if (rc != 0)
+        return rc;
+
+    /*
+     * Do not propagate flags returned by SIOCGHWTSTAMP.
+     * Only userspace-supported hwtstamp flags may be set in SIOCSHWTSTAMP.
+     */
+    cfg.flags = 0;
+    cfg.tx_type = val;
+
+    return iface_hwtstamp_set_cfg(ifname, &cfg);
+#else
+    UNUSED(value);
+
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+}
+
+static te_errno
+iface_hwtstamp_rx_filter_get(unsigned int gid, const char *oid, char *value,
+                             const char *ifname)
+{
+#ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
+    struct hwtstamp_config cfg;
+#endif
+    const char *val;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
+    rc = iface_hwtstamp_get_cfg(ifname, &cfg);
+    if (rc != 0)
+        return rc;
+
+    val = te_enum_map_from_any_value(hwtstamp_rx_filter_map, cfg.tx_type,
+                                     "UNKNOWN");
+    sprintf(value, "%s", val);
+
+    return 0;
+#else
+    UNUSED(value);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+static te_errno
+iface_hwtstamp_rx_filter_set(unsigned int gid, const char *oid,
+                             const char *value, const char *ifname)
+{
+#ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
+    struct hwtstamp_config cfg;
+#endif
+    te_errno rc;
+    int val;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef HAVE_STRUCT_HWTSTAMP_CONFIG
+    val = te_enum_map_from_str(hwtstamp_rx_filter_map, value, INT_MIN);
+    if (val == INT_MIN)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    rc = iface_hwtstamp_get_cfg(ifname, &cfg);
+    if (rc != 0)
+        return rc;
+
+    /*
+     * Do not propagate flags returned by SIOCGHWTSTAMP.
+     * Only userspace-supported hwtstamp flags may be set in SIOCSHWTSTAMP.
+     */
+    cfg.flags = 0;
+    cfg.rx_filter = val;
+
+    return iface_hwtstamp_set_cfg(ifname, &cfg);
+#else
+    UNUSED(value);
+
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+}
+
+/**
+ * Get kind of an interface (whether it is vlan, macvlan, ipvlan, etc).
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full object instance identifier (unused).
+ * @param value         Value location.
+ * @param ifname        Name of the interface (like "eth0").
+ *
+ * @return              Status code.
+ */
+static te_errno
+iface_kind_get(unsigned int gid, const char *oid, char *value,
+               const char *ifname)
+{
+    te_errno    rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    return get_interface_kind(ifname, value);
+}
+
+static te_errno
+mcast_link_addr_change_ioctl(const char *ifname, const char *addr, int op)
+{
+    struct ifreq    request;
+    int             i;
+    const char     *p;
+    uint8_t        *q;
+
+    memset(&request, 0, sizeof(request));
+    te_strlcpy(request.ifr_name, ifname, IFNAMSIZ);
+    /* Read MAC address */
+#ifdef HAVE_STRUCT_IFREQ_IFR_HWADDR
+    q = (uint8_t *)request.ifr_hwaddr.sa_data;
+#elif HAVE_STRUCT_IFREQ_IFR_ENADDR
+    q = (uint8_t *)request.ifr_enaddr;
+#else
+    request.ifr_addr.sa_family = AF_LINK;
+    {
+        struct sockaddr_dl *sdl =
+            (struct sockaddr_dl *)&(request.ifr_addr);
+
+        sdl->sdl_alen = ETHER_ADDR_LEN;
+        q = (uint8_t *)sdl->sdl_data;
+    }
+#endif
+
+    for (i = 0, p = addr; i < ETHER_ADDR_LEN; i++, p++)
+    {
+        unsigned tmp = strtoul(p, (char **)&p, 16);
+
+        if (tmp > UCHAR_MAX)
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        if (*p != ':' && (*p != '\0' || i < ETHER_ADDR_LEN - 1))
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        q[i] = tmp;
+    }
+    if (ioctl(cfg_socket, op, &request) != 0)
+    {
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("Changing multicast MAC address %s on %s failed: %r",
+              addr, ifname, rc);
+        return rc;
+    }
+
+    return 0;
+}
+
+static te_errno
+mcast_link_addr_add(unsigned int gid, const char *oid,
+                    const char *value, const char *ifname, const char *addr)
+{
+    te_errno rc = 0;
+#ifndef __linux__
+    ifs_list_el *p = interface_stream_list;
+    mma_list_el *q;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+
+#ifdef __linux__
+    rc = mcast_link_addr_change_ioctl(ifname, addr, SIOCADDMULTI);
+#else
+    for (p = interface_stream_list;
+         p != NULL && strcmp(p->ifname, ifname) != 0; p = p->next);
+    if (p == NULL)
+    {
+        p = TE_ALLOC(sizeof(ifs_list_el));
+        strcpy(p->ifname, ifname);
+        p->mcast_addresses = NULL;
+        p->next = interface_stream_list;
+        interface_stream_list = p;
+    }
+
+    for (q = p->mcast_addresses;
+         q != NULL && strcmp(q->value, addr) != 0; q = q->next);
+    if (q == NULL)
+    {
+        q = TE_ALLOC(sizeof(mma_list_el));
+        /* Against setting too long value for MAC address */
+        te_strlcpy(q->value, addr, sizeof(q->value));
+        q->next = p->mcast_addresses;
+        p->mcast_addresses = q;
+    }
+#endif
+    return rc;
+}
+
+static te_errno
+mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
+                    const char *addr)
+{
+    te_errno rc;
+#ifndef __linux__
+    ifs_list_el *p;
+    mma_list_el *q;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+#ifdef __linux__
+    rc = mcast_link_addr_change_ioctl(ifname, addr, SIOCDELMULTI);
+/* there are problems with deleting neighbour discovery multicast addresses,
+   when restoring configuration.
+   this is solely to shut up the configurator.
+   yes, it's ugly, but there seems to be no other way...
+*/
+    if (rc == TE_RC(TE_TA_UNIX, TE_ENOENT) &&
+        strncmp(addr, "33:33:", 6) == 0)
+    {
+        rc = 0;
+    }
+#else
+    for (p = interface_stream_list;
+         p != NULL && strcmp(p->ifname, ifname) != 0; p = p->next);
+    if (p == NULL)
+    {
+        ERROR("No such interface: %s", ifname);
+        return TE_RC(TE_TA_UNIX, TE_ENXIO);
+    }
+    if (strcmp(p->mcast_addresses->value, addr) == 0)
+    {
+        q = p->mcast_addresses->next;
+        free(p->mcast_addresses);
+        p->mcast_addresses = q;
+        if (q == NULL)
+        {
+            if (p == interface_stream_list)
+            {
+                interface_stream_list = p->next;
+                free(p);
+            }
+            else
+            {
+                ifs_list_el *tmp;
+                for (tmp = interface_stream_list;
+                     tmp->next != p; tmp = tmp->next);
+                tmp->next = p->next;
+                free(p);
+            }
+        }
+    }
+    else
+    {
+        for (q = p->mcast_addresses;
+             q->next != NULL && strcmp(addr, q->next->value) != 0;
+             q = q->next);
+        if (q->next == NULL)
+        {
+            ERROR("No such address: %s on interface %s", addr, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+        else
+        {
+            mma_list_el *tmp = q->next->next;
+            free(q->next);
+            q->next = tmp;
+        }
+    }
+
+#endif
+    return rc;
+}
+
+static te_errno
+mcast_link_addr_list(unsigned int gid, const char *oid,
+                     const char *sub_id, char **list,
+                     const char *ifname)
+{
+    char       *s = NULL;
+    int         sp = 0;         /* String Pointer */
+    int         buf_segs = 1;
+
+    UNUSED(sub_id);
+
+#define MMAC_ADDR_BUF_SIZE 16384
+#ifndef __linux__
+    ifs_list_el *p = interface_stream_list;
+    mma_list_el *tmp;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(ifname);
+
+    s = TE_ALLOC(MMAC_ADDR_BUF_SIZE);
+    *s = '\0';
+    for (p = interface_stream_list;
+         (p != NULL) && (strcmp(p->ifname, ifname)) != 0; p = p->next);
+    if (p != NULL)
+    {
+        for (tmp = p->mcast_addresses; tmp != NULL; tmp = tmp->next)
+        {
+            if (sp >= MMAC_ADDR_BUF_SIZE - ETHER_ADDR_LEN * 3)
+            {
+                TE_REALLOC(s, (++buf_segs) * MMAC_ADDR_BUF_SIZE);
+            }
+            sp += sprintf(&s[sp], "%s ", tmp->value);
+        }
+    }
+    else
+    {
+        return 0;
+    }
+#else
+/* It should be big enough to hold 20-octet IPoIB link-layer address. */
+#define MCAST_LINK_ADDR_LEN_MAX (MAX(ETHER_ADDR_LEN, 20) * 3)
+    FILE       *fd;
+    char        ifn[IFNAMSIZ];
+    char        addrstr[MCAST_LINK_ADDR_LEN_MAX];
+
+#define DEFAULT_MULTICAST_ETHER_ADDR_IPV4 "01005e000001"
+#define DEFAULT_MULTICAST_ETHER_ADDR_IPV6 "333300000001"
+
+    UNUSED(gid);
+    UNUSED(oid);
+    if ((fd = fopen("/proc/net/dev_mcast", "r")) == NULL)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    s = TE_ALLOC(MMAC_ADDR_BUF_SIZE);
+    *s = '\0';
+
+    while (fscanf(fd, "%*d %s %*d %*d %s\n", ifn, addrstr) > 0)
+    {
+        /*
+         * Read file and copy items with appropriate interface name
+         * to the buffer, adding colons to MAC addresses.
+         */
+
+        if (strcmp(ifn, ifname) == 0)
+        {
+            int i;
+            size_t octet_num = strlen(addrstr) / 2;
+
+            /* exclude `default' addresses */
+            if (strcmp(addrstr, DEFAULT_MULTICAST_ETHER_ADDR_IPV4) == 0 ||
+                strcmp(addrstr, DEFAULT_MULTICAST_ETHER_ADDR_IPV6) == 0)
+                continue;
+
+            for (i = 0; i < octet_num; i++)
+            {
+                if (sp >= MMAC_ADDR_BUF_SIZE - MCAST_LINK_ADDR_LEN_MAX)
+                {
+                    TE_REALLOC(s, (++buf_segs) * MMAC_ADDR_BUF_SIZE);
+                }
+                strncpy(&s[sp], &addrstr[i * 2], 2);
+                sp += 2;
+                s[sp++] = (i < octet_num - 1) ? ':' : ' ';
+                s[sp] = '\0';
+            }
+        }
+    }
+    fclose(fd);
+#undef MCAST_LINK_ADDR_LEN_MAX
+#endif
+    *list = s;
+    return 0;
+}
+
+/**
+ * Configure IPv4/IPv6 address for the interface.
+ * If the address does not exist, alias interface is created.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         value string (unused)
+ * @param ifname        name of the interface (like "eth0")
+ * @param addr          IPv4 address in dotted notation
+ *
+ * @return              Status code
+ */
+#ifdef USE_IOCTL
+static te_errno
+net_addr_add(unsigned int gid, const char *oid, const char *value,
+             const char *ifname, const char *addr)
+{
+    gen_ip_address  new_addr;
+    te_errno        rc;
+    sa_family_t     family = str_addr_family(addr);
+    size_t          addrlen = (family == AF_INET) ?
+                                  sizeof(struct in_addr) :
+                                  sizeof(struct in6_addr);
+    uint8_t         zeros[addrlen];
+    unsigned int    prefix;
+    char           *cur;
+    char           *next;
+#ifdef __linux__
+    char            slots[32] = { 0, };
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+
+    if (strlen(ifname) >= IF_NAMESIZE)
+        return TE_RC(TE_TA_UNIX, TE_E2BIG);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    memset(zeros, 0, addrlen);
+
+    if (((inet_pton(family, addr, &new_addr) <= 0) ||
+        (memcmp(&new_addr, zeros, addrlen) == 0) ||
+        ((family == AF_INET) &&
+         (ntohl(new_addr.ip4_addr.s_addr) & 0xe0000000) == 0xe0000000)))
+    {
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    rc = prefix_check(value, family, &prefix);
+    if (rc != 0)
+        return rc;
+
+    if ((rc = aliases_list()) != 0)
+        return rc;
+
+    for (cur = buf; strlen(cur) > 0; cur = next)
+    {
+        void   *tmp_addr;
+
+        next = strchr(cur, ' ');
+        if (next != NULL)
+        {
+            *next++ = '\0';
+            if (strlen(cur) == 0)
+                continue;
+        }
+
+        rc = ta_unix_conf_get_addr(cur, family, &tmp_addr);
+        if (rc == 0 && memcmp(tmp_addr, &new_addr, addrlen) == 0)
+            return TE_RC(TE_TA_UNIX, TE_EEXIST);
+
+        if (strcmp(cur, ifname) == 0)
+        {
+            if (rc != 0)
+                break;
+            else
+                continue;
+        }
+
+        if (!is_alias_of(cur, ifname))
+            continue;
+
+        if (rc != 0)
+            break;
+
+#ifdef __linux__
+        slots[atoi(strchr(cur, ':') + 1)] = 1;
+#endif
+    }
+
+#ifdef __linux__
+    if (family != AF_INET)
+    {
+        ERROR("Only addition of IPv4 address is supported on Linux");
+        return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+    }
+
+    if (strlen(cur) != 0)
+    {
+        te_strlcpy(req.my_ifr_name, cur, IFNAMSIZ);
+    }
+    else
+    {
+        unsigned int n;
+
+        for (n = 0; n < sizeof(slots) && slots[n] != 0; n++);
+
+        if (n == sizeof(slots))
+            return TE_RC(TE_TA_UNIX, TE_EPERM);
+
+        sprintf(trash, "%s:%d", ifname, n);
+        te_strlcpy(req.my_ifr_name, trash, IFNAMSIZ);
+    }
+
+    SIN(&req.my_ifr_addr)->sin_family = AF_INET;
+    SIN(&req.my_ifr_addr)->sin_addr = new_addr.ip4_addr;
+    CFG_IOCTL(cfg_socket, MY_SIOCSIFADDR, &req);
+
+#elif defined(SIOCLIFADDIF)
+    {
+        /*
+         * It is impossible to specify netmask/prefixlen when address
+         * is added. We don't want to have address with incorrect mask,
+         * since it can be fatal (unexpected routing, etc). Therefore,
+         *  - if interface has specified address, add logical interface
+         *    with unspecified address;
+         *  - set required netmaks / prefix length;
+         *  - set required address;
+         *  - push interface up.
+         */
+        int             sock = (family == AF_INET6) ?
+                               cfg6_socket : cfg_socket;
+        struct lifreq   lreq;
+        bool logical_iface = false;
+
+        memset(&lreq, 0, sizeof(lreq));
+        te_strlcpy(lreq.lifr_name, ifname, sizeof(lreq.lifr_name));
+        lreq.lifr_addr.ss_family = family;
+
+        CFG_IOCTL(sock, SIOCGLIFADDR, &lreq);
+
+        if (!te_sockaddr_is_wildcard(SA(&lreq.lifr_addr)))
+        {
+            logical_iface = true;
+            CFG_IOCTL(sock, SIOCLIFADDIF, &lreq);
+            /* NOTE: Name of logical interface was set in 'lreq' */
+        }
+
+        te_sockaddr_mask_by_prefix(SA(&lreq.lifr_addr),
+                                   sizeof(lreq.lifr_addr),
+                                   family, prefix);
+        CFG_IOCTL(sock, SIOCSLIFNETMASK, &lreq);
+
+        lreq.lifr_addr.ss_family = family;
+        memcpy((family == AF_INET) ?
+                   (void *)&SIN(&lreq.lifr_addr)->sin_addr :
+                   (void *)&SIN6(&lreq.lifr_addr)->sin6_addr,
+               &new_addr, addrlen);
+        CFG_IOCTL(sock, SIOCSLIFADDR, &lreq);
+
+        if (logical_iface)
+        {
+            /* Push logical interface up */
+            CFG_IOCTL(sock, SIOCGLIFFLAGS, &lreq);
+            lreq.lifr_flags |= IFF_UP;
+            CFG_IOCTL(sock, SIOCSLIFFLAGS, &lreq);
+        }
+    }
+#elif defined(SIOCALIFADDR)
+    {
+        struct if_laddrreq lreq;
+
+        memset(&lreq, 0, sizeof(lreq));
+        te_strlcpy(lreq.iflr_name, ifname, IFNAMSIZ);
+        lreq.addr.ss_family = family;
+        lreq.addr.ss_len =
+            (family == AF_INET) ? sizeof(struct sockaddr_in) :
+                                  sizeof(struct sockaddr_in6);
+        if (inet_pton(family, addr,
+                      (family == AF_INET) ?
+                          (void *)&SIN(&lreq.addr)->sin_addr :
+                          (void *)&SIN6(&lreq.addr)->sin6_addr) <= 0)
+        {
+            ERROR("inet_pton() failed");
+            return TE_RC(TE_TA_UNIX, TE_EFMT);
+        }
+        CFG_IOCTL((family == AF_INET6) ? cfg6_socket : cfg_socket,
+                  SIOCALIFADDR, &lreq);
+    }
+#else
+    ERROR("%s(): %s", __FUNCTION__, strerror(EOPNOTSUPP));
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+
+#if defined(__linux__) || (!defined(SIOCLIFADDIF) && defined(SIOCALIFADDR))
+    /* SIOCLIFADDIF case sets prefix itself, so no need for this */
+    if (*value != '\0')
+    {
+        if ((rc = prefix_set(gid, oid, value, ifname, addr)) != 0)
+        {
+            net_addr_del(gid, oid, ifname, addr);
+            ERROR("prefix_set failure");
+            return rc;
+        }
+    }
+#endif
+
+    return 0;
+}
+#endif
+
+#ifdef USE_LIBNETCONF
+#define AF_INET_DEFAULT_BYTELEN  (sizeof(struct in_addr))
+#define AF_INET_DEFAULT_BITLEN   (AF_INET_DEFAULT_BYTELEN << 3)
+#define AF_INET6_DEFAULT_BYTELEN (sizeof(struct in6_addr))
+#define AF_INET6_DEFAULT_BITLEN  (AF_INET6_DEFAULT_BYTELEN << 3)
+
+static te_errno
+net_addr_add(unsigned int gid, const char *oid, const char *value,
+             const char *ifname, const char *addr)
+{
+    unsigned int    prefix;
+    char           *end;
+    in_addr_t       mask;
+    gen_ip_address  broadcast;
+
+    sa_family_t     family;
+    gen_ip_address  ip_addr;
+    struct in6_addr zero_ip6_addr;
+    te_errno        rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    family = str_addr_family(addr);
+
+    memset(&zero_ip6_addr, 0, sizeof(zero_ip6_addr));
+
+    /* Validate address to be added */
+    if (inet_pton(family, addr, &ip_addr) <= 0 ||
+        (family == AF_INET && ip_addr.ip4_addr.s_addr == 0) ||
+        (family == AF_INET6 && memcmp(&ip_addr.ip6_addr,
+                                      &zero_ip6_addr,
+                                      sizeof(zero_ip6_addr)) == 0))
+    {
+        ERROR("%s(): Trying to add incorrect address %s",
+              __FUNCTION__, addr);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    /* Validate specified address prefix */
+    prefix = strtol(value, &end, 10);
+    if (value == end || *end != '\0')
+    {
+        ERROR("Invalid value '%s' of prefix length", value);
+        return TE_RC(TE_TA_UNIX, TE_EFMT);
+    }
+    if (((family == AF_INET) && (prefix > AF_INET_DEFAULT_BITLEN)) ||
+       ((family == AF_INET6) && (prefix > AF_INET6_DEFAULT_BITLEN)))
+    {
+        ERROR("Invalid prefix '%s' to be set", value);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    if (family == AF_INET)
+    {
+        if (prefix == 0)
+        {
+            /* Use default prefix in the cast of 0 */
+            mask = ((ip_addr.ip4_addr.s_addr) & htonl(0x80000000)) == 0 ?
+                   htonl(0xFF000000) :
+                   ((ip_addr.ip4_addr.s_addr) & htonl(0xC0000000)) ==
+                   htonl(0x80000000) ?
+                   htonl(0xFFFF0000) : htonl(0xFFFFFF00);
+            MASK2PREFIX(ntohl(mask), prefix);
+        }
+        else
+        {
+            mask = htonl(PREFIX2MASK(prefix));
+        }
+        /* Prepare broadcast address to be set */
+        broadcast.ip4_addr.s_addr = (~mask) | ip_addr.ip4_addr.s_addr;
+    }
+
+    {
+        unsigned int      ifindex;
+        unsigned int      addrlen;
+        netconf_list     *list;
+        netconf_node     *t;
+        netconf_net_addr  net_addr;
+
+        if ((ifindex = if_nametoindex(ifname)) == 0)
+        {
+            ERROR("%s(): Device '%s' does not exist",
+                  __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENODEV);
+        }
+
+        addrlen = (family == AF_INET) ?
+                  sizeof(struct in_addr) : sizeof(struct in6_addr);
+
+        /*
+         * Check that address has not been assigned to any
+         * interface yet.
+         */
+
+        list = netconf_net_addr_dump_iface(nh, (unsigned char)family,
+                                           ifindex);
+        if (list == NULL)
+        {
+            ERROR("%s(): Cannot get list of addresses", __FUNCTION__);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        for (t = list->head; t != NULL; t = t->next)
+        {
+            const netconf_net_addr *naddr = &(t->data.net_addr);
+
+            if (memcmp(&ip_addr, naddr->address, addrlen) == 0)
+            {
+                static char tmp[IF_NAMESIZE];
+
+                if (if_indextoname(naddr->ifindex, tmp) == NULL)
+                    strcpy(tmp, "unknown");
+                /**
+                 * Exit without error if the address exists on needed
+                 * interface.
+                 */
+                netconf_list_free(list);
+                VERB("%s(): Address '%s' already exists "
+                     "on interface '%s'", __FUNCTION__, addr, tmp);
+                return 0;
+            }
+        }
+
+        netconf_list_free(list);
+
+        netconf_net_addr_init(&net_addr);
+        net_addr.family = family;
+        net_addr.prefix = prefix;
+        net_addr.ifindex = ifindex;
+        net_addr.address = (uint8_t *)&ip_addr;
+        net_addr.broadcast = (uint8_t *)&broadcast;
+
+        /*
+         * Duplicate Address Discovery (DAD) makes IPv6 address assignment
+         * a bit slow, which causes failures in some tests.
+         * So disable DAD in case of IPv6.
+         */
+        if (family == AF_INET6)
+            net_addr.flags = IFA_F_NODAD;
+
+        if (netconf_net_addr_modify(nh, NETCONF_CMD_ADD, &net_addr) < 0)
+        {
+            ERROR("%s(): Cannot add address '%s' on interface '%s'",
+                  __FUNCTION__, addr, ifname);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        return 0;
+    }
+}
+#endif /* USE_LIBNETCONF */
+
+#ifdef USE_IOCTL
+/**
+ * Find name of the interface with specified address.
+ *
+ * @param ifname    name of "master" (non-alias) interface
+ * @param addr      address in dotted notation
+ *
+ * @return pointer to interface name in buf or NULL
+ */
+static char *
+find_net_addr(const char *ifname, const char *addr)
+{
+    gen_ip_address  tgt_addr;
+    te_errno        rc;
+    sa_family_t     family = str_addr_family(addr);
+    size_t          addrlen = (family == AF_INET) ?
+                                  sizeof(struct in_addr) :
+                                  sizeof(struct in6_addr);
+    char           *cur;
+    char           *next;
+
+    if (CHECK_INTERFACE(ifname) != 0)
+        return NULL;
+
+    if (inet_pton(family, addr, &tgt_addr) <= 0)
+    {
+        ERROR("inet_pton() failed for address %s", addr);
+        return NULL;
+    }
+
+    /* Get list of aliases/logical interfaces in 'buf' */
+    if ((rc = aliases_list()) != 0)
+        return NULL;
+
+    for (cur = buf; strlen(cur) > 0; cur = next)
+    {
+        void   *tmp_addr;
+
+        next = strchr(cur, ' ');
+        if (next != NULL)
+        {
+            *next++ = 0;
+            if (strlen(cur) == 0)
+                continue;
+        }
+
+        if (strcmp(cur, ifname) != 0 && !is_alias_of(cur, ifname))
+        {
+            continue;
+        }
+
+        rc = ta_unix_conf_get_addr(cur, family, &tmp_addr);
+        if (rc == 0 && memcmp(tmp_addr, &tgt_addr, addrlen) == 0)
+        {
+            return cur;
+        }
+    }
+    return NULL;
+}
+#endif
+
+/**
+ * Clear interface address of the down interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param ifname        name of the interface (like "eth0")
+ * @param addr          IPv4 address in dotted notation
+ *
+ * @return              Status code
+ */
+static te_errno
+net_addr_del(unsigned int gid, const char *oid,
+             const char *ifname, const char *addr)
+{
+    te_errno    rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#if defined(USE_LIBNETCONF)
+    {
+        sa_family_t             family;
+        unsigned int            addrlen;
+        unsigned int            ifindex;
+        netconf_net_addr        net_addr;
+        gen_ip_address          ip_addr;
+        netconf_list           *list;
+        netconf_node           *t;
+        bool found;
+        unsigned char           prefix = 0;
+
+        family = str_addr_family(addr);
+        if ((ifindex = if_nametoindex(ifname)) == 0)
+        {
+            ERROR("%s(): Device '%s' does not exist",
+                  __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENODEV);
+        }
+
+        addrlen = (family == AF_INET) ?
+                  sizeof(struct in_addr) : sizeof(struct in6_addr);
+
+        if (inet_pton(family, addr, &ip_addr) <= 0)
+        {
+            ERROR("Failed to convert address '%s' from string", addr);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        /* Check address existence */
+        if ((list = netconf_net_addr_dump_iface(nh,
+                                                (unsigned char)family,
+                                                ifindex)) == NULL)
+        {
+            ERROR("%s(): Cannot get list of addresses", __FUNCTION__);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        found = false;
+        for (t = list->head; t != NULL; t = t->next)
+        {
+            const netconf_net_addr *naddr = &(t->data.net_addr);
+
+            if (memcmp(&ip_addr, naddr->address, addrlen) == 0)
+            {
+                found = true;
+                prefix = naddr->prefix;
+                break;
+            }
+        }
+
+        netconf_list_free(list);
+
+        if (!found)
+        {
+            ERROR("Address '%s' on interface '%s' not found",
+                  addr, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        netconf_net_addr_init(&net_addr);
+        net_addr.family = family;
+        net_addr.prefix = prefix;
+        net_addr.ifindex = ifindex;
+        net_addr.address = (uint8_t *)&ip_addr;
+
+        if (netconf_net_addr_modify(nh, NETCONF_CMD_DEL, &net_addr) < 0)
+        {
+            ERROR("%s(): Cannot delete address '%s' from "
+                  "interface '%s'", __FUNCTION__, addr, ifname);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        return 0;
+    }
+#elif defined(USE_IOCTL)
+    {
+        sa_family_t  family = str_addr_family(addr);
+        int          sock = (family == AF_INET6) ? cfg6_socket : cfg_socket;
+        char        *name;
+
+        if ((name = find_net_addr(ifname, addr)) == NULL)
+        {
+            ERROR("Address %s on interface %s not found", addr, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        memset(&req, 0, sizeof(req));
+        te_strlcpy(req.my_ifr_name, name, sizeof(req.my_ifr_name));
+
+        if (strcmp(name, ifname) == 0)
+        {
+            /* It is a physical interface */
+            /* Set unspecified address */
+            SA(&req.my_ifr_addr)->sa_family = str_addr_family(addr);
+            CFG_IOCTL(sock, MY_SIOCSIFADDR, &req);
+        }
+        else
+        {
+            /* It is a logical/alias interface */
+            /* Push logical interface down */
+            CFG_IOCTL(sock, MY_SIOCGIFFLAGS, &req);
+            req.my_ifr_flags &= ~IFF_UP;
+            CFG_IOCTL(sock, MY_SIOCSIFFLAGS, &req);
+#if HAVE_STRUCT_LIFREQ
+            /* On Solaris - remove logical interface directly */
+            CFG_IOCTL(sock, SIOCLIFREMOVEIF, &req);
+#else
+            /* On Linux - nothing special to be done */
+#endif
+        }
+        return 0;
+    }
+#else
+#error Cannot delete network addresses from interfaces
+#endif
+}
+
+
+#define ADDR_LIST_BULK      (INET6_ADDRSTRLEN * 4)
+
+#ifdef USE_LIBNETCONF
+/**
+ * Get instance list for object "agent/interface/net_addr".
+ *
+ * @param id            full identifier of the father instance
+ * @param oid           OID of the parent instance
+ * @param sub_id        ID of the object to be listed
+ * @param list          location for the list pointer
+ * @param ifname        interface name
+ *
+ * @return              Status code:
+ * @retval 0                success
+ * @retval TE_ENOENT        no such instance
+ */
+static te_errno
+net_addr_list(unsigned int gid, const char *oid,
+              const char *sub_id, char **list,
+              const char *ifname)
+{
+    te_errno            rc;
+    unsigned int        ifindex;
+    netconf_list       *nlist;
+    netconf_node       *t;
+    unsigned int        len;
+    char               *cur_ptr;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+
+    if (list == NULL)
+    {
+        ERROR("%s(): Invalid value for 'list' argument", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+    {
+        ERROR("%s(): Bad device name '%s'", __FUNCTION__, ifname);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if ((ifindex = if_nametoindex(ifname)) == 0)
+    {
+        ERROR("%s(): Device '%s' does not exist", __FUNCTION__, ifname);
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    /* Get addresses of both families, IPv4 and IPv6 */
+    if ((nlist = netconf_net_addr_dump_iface(nh, AF_UNSPEC,
+                                            ifindex)) == NULL)
+    {
+        ERROR("%s(): Cannot get list of addresses", __FUNCTION__);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    /* Calculate maximum space needed by list */
+    len = nlist->length * (INET6_ADDRSTRLEN + 1);
+
+    if (len == 0)
+    {
+        netconf_list_free(nlist);
+        *list = NULL;
+        return 0;
+    }
+
+    *list = TE_ALLOC(len);
+
+    cur_ptr = *list;
+    for (t = nlist->head; t != NULL; t = t->next)
+    {
+        const netconf_net_addr *net_addr = &(t->data.net_addr);
+
+        assert(cur_ptr >= *list);
+        assert((unsigned int)(cur_ptr - *list) <= len);
+
+        if (cur_ptr != *list)
+        {
+            snprintf(cur_ptr, len - (cur_ptr - *list), " ");
+            cur_ptr += strlen(cur_ptr);
+        }
+
+        if (inet_ntop(net_addr->family, net_addr->address, cur_ptr,
+                      *list + len - cur_ptr) == NULL)
+        {
+            ERROR("%s(): Cannot save network address", __FUNCTION__);
+            free(*list);
+            netconf_list_free(nlist);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        cur_ptr += strlen(cur_ptr);
+    }
+
+    netconf_list_free(nlist);
+
+    return 0;
+}
+
+#elif USE_IOCTL
+
+/** Opaque data for net_addr_list_ifreq_cb() */
+struct net_addr_list_ifreq_cb_data {
+    const char *ifname;     /**< Interface name */
+    char       *buf;        /**< Buffer to print address to */
+    size_t      buf_len;    /**< Size of the buffer */
+    size_t      buf_off;    /**< Current offset in the buffer */
+};
+
+static te_errno
+net_addr_list_ifreq_cb(struct my_ifreq *ifr, void *opaque)
+{
+    struct net_addr_list_ifreq_cb_data *data = opaque;
+
+    size_t  str_addrlen;
+    void   *net_addr;
+
+    if (strcmp(ifr->my_ifr_name, data->ifname) != 0 &&
+        !is_alias_of(ifr->my_ifr_name, data->ifname))
+        return 0;
+
+    if (SA(&ifr->my_ifr_addr)->sa_family == AF_INET)
+    {
+        str_addrlen = INET_ADDRSTRLEN;
+        net_addr = &SIN(&ifr->my_ifr_addr)->sin_addr;
+    }
+    else if (SA(&ifr->my_ifr_addr)->sa_family == AF_INET6)
+    {
+        str_addrlen = INET6_ADDRSTRLEN;
+        net_addr = &SIN6(&ifr->my_ifr_addr)->sin6_addr;
+    }
+    else
+    {
+        return 0;
+    }
+
+    while (data->buf_len - data->buf_off <= str_addrlen + 1)
+    {
+        data->buf_len += ADDR_LIST_BULK;
+        TE_REALLOC(data->buf, data->buf_len);
+    }
+
+    if (inet_ntop(SA(&ifr->my_ifr_addr)->sa_family, net_addr,
+                  data->buf + data->buf_off, str_addrlen) == NULL)
+    {
+        ERROR("Failed to convert address to string");
+        return TE_RC(TE_TA_UNIX, TE_EFAULT);
+    }
+    data->buf_off += strlen(data->buf + data->buf_off);
+    data->buf[data->buf_off++] = ' ';
+    data->buf[data->buf_off] = '\0';
+    assert(data->buf_off < data->buf_len);
+
+    return 0;
+}
+
+static te_errno
+net_addr_list(unsigned int gid, const char *oid,
+              const char *sub_id, char **list,
+              const char *ifname)
+{
+    struct net_addr_list_ifreq_cb_data  cb_data;
+
+    struct my_ifreq    *req;
+    void               *ifconf_buf = NULL;
+    size_t              ifconf_len;
+    te_errno            rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+    {
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    rc = get_ifconf_to_buf(&ifconf_buf, (void **)&req, &ifconf_len);
+    if (rc != 0)
+    {
+        free(ifconf_buf);
+        return rc;
+    }
+
+    cb_data.ifname = ifname;
+    cb_data.buf_len = ADDR_LIST_BULK;
+    cb_data.buf = TE_ALLOC(cb_data.buf_len);
+    cb_data.buf[0] = '\0';
+    cb_data.buf_off = 0;
+
+    rc = ifconf_foreach_ifreq(req, ifconf_len, net_addr_list_ifreq_cb,
+                              &cb_data);
+    if (rc != 0)
+    {
+        free(cb_data.buf);
+    }
+    else
+    {
+        *list = cb_data.buf;
+    }
+
+    free(ifconf_buf);
+
+    return rc;
+}
+#endif
+
+#ifdef USE_IOCTL
+te_errno
+ta_unix_conf_netaddr2ifname(const struct sockaddr *addr, char *ifname)
+{
+    size_t           addrlen = te_netaddr_get_size(addr->sa_family);
+    void            *netaddr = te_sockaddr_get_netaddr(addr);
+    te_errno         rc;
+    void            *ifconf_buf = NULL;
+    size_t           ifconf_len;
+    struct my_ifreq *first_req;
+    struct my_ifreq *p;
+
+    rc = get_ifconf_to_buf(&ifconf_buf, (void **)&first_req, &ifconf_len);
+    if (rc != 0)
+    {
+        free(ifconf_buf);
+        return rc;
+    }
+
+    VERB("%s(): SEARCH %s", __FUNCTION__, te_sockaddr2str(addr));
+    rc = TE_RC(TE_TA_UNIX, TE_ESRCH);
+    for (p = first_req; *(p->my_ifr_name) != '\0'; p++)
+    {
+        VERB("%s(): CHECK name=%s addr=%s", __FUNCTION__, p->my_ifr_name,
+             te_sockaddr2str(CONST_SA(&p->my_ifr_addr)));
+        if (addr->sa_family == CONST_SA(&p->my_ifr_addr)->sa_family &&
+            memcmp(netaddr,
+                   te_sockaddr_get_netaddr(CONST_SA(&p->my_ifr_addr)),
+                   addrlen) == 0)
+        {
+            te_strlcpy(ifname, p->my_ifr_name, IF_NAMESIZE);
+            rc = 0;
+            break;
+        }
+    }
+    free(ifconf_buf);
+    return rc;
+}
+#endif
+
+
+/**
+ * Get prefix of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         prefix location (prefix is presented in dotted
+ *                      notation)
+ * @param ifname        name of the interface (like "eth0")
+ * @param addr          IPv4 address in dotted notation
+ *
+ * @return              Status code
+ */
+static te_errno
+prefix_get(unsigned int gid, const char *oid, char *value,
+           const char *ifname, const char *addr)
+{
+    unsigned int prefix = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if defined(USE_LIBNETCONF)
+    {
+        te_errno                rc;
+        sa_family_t             family;
+        unsigned int            addrlen;
+        unsigned int            ifindex;
+        gen_ip_address          ip_addr;
+        netconf_list           *list;
+        netconf_node           *t;
+        bool found;
+
+        if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        {
+            ERROR("%s(): Bad device name '%s'", __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+
+        family = str_addr_family(addr);
+
+        if ((ifindex = if_nametoindex(ifname)) == 0)
+        {
+            ERROR("%s(): Device '%s' does not exist",
+                  __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENODEV);
+        }
+
+        addrlen = (family == AF_INET) ?
+                  sizeof(struct in_addr) : sizeof(struct in6_addr);
+
+        if (inet_pton(family, addr, &ip_addr) <= 0)
+        {
+            ERROR("Failed to covnert address '%s' from string", addr);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        if ((list = netconf_net_addr_dump_iface(nh,
+                                                (unsigned char)family,
+                                                ifindex)) == NULL)
+        {
+            ERROR("%s(): Cannot get list of addresses", __FUNCTION__);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        found = false;
+        for (t = list->head; t != NULL; t = t->next)
+        {
+            const netconf_net_addr *net_addr = &(t->data.net_addr);
+
+            if (memcmp(&ip_addr, net_addr->address, addrlen) == 0)
+            {
+                found = true;
+                prefix = net_addr->prefix;
+                break;
+            }
+        }
+
+        netconf_list_free(list);
+
+        if (!found)
+        {
+            ERROR("Address '%s' on interface '%s' to get prefix "
+                  "not found", addr, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+    }
+#elif defined(USE_IOCTL)
+    te_strlcpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
+    if (strchr(addr, ':') == NULL)
+    {
+        SIN(&req.my_ifr_addr)->sin_family = AF_INET;
+        if (inet_pton(AF_INET, addr, &SIN(&req.my_ifr_addr)->sin_addr) <= 0)
+        {
+            ERROR("inet_pton(AF_INET) failed for '%s'", addr);
+            return TE_RC(TE_TA_UNIX, TE_EFMT);
+        }
+        CFG_IOCTL(cfg_socket, MY_SIOCGIFNETMASK, &req);
+        MASK2PREFIX(ntohl(SIN(&req.my_ifr_addr)->sin_addr.s_addr), prefix);
+    }
+    else
+    {
+#ifdef SIOCGLIFSUBNET
+        SIN6(&req.my_ifr_addr)->sin6_family = AF_INET6;
+        if (inet_pton(AF_INET6, addr,
+                      &SIN6(&req.my_ifr_addr)->sin6_addr) <= 0)
+        {
+            ERROR("inet_pton(AF_INET6) failed for '%s'", addr);
+            return TE_RC(TE_TA_UNIX, TE_EFMT);
+        }
+        CFG_IOCTL(cfg6_socket, SIOCGLIFSUBNET, &req);
+        prefix = req.lifr_addrlen;
+#elif defined(SIOCGLIFADDR)
+        struct if_laddrreq lreq;
+
+        memset(&lreq, 0, sizeof(lreq));
+        te_strlcpy(lreq.iflr_name, ifname, sizeof(lreq.iflr_name));
+        lreq.addr.ss_family = AF_INET6;
+        lreq.addr.ss_len = 0;
+        if (inet_pton(AF_INET6, addr, &SIN6(&lreq.addr)->sin6_addr) <= 0)
+        {
+            ERROR("inet_pton(AF_INET6) failed for '%s'", addr);
+            return TE_RC(TE_TA_UNIX, TE_EFMT);
+        }
+        CFG_IOCTL(cfg6_socket, SIOCGLIFADDR, &lreq);
+        prefix = lreq.prefixlen;
+#else
+        ERROR("Unable to get IPv6 address prefix");
+        return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+    }
+#else
+#error Way to work with network addresses is not defined.
+#endif
+
+    sprintf(value, "%u", prefix);
+
+    return 0;
+}
+
+/**
+ * Change prefix of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         pointer to the new network mask in dotted notation
+ * @param ifname        name of the interface (like "eth0")
+ * @param addr          IPv4 address in dotted notation
+ *
+ * @return              Status code
+ */
+static te_errno
+prefix_set(unsigned int gid, const char *oid, const char *value,
+           const char *ifname, const char *addr)
+{
+    te_errno        rc;
+    unsigned int    prefix;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = prefix_check(value, str_addr_family(addr), &prefix);
+    if (rc != 0)
+        return rc;
+
+#if defined(USE_LIBNETCONF)
+    {
+        te_errno                rc;
+        sa_family_t             family;
+        unsigned int            addrlen;
+        unsigned int            ifindex;
+        netconf_net_addr        net_addr;
+        gen_ip_address          ip_addr;
+        netconf_list           *list;
+        netconf_node           *t;
+        unsigned char           oldprefix = 0;
+        bool found;
+
+        if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        {
+            ERROR("%s(): Bad device name '%s'", __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+
+        family = str_addr_family(addr);
+
+        if ((ifindex = if_nametoindex(ifname)) == 0)
+        {
+            ERROR("%s(): Device '%s' does not exist",
+                  __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENODEV);
+        }
+
+        addrlen = (family == AF_INET) ?
+                  sizeof(struct in_addr) : sizeof(struct in6_addr);
+
+        if (inet_pton(family, addr, &ip_addr) <= 0)
+        {
+            ERROR("Failed to convert address '%s' from string", addr);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        if ((list = netconf_net_addr_dump_iface(nh,
+                                                (unsigned char)family,
+                                                ifindex)) == NULL)
+        {
+            ERROR("%s(): Cannot get list of addresses", __FUNCTION__);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        found = false;
+        for (t = list->head; t != NULL; t = t->next)
+        {
+            const netconf_net_addr *naddr = &(t->data.net_addr);
+
+            if (memcmp(&ip_addr, naddr->address, addrlen) == 0)
+            {
+                found = true;
+                oldprefix = naddr->prefix;
+                break;
+            }
+        }
+
+        netconf_list_free(list);
+
+        if (!found)
+        {
+            ERROR("Address '%s' on interface '%s' to set prefix "
+                  "not found", addr, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        netconf_net_addr_init(&net_addr);
+        net_addr.family = family;
+        net_addr.prefix = oldprefix;
+        net_addr.ifindex = ifindex;
+        net_addr.address = (uint8_t *)&ip_addr;
+
+        if (netconf_net_addr_modify(nh, NETCONF_CMD_DEL,
+                                    &net_addr) < 0)
+        {
+            ERROR("%s(): Cannot delete address '%s' from "
+                  "interface '%s'", __FUNCTION__, addr, ifname);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        net_addr.prefix = prefix;
+
+        if (netconf_net_addr_modify(nh, NETCONF_CMD_ADD,
+                                    &net_addr) < 0)
+        {
+            ERROR("%s(): Cannot add address '%s' to interface '%s'",
+                  __FUNCTION__, addr, ifname);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        return 0;
+    }
+#elif defined(USE_IOCTL)
+    {
+        const char *name;
+
+        if ((name = find_net_addr(ifname, addr)) == NULL)
+        {
+            ERROR("Address '%s' on interface '%s' to set prefix not found",
+                  addr, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+        return set_prefix(name, prefix);
+    }
+#else
+#error Way to work with network addresses is not defined.
+#endif
+}
+
+
+/**
+ * Get broadcast of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         broadcast address location (in dotted notation)
+ * @param ifname        name of the interface (like "eth0")
+ * @param addr          IP address in human notation
+ *
+ * @return              Status code
+ */
+static te_errno
+broadcast_get(unsigned int gid, const char *oid, char *value,
+            const char *ifname, const char *addr)
+{
+    gen_ip_address  bcast;
+    sa_family_t     family = str_addr_family(addr);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (family == AF_INET6)
+    {
+        /* No broadcast addresses in IPv6 */
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+    assert(family == AF_INET);
+
+    memset(&bcast, 0, sizeof(bcast));
+
+#if defined(USE_LIBNETCONF)
+    {
+        te_errno                rc;
+        unsigned int            ifindex;
+        gen_ip_address          ip_addr;
+        netconf_list           *list;
+        netconf_node           *t;
+        bool found;
+
+        if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        {
+            ERROR("%s(): Bad device name '%s'", __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+
+        if ((ifindex = if_nametoindex(ifname)) == 0)
+        {
+            ERROR("%s(): Device '%s' does not exist",
+                  __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENODEV);
+        }
+
+        if (inet_pton(AF_INET, addr, &ip_addr) <= 0)
+        {
+            ERROR("Failed to convert address '%s' from string", addr);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        if ((list = netconf_net_addr_dump_iface(nh, AF_INET,
+                                                ifindex)) == NULL)
+        {
+            ERROR("%s(): Cannot get list of addresses", __FUNCTION__);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        found = false;
+        for (t = list->head; t != NULL; t = t->next)
+        {
+            const netconf_net_addr *net_addr = &(t->data.net_addr);
+
+            if (memcmp(&ip_addr, net_addr->address,
+                       sizeof(struct in_addr)) == 0)
+            {
+                found = true;
+
+                if (net_addr->broadcast != NULL)
+                {
+                    memcpy(&bcast.ip4_addr.s_addr, net_addr->broadcast,
+                           sizeof(struct in_addr));
+                }
+                else
+                {
+                    bcast.ip4_addr.s_addr = htonl(INADDR_BROADCAST);
+                }
+
+                break;
+            }
+        }
+
+        netconf_list_free(list);
+
+        if (!found)
+        {
+            ERROR("Address '%s' on interface '%s' to get broadcast "
+                  "address not found", addr, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+    }
+#elif defined(USE_IOCTL)
+    te_strlcpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
+    if (inet_pton(AF_INET, addr, &SIN(&req.my_ifr_addr)->sin_addr) <= 0)
+    {
+        ERROR("inet_pton(AF_INET) failed for '%s'", addr);
+        return TE_RC(TE_TA_UNIX, TE_EFMT);
+    }
+    if (ioctl(cfg_socket, MY_SIOCGIFBRDADDR, &req) < 0)
+    {
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+
+        /*
+         * Solaris2 (SunOS 5.11) returns EADDRNOTAVAIL on request for
+         * broadcast address on loopback.
+         * FreeBSD6 returns EINVAL on request for broadcast address
+         * on loopback.
+         */
+        if (INTERFACE_IS_LOOPBACK(ifname))
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+        ERROR("ioctl(SIOCGIFBRDADDR) failed for if=%s addr=%s: %r",
+              ifname, addr, rc);
+        return rc;
+    }
+    else
+    {
+        bcast.ip4_addr.s_addr = SIN(&req.my_ifr_addr)->sin_addr.s_addr;
+    }
+#else
+#error Way to work with network addresses is not defined.
+#endif
+
+    if (inet_ntop(family, &bcast, value, RCF_MAX_VAL) == NULL)
+    {
+        ERROR("inet_ntop() failed");
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    return 0;
+}
+
+/**
+ * Change broadcast of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         pointer to the new broadcast address in dotted
+ *                      notation
+ * @param ifname        name of the interface (like "eth0")
+ * @param addr          IP address in human notation
+ *
+ * @return              Status code
+ */
+static te_errno
+broadcast_set(unsigned int gid, const char *oid, const char *value,
+            const char *ifname, const char *addr)
+{
+    gen_ip_address  bcast;
+    sa_family_t     family = str_addr_family(addr);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (family != AF_INET)
+    {
+        ERROR("Broadcast address can be set for IPv4 only");
+        return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+    }
+
+    if (inet_pton(family, value, &bcast) <= 0 ||
+        ((family == AF_INET) &&
+         ((bcast.ip4_addr.s_addr == 0) ||
+          (((ntohl(bcast.ip4_addr.s_addr) & 0xe0000000) == 0xe0000000) &&
+           (ntohl(bcast.ip4_addr.s_addr) != 0xffffffff)))))
+    {
+        ERROR("%s(): Invalid broadcast %s", __FUNCTION__, value);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+#if defined(USE_LIBNETCONF)
+    {
+        te_errno                rc;
+        unsigned int            ifindex;
+        netconf_net_addr        net_addr;
+        gen_ip_address          ip_addr;
+        netconf_list           *list;
+        netconf_node           *t;
+        bool found;
+        unsigned char           prefix = 0;
+
+        if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        {
+            ERROR("%s(): Bad device name '%s'", __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+
+        if ((ifindex = if_nametoindex(ifname)) == 0)
+        {
+            ERROR("%s(): Device '%s' does not exist",
+                  __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENODEV);
+        }
+
+        if (inet_pton(AF_INET, addr, &ip_addr) <= 0)
+        {
+            ERROR("Failed to convert address '%s' from string", addr);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        if ((list = netconf_net_addr_dump_iface(nh,
+                                                AF_INET,
+                                                ifindex)) == NULL)
+        {
+            ERROR("%s(): Cannot get list of addresses", __FUNCTION__);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        found = false;
+        for (t = list->head; t != NULL; t = t->next)
+        {
+            const netconf_net_addr *naddr = &(t->data.net_addr);
+
+            if (memcmp(&ip_addr, naddr->address,
+                       sizeof(struct in_addr)) == 0)
+            {
+                found = true;
+                prefix = naddr->prefix;
+                break;
+            }
+        }
+
+        netconf_list_free(list);
+
+        if (!found)
+        {
+            ERROR("Address '%s' on interface '%s' to set broadcast "
+                  "not found", addr, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        netconf_net_addr_init(&net_addr);
+        net_addr.family = AF_INET;
+        net_addr.prefix = prefix;
+        net_addr.ifindex = ifindex;
+        net_addr.address = (uint8_t *)&ip_addr;
+
+        net_addr.broadcast = (uint8_t *)&bcast;
+
+        if (netconf_net_addr_modify(nh, NETCONF_CMD_CHANGE,
+                                    &net_addr) < 0)
+        {
+            /* This case we see on rhel6, so we need to try to set broadcast
+             * anyway.
+             */
+            WARN("%s(): Cannot change address '%s' on interface '%s'"
+                  " to set broadcast. Try to delete and add address again.",
+                  __FUNCTION__, addr, ifname);
+
+            if (netconf_net_addr_modify(nh, NETCONF_CMD_DEL,
+                                        &net_addr) < 0)
+            {
+                int save_errno = errno;
+                ERROR("%s(): Cannot delete address '%s' from "
+                      "interface '%s'",
+                      __FUNCTION__, addr, ifname);
+                return TE_OS_RC(TE_TA_UNIX, save_errno);
+            }
+
+            if (netconf_net_addr_modify(nh, NETCONF_CMD_ADD,
+                                        &net_addr) < 0)
+            {
+                int save_errno = errno;
+                ERROR("%s(): Cannot add address '%s' to interface '%s'",
+                      __FUNCTION__, addr, ifname);
+                return TE_OS_RC(TE_TA_UNIX, save_errno);
+            }
+        }
+
+        return 0;
+    }
+#elif defined(USE_IOCTL)
+    {
+        const char *name;
+
+        if ((name = find_net_addr(ifname, addr)) == NULL)
+        {
+            ERROR("Address '%s' on interface '%s' to set broadcast "
+                  "not found", addr, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+
+        strcpy(req.my_ifr_name, name);
+        SA(&req.my_ifr_addr)->sa_family = AF_INET;
+        SIN(&(req.my_ifr_addr))->sin_addr = bcast.ip4_addr;
+        CFG_IOCTL(cfg_socket, MY_SIOCSIFBRDADDR, &req);
+        return 0;
+    }
+#else
+#error Way to work with network addresses is not defined.
+#endif
+}
+
+
+int
+link_addr_a2n(uint8_t *lladdr, int len, const char *str)
+{
+    char       *buf = TE_STRDUP(str);
+    char       *arg = buf;
+    int         i;
+
+    for (i = 0; i < len; i++)
+    {
+        unsigned int  temp;
+        char         *cp = strchr(arg, ':');
+
+        if (cp != NULL)
+            *cp = '\0';
+
+        if (sscanf(arg, "%x", &temp) != 1)
+        {
+            ERROR("%s: \"%s\" is invalid lladdr",
+                  __FUNCTION__, arg);
+            free(buf);
+            return -1;
+        }
+
+        if (temp > 255)
+        {
+            ERROR("%s:\"%s\" is invalid lladdr",
+                  __FUNCTION__, arg);
+            free(buf);
+            return -1;
+        }
+
+        lladdr[i] = (uint8_t)temp;
+
+        if (cp == NULL)
+            break;
+
+        arg = cp + 1;
+    }
+
+    free(buf);
+    return i + 1;
+}
+
+/**
+ * Get hardware address of the interface.
+ * Only MAC addresses are supported now.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         location for hardware address (address is returned
+ *                      as XX:XX:XX:XX:XX:XX)
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+link_addr_get(unsigned int gid, const char *oid, char *value,
+              const char *ifname)
+{
+    te_errno        rc;
+    const uint8_t  *ptr = NULL;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef MY_SIOCGIFHWADDR
+    memset(&req, 0, sizeof(req));
+    strcpy(req.my_ifr_name, ifname);
+
+    if (ioctl(cfg_socket, MY_SIOCGIFHWADDR, (caddr_t)&req) != 0)
+    {
+        static const uint8_t zero_mac[ETHER_ADDR_LEN] = {};
+
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+
+        /*
+         * For the case of loopback interface SIOCGIFHWADDR
+         * can return an error with errno code set to EADDRNOTAVAIL.
+         * There is nothing wrong here and we need to check that
+         * we really deal with loopback interface.
+         */
+        if (errno != EADDRNOTAVAIL)
+        {
+            ERROR("line %u: ioctl(MY_SIOCGIFHWADDR) failed: %r",
+                  __LINE__, rc);
+            return rc;
+        }
+        CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
+        if (!(req.my_ifr_flags & IFF_LOOPBACK))
+        {
+            ERROR("line %u: ioctl(MY_SIOCGIFHWADDR) failed: %r "
+                  "for non loopback interface", __LINE__, rc);
+            return rc;
+        }
+        ptr = zero_mac;
+    }
+    else
+        ptr = (const uint8_t *)my_ifr_hwaddr_data(req);
+
+#elif defined(__FreeBSD__)
+
+    void           *ifconf_buf = NULL;
+    size_t          ifconf_len;
+    struct ifreq   *p;
+
+    rc = get_ifconf_to_buf(&ifconf_buf, (void **)&p, &ifconf_len);
+    if (rc != 0)
+    {
+        free(ifconf_buf);
+        return rc;
+    }
+
+    for (; *(p->ifr_name) != '\0';
+         p = (struct ifreq *)((caddr_t)p + _SIZEOF_ADDR_IFREQ(*p)))
+    {
+        if ((strcmp(p->ifr_name, ifname) == 0) &&
+            (p->ifr_addr.sa_family == AF_LINK))
+        {
+            struct sockaddr_dl *sdl =
+                (struct sockaddr_dl *)&(p->ifr_addr);
+
+            if (sdl->sdl_alen == ETHER_ADDR_LEN)
+            {
+                ptr = (const uint8_t *)sdl->sdl_data + sdl->sdl_nlen;
+            }
+            else
+            {
+                /* ptr is NULL - no link-layer address */
+            }
+            break;
+        }
+    }
+    free(ifconf_buf);
+#endif
+
+    if (ptr == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%02x:%02x:%02x:%02x:%02x:%02x",
+             ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]);
+    return 0;
+}
+
+
+/**
+ * Set hardware address of the interface.
+ * Only MAC addresses are supported now.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         hardware address (address should be
+ *                      provided as XX:XX:XX:XX:XX:XX)
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+link_addr_set(unsigned int gid, const char *oid, const char *value,
+              const char *ifname)
+{
+    te_errno rc = 0;
+    uint8_t  link_addr[ETHER_ADDR_LEN];
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    if (value == NULL)
+    {
+       ERROR("A link layer address to set is not provided");
+       return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    if (link_addr_a2n(link_addr, sizeof(link_addr), value) == -1)
+    {
+        ERROR("%s: Link layer address conversation issue", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+#ifdef SIOCSIFHWADDR
+    strcpy(req.my_ifr_name, ifname);
+    my_ifr_hwaddr_family(req) = AF_LOCAL;
+    memcpy(my_ifr_hwaddr_data(req), link_addr, sizeof(link_addr));
+
+    CFG_IOCTL(cfg_socket, SIOCSIFHWADDR, &req);
+#else
+    ERROR("Set of link-layer address is not supported");
+    rc = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+    return rc;
+}
+
+/**
+ * Set broadcast hardware address of the interface.
+ * Only MAC addresses are supported now.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         broadcast hardware address (it should be
+ *                      provided as XX:XX:XX:XX:XX:XX string)
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+bcast_link_addr_set(unsigned int gid, const char *oid,
+                    const char *value, const char *ifname)
+{
+    te_errno rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    if (value == NULL)
+    {
+       ERROR("A broadcast link layer address to set is not provided");
+       return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+#ifdef SIOCSIFHWBROADCAST
+    strcpy(req.my_ifr_name, ifname);
+    my_ifr_hwaddr_family(req) = AF_LOCAL;
+
+    if ((rc = link_addr_a2n((uint8_t *)my_ifr_hwaddr_data(req), 6,
+                            value)) == -1)
+    {
+        ERROR("%s: Link layer address conversation issue", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    rc = 0;
+
+    CFG_IOCTL(cfg_socket, SIOCSIFHWBROADCAST, &req);
+#else
+    ERROR("Set of broadcast link-layer address is not supported");
+    rc = TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+
+    return rc;
+}
+
+
+/**
+ * Set broadcast hardware address of the interface.
+ * Only MAC addresses are supported now.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         broadcast hardware address (it should be
+ *                      provided as XX:XX:XX:XX:XX:XX string)
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+bcast_link_addr_get(unsigned int gid, const char *oid,
+                    char *value, const char *ifname)
+{
+    te_errno rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    if (value == NULL)
+    {
+       ERROR("A buffer for broadcast link layer address is not provided");
+       return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    /*
+     * In case of point-to-point protocol there is no broadcast
+     * hardware address, return zero-address.
+     */
+    if (strstr(ifname, "ppp") != NULL)
+    {
+        strcpy(value, "00:00:00:00:00:00");
+        return 0;
+    }
+
+#if defined(USE_LIBNETCONF)
+    return iface_get_property_netconf(ifname, value,
+                                      IF_PROP_BCAST_ADDR);
+#else
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+/**
+ * Get minimum allowed MTU of the interface.
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full object instance identifier (unused).
+ * @param value         Value location.
+ * @param ifname        Name of the interface (like "eth0").
+ *
+ * @return              Status code.
+ */
+static te_errno
+min_mtu_get(unsigned int gid, const char *oid, char *value,
+            const char *ifname)
+{
+    te_errno    rc;
+#ifdef USE_LIBNETCONF
+    netconf_list *links;
+    const netconf_node *node;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = CHECK_INTERFACE(ifname);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef USE_LIBNETCONF
+    links = netconf_link_dump(nh);
+    if (links == NULL)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+    for (node = links->head; node != NULL; node = node->next)
+    {
+        const netconf_link *link = &(node->data.link);
+
+        if (link->ifname != NULL && strcmp(link->ifname, ifname) == 0)
+        {
+            if (link->min_mtu_set)
+            {
+                te_snprintf(value, RCF_MAX_VAL, "%" TE_PRINTF_16 "u",
+                            link->min_mtu);
+                rc = 0;
+            }
+            break;
+        }
+    }
+    netconf_list_free(links);
+
+    return rc;
+#else
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+/**
+ * Get maximum allowed MTU of the interface.
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full object instance identifier (unused).
+ * @param value         Value location.
+ * @param ifname        Name of the interface (like "eth0").
+ *
+ * @return              Status code.
+ */
+static te_errno
+max_mtu_get(unsigned int gid, const char *oid, char *value,
+            const char *ifname)
+{
+    te_errno    rc;
+#ifdef USE_LIBNETCONF
+    netconf_list *links;
+    const netconf_node *node;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = CHECK_INTERFACE(ifname);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef USE_LIBNETCONF
+    links = netconf_link_dump(nh);
+    if (links == NULL)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+    for (node = links->head; node != NULL; node = node->next)
+    {
+        const netconf_link *link = &(node->data.link);
+
+        if (link->ifname != NULL && strcmp(link->ifname, ifname) == 0)
+        {
+            if (link->max_mtu_set)
+            {
+                te_snprintf(value, RCF_MAX_VAL, "%" TE_PRINTF_16 "u",
+                            link->max_mtu);
+                rc = 0;
+            }
+            break;
+        }
+    }
+    netconf_list_free(links);
+
+    return rc;
+#else
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+/**
+ * Get MTU of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+mtu_get(unsigned int gid, const char *oid, char *value,
+        const char *ifname)
+{
+    te_errno    rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#if defined(SIOCGIFMTU)  && defined(HAVE_STRUCT_IFREQ_IFR_MTU)   || \
+    defined(SIOCGLIFMTU) && defined(HAVE_STRUCT_LIFREQ_LIFR_MTU)
+    {
+        struct my_ifreq req;
+
+        te_strlcpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
+        CFG_IOCTL(cfg_socket, MY_SIOCGIFMTU, &req);
+        sprintf(value, "%d", req.my_ifr_mtu);
+    }
+#endif
+    return 0;
+}
+
+/**
+ * Change MTU for the specified interface.
+ *
+ * @param ifname  Interface name
+ * @param mtu     MTU value
+ *
+ * @return Error code.
+ */
+static te_errno
+change_mtu(const char *ifname, int mtu)
+{
+    te_errno  rc = 0;
+    bool status;
+
+    req.my_ifr_mtu = mtu;
+    strcpy(req.my_ifr_name, ifname);
+    if (ioctl(cfg_socket, MY_SIOCSIFMTU, (intptr_t)&req) != 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        if (errno != EBUSY)
+        {
+            ERROR("Failed to change MTU to %d on interface %s: %r",
+                  mtu, ifname, TE_OS_RC(TE_TA_UNIX, errno));
+            return rc;
+        }
+
+        /* Try to down interface */
+        if (ta_interface_status_get(ifname, &status) == 0 &&
+            status && ta_interface_status_set(ifname, false) == 0)
+        {
+            te_errno  rc1;
+
+            RING("Interface '%s' is pushed down/up to set a new MTU",
+                 ifname);
+
+            if (ioctl(cfg_socket, MY_SIOCSIFMTU, (intptr_t)&req) == 0)
+                rc = 0;
+            else
+                ERROR("Failed to change MTU to %d on interface %s: %r",
+                      mtu, ifname, TE_OS_RC(TE_TA_UNIX, errno));
+
+            if ((rc1 = ta_interface_status_set(ifname, true)) != 0)
+            {
+                ERROR("Failed to up interface after mtu changing "
+                      "error %r", rc1);
+                return rc1;
+            }
+        }
+    }
+
+    return rc;
+}
+
+/**
+ * Change MTU of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+mtu_set(unsigned int gid, const char *oid, const char *value,
+        const char *ifname)
+{
+    te_errno  rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#if (defined(SIOCGIFMTU)  && defined(HAVE_STRUCT_IFREQ_IFR_MTU))   || \
+    (defined(SIOCGLIFMTU) && defined(HAVE_STRUCT_LIFREQ_LIFR_MTU))
+    rc = change_mtu(ifname, strtol(value, NULL, 10));
+#else
+    rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
+    if (rc != 0)
+        ERROR("ioctl(SIOCSIFMTU) failed: %r", rc);
+
+    return rc;
+}
+
+/**
+ * Get interface flag value.
+ *
+ * @param ifname        name of the interface (like "eth0")
+ * @param flag          flag to get
+ * @param value         value location
+ *
+ * @return              Status code
+ */
+static te_errno
+iff_flag_get(const char *ifname, int flag, bool *value)
+{
+    te_errno rc;
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    strcpy(req.my_ifr_name, ifname);
+    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
+
+    *value = ((req.my_ifr_flags & flag) != 0);
+
+    return 0;
+}
+
+/**
+ * Get interface flag value as string in CS value.
+ *
+ * @param ifname        name of the interface (like "eth0")
+ * @param flag          flag to get
+ * @param value         value location
+ *
+ * @return              Status code
+ */
+static te_errno
+iff_flag_get_str(const char *ifname, int flag, char *value)
+{
+    te_errno rc;
+    bool flag_set;
+
+    rc = iff_flag_get(ifname, flag, &flag_set);
+    if (rc != 0)
+        return rc;
+
+    sprintf(value, "%d", flag_set);
+
+    return 0;
+}
+
+/**
+ * Change interface flag value.
+ *
+ * @param ifname        name of the interface (like "eth0")
+ * @param flag          flag to set or clear
+ * @param set           set or clear the flag
+ *
+ * @return              Status code
+ */
+static te_errno
+iff_flag_set(const char *ifname, int flag, bool set)
+{
+    te_errno rc;
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    te_strlcpy(req.my_ifr_name, ifname, IFNAMSIZ);
+    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
+
+    if (set)
+        req.my_ifr_flags |= flag;
+    else
+        req.my_ifr_flags &= ~flag;
+
+    CFG_IOCTL(cfg_socket, MY_SIOCSIFFLAGS, &req);
+
+    return 0;
+}
+
+/**
+ * Change interface flag value specified in string.
+ *
+ * @param ifname        name of the interface (like "eth0")
+ * @param flag          flag to set or clear
+ * @param value         set (1) or clear (0) the flag
+ *
+ * @return              Status code
+ */
+static te_errno
+iff_flag_set_str(const char *ifname, int flag, const char *value)
+{
+    bool flag_set;
+
+    if (strcmp(value, "0") == 0)
+        flag_set = false;
+    else if (strcmp(value, "1") == 0)
+        flag_set = true;
+    else
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    return iff_flag_set(ifname, flag, flag_set);
+}
+
+/**
+ * Check if ARP is enabled on the interface
+ * ("0" - arp disable, "1" - arp enable).
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+arp_get(unsigned int gid, const char *oid, char *value, const char *ifname)
+{
+    te_errno rc;
+    bool flag_set;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = iff_flag_get(ifname, IFF_NOARP, &flag_set);
+    if (rc != 0)
+        return rc;
+
+    sprintf(value, "%d", !flag_set);
+
+    return 0;
+}
+
+/**
+ * Enable/disable ARP on the interface
+ * ("0" - arp disable, "1" - arp enable).
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+arp_set(unsigned int gid, const char *oid, const char *value,
+        const char *ifname)
+{
+    bool flag_set;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (strcmp(value, "0") == 0)
+        flag_set = true;
+    else if (strcmp(value, "1") == 0)
+        flag_set = false;
+    else
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    return iff_flag_set(ifname, IFF_NOARP, flag_set);
+}
+
+/**
+ * Get oper status of the interface (@c true - RUNNING).
+ *
+ * @param ifname        name of the interface (like "eth0")
+ * @param status        location to put status of the interface
+ *
+ * @return              Status code
+ */
+te_errno
+ta_interface_oper_status_get(const char *ifname, bool *status)
+{
+    te_errno rc;
+
+    assert(status != NULL);
+
+    rc = iff_flag_get(ifname, IFF_RUNNING, status);
+    if (rc != 0)
+        return rc;
+
+#if defined(__sun__)
+    rc = ioctl(cfg6_socket, MY_SIOCGIFFLAGS, &req);
+    if (rc < 0)
+        WARN("Failed to get staust of %s IPv6 interface", ifname);
+    else if (*status != !!(req.my_ifr_flags & IFF_RUNNING))
+        WARN("Different statuses for %s IPv4 and IPv6 interfaces", ifname);
+#endif
+
+    return 0;
+}
+
+/**
+ * Get status of the interface (@c false - down or @c true - up).
+ *
+ * @param ifname        name of the interface (like "eth0")
+ * @param status        location to put status of the interface
+ *
+ * @return              Status code
+ */
+te_errno
+ta_interface_status_get(const char *ifname, bool *status)
+{
+    te_errno rc;
+
+    assert(status != NULL);
+
+    rc = iff_flag_get(ifname, IFF_UP, status);
+    if (rc != 0)
+        return rc;
+
+#if defined(__sun__)
+    rc = ioctl(cfg6_socket, MY_SIOCGIFFLAGS, &req);
+    if (rc < 0)
+        WARN("Failed to get staust of %s IPv6 interface", ifname);
+    else if (*status != !!(req.my_ifr_flags & IFF_UP))
+        WARN("Different statuses for %s IPv4 and IPv6 interfaces", ifname);
+#endif
+
+    return 0;
+}
+
+/**
+ * Change status of the interface. If virtual interface is put to down
+ * state,it is de-installed and information about it is stored in the list
+ * of down interfaces.
+ *
+ * @param ifname        name of the interface (like "eth0")
+ * @param status        @c true to get interface up and @c false to down
+ *
+ * @return              Status code
+ */
+te_errno
+ta_interface_status_set(const char *ifname, bool status)
+{
+    te_errno rc;
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    te_strlcpy(req.my_ifr_name, ifname, IFNAMSIZ);
+    CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
+
+    if (status)
+        req.my_ifr_flags |= (IFF_UP | IFF_RUNNING);
+    else
+        req.my_ifr_flags &= ~(IFF_UP | IFF_RUNNING);
+
+    CFG_IOCTL(cfg_socket, MY_SIOCSIFFLAGS, &req);
+#if defined(__sun__)
+    rc = ioctl(cfg6_socket, MY_SIOCSIFFLAGS, &req);
+    if (rc < 0)
+        WARN("Failed to bring up %s IPv6 interface", ifname);
+#endif
+    return 0;
+}
+
+/**
+ * Get oper status of the interface ("1" - RUNNING).
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+oper_status_get(unsigned int gid, const char *oid, char *value,
+                const char *ifname)
+{
+    te_errno rc;
+    bool status;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = ta_interface_oper_status_get(ifname, &status);
+    if (rc != 0)
+        return rc;
+    sprintf(value, "%d", status);
+
+    return 0;
+}
+
+/**
+ * Get status of the interface ("0" - down or "1" - up).
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+status_get(unsigned int gid, const char *oid, char *value,
+           const char *ifname)
+{
+    te_errno rc;
+    bool status;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = ta_interface_status_get(ifname, &status);
+    if (rc != 0)
+        return rc;
+    sprintf(value, "%d", status);
+
+    return 0;
+}
+
+/**
+ * Change status of the interface. If virtual interface is put to down
+ * state,it is de-installed and information about it is stored in the list
+ * of down interfaces.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+status_set(unsigned int gid, const char *oid, const char *value,
+           const char *ifname)
+{
+    bool status;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (strcmp(value, "0") == 0)
+        status = false;
+    else if (strcmp(value, "1") == 0)
+        status = true;
+    else
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    return ta_interface_status_set(ifname, status);
+}
+
+/**
+ * Get IP4 forwarding state of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+iface_ip4_fw_get(unsigned int gid, const char *oid, char *value,
+                 const char *ifname)
+{
+#if __linux__
+    char    c = '0';
+    int     fd;
+    char    filename[128];
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if __linux__
+    sprintf(filename, "/proc/sys/net/ipv4/conf/%s/forwarding", ifname);
+    if ((fd = open(filename, O_RDONLY)) < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    if (read(fd, &c, 1) < 0)
+    {
+        close(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    close(fd);
+
+    sprintf(value, "%d", c == '0' ? 0 : 1);
+#else
+    /* FIXME Add implementation in SOLARIS and(or) BSD if necessary */
+    sprintf(value, "%d", 0);
+#endif
+
+    return 0;
+}
+
+/**
+ * Change IP4 forwarding state of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+iface_ip4_fw_set(unsigned int gid, const char *oid, const char *value,
+                 const char *ifname)
+{
+#if __linux__
+    int     fd;
+    char    filename[128];
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if __linux__
+    if ((*value != '0' && *value != '1') || *(value + 1) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    sprintf(filename, "/proc/sys/net/ipv4/conf/%s/forwarding", ifname);
+    if ((fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    if (write(fd, *value == '0' ? "0\n" : "1\n", 2) < 0)
+    {
+        close(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    close(fd);
+#else
+    /* FIXME Add implementation in SOLARIS and(or) BSD if necessary */
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
+    return 0;
+}
+
+/**
+ * Get IP6 forwarding state of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+iface_ip6_fw_get(unsigned int gid, const char *oid, char *value,
+                 const char *ifname)
+{
+#if __linux__
+    char    c = '0';
+    int     fd;
+    char    filename[128];
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if __linux__
+    sprintf(filename, "/proc/sys/net/ipv6/conf/%s/forwarding", ifname);
+    if ((fd = open(filename, O_RDONLY)) < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    if (read(fd, &c, 1) < 0)
+    {
+        close(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    close(fd);
+
+    sprintf(value, "%d", c == '0' ? 0 : 1);
+#else
+    /* FIXME Add implementation in SOLARIS and(or) BSD if necessary */
+    sprintf(value, "%d", 0);
+#endif
+
+    return 0;
+}
+
+/**
+ * Change IP6 forwarding state of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+iface_ip6_fw_set(unsigned int gid, const char *oid, const char *value,
+                 const char *ifname)
+{
+#if __linux__
+    int     fd;
+    char    filename[128];
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if __linux__
+    if ((*value != '0' && *value != '1') || *(value + 1) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    sprintf(filename, "/proc/sys/net/ipv6/conf/%s/forwarding", ifname);
+    if ((fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    if (write(fd, *value == '0' ? "0\n" : "1\n", 2) < 0)
+    {
+        close(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    close(fd);
+#else
+    /* FIXME Add implementation in SOLARIS and(or) BSD if necessary */
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
+    return 0;
+}
+
+/**
+ * Get IP6 'accept_ra' state of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+iface_ip6_accept_ra_get(unsigned int gid, const char *oid, char *value,
+                 const char *ifname)
+{
+#if __linux__
+    char    c[2];
+    int     fd;
+    char    filename[128];
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    sprintf(filename, "/proc/sys/net/ipv6/conf/%s/accept_ra", ifname);
+    if ((fd = open(filename, O_RDONLY)) < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    if (read(fd, c, 1) < 0)
+    {
+        close(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    close(fd);
+
+    c[1] = '\0';
+    sprintf(value, "%s", c);
+#else
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(ifname);
+
+    /* FIXME Add implementation in SOLARIS and(or) BSD if necessary */
+    sprintf(value, "%d", 0);
+#endif
+
+    return 0;
+}
+
+/**
+ * Change IP6 'accept_ra' state of the interface.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+iface_ip6_accept_ra_set(unsigned int gid, const char *oid,
+                const char *value, const char *ifname)
+{
+#if __linux__
+    int     fd;
+    char    filename[128];
+    int     accept_ra_val = -1; /* Invalid value */
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (sscanf(value, "%d", &accept_ra_val) != 1 ||
+        accept_ra_val < 0 ||
+        accept_ra_val > 2 /* Allowed values are 0, 1, 2 */)
+    {
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    sprintf(filename, "/proc/sys/net/ipv6/conf/%s/accept_ra", ifname);
+    if ((fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    if (write(fd,
+              accept_ra_val == 0 ?
+                "0\n" :
+                    accept_ra_val == 1 ?
+                        "1\n" :
+                            "2\n", 2) < 0)
+    {
+        close(fd);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    close(fd);
+#else
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    UNUSED(ifname);
+
+    /* FIXME Add implementation in SOLARIS and(or) BSD if necessary */
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
+    return 0;
+}
+
+/* See the description in conf_common.h */
+te_errno
+rp_filter_get(unsigned int gid, const char *oid, char *value,
+              const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if __linux__
+    return read_sys_value(value, RCF_MAX_VAL, false,
+                          "/proc/sys/net/ipv4/conf/%s/rp_filter",
+                          ifname);
+#else
+    UNUSED(value);
+    UNUSED(ifname);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
+    return 0;
+}
+
+/* See the description in conf_common.h */
+te_errno
+rp_filter_set(unsigned int gid, const char *oid, const char *value,
+              const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if __linux__
+    if (*value < '0' || *value > '2' || *(value + 1) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    return write_sys_value(value,
+                           "/proc/sys/net/ipv4/conf/%s/rp_filter",
+                           ifname);
+#else
+    UNUSED(value);
+    UNUSED(ifname);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
+    return 0;
+}
+
+/* See the description in conf_common.h */
+te_errno
+arp_ignore_get(unsigned int gid, const char *oid, char *value,
+               const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if __linux__
+    return read_sys_value(value, RCF_MAX_VAL, false,
+                          "/proc/sys/net/ipv4/conf/%s/arp_ignore",
+                          ifname);
+#else
+    UNUSED(value);
+    UNUSED(ifname);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
+    return 0;
+}
+
+/* See the description in conf_common.h */
+te_errno
+arp_ignore_set(unsigned int gid, const char *oid, const char *value,
+               const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if __linux__
+    if (*value < '0' || *value > '8' || *(value + 1) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    return write_sys_value(value,
+                           "/proc/sys/net/ipv4/conf/%s/arp_ignore",
+                           ifname);
+#else
+    UNUSED(value);
+    UNUSED(ifname);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
+    return 0;
+}
+
+/**
+ * Get promiscuous mode of the interface ("0" - normal or "1" - promiscuous)
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+promisc_get(unsigned int gid, const char *oid, char *value,
+            const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return iff_flag_get_str(ifname, IFF_PROMISC, value);
+}
+
+/**
+ * Change the promiscuous mode of the interface
+ * ("1" - enable, "0" - disable)
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+promisc_set(unsigned int gid, const char *oid, const char *value,
+           const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return iff_flag_set_str(ifname, IFF_PROMISC, value);
+}
+
+/**
+ * Get all-multicast mode of the interface ("0" - normal or "1" -
+ * all-multicast)
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+allmulti_get(unsigned int gid, const char *oid, char *value,
+             const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return iff_flag_get_str(ifname, IFF_ALLMULTI, value);
+}
+
+/**
+ * Change the all-multicast mode of the interface
+ * ("1" - enable, "0" - disable)
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+allmulti_set(unsigned int gid, const char *oid, const char *value,
+             const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return iff_flag_set_str(ifname, IFF_ALLMULTI, value);
+}
+
+#if defined(USE_LIBNETCONF)
+static unsigned int
+neigh_netconf_dynamic_state2te(unsigned int state)
+{
+    switch (state)
+    {
+#define NEIGH_NETCONF_STATE2TE(_state) \
+        case NETCONF_NUD_##_state: return CS_NEIGH_##_state
+
+        NEIGH_NETCONF_STATE2TE(INCOMPLETE);
+        NEIGH_NETCONF_STATE2TE(REACHABLE);
+        NEIGH_NETCONF_STATE2TE(STALE);
+        NEIGH_NETCONF_STATE2TE(DELAY);
+        NEIGH_NETCONF_STATE2TE(PROBE);
+        NEIGH_NETCONF_STATE2TE(FAILED);
+        NEIGH_NETCONF_STATE2TE(NOARP);
+
+#undef NEIGH_NETCONF_STATE2TE
+
+        default:
+            /* 0 is incorrect value for cs_neigh_entry_state, so TAPI will
+             * interpret it as invalid state.
+             */
+            return 0;
+    }
+}
+#endif
+
+static te_errno
+neigh_find(const char *oid, const char *ifname, const char *addr,
+           char *mac_p, unsigned int *state_p)
+{
+#if defined(USE_LIBNETCONF)
+    te_errno            rc;
+    sa_family_t         family;
+    unsigned int        ifindex;
+    gen_ip_address      ip_addr;
+    unsigned int        addrlen;
+    netconf_list       *list;
+    netconf_node       *t;
+    bool dynamic;
+    bool found;
+
+    family = str_addr_family(addr);
+    dynamic = (strstr(oid, "dynamic") != NULL);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+    {
+        ERROR("%s(): Bad device name '%s'", __FUNCTION__, ifname);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if ((ifindex = if_nametoindex(ifname)) == 0)
+    {
+        ERROR("%s(): Device '%s' does not exist", __FUNCTION__, ifname);
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    if (inet_pton(family, addr, &ip_addr) <= 0)
+    {
+        ERROR("Failed to convert address '%s' from string", addr);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    addrlen = (family == AF_INET) ?
+              sizeof(struct in_addr) : sizeof(struct in6_addr);
+
+    if ((list = netconf_neigh_dump(nh, family)) == NULL)
+    {
+        ERROR("%s(): Cannot get list of neighbours", __FUNCTION__);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    found = false;
+    for (t = list->head; t != NULL; t = t->next)
+    {
+        const netconf_neigh *neigh = &(t->data.neigh);
+
+        if ((unsigned int)(neigh->ifindex) != ifindex)
+            continue;
+
+        if (memcmp(neigh->dst, &ip_addr, addrlen) != 0)
+            continue;
+
+        if ((neigh->state == NETCONF_NUD_UNSPEC) ||
+            (neigh->state == NETCONF_NUD_FAILED) ||
+            (dynamic == !!(neigh->state & NETCONF_NUD_PERMANENT)))
+        {
+            continue;
+        }
+
+        found = true;
+
+        if (mac_p != NULL)
+        {
+            link_addr_n2a(neigh->lladdr, neigh->addrlen,
+                          mac_p, RCF_MAX_VAL);
+        }
+
+        if (state_p != NULL)
+            *state_p = neigh_netconf_dynamic_state2te(neigh->state);
+
+        /* Find the first one */
+        break;
+    }
+
+    netconf_list_free(list);
+
+    if (!found)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    return 0;
+#else
+    UNUSED(oid);
+    UNUSED(ifname);
+    {
+        struct arpreq arp_req;
+        sa_family_t   family;
+
+        memset(&arp_req, 0, sizeof(arp_req));
+        family = str_addr_family(addr);
+        arp_req.arp_pa.sa_family = family;
+        if (inet_pton(family, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+#if HAVE_STRUCT_ARPREQ_ARP_DEV
+        te_strlcpy(arp_req.arp_dev, ifname, sizeof(arp_req.arp_dev));
+#endif
+
+#ifdef SIOCGARP
+        if (ioctl(cfg_socket, SIOCGARP, (caddr_t)&arp_req) != 0)
+        {
+            te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+
+            if (TE_RC_GET_ERROR(rc) != TE_ENXIO)
+            {
+                /* Temporary hack to avoid failures */
+                WARN("line %u: ioctl(SIOCGARP) failed: %r", __LINE__, rc);
+            }
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        }
+        if (mac_p != NULL)
+        {
+            int      i;
+            char    *s = mac_p;
+
+            for (i = 0; i < ETHER_ADDR_LEN; i++)
+            {
+                sprintf(s, "%02x:",
+                        ((const uint8_t *)arp_req.arp_ha.sa_data)[i]);
+                s += strlen(s);
+            }
+            *(s - 1) = '\0';
+        }
+        if (state_p != NULL)
+        {
+            if (arp_req.arp_flags & ATF_COM)
+                *state_p = CS_NEIGH_REACHABLE;
+            else
+                *state_p = CS_NEIGH_INCOMPLETE;
+        }
+
+        return 0;
+#else
+        return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+    }
+    UNUSED(mac_p);
+    UNUSED(state_p);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+
+
+/**
+ * Get neighbour entry state.
+ *
+ * @param gid            group identifier (unused)
+ * @param oid            full object instance identifier (unused)
+ * @param value          location for the value
+ *                       (XX:XX:XX:XX:XX:XX is returned)
+ * @param ifname         interface name
+ * @param addr           IP address in human notation
+ *
+ * @return Status code
+ */
+int
+neigh_state_get(unsigned int gid, const char *oid, char *value,
+                const char *ifname, const char *addr)
+{
+    unsigned int state;
+    te_errno     rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = neigh_find("dynamic", ifname, addr, NULL, &state)) != 0)
+        return rc;
+
+    sprintf(value, "%u", state);
+
+    return 0;
+}
+
+/**
+ * Get neighbour entry value (hardware address corresponding to IP).
+ *
+ * @param gid            group identifier (unused)
+ * @param oid            full object instance identifier or NULL for
+ *                       dynamic entries (hack)
+ * @param value          location for the value
+ *                       (XX:XX:XX:XX:XX:XX is returned)
+ * @param ifname         interface name
+ * @param addr           IP address in human notation
+ *
+ * @return Status code
+ */
+static te_errno
+neigh_get(unsigned int gid, const char *oid, char *value,
+          const char *ifname, const char *addr)
+{
+    UNUSED(gid);
+
+    return neigh_find(oid, ifname, addr, value, NULL);
+}
+
+/**
+ * Change already existing neighbour entry.
+ *
+ * @param gid            group identifier
+ * @param oid            full object instance identifier (unused)
+ * @param value          new value pointer ("XX:XX:XX:XX:XX:XX")
+ * @param ifname         interface name
+ * @param addr           IP address in human notation
+ *
+ * @return Status code
+ */
+static te_errno
+neigh_set(unsigned int gid, const char *oid, const char *value,
+          const char *ifname, const char *addr)
+{
+    if (neigh_find(oid, ifname, addr, NULL, NULL) != 0)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    return neigh_add(gid, oid, value, ifname, addr);
+}
+
+/**
+ * Add a new neighbour entry.
+ *
+ * @param gid            group identifier (unused)
+ * @param oid            full object instance identifier (unused)
+ * @param value          new entry value pointer ("XX:XX:XX:XX:XX:XX")
+ * @param ifname         interface name
+ * @param addr           IP address in human notation
+ *
+ * @return Status code
+ */
+static te_errno
+neigh_add(unsigned int gid, const char *oid, const char *value,
+          const char *ifname, const char *addr)
+{
+    bool proxy = (strstr(oid, "proxy") != NULL);
+
+#if defined(USE_LIBNETCONF)
+    te_errno            rc;
+    bool dynamic;
+    sa_family_t         family;
+    unsigned int        ifindex;
+    gen_ip_address      ip_addr;
+    netconf_neigh       neigh;
+    uint8_t             raw_addr[ETHER_ADDR_LEN];
+
+    UNUSED(gid);
+
+    family = str_addr_family(addr);
+    dynamic = (strstr(oid, "dynamic") != NULL);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+    {
+        ERROR("%s(): Bad device name '%s'", __FUNCTION__, ifname);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if ((ifindex = if_nametoindex(ifname)) == 0)
+    {
+        ERROR("%s(): Device '%s' does not exist", __FUNCTION__, ifname);
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    if (inet_pton(family, addr, &ip_addr) <= 0)
+    {
+        ERROR("Failed to convert address '%s' from string", addr);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    netconf_neigh_init(&neigh);
+    neigh.family = family;
+    neigh.ifindex = ifindex;
+
+    neigh.state = (dynamic) ?
+                  NETCONF_NUD_REACHABLE : NETCONF_NUD_PERMANENT;
+
+    neigh.dst = (uint8_t *)&ip_addr;
+
+    if (proxy)
+    {
+        neigh.flags |= NETCONF_NTF_PROXY;
+    }
+    else if (value != NULL)
+    {
+        if (link_addr_a2n(raw_addr, sizeof(raw_addr),
+                          value) != ETHER_ADDR_LEN)
+        {
+            ERROR("Bad hardware address '%s'", value);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        neigh.addrlen = ETHER_ADDR_LEN;
+        neigh.lladdr = raw_addr;
+    }
+
+    if (netconf_neigh_modify(nh, NETCONF_CMD_REPLACE, &neigh) < 0)
+    {
+        ERROR("%s(): Cannot add neighbour '%s' on interface '%s'",
+              __FUNCTION__, addr, ifname);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    return 0;
+#else
+    struct arpreq arp_req;
+    int           i;
+
+    int           int_addr[ETHER_ADDR_LEN];
+    int           res;
+
+    UNUSED(gid);
+
+    if (proxy)
+    {
+        ERROR("%s(): adding of neighbor proxy is not implemented via "
+              "SIOCSARP", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    res = sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%*s",
+                 int_addr, int_addr + 1, int_addr + 2, int_addr + 3,
+                 int_addr + 4, int_addr + 5);
+
+    if (res != 6)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    /* TODO: check that address corresponds to interface */
+    UNUSED(ifname);
+
+    memset(&arp_req, 0, sizeof(arp_req));
+    arp_req.arp_pa.sa_family = AF_INET;
+
+    if (inet_pton(AF_INET, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
+    {
+        ERROR("%s(): Failed to convert IPv4 address from string '%s'",
+              __FUNCTION__, addr);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    arp_req.arp_ha.sa_family = AF_UNIX; /* AF_LOCAL */
+    for (i = 0; i < 6; i++)
+        (arp_req.arp_ha.sa_data)[i] = (unsigned char)(int_addr[i]);
+
+    arp_req.arp_flags = ATF_COM;
+    if (strstr(oid, "dynamic") == NULL)
+    {
+        VERB("%s(): Add permanent ARP entry", __FUNCTION__);
+        arp_req.arp_flags |= ATF_PERM;
+    }
+#if HAVE_STRUCT_ARPREQ_ARP_DEV
+    te_strlcpy(arp_req.arp_dev, ifname, sizeof(arp_req.arp_dev));
+#endif
+
+#ifdef SIOCSARP
+    CFG_IOCTL(cfg_socket, SIOCSARP, &arp_req);
+
+    return 0;
+#else
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+#endif
+}
+
+/**
+ * Delete neighbour entry.
+ *
+ * @param gid            group identifier (unused)
+ * @param oid            full object instance identifier (unused)
+ * @param ifname         interface name
+ * @param addr           IP address in human notation
+ *
+ * @return Status code
+ */
+static te_errno
+neigh_del(unsigned int gid, const char *oid, const char *ifname,
+          const char *addr)
+{
+    te_errno      rc;
+    bool proxy = (strstr(oid, "proxy") != NULL);
+
+    UNUSED(gid);
+
+    if ((rc = neigh_find(oid, ifname, addr, NULL, NULL)) != 0)
+    {
+        if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+        {
+            WARN("Cannot delete ARP entry: it disappeared");
+            rc = 0;
+        }
+        return rc;
+    }
+#if defined(USE_LIBNETCONF)
+    {
+        sa_family_t         family;
+        unsigned int        ifindex;
+        gen_ip_address      ip_addr;
+        netconf_neigh       neigh;
+
+        family = str_addr_family(addr);
+
+        if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        {
+            ERROR("%s(): Bad device name '%s'", __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+
+        if ((ifindex = if_nametoindex(ifname)) == 0)
+        {
+            ERROR("%s(): Device '%s' does not exist",
+                  __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, TE_ENODEV);
+        }
+
+        if (inet_pton(family, addr, &ip_addr) <= 0)
+        {
+            ERROR("Failed to convert address '%s' from string", addr);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        netconf_neigh_init(&neigh);
+        neigh.family = family;
+        neigh.ifindex = ifindex;
+        neigh.dst = (uint8_t *)&ip_addr;
+        if (proxy)
+            neigh.flags = NETCONF_NTF_PROXY;
+
+        if (netconf_neigh_modify(nh, NETCONF_CMD_DEL, &neigh) < 0)
+        {
+            ERROR("%s(): Cannot delete neighbour '%s' from "
+                  "interface '%s'",
+                  __FUNCTION__, addr, ifname);
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        return 0;
+    }
+#else /* USE_IOCTL */
+    {
+        struct arpreq arp_req;
+        sa_family_t   family;
+
+        if (proxy)
+        {
+            ERROR("%s(): removal of neighbor proxy is not implemented via "
+                  "SIOCDARP", __FUNCTION__);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        memset(&arp_req, 0, sizeof(arp_req));
+        family = str_addr_family(addr);
+        arp_req.arp_pa.sa_family = family;
+        if (inet_pton(family, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+#if HAVE_STRUCT_ARPREQ_ARP_DEV
+        te_strlcpy(arp_req.arp_dev, ifname, sizeof(arp_req.arp_dev));
+#endif
+
+#ifdef SIOCDARP
+
+        if (ioctl(cfg_socket, SIOCDARP, (caddr_t)&arp_req) != 0)
+        {
+            te_errno rc = te_rc_os2te(errno);
+
+            if ((rc != TE_ENXIO) || (strstr(oid, "dynamic") == NULL))
+            {
+                ERROR("line %u: ioctl(SIOCDARP) failed: %r", __LINE__, rc);
+            }
+            else
+            {
+                rc = TE_ENOENT;
+            }
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+        return 0;
+#else
+        return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+    }
+#endif
+}
+
+#if defined(USE_LIBNETCONF)
+static te_errno
+ta_unix_conf_neigh_list(const char *ifname, bool is_static,
+                        bool is_proxy, char **list)
+{
+    te_errno            rc;
+    unsigned int        ifindex;
+    netconf_list       *nlist;
+    netconf_node       *t;
+    unsigned int        len;
+    char               *cur_ptr;
+
+    if (list == NULL)
+    {
+        ERROR("%s(): Invalid value for 'list' argument", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+    {
+        ERROR("%s(): Bad device name '%s'", __FUNCTION__, ifname);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if ((ifindex = if_nametoindex(ifname)) == 0)
+    {
+        ERROR("%s(): Device '%s' does not exist", __FUNCTION__, ifname);
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    /* There are no neighbours for loopback interface */
+    if (strcmp(ifname, "lo") == 0)
+        return 0;
+
+    /* Get neighbours of both families: IPv4 and IPv6 */
+    if ((nlist = netconf_neigh_dump(nh, AF_UNSPEC)) == NULL)
+    {
+        ERROR("%s(): Cannot get list of neighbours", __FUNCTION__);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    /* Calculate maximum space needed by the list */
+    len = nlist->length * (INET6_ADDRSTRLEN + 1);
+
+    if (len == 0)
+    {
+        *list = NULL;
+        return 0;
+    }
+
+    *list = TE_ALLOC(len);
+    if (len == 0)
+    {
+        *list = NULL;
+        return 0;
+    }
+
+    cur_ptr = *list;
+    for (t = nlist->head; t != NULL; t = t->next)
+    {
+        const netconf_neigh *neigh = &(t->data.neigh);
+
+        assert(cur_ptr >= *list);
+        assert((unsigned int)(cur_ptr - *list) <= len);
+
+        if ((unsigned int)(neigh->ifindex) != ifindex)
+            continue;
+
+        if (is_proxy)
+        {
+            if (!(neigh->flags & NETCONF_NTF_PROXY))
+                continue;
+        }
+        else if (((neigh->state & NETCONF_NUD_UNSPEC) != 0) ||
+                 ((neigh->state & NETCONF_NUD_INCOMPLETE) != 0) ||
+                 (is_static == !(neigh->state & NETCONF_NUD_PERMANENT)) ||
+                 (neigh->flags & NETCONF_NTF_PROXY))
+        {
+            continue;
+        }
+
+        if ((neigh->lladdr == NULL) || (neigh->dst == NULL))
+            continue;
+
+        /* Neighbour is ok, save it to the list */
+
+        if (cur_ptr != *list)
+        {
+            snprintf(cur_ptr, len - (cur_ptr - *list), " ");
+            cur_ptr += strlen(cur_ptr);
+        }
+
+        if (inet_ntop(neigh->family, neigh->dst, cur_ptr,
+                      len - (cur_ptr - *list)) == NULL)
+        {
+            ERROR("%s(): Cannot save destination address",
+                  __FUNCTION__);
+            free(*list);
+            netconf_list_free(nlist);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        cur_ptr += strlen(cur_ptr);
+    }
+
+    netconf_list_free(nlist);
+
+    return 0;
+}
+#else
+static te_errno
+ta_unix_conf_neigh_list(const char *ifname, bool is_static,
+                        bool is_proxy, char **list)
+{
+    UNUSED(ifname);
+    UNUSED(is_static);
+
+    *list = NULL;
+
+#if HAVE_INET_MIB2_H
+    if (!is_proxy)
+    {
+        return ta_unix_conf_neigh_list_getmsg(ifname, is_static, list);
+    }
+#endif
+    return 0;
+}
+#endif
+
+/**
+ * Get instance list for object "agent/arp" and "agent/volatile/arp".
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full parent object instance identifier
+ * @param sub_id        ID of the object to be listed
+ * @param list          location for the list pointer
+ * @param ifname        interface name
+ *
+ * @return Status code
+ */
+static te_errno
+neigh_list(unsigned int gid, const char *oid,
+           const char *sub_id, char **list,
+           const char *ifname)
+{
+    UNUSED(oid);
+    UNUSED(gid);
+
+    return ta_unix_conf_neigh_list(ifname,
+                                   strstr(sub_id, "dynamic") == NULL,
+                                   strstr(sub_id, "proxy") != NULL,
+                                   list);
+}
