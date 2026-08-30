@@ -65,6 +65,8 @@ enum {
     RCF_SID_GET_LOG = 1,
     /** Session used for TA check */
     RCF_SID_TACHECK,
+    /** Session used for TA event gathering */
+    RCF_SID_TA_EVENTS,
 
     /** Unused SID, must be the last in the enum */
     RCF_SID_UNUSED,
@@ -329,6 +331,13 @@ extern int rcf_send_cmd(ta *agent, usrreq *req);
  * @note Cannot return @c NULL.
  */
 extern usrreq *rcf_alloc_usrreq(void);
+
+/**
+ * Release allocated memory for user request.
+ *
+ * @param req   User request
+ */
+extern void rcf_free_usrreq(usrreq *req);
 
 /**
  * Entry point of reboot state machine.

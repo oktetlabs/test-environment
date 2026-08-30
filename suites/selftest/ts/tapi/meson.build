@@ -9,6 +9,7 @@ packages = [
     'jobopt',
     'tool',
     'dns',
+    'ta_events',
 ]
 
 install_data([ 'package.xml' ], install_dir: package_dir)

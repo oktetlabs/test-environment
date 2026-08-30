@@ -24,5 +24,8 @@
 
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tapi/dns.trc.xml" parse="xml"/>
+
+        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                    href="tapi/ta_events.trc.xml" parse="xml"/>
     </iter>
 </test>
