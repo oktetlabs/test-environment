@@ -8445,7 +8445,7 @@ user_list(unsigned int gid, const char *oid,
         uid = strtol(tmp, &tmp1, 10);
         if (tmp1 == tmp || *tmp1 != ':')
             continue;
-        s += sprintf(s, TE_USER_PREFIX "%u", uid);
+        s += sprintf(s, TE_USER_PREFIX "%u ", uid);
     }
     fclose(f);
 
