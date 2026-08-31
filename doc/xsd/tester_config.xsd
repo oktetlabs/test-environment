@@ -221,7 +221,7 @@
                         Disabled by default.
                     </xsd:documentation>
                 </xsd:annotation>
-            </xsd:element>
+            </xsd:attribute>
         </xsd:choice>
     </xsd:complexType>
 
