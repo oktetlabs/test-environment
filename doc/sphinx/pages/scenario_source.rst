@@ -191,3 +191,82 @@ are findings. By default a header ``@param`` still counts as
 documentation; ``--strict`` requires the inline form. The ``env``
 parameter is the one exception to staleness checking, because its
 read is hidden inside ``TEST_START``.
+
+Parameter docs and scenario in the log
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The same ``TEST_PARAM_DOC()`` text and ``TEST_STEP()`` scenario
+that feed the doxygen filter also reach the run log, without
+running the tool by hand. At build time
+``engine/builder/te_tests_info.sh`` calls
+``scripts/scenario/tests_info.py`` for every test source and folds
+its output into the suite's ``tests-info.xml`` alongside the
+existing ``<objective>``. When the optional ``libclang`` package is
+importable the scenario is the same control-flow-annotated tree the
+doxygen filter renders - loop and branch headings such as ``For
+each iteration (...)`` and ``If `deep`:`` become steps one depth
+above their bodies. Without libclang the tool needs only the
+standard library and falls back to the flat textual extraction
+(``cstep``), listing the step texts in source order. Either
+way the texts carry no list markers: the consumer derives the
+list markup from the ``depth`` that travels with every step:
+
+.. code-block:: xml
+
+    <test name="parameters" page="minimal_parameters">
+      <objective>Test that various types of parameters are properly handled.</objective>
+      <param name="unit_param">Value with a decimal unit prefix:
+    - a plain number (no prefix)
+    - k, M, G, T suffixes (powers of 1000)</param>
+      <scenario>
+        <step depth="1">Getting required parameters</step>
+      </scenario>
+    </test>
+
+This needs ``python3`` on ``PATH`` at build time. Without it - or
+if the extractor fails - the build still succeeds: it falls back
+to the classic ``te_tests_info.awk`` scrape, which only ever
+produced ``<objective>``, so the ``<param>``/``<scenario>``
+entries are silently lost for that run. The build log says so:
+
+.. code-block:: none
+
+    tests-info: python tests-info generator unavailable or failed;
+        parameter descriptions and scenarios are not extracted
+        (install python3, e.g. apt install python3)
+
+With python3 but no libclang, a milder note marks the flat
+scenarios:
+
+.. code-block:: none
+
+    tests_info: scenarios lack control-flow annotations
+        (pip install libclang to add them)
+
+The Tester reads the extra fields back out of ``tests-info.xml``
+and logs them on the test's ``test_start`` MI message, bumped to
+version 2 for the addition: ``param_docs`` (parameter name to
+description, only the parameters that have one) and ``scenario``
+(the ordered ``{"depth": ..., "text": ...}`` steps), both omitted
+rather than emitted empty when a test has neither:
+
+.. code-block:: none
+
+    {"type":"test_start","version":2,"msg":{...,
+    "param_docs":{"unit_param":"Value with a decimal unit prefix:\n..."},
+    "scenario":[{"depth":1,"text":"Getting required parameters"}, ...],
+    "objective":"..."}}
+
+Bublik meets this data in two places. The log view renders it
+directly: the JSON log ``rgt-xml2json`` produces (what
+``rgt-proc-raw-log --json`` and the log bundle serve) carries a
+``description`` alongside each documented parameter's ``value``
+and a ``scenario`` array next to ``objective`` in the same test
+node, so the viewer can show them with the rest of the node's
+metadata. The plain-text and HTML renderers (``rgt-xml2text``,
+``rgt-xml2html``, ``rgt-xml2html-multi``) leave both out on
+purpose, so the flat log is not cluttered with text that is
+already in the source. Separately, for bublik's own database
+import, ``rgt-bublik-json`` copies ``param_docs`` and ``scenario``
+onto the test object straight from the ``test_start`` message,
+again present only when the test has them.
