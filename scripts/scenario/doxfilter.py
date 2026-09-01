@@ -30,7 +30,7 @@ from typing import TYPE_CHECKING
 import aststeps
 import cmaps
 from cheader import param_spans, split_source
-from steptree import Node, build, cond_label
+from steptree import Node, build, node_text
 
 if TYPE_CHECKING:
     from typing import NoReturn
@@ -62,13 +62,8 @@ def render_dox(nodes: list[Node], depth: int = 0) -> list[str]:
     """
     out: list[str] = []
     for node in nodes:
-        if node.kind == 'COND' and node.cond is not None:
-            before, code, after = cond_label(node.cond)
-            text = f'{before}`{code}`{after}' if code else before
-        else:
-            text = node.text
         bullet = '-#' if depth == 0 else '-'
-        out.append(f'{"   " * (depth + 1)}{bullet} {text}')
+        out.append(f'{"   " * (depth + 1)}{bullet} {node_text(node)}')
         out.extend(render_dox(node.children, depth + 1))
     return out
 
@@ -85,6 +80,33 @@ def _map_paths(source: Path) -> list[Path]:
     if te_base:
         paths += sorted((Path(te_base) / 'lib' / 'tapi').glob('*.h'))
     return paths
+
+
+def parse_setup(
+    source: Path,
+) -> tuple[list[str], dict[str, str], dict[str, list[str]]]:
+    """Everything aststeps.analyze needs to parse a source standalone.
+
+    Harvests the suite's wrapper getters and mapping lists, and
+    builds the -D stubs for them and for the step and parameter
+    macros, so the source parses without a compile database.
+    tests_info shares this with the filter itself, keeping the
+    logged scenario identical to the documented one.
+
+    Args:
+        source: The C test source about to be analyzed.
+
+    Returns:
+        The compiler stub arguments, the harvested wrapper getters,
+        and the harvested mapping lists.
+    """
+    wrappers, mappings = cmaps.harvest(_map_paths(source))
+    stubs = _STUBS + [
+        f'-D{name}(...)=(void)0'
+        for name in sorted(wrappers)
+        if name not in aststeps.PARAM_MACROS
+    ]
+    return stubs, wrappers, mappings
 
 
 def add_values(
@@ -243,12 +265,7 @@ def filter_text(source: Path) -> str:
         return ''
     header, trailing = split
     header, authors = _split_authors(header)
-    wrappers, mappings = cmaps.harvest(_map_paths(source))
-    stubs = _STUBS + [
-        f'-D{name}(...)=(void)0'
-        for name in sorted(wrappers)
-        if name not in aststeps.PARAM_MACROS
-    ]
+    stubs, wrappers, mappings = parse_setup(source)
     info = aststeps.analyze(source, extra_args=stubs, wrappers=wrappers)
     steps = info.steps
     docs = add_values(info.param_docs, info.bindings, mappings)

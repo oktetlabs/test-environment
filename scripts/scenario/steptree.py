@@ -76,6 +76,25 @@ def cond_label(cond: Cond) -> tuple[str, str, str]:
     return before, cond.cond, after
 
 
+def node_text(node: Node) -> str:
+    """The rendered text of a scenario item, shared by all emitters.
+
+    A construct heading gets its cond_label() phrasing with the C
+    expression marked up as markdown code; a plain step keeps its
+    text.
+
+    Args:
+        node: The scenario item to render.
+
+    Returns:
+        The item's display text.
+    """
+    if node.kind == 'COND' and node.cond is not None:
+        before, code, after = cond_label(node.cond)
+        return f'{before}`{code}`{after}' if code else before
+    return node.text
+
+
 class _Builder:
     """Mutable state of one tree construction pass."""
 
