@@ -26,6 +26,13 @@
 extern "C" {
 #endif
 
+/**
+ * Version of "test_start" MI message.
+ * v2 adds "param_docs" (parameter name -> description) and
+ * "scenario" (declared scenario steps), both from tests-info.xml.
+ */
+#define TESTER_TEST_START_VERSION 2
+
 /** Version of "test_end" MI message */
 #define TESTER_TEST_END_VERSION 2
 

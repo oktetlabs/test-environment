@@ -2021,6 +2021,78 @@ log_test_start(unsigned int flags,
             }
             SET_NEW_JSON(result, "hash", tmp);
 
+            if (!TAILQ_EMPTY(&ri->u.script.param_docs))
+            {
+                const test_param_doc *doc;
+                json_t *docs = json_object();
+
+                if (docs == NULL)
+                {
+                    ERROR("%s: json_object failed for param_docs",
+                          __FUNCTION__);
+                    json_decref(result);
+                    return;
+                }
+
+                TAILQ_FOREACH(doc, &ri->u.script.param_docs, links)
+                {
+                    /*
+                     * An empty tests-info.xml element yields a NULL
+                     * description; skip it, an empty entry adds nothing.
+                     */
+                    if (doc->description == NULL)
+                        continue;
+
+                    if (json_object_set_new(docs, doc->name,
+                            json_string(doc->description)) != 0)
+                    {
+                        ERROR("%s: failed to set param_docs entry %s",
+                              __FUNCTION__, doc->name);
+                        json_decref(docs);
+                        json_decref(result);
+                        return;
+                    }
+                }
+                SET_NEW_JSON(result, "param_docs", docs);
+            }
+
+            if (!TAILQ_EMPTY(&ri->u.script.scenario))
+            {
+                const test_scenario_step *step;
+                json_t *scen = json_array();
+
+                if (scen == NULL)
+                {
+                    ERROR("%s: json_array failed for scenario",
+                          __FUNCTION__);
+                    json_decref(result);
+                    return;
+                }
+
+                TAILQ_FOREACH(step, &ri->u.script.scenario, links)
+                {
+                    /*
+                     * An empty tests-info.xml element yields a NULL
+                     * text; skip it, an empty entry adds nothing.
+                     */
+                    if (step->text == NULL)
+                        continue;
+
+                    if (json_array_append_new(scen,
+                            json_pack("{s:i, s:s}",
+                                      "depth", (int)step->depth,
+                                      "text", step->text)) != 0)
+                    {
+                        ERROR("%s: failed to append scenario step",
+                              __FUNCTION__);
+                        json_decref(scen);
+                        json_decref(result);
+                        return;
+                    }
+                }
+                SET_NEW_JSON(result, "scenario", scen);
+            }
+
             if (flags & TESTER_CFG_WALK_OUTPUT_PARAMS)
             {
                 test_params_to_te_string(&params_str, ri->n_args, ctx->args);
@@ -2068,7 +2140,7 @@ log_test_start(unsigned int flags,
 
     te_string_free(&params_str);
     te_string_free(&obj_str);
-    tester_control_log(result, "test_start", 1);
+    tester_control_log(result, "test_start", TESTER_TEST_START_VERSION);
     json_decref(result);
 
 #undef SET_JSON_STRING

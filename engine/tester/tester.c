@@ -1036,7 +1036,7 @@ tester_log_mi_versions(void)
     msg = json_pack("{s:s, s:i, s:i, s:i}",
                     "type", "tester_mi_versions",
                     "test_plan", 1,
-                    "test_start", 1,
+                    "test_start", TESTER_TEST_START_VERSION,
                     "test_end", TESTER_TEST_END_VERSION);
     if (msg == NULL)
     {
