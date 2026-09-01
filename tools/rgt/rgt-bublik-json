@@ -51,6 +51,18 @@ def parse_test_start(obj, msg):
     obj['reqs'] = msg.get('reqs') or []
     obj['objective'] = msg.get('objective') or ''
 
+    # del_none_fields() is not run on this object tree (only on
+    # 'obtained'/'expected' inside parse_test_end()), so these two
+    # optional v2 fields must be omitted rather than set to None,
+    # or they would show up as JSON null in bublik.json.
+    param_docs = msg.get('param_docs')
+    if param_docs is not None:
+        obj['param_docs'] = param_docs
+
+    scenario = msg.get('scenario')
+    if scenario is not None:
+        obj['scenario'] = scenario
+
     params = {}
     for param in (msg.get('params') or []):
         params[param[0]] = param[1]
