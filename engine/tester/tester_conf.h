@@ -161,6 +161,25 @@ typedef struct test_attrs {
 } test_attrs;
 
 
+/** Parameter documentation entry (from tests-info.xml) */
+typedef struct test_param_doc {
+    TAILQ_ENTRY(test_param_doc) links;  /**< List links */
+    char *name;                         /**< Parameter name */
+    char *description;                  /**< Description text */
+} test_param_doc;
+/** Head of the list of parameter documentation entries */
+typedef TAILQ_HEAD(test_param_docs, test_param_doc) test_param_docs;
+
+/** Declared scenario step (from tests-info.xml) */
+typedef struct test_scenario_step {
+    TAILQ_ENTRY(test_scenario_step) links;  /**< List links */
+    unsigned int depth;                     /**< Nesting depth, from 1 */
+    char *text;                             /**< Step text */
+} test_scenario_step;
+/** Head of the list of declared scenario steps */
+typedef TAILQ_HEAD(test_scenario, test_scenario_step) test_scenario;
+
+
 /** Test script */
 typedef struct test_script {
     char               *name;       /**< Name of the script */
@@ -169,6 +188,8 @@ typedef struct test_script {
     char               *execute;    /**< Full path to executable */
     test_requirements   reqs;       /**< Set of requirements */
     test_attrs          attrs;      /**< Test attributes */
+    test_param_docs      param_docs;  /**< Parameter documentation */
+    test_scenario        scenario;    /**< Declared scenario */
 } test_script;
 
 
@@ -232,6 +253,8 @@ typedef struct test_info {
     char   *name;                   /**< Test name */
     char   *page;                   /**< HTML page with documentation */
     char   *objective;              /**< Objective of the test */
+    test_param_docs  param_docs;    /**< Parameter documentation */
+    test_scenario    scenario;      /**< Declared scenario */
 } test_info;
 
 /** Head of the list with test info */

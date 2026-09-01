@@ -43,6 +43,7 @@
 #include "te_expand.h"
 #include "te_compound.h"
 #include "te_str.h"
+#include "te_string.h"
 #include "tester_conf.h"
 #include "type_lib.h"
 #include "tester_cmd_monitor.h"
@@ -1269,6 +1270,86 @@ add_or_fix_arg(test_var_arg *p, test_vars_args *list)
 }
 
 /**
+ * Clone list of parameter documentation entries.
+ *
+ * @param docs      List to clone
+ * @param new_docs  Location for the cloned list
+ */
+static void
+test_param_docs_clone(const test_param_docs *docs, test_param_docs *new_docs)
+{
+    const test_param_doc  *p;
+    test_param_doc         *q;
+
+    TAILQ_FOREACH(p, docs, links)
+    {
+        q = TE_ALLOC(sizeof(*q));
+        q->name = TE_STRDUP(p->name);
+        q->description = TE_STRDUP(p->description);
+        TAILQ_INSERT_TAIL(new_docs, q, links);
+    }
+}
+
+/**
+ * Free list of parameter documentation entries.
+ *
+ * @param docs      List to free
+ */
+static void
+test_param_docs_free(test_param_docs *docs)
+{
+    test_param_doc *p;
+
+    while ((p = TAILQ_FIRST(docs)) != NULL)
+    {
+        TAILQ_REMOVE(docs, p, links);
+        free(p->name);
+        free(p->description);
+        free(p);
+    }
+}
+
+/**
+ * Clone declared test scenario.
+ *
+ * @param scenario      Scenario to clone
+ * @param new_scenario  Location for the cloned scenario
+ */
+static void
+test_scenario_clone(const test_scenario *scenario,
+                    test_scenario *new_scenario)
+{
+    const test_scenario_step  *p;
+    test_scenario_step         *q;
+
+    TAILQ_FOREACH(p, scenario, links)
+    {
+        q = TE_ALLOC(sizeof(*q));
+        q->depth = p->depth;
+        q->text = TE_STRDUP(p->text);
+        TAILQ_INSERT_TAIL(new_scenario, q, links);
+    }
+}
+
+/**
+ * Free declared test scenario.
+ *
+ * @param scenario      Scenario to free
+ */
+static void
+test_scenario_free(test_scenario *scenario)
+{
+    test_scenario_step *p;
+
+    while ((p = TAILQ_FIRST(scenario)) != NULL)
+    {
+        TAILQ_REMOVE(scenario, p, links);
+        free(p->text);
+        free(p);
+    }
+}
+
+/**
  * Get script call description.
  *
  * @param node      XML node with script call description
@@ -1319,6 +1400,8 @@ get_script(xmlNodePtr node, tester_cfg *cfg, run_item *ritem)
         {
             script->objective = TE_STRDUP(ti->objective);
             script->page = TE_STRDUP(ti->page);
+            test_param_docs_clone(&ti->param_docs, &script->param_docs);
+            test_scenario_clone(&ti->scenario, &script->scenario);
         }
     }
 
@@ -2648,6 +2731,8 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
     {
         p->type = RUN_ITEM_SCRIPT;
         TAILQ_INIT(&p->u.script.reqs);
+        TAILQ_INIT(&p->u.script.param_docs);
+        TAILQ_INIT(&p->u.script.scenario);
         rc = get_script(node, cfg, p);
         if (rc != 0)
             return rc;
@@ -3054,6 +3139,146 @@ get_tester_config(xmlNodePtr root, tester_cfg *cfg,
 
 
 /**
+ * Get text content of a node that may also carry element children,
+ * so that the format can grow structured children (say, a future
+ * 'value') without breaking older parsers: text nodes are
+ * concatenated in document order and element nodes are silently
+ * skipped.
+ *
+ * @param node      XML node
+ * @param content   Location for the result, left untouched (and
+ *                  thus @c NULL, as it should be for an absent
+ *                  optional description) when there is no text
+ *
+ * @return Status code.
+ */
+static te_errno
+get_lenient_text_content(xmlNodePtr node, char **content)
+{
+    xmlNodePtr  q;
+    te_string   str = TE_STRING_INIT;
+
+    for (q = node->children; q != NULL; q = q->next)
+    {
+        if (q->type != XML_TEXT_NODE || q->content == NULL)
+            continue;
+
+        te_string_append(&str, "%s", XML2CHAR(q->content));
+    }
+
+    if (str.len == 0)
+    {
+        te_string_free(&str);
+        return 0;
+    }
+
+    if (tester_global_context.flags & TESTER_STRIP_INDENT)
+        remove_common_leading_indent(str.ptr);
+
+    te_string_move(content, &str);
+    return 0;
+}
+
+/**
+ * Allocate and get parameter documentation entry.
+ *
+ * @param node      XML node ('param' element)
+ * @param docs      List of parameter documentation entries
+ *
+ * @return Status code.
+ */
+static te_errno
+alloc_and_get_param_doc(xmlNodePtr node, test_param_docs *docs)
+{
+    test_param_doc *p;
+    te_errno        rc;
+
+    p = TE_ALLOC(sizeof(*p));
+    TAILQ_INSERT_TAIL(docs, p, links);
+
+    p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
+    if (p->name == NULL)
+    {
+        ERROR("Missing 'name' attribute of the 'param' element");
+        return TE_RC(TE_TESTER, TE_EINVAL);
+    }
+
+    /*
+     * Description is optional and may carry element children (a
+     * future format extension) alongside its text - keep the text,
+     * ignore the elements.
+     */
+    rc = get_lenient_text_content(node, &p->description);
+    if (rc != 0)
+        return rc;
+
+    return 0;
+}
+
+/**
+ * Allocate and get declared scenario step.
+ *
+ * @param node      XML node ('step' element)
+ * @param scenario  Scenario to append the step to
+ *
+ * @return Status code.
+ */
+static te_errno
+alloc_and_get_scenario_step(xmlNodePtr node, test_scenario *scenario)
+{
+    test_scenario_step *p;
+    te_errno             rc;
+
+    p = TE_ALLOC(sizeof(*p));
+    TAILQ_INSERT_TAIL(scenario, p, links);
+
+    rc = get_uint_prop(node, "depth", &p->depth);
+    if (rc != 0)
+    {
+        ERROR("Missing or invalid 'depth' attribute of the 'step' element");
+        return TE_RC(TE_TESTER, TE_EINVAL);
+    }
+
+    rc = get_text_content(node, "step", &p->text);
+    if (rc != 0)
+        return rc;
+
+    return 0;
+}
+
+/**
+ * Get declared test scenario.
+ *
+ * @param node      XML node ('scenario' element)
+ * @param scenario  Scenario to fill in
+ *
+ * @return Status code.
+ */
+static te_errno
+get_test_scenario(xmlNodePtr node, test_scenario *scenario)
+{
+    xmlNodePtr q;
+    te_errno   rc;
+
+    /*
+     * Unknown elements are skipped rather than rejected, for the
+     * same forward-compatibility reason as in
+     * alloc_and_get_test_info().
+     */
+    for (q = xmlNodeChildren(node); q != NULL; q = xmlNodeNext(q))
+    {
+        if (xmlStrcmp(q->name, CONST_CHAR2XML("step")) != 0)
+            continue;
+
+        rc = alloc_and_get_scenario_step(q, scenario);
+        if (rc != 0)
+            return rc;
+    }
+
+    return 0;
+}
+
+/**
  * Allocate and get information about test.
  *
  * @param node      XML node
@@ -3065,9 +3290,12 @@ static te_errno
 alloc_and_get_test_info(xmlNodePtr node, tests_info *ti)
 {
     test_info  *p;
+    te_errno    rc;
 
     p = TE_ALLOC(sizeof(*p));
     TAILQ_INSERT_TAIL(ti, p, links);
+    TAILQ_INIT(&p->param_docs);
+    TAILQ_INIT(&p->scenario);
 
     p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
     if (p->name == NULL)
@@ -3099,6 +3327,26 @@ alloc_and_get_test_info(xmlNodePtr node, tests_info *ti)
     {
         ERROR("Failed to duplicate string");
         return TE_RC(TE_TESTER, TE_ENOMEM);
+    }
+
+    /*
+     * Get optional parameter documentation and declared scenario.
+     * Unknown elements are ignored silently for forward compatibility.
+     */
+    for (node = xmlNodeNext(node); node != NULL; node = xmlNodeNext(node))
+    {
+        if (xmlStrcmp(node->name, CONST_CHAR2XML("param")) == 0)
+        {
+            rc = alloc_and_get_param_doc(node, &p->param_docs);
+            if (rc != 0)
+                return rc;
+        }
+        else if (xmlStrcmp(node->name, CONST_CHAR2XML("scenario")) == 0)
+        {
+            rc = get_test_scenario(node, &p->scenario);
+            if (rc != 0)
+                return rc;
+        }
     }
 
     return 0;
@@ -3194,6 +3442,8 @@ tests_info_free(tests_info *ti)
         free(p->name);
         free(p->page);
         free(p->objective);
+        test_param_docs_free(&p->param_docs);
+        test_scenario_free(&p->scenario);
         free(p);
     }
 }
@@ -3455,6 +3705,8 @@ test_script_free(test_script *p)
     free(p->page);
     free(p->execute);
     test_requirements_free(&p->reqs);
+    test_param_docs_free(&p->param_docs);
+    test_scenario_free(&p->scenario);
 }
 
 
