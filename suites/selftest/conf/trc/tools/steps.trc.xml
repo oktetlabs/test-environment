@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2026 OKTET Ltd. -->
+<test name="steps" type="script">
+    <objective>Exercise nested and conditional scenario steps.</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="loops" />
+        <arg name="deep" />
+    </iter>
+</test>

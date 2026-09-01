@@ -374,6 +374,18 @@
         </run>
 
         <run>
+            <script name="steps"/>
+            <arg name="loops">
+                <value>1</value>
+                <value>3</value>
+            </arg>
+            <arg name="deep">
+                <value>TRUE</value>
+                <value>FALSE</value>
+            </arg>
+        </run>
+
+        <run>
             <script name="str_compare_versions"/>
         </run>
 
