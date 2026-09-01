@@ -1314,6 +1314,11 @@ RGT_DEF_FUNC(proc_meta_req_start)
 
 RGT_DEF_DUMMY_FUNC(proc_meta_req_end)
 
+RGT_DEF_DUMMY_FUNC(proc_meta_scenario_start)
+RGT_DEF_DUMMY_FUNC(proc_meta_scenario_end)
+RGT_DEF_DUMMY_FUNC(proc_meta_step_start)
+RGT_DEF_DUMMY_FUNC(proc_meta_step_end)
+
 RGT_DEF_FUNC(proc_logs_start)
 {
     depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
@@ -1580,10 +1585,16 @@ proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     const rgt_xmlChar *p, *ch_begin, *ch_end;
 #endif
 
-    UNUSED(ctx);
     TE_COMPILE_TIME_ASSERT(sizeof(rgt_xmlChar) == 1);
 
     if (fd == NULL)
+        return;
+
+    /*
+     * Scenario step text is not shown in this format - avoid leaking
+     * it into the HTML log.
+     */
+    if (ctx->state == RGT_XML2HTML_STATE_STEP)
         return;
 
     if (depth_user->log_level != NULL &&

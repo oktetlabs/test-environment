@@ -13,6 +13,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <errno.h>
+#include <stdlib.h>
 
 #include "logger_defs.h"
 #include "te_raw_log.h"
@@ -877,10 +878,13 @@ RGT_XML2JSON_CB(proc_meta_param_start,
 {
     const char *name = rgt_tmpls_xml_attrs_get(xml_attrs, "name");
     const char *value = rgt_tmpls_xml_attrs_get(xml_attrs, "value");
+    const char *descr = rgt_tmpls_xml_attrs_get(xml_attrs, "description");
 
     te_json_start_object(json_ctx);
     te_json_add_key_str(json_ctx, "name", name);
     te_json_add_key_str(json_ctx, "value", value);
+    if (descr != NULL)
+        te_json_add_key_str(json_ctx, "description", descr);
     te_json_end(json_ctx);
 })
 
@@ -937,6 +941,27 @@ RGT_XML2JSON_VERDICT_OR_ARTIFACT_CB(verdict)
 
 RGT_XML2JSON_META_ARRAY_PROP_CB(artifacts, artifacts)
 RGT_XML2JSON_VERDICT_OR_ARTIFACT_CB(artifact)
+
+RGT_XML2JSON_META_ARRAY_PROP_CB(scenario, scenario)
+
+RGT_XML2JSON_CB(proc_meta_step_start,
+{
+    const char *depth = rgt_tmpls_xml_attrs_get(xml_attrs, "depth");
+
+    te_json_start_object(json_ctx);
+    te_json_add_key(json_ctx, "depth");
+    te_json_add_integer(json_ctx, depth != NULL ? atoi(depth) : 1);
+    te_json_add_key(json_ctx, "text");
+    te_json_start_string(json_ctx);
+    depth_user->append_chars = true;
+})
+
+RGT_XML2JSON_CB(proc_meta_step_end,
+{
+    te_json_end(json_ctx);
+    te_json_end(json_ctx);
+    depth_user->append_chars = false;
+})
 
 RGT_XML2JSON_CB(proc_meta_page_start,
 {

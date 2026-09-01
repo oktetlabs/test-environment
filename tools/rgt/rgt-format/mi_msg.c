@@ -793,6 +793,14 @@ te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
     /* The following two are  not actually used so far */
     json_t *param_stems = NULL;
     json_t *param_fields = NULL;
+    /*
+     * v2 test_start fields: accepted here only so JSON_STRICT
+     * unpacking does not fail on them, deliberately not rendered
+     * in the MI summary (the XML meta block produced by rgt-core is
+     * the rendering path for these - see xml2json.c/xml2fmt_core.c).
+     */
+    json_t *param_docs = NULL;
+    json_t *scenario = NULL;
     json_t *reqs = NULL;
     json_t *authors = NULL;
     json_t *objective = NULL;
@@ -821,7 +829,7 @@ te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
     data->plan_id = -1;
     ret = json_unpack_ex(root, &err, JSON_STRICT,
                          "{s:i, s:i, s?i, s:s, s?o, s?o, s?o, s?o, s?o, s?o, "
-                         "s?o, s?o, s?o, s?o}",
+                         "s?o, s?o, s?o, s?o, s?o, s?o}",
                          "id", &data->node_id,
                          "parent", &data->parent_id,
                          "plan_id", &data->plan_id,
@@ -830,6 +838,8 @@ te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
                          "params", &params,
                          "param_stems", &param_stems,
                          "param_fields", &param_fields,
+                         "param_docs", &param_docs,
+                         "scenario", &scenario,
                          "reqs", &reqs,
                          "authors", &authors,
                          "objective", &objective,

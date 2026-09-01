@@ -361,6 +361,23 @@ rgt_log_end_element(void *user_data, const rgt_xmlChar *xml_tag)
             ctx->state = RGT_XML2HTML_STATE_META;
             break;
 
+        case RGT_XML2HTML_STATE_SCENARIO:
+            assert(strcmp(tag, "scenario") == 0);
+            assert(ctx->depth >= 1);
+            proc_meta_scenario_end(ctx, depth_ctx, NULL);
+            ctx->state = RGT_XML2HTML_STATE_META;
+            break;
+
+        case RGT_XML2HTML_STATE_STEP:
+            if (strcmp(tag, "step") == 0)
+            {
+                proc_meta_step_end(ctx, depth_ctx, NULL);
+                ctx->state = RGT_XML2HTML_STATE_SCENARIO;
+            }
+            else
+                assert(strcmp(tag, "br") == 0);
+            break;
+
         case RGT_XML2HTML_STATE_FILE:
             if (strcmp(tag, "file") == 0)
             {
@@ -491,6 +508,12 @@ rgt_log_start_element(void *user_data,
                                      RGT_XML2CHAR(attrs));
                 ctx->state = RGT_XML2HTML_STATE_REQS;
             }
+            else if (strcmp(tag, "scenario") == 0)
+            {
+                proc_meta_scenario_start(ctx, depth_ctx,
+                                         RGT_XML2CHAR(attrs));
+                ctx->state = RGT_XML2HTML_STATE_SCENARIO;
+            }
             else
             {
                 fprintf(stderr, "Unexpected TAG '%s' in META state\n",
@@ -536,6 +559,17 @@ rgt_log_start_element(void *user_data,
         case RGT_XML2HTML_STATE_REQS:
             assert(strcmp(tag, "req") == 0);
             proc_meta_req_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
+            break;
+
+        case RGT_XML2HTML_STATE_SCENARIO:
+            assert(strcmp(tag, "step") == 0);
+            proc_meta_step_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
+            ctx->state = RGT_XML2HTML_STATE_STEP;
+            break;
+
+        case RGT_XML2HTML_STATE_STEP:
+            assert(strcmp(tag, "br") == 0);
+            proc_log_msg_br(ctx, depth_ctx, RGT_XML2CHAR(attrs));
             break;
 
         case RGT_XML2HTML_STATE_LOGS:
@@ -641,6 +675,7 @@ rgt_log_characters(void *user_data, const rgt_xmlChar *ch, int len)
         case RGT_XML2HTML_STATE_PAGE:
         case RGT_XML2HTML_STATE_VERDICT:
         case RGT_XML2HTML_STATE_ARTIFACT:
+        case RGT_XML2HTML_STATE_STEP:
         case RGT_XML2HTML_STATE_LOG_MSG:
         case RGT_XML2HTML_STATE_MEM_DUMP_ELEM:
         case RGT_XML2HTML_STATE_FILE:

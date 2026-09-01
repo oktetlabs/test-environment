@@ -413,6 +413,10 @@ RGT_DEF_DUMMY_FUNC(proc_meta_param_start)
 RGT_DEF_DUMMY_FUNC(proc_meta_param_end)
 RGT_DEF_DUMMY_FUNC(proc_meta_req_start)
 RGT_DEF_DUMMY_FUNC(proc_meta_req_end)
+RGT_DEF_DUMMY_FUNC(proc_meta_scenario_start)
+RGT_DEF_DUMMY_FUNC(proc_meta_scenario_end)
+RGT_DEF_DUMMY_FUNC(proc_meta_step_start)
+RGT_DEF_DUMMY_FUNC(proc_meta_step_end)
 RGT_DEF_DUMMY_FUNC(proc_logs_start)
 RGT_DEF_DUMMY_FUNC(proc_logs_end)
 RGT_DEF_DUMMY_FUNC(proc_meta_start)
@@ -1020,8 +1024,14 @@ proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
 {
     gen_ctx_user_t *user_ctx = (gen_ctx_user_t *)(ctx->user_data);
 
-    UNUSED(ctx);
     UNUSED(depth_ctx);
+
+    /*
+     * Scenario step text is not shown in this format - avoid leaking
+     * it into the plain text log.
+     */
+    if (ctx->state == RGT_XML2HTML_STATE_STEP)
+        return;
 
     if (user_ctx->mi_artifact)
     {

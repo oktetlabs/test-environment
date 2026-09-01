@@ -58,6 +58,8 @@ typedef enum rgt_state {
     RGT_XML2HTML_STATE_PAGE,
     RGT_XML2HTML_STATE_PARAMS,
     RGT_XML2HTML_STATE_REQS,
+    RGT_XML2HTML_STATE_SCENARIO,
+    RGT_XML2HTML_STATE_STEP,
 
     RGT_XML2HTML_STATE_CNTRL_MSG,
     RGT_XML2HTML_STATE_LOG_MSG,
@@ -238,6 +240,10 @@ RGT_EXTERN_FUNC(proc_meta_reqs_start);
 RGT_EXTERN_FUNC(proc_meta_reqs_end);
 RGT_EXTERN_FUNC(proc_meta_req_start);
 RGT_EXTERN_FUNC(proc_meta_req_end);
+RGT_EXTERN_FUNC(proc_meta_scenario_start);
+RGT_EXTERN_FUNC(proc_meta_scenario_end);
+RGT_EXTERN_FUNC(proc_meta_step_start);
+RGT_EXTERN_FUNC(proc_meta_step_end);
 RGT_EXTERN_FUNC(proc_meta_start_ts_start);
 RGT_EXTERN_FUNC(proc_meta_start_ts_end);
 RGT_EXTERN_FUNC(proc_meta_end_ts_start);
