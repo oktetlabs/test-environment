@@ -843,6 +843,8 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
     json_t     *params = NULL;
     json_t     *param_stems = NULL;
     json_t     *param_fields = NULL;
+    json_t     *param_docs = NULL;
+    json_t     *scenario = NULL;
     json_t     *reqs = NULL;
     json_t     *name_opt = NULL;
     json_t     *objective_opt = NULL;
@@ -876,7 +878,7 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
      */
     ret = json_unpack_ex(msg, &err, JSON_STRICT,
                          "{s:i, s:i, s:s, s?o, s?o, s?o, s?o, s?o, "
-                         "s?o, s?o, s?o, s?o, s?o, s?i}",
+                         "s?o, s?o, s?o, s?o, s?o, s?o, s?o, s?i}",
                          "id", &node->node_id,
                          "parent", &node->parent_id,
                          "node_type", &type,
@@ -889,6 +891,8 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
                          "params", &params,
                          "param_stems", &param_stems,
                          "param_fields", &param_fields,
+                         "param_docs", &param_docs,
+                         "scenario", &scenario,
                          "reqs", &reqs,
                          "plan_id", &node->plan_id);
     if (ret != 0)
@@ -1035,6 +1039,7 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
                         node_info_obstack_copy0(name, strlen(name));
                     (*p_prm)->stem = NULL;
                     (*p_prm)->field = NULL;
+                    (*p_prm)->descr = NULL;
                     (*p_prm)->val =
                         node_info_obstack_copy0(value, strlen(value));
                     if (param_stems != NULL)
@@ -1067,6 +1072,16 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
                             }
                         }
                     }
+                    if (param_docs != NULL)
+                    {
+                        json_t *descr = json_object_get(param_docs, name);
+                        const char *descr_str = json_string_value(descr);
+
+                        if (descr_str != NULL)
+                            (*p_prm)->descr =
+                                node_info_obstack_copy0(descr_str,
+                                                        strlen(descr_str));
+                    }
                     p_prm = &((*p_prm)->next);
                 }
             }
@@ -1076,6 +1091,47 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
         {
             FMT_TRACE("Invalid type for the \"params\" value:%s",
                       get_json_type(params));
+        }
+    }
+
+    if (scenario != NULL && !json_is_null(scenario))
+    {
+        size_t          index;
+        json_t         *json_step;
+        int             depth;
+        const char     *text = NULL;
+        scenario_step **p_step;
+
+        if (json_is_array(scenario))
+        {
+            p_step = &(node->scenario);
+            json_array_foreach(scenario, index, json_step)
+            {
+                ret = json_unpack_ex(json_step, &err, JSON_STRICT,
+                                     "{s:i, s:s}",
+                                     "depth", &depth, "text", &text);
+                if (ret != 0)
+                {
+                    FMT_TRACE("Error unpacking scenario step: %s "
+                              "(line %d, column %d)",
+                              err.text, err.line, err.column);
+                }
+                else
+                {
+                    *p_step = (scenario_step *)node_info_obstack_alloc(
+                                                    sizeof(scenario_step));
+                    (*p_step)->depth = depth;
+                    (*p_step)->text =
+                        node_info_obstack_copy0(text, strlen(text));
+                    p_step = &((*p_step)->next);
+                }
+            }
+            *p_step = NULL;
+        }
+        else
+        {
+            FMT_TRACE("Invalid type for the \"scenario\" value: %s",
+                      get_json_type(scenario));
         }
     }
 

@@ -51,7 +51,15 @@ typedef struct param {
     char *stem; /**< Base name for compound parameters */
     char *field; /**< Field name for compound parameters */
     char *val;  /**< Parameter value in string representation */
+    char *descr; /**< Parameter description, or @c NULL if none */
 } param;
+
+/** Declared scenario step of a test */
+typedef struct scenario_step {
+    struct scenario_step *next; /**< Next step */
+    int depth;                  /**< Nesting depth, from 1 */
+    char *text;                 /**< Step text */
+} scenario_step;
 
 /** Structure that represents test requirement */
 typedef struct requirement {
@@ -189,6 +197,7 @@ typedef struct node_info {
     int             plan_id;     /**< ID of the next run item in
                                       the execution plan */
     param          *params;      /**< List of parameters */
+    scenario_step  *scenario;    /**< List of declared scenario steps */
     requirement    *reqs;        /**< List of requirements */
     uint32_t        start_ts[2]; /**< Timestamp of a "node start" event */
     uint32_t        end_ts[2];   /**< Timestamp of a "node end" event */

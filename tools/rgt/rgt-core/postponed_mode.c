@@ -195,10 +195,36 @@ print_params(node_info_t *node)
             if (prm->field != NULL)
                 append_attr("field", prm->field);
             append_attr("value", prm->val);
+            if (prm->descr != NULL)
+                append_attr("description", prm->descr);
             fprintf(rgt_ctx.out_fd, "/>\n");
             prm = prm->next;
         }
         fprintf(rgt_ctx.out_fd, "</params>\n");
+    }
+}
+
+/**
+ * Print declared scenario steps of a test, if any.
+ *
+ * @param node      Node info.
+ */
+static void
+print_scenario(node_info_t *node)
+{
+    if (node->scenario != NULL)
+    {
+        scenario_step *step = node->scenario;
+
+        fprintf(rgt_ctx.out_fd, "<scenario>\n");
+        while (step != NULL)
+        {
+            fprintf(rgt_ctx.out_fd, "<step depth=\"%d\">", step->depth);
+            write_xml_string(NULL, step->text, false);
+            fprintf(rgt_ctx.out_fd, "</step>\n");
+            step = step->next;
+        }
+        fprintf(rgt_ctx.out_fd, "</scenario>\n");
     }
 }
 
@@ -391,6 +417,7 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
 
     print_reqs(node);
     print_params(node);
+    print_scenario(node);
     fprintf(rgt_ctx.out_fd, "</meta>\n");
     logs_opened = 0;
 
