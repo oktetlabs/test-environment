@@ -139,3 +139,46 @@ def test_param_spans() -> None:
 
 def test_param_spans_none() -> None:
     assert param_spans(['/** @defgroup x-y T', ' * @objective O']) == []
+
+
+INLINE_MARKER_SRC = """\
+/** @defgroup demo-check Demo check test
+ * @ingroup demo
+ * @{
+ *
+ * @objective Set the list of multicast addresses to filter on
+ *            @p iut_port port
+ *
+ * @param iut_port  Interface handle to use
+ *                   @p iut_port here too
+ *
+ * @par Scenario:
+ */
+int main(void) { return 0; }
+"""
+
+
+def test_parse_doc_header_inline_marker_at_line_start() -> None:
+    """An @p/@a/@b/@c/@e at the start of a continuation line is markup."""
+    summary, objective, type_, params = parse_doc_header(INLINE_MARKER_SRC)
+    assert summary == 'Demo check test'
+    assert objective == (
+        'Set the list of multicast addresses to filter on @p iut_port port'
+    )
+    assert params == [
+        ('iut_port', 'Interface handle to use @p iut_port here too'),
+    ]
+
+
+def test_param_spans_inline_marker_at_line_start() -> None:
+    header = [
+        '/** @defgroup x-y Title',
+        ' * @objective Check',
+        ' *',
+        ' * @param mode  The mode of',
+        ' *              @p iut_port port',
+        ' * @param size  The size',
+        ' *',
+        ' * @par Scenario:',
+    ]
+    assert param_spans(header) == [('mode', 3, 5), ('size', 5, 6)]

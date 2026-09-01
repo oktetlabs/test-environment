@@ -14,6 +14,11 @@ from __future__ import annotations
 import re
 
 _TAG = re.compile(r'^@(\w+)\s*(.*)$')
+# Doxygen inline markers: @p, @a, @b, @c, @e mark up a single word
+# within running text, not a new block tag - a continuation line
+# that happens to start with one (wrapped @p foo text, say) must
+# not be mistaken for the start of a fresh @tag block.
+_INLINE_MARKERS = frozenset({'a', 'b', 'c', 'e', 'p'})
 _DOC_START = re.compile(r'^\s*/\*\*')
 _DOC_ONE_LINE = re.compile(r'^\s*/\*\*.*\*/\s*$')
 
@@ -84,6 +89,8 @@ def _header_tags(header: list[str]) -> list[tuple[str, str]]:
     for raw in header:
         line = raw.strip().lstrip('/').lstrip('*').strip()
         m = _TAG.match(line)
+        if m and m.group(1) in _INLINE_MARKERS:
+            m = None
         if m:
             flush()
             tag, collected = m.group(1), [m.group(2)]
@@ -109,6 +116,8 @@ def param_spans(header: list[str]) -> list[tuple[str, int, int]]:
     for i, raw in enumerate(header):
         line = raw.strip().lstrip('/').lstrip('*').strip()
         m = _TAG.match(line)
+        if m and m.group(1) in _INLINE_MARKERS:
+            m = None
         if m or not line:
             if start is not None:
                 spans.append((name, start, i))
