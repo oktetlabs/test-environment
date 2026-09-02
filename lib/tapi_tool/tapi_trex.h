@@ -669,6 +669,14 @@ typedef struct tapi_trex_opt {
      */
     const char *astf_template;
     /**
+     * Path to an already expanded ASTF profile on the engine host.
+     *
+     * When not @c NULL, the file is copied to the agent as is and
+     * @p astf_template is ignored. Use it for profiles too large to
+     * pass through an RPC buffer.
+     */
+    const char *astf_template_file;
+    /**
      * Full path to TRex exec (should not be @c NULL).
      * The directory with TRex exec should also contain @c "astf_schema.json".
     */

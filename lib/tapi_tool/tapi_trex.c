@@ -33,6 +33,7 @@
 #include "te_sockaddr.h"
 
 #include "conf_oid.h"
+#include "rcf_api.h"
 
 /** TRex dummy interface name. */
 #define TAPI_TREX_DUMMY "dummy"
@@ -548,14 +549,6 @@ tapi_trex_gen_astf_config(const char *ta, const tapi_trex_opt *opt)
     te_kvpair_h kvpairs;
     te_kvpair_init(&kvpairs);
 
-    te_string_append(&template, "%s", opt->astf_template);
-
-    tapi_trex_gen_clients_astf_conf(opt->clients, &kvpairs);
-    tapi_trex_gen_servers_astf_conf(opt->servers, &kvpairs);
-
-    if (opt->astf_vars != NULL)
-        te_kvpairs_copy(&kvpairs, opt->astf_vars);
-
     rc = te_snprintf(astf_json_path, sizeof(astf_json_path),
                      TAPI_TREX_ASTF_CONF_FMT,
                      prefix_is_empty ? "" : "-",
@@ -567,12 +560,36 @@ tapi_trex_gen_astf_config(const char *ta, const tapi_trex_opt *opt)
         goto cleanup;
     }
 
-    rc = tapi_file_expand_kvpairs(ta, template.ptr, NULL, &kvpairs,
-                                  astf_json_path);
-    if (rc != 0)
+    /*
+     * An already expanded profile may be far larger than an RPC buffer,
+     * so it is shipped to the agent as a file instead of a string.
+     */
+    if (opt->astf_template_file != NULL)
     {
-        ERROR("Failed to create TRex ASTF config '%s': %r", astf_json_path, rc);
-        goto cleanup;
+        rc = rcf_ta_put_file(ta, 0, opt->astf_template_file, astf_json_path);
+        if (rc != 0)
+        {
+            ERROR("Failed to copy TRex ASTF config '%s' to '%s': %r",
+                  opt->astf_template_file, astf_json_path, rc);
+        }
+    }
+    else
+    {
+        te_string_append(&template, "%s", opt->astf_template);
+
+        tapi_trex_gen_clients_astf_conf(opt->clients, &kvpairs);
+        tapi_trex_gen_servers_astf_conf(opt->servers, &kvpairs);
+
+        if (opt->astf_vars != NULL)
+            te_kvpairs_copy(&kvpairs, opt->astf_vars);
+
+        rc = tapi_file_expand_kvpairs(ta, template.ptr, NULL, &kvpairs,
+                                      astf_json_path);
+        if (rc != 0)
+        {
+            ERROR("Failed to create TRex ASTF config '%s': %r",
+                  astf_json_path, rc);
+        }
     }
 
 cleanup:
