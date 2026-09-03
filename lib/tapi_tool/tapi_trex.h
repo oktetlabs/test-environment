@@ -459,7 +459,12 @@ typedef struct tapi_trex_opt {
      * flow traffic is asymmetric.
      */
     bool asymmetric_traffic_flow;
-    /** If set, report latency using high dynamic range histograms. */
+    /**
+     * If set, report latency using high dynamic range histograms.
+     *
+     * TRex ignores this unless the latency check is running, so it does
+     * nothing on its own: set @p latency_pps as well.
+     */
     bool use_hdr_histograms;
     /**
      * Latency check packet rate per interface, packets per second.
@@ -695,9 +700,16 @@ typedef struct tapi_trex_opt {
     /**
      * Path to an already expanded ASTF profile on the engine host.
      *
-     * When not @c NULL, the file is copied to the agent as is and
-     * @p astf_template is ignored. Use it for profiles too large to
-     * pass through an RPC buffer.
+     * When not @c NULL, the file is copied to the agent exactly as it
+     * is and no expansion happens at all. That means @p astf_template
+     * is ignored, and so is every source of substitution values:
+     * @p astf_vars, and the client and server address variables that
+     * tapi_trex_gen_astf_config() would otherwise derive from
+     * @p clients and @p servers. The file must therefore already carry
+     * final addresses and final values for anything a template would
+     * have parameterised.
+     *
+     * Use it for profiles too large to pass through an RPC buffer.
      */
     const char *astf_template_file;
     /**
