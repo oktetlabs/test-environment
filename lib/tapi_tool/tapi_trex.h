@@ -277,6 +277,21 @@ typedef struct tapi_trex_app {
     /** total-rx-bytes filter. */
     tapi_job_channel_t *total_rx_bytes_flt;
 
+    /**
+     * Latency probe tx-ok counter filter (one match per interface,
+     * summed at report time).
+     */
+    tapi_job_channel_t *latency_tx_pkt_filter;
+    /**
+     * Latency probe rx-ok counter filter (one match per interface,
+     * summed at report time).
+     */
+    tapi_job_channel_t *latency_rx_pkt_filter;
+    /** average-latency filter. */
+    tapi_job_channel_t *latency_avg_filter;
+    /** maximum-latency filter. */
+    tapi_job_channel_t *latency_max_filter;
+
     /** Optional filters. */
     tapi_trex_opt_flt *opt_flts;
 
@@ -446,6 +461,13 @@ typedef struct tapi_trex_opt {
     bool asymmetric_traffic_flow;
     /** If set, report latency using high dynamic range histograms. */
     bool use_hdr_histograms;
+    /**
+     * Latency check packet rate per interface, packets per second.
+     *
+     * In parallel to the test, run a latency check, sending packets at
+     * this rate from each interface.
+     */
+    tapi_job_opt_uint_t latency_pps;
     /** If set, work in IPv6 mode. */
     bool ipv6;
     /**
@@ -715,6 +737,36 @@ typedef struct tapi_trex_report {
     uint64_t total_tx_bytes;
     /** Total bytes received. */
     uint64_t total_rx_bytes;
+
+    /**
+     * Latency probe packets sent during the run, summed over all
+     * interfaces. Populated only when @p tapi_trex_opt::latency_pps is
+     * set; @c 0 otherwise.
+     */
+    uint64_t latency_tx_pkts;
+    /**
+     * Latency probe packets received back, summed over all interfaces.
+     * Populated only when @p tapi_trex_opt::latency_pps is set;
+     * @c 0 otherwise.
+     *
+     * Comparing this to @p latency_tx_pkts tells whether latency
+     * probing actually worked: @c 0 received while @p latency_tx_pkts
+     * is nonzero means no probe ever came back, which is a broken
+     * measurement rather than a genuine zero latency result.
+     */
+    uint64_t latency_rx_pkts;
+    /**
+     * Average latency of the probe packets over the whole run, in
+     * microseconds, as reported by TRex's "average-latency" line.
+     * Meaningless (@c 0) unless @p latency_tx_pkts is nonzero.
+     */
+    uint64_t latency_avg_usec;
+    /**
+     * Maximum latency of the probe packets over the whole run, in
+     * microseconds, as reported by TRex's "maximum-latency" line.
+     * Meaningless (@c 0) unless @p latency_tx_pkts is nonzero.
+     */
+    uint64_t latency_max_usec;
 
     /** Optional filter values. */
     tapi_trex_opt_flt_vals *opt_flts_vals;
