@@ -174,6 +174,7 @@ typedef enum tapi_trex_global_stat_enum {
     TAPI_TREX_GLOBAL_STAT_EXPECTED_PPS,
     TAPI_TREX_GLOBAL_STAT_EXPECTED_CPS,
     TAPI_TREX_GLOBAL_STAT_EXPECTED_L7_BPS,
+    TAPI_TREX_GLOBAL_STAT_ACTIVE_FLOWS,
 } tapi_trex_global_stat_enum;
 
 /** TRex port stat filter. */
@@ -223,6 +224,7 @@ typedef struct tapi_trex_global_stat {
     double expected_pps;
     double expected_cps;
     double expected_l7_bps;
+    double active_flows;
     double curr_time;
     double test_duration;
     bool valid;

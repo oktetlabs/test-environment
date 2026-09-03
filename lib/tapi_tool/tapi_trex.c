@@ -310,6 +310,12 @@ static const tapi_trex_stat_type global_stat_types[] = {
         .with_units = true,
         .type = TAPI_TREX_VAL_TYPE_DOUBLE,
         .offset = offsetof(struct tapi_trex_global_stat, expected_l7_bps) },
+    [TAPI_TREX_GLOBAL_STAT_ACTIVE_FLOWS] = {
+        .name = "Active-flows",
+        .re = "\\s+:\\s+([0-9]+)",
+        .with_units = false,
+        .type = TAPI_TREX_VAL_TYPE_DOUBLE,
+        .offset = offsetof(struct tapi_trex_global_stat, active_flows) },
 };
 
 /** TRex interface description. */
