@@ -21,6 +21,7 @@
 #include "rcf_pch_tree.h"
 #include "unix_internal.h"
 #include "te_string.h"
+#include "te_sockaddr.h"
 
 /** Data for object with two properties */
 typedef struct two_props_data {
@@ -320,6 +321,8 @@ static uint8_t demo_narrowing_u8;
 static int8_t demo_narrowing_i8;
 static bool demo_bool;
 static int demo_color = 1;
+static const double demo_double = 2.5;
+static struct sockaddr_storage demo_addr;   /* AF_UNSPEC until set */
 
 typedef struct demo_item {
     SLIST_ENTRY(demo_item) links;
@@ -476,6 +479,30 @@ demo_narrowing_i8_set(const ta_conf_ctx *ctx, int8_t val)
 {
     UNUSED(ctx);
     demo_narrowing_i8 = val;
+    return 0;
+}
+
+static te_errno
+demo_double_get(const ta_conf_ctx *ctx, double *val)
+{
+    UNUSED(ctx);
+    *val = demo_double;
+    return 0;
+}
+
+static te_errno
+demo_addr_get(const ta_conf_ctx *ctx, struct sockaddr_storage *val)
+{
+    UNUSED(ctx);
+    *val = demo_addr;
+    return 0;
+}
+
+static te_errno
+demo_addr_set(const ta_conf_ctx *ctx, const struct sockaddr *val)
+{
+    UNUSED(ctx);
+    memcpy(&demo_addr, val, te_sockaddr_get_size(val));
     return 0;
 }
 
@@ -1070,6 +1097,8 @@ static const ta_conf_node *const demo_tree =
         TA_CONF_RW_INT8("narrowing_i8", demo_narrowing_i8_get,
                         demo_narrowing_i8_set),
         TA_CONF_RW_BOOL("bool_val", demo_bool_get, demo_bool_set),
+        TA_CONF_RO_DOUBLE("double_val", demo_double_get),
+        TA_CONF_RW_ADDRESS("addr_val", demo_addr_get, demo_addr_set),
         TA_CONF_RW_ENUM("color", demo_colors,
                         demo_color_get, demo_color_set),
         TA_CONF_COLL_STR_RW("item", demo_item_get, demo_item_set,

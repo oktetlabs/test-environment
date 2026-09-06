@@ -189,6 +189,25 @@
          Name: none
          Value: "0" or "1"
 
+    - oid: "/agent/ta_conf_demo/double_val"
+      access: read_only
+      type: double
+      d: |
+         Floating point leaf, printed with "%g" on get. Read-only
+         because Configurator refuses any other access for an object
+         of type double
+         Name: none
+         Value: Floating point number
+
+    - oid: "/agent/ta_conf_demo/addr_val"
+      access: read_write
+      type: address
+      d: |
+         Network address leaf. Declared with the Configurator address
+         type, so both sides convert the same textual form
+         Name: none
+         Value: IPv4, IPv6 or link layer address, empty when unspecified
+
     - oid: "/agent/ta_conf_demo/color"
       access: read_write
       type: string
