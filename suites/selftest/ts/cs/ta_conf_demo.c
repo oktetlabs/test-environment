@@ -32,6 +32,7 @@
 #include "tapi_test.h"
 #include "tapi_env.h"
 #include "conf_api.h"
+#include "te_sockaddr.h"
 
 int
 main(int argc, char *argv[])
@@ -103,6 +104,43 @@ main(int argc, char *argv[])
     if (strcmp(str, "green") != 0)
         TEST_VERDICT("color reads back '%s'", str);
     free(str); str = NULL;
+
+    TEST_STEP("Typed leaves whose object is not declared as a string: "
+              "the agent and the engine must agree on the textual form");
+    {
+        static const char *const addrs[] = {
+            "192.0.2.1",
+            "2001:db8::1",
+            "aa:bb:cc:dd:ee:ff",
+        };
+        struct sockaddr *got = NULL;
+        double double_val;
+        unsigned int i;
+
+        CHECK_RC(cfg_get_double(&double_val,
+                 "/agent:%s/ta_conf_demo:/double_val:", pco_iut->ta));
+        if (double_val != 2.5)
+            TEST_VERDICT("double_val reads back '%g'", double_val);
+
+        for (i = 0; i < TE_ARRAY_LEN(addrs); i++)
+        {
+            struct sockaddr_storage sent;
+
+            CHECK_RC(te_netaddr_from_te_str(addrs[i], &sent));
+            CHECK_RC(cfg_set_instance_fmt(CFG_VAL(ADDRESS, SA(&sent)),
+                     "/agent:%s/ta_conf_demo:/addr_val:", pco_iut->ta));
+            CHECK_RC(cfg_get_addr(&got,
+                     "/agent:%s/ta_conf_demo:/addr_val:", pco_iut->ta));
+
+            if (te_sockaddrcmp(SA(&sent), te_sockaddr_get_size(SA(&sent)),
+                               got, te_sockaddr_get_size(got)) != 0)
+            {
+                TEST_VERDICT("addr_val set to '%s' reads back differently",
+                             addrs[i]);
+            }
+            free(got); got = NULL;
+        }
+    }
 
     TEST_STEP("Every integer width round-trips through its own accessor");
     {
