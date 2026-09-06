@@ -99,7 +99,7 @@ loadavg_runnable_get(const ta_conf_ctx *ctx, uint64_t *val)
 }
 
 static te_errno
-loadavg_min15_get(const ta_conf_ctx *ctx, te_string *val)
+loadavg_min15_get(const ta_conf_ctx *ctx, double *val)
 {
     loadavg_stats stats;
     te_errno rc;
@@ -110,12 +110,12 @@ loadavg_min15_get(const ta_conf_ctx *ctx, te_string *val)
     if (rc != 0)
         return rc;
 
-    te_string_append(val, "%g", stats.min15);
+    *val = stats.min15;
     return 0;
 }
 
 static te_errno
-loadavg_min5_get(const ta_conf_ctx *ctx, te_string *val)
+loadavg_min5_get(const ta_conf_ctx *ctx, double *val)
 {
     loadavg_stats stats;
     te_errno rc;
@@ -126,12 +126,12 @@ loadavg_min5_get(const ta_conf_ctx *ctx, te_string *val)
     if (rc != 0)
         return rc;
 
-    te_string_append(val, "%g", stats.min5);
+    *val = stats.min5;
     return 0;
 }
 
 static te_errno
-loadavg_min1_get(const ta_conf_ctx *ctx, te_string *val)
+loadavg_min1_get(const ta_conf_ctx *ctx, double *val)
 {
     loadavg_stats stats;
     te_errno rc;
@@ -142,15 +142,15 @@ loadavg_min1_get(const ta_conf_ctx *ctx, te_string *val)
     if (rc != 0)
         return rc;
 
-    te_string_append(val, "%g", stats.min1);
+    *val = stats.min1;
     return 0;
 }
 
 static const ta_conf_node *const node_loadavg =
     TA_CONF_NA("loadavg",
-        TA_CONF_RO_STR("min1", loadavg_min1_get),
-        TA_CONF_RO_STR("min5", loadavg_min5_get),
-        TA_CONF_RO_STR("min15", loadavg_min15_get),
+        TA_CONF_RO_DOUBLE("min1", loadavg_min1_get),
+        TA_CONF_RO_DOUBLE("min5", loadavg_min5_get),
+        TA_CONF_RO_DOUBLE("min15", loadavg_min15_get),
         TA_CONF_RO_UINT64("runnable", loadavg_runnable_get),
         TA_CONF_RO_UINT64("total", loadavg_total_get),
         TA_CONF_RO_UINT64("latest_pid", loadavg_latest_pid_get));
