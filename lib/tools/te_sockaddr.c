@@ -350,11 +350,68 @@ te_netaddr2te_str(const struct sockaddr *sa, te_string *str)
         case AF_LOCAL:
             return te_mac_addr2te_str(str, (const uint8_t *)sa->sa_data);
 
+        case AF_UNSPEC:
+            return 0;
+
         default:
             ERROR("%s(): address family %d is not supported",
                   __func__, (int)sa->sa_family);
             return TE_EAFNOSUPPORT;
     }
+}
+
+/* See the description in te_sockaddr.h */
+te_errno
+te_netaddr_from_te_str(const char *str, struct sockaddr_storage *addr)
+{
+    if (str == NULL || addr == NULL)
+        return TE_EFAULT;
+
+    memset(addr, 0, sizeof(*addr));
+
+    if (strchr(str, ':') != NULL)
+    {
+        uint8_t mac[ETHER_ADDR_LEN];
+        char trailing;
+
+        if (inet_pton(AF_INET6, str, &SIN6(addr)->sin6_addr) > 0)
+        {
+            addr->ss_family = AF_INET6;
+            return 0;
+        }
+
+        /*
+         * The trailing conversion is there to reject anything after
+         * the sixth octet: sscanf() stops as soon as the format is
+         * satisfied and would otherwise accept a longer string.
+         */
+        if (sscanf(str, "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx%c",
+                   &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5],
+                   &trailing) != ETHER_ADDR_LEN)
+        {
+            return TE_EINVAL;
+        }
+
+        memcpy(SA(addr)->sa_data, mac, ETHER_ADDR_LEN);
+        addr->ss_family = AF_LOCAL;
+        return 0;
+    }
+
+    if (strchr(str, '.') != NULL)
+    {
+        if (inet_pton(AF_INET, str, &SIN(addr)->sin_addr) <= 0)
+            return TE_EINVAL;
+        addr->ss_family = AF_INET;
+        return 0;
+    }
+
+    if (*str == '\0')
+    {
+        addr->ss_family = AF_UNSPEC;
+        return 0;
+    }
+
+    return TE_EINVAL;
 }
 
 /* See the description in te_sockaddr.h */

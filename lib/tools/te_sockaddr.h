@@ -484,12 +484,32 @@ extern size_t te_netaddr_get_bitsize(int af);
 /**
  * Append IPv4, IPv6 or MAC address to TE string.
  *
+ * An unspecified address (@c AF_UNSPEC) appends nothing, which is
+ * how Configurator spells it.
+ *
  * @param sa[in]    pointer to struct sockaddr
  * @param str[out]  pointer to TE string
  *
  * @return Status code.
  */
 extern te_errno te_netaddr2te_str(const struct sockaddr *sa, te_string *str);
+
+/**
+ * Parse the textual form produced by te_netaddr2te_str().
+ *
+ * This is the representation Configurator uses for values of objects
+ * declared with type @c address: dotted-quad for IPv4, RFC 4291 text
+ * for IPv6, colon-separated octets for a MAC address, and an empty
+ * string for an unspecified address.  IPv6 is tried before MAC
+ * because an IPv4-mapped IPv6 address contains dots as well.
+ *
+ * @param str[in]    address in string form
+ * @param addr[out]  location for the address, zeroed first
+ *
+ * @return Status code.
+ */
+extern te_errno te_netaddr_from_te_str(const char *str,
+                                       struct sockaddr_storage *addr);
 
 /**
  * Set multicast address part of XXX_mreq(n) structure
