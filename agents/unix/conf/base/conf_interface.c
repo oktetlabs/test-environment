@@ -107,7 +107,6 @@
 #define IF_NAMESIZE IFNAMSIZ
 #endif
 
-extern int link_addr_a2n(uint8_t *lladdr, int len, const char *str);
 
 /**
  * Determine family of the address in string representation.
@@ -275,14 +274,18 @@ static te_errno net_addr_list(const ta_conf_ctx *ctx, te_vec *names);
 static te_errno prefix_get(const ta_conf_ctx *ctx, te_string *val);
 static te_errno prefix_set(const ta_conf_ctx *ctx, const char *val);
 
-static te_errno broadcast_get(const ta_conf_ctx *ctx, te_string *val);
-static te_errno broadcast_set(const ta_conf_ctx *ctx, const char *val);
+static te_errno broadcast_get(const ta_conf_ctx *ctx,
+                              struct sockaddr_storage *val);
+static te_errno broadcast_set(const ta_conf_ctx *ctx, const struct sockaddr *val);
 
-static te_errno link_addr_get(const ta_conf_ctx *ctx, te_string *val);
-static te_errno link_addr_set(const ta_conf_ctx *ctx, const char *val);
+static te_errno link_addr_get(const ta_conf_ctx *ctx,
+                              struct sockaddr_storage *val);
+static te_errno link_addr_set(const ta_conf_ctx *ctx, const struct sockaddr *val);
 
-static te_errno bcast_link_addr_get(const ta_conf_ctx *ctx, te_string *val);
-static te_errno bcast_link_addr_set(const ta_conf_ctx *ctx, const char *val);
+static te_errno bcast_link_addr_get(const ta_conf_ctx *ctx,
+                                    struct sockaddr_storage *val);
+static te_errno bcast_link_addr_set(const ta_conf_ctx *ctx,
+                                    const struct sockaddr *val);
 
 static te_errno vlan_ifname_get(const ta_conf_ctx *ctx, te_string *val);
 
@@ -332,14 +335,18 @@ typedef enum neigh_flavor {
 } neigh_flavor;
 
 static te_errno neigh_find_core(neigh_flavor flavor, const char *ifname,
-                                const char *addr, char *mac_p,
+                                const char *addr,
+                                struct sockaddr_storage *mac_p,
                                 unsigned int *state_p);
 static te_errno neigh_get_core(neigh_flavor flavor, const char *ifname,
-                               const char *addr, char *value);
+                               const char *addr,
+                               struct sockaddr_storage *value);
 static te_errno neigh_set_core(neigh_flavor flavor, const char *ifname,
-                               const char *addr, const char *value);
+                               const char *addr,
+                               const struct sockaddr *value);
 static te_errno neigh_add_core(neigh_flavor flavor, const char *ifname,
-                               const char *addr, const char *value);
+                               const char *addr,
+                               const struct sockaddr *value);
 static te_errno neigh_del_core(neigh_flavor flavor, const char *ifname,
                                const char *addr);
 static te_errno neigh_list_core(neigh_flavor flavor, const char *ifname,
@@ -347,15 +354,21 @@ static te_errno neigh_list_core(neigh_flavor flavor, const char *ifname,
 
 static te_errno neigh_state_get(const ta_conf_ctx *ctx, int32_t *val);
 
-static te_errno neigh_dynamic_get(const ta_conf_ctx *ctx, te_string *val);
-static te_errno neigh_dynamic_set(const ta_conf_ctx *ctx, const char *val);
-static te_errno neigh_dynamic_add(const ta_conf_ctx *ctx, const char *val);
+static te_errno neigh_dynamic_get(const ta_conf_ctx *ctx,
+                                 struct sockaddr_storage *val);
+static te_errno neigh_dynamic_set(const ta_conf_ctx *ctx,
+                                 const struct sockaddr *val);
+static te_errno neigh_dynamic_add(const ta_conf_ctx *ctx,
+                                 const struct sockaddr *val);
 static te_errno neigh_dynamic_del(const ta_conf_ctx *ctx);
 static te_errno neigh_dynamic_list(const ta_conf_ctx *ctx, te_vec *names);
 
-static te_errno neigh_static_get(const ta_conf_ctx *ctx, te_string *val);
-static te_errno neigh_static_set(const ta_conf_ctx *ctx, const char *val);
-static te_errno neigh_static_add(const ta_conf_ctx *ctx, const char *val);
+static te_errno neigh_static_get(const ta_conf_ctx *ctx,
+                                 struct sockaddr_storage *val);
+static te_errno neigh_static_set(const ta_conf_ctx *ctx,
+                                 const struct sockaddr *val);
+static te_errno neigh_static_add(const ta_conf_ctx *ctx,
+                                 const struct sockaddr *val);
 static te_errno neigh_static_del(const ta_conf_ctx *ctx);
 static te_errno neigh_static_list(const ta_conf_ctx *ctx, te_vec *names);
 
@@ -386,9 +399,9 @@ static const ta_conf_node *const node_interface =
                         iface_ip6_fw_set),
         TA_CONF_RW_BOOL("iface_ip4_fw", iface_ip4_fw_get,
                         iface_ip4_fw_set),
-        TA_CONF_RW_STR("bcast_link_addr", bcast_link_addr_get,
-                       bcast_link_addr_set),
-        TA_CONF_RW_STR("link_addr", link_addr_get, link_addr_set),
+        TA_CONF_RW_ADDRESS("bcast_link_addr", bcast_link_addr_get,
+                           bcast_link_addr_set),
+        TA_CONF_RW_ADDRESS("link_addr", link_addr_get, link_addr_set),
         TA_CONF_RW_BOOL("arp", arp_get, arp_set),
         TA_CONF_RW_STR("mtu", mtu_get, mtu_set),
         TA_CONF_RO_UINT16("min_mtu", min_mtu_get),
@@ -406,15 +419,16 @@ static const ta_conf_node *const node_interface =
                     mcast_link_addr_del, mcast_link_addr_list),
         TA_CONF_COLL_STR_RW("net_addr", prefix_get, prefix_set,
                             net_addr_add, net_addr_del, net_addr_list,
-            TA_CONF_RW_STR("broadcast", broadcast_get, broadcast_set)),
+            TA_CONF_RW_ADDRESS("broadcast", broadcast_get,
+                               broadcast_set)),
         TA_CONF_COLL_STR("neigh_proxy", neigh_proxy_get, neigh_proxy_add,
                          neigh_proxy_del, neigh_proxy_list),
-        TA_CONF_COLL_STR_RW("neigh_static", neigh_static_get,
-                            neigh_static_set, neigh_static_add,
-                            neigh_static_del, neigh_static_list),
-        TA_CONF_COLL_STR_RW("neigh_dynamic", neigh_dynamic_get,
-                            neigh_dynamic_set, neigh_dynamic_add,
-                            neigh_dynamic_del, neigh_dynamic_list,
+        TA_CONF_COLL_ADDRESS_RW("neigh_static", neigh_static_get,
+                                neigh_static_set, neigh_static_add,
+                                neigh_static_del, neigh_static_list),
+        TA_CONF_COLL_ADDRESS_RW("neigh_dynamic", neigh_dynamic_get,
+                                neigh_dynamic_set, neigh_dynamic_add,
+                                neigh_dynamic_del, neigh_dynamic_list,
             TA_CONF_RO_INT32("state", neigh_state_get)));
 
 /* See the description in conf_common.h */
@@ -3452,13 +3466,12 @@ prefix_set(const ta_conf_ctx *ctx, const char *value)
  * @return              Status code
  */
 static te_errno
-broadcast_get(const ta_conf_ctx *ctx, te_string *val)
+broadcast_get(const ta_conf_ctx *ctx, struct sockaddr_storage *val)
 {
     const char     *ifname = ta_conf_ctx_inst(ctx, "interface");
     const char     *addr = ta_conf_ctx_inst(ctx, "net_addr");
     gen_ip_address  bcast;
     sa_family_t     family = str_addr_family(addr);
-    char            value[RCF_MAX_VAL];
 
     if (family == AF_INET6)
     {
@@ -3569,13 +3582,9 @@ broadcast_get(const ta_conf_ctx *ctx, te_string *val)
 #error Way to work with network addresses is not defined.
 #endif
 
-    if (inet_ntop(family, &bcast, value, RCF_MAX_VAL) == NULL)
-    {
-        ERROR("inet_ntop() failed");
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-
-    te_string_append(val, "%s", value);
+    memset(val, 0, sizeof(*val));
+    val->ss_family = AF_INET;
+    SIN(val)->sin_addr = bcast.ip4_addr;
 
     return 0;
 }
@@ -3590,7 +3599,7 @@ broadcast_get(const ta_conf_ctx *ctx, te_string *val)
  * @return              Status code
  */
 static te_errno
-broadcast_set(const ta_conf_ctx *ctx, const char *value)
+broadcast_set(const ta_conf_ctx *ctx, const struct sockaddr *value)
 {
     const char     *ifname = ta_conf_ctx_inst(ctx, "interface");
     const char     *addr = ta_conf_ctx_inst(ctx, "net_addr");
@@ -3603,13 +3612,21 @@ broadcast_set(const ta_conf_ctx *ctx, const char *value)
         return TE_RC(TE_TA_UNIX, TE_ENOSYS);
     }
 
-    if (inet_pton(family, value, &bcast) <= 0 ||
-        ((family == AF_INET) &&
-         ((bcast.ip4_addr.s_addr == 0) ||
-          (((ntohl(bcast.ip4_addr.s_addr) & 0xe0000000) == 0xe0000000) &&
-           (ntohl(bcast.ip4_addr.s_addr) != 0xffffffff)))))
+    if (value->sa_family != AF_INET)
     {
-        ERROR("%s(): Invalid broadcast %s", __FUNCTION__, value);
+        ERROR("%s(): An IPv4 broadcast address is expected",
+              __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    bcast.ip4_addr = SIN(value)->sin_addr;
+
+    if ((bcast.ip4_addr.s_addr == 0) ||
+        (((ntohl(bcast.ip4_addr.s_addr) & 0xe0000000) == 0xe0000000) &&
+         (ntohl(bcast.ip4_addr.s_addr) != 0xffffffff)))
+    {
+        ERROR("%s(): Invalid broadcast %s", __FUNCTION__,
+              te_sockaddr_get_ipstr(value));
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
@@ -3791,7 +3808,7 @@ link_addr_a2n(uint8_t *lladdr, int len, const char *str)
  * @return              Status code
  */
 static te_errno
-link_addr_get(const ta_conf_ctx *ctx, te_string *val)
+link_addr_get(const ta_conf_ctx *ctx, struct sockaddr_storage *val)
 {
     const char     *ifname = ta_conf_ctx_inst(ctx, "interface");
     te_errno        rc;
@@ -3873,8 +3890,9 @@ link_addr_get(const ta_conf_ctx *ctx, te_string *val)
     if (ptr == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    te_string_append(val, "%02x:%02x:%02x:%02x:%02x:%02x",
-                     ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5]);
+    memset(val, 0, sizeof(*val));
+    val->ss_family = AF_LOCAL;
+    memcpy(SA(val)->sa_data, ptr, ETHER_ADDR_LEN);
     return 0;
 }
 
@@ -3890,7 +3908,7 @@ link_addr_get(const ta_conf_ctx *ctx, te_string *val)
  * @return              Status code
  */
 static te_errno
-link_addr_set(const ta_conf_ctx *ctx, const char *value)
+link_addr_set(const ta_conf_ctx *ctx, const struct sockaddr *value)
 {
     const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     te_errno rc = 0;
@@ -3899,17 +3917,13 @@ link_addr_set(const ta_conf_ctx *ctx, const char *value)
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    if (value == NULL)
+    if (value->sa_family != AF_LOCAL)
     {
-       ERROR("A link layer address to set is not provided");
-       return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    if (link_addr_a2n(link_addr, sizeof(link_addr), value) == -1)
-    {
-        ERROR("%s: Link layer address conversation issue", __FUNCTION__);
+        ERROR("%s: a link layer address is expected", __FUNCTION__);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
+
+    memcpy(link_addr, value->sa_data, sizeof(link_addr));
 
 #ifdef SIOCSIFHWADDR
     strcpy(req.my_ifr_name, ifname);
@@ -3935,7 +3949,7 @@ link_addr_set(const ta_conf_ctx *ctx, const char *value)
  * @return              Status code
  */
 static te_errno
-bcast_link_addr_set(const ta_conf_ctx *ctx, const char *value)
+bcast_link_addr_set(const ta_conf_ctx *ctx, const struct sockaddr *value)
 {
     const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     te_errno rc = 0;
@@ -3943,23 +3957,16 @@ bcast_link_addr_set(const ta_conf_ctx *ctx, const char *value)
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    if (value == NULL)
+    if (value->sa_family != AF_LOCAL)
     {
-       ERROR("A broadcast link layer address to set is not provided");
-       return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        ERROR("%s: a link layer address is expected", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
 #ifdef SIOCSIFHWBROADCAST
     strcpy(req.my_ifr_name, ifname);
     my_ifr_hwaddr_family(req) = AF_LOCAL;
-
-    if ((rc = link_addr_a2n((uint8_t *)my_ifr_hwaddr_data(req), 6,
-                            value)) == -1)
-    {
-        ERROR("%s: Link layer address conversation issue", __FUNCTION__);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-    rc = 0;
+    memcpy(my_ifr_hwaddr_data(req), value->sa_data, ETHER_ADDR_LEN);
 
     CFG_IOCTL(cfg_socket, SIOCSIFHWBROADCAST, &req);
 #else
@@ -3981,7 +3988,7 @@ bcast_link_addr_set(const ta_conf_ctx *ctx, const char *value)
  * @return              Status code
  */
 static te_errno
-bcast_link_addr_get(const ta_conf_ctx *ctx, te_string *val)
+bcast_link_addr_get(const ta_conf_ctx *ctx, struct sockaddr_storage *val)
 {
     const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     te_errno rc = 0;
@@ -3992,20 +3999,22 @@ bcast_link_addr_get(const ta_conf_ctx *ctx, te_string *val)
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
+    memset(val, 0, sizeof(*val));
+
     /*
      * In case of point-to-point protocol there is no broadcast
      * hardware address, return zero-address.
      */
     if (strstr(ifname, "ppp") != NULL)
     {
-        te_string_append(val, "%s", "00:00:00:00:00:00");
+        val->ss_family = AF_LOCAL;
         return 0;
     }
 
 #if defined(USE_LIBNETCONF)
     rc = iface_get_property_netconf(ifname, value, IF_PROP_BCAST_ADDR);
     if (rc == 0)
-        te_string_append(val, "%s", value);
+        rc = te_netaddr_from_te_str(value, val);
     return rc;
 #else
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -4951,7 +4960,7 @@ neigh_netconf_dynamic_state2te(unsigned int state)
  */
 static te_errno
 neigh_find_core(neigh_flavor flavor, const char *ifname, const char *addr,
-                char *mac_p, unsigned int *state_p)
+                struct sockaddr_storage *mac_p, unsigned int *state_p)
 {
 #if defined(USE_LIBNETCONF)
     te_errno            rc;
@@ -5016,8 +5025,23 @@ neigh_find_core(neigh_flavor flavor, const char *ifname, const char *addr,
 
         if (mac_p != NULL)
         {
-            link_addr_n2a(neigh->lladdr, neigh->addrlen,
-                          mac_p, RCF_MAX_VAL);
+            /*
+             * A Configurator address value holds a six-octet link
+             * layer address and nothing else, so report anything
+             * else as an error rather than truncate it.
+             */
+            if (neigh->addrlen != ETHER_ADDR_LEN)
+            {
+                ERROR("%s(): neighbour of '%s' has a %u-octet link "
+                      "layer address", __FUNCTION__, addr,
+                      (unsigned int)neigh->addrlen);
+                netconf_list_free(list);
+                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+            }
+
+            memset(mac_p, 0, sizeof(*mac_p));
+            mac_p->ss_family = AF_LOCAL;
+            memcpy(SA(mac_p)->sa_data, neigh->lladdr, ETHER_ADDR_LEN);
         }
 
         if (state_p != NULL)
@@ -5135,7 +5159,7 @@ neigh_state_get(const ta_conf_ctx *ctx, int32_t *val)
  */
 static te_errno
 neigh_get_core(neigh_flavor flavor, const char *ifname, const char *addr,
-              char *value)
+              struct sockaddr_storage *value)
 {
     return neigh_find_core(flavor, ifname, addr, value, NULL);
 }
@@ -5152,7 +5176,7 @@ neigh_get_core(neigh_flavor flavor, const char *ifname, const char *addr,
  */
 static te_errno
 neigh_set_core(neigh_flavor flavor, const char *ifname, const char *addr,
-              const char *value)
+              const struct sockaddr *value)
 {
     if (neigh_find_core(flavor, ifname, addr, NULL, NULL) != 0)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -5172,7 +5196,7 @@ neigh_set_core(neigh_flavor flavor, const char *ifname, const char *addr,
  */
 static te_errno
 neigh_add_core(neigh_flavor flavor, const char *ifname, const char *addr,
-              const char *value)
+              const struct sockaddr *value)
 {
     bool proxy = (flavor == NEIGH_PROXY);
 
@@ -5221,13 +5245,13 @@ neigh_add_core(neigh_flavor flavor, const char *ifname, const char *addr,
     }
     else if (value != NULL)
     {
-        if (link_addr_a2n(raw_addr, sizeof(raw_addr),
-                          value) != ETHER_ADDR_LEN)
+        if (value->sa_family != AF_LOCAL)
         {
-            ERROR("Bad hardware address '%s'", value);
+            ERROR("A link layer address is expected as a neighbour value");
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
 
+        memcpy(raw_addr, value->sa_data, sizeof(raw_addr));
         neigh.addrlen = ETHER_ADDR_LEN;
         neigh.lladdr = raw_addr;
     }
@@ -5546,22 +5570,16 @@ neigh_list_core(neigh_flavor flavor, const char *ifname, te_vec *names)
 #endif
 
 static te_errno
-neigh_dynamic_get(const ta_conf_ctx *ctx, te_string *val)
+neigh_dynamic_get(const ta_conf_ctx *ctx, struct sockaddr_storage *val)
 {
     const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     const char *addr = ta_conf_ctx_inst(ctx, "neigh_dynamic");
-    char value[RCF_MAX_VAL];
-    te_errno rc;
 
-    rc = neigh_get_core(NEIGH_DYNAMIC, ifname, addr, value);
-    if (rc == 0)
-        te_string_append(val, "%s", value);
-
-    return rc;
+    return neigh_get_core(NEIGH_DYNAMIC, ifname, addr, val);
 }
 
 static te_errno
-neigh_dynamic_set(const ta_conf_ctx *ctx, const char *val)
+neigh_dynamic_set(const ta_conf_ctx *ctx, const struct sockaddr *val)
 {
     const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     const char *addr = ta_conf_ctx_inst(ctx, "neigh_dynamic");
@@ -5570,7 +5588,7 @@ neigh_dynamic_set(const ta_conf_ctx *ctx, const char *val)
 }
 
 static te_errno
-neigh_dynamic_add(const ta_conf_ctx *ctx, const char *val)
+neigh_dynamic_add(const ta_conf_ctx *ctx, const struct sockaddr *val)
 {
     const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     const char *addr = ta_conf_ctx_inst(ctx, "neigh_dynamic");
@@ -5596,22 +5614,16 @@ neigh_dynamic_list(const ta_conf_ctx *ctx, te_vec *names)
 }
 
 static te_errno
-neigh_static_get(const ta_conf_ctx *ctx, te_string *val)
+neigh_static_get(const ta_conf_ctx *ctx, struct sockaddr_storage *val)
 {
     const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     const char *addr = ta_conf_ctx_inst(ctx, "neigh_static");
-    char value[RCF_MAX_VAL];
-    te_errno rc;
 
-    rc = neigh_get_core(NEIGH_STATIC, ifname, addr, value);
-    if (rc == 0)
-        te_string_append(val, "%s", value);
-
-    return rc;
+    return neigh_get_core(NEIGH_STATIC, ifname, addr, val);
 }
 
 static te_errno
-neigh_static_set(const ta_conf_ctx *ctx, const char *val)
+neigh_static_set(const ta_conf_ctx *ctx, const struct sockaddr *val)
 {
     const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     const char *addr = ta_conf_ctx_inst(ctx, "neigh_static");
@@ -5620,7 +5632,7 @@ neigh_static_set(const ta_conf_ctx *ctx, const char *val)
 }
 
 static te_errno
-neigh_static_add(const ta_conf_ctx *ctx, const char *val)
+neigh_static_add(const ta_conf_ctx *ctx, const struct sockaddr *val)
 {
     const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     const char *addr = ta_conf_ctx_inst(ctx, "neigh_static");
@@ -5650,12 +5662,12 @@ neigh_proxy_get(const ta_conf_ctx *ctx, te_string *val)
 {
     const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     const char *addr = ta_conf_ctx_inst(ctx, "neigh_proxy");
-    char value[RCF_MAX_VAL];
+    struct sockaddr_storage value;
     te_errno rc;
 
-    rc = neigh_get_core(NEIGH_PROXY, ifname, addr, value);
+    rc = neigh_get_core(NEIGH_PROXY, ifname, addr, &value);
     if (rc == 0)
-        te_string_append(val, "%s", value);
+        rc = te_netaddr2te_str(SA(&value), val);
 
     return rc;
 }
@@ -5666,7 +5678,10 @@ neigh_proxy_add(const ta_conf_ctx *ctx, const char *val)
     const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     const char *addr = ta_conf_ctx_inst(ctx, "neigh_proxy");
 
-    return neigh_add_core(NEIGH_PROXY, ifname, addr, val);
+    UNUSED(val);
+
+    /* A proxy entry carries no link layer address */
+    return neigh_add_core(NEIGH_PROXY, ifname, addr, NULL);
 }
 
 static te_errno
