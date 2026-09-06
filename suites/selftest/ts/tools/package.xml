@@ -7,6 +7,10 @@
 
     <session>
         <run>
+            <script name="netaddr"/>
+        </run>
+
+        <run>
             <script name="readlink"/>
         </run>
 

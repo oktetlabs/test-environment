@@ -19,6 +19,7 @@ tests = [
     'kvpair',
     'lines',
     'make_bufs',
+    'netaddr',
     'readlink',
     'rand',
     'rings',

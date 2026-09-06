@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2026 OKTET Ltd. All rights reserved. -->
+<test name="netaddr" type="script">
+    <objective>Test for network address string conversions</objective>
+    <notes/>
+    <iter result="PASSED">
+    </iter>
+</test>
