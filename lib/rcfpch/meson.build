@@ -25,6 +25,7 @@ headers += files(
     'rcf_ch_api.h',
     'rcf_pch.h',
     'rcf_pch_ta_cfg.h',
+    'rcf_pch_tree.h',
 )
 sources += files(
     'rcf_pch.c',
@@ -33,6 +34,7 @@ sources += files(
     'rcf_pch_plugin.c',
     'rcf_pch_rpc.c',
     'rcf_pch_ta_cfg.c',
+    'rcf_pch_tree.c',
     'rcf_pch_var.c',
 )
 te_libs += [
