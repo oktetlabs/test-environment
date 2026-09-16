@@ -22,6 +22,7 @@
 #include "te_alloc.h"
 #include "te_defs.h"
 #include "te_queue.h"
+#include "te_string.h"
 
 /** Size of a block chars that should be read from a file for each call */
 #define BL_SIZE 4
@@ -157,17 +158,13 @@ rgt_check_curr_stream(void)
 static void
 rgt_save_tag(const char *tag, const char **atts, rgt_file_ctx *ctx)
 {
-    int     size;
-    int     i;
-    int     clen;
-    int     res;
+    te_string str = TE_STRING_INIT;
+    int i;
 
-    if (ctx->last_tag != NULL)
-        free(ctx->last_tag);
-    ctx->last_tag = TE_ALLOC(RGT_MSG_SIZE);
-    size = RGT_MSG_SIZE;
+    free(ctx->last_tag);
+    ctx->last_tag = NULL;
 
-    clen = snprintf(ctx->last_tag, size, "<%s", tag);
+    te_string_append(&str, "<%s", tag);
 
     if (atts != NULL)
     {
@@ -175,28 +172,17 @@ rgt_save_tag(const char *tag, const char **atts, rgt_file_ctx *ctx)
         for (i = 0; atts[i] != NULL; i++)
         {
             if (attr_name)
-                res = snprintf(ctx->last_tag + clen, size - clen, " %s=",
-                               atts[i]);
+                te_string_append(&str, " %s=", atts[i]);
             else
-                res = snprintf(ctx->last_tag + clen, size - clen, "\"%s\"",
-                               atts[i]);
+                te_string_append(&str, "\"%s\"", atts[i]);
+
             attr_name = !attr_name;
-            if (clen + res > size)
-            {
-                size *= 2;
-                TE_REALLOC(ctx->last_tag, size);
-                i--;
-            }
-            else
-                clen += res;
         }
     }
-    if (clen == size)
-    {
-        size += 2;
-        TE_REALLOC(ctx->last_tag, size);
-    }
-    snprintf(ctx->last_tag + clen, size - clen, ">");
+
+    te_string_append(&str, ">");
+
+    te_string_move(&ctx->last_tag, &str);
 }
 
 /**
