@@ -65,3 +65,6 @@
 
 /* Define to 1 if you have off64_t type. */
 #mesondefine HAVE_OFF64_T
+
+/* Define to 1 if Target system has Debian-like adduser semantics. */
+#mesondefine ADDUSER_IS_DEBIAN_LIKE
