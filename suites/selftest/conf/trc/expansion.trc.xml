@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2026 OKTET Labs Ltd. All rights reserved. -->
+<test name="expansion" type="package">
+    <objective>Objective expansion at ${speed} on ${dev_name}</objective>
+    <notes/>
+    <iter result="PASSED">
+        <arg name="speed"/>
+        <arg name="dev"/>
+        <notes/>
+        <test name="helloworld" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="speed"/>
+                <arg name="dev"/>
+                <notes/>
+            </iter>
+        </test>
+    </iter>
+</test>
