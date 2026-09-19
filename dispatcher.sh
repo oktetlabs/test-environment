@@ -136,7 +136,14 @@ if [[ "${TE_RUN_META}" = "yes" ]] ; then
         # get the same date as tests started after midnight (assuming
         # that automated testing session starts in the evening every day
         # and can include a few runs of different test suites).
-        te_meta_set CAMPAIGN_DATE "$(date --date="+6 hours" +%F)"
+        #
+        # GNU and BSD date(1) spell a relative time differently, and
+        # each rejects the other's option, so ask which one this is.
+        if date --version >/dev/null 2>&1 ; then
+            te_meta_set CAMPAIGN_DATE "$(date --date="+6 hours" +%F)"
+        else
+            te_meta_set CAMPAIGN_DATE "$(date -v +6H +%F)"
+        fi
     fi
 
     te_meta_set USER "$(whoami)"
