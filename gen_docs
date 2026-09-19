@@ -211,8 +211,11 @@ function report_doxyrest_version()
 
     pinned=$(sed -n 's/.*doxyrest-\([0-9][0-9.]*\)-linux.*/\1/p' \
              "${TE_BASE}/scripts/doxyrest_deploy.sh" 2>/dev/null | head -1)
+    # \+ is a GNU extension, and a sed without it reads the pattern
+    # as a literal plus and matches nothing, leaving every build on
+    # such a system reporting an unknown version.
     actual=$("$DOXYREST_BIN" --version 2>/dev/null |
-             sed -n 's/.*[ v]\([0-9]\+\.[0-9.]*[0-9]\).*/\1/p' | head -1)
+             sed -n 's/.*[ v]\([0-9][0-9.]*[0-9]\).*/\1/p' | head -1)
 
     if [ -z "$actual" ]; then
         echo "doxyrest: version unknown ($DOXYREST_BIN)" >&2
