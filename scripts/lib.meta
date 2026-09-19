@@ -299,7 +299,13 @@ te_meta_set_git() {
 te_meta_set_ts() {
     local name="$1"
 
-    te_meta_set "${name}" "$(date +%FT%T%:z)"
+    # %:z, which writes the UTC offset as +HH:MM, is a GNU extension;
+    # elsewhere it is copied into the timestamp verbatim. Ask for %z,
+    # which POSIX has and which writes the same offset as +HHMM, and
+    # put the colon in afterwards. The pattern spells that shape out,
+    # so an offset already written with a colon is left alone.
+    te_meta_set "${name}" \
+        "$(date +%FT%T%z | sed -e 's/\([+-][0-9][0-9]\)\([0-9][0-9]\)$/\1:\2/')"
     te_meta_set_type "${name}" timestamp
 }
 
