@@ -137,3 +137,6 @@ option('cs-conf-yaml', type: 'boolean', value: true,
 
 option('workspace', type: 'string', value: '',
        description: 'Build workspace')
+
+option('agentlib-adduser-debian-like', type: 'boolean', value: false,
+       description: 'Target system has Debian-like adduser semantics')
