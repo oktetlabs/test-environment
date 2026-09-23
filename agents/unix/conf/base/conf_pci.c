@@ -86,14 +86,14 @@ typedef struct pci_device {
     pci_address address;          /**< PCI address */
     uint16_t vendor_id;           /**< Vendor ID */
     uint16_t device_id;           /**< Device ID */
-    unsigned devno;               /**< Device instance number
+    unsigned int devno;           /**< Device instance number
                                    *   among all the devices
                                    *   with same vendor/device ID
                                    */
     uint16_t subsystem_vendor;    /**< Subsystem vendor ID */
     uint16_t subsystem_device;    /**< Subsystem device ID */
     uint32_t device_class;        /**< PCI device class */
-    unsigned lock;                /**< TE resource lock counter */
+    unsigned int lock;            /**< TE resource lock counter */
     char *net_list;               /**< Space separated list of network
                                        interfaces */
     TAILQ_ENTRY(pci_device) next; /**< Next device with the same
@@ -109,11 +109,11 @@ typedef struct pci_vendor_device {
     LIST_ENTRY(pci_vendor_device) next;   /**< Next device ID for the same
                                            *   vendor
                                            */
-    unsigned id;                          /** Device ID */
-    unsigned next_devno;                  /** Next instance number for a PCI
+    unsigned int id;                      /** Device ID */
+    unsigned int next_devno;              /** Next instance number for a PCI
                                            *   device
                                            */
-    unsigned lock;                        /**< TE resource lock counter */
+    unsigned int lock;                    /**< TE resource lock counter */
     pci_devices devices;                  /**< List of device instances */
 } pci_vendor_device;
 
@@ -124,8 +124,8 @@ typedef LIST_HEAD(pci_vendor_devices, pci_vendor_device)
 /** A set of devices with the same vendor ID */
 typedef struct pci_vendor {
     LIST_ENTRY(pci_vendor) next;         /**< Next vendor ID */
-    unsigned id;                         /**< Vendor ID */
-    unsigned lock;                       /**< TE resource lock counter */
+    unsigned int id;                     /**< Vendor ID */
+    unsigned int lock;                   /**< TE resource lock counter */
     pci_vendor_devices vendor_devices;   /**< List of device IDs */
 } pci_vendor;
 
@@ -142,7 +142,7 @@ static pci_device *all_devices = NULL;
 static pci_vendors *vendor_list;
 
 /** Whole PCI tree TE resource lock */
-static unsigned global_pci_lock;
+static unsigned int global_pci_lock;
 
 #ifdef USE_LIBNETCONF
 
@@ -252,12 +252,12 @@ open_pci_attr(const char *name, const char *attr, FILE **result)
     return rc;
 }
 
-static unsigned
+static unsigned int
 read_pci_hex_attr(const char *name, const char *attr)
 {
     FILE *f;
     te_errno rc = open_pci_attr(name, attr, &f);
-    unsigned result = 0;
+    unsigned int result = 0;
 
     if (rc != 0)
     {
@@ -395,7 +395,7 @@ addr_compar(const void *key, const void *item)
 }
 
 static pci_vendor *
-find_vendor(const pci_vendors *list, unsigned vendor_id)
+find_vendor(const pci_vendors *list, unsigned int vendor_id)
 {
     pci_vendor *vendor;
 
@@ -409,7 +409,7 @@ find_vendor(const pci_vendors *list, unsigned vendor_id)
 }
 
 static pci_vendor_device *
-find_vendor_device(const pci_vendor_devices list, unsigned device_id)
+find_vendor_device(const pci_vendor_devices list, unsigned int device_id)
 {
     pci_vendor_device *vendor_device;
 
@@ -423,7 +423,7 @@ find_vendor_device(const pci_vendor_devices list, unsigned device_id)
 }
 
 static pci_device *
-find_device_byno(const pci_devices list, unsigned devno)
+find_device_byno(const pci_devices list, unsigned int devno)
 {
     pci_device *device;
 
@@ -437,7 +437,8 @@ find_device_byno(const pci_devices list, unsigned devno)
 }
 
 static pci_device *
-find_device_by_id(unsigned vendor_id, unsigned device_id, unsigned devno)
+find_device_by_id(unsigned int vendor_id, unsigned int device_id,
+                  unsigned int devno)
 {
     pci_vendor *vendor = find_vendor(vendor_list, vendor_id);
     pci_vendor_device *devid;
@@ -483,7 +484,7 @@ static pci_vendors *
 make_vendor_list(pci_device *devs, size_t n_devs)
 {
     pci_vendors *vendor_list;
-    unsigned i;
+    unsigned int i;
 
     vendor_list = TE_ALLOC(sizeof(*vendor_list));
     LIST_INIT(vendor_list);
@@ -702,7 +703,7 @@ static te_errno
 pci_device_list(unsigned int gid, const char *oid,
                 const char *sub_id, char **list)
 {
-    unsigned i;
+    unsigned int i;
     const pci_device *iter = all_devices;
     te_string result = TE_STRING_INIT;
     te_errno rc;
@@ -731,7 +732,7 @@ pci_device_list(unsigned int gid, const char *oid,
     return 0;
 }
 
-static unsigned
+static unsigned int
 get_hex_id(const char *id)
 {
     const char *end = id;
@@ -743,14 +744,14 @@ get_hex_id(const char *id)
     return result;
 }
 
-static unsigned
+static unsigned int
 get_devno(const char *id)
 {
     const char *end = id;
     unsigned long result = strtoul(id, (char **)&end, 10);
 
     if (*end != '\0')
-        return (unsigned)(-1);
+        return (unsigned int)(-1);
 
     return result;
 }
@@ -762,9 +763,9 @@ pci_device_instance_get(unsigned int gid, const char *oid, char *value,
                         const char *inst)
 {
     te_string result = TE_STRING_INIT;
-    unsigned vendor_id = get_hex_id(venid);
-    unsigned device_id = get_hex_id(devid);
-    unsigned devno = get_devno(inst);
+    unsigned int vendor_id = get_hex_id(venid);
+    unsigned int device_id = get_hex_id(devid);
+    unsigned int devno = get_devno(inst);
     te_errno rc;
     const pci_device *dev;
 
@@ -773,7 +774,7 @@ pci_device_instance_get(unsigned int gid, const char *oid, char *value,
     UNUSED(unused1);
     UNUSED(unused2);
 
-    if (vendor_id == 0 || device_id == 0 || devno == (unsigned)(-1))
+    if (vendor_id == 0 || device_id == 0 || devno == (unsigned int)(-1))
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     dev = find_device_by_id(vendor_id, device_id, devno);
@@ -802,8 +803,8 @@ pci_device_instance_list(unsigned int gid, const char *oid,
                          const char *venid, const char *devid)
 {
     te_string result = TE_STRING_INIT;
-    unsigned vendor_id = get_hex_id(venid);
-    unsigned device_id = get_hex_id(devid);
+    unsigned int vendor_id = get_hex_id(venid);
+    unsigned int device_id = get_hex_id(devid);
     pci_vendor *vendor;
     pci_vendor_device *vd;
     pci_device *dev;
@@ -846,7 +847,7 @@ pci_vendor_device_list(unsigned int gid, const char *oid,
                        const char *venid)
 {
     te_string result = TE_STRING_INIT;
-    unsigned vendor_id = get_hex_id(venid);
+    unsigned int vendor_id = get_hex_id(venid);
     pci_vendor *vendor;
     pci_vendor_device *vd;
     bool first = true;
@@ -1063,7 +1064,7 @@ parse_pci_oid(const char *name, pci_vendor **vendor, pci_vendor_device **vd,
               pci_device **dev)
 {
     cfg_oid *oid = parse_pci_oid_base(name);
-    unsigned vendor_id = get_hex_id(CFG_OID_GET_INST_NAME(oid, 4));
+    unsigned int vendor_id = get_hex_id(CFG_OID_GET_INST_NAME(oid, 4));
 
     if (oid == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -1084,7 +1085,7 @@ parse_pci_oid(const char *name, pci_vendor **vendor, pci_vendor_device **vd,
 
     if (vd != NULL)
     {
-        unsigned device_id;
+        unsigned int device_id;
 
         assert(oid->len > 5);
 
@@ -1104,12 +1105,12 @@ parse_pci_oid(const char *name, pci_vendor **vendor, pci_vendor_device **vd,
 
         if (dev != NULL)
         {
-            unsigned devno;
+            unsigned int devno;
 
             assert(oid->len > 6);
 
             devno = get_devno(CFG_OID_GET_INST_NAME(oid, 6));
-            if (devno == (unsigned)(-1))
+            if (devno == (unsigned int)(-1))
             {
                 cfg_free_oid(oid);
                 return TE_RC(TE_TA_UNIX, TE_EINVAL);
