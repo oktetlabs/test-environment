@@ -636,6 +636,26 @@ output_regular_log_msg(log_msg *msg)
                         continue;
                     }
 
+                    case 'z':
+                    {
+                        char sp;
+                        char value[RGT_SIZE_ARG_BUFSIZE];
+
+                        sp = msg->fmt_str[i + 2];
+                        if (sp == '\0' || strchr("diouxX", sp) == NULL)
+                            break;
+
+                        if (rgt_size_arg_fmt(arg, sp, value, sizeof(value)))
+                            obstack_grow(log_obstk, value, strlen(value));
+                        else
+                            obstack_printf(log_obstk,
+                                           "&lt;invalid %%z%c argument&gt;",
+                                           sp);
+
+                        i += 2;
+                        continue;
+                    }
+
                     case 'p':
                     {
                         uint32_t val;

@@ -25,6 +25,7 @@
 #include "rgt_common.h"
 #include "memory.h"
 
+#include "te_str.h"
 #include "te_string.h"
 #include "te_vector.h"
 
@@ -1522,6 +1523,74 @@ create_node_by_msg(log_msg *msg, node_type_t type,
     return node;
 }
 
+/**
+ * Interpret an unsigned bit pattern as a signed value.
+ *
+ * @param value     Unsigned value containing the original bit pattern.
+ * @param value_len Size of the original value in bytes.
+ *
+ * @return Signed value.
+ */
+static intmax_t
+uintmax_val2intmax(uintmax_t value, int value_len)
+{
+    assert(value_len == (int)sizeof(uint32_t) ||
+           value_len == (int)sizeof(uint64_t));
+
+    if (value_len == (int)sizeof(uint32_t) && value > INT32_MAX)
+        return -((intmax_t)(UINT32_MAX - value)) - 1;
+
+    if (value_len == (int)sizeof(uint64_t) && value > INT64_MAX)
+        return -((intmax_t)(UINT64_MAX - value)) - 1;
+
+    return value;
+}
+
+/* See description in log_msg.h */
+bool
+rgt_size_arg_fmt(const msg_arg *arg, char sp, char *buf, size_t buf_len)
+{
+    /*
+     * uintmax_t is used here instead of size_t because
+     * uintmax_t is maximum-width unsigned integer type.
+     * This means that SIZE_MAX <= UINTMAX_MAX.
+     * For AMD64 SIZE_MAX == UINTMAX_MAX, but for i386 and aarch32
+     * SIZE_MAX < UINTMAX_MAX. RGT can decode both 32-bit
+     * and 64-bit values regardless of the producer and consumer
+     * architectures.
+     */
+    char format[] = "%j?";
+    uintmax_t val = 0;
+    int i;
+
+    if (arg->len != (int)sizeof(uint32_t) && arg->len != (int)sizeof(uint64_t))
+        return false;
+
+    for (i = 0; i < arg->len; i++)
+        val = (val << 8) | arg->val[i];
+
+    format[2] = sp;
+    switch (sp)
+    {
+        case 'd':
+        case 'i':
+            TE_SNPRINTF(buf, buf_len, format,
+                        uintmax_val2intmax(val, arg->len));
+            break;
+
+        case 'o':
+        case 'u':
+        case 'x':
+        case 'X':
+            TE_SNPRINTF(buf, buf_len, format, val);
+            break;
+
+        default:
+            return false;
+    }
+
+    return true;
+}
 
 /* See description in log_msg.h */
 void
@@ -1575,6 +1644,27 @@ rgt_expand_log_msg(log_msg *msg)
                     sprintf(tmp, format, *((uint32_t *)arg->val));
                     obstack_grow(msg->obstk, tmp, strlen(tmp));
                     i++;
+
+                    continue;
+                }
+
+                case 'z':
+                {
+                    char sp;
+
+                    if (i + 2 >= str_len)
+                        break;
+
+                    sp = msg->fmt_str[i + 2];
+                    if (strchr("diouxX", sp) == NULL)
+                        break;
+
+                    if (!rgt_size_arg_fmt(arg, sp, tmp, sizeof(tmp)))
+                        TE_SNPRINTF(tmp, sizeof(tmp),
+                                    "<invalid %%z%c argument>", sp);
+
+                    obstack_grow(msg->obstk, tmp, strlen(tmp));
+                    i += 2;
 
                     continue;
                 }

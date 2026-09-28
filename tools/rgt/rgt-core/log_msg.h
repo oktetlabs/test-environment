@@ -34,6 +34,8 @@
      val_ == NT_PACKAGE ? CNTR_MSG_PACKAGE :      \
      val_ == NT_SESSION ? CNTR_MSG_SESSION : (assert(0), ""))
 
+#define RGT_SIZE_ARG_BUFSIZE    32
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -316,6 +318,19 @@ extern void log_msg_init_arg(log_msg *msg);
  * @return Pointer to an argument of a message
  */
 extern msg_arg *get_next_arg(log_msg *msg);
+
+/**
+ * Format a log argument with the @c z length modifier.
+ *
+ * @param arg       Serialized log argument.
+ * @param sp        One of @c d, @c i, @c o, @c u, @c x or @c X.
+ * @param buf       Output buffer.
+ * @param buf_len   Output buffer size.
+ *
+ * @return @c true on success.
+ */
+extern bool rgt_size_arg_fmt(const msg_arg *arg, char sp,
+                             char *buf, size_t buf_len);
 
 /**
  * Allocates a new log_msg structure from global memory pool for log
