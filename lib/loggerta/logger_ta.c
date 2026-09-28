@@ -247,6 +247,24 @@ ta_log_message(const char *file, unsigned int line,
                 break;
             }
 
+            case 'z':
+            {
+                char sp = *(p_str + 1);
+                ta_log_arg arg;
+
+                if (sp == '\0' || strchr("diouxX", sp) == NULL)
+                    break;
+
+                if (sp == 'd' || sp == 'i')
+                    arg = (ta_log_arg)va_arg(ap, ssize_t);
+                else
+                    arg = (ta_log_arg)va_arg(ap, size_t);
+
+                LGR_SET_ARG(header, narg, arg);
+                p_str++;
+                break;
+            }
+
             case 'p':
             {
                 void *tmp = va_arg(ap, void *);
@@ -547,6 +565,39 @@ log_get_message(uint32_t length, uint8_t *buffer)
                 val = LGR_GET_ARG(header, argn++);
                 LGR_32_TO_NET(val, tmp_buf);
                 tmp_buf += sizeof(uint32_t);
+                break;
+            }
+
+            case 'z':
+            {
+                char sp = *(fs + 1);
+                uint64_t val;
+                uint32_t tmp;
+
+                if (sp == '\0' || strchr("diouxX", sp) == NULL)
+                    break;
+
+                LGR_CHECK_LENGTH(sizeof(te_log_nfl) + SIZEOF_SIZE_T);
+                *((te_log_nfl *)tmp_buf) = log_nfl_hton(SIZEOF_SIZE_T);
+                tmp_buf += sizeof(te_log_nfl);
+                val = (uint64_t)LGR_GET_ARG(header, argn++);
+
+#if (SIZEOF_SIZE_T == 4)
+                tmp = (uint32_t)val;
+                LGR_32_TO_NET(tmp, tmp_buf);
+                tmp_buf += sizeof(uint32_t);
+#elif (SIZEOF_SIZE_T == 8)
+                tmp = (uint32_t)(val >> 32);
+                LGR_32_TO_NET(tmp, tmp_buf);
+                tmp_buf += sizeof(uint32_t);
+
+                tmp = (uint32_t)val;
+                LGR_32_TO_NET(tmp, tmp_buf);
+                tmp_buf += sizeof(uint32_t);
+#else
+#error Unsupported size_t size
+#endif
+                fs++;
                 break;
             }
 
