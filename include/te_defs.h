@@ -340,6 +340,8 @@ typedef enum te_bool3 {
 
 /** Prefix for tester user name */
 #define TE_USER_PREFIX  "te"
+/** Affix for non-numeric tester user name */
+#define TE_USER_NONNUM_AFFIX  "_nonnum_"
 
 #ifdef __cplusplus
 extern "C" {

@@ -140,7 +140,7 @@ typedef struct te_exec_workdir_param {
  *                     the process; see note
  * @param out_fd       location to store file descriptor of pipe to stdout of
  *                     the process; see note
- * @param out_fd       location to store file descriptor of pipe to stderr of
+ * @param err_fd       location to store file descriptor of pipe to stderr of
  *                     the process; see note
  * @param exec_param   Array of process parameters. The last element must
  *                     have the type TE_EXEC_END and data pointer to
