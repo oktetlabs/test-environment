@@ -30,6 +30,9 @@
             </arg>
         </run>
         <run>
+            <script name="loggertest"/>
+        </run>
+        <run>
             <script name="artifact"/>
         </run>
         <run>

@@ -6,6 +6,7 @@ tests = [
     'default_args',
     'env',
     'helloworld',
+    'loggertest',
     'mi_meas_line_graph',
     'mi_meas_highrange',
     'mi_meas_multipliers',
