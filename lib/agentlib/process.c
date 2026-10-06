@@ -635,14 +635,18 @@ ta_read_cmd_fmt(te_string *str, const char *cmd, ...)
     size_t sys_rc;
     te_errno rc;
     pid_t cmd_pid;
+    te_string formatted_cmd = TE_STRING_INIT;
     va_list ap;
 
     va_start(ap, cmd);
-    rc = ta_popen_r_fmt(&cmd_pid, &f, cmd, ap);
+    te_string_append_va(&formatted_cmd, cmd, ap);
     va_end(ap);
+
+    rc = ta_popen_r(te_string_value(&formatted_cmd), &cmd_pid, &f);
+
     if (rc != 0)
     {
-        ERROR("%s(): ta_popen_r_fmt() failed with rc=%r", __FUNCTION__, rc);
+        ERROR("%s(): ta_popen_r() failed with rc=%r", __FUNCTION__, rc);
         goto cleanup;
     }
     while (!feof(f))
@@ -661,6 +665,8 @@ ta_read_cmd_fmt(te_string *str, const char *cmd, ...)
     }
 
 cleanup:
+
+    te_string_free(&formatted_cmd);
 
     if (f != NULL)
     {
