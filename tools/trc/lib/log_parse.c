@@ -1062,13 +1062,17 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                     !(app_ctx->flags & TRC_UPDATE_PRINT_PATHS))
                     func_ptr = app_ctx->func_args_match;
             }
-            else
+            else if (ctx->db->unknown_exp_status !=
+                     TRC_UNKNOWN_EXP_STATUS_PASSED_OK)
             {
                 /*
                  * If this is not TRC Update tool, for unknown iterations
                  * added to DB default expected result should be
                  * TE_TEST_UNSPEC. This allows to detect such
                  * iterations as new (not known to existing TRC DB) later.
+                 * A DB with unknown_exp_status set to passed_ok expects
+                 * unknown iterations to pass instead, the same way
+                 * trc_db_walker_get_exp_result() treats them in Tester.
                  */
                 step_iter_flags |= STEP_ITER_CREATE_UNSPEC;
             }
