@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- Copyright (C) 2019-2022 OKTET Labs Ltd. All rights reserved. -->
-<trc_db>
+<trc_db unknown_exp_status="passed_ok">
     <test name="ts" type="package">
         <objective>TE Seft Tests</objective>
         <notes/>
