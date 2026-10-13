@@ -95,6 +95,10 @@ typedef struct trc_log_parse_ctx {
 
     trc_report_test_iter_data  *iter_data;  /**< Current test iteration
                                                  data */
+    bool                        iter_pending; /**< Iteration data waits
+                                                   for the test end to
+                                                   get its expected
+                                                   result */
 
     unsigned int        stack_size; /**< Size of the stack in elements */
     bool               *stack_info; /**< Stack */

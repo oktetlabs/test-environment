@@ -941,6 +941,50 @@ trc_log_parse_start_element(void *user_data,
 }
 
 /**
+ * Get the expected result of the current test iteration, update
+ * statistics and attach the iteration data to TRC database.
+ *
+ * @param ctx           TRC log parse context
+ */
+static void
+trc_log_parse_iter_result(trc_log_parse_ctx *ctx)
+{
+    trc_report_test_iter_data *iter_data;
+
+    iter_data = trc_db_walker_get_user_data(ctx->db_walker, ctx->db_uid);
+    if (iter_data == NULL)
+    {
+        /* Get expected result */
+        ctx->iter_data->exp_result =
+            trc_db_walker_get_exp_result(ctx->db_walker, ctx->tags);
+        /* Update statistics */
+        if (ctx->type == TRC_TEST_SCRIPT)
+            TAILQ_FIRST(&ctx->iter_data->runs)->is_exp =
+                trc_report_test_iter_stats_update(
+                    &ctx->iter_data->stats,
+                    ctx->iter_data->exp_result,
+                    &TAILQ_FIRST(&ctx->iter_data->runs)->result);
+        /* Attach iteration data to TRC database */
+        ctx->rc = trc_db_walker_set_user_data(ctx->db_walker, ctx->db_uid,
+                                              ctx->iter_data);
+        if (ctx->rc != 0)
+            return;
+    }
+    else
+    {
+        /* Update statistics */
+        if (ctx->type == TRC_TEST_SCRIPT)
+            TAILQ_FIRST(&ctx->iter_data->runs)->is_exp =
+                trc_report_test_iter_stats_update(
+                    &iter_data->stats, iter_data->exp_result,
+                    &TAILQ_FIRST(&ctx->iter_data->runs)->result);
+        /* Merge a new entry */
+        trc_report_merge_test_iter_data(iter_data, ctx->iter_data);
+    }
+    ctx->iter_data = NULL;
+}
+
+/**
  * Callback function that is called when XML parser meets the end of
  * an element.
  *
@@ -984,6 +1028,14 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
             break;
 
         case TRC_LOG_PARSE_TEST:
+            if (ctx->iter_pending)
+            {
+                ctx->iter_pending = false;
+                trc_log_parse_iter_result(ctx);
+                if (ctx->rc != 0)
+                    break;
+            }
+
             if (ctx->iter_data != NULL)
             {
                 trc_report_free_test_iter_data(ctx->iter_data);
@@ -1009,7 +1061,6 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
 
         case TRC_LOG_PARSE_META:
         {
-            trc_report_test_iter_data     *iter_data;
             trc_report_test_iter_entry    *entry;
             func_args_match_ptr            func_ptr = NULL;
             trc_test                      *test;
@@ -1111,43 +1162,16 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
             }
             else
             {
-                iter_data = trc_db_walker_get_user_data(ctx->db_walker,
-                                                        ctx->db_uid);
-                if (iter_data == NULL)
-                {
-                    /* Get expected result */
-                    ctx->iter_data->exp_result =
-                        trc_db_walker_get_exp_result(ctx->db_walker,
-                                                     ctx->tags);
-                    /* Update statistics */
-                    if (ctx->type == TRC_TEST_SCRIPT)
-                        TAILQ_FIRST(&ctx->iter_data->runs)->is_exp =
-                            trc_report_test_iter_stats_update(
-                                &ctx->iter_data->stats,
-                                ctx->iter_data->exp_result,
-                                &TAILQ_FIRST(&ctx->iter_data->runs)->
-                                                                result);
-                    /* Attach iteration data to TRC database */
-                    ctx->rc = trc_db_walker_set_user_data(ctx->db_walker,
-                                                          ctx->db_uid,
-                                                          ctx->iter_data);
-                    if (ctx->rc != 0)
-                        break;
-                }
+                /*
+                 * Tester gets the expected result of a script after it
+                 * ends, with the TRC tags logged by then (e.g. the tags
+                 * added by the root prologue), so wait for the logs of
+                 * the test.
+                 */
+                if (ctx->type == TRC_TEST_SCRIPT)
+                    ctx->iter_pending = true;
                 else
-                {
-                    /* Update statistics */
-                    if (ctx->type == TRC_TEST_SCRIPT)
-                        TAILQ_FIRST(&ctx->iter_data->runs)->is_exp =
-                            trc_report_test_iter_stats_update(
-                                &iter_data->stats, iter_data->exp_result,
-                                &TAILQ_FIRST(&ctx->iter_data->runs)->
-                                                                  result);
-                    /* Merge a new entry */
-                    trc_report_merge_test_iter_data(iter_data,
-                                                    ctx->iter_data);
-                }
-                ctx->iter_data = NULL;
+                    trc_log_parse_iter_result(ctx);
             }
 
             break;
