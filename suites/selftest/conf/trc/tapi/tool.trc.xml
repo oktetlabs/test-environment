@@ -5,22 +5,10 @@
     <objective>Check TAPI TOOL implementation</objective>
     <iter result="PASSED">
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
-                    href="tool/haproxy.trc.xml" parse="xml"/>
-
-        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tool/memcached.trc.xml" parse="xml"/>
 
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
-                    href="tool/nptcp.trc.xml" parse="xml"/>
-
-        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
-                    href="tool/perf.trc.xml" parse="xml"/>
-
-        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tool/redis.trc.xml" parse="xml"/>
-
-        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
-                    href="tool/torrent.trc.xml" parse="xml"/>
 
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tool/trex.trc.xml" parse="xml"/>

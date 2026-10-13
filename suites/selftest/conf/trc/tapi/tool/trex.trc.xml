@@ -4,12 +4,6 @@
 <test name="trex" type="package">
     <objective>TAPI TRex implementation</objective>
     <iter result="PASSED">
-
-        <test name="trex_prologue">
-            <objective/>
-            <iter result="PASSED"/>
-        </test>
-
         <test name="trex_nginx">
             <objective/>
             <iter result="PASSED">
@@ -38,6 +32,5 @@
                 </results>
             </iter>
         </test>
-
     </iter>
 </test>

@@ -19,7 +19,6 @@
                             <verdict>Test verdict with added tag</verdict>
                         </result>
                     </results>
-
                 </iter>
             </test>
 
@@ -27,25 +26,10 @@
                         href="trc/minimal.trc.xml" parse="xml"/>
 
             <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
-                        href="trc/rpc.trc.xml" parse="xml"/>
-
-            <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                         href="trc/tapi.trc.xml" parse="xml"/>
 
             <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
-                        href="trc/apps.trc.xml" parse="xml"/>
-
-            <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                         href="trc/cs.trc.xml" parse="xml"/>
-
-            <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
-                        href="trc/expansion.trc.xml" parse="xml"/>
-
-            <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
-                        href="trc/tad.trc.xml" parse="xml"/>
-
-            <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
-                        href="trc/tools.trc.xml" parse="xml"/>
 
             <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                         href="trc/trc.trc.xml" parse="xml"/>

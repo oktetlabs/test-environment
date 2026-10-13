@@ -5,12 +5,6 @@
 <test name="redis" type="package">
     <objective>TAPI redis implementation</objective>
     <iter result="PASSED">
-        <test name="redis_srv">
-            <objective/>
-            <iter result="PASSED">
-                <arg name="env"/>
-            </iter>
-        </test>
          <test name="redis_benchmark">
             <objective/>
             <iter result="PASSED">
