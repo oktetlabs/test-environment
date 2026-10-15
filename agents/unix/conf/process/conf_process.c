@@ -30,6 +30,7 @@
 #include "te_sigmap.h"
 #include "te_sleep.h"
 #include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 #include "agentlib.h"
 #include "conf_common.h"
 #include "conf_process.h"
@@ -643,39 +644,30 @@ ps_find(const char *ps_name)
 }
 
 static te_errno
-ps_list(unsigned int gid, const char *oid, const char *sub_id, char **list)
+ps_list(const ta_conf_ctx *ctx, te_vec *names)
 {
     struct ps_entry *ps;
-    size_t len = 0;
-    char *p;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    UNUSED(ctx);
 
     SLIST_FOREACH(ps, &processes, links)
-        len += strlen(ps->name) + 1;
-
-    if (len == 0)
     {
-        *list = NULL;
-        return 0;
-    }
+        char *name = TE_STRDUP(ps->name);
 
-    *list = TE_ALLOC(len);
-
-    p = *list;
-    SLIST_FOREACH(ps, &processes, links)
-    {
-        if (p != *list)
-            *p++ = ' ';
-        len = strlen(ps->name);
-        memcpy(p, ps->name, len);
-        p += len;
+        TE_VEC_APPEND(names, name);
     }
-    *p = '\0';
 
     return 0;
+}
+
+/**
+ * Put a string value into the get buffer, truncating it to what the
+ * legacy fixed-size buffer could hold.
+ */
+static void
+ps_value_put(te_string *val, const char *str)
+{
+    te_string_append(val, "%.*s", RCF_MAX_VAL - 1, str);
 }
 
 static void
@@ -692,14 +684,10 @@ ps_ta_job_init(struct ps_ta_job *ta_job)
 }
 
 static te_errno
-ps_add(unsigned int gid, const char *oid, const char *value,
-       const char *ps_name)
+ps_add(const ta_conf_ctx *ctx)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     struct ps_entry *ps;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
 
     ENTRY("%s", ps_name);
 
@@ -738,13 +726,10 @@ ps_add(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-ps_long_opt_sep_get(unsigned int gid, const char *oid, char *value,
-                    const char *ps_name)
+ps_long_opt_sep_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     struct ps_entry *ps;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", ps_name);
 
@@ -752,19 +737,16 @@ ps_long_opt_sep_get(unsigned int gid, const char *oid, char *value,
     if (ps == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", ps->long_opt_sep ? "=" : "");
+    te_string_append(val, "%s", ps->long_opt_sep ? "=" : "");
 
     return 0;
 }
 
 static te_errno
-ps_long_opt_sep_set(unsigned int gid, const char *oid, const char *value,
-                    const char *ps_name)
+ps_long_opt_sep_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     struct ps_entry *ps;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", ps_name);
 
@@ -846,14 +828,11 @@ ps_free(struct ps_entry *ps)
 }
 
 static te_errno
-ps_del(unsigned int gid, const char *oid,
-       const char *ps_name)
+ps_del(const ta_conf_ctx *ctx)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     struct ps_entry *ps;
     te_errno rc = 0;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", ps_name);
 
@@ -885,13 +864,10 @@ ps_del(unsigned int gid, const char *oid,
 }
 
 static te_errno
-ps_sleep_get(unsigned int gid, const char *oid, char *value,
-           const char *ps_name)
+ps_sleep_get(const ta_conf_ctx *ctx, uint32_t *val)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     struct ps_entry *ps;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", ps_name);
 
@@ -899,20 +875,16 @@ ps_sleep_get(unsigned int gid, const char *oid, char *value,
     if (ps == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%u", ps->sleep);
+    *val = ps->sleep;
 
     return 0;
 }
 
 static te_errno
-ps_sleep_set(unsigned int gid, const char *oid, const char *value,
-           const char *ps_name)
+ps_sleep_set(const ta_conf_ctx *ctx, uint32_t val)
 {
-    te_errno rc;
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     struct ps_entry *ps;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", ps_name);
 
@@ -923,19 +895,16 @@ ps_sleep_set(unsigned int gid, const char *oid, const char *value,
     if (ps->enabled)
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    rc = te_strtoui(value, 10, &ps->sleep);
+    ps->sleep = val;
 
-    return rc;
+    return 0;
 }
 
 static te_errno
-ps_exe_get(unsigned int gid, const char *oid, char *value,
-           const char *ps_name)
+ps_exe_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     struct ps_entry *ps;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", ps_name);
 
@@ -943,20 +912,17 @@ ps_exe_get(unsigned int gid, const char *oid, char *value,
     if (ps == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(ps->exe));
+    ps_value_put(val, te_str_empty_if_null(ps->exe));
 
     return 0;
 }
 
 static te_errno
-ps_exe_set(unsigned int gid, const char *oid, const char *value,
-           const char *ps_name)
+ps_exe_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     te_errno rc;
     struct ps_entry *ps;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", ps_name);
 
@@ -1004,14 +970,11 @@ ps_status_check(struct ps_entry *ps, bool *is_running)
 }
 
 static te_errno
-ps_status_get(unsigned int gid, const char *oid, char *value,
-              const char *ps_name)
+ps_status_get(const ta_conf_ctx *ctx, int32_t *val)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     te_errno rc = 0;
     struct ps_entry *ps;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", ps_name);
 
@@ -1028,21 +991,18 @@ ps_status_get(unsigned int gid, const char *oid, char *value,
 
     pthread_mutex_unlock(&autorestart_lock);
 
-    snprintf(value, RCF_MAX_VAL, "%d", ps->enabled);
+    *val = ps->enabled ? 1 : 0;
 
     return rc;
 }
 
 static te_errno
-ps_status_set(unsigned int gid, const char *oid, const char *value,
-              const char *ps_name)
+ps_status_set(const ta_conf_ctx *ctx, int32_t val)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     struct ps_entry *ps;
-    bool enable = !!atoi(value);
+    bool enable = (val != 0);
     te_errno rc = 0;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", ps_name);
 
@@ -1088,13 +1048,10 @@ ps_status_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-ps_autorestart_get(unsigned int gid, const char *oid, char *value,
-                   const char *ps_name)
+ps_autorestart_get(const ta_conf_ctx *ctx, int32_t *val)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     struct ps_entry *ps;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", ps_name);
 
@@ -1102,19 +1059,16 @@ ps_autorestart_get(unsigned int gid, const char *oid, char *value,
     if (ps == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%d", ps->autorestart);
+    *val = (int32_t)ps->autorestart;
 
     return 0;
 }
 
 static te_errno
-ps_autorestart_set(unsigned int gid, const char *oid, const char *value,
-                   const char *ps_name)
+ps_autorestart_set(const ta_conf_ctx *ctx, int32_t val)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     struct ps_entry *ps;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", ps_name);
 
@@ -1125,17 +1079,20 @@ ps_autorestart_set(unsigned int gid, const char *oid, const char *value,
     if (ps->enabled)
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    return te_strtoui(value, 10, &ps->autorestart);
+    /* Negative values have never been accepted */
+    if (val < 0)
+        return TE_RC(TE_TA_UNIX, TE_EOVERFLOW);
+
+    ps->autorestart = val;
+
+    return 0;
 }
 
 static te_errno
-ps_stop_group_get(unsigned int gid, const char *oid, char *value,
-                  const char *ps_name)
+ps_stop_group_get(const ta_conf_ctx *ctx, bool *val)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     struct ps_entry *ps;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", ps_name);
 
@@ -1143,22 +1100,18 @@ ps_stop_group_get(unsigned int gid, const char *oid, char *value,
     if (ps == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%d", ps->stop_group);
+    *val = ps->stop_group;
 
     return 0;
 }
 
 static te_errno
-ps_stop_group_set(unsigned int gid, const char *oid, const char *value,
-                  const char *ps_name)
+ps_stop_group_set(const ta_conf_ctx *ctx, bool val)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     struct ps_entry *ps;
-    unsigned int stop_group;
     te_errno rc;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
     ENTRY("%s", ps_name);
 
     ps = ps_find(ps_name);
@@ -1168,14 +1121,7 @@ ps_stop_group_set(unsigned int gid, const char *oid, const char *value,
     if (ps->enabled)
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    rc = te_strtoui(value, 10, &stop_group);
-    if (rc != 0)
-        return rc;
-
-    if (stop_group > 1)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    ps->stop_group = (stop_group != 0);
+    ps->stop_group = val;
 
     /*
      * The job survives a stop and is reused by the next start, so a
@@ -1239,17 +1185,14 @@ ps_exec_param_get(te_vec *exec_params, te_exec_param_type type)
 }
 
 static te_errno
-ps_workdir_get(unsigned int gid, const char *oid, char *value,
-               const char *ps_name)
+ps_workdir_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     te_errno rc;
     struct ps_entry *ps;
 
     const te_exec_workdir_param *p;
     const char *workdir = NULL;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", ps_name);
 
@@ -1261,21 +1204,18 @@ ps_workdir_get(unsigned int gid, const char *oid, char *value,
     if (p != NULL)
         workdir = p->workdir;
 
-    rc = te_snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(workdir));
-    return  TE_RC_UPSTREAM(TE_TA_UNIX, rc);
+    rc = te_string_append_chk(val, "%s", te_str_empty_if_null(workdir));
+    return rc == 0 ? 0 : TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
 }
 
 static te_errno
-ps_workdir_set(unsigned int gid, const char *oid, const char *value,
-               const char *ps_name)
+ps_workdir_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     te_errno rc;
     struct ps_entry *ps;
 
     te_exec_workdir_param param;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", ps_name);
 
@@ -1324,42 +1264,34 @@ ps_arg_find(const struct ps_entry *ps, unsigned int order)
 }
 
 static te_errno
-ps_arg_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
-            const char *ps_name)
+ps_arg_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string result = TE_STRING_INIT;
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     struct ps_entry *ps;
     struct ps_arg_entry *arg;
-    bool first = true;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-    if((ps = ps_find(ps_name)) == NULL)
+    if ((ps = ps_find(ps_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     SLIST_FOREACH(arg, &ps->args, links)
     {
-        te_string_append(&result, "%s%u", first ? "" : " ", arg->order);
-        first = false;
+        char *name = te_string_fmt("%u", arg->order);
+
+        TE_VEC_APPEND(names, name);
     }
 
-    *list = result.ptr;
     return 0;
 }
 
 static te_errno
-ps_arg_get(unsigned int gid, const char *oid, char *value,
-           const char *ps_name, const char *arg_name)
+ps_arg_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
+    const char *arg_name = ta_conf_ctx_inst(ctx, "arg");
     struct ps_entry *ps;
     struct ps_arg_entry *arg = NULL;
     unsigned int order;
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((ps = ps_find(ps_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1372,22 +1304,20 @@ ps_arg_get(unsigned int gid, const char *oid, char *value,
     if (arg == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", arg->value);
+    ps_value_put(val, arg->value);
 
     return 0;
 }
 
 static te_errno
-ps_arg_add(unsigned int gid, const char *oid, const char *value,
-           const char *ps_name, const char *arg_name)
+ps_arg_add(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
+    const char *arg_name = ta_conf_ctx_inst(ctx, "arg");
     struct ps_entry *ps;
     struct ps_arg_entry *arg;
     unsigned int order;
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((ps = ps_find(ps_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1421,16 +1351,14 @@ ps_arg_add(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-ps_arg_del(unsigned int gid, const char *oid,
-           const char *ps_name, const char *arg_name)
+ps_arg_del(const ta_conf_ctx *ctx)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
+    const char *arg_name = ta_conf_ctx_inst(ctx, "arg");
     struct ps_entry *ps;
     struct ps_arg_entry *arg;
     unsigned int order;
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if((ps = ps_find(ps_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1473,40 +1401,32 @@ ps_env_find(const struct ps_entry *ps, const char *env_name)
 }
 
 static te_errno
-ps_env_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
-            const char *ps_name)
+ps_env_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string result = TE_STRING_INIT;
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     struct ps_entry *ps;
     struct ps_env_entry *env;
-    bool first = true;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
 
     if ((ps = ps_find(ps_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     SLIST_FOREACH(env, &ps->envs, links)
     {
-        te_string_append(&result, "%s%s", first ? "" : " ", env->name);
-        first = false;
+        char *name = TE_STRDUP(env->name);
+
+        TE_VEC_APPEND(names, name);
     }
 
-    *list = result.ptr;
     return 0;
 }
 
 static te_errno
-ps_env_get(unsigned int gid, const char *oid, char *value,
-           const char *ps_name, const char *env_name)
+ps_env_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
+    const char *env_name = ta_conf_ctx_inst(ctx, "env");
     struct ps_entry *ps;
     struct ps_env_entry *env = NULL;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((ps = ps_find(ps_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1515,20 +1435,18 @@ ps_env_get(unsigned int gid, const char *oid, char *value,
     if (env == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", env->value);
+    ps_value_put(val, env->value);
 
     return 0;
 }
 
 static te_errno
-ps_env_add(unsigned int gid, const char *oid, const char *value,
-           const char *ps_name, const char *env_name)
+ps_env_add(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
+    const char *env_name = ta_conf_ctx_inst(ctx, "env");
     struct ps_entry *ps;
     struct ps_env_entry *env;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((ps = ps_find(ps_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1562,14 +1480,12 @@ ps_env_add(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-ps_env_del(unsigned int gid, const char *oid,
-           const char *ps_name, const char *env_name)
+ps_env_del(const ta_conf_ctx *ctx)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
+    const char *env_name = ta_conf_ctx_inst(ctx, "env");
     struct ps_entry *ps;
     struct ps_env_entry *env;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((ps = ps_find(ps_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1607,40 +1523,32 @@ ps_opt_find(const struct ps_entry *ps, const char *opt_name)
 }
 
 static te_errno
-ps_opt_list(unsigned int gid, const char *oid, const char *sub_id,
-            char **list, const char *ps_name)
+ps_opt_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string result = TE_STRING_INIT;
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     struct ps_entry *ps;
     struct ps_opt_entry *opt;
-    bool first = true;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
 
     if ((ps = ps_find(ps_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     SLIST_FOREACH(opt, &ps->opts, links)
     {
-        te_string_append(&result, "%s%s", first ? "" : " ", opt->name);
-        first = false;
+        char *name = TE_STRDUP(opt->name);
+
+        TE_VEC_APPEND(names, name);
     }
 
-    *list = result.ptr;
     return 0;
 }
 
 static te_errno
-ps_opt_get(unsigned int gid, const char *oid, char *value,
-           const char *ps_name, const char *opt_name)
+ps_opt_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
+    const char *opt_name = ta_conf_ctx_inst(ctx, "option");
     struct ps_entry *ps;
     struct ps_opt_entry *opt = NULL;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((ps = ps_find(ps_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1649,20 +1557,18 @@ ps_opt_get(unsigned int gid, const char *oid, char *value,
     if (opt == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", opt->value);
+    ps_value_put(val, opt->value);
 
     return 0;
 }
 
 static te_errno
-ps_opt_add(unsigned int gid, const char *oid, const char *value,
-           const char *ps_name, const char *opt_name)
+ps_opt_add(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
+    const char *opt_name = ta_conf_ctx_inst(ctx, "option");
     struct ps_entry *ps;
     struct ps_opt_entry *opt;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((ps = ps_find(ps_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1698,14 +1604,12 @@ ps_opt_add(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-ps_opt_del(unsigned int gid, const char *oid,
-           const char *ps_name, const char *opt_name)
+ps_opt_del(const ta_conf_ctx *ctx)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
+    const char *opt_name = ta_conf_ctx_inst(ctx, "option");
     struct ps_entry *ps;
     struct ps_opt_entry *opt;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if ((ps = ps_find(ps_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -1809,13 +1713,10 @@ autorestart_loop(void *arg)
 }
 
 static te_errno
-ps_kill_common_get(unsigned int gid, const char *oid, char *value,
-                   const char *ps_name)
+ps_kill_common_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     struct ps_entry *ps;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", ps_name);
 
@@ -1824,20 +1725,17 @@ ps_kill_common_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     /* We do not care about the value we get since it does not mean anything */
-    value[0] = '\0';
+    UNUSED(val);
 
     return 0;
 }
 
 static te_errno
-ps_kill_common_set(unsigned int gid, const char *oid, const char *value,
-                   const char *ps_name, bool killpg)
+ps_kill_common_set(const ta_conf_ctx *ctx, const char *value, bool killpg)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     struct ps_entry *ps;
     int signo;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", ps_name);
 
@@ -1860,27 +1758,22 @@ ps_kill_common_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-ps_kill_self_set(unsigned int gid, const char *oid, const char *value,
-                 const char *ps_name)
+ps_kill_self_set(const ta_conf_ctx *ctx, const char *value)
 {
-    return ps_kill_common_set(gid, oid, value, ps_name, false);
+    return ps_kill_common_set(ctx, value, false);
 }
 
 static te_errno
-ps_kill_group_set(unsigned int gid, const char *oid, const char *value,
-                  const char *ps_name)
+ps_kill_group_set(const ta_conf_ctx *ctx, const char *value)
 {
-    return ps_kill_common_set(gid, oid, value, ps_name, true);
+    return ps_kill_common_set(ctx, value, true);
 }
 
 static te_errno
-ps_exit_status_type_get(unsigned int gid, const char *oid, char *value,
-                        const char *ps_name)
+ps_exit_status_type_get(const ta_conf_ctx *ctx, int32_t *val)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     struct ps_entry *ps;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", ps_name);
 
@@ -1888,19 +1781,16 @@ ps_exit_status_type_get(unsigned int gid, const char *oid, char *value,
     if (ps == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%d", ps->ta_job.exit_status.type);
+    *val = ps->ta_job.exit_status.type;
 
     return 0;
 }
 
 static te_errno
-ps_exit_status_value_get(unsigned int gid, const char *oid, char *value,
-                         const char *ps_name)
+ps_exit_status_value_get(const ta_conf_ctx *ctx, int32_t *val)
 {
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
     struct ps_entry *ps;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", ps_name);
 
@@ -1908,7 +1798,7 @@ ps_exit_status_value_get(unsigned int gid, const char *oid, char *value,
     if (ps == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%d", ps->ta_job.exit_status.value);
+    *val = ps->ta_job.exit_status.value;
 
     return 0;
 }
@@ -1930,62 +1820,36 @@ static const rcf_pch_cfg_substitution subst[] = RCF_PCH_CFG_SUBST_SET(
     { "*", "/agent/dir", subst_process }
 );
 
-RCF_PCH_CFG_NODE_RW_COLLECTION_WITH_SUBST(node_ps_arg, "arg", NULL, NULL,
-                                          ps_arg_get, NULL, ps_arg_add,
-                                          ps_arg_del, ps_arg_list,
-                                          NULL, subst);
-
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_ps_env, "env", NULL, &node_ps_arg,
-                               ps_env_get, NULL, ps_env_add,
-                               ps_env_del, ps_env_list, NULL);
-
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_ps_opt, "option", NULL, &node_ps_env,
-                               ps_opt_get, NULL, ps_opt_add,
-                               ps_opt_del, ps_opt_list, NULL);
-
-RCF_PCH_CFG_NODE_RW(node_ps_sleep, "sleep", NULL, &node_ps_opt,
-                    ps_sleep_get, ps_sleep_set);
-
-RCF_PCH_CFG_NODE_RW_WITH_SUBST(node_ps_exe, "exe", NULL, &node_ps_sleep,
-                               ps_exe_get, ps_exe_set, subst);
-
-RCF_PCH_CFG_NODE_RO(node_ps_exit_status_type, "type", NULL, NULL,
-                    ps_exit_status_type_get);
-
-RCF_PCH_CFG_NODE_RO(node_ps_exit_status_value, "value", NULL,
-                    &node_ps_exit_status_type, ps_exit_status_value_get);
-
-RCF_PCH_CFG_NODE_NA(node_ps_exit_status, "exit_status",
-                    &node_ps_exit_status_value, NULL);
-
-RCF_PCH_CFG_NODE_RW(node_ps_status, "status", &node_ps_exit_status,
-                    &node_ps_exe, ps_status_get, ps_status_set);
-
-RCF_PCH_CFG_NODE_RW(node_ps_long_opt_sep, "long_option_value_separator", NULL,
-                    &node_ps_status, ps_long_opt_sep_get, ps_long_opt_sep_set);
-
-RCF_PCH_CFG_NODE_RW(node_ps_workdir, "workdir", NULL, &node_ps_long_opt_sep,
-                    ps_workdir_get, ps_workdir_set);
-
-RCF_PCH_CFG_NODE_RW(node_ps_autorestart, "autorestart", NULL,
-                    &node_ps_workdir, ps_autorestart_get,
-                    ps_autorestart_set);
-
-RCF_PCH_CFG_NODE_RW(node_ps_stop_group, "stop_group", NULL,
-                    &node_ps_autorestart, ps_stop_group_get,
-                    ps_stop_group_set);
-
-RCF_PCH_CFG_NODE_RW(node_ps_kill_self, "self", NULL, NULL,
-                    ps_kill_common_get, ps_kill_self_set);
-
-RCF_PCH_CFG_NODE_RW(node_ps_kill_group, "group", NULL, &node_ps_kill_self,
-                    ps_kill_common_get, ps_kill_group_set);
-
-RCF_PCH_CFG_NODE_NA(node_ps_kill, "kill", &node_ps_kill_group,
-                    &node_ps_stop_group);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_ps, "process", &node_ps_kill, NULL,
-                            ps_add, ps_del, ps_list, NULL);
+static const ta_conf_node *const node_ps =
+    TA_CONF_COLL("process", ps_add, ps_del, ps_list,
+        TA_CONF_NA("kill",
+            TA_CONF_RW_STR("group", ps_kill_common_get, ps_kill_group_set),
+            TA_CONF_RW_STR("self", ps_kill_common_get, ps_kill_self_set)),
+        TA_CONF_RW_BOOL("stop_group", ps_stop_group_get, ps_stop_group_set),
+        TA_CONF_RW_INT32("autorestart", ps_autorestart_get,
+                         ps_autorestart_set),
+        TA_CONF_RW_STR("workdir", ps_workdir_get, ps_workdir_set),
+        TA_CONF_RW_STR("long_option_value_separator", ps_long_opt_sep_get,
+                       ps_long_opt_sep_set),
+        TA_CONF_RW_INT32("status", ps_status_get, ps_status_set,
+            TA_CONF_NA("exit_status",
+                TA_CONF_RO_INT32("value", ps_exit_status_value_get),
+                TA_CONF_RO_INT32("type", ps_exit_status_type_get))),
+        TA_CONF_NODE((.name = "exe", .type = CVT_STRING,
+                      .get = { .as_str = ps_exe_get },
+                      .set = { .as_str = ps_exe_set },
+                      .subst = subst)),
+        TA_CONF_RW_UINT32("sleep", ps_sleep_get, ps_sleep_set),
+        TA_CONF_COLL_STR("option", ps_opt_get, ps_opt_add, ps_opt_del,
+                         ps_opt_list),
+        TA_CONF_COLL_STR("env", ps_env_get, ps_env_add, ps_env_del,
+                         ps_env_list),
+        TA_CONF_NODE((.name = "arg", .type = CVT_STRING,
+                      .get = { .as_str = ps_arg_get },
+                      .add = { .as_str = ps_arg_add },
+                      .del = ps_arg_del,
+                      .list = ps_arg_list,
+                      .subst = subst)));
 
 te_errno
 ta_unix_conf_ps_init(void)
@@ -2004,5 +1868,5 @@ ta_unix_conf_ps_init(void)
     if (ret != 0)
         return TE_OS_RC(TE_TA_UNIX, ret);
 
-    return rcf_pch_add_node("/agent", &node_ps);
+    return ta_conf_register("/agent", node_ps);
 }
