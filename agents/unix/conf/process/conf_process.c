@@ -1121,7 +1121,7 @@ static te_errno
 ps_exec_param_set(te_vec *exec_params, te_exec_param *new_param)
 {
     te_exec_param *iter;
-    te_exec_param param;
+    te_exec_param param = { .data = NULL };
 
     if (exec_params == NULL || new_param == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
