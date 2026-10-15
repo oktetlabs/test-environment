@@ -29,9 +29,11 @@
 #include "logger_api.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_string.h"
+#include "te_vector.h"
 
 #if defined(USE_LIBNETCONF) || defined(USE_ROUTE_SOCKET)
 
@@ -99,26 +101,20 @@ rule_find(unsigned int gid, const char *rule, te_conf_ip_rule **rule_info)
 /**
  * Add a new rule.
  *
- * @param gid           Group identifier (unused)
- * @param oid           Full object instance identifier (unused)
- * @param value         Value string
- * @param rule          Rule instance name: see doc/cm/cm_base.xml
- *                      for the format
+ * @param ctx           Request context; the rule instance name (see
+ *                      doc/cm/cm_base.yml for the format) is the
+ *                      "rule" instance
  *
  * @return              Status code
  */
 static te_errno
-rule_add(unsigned int gid, const char *oid, const char *value,
-         const char *rule)
+rule_add(const ta_conf_ctx *ctx)
 {
+    const char         *rule = ta_conf_ctx_inst(ctx, "rule");
     te_errno            rc;
     uint32_t            required;
     te_conf_ip_rule     ip_rule;
     te_conf_ip_rule     found_ip_rule;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
 
     rc = te_conf_ip_rule_from_str(rule, &required, &ip_rule);
     if (rc != 0)
@@ -144,22 +140,20 @@ rule_add(unsigned int gid, const char *oid, const char *value,
 /**
  * Delete a rule.
  *
- * @param gid           Group identifier (unused)
- * @param oid           Full object instance identifier (unused)
- * @param rule          Rule instance name: see doc/cm/cm_base.xml
- *                      for the format
+ * @param ctx           Request context; the rule instance name (see
+ *                      doc/cm/cm_base.yml for the format) is the
+ *                      "rule" instance
  *
  * @return              Status code
  */
 static te_errno
-rule_del(unsigned int gid, const char *oid, const char *rule)
+rule_del(const ta_conf_ctx *ctx)
 {
+    const char *rule = ta_conf_ctx_inst(ctx, "rule");
     int         rc;
     te_conf_ip_rule *ip_rule;
 
-    UNUSED(oid);
-
-    if ((rc = rule_find(gid, rule, &ip_rule)) != 0)
+    if ((rc = rule_find(ta_conf_ctx_gid(ctx), rule, &ip_rule)) != 0)
     {
         ERROR("Rule %s cannot be found", rule);
         return rc;
@@ -171,37 +165,40 @@ rule_del(unsigned int gid, const char *oid, const char *rule)
 /**
  * Get rules list.
  *
- * @param gid           Group identifier (unused)
- * @param oid           Full identifier of the father instance (unused)
- * @param sub_id        ID of the object to be listed (unused)
- * @param list          Location for the list pointer
+ * @param ctx           Request context (unused)
+ * @param names         Vector to append rule instance names to
  *
  * @return              Status code
  */
 static te_errno
-rule_list(unsigned int gid, const char *oid,
-          const char *sub_id, char **list)
+rule_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    char       *list = NULL;
+    te_errno    rc;
 
-    return ta_unix_conf_rule_list(list);
+    UNUSED(ctx);
+
+    rc = ta_unix_conf_rule_list(&list);
+    if (rc != 0)
+        return rc;
+
+    te_vec_split_string(list, names, ' ', true);
+    free(list);
+
+    return 0;
 }
 
 /**
  * Commit a rule.
  *
- * @param gid           Group identifier (unused)
- * @param p_oid         Parsed object instance identifier (unused)
+ * @param ctx           Request context (unused)
  *
  * @return              Status code
  */
 static te_errno
-rule_commit(unsigned int gid, const cfg_oid *p_oid)
+rule_commit(const ta_conf_ctx *ctx)
 {
-    UNUSED(gid);
-    UNUSED(p_oid);
+    UNUSED(ctx);
 
     return 0;
 }
@@ -210,13 +207,9 @@ rule_commit(unsigned int gid, const cfg_oid *p_oid)
  * Unix Test Agent rules configuration tree.
  */
 
-static rcf_pch_cfg_object node_rule;
-
-static rcf_pch_cfg_object node_rule =
-    {"rule", 0, NULL, NULL,
-     (rcf_ch_cfg_get)NULL, (rcf_ch_cfg_set)NULL,
-     (rcf_ch_cfg_add)rule_add, (rcf_ch_cfg_del)rule_del,
-     (rcf_ch_cfg_list)rule_list, (rcf_ch_cfg_commit)rule_commit, NULL, NULL};
+static const ta_conf_node *const node_rule =
+    TA_CONF_COLL_COMMIT("rule", rule_add, rule_del, rule_list,
+                        rule_commit);
 
 /* See the description in conf_rule.h */
 te_errno
@@ -240,7 +233,7 @@ ta_unix_conf_rule_init(void)
 
     netconf_list_free(nlist);
 
-    return rcf_pch_add_node("/agent", &node_rule);
+    return ta_conf_register("/agent", node_rule);
 }
 
 /**
