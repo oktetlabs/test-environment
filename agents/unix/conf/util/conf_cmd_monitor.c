@@ -24,13 +24,17 @@
 #include "te_defs.h"
 #include "te_queue.h"
 #include "te_errno.h"
+#include "te_str.h"
+#include "te_string.h"
+#include "te_vector.h"
 #include "rcf_ch_api.h"
 #include "logger_api.h"
 #include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 
 #include "te_cmd_monitor.h"
 
-TAILQ_HEAD(, cmd_monitor_t) cmd_monitors_h;
+static TAILQ_HEAD(, cmd_monitor_t) cmd_monitors_h;
 
 /**
  * Searching for the command monitor by name.
@@ -52,23 +56,30 @@ monitor_find_by_name(const char *name)
 }
 
 /**
+ * Find the command monitor a request is addressed to.
+ *
+ * @param ctx       Request context
+ *
+ * @return The command monitor structure pointer or @c NULL.
+ */
+static cmd_monitor_t *
+monitor_find(const ta_conf_ctx *ctx)
+{
+    return monitor_find_by_name(ta_conf_ctx_inst(ctx, "command_monitor"));
+}
+
+/**
  * Add the command monitor object
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param value     Node value (unused)
- * @param pname     The command monitor name name
+ * @param ctx       Request context
  *
  * @return 0 on success or error code on failure
  */
 static te_errno
-cmd_monitor_add(unsigned int gid, const char *oid, char *value, char *name)
+cmd_monitor_add(const ta_conf_ctx *ctx)
 {
+    const char      *name = ta_conf_ctx_inst(ctx, "command_monitor");
     cmd_monitor_t   *monitor;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
 
     monitor = monitor_find_by_name(name);
     if (monitor != NULL)
@@ -109,7 +120,7 @@ _monitor_set_enable(cmd_monitor_t *monitor, bool enable)
     if (enable)
     {
         rc = pthread_create(&monitor->thread, NULL,
-                            (void *)&te_command_monitor, monitor);
+                            te_command_monitor, monitor);
         if (rc != 0)
         {
             ERROR("Cannot start the monitor thread for command '%s'",
@@ -167,19 +178,14 @@ _cmd_monitor_del(cmd_monitor_t *monitor)
 /**
  * Delete a command monitor object
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param name      Command monitor object name
+ * @param ctx       Request context
  *
  * @return 0 on success or error code on failure
  */
 static te_errno
-cmd_monitor_del(unsigned int gid, const char *oid, const char *name)
+cmd_monitor_del(const ta_conf_ctx *ctx)
 {
-    cmd_monitor_t   *monitor = monitor_find_by_name(name);
-
-    UNUSED(gid);
-    UNUSED(oid);
+    cmd_monitor_t   *monitor = monitor_find(ctx);
 
     if (monitor == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -190,169 +196,198 @@ cmd_monitor_del(unsigned int gid, const char *oid, const char *name)
 /**
  * Get list of names of all command monitor objects
  *
- * @param gid         Group identifier (unused)
- * @param oid         Full parent object instance identifier (unused)
- * @param sub_id      ID of the object to be listed (unused)
- * @param list [out]  Location for the list
+ * @param ctx       Request context (unused)
+ * @param names     Vector of heap-allocated names to append to
  *
  * @return 0 on success or error code on failure
  */
 static te_errno
-cmd_monitors_list(unsigned int gid, const char *oid, const char *sub_id,
-                  char **list)
+cmd_monitors_list(const ta_conf_ctx *ctx, te_vec *names)
 {
     cmd_monitor_t    *monitor;
-    size_t            list_size = 0;
-    size_t            list_len  = 0;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    UNUSED(ctx);
 
-    *list = NULL;
-
-    list_len = 0;
     TAILQ_FOREACH(monitor, &cmd_monitors_h, links)
     {
-        if (list_len + strlen(monitor->name) + 2 >= list_size)
-        {
-            list_size = (list_size + strlen(monitor->name) + 2) * 2;
-            TE_REALLOC(*list, list_size);
-        }
+        char *name = TE_STRDUP(monitor->name);
 
-        list_len += sprintf(*list + list_len, "%s ", monitor->name);
+        TE_VEC_APPEND(names, name);
     }
 
     return 0;
 }
 
 /**
- * Common function to get command monitor properties values.
+ * Find a command monitor whose properties may be changed.
  *
- * @param gid          Group identifier (unused).
- * @param oid          Full object instance identifier.
- * @param value  [out] Property value.
- * @param name         The monitor name.
+ * @param ctx           Request context
+ * @param monitor [out] Command monitor structure pointer
  *
  * @return 0 on success or error code on failure
  */
 static te_errno
-monitor_common_get(unsigned int gid, const char *oid, char *value,
-                   const char *name)
+monitor_find_disabled(const ta_conf_ctx *ctx, cmd_monitor_t **monitor)
 {
-    cmd_monitor_t *monitor = monitor_find_by_name(name);
+    *monitor = monitor_find(ctx);
+    if (*monitor == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    if ((*monitor)->enable)
+    {
+       ERROR("Cannot change monitor properties while it is enabled");
+       return TE_RC(TE_TA_UNIX, TE_EBUSY);
+    }
 
-    UNUSED(gid);
+    return 0;
+}
+
+/**
+ * Get the time to wait between command runs.
+ *
+ * @param ctx          Request context
+ * @param val    [out] Time to wait, in milliseconds
+ *
+ * @return 0 on success or error code on failure
+ */
+static te_errno
+monitor_time_to_wait_get(const ta_conf_ctx *ctx, int32_t *val)
+{
+    cmd_monitor_t *monitor = monitor_find(ctx);
+    int            v;
+    te_errno       rc;
 
     if (monitor == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    if (value == NULL)
+
+    /* Not set yet; the monitor thread takes "" as 0 */
+    if (*monitor->time_to_wait == '\0')
     {
-       ERROR("A buffer to get a variable value is not provided");
-       return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        *val = 0;
+        return 0;
     }
 
-    if (strstr(oid, "/enable:") != NULL)
-        snprintf(value, RCF_MAX_VAL, "%d", monitor->enable);
-    else if (strstr(oid, "/command:") != NULL)
-        snprintf(value, RCF_MAX_VAL, "%s", monitor->command);
-    else if (strstr(oid, "/time_to_wait:") != NULL)
-        snprintf(value, RCF_MAX_VAL, "%s", monitor->time_to_wait);
-    else
+    rc = te_strtoi(monitor->time_to_wait, 10, &v);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    *val = v;
+    return 0;
+}
+
+/**
+ * Set the time to wait between command runs.
+ *
+ * @param ctx          Request context
+ * @param val          Time to wait, in milliseconds
+ *
+ * @return 0 on success or error code on failure
+ */
+static te_errno
+monitor_time_to_wait_set(const ta_conf_ctx *ctx, int32_t val)
+{
+    cmd_monitor_t *monitor;
+    te_errno       rc;
+
+    rc = monitor_find_disabled(ctx, &monitor);
+    if (rc != 0)
+        return rc;
+
+    free(monitor->time_to_wait);
+    monitor->time_to_wait = te_string_fmt("%" PRId32, val);
+
+    return 0;
+}
+
+/**
+ * Get the monitored command.
+ *
+ * @param ctx          Request context
+ * @param val    [out] Shell command
+ *
+ * @return 0 on success or error code on failure
+ */
+static te_errno
+monitor_command_get(const ta_conf_ctx *ctx, te_string *val)
+{
+    cmd_monitor_t *monitor = monitor_find(ctx);
+
+    if (monitor == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
+    te_string_append(val, "%.*s", RCF_MAX_VAL - 1, monitor->command);
+    return 0;
+}
+
+/**
+ * Set the monitored command.
+ *
+ * @param ctx          Request context
+ * @param val          Shell command
+ *
+ * @return 0 on success or error code on failure
+ */
+static te_errno
+monitor_command_set(const ta_conf_ctx *ctx, const char *val)
+{
+    cmd_monitor_t *monitor;
+    te_errno       rc;
+
+    rc = monitor_find_disabled(ctx, &monitor);
+    if (rc != 0)
+        return rc;
+
+    free(monitor->command);
+    monitor->command = strdup(val);
+
+    return 0;
+}
+
+/**
+ * Get the enable state of a command monitor.
+ *
+ * @param ctx          Request context
+ * @param val    [out] Enabled (1) or disabled (0)
+ *
+ * @return 0 on success or error code on failure
+ */
+static te_errno
+monitor_enable_get(const ta_conf_ctx *ctx, int32_t *val)
+{
+    cmd_monitor_t *monitor = monitor_find(ctx);
+
+    if (monitor == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    *val = monitor->enable;
     return 0;
 }
 
 /**
  * Enable or disable a command monitor.
  *
- * @param gid          Group identifier (unused).
- * @param oid          Full object instance identifier (unused).
- * @param value        Enabled (1) or disabled (0).
- * @param name         The monitor name.
+ * @param ctx          Request context
+ * @param val          Non-zero to enable, 0 to disable
  *
  * @return 0 on success or error code on failure
  */
 static te_errno
-monitor_set_enable(unsigned int gid, const char *oid, char *value,
-                   const char *name)
+monitor_enable_set(const ta_conf_ctx *ctx, int32_t val)
 {
-    cmd_monitor_t *monitor = monitor_find_by_name(name);
-    bool enable = false;
-
-    UNUSED(gid);
-    UNUSED(oid);
+    cmd_monitor_t *monitor = monitor_find(ctx);
 
     if (monitor == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    enable = (atoi(value) == 0) ? false : true;
-
-    return _monitor_set_enable(monitor, enable);
+    return _monitor_set_enable(monitor, val != 0);
 }
 
-/**
- * Common function to set command monitor properties values.
- *
- * @param gid          Group identifier (unused).
- * @param oid          Full object instance identifier.
- * @param value        Property value.
- * @param name         The monitor name.
- *
- * @return 0 on success or error code on failure
- */
-static te_errno
-monitor_common_set(unsigned int gid, const char *oid, char *value,
-                   const char *name)
-{
-    cmd_monitor_t *monitor = monitor_find_by_name(name);
-
-    UNUSED(gid);
-
-    if (monitor == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    if (value == NULL)
-    {
-       ERROR("A buffer to set a variable value is not provided");
-       return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-    if (monitor->enable)
-    {
-       ERROR("Cannot change monitor properties while it is enabled");
-       return TE_RC(TE_TA_UNIX, TE_EBUSY);
-    }
-
-    if (strstr(oid, "/command:") != NULL)
-    {
-        free(monitor->command);
-        monitor->command = strdup(value);
-    }
-    else if (strstr(oid, "/time_to_wait:") != NULL)
-    {
-        free(monitor->time_to_wait);
-        monitor->time_to_wait = strdup(value);
-    }
-    else
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    return 0;
-}
-
-RCF_PCH_CFG_NODE_RW(monitor_enable, "enable", NULL,
-                    NULL, monitor_common_get, monitor_set_enable);
-RCF_PCH_CFG_NODE_RW(monitor_command, "command", NULL,
-                    &monitor_enable,
-                    monitor_common_get, monitor_common_set);
-RCF_PCH_CFG_NODE_RW(monitor_time, "time_to_wait", NULL,
-                    &monitor_command,
-                    monitor_common_get, monitor_common_set);
-
-static rcf_pch_cfg_object node_monitor_inst =
-    { "command_monitor", 0, &monitor_time, NULL,
-      NULL, NULL,
-      (rcf_ch_cfg_add)cmd_monitor_add, (rcf_ch_cfg_del)cmd_monitor_del,
-      (rcf_ch_cfg_list)cmd_monitors_list, NULL, NULL, NULL };
+static const ta_conf_node *const node_cmd_monitor =
+    TA_CONF_COLL("command_monitor", cmd_monitor_add, cmd_monitor_del,
+                 cmd_monitors_list,
+        TA_CONF_RW_INT32("time_to_wait", monitor_time_to_wait_get,
+                         monitor_time_to_wait_set),
+        TA_CONF_RW_STR("command", monitor_command_get, monitor_command_set),
+        TA_CONF_RW_INT32("enable", monitor_enable_get, monitor_enable_set));
 
 /*
  * Initializing command monitor subtree.
@@ -364,7 +399,7 @@ ta_unix_conf_cmd_monitor_init(void)
 {
     TAILQ_INIT(&cmd_monitors_h);
 
-    return rcf_pch_add_node("/agent", &node_monitor_inst);
+    return ta_conf_register("/agent", node_cmd_monitor);
 }
 
 /*
