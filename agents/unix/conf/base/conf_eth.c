@@ -196,6 +196,10 @@ eth_feature_get_values(struct eth_if_context *if_context)
 
     for (i = 0; i < if_context->nb_features; ++i)
     {
+        /* Do not overwrite a value changed, but not committed yet */
+        if (if_context->features[i].need_update)
+            continue;
+
         if_context->features[i].enabled =
             E_FEATURE_BIT_IS_SET(e_features->features, i, active);
 
@@ -338,6 +342,10 @@ eth_feature_get_by_name(const char *ifname,
     if_context = eth_feature_iface_context(ifname);
     if ((if_context == NULL) || !if_context->valid)
         return TE_ENOENT;
+
+    rc = eth_feature_get_values(if_context);
+    if (rc != 0)
+        return rc;
 
     rc = eth_feature_get_index_by_name(if_context,
                                        feature_name,
