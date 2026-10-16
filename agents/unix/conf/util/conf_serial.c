@@ -25,9 +25,11 @@
 #include "te_sockaddr.h"
 #include "unix_internal.h"
 #include "te_string.h"
+#include "te_vector.h"
+#include "rcf_pch_tree.h"
 
 /** Head of the consoles list */
-SLIST_HEAD(, serial_console_t) consoles;
+static SLIST_HEAD(, serial_console_t) consoles;
 
 /**
  * Search for the console by name.
@@ -53,23 +55,31 @@ console_get_by_name(const char *name)
 }
 
 /**
+ * Find the console a request is addressed to.
+ *
+ * @param ctx       Request context
+ *
+ * @return The console unit or @c NULL.
+ */
+static serial_console_t *
+console_find(const ta_conf_ctx *ctx)
+{
+    return console_get_by_name(ta_conf_ctx_inst(ctx, "console"));
+}
+
+/**
  * Add the console object
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
+ * @param ctx       Request context
  * @param cname     The serial console name
- * @param inst_name The console name
  *
  * @return Status code
  */
 static te_errno
-console_add(unsigned int gid, const char *oid, const char *cname,
-            const char *inst_name)
+console_add(const ta_conf_ctx *ctx, const char *cname)
 {
+    const char       *inst_name = ta_conf_ctx_inst(ctx, "console");
     serial_console_t *console;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if (strlen(inst_name) > TE_SERIAL_MAX_NAME)
         return TE_RC(TE_TA_UNIX, TE_ENAMETOOLONG);
@@ -92,22 +102,17 @@ console_add(unsigned int gid, const char *oid, const char *cname,
 /**
  * Delete the console object.
  *
- * @param gid          Group identifier (unused).
- * @param oid          Full object instance identifier (unused).
- * @param inst_name    The console name.
+ * @param ctx       Request context
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-console_del(unsigned int gid, const char *oid, const char *inst_name)
+console_del(const ta_conf_ctx *ctx)
 {
     serial_console_t *console;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    console = console_get_by_name(inst_name);
+    console = console_find(ctx);
     if (console == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -120,24 +125,18 @@ console_del(unsigned int gid, const char *oid, const char *inst_name)
 /**
  * Set a serial console name for the console.
  *
- * @param gid          Group identifier (unused).
- * @param oid          Full object instance identifier (unused).
- * @param cname        Serial console name.
- * @param inst_name    The console name.
+ * @param ctx       Request context
+ * @param cname     Serial console name
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-console_set(unsigned int gid, const char *oid, const char *cname,
-            const char *inst_name)
+console_set(const ta_conf_ctx *ctx, const char *cname)
 {
     serial_console_t *console;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    console = console_get_by_name(inst_name);
+    console = console_find(ctx);
     if (console == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -149,28 +148,22 @@ console_set(unsigned int gid, const char *oid, const char *cname,
 /**
  * Get a serial console name of the console.
  *
- * @param gid          Group identifier (unused).
- * @param oid          Full object instance identifier (unused).
- * @param cname        Serial console name.
- * @param inst_name    The console name.
+ * @param ctx       Request context
+ * @param cname     Location for the serial console name
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-console_get(unsigned int gid, const char *oid, char *cname,
-            const char *inst_name)
+console_get(const ta_conf_ctx *ctx, te_string *cname)
 {
     serial_console_t *console;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    console = console_get_by_name(inst_name);
+    console = console_find(ctx);
     if (console == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    te_strlcpy(cname, console->name, RCF_MAX_VAL);
+    te_string_append(cname, "%s", console->name);
 
     return 0;
 }
@@ -178,152 +171,158 @@ console_get(unsigned int gid, const char *oid, char *cname,
 /**
  * Get instance list of the consoles.
  *
- * @param gid       Group identifier (unused).
- * @param oid       Full parent object instance identifier (unused).
- * @param sub_id    ID of the object to be listed (unused).
- * @param list      Location for the list pointer.
+ * @param ctx       Request context (unused)
+ * @param names     Vector of heap-allocated names to append to
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-console_list(unsigned int gid, const char *oid, const char *sub_id,
-             char **list)
+console_list(const ta_conf_ctx *ctx, te_vec *names)
 {
     serial_console_t   *console;
-    te_string           str = TE_STRING_INIT;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    UNUSED(ctx);
 
     SLIST_FOREACH(console, &consoles, next)
     {
-        te_string_append(&str, (str.ptr != NULL) ? " %s" : "%s",
-                         console->inst_name);
+        char *name = TE_STRDUP(console->inst_name);
+
+        TE_VEC_APPEND(names, name);
     }
-    *list = str.ptr;
 
     return 0;
 }
 
 /**
- * Common function to set variable values.
+ * Get the conserver port of the console.
  *
- * @param gid          Group identifier (unused).
- * @param oid          Full object instance identifier.
- * @param value        New value.
- * @param inst_name    The console name.
+ * @param ctx       Request context
+ * @param val       Location for the port
  *
  * @return Status code
- * @retval 0        Success
  */
 static te_errno
-console_common_set(unsigned int gid, const char *oid, const char *value,
-                   const char *inst_name)
+console_port_get(const ta_conf_ctx *ctx, int32_t *val)
 {
-    te_errno          rc = 0;
-    serial_console_t *console;
+    serial_console_t *console = console_find(ctx);
 
-    UNUSED(gid);
-
-    console = console_get_by_name(inst_name);
     if (console == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    if (value == NULL)
-    {
-        ERROR("A variable value is not provided");
+
+    *val = console->port;
+    return 0;
+}
+
+/**
+ * Set the conserver port of the console.
+ *
+ * @param ctx       Request context
+ * @param val       Port
+ *
+ * @return Status code
+ */
+static te_errno
+console_port_set(const ta_conf_ctx *ctx, int32_t val)
+{
+    serial_console_t *console = console_find(ctx);
+
+    if (console == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    console->port = val;
+    return 0;
+}
+
+/**
+ * Get the conserver user of the console.
+ *
+ * @param ctx       Request context
+ * @param val       Location for the user name
+ *
+ * @return Status code
+ */
+static te_errno
+console_user_get(const ta_conf_ctx *ctx, te_string *val)
+{
+    serial_console_t *console = console_find(ctx);
+
+    if (console == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    te_string_append(val, "%s", console->user);
+    return 0;
+}
+
+/**
+ * Set the conserver user of the console.
+ *
+ * @param ctx       Request context
+ * @param val       User name
+ *
+ * @return Status code
+ */
+static te_errno
+console_user_set(const ta_conf_ctx *ctx, const char *val)
+{
+    serial_console_t *console = console_find(ctx);
+
+    if (console == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(console->user, TE_SERIAL_MAX_NAME, "%s", val);
+    return 0;
+}
+
+/**
+ * Get the conserver address of the console.
+ *
+ * @param ctx       Request context
+ * @param val       Location for the address
+ *
+ * @return Status code
+ */
+static te_errno
+console_address_get(const ta_conf_ctx *ctx, struct sockaddr_storage *val)
+{
+    serial_console_t *console = console_find(ctx);
+
+    if (console == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    *val = console->address;
+    return 0;
+}
+
+/**
+ * Set the conserver address of the console.
+ *
+ * @param ctx       Request context
+ * @param val       IPv4 or IPv6 address
+ *
+ * @return Status code
+ */
+static te_errno
+console_address_set(const ta_conf_ctx *ctx, const struct sockaddr *val)
+{
+    serial_console_t *console = console_find(ctx);
+
+    if (console == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    if (val->sa_family != AF_INET && val->sa_family != AF_INET6)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
 
-    if (strstr(oid, "/port:") != NULL)
-    {
-        console->port = atoi(value);
-    }
-    else if (strstr(oid, "/user:") != NULL)
-    {
-        snprintf(console->user, TE_SERIAL_MAX_NAME, "%s", value);
-    }
-    else if (strstr(oid, "/address:") != NULL)
-    {
-        struct sockaddr_storage addr = console->address;
-
-        rc = te_sockaddr_str2h(value, SA(&addr));
-        if (rc == 0)
-            console->address = addr;
-    }
-    else
-    {
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    }
-
-    return rc;
-}
-
-/**
- * Common function to get variable values.
- *
- * @param[in]  gid          Group identifier (unused).
- * @param[in]  oid          Full object instance identifier.
- * @param[out] value        New value.
- * @param[in]  inst_name    The console name.
- *
- * @return Status code
- * @retval 0        Success
- */
-static te_errno
-console_common_get(unsigned int gid, const char *oid, char *value,
-                   const char *inst_name)
-{
-    serial_console_t *console;
-
-    UNUSED(gid);
-
-    console = console_get_by_name(inst_name);
-    if (console == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    if (value == NULL)
-    {
-       ERROR("A buffer to get a variable value is not provided");
-       return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    if (strstr(oid, "/port:") != NULL)
-    {
-        snprintf(value, RCF_MAX_VAL, "%d", console->port);
-    }
-    else if (strstr(oid, "/user:") != NULL)
-    {
-        snprintf(value, RCF_MAX_VAL, "%s", console->user);
-    }
-    else if (strstr(oid, "/address:") != NULL)
-    {
-        snprintf(value, RCF_MAX_VAL, "%s",
-                 te_sockaddr_get_ipstr(SA(&console->address)));
-    }
-    else
-    {
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    }
-
+    memcpy(&console->address, val, te_sockaddr_get_size(val));
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RW(console_address, "address", NULL, NULL,
-                    console_common_get, console_common_set);
-
-RCF_PCH_CFG_NODE_RW(console_user, "user", NULL, &console_address,
-                    console_common_get, console_common_set);
-
-RCF_PCH_CFG_NODE_RW(console_port, "port", NULL, &console_user,
-                    console_common_get, console_common_set);
-
-static rcf_pch_cfg_object node_console_inst =
-    { "console", 0, &console_port, NULL,
-      (rcf_ch_cfg_get)console_get, (rcf_ch_cfg_set)console_set,
-      (rcf_ch_cfg_add)console_add, (rcf_ch_cfg_del)console_del,
-      (rcf_ch_cfg_list)console_list, NULL, NULL, NULL };
+static const ta_conf_node *const node_console =
+    TA_CONF_COLL_STR_RW("console", console_get, console_set,
+                        console_add, console_del, console_list,
+        TA_CONF_RW_INT32("port", console_port_get, console_port_set),
+        TA_CONF_RW_STR("user", console_user_get, console_user_set),
+        TA_CONF_RW_ADDRESS("address", console_address_get,
+                           console_address_set));
 
 /** Initialize the module and add the subtree to agent tree */
 te_errno
@@ -331,7 +330,7 @@ ta_unix_serial_console_init(void)
 {
     SLIST_INIT(&consoles);
 
-    return rcf_pch_add_node("/agent", &node_console_inst);
+    return ta_conf_register("/agent", node_console);
 }
 
 /** Clean up the existing consoles */
