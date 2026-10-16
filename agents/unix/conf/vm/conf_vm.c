@@ -31,7 +31,9 @@
 #include "te_string.h"
 #include "te_shell_cmd.h"
 #include "te_str.h"
+#include "te_vector.h"
 #include "rcf_pch.h"
+#include "rcf_pch_tree.h"
 #include "agentlib.h"
 #include "conf_common.h"
 #include "conf_vm.h"
@@ -989,52 +991,39 @@ vm_find(const char *name)
     return NULL;
 }
 
+/**
+ * Put a string value into the get buffer, truncating it to what the
+ * legacy fixed-size buffer could hold.
+ */
+static void
+vm_value_put(te_string *val, const char *str)
+{
+    te_string_append(val, "%.*s", RCF_MAX_VAL - 1, str);
+}
+
 static te_errno
-vm_list(unsigned int gid, const char *oid, const char *sub_id, char **list)
+vm_list(const ta_conf_ctx *ctx, te_vec *names)
 {
     struct vm_entry *vm;
-    size_t len = 0;
-    char *p;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    UNUSED(ctx);
 
     SLIST_FOREACH(vm, &vms, links)
-        len += strlen(vm->name) + 1;
-
-    if (len == 0)
     {
-        *list = NULL;
-        return 0;
-    }
+        char *name = TE_STRDUP(vm->name);
 
-    *list = TE_ALLOC(len);
-
-    p = *list;
-    SLIST_FOREACH(vm, &vms, links)
-    {
-        if (p != *list)
-            *p++ = ' ';
-        len = strlen(vm->name);
-        memcpy(p, vm->name, len);
-        p += len;
+        TE_VEC_APPEND(names, name);
     }
-    *p = '\0';
 
     return 0;
 }
 
 static te_errno
-vm_add(unsigned int gid, const char *oid, const char *value,
-       const char *vm_name)
+vm_add(const ta_conf_ctx *ctx)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
 
     ENTRY("%s", vm_name);
 
@@ -1114,13 +1103,10 @@ vm_add(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_del(unsigned int gid, const char *oid,
-       const char *vm_name)
+vm_del(const ta_conf_ctx *ctx)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -1139,13 +1125,10 @@ vm_del(unsigned int gid, const char *oid,
 }
 
 static te_errno
-vm_qemu_get(unsigned int gid, const char *oid, char *value,
-            const char *vm_name)
+vm_qemu_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -1153,19 +1136,16 @@ vm_qemu_get(unsigned int gid, const char *oid, char *value,
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", vm->qemu);
+    vm_value_put(val, vm->qemu);
 
     return 0;
 }
 
 static te_errno
-vm_qemu_set(unsigned int gid, const char *oid, const char *value,
-            const char *vm_name)
+vm_qemu_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -1183,13 +1163,10 @@ vm_qemu_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_status_get(unsigned int gid, const char *oid, char *value,
-              const char *vm_name)
+vm_status_get(const ta_conf_ctx *ctx, int32_t *val)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -1197,21 +1174,18 @@ vm_status_get(unsigned int gid, const char *oid, char *value,
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%d", vm_is_running(vm));
+    *val = vm_is_running(vm);
 
     return 0;
 }
 
 static te_errno
-vm_status_set(unsigned int gid, const char *oid, const char *value,
-              const char *vm_name)
+vm_status_set(const ta_conf_ctx *ctx, int32_t val)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-    bool enable = !!atoi(value);
+    bool enable = (val != 0);
     te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -1257,13 +1231,12 @@ vm_port_ptr_by_oid(struct vm_entry *vm, const char *oid)
 }
 
 static te_errno
-vm_port_get(unsigned int gid, const char *oid, char *value,
-            const char *vm_name)
+vm_port_get(const ta_conf_ctx *ctx, int32_t *val)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
+    const char *oid = ta_conf_ctx_oid(ctx);
     struct vm_entry *vm;
     uint16_t *port;
-
-    UNUSED(gid);
 
     ENTRY("%s oid=%s", vm_name, oid);
 
@@ -1275,20 +1248,17 @@ vm_port_get(unsigned int gid, const char *oid, char *value,
     if (port == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%hu", *port);
+    *val = *port;
 
     return 0;
 }
 
 static te_errno
-vm_port_set(unsigned int gid, const char *oid, const char *value,
-            const char *vm_name)
+vm_port_set(const ta_conf_ctx *ctx, int32_t val)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
     uint16_t *port;
-    int val;
-
-    UNUSED(gid);
 
     ENTRY("%s", vm_name);
 
@@ -1296,14 +1266,13 @@ vm_port_set(unsigned int gid, const char *oid, const char *value,
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    port = vm_port_ptr_by_oid(vm, oid);
+    port = vm_port_ptr_by_oid(vm, ta_conf_ctx_oid(ctx));
     if (port == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    val = atoi(value);
     if (val < 0 || val > UINT16_MAX)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
@@ -1314,13 +1283,10 @@ vm_port_set(unsigned int gid, const char *oid, const char *value,
 
 
 static te_errno
-vm_kvm_get(unsigned int gid, const char *oid, char *value,
-           const char *vm_name)
+vm_kvm_get(const ta_conf_ctx *ctx, int32_t *val)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -1328,20 +1294,17 @@ vm_kvm_get(unsigned int gid, const char *oid, char *value,
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%d", vm->kvm);
+    *val = vm->kvm;
 
     return 0;
 }
 
 static te_errno
-vm_kvm_set(unsigned int gid, const char *oid, const char *value,
-           const char *vm_name)
+vm_kvm_set(const ta_conf_ctx *ctx, int32_t value)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
     bool val;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -1352,7 +1315,7 @@ vm_kvm_set(unsigned int gid, const char *oid, const char *value,
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    val = !!atoi(value);
+    val = (value != 0);
 
     if (!kvm_supported && val)
         WARN("KVM is not supported, but requested");
@@ -1363,13 +1326,10 @@ vm_kvm_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_machine_get(unsigned int gid, const char *oid, char *value,
-               const char *vm_name)
+vm_machine_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -1377,19 +1337,16 @@ vm_machine_get(unsigned int gid, const char *oid, char *value,
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", vm->machine);
+    vm_value_put(val, vm->machine);
 
     return 0;
 }
 
 static te_errno
-vm_machine_set(unsigned int gid, const char *oid, const char *value,
-               const char *vm_name)
+vm_machine_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -1407,73 +1364,59 @@ vm_machine_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_mem_size_get(unsigned int gid, const char *oid, char *value,
-                const char *vm_name)
+vm_mem_size_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     struct vm_entry *vm;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%u", vm->mem_size);
+    *val = vm->mem_size;
 
     return 0;
 }
 
 static te_errno
-vm_mem_size_set(unsigned int gid, const char *oid, const char *value,
-                const char *vm_name)
+vm_mem_size_set(const ta_conf_ctx *ctx, int32_t val)
 {
     struct vm_entry *vm;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    if (te_strtoui(value, 0, &vm->mem_size) != 0)
+    if (val < 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    vm->mem_size = val;
 
     return 0;
 }
 
 static te_errno
-vm_mem_path_get(unsigned int gid, const char *oid, char *value,
-                const char *vm_name)
+vm_mem_path_get(const ta_conf_ctx *ctx, te_string *val)
 {
     struct vm_entry *vm;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    te_strlcpy(value, te_str_empty_if_null(vm->mem_path), RCF_MAX_VAL);
+    vm_value_put(val, te_str_empty_if_null(vm->mem_path));
 
     return 0;
 }
 
 static te_errno
-vm_mem_path_set(unsigned int gid, const char *oid, const char *value,
-                const char *vm_name)
+vm_mem_path_set(const ta_conf_ctx *ctx, const char *value)
 {
     struct vm_entry *vm;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -1484,34 +1427,26 @@ vm_mem_path_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_mem_prealloc_get(unsigned int gid, const char *oid, char *value,
-                    const char *vm_name)
+vm_mem_prealloc_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     struct vm_entry *vm;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%d", vm->mem_prealloc);
+    *val = vm->mem_prealloc;
 
     return 0;
 }
 
 static te_errno
-vm_mem_prealloc_set(unsigned int gid, const char *oid, const char *value,
-                    const char *vm_name)
+vm_mem_prealloc_set(const ta_conf_ctx *ctx, int32_t val)
 {
     struct vm_entry *vm;
-    bool enable = !!atoi(value);
+    bool enable = (val != 0);
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -1524,17 +1459,13 @@ vm_mem_prealloc_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_chardev_add(unsigned int gid, const char *oid, const char *value,
-               const char *vm_name, const char *chardev_name)
+vm_chardev_add(const ta_conf_ctx *ctx)
 {
+    const char *chardev_name = ta_conf_ctx_inst(ctx, "chardev");
     struct vm_entry *vm;
     struct vm_chardev_entry *chardev;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-
-    if ((vm = vm_find(vm_name)) == NULL)
+    if ((vm = vm_find(ta_conf_ctx_inst(ctx, "vm"))) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
@@ -1558,23 +1489,19 @@ vm_chardev_add(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_chardev_del(unsigned int gid, const char *oid,
-           const char *vm_name, const char *chardev_name)
+vm_chardev_del(const ta_conf_ctx *ctx)
 {
     struct vm_entry *vm;
     struct vm_chardev_entry *chardev;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    chardev = vm_chardev_find(vm, chardev_name);
+    chardev = vm_chardev_find(vm, ta_conf_ctx_inst(ctx, "chardev"));
     if (chardev == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -1586,40 +1513,30 @@ vm_chardev_del(unsigned int gid, const char *oid,
 }
 
 static te_errno
-vm_chardev_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
-            const char *vm_name)
+vm_chardev_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string result = TE_STRING_INIT;
     struct vm_entry *vm;
     struct vm_chardev_entry *chardev;
-    bool first = true;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     SLIST_FOREACH(chardev, &vm->chardevs, links)
     {
-        te_string_append(&result, "%s%s", first ? "" : " ", chardev->name);
-        first = false;
+        char *name = TE_STRDUP(chardev->name);
+
+        TE_VEC_APPEND(names, name);
     }
 
-    *list = result.ptr;
     return 0;
 }
 
 static te_errno
-vm_mgmt_net_device_get(unsigned int gid, const char *oid, char *value,
-                       const char *vm_name)
+vm_mgmt_net_device_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -1627,19 +1544,16 @@ vm_mgmt_net_device_get(unsigned int gid, const char *oid, char *value,
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", vm->mgmt_net_device);
+    vm_value_put(val, vm->mgmt_net_device);
 
     return 0;
 }
 
 static te_errno
-vm_mgmt_net_device_set(unsigned int gid, const char *oid, const char *value,
-                       const char *vm_name)
+vm_mgmt_net_device_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -1657,17 +1571,13 @@ vm_mgmt_net_device_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_net_add(unsigned int gid, const char *oid, const char *value,
-           const char *vm_name, const char *net_name)
+vm_net_add(const ta_conf_ctx *ctx)
 {
+    const char *net_name = ta_conf_ctx_inst(ctx, "net");
     struct vm_entry *vm;
     struct vm_net_entry *net;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-
-    if ((vm = vm_find(vm_name)) == NULL)
+    if ((vm = vm_find(ta_conf_ctx_inst(ctx, "vm"))) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
@@ -1694,23 +1604,19 @@ vm_net_add(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_net_del(unsigned int gid, const char *oid,
-           const char *vm_name, const char *net_name)
+vm_net_del(const ta_conf_ctx *ctx)
 {
     struct vm_entry *vm;
     struct vm_net_entry *net;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    net = vm_net_find(vm, net_name);
+    net = vm_net_find(vm, ta_conf_ctx_inst(ctx, "net"));
     if (net == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -1722,69 +1628,55 @@ vm_net_del(unsigned int gid, const char *oid,
 }
 
 static te_errno
-vm_net_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
-            const char *vm_name)
+vm_net_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string result = TE_STRING_INIT;
     struct vm_entry *vm;
     struct vm_net_entry *net;
-    bool first = true;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     SLIST_FOREACH(net, &vm->nets, links)
     {
-        te_string_append(&result, "%s%s", first ? "" : " ", net->name);
-        first = false;
+        char *name = TE_STRDUP(net->name);
+
+        TE_VEC_APPEND(names, name);
     }
 
-    *list = result.ptr;
     return 0;
 }
 
 static te_errno
-vm_chardev_server_get(unsigned int gid, const char *oid, char *value,
-                      const char *vm_name, const char *chardev_name)
+vm_chardev_server_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     struct vm_chardev_entry *chardev;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    chardev = vm_chardev_find(vm_find(vm_name), chardev_name);
+    chardev = vm_chardev_find(vm_find(ta_conf_ctx_inst(ctx, "vm")),
+                              ta_conf_ctx_inst(ctx, "chardev"));
     if (chardev == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%d", chardev->server);
+    *val = chardev->server;
 
     return 0;
 }
 
 static te_errno
-vm_chardev_server_set(unsigned int gid, const char *oid, const char *value,
-                      const char *vm_name, const char *chardev_name)
+vm_chardev_server_set(const ta_conf_ctx *ctx, int32_t val)
 {
     struct vm_entry *vm;
     struct vm_chardev_entry *chardev;
-    bool is_server = !!atoi(value);
+    bool is_server = (val != 0);
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    chardev = vm_chardev_find(vm, chardev_name);
+    chardev = vm_chardev_find(vm, ta_conf_ctx_inst(ctx, "chardev"));
     if (chardev == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -1794,41 +1686,34 @@ vm_chardev_server_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_chardev_path_get(unsigned int gid, const char *oid, char *value,
-                    const char *vm_name, const char *chardev_name)
+vm_chardev_path_get(const ta_conf_ctx *ctx, te_string *val)
 {
     struct vm_chardev_entry *chardev;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    chardev = vm_chardev_find(vm_find(vm_name), chardev_name);
+    chardev = vm_chardev_find(vm_find(ta_conf_ctx_inst(ctx, "vm")),
+                              ta_conf_ctx_inst(ctx, "chardev"));
     if (chardev == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    te_strlcpy(value, te_str_empty_if_null(chardev->path), RCF_MAX_VAL);
+    vm_value_put(val, te_str_empty_if_null(chardev->path));
 
     return 0;
 }
 
 static te_errno
-vm_chardev_path_set(unsigned int gid, const char *oid, const char *value,
-                    const char *vm_name, const char *chardev_name)
+vm_chardev_path_set(const ta_conf_ctx *ctx, const char *value)
 {
     struct vm_entry *vm;
     struct vm_chardev_entry *chardev;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    chardev = vm_chardev_find(vm, chardev_name);
+    chardev = vm_chardev_find(vm, ta_conf_ctx_inst(ctx, "chardev"));
     if (chardev == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -1863,207 +1748,220 @@ exit:
 }
 
 static te_kvpair_h *
-vm_net_opt_ptr_by_oid(struct vm_net_entry *net, const char *oid)
+vm_net_opts_by_subid(struct vm_net_entry *net, const char *sub_id)
 {
-    cfg_oid *coid = cfg_convert_oid_str(oid);
-    te_kvpair_h *result = NULL;
-    char *opt_subid;
-
-    if (coid == NULL)
-        goto exit;
-
-    opt_subid = cfg_oid_inst_subid(coid, 4);
-    if (opt_subid == NULL)
-        goto exit;
-
-    if (strcmp(opt_subid, VM_NET_NETDEV_OPT) == 0)
-        result = &net->netdev_opts;
-    else if (strcmp(opt_subid, VM_NET_DEVICE_OPT) == 0)
-        result = &net->device_opts;
-
-exit:
-    cfg_free_oid(coid);
-
-    return result;
-}
-
-static te_errno
-vm_net_opt_add(unsigned int gid, const char *oid, char *value,
-               const char *vm_name, const char *net_name,
-               const char *opt_name)
-{
-    struct vm_entry *vm;
-    struct vm_net_entry *net;
-    te_kvpair_h *kvp;
-    te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
-    if (vm == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    net = vm_net_find(vm, net_name);
-    if (net == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, TE_EBUSY);
-
-    kvp = vm_net_opt_ptr_by_oid(net, oid);
-    if (kvp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    rc = te_kvpair_add(kvp, opt_name, "%s", value);
-
-    return TE_RC(TE_TA_UNIX, rc);
-}
-
-static te_errno
-vm_net_opt_del(unsigned int gid, const char *oid,
-               const char *vm_name, const char *net_name,
-               const char *opt_name)
-{
-    struct vm_entry *vm;
-    struct vm_net_entry *net;
-    te_kvpair_h *kvp;
-    te_errno rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
-    if (vm == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    net = vm_net_find(vm, net_name);
-    if (net == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, TE_EBUSY);
-
-    kvp = vm_net_opt_ptr_by_oid(net, oid);
-    if (kvp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    rc = te_kvpairs_del(kvp, opt_name);
-
-    return TE_RC(TE_TA_UNIX, rc);
-}
-
-static te_errno
-vm_net_opt_list(unsigned int gid, const char *oid, const char *sub_id,
-                 char **list, const char *vm_name, const char *net_name)
-{
-    struct vm_entry *vm;
-    struct vm_net_entry *net;
-    te_kvpair_h *kvp;
-    te_string str = TE_STRING_INIT;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
-    if (vm == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    net = vm_net_find(vm, net_name);
-    if (net == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
     if (strcmp(sub_id, VM_NET_NETDEV_OPT) == 0)
-        kvp = &net->netdev_opts;
+        return &net->netdev_opts;
     else if (strcmp(sub_id, VM_NET_DEVICE_OPT) == 0)
-        kvp = &net->device_opts;
-    else
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        return &net->device_opts;
 
-    te_kvpair_keys_to_str(kvp, " ", &str);
-    *list = str.ptr;
-
-    return 0;
+    return NULL;
 }
 
 static te_errno
-vm_net_opt_get(unsigned int gid, const char *oid, char *value,
-                const char *vm_name, const char *net_name,
-                const char *opt_name)
+vm_net_opt_add(const ta_conf_ctx *ctx, const char *sub_id,
+               const char *value)
 {
     struct vm_entry *vm;
     struct vm_net_entry *net;
     te_kvpair_h *kvp;
-    const char *val;
+    te_errno rc;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    net = vm_net_find(vm, net_name);
+    net = vm_net_find(vm, ta_conf_ctx_inst(ctx, "net"));
     if (net == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    kvp = vm_net_opt_ptr_by_oid(net, oid);
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
+
+    kvp = vm_net_opts_by_subid(net, sub_id);
     if (kvp == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    val = te_kvpairs_get(kvp, opt_name);
-    if (val == NULL)
+    rc = te_kvpair_add(kvp, ta_conf_ctx_inst(ctx, sub_id), "%s", value);
+
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+static te_errno
+vm_net_opt_del(const ta_conf_ctx *ctx, const char *sub_id)
+{
+    struct vm_entry *vm;
+    struct vm_net_entry *net;
+    te_kvpair_h *kvp;
+    te_errno rc;
+
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
+    if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", val);
+    net = vm_net_find(vm, ta_conf_ctx_inst(ctx, "net"));
+    if (net == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
+
+    kvp = vm_net_opts_by_subid(net, sub_id);
+    if (kvp == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    rc = te_kvpairs_del(kvp, ta_conf_ctx_inst(ctx, sub_id));
+
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+static te_errno
+vm_net_opt_list(const ta_conf_ctx *ctx, const char *sub_id, te_vec *names)
+{
+    struct vm_entry *vm;
+    struct vm_net_entry *net;
+    te_kvpair_h *kvp;
+    te_kvpair *p;
+
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    net = vm_net_find(vm, ta_conf_ctx_inst(ctx, "net"));
+    if (net == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    kvp = vm_net_opts_by_subid(net, sub_id);
+    if (kvp == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    /* Same order as te_kvpair_keys_to_str() */
+    TAILQ_FOREACH_REVERSE(p, kvp, te_kvpair_h, links)
+    {
+        char *name = TE_STRDUP(p->key);
+
+        TE_VEC_APPEND(names, name);
+    }
 
     return 0;
 }
 
 static te_errno
-vm_net_property_get(unsigned int gid, const char *oid, char *value,
-                    const char *vm_name, const char *net_name)
+vm_net_opt_get(const ta_conf_ctx *ctx, const char *sub_id, te_string *val)
+{
+    struct vm_entry *vm;
+    struct vm_net_entry *net;
+    te_kvpair_h *kvp;
+    const char *opt;
+
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    net = vm_net_find(vm, ta_conf_ctx_inst(ctx, "net"));
+    if (net == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    kvp = vm_net_opts_by_subid(net, sub_id);
+    if (kvp == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    opt = te_kvpairs_get(kvp, ta_conf_ctx_inst(ctx, sub_id));
+    if (opt == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    vm_value_put(val, opt);
+
+    return 0;
+}
+
+static te_errno
+vm_net_netdev_opt_get(const ta_conf_ctx *ctx, te_string *val)
+{
+    return vm_net_opt_get(ctx, VM_NET_NETDEV_OPT, val);
+}
+
+static te_errno
+vm_net_netdev_opt_add(const ta_conf_ctx *ctx, const char *value)
+{
+    return vm_net_opt_add(ctx, VM_NET_NETDEV_OPT, value);
+}
+
+static te_errno
+vm_net_netdev_opt_del(const ta_conf_ctx *ctx)
+{
+    return vm_net_opt_del(ctx, VM_NET_NETDEV_OPT);
+}
+
+static te_errno
+vm_net_netdev_opt_list(const ta_conf_ctx *ctx, te_vec *names)
+{
+    return vm_net_opt_list(ctx, VM_NET_NETDEV_OPT, names);
+}
+
+static te_errno
+vm_net_device_opt_get(const ta_conf_ctx *ctx, te_string *val)
+{
+    return vm_net_opt_get(ctx, VM_NET_DEVICE_OPT, val);
+}
+
+static te_errno
+vm_net_device_opt_add(const ta_conf_ctx *ctx, const char *value)
+{
+    return vm_net_opt_add(ctx, VM_NET_DEVICE_OPT, value);
+}
+
+static te_errno
+vm_net_device_opt_del(const ta_conf_ctx *ctx)
+{
+    return vm_net_opt_del(ctx, VM_NET_DEVICE_OPT);
+}
+
+static te_errno
+vm_net_device_opt_list(const ta_conf_ctx *ctx, te_vec *names)
+{
+    return vm_net_opt_list(ctx, VM_NET_DEVICE_OPT, names);
+}
+
+static te_errno
+vm_net_property_get(const ta_conf_ctx *ctx, te_string *val)
 {
     struct vm_net_entry *net;
     char **property;
 
-    UNUSED(gid);
-
-    net = vm_net_find(vm_find(vm_name), net_name);
+    net = vm_net_find(vm_find(ta_conf_ctx_inst(ctx, "vm")),
+                      ta_conf_ctx_inst(ctx, "net"));
     if (net == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    property = vm_net_property_ptr_by_oid(net, oid);
+    property = vm_net_property_ptr_by_oid(net, ta_conf_ctx_oid(ctx));
     if (property == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", *property == NULL ? "" : *property);
+    vm_value_put(val, te_str_empty_if_null(*property));
 
     return 0;
 }
 
 static te_errno
-vm_net_property_set(unsigned int gid, const char *oid, const char *value,
-                const char *vm_name, const char *net_name)
+vm_net_property_set(const ta_conf_ctx *ctx, const char *value)
 {
     struct vm_entry *vm;
     struct vm_net_entry *net;
     char **property;
 
-    UNUSED(gid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    net = vm_net_find(vm, net_name);
+    net = vm_net_find(vm, ta_conf_ctx_inst(ctx, "net"));
     if (net == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    property = vm_net_property_ptr_by_oid(net, oid);
+    property = vm_net_property_ptr_by_oid(net, ta_conf_ctx_oid(ctx));
     if (property == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -2071,13 +1969,10 @@ vm_net_property_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_kernel_get(unsigned int gid, const char *oid, char *value,
-              const char *vm_name)
+vm_kernel_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -2085,19 +1980,16 @@ vm_kernel_get(unsigned int gid, const char *oid, char *value,
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(vm->kernel));
+    vm_value_put(val, te_str_empty_if_null(vm->kernel));
 
     return 0;
 }
 
 static te_errno
-vm_kernel_set(unsigned int gid, const char *oid, const char *value,
-              const char *vm_name)
+vm_kernel_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -2112,13 +2004,10 @@ vm_kernel_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_ker_cmd_get(unsigned int gid, const char *oid, char *value,
-               const char *vm_name)
+vm_ker_cmd_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -2126,19 +2015,16 @@ vm_ker_cmd_get(unsigned int gid, const char *oid, char *value,
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(vm->ker_cmd));
+    vm_value_put(val, te_str_empty_if_null(vm->ker_cmd));
 
     return 0;
 }
 
 static te_errno
-vm_ker_cmd_set(unsigned int gid, const char *oid, const char *value,
-               const char *vm_name)
+vm_ker_cmd_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -2153,13 +2039,10 @@ vm_ker_cmd_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_ker_initrd_get(unsigned int gid, const char *oid, char *value,
-                  const char *vm_name)
+vm_ker_initrd_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -2167,19 +2050,16 @@ vm_ker_initrd_get(unsigned int gid, const char *oid, char *value,
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(vm->ker_initrd));
+    vm_value_put(val, te_str_empty_if_null(vm->ker_initrd));
 
     return 0;
 }
 
 static te_errno
-vm_ker_initrd_set(unsigned int gid, const char *oid, const char *value,
-                  const char *vm_name)
+vm_ker_initrd_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -2194,13 +2074,10 @@ vm_ker_initrd_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_ker_dtb_get(unsigned int gid, const char *oid, char *value,
-               const char *vm_name)
+vm_ker_dtb_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -2208,19 +2085,16 @@ vm_ker_dtb_get(unsigned int gid, const char *oid, char *value,
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(vm->ker_dtb));
+    vm_value_put(val, te_str_empty_if_null(vm->ker_dtb));
 
     return 0;
 }
 
 static te_errno
-vm_ker_dtb_set(unsigned int gid, const char *oid, const char *value,
-              const char *vm_name)
+vm_ker_dtb_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -2235,13 +2109,10 @@ vm_ker_dtb_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_serial_get(unsigned int gid, const char *oid, char *value,
-              const char *vm_name)
+vm_serial_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -2249,19 +2120,16 @@ vm_serial_get(unsigned int gid, const char *oid, char *value,
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(vm->serial));
+    vm_value_put(val, te_str_empty_if_null(vm->serial));
 
     return 0;
 }
 
 static te_errno
-vm_serial_set(unsigned int gid, const char *oid, const char *value,
-              const char *vm_name)
+vm_serial_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *vm_name = ta_conf_ctx_inst(ctx, "vm");
     struct vm_entry *vm;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     ENTRY("%s", vm_name);
 
@@ -2276,17 +2144,13 @@ vm_serial_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_drive_add(unsigned int gid, const char *oid, const char *value,
-             const char *vm_name, const char *drive_name)
+vm_drive_add(const ta_conf_ctx *ctx)
 {
+    const char *drive_name = ta_conf_ctx_inst(ctx, "drive");
     struct vm_entry *vm;
     struct vm_drive_entry *drive;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-
-    if ((vm = vm_find(vm_name)) == NULL)
+    if ((vm = vm_find(ta_conf_ctx_inst(ctx, "vm"))) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
@@ -2312,23 +2176,19 @@ vm_drive_add(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_drive_del(unsigned int gid, const char *oid,
-             const char *vm_name, const char *drive_name)
+vm_drive_del(const ta_conf_ctx *ctx)
 {
     struct vm_entry *vm;
     struct vm_drive_entry *drive;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    drive = vm_drive_find(vm, drive_name);
+    drive = vm_drive_find(vm, ta_conf_ctx_inst(ctx, "drive"));
     if (drive == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -2340,68 +2200,54 @@ vm_drive_del(unsigned int gid, const char *oid,
 }
 
 static te_errno
-vm_drive_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
-              const char *vm_name)
+vm_drive_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string result = TE_STRING_INIT;
     struct vm_entry *vm;
     struct vm_drive_entry *drive;
-    bool first = true;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     SLIST_FOREACH(drive, &vm->drives, links)
     {
-        te_string_append(&result, "%s%s", first ? "" : " ", drive->name);
-        first = false;
+        char *name = TE_STRDUP(drive->name);
+
+        TE_VEC_APPEND(names, name);
     }
 
-    *list = result.ptr;
     return 0;
 }
 
 static te_errno
-vm_file_get(unsigned int gid, const char *oid, char *value,
-            const char *vm_name, const char *drive_name)
+vm_file_get(const ta_conf_ctx *ctx, te_string *val)
 {
     struct vm_drive_entry *drive;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    drive = vm_drive_find(vm_find(vm_name), drive_name);
+    drive = vm_drive_find(vm_find(ta_conf_ctx_inst(ctx, "vm")),
+                          ta_conf_ctx_inst(ctx, "drive"));
     if (drive == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", te_string_value(&drive->file));
+    vm_value_put(val, te_string_value(&drive->file));
 
     return 0;
 }
 
 static te_errno
-vm_file_set(unsigned int gid, const char *oid, char *value,
-            const char *vm_name, const char *drive_name)
+vm_file_set(const ta_conf_ctx *ctx, const char *value)
 {
     struct vm_entry *vm;
     struct vm_drive_entry *drive;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    drive = vm_drive_find(vm, drive_name);
+    drive = vm_drive_find(vm, ta_conf_ctx_inst(ctx, "drive"));
     if (drive == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -2412,105 +2258,87 @@ vm_file_set(unsigned int gid, const char *oid, char *value,
 }
 
 static te_errno
-vm_snapshot_get(unsigned int gid, const char *oid, char *value,
-                const char *vm_name, const char *drive_name)
+vm_snapshot_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     struct vm_drive_entry *drive;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    drive = vm_drive_find(vm_find(vm_name), drive_name);
+    drive = vm_drive_find(vm_find(ta_conf_ctx_inst(ctx, "vm")),
+                          ta_conf_ctx_inst(ctx, "drive"));
     if (drive == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%d", drive->snapshot);
+    *val = drive->snapshot;
 
     return 0;
 }
 
 static te_errno
-vm_snapshot_set(unsigned int gid, const char *oid, char *value,
-                const char *vm_name, const char *drive_name)
+vm_snapshot_set(const ta_conf_ctx *ctx, int32_t val)
 {
     struct vm_entry *vm;
     struct vm_drive_entry *drive;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    drive = vm_drive_find(vm, drive_name);
+    drive = vm_drive_find(vm, ta_conf_ctx_inst(ctx, "drive"));
     if (drive == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    drive->snapshot = (atoi(value) != 0);
+    drive->snapshot = (val != 0);
 
     return 0;
 }
 
 static te_errno
-vm_drive_cdrom_get(unsigned int gid, const char *oid, char *value,
-                   const char *vm_name, const char *drive_name)
+vm_drive_cdrom_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     struct vm_drive_entry *drive;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    drive = vm_drive_find(vm_find(vm_name), drive_name);
+    drive = vm_drive_find(vm_find(ta_conf_ctx_inst(ctx, "vm")),
+                          ta_conf_ctx_inst(ctx, "drive"));
     if (drive == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%d", drive->cdrom);
+    *val = drive->cdrom;
 
     return 0;
 }
 
 static te_errno
-vm_drive_cdrom_set(unsigned int gid, const char *oid, char *value,
-                   const char *vm_name, const char *drive_name)
+vm_drive_cdrom_set(const ta_conf_ctx *ctx, int32_t val)
 {
     struct vm_entry *vm;
     struct vm_drive_entry *drive;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    drive = vm_drive_find(vm, drive_name);
+    drive = vm_drive_find(vm, ta_conf_ctx_inst(ctx, "drive"));
     if (drive == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    drive->cdrom = (atoi(value) != 0);
+    drive->cdrom = (val != 0);
 
     return 0;
 }
 
 static te_errno
-vm_virtfs_add(unsigned int gid, const char *oid, const char *value,
-              const char *vm_name, const char *virtfs_name)
+vm_virtfs_add(const ta_conf_ctx *ctx)
 {
+    const char *virtfs_name = ta_conf_ctx_inst(ctx, "virtfs");
     struct vm_entry *vm;
     struct vm_virtfs_entry *virtfs;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-
-    if ((vm = vm_find(vm_name)) == NULL)
+    if ((vm = vm_find(ta_conf_ctx_inst(ctx, "vm"))) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
@@ -2534,23 +2362,19 @@ vm_virtfs_add(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_virtfs_del(unsigned int gid, const char *oid,
-              const char *vm_name, const char *virtfs_name)
+vm_virtfs_del(const ta_conf_ctx *ctx)
 {
     struct vm_entry *vm;
     struct vm_virtfs_entry *virtfs;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    virtfs = vm_virtfs_find(vm, virtfs_name);
+    virtfs = vm_virtfs_find(vm, ta_conf_ctx_inst(ctx, "virtfs"));
     if (virtfs == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -2562,68 +2386,54 @@ vm_virtfs_del(unsigned int gid, const char *oid,
 }
 
 static te_errno
-vm_virtfs_list(unsigned int gid, const char *oid, const char *sub_id,
-               char **list, const char *vm_name)
+vm_virtfs_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string result = TE_STRING_INIT;
     struct vm_entry *vm;
     struct vm_virtfs_entry *vfs;
-    bool first = true;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     SLIST_FOREACH(vfs, &vm->virtfses, links)
     {
-        te_string_append(&result, "%s%s", first ? "" : " ", vfs->name);
-        first = false;
+        char *name = TE_STRDUP(vfs->name);
+
+        TE_VEC_APPEND(names, name);
     }
 
-    *list = result.ptr;
     return 0;
 }
 
 static te_errno
-vm_virtfs_fsdriver_get(unsigned int gid, const char *oid, char *value,
-                       const char *vm_name, const char *virtfs_name)
+vm_virtfs_fsdriver_get(const ta_conf_ctx *ctx, te_string *val)
 {
     struct vm_virtfs_entry *virtfs;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    virtfs = vm_virtfs_find(vm_find(vm_name), virtfs_name);
+    virtfs = vm_virtfs_find(vm_find(ta_conf_ctx_inst(ctx, "vm")),
+                            ta_conf_ctx_inst(ctx, "virtfs"));
     if (virtfs == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(virtfs->fsdriver));
+    vm_value_put(val, te_str_empty_if_null(virtfs->fsdriver));
 
     return 0;
 }
 
 static te_errno
-vm_virtfs_fsdriver_set(unsigned int gid, const char *oid, char *value,
-                       const char *vm_name, const char *virtfs_name)
+vm_virtfs_fsdriver_set(const ta_conf_ctx *ctx, const char *value)
 {
     struct vm_entry *vm;
     struct vm_virtfs_entry *virtfs;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    virtfs = vm_virtfs_find(vm, virtfs_name);
+    virtfs = vm_virtfs_find(vm, ta_conf_ctx_inst(ctx, "virtfs"));
     if (virtfs == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -2631,41 +2441,34 @@ vm_virtfs_fsdriver_set(unsigned int gid, const char *oid, char *value,
 }
 
 static te_errno
-vm_virtfs_mount_tag_get(unsigned int gid, const char *oid, char *value,
-                        const char *vm_name, const char *virtfs_name)
+vm_virtfs_mount_tag_get(const ta_conf_ctx *ctx, te_string *val)
 {
     struct vm_virtfs_entry *virtfs;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    virtfs = vm_virtfs_find(vm_find(vm_name), virtfs_name);
+    virtfs = vm_virtfs_find(vm_find(ta_conf_ctx_inst(ctx, "vm")),
+                            ta_conf_ctx_inst(ctx, "virtfs"));
     if (virtfs == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(virtfs->mount_tag));
+    vm_value_put(val, te_str_empty_if_null(virtfs->mount_tag));
 
     return 0;
 }
 
 static te_errno
-vm_virtfs_mount_tag_set(unsigned int gid, const char *oid, char *value,
-                        const char *vm_name, const char *virtfs_name)
+vm_virtfs_mount_tag_set(const ta_conf_ctx *ctx, const char *value)
 {
     struct vm_entry *vm;
     struct vm_virtfs_entry *virtfs;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    virtfs = vm_virtfs_find(vm, virtfs_name);
+    virtfs = vm_virtfs_find(vm, ta_conf_ctx_inst(ctx, "virtfs"));
     if (virtfs == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -2673,41 +2476,34 @@ vm_virtfs_mount_tag_set(unsigned int gid, const char *oid, char *value,
 }
 
 static te_errno
-vm_virtfs_path_get(unsigned int gid, const char *oid, char *value,
-                   const char *vm_name, const char *virtfs_name)
+vm_virtfs_path_get(const ta_conf_ctx *ctx, te_string *val)
 {
     struct vm_virtfs_entry *virtfs;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    virtfs = vm_virtfs_find(vm_find(vm_name), virtfs_name);
+    virtfs = vm_virtfs_find(vm_find(ta_conf_ctx_inst(ctx, "vm")),
+                            ta_conf_ctx_inst(ctx, "virtfs"));
     if (virtfs == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(virtfs->path));
+    vm_value_put(val, te_str_empty_if_null(virtfs->path));
 
     return 0;
 }
 
 static te_errno
-vm_virtfs_path_set(unsigned int gid, const char *oid, char *value,
-                   const char *vm_name, const char *virtfs_name)
+vm_virtfs_path_set(const ta_conf_ctx *ctx, const char *value)
 {
     struct vm_entry *vm;
     struct vm_virtfs_entry *virtfs;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    virtfs = vm_virtfs_find(vm, virtfs_name);
+    virtfs = vm_virtfs_find(vm, ta_conf_ctx_inst(ctx, "virtfs"));
     if (virtfs == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -2715,42 +2511,34 @@ vm_virtfs_path_set(unsigned int gid, const char *oid, char *value,
 }
 
 static te_errno
-vm_virtfs_security_model_get(unsigned int gid, const char *oid, char *value,
-                             const char *vm_name, const char *virtfs_name)
+vm_virtfs_security_model_get(const ta_conf_ctx *ctx, te_string *val)
 {
     struct vm_virtfs_entry *virtfs;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    virtfs = vm_virtfs_find(vm_find(vm_name), virtfs_name);
+    virtfs = vm_virtfs_find(vm_find(ta_conf_ctx_inst(ctx, "vm")),
+                            ta_conf_ctx_inst(ctx, "virtfs"));
     if (virtfs == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s",
-             te_str_empty_if_null(virtfs->security_model));
+    vm_value_put(val, te_str_empty_if_null(virtfs->security_model));
 
     return 0;
 }
 
 static te_errno
-vm_virtfs_security_model_set(unsigned int gid, const char *oid, char *value,
-                             const char *vm_name, const char *virtfs_name)
+vm_virtfs_security_model_set(const ta_conf_ctx *ctx, const char *value)
 {
     struct vm_entry *vm;
     struct vm_virtfs_entry *virtfs;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    virtfs = vm_virtfs_find(vm, virtfs_name);
+    virtfs = vm_virtfs_find(vm, ta_conf_ctx_inst(ctx, "virtfs"));
     if (virtfs == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -2759,16 +2547,13 @@ vm_virtfs_security_model_set(unsigned int gid, const char *oid, char *value,
 
 
 static te_errno
-vm_pci_pt_token_get(unsigned int gid, const char *oid, char *value,
-                    const char *vm_name, const char *pci_pt_name)
+vm_pci_pt_token_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *pci_pt_name = ta_conf_ctx_inst(ctx, "pci_pt");
     struct vm_entry *vm;
     struct vm_pci_pt_entry *pt = NULL;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if ((vm = vm_find(vm_name)) == NULL)
+    if ((vm = vm_find(ta_conf_ctx_inst(ctx, "vm"))) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     SLIST_FOREACH(pt, &vm->pci_pts, links)
@@ -2779,22 +2564,19 @@ vm_pci_pt_token_get(unsigned int gid, const char *oid, char *value,
     if (pt == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(pt->vf_token));
+    vm_value_put(val, te_str_empty_if_null(pt->vf_token));
 
     return 0;
 }
 
 static te_errno
-vm_pci_pt_token_set(unsigned int gid, const char *oid, const char *value,
-                    const char *vm_name, const char *pci_pt_name)
+vm_pci_pt_token_set(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *pci_pt_name = ta_conf_ctx_inst(ctx, "pci_pt");
     struct vm_entry *vm;
     struct vm_pci_pt_entry *pt = NULL;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if ((vm = vm_find(vm_name)) == NULL)
+    if ((vm = vm_find(ta_conf_ctx_inst(ctx, "vm"))) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
@@ -2812,19 +2594,16 @@ vm_pci_pt_token_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_pci_pt_add(unsigned int gid, const char *oid, char *value,
-              const char *vm_name, const char *pci_pt_name)
+vm_pci_pt_add(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *pci_pt_name = ta_conf_ctx_inst(ctx, "pci_pt");
     struct vm_entry *vm;
     struct vm_pci_pt_entry *pt = NULL;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if (rcf_pch_rsrc_accessible("%s", value))
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -2852,23 +2631,19 @@ vm_pci_pt_add(unsigned int gid, const char *oid, char *value,
 }
 
 static te_errno
-vm_pci_pt_del(unsigned int gid, const char *oid,
-              const char *vm_name, const char *pci_pt_name)
+vm_pci_pt_del(const ta_conf_ctx *ctx)
 {
     struct vm_entry *vm;
     struct vm_pci_pt_entry *pt;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    pt = vm_pci_pt_find(vm, pci_pt_name);
+    pt = vm_pci_pt_find(vm, ta_conf_ctx_inst(ctx, "pci_pt"));
     if (pt == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -2880,46 +2655,33 @@ vm_pci_pt_del(unsigned int gid, const char *oid,
 }
 
 static te_errno
-vm_pci_pt_list(unsigned int gid, const char *oid, const char *sub_id,
-               char **list, const char *vm_name)
+vm_pci_pt_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string result = TE_STRING_INIT;
     struct vm_entry *vm;
     struct vm_pci_pt_entry *pt;
-    bool first = true;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     SLIST_FOREACH(pt, &vm->pci_pts, links)
     {
-        te_string_append(&result, "%s%s", first ? "" : " ", pt->name);
-        first = false;
+        char *name = TE_STRDUP(pt->name);
+
+        TE_VEC_APPEND(names, name);
     }
 
-    *list = result.ptr;
     return 0;
 }
 
 static te_errno
-vm_pci_pt_get(unsigned int gid, const char *oid, char *value,
-              const char *vm_name, const char *pci_pt_name)
+vm_pci_pt_get(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char *pci_pt_name = ta_conf_ctx_inst(ctx, "pci_pt");
     struct vm_entry *vm;
     struct vm_pci_pt_entry *pt = NULL;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    if ((vm = vm_find(vm_name)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    if (vm == NULL)
+    if ((vm = vm_find(ta_conf_ctx_inst(ctx, "vm"))) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     SLIST_FOREACH(pt, &vm->pci_pts, links)
@@ -2931,7 +2693,7 @@ vm_pci_pt_get(unsigned int gid, const char *oid, char *value,
     if (pt == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", pt->pci_addr.ptr);
+    vm_value_put(val, pt->pci_addr.ptr);
 
     return 0;
 }
@@ -2939,42 +2701,35 @@ vm_pci_pt_get(unsigned int gid, const char *oid, char *value,
 
 
 static te_errno
-vm_device_get(unsigned int gid, const char *oid, char *value,
-              const char *vm_name, const char *device_name)
+vm_device_get(const ta_conf_ctx *ctx, te_string *val)
 {
     struct vm_entry *vm;
     struct vm_device_entry *dev;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    dev = vm_device_find(vm, device_name);
+    dev = vm_device_find(vm, ta_conf_ctx_inst(ctx, "device"));
     if (dev == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", dev->device.ptr);
+    vm_value_put(val, dev->device.ptr);
 
     return 0;
 }
 
 static te_errno
-vm_device_add(unsigned int gid, const char *oid, const char *value,
-              const char *vm_name, const char *device_name)
+vm_device_add(const ta_conf_ctx *ctx, const char *value)
 {
+    const char *device_name = ta_conf_ctx_inst(ctx, "device");
     struct vm_entry *vm;
     struct vm_device_entry *dev;
-
-    UNUSED(gid);
-    UNUSED(oid);
 
     if (rcf_pch_rsrc_accessible("%s", value))
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -3002,23 +2757,19 @@ vm_device_add(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_device_del(unsigned int gid, const char *oid,
-              const char *vm_name, const char *device_name)
+vm_device_del(const ta_conf_ctx *ctx)
 {
     struct vm_entry *vm;
     struct vm_device_entry *dev;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    dev = vm_device_find(vm, device_name);
+    dev = vm_device_find(vm, ta_conf_ctx_inst(ctx, "device"));
     if (dev == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -3030,60 +2781,45 @@ vm_device_del(unsigned int gid, const char *oid,
 }
 
 static te_errno
-vm_device_list(unsigned int gid, const char *oid, const char *sub_id,
-               char **list, const char *vm_name)
+vm_device_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    te_string result = TE_STRING_INIT;
     struct vm_entry *vm;
     struct vm_device_entry *dev;
-    bool first = true;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     SLIST_FOREACH(dev, &vm->devices, links)
     {
-        te_string_append(&result, "%s%s", first ? "" : " ", dev->name);
-        first = false;
+        char *name = TE_STRDUP(dev->name);
+
+        TE_VEC_APPEND(names, name);
     }
 
-    *list = result.ptr;
     return 0;
 }
 
 static te_errno
-vm_cpu_model_get(unsigned int gid, const char *oid, char *value,
-               const char *vm_name)
+vm_cpu_model_get(const ta_conf_ctx *ctx, te_string *val)
 {
     struct vm_entry *vm;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", vm->cpu.model.ptr);
+    vm_value_put(val, vm->cpu.model.ptr);
 
     return 0;
 }
 
 static te_errno
-vm_cpu_model_set(unsigned int gid, const char *oid, const char *value,
-                const char *vm_name)
+vm_cpu_model_set(const ta_conf_ctx *ctx, const char *value)
 {
     struct vm_entry *vm;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -3097,195 +2833,101 @@ vm_cpu_model_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
-vm_cpu_num_get(unsigned int gid, const char *oid, char *value,
-               const char *vm_name)
+vm_cpu_num_get(const ta_conf_ctx *ctx, int32_t *val)
 {
     struct vm_entry *vm;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%u", vm->cpu.num);
+    *val = vm->cpu.num;
 
     return 0;
 }
 
 static te_errno
-vm_cpu_num_set(unsigned int gid, const char *oid, const char *value,
-               const char *vm_name)
+vm_cpu_num_set(const ta_conf_ctx *ctx, int32_t val)
 {
     struct vm_entry *vm;
-    unsigned int save;
 
-    UNUSED(gid);
-    UNUSED(oid);
-
-    vm = vm_find(vm_name);
+    vm = vm_find(ta_conf_ctx_inst(ctx, "vm"));
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
-    save = vm->cpu.num;
-    if (te_strtoui(value, 0, &vm->cpu.num) != 0)
-    {
-        vm->cpu.num = save;
+    if (val < 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
+
+    vm->cpu.num = val;
 
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RW(node_vm_serial, "serial", NULL, NULL,
-                    vm_serial_get, vm_serial_set);
-
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_vm_device, "device", NULL, &node_vm_serial,
-                               vm_device_get, NULL, vm_device_add,
-                               vm_device_del, vm_device_list, NULL);
-
-RCF_PCH_CFG_NODE_RW(node_vm_pci_pt_token, "vf_token", NULL, NULL,
-                    vm_pci_pt_token_get, vm_pci_pt_token_set);
-
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_vm_pci_pt, "pci_pt",
-                               &node_vm_pci_pt_token, &node_vm_device,
-                               vm_pci_pt_get, NULL, vm_pci_pt_add,
-                               vm_pci_pt_del, vm_pci_pt_list, NULL);
-
-RCF_PCH_CFG_NODE_RW(node_vm_cpu_num, "num", NULL, NULL,
-                    vm_cpu_num_get, vm_cpu_num_set);
-
-RCF_PCH_CFG_NODE_RW(node_vm_cpu_model, "model", NULL, &node_vm_cpu_num,
-                    vm_cpu_model_get, vm_cpu_model_set);
-
-RCF_PCH_CFG_NODE_NA(node_vm_cpu, "cpu", &node_vm_cpu_model, &node_vm_pci_pt);
-
-RCF_PCH_CFG_NODE_RW(node_vm_virtfs_fsdriver, "fsdriver", NULL, NULL,
-                    vm_virtfs_fsdriver_get, vm_virtfs_fsdriver_set);
-
-RCF_PCH_CFG_NODE_RW(node_vm_virtfs_path, "path", NULL, &node_vm_virtfs_fsdriver,
-                    vm_virtfs_path_get, vm_virtfs_path_set);
-
-RCF_PCH_CFG_NODE_RW(node_vm_virtfs_mount_tag, "mount_tag",
-                    NULL, &node_vm_virtfs_path,
-                    vm_virtfs_mount_tag_get, vm_virtfs_mount_tag_set);
-
-RCF_PCH_CFG_NODE_RW(node_vm_virtfs_security_model, "security_model",
-                    NULL, &node_vm_virtfs_mount_tag,
-                    vm_virtfs_security_model_get, vm_virtfs_security_model_set);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_vm_virtfs, "virtfs",
-                            &node_vm_virtfs_security_model,
-                            &node_vm_cpu, vm_virtfs_add, vm_virtfs_del,
-                            vm_virtfs_list, NULL);
-
-RCF_PCH_CFG_NODE_RW(node_vm_drive_cdrom, "cdrom", NULL, NULL,
-                    vm_drive_cdrom_get, vm_drive_cdrom_set);
-
-RCF_PCH_CFG_NODE_RW(node_vm_snapshot, "snapshot", NULL, &node_vm_drive_cdrom,
-                    vm_snapshot_get, vm_snapshot_set);
-
-RCF_PCH_CFG_NODE_RW(node_vm_file, "file", NULL, &node_vm_snapshot,
-                    vm_file_get, vm_file_set);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_vm_drive, "drive", &node_vm_file,
-                            &node_vm_virtfs, vm_drive_add, vm_drive_del,
-                            vm_drive_list, NULL);
-
-RCF_PCH_CFG_NODE_RW(node_vm_kernel_cmdline, "cmdline", NULL, NULL,
-                    vm_ker_cmd_get, vm_ker_cmd_set);
-
-RCF_PCH_CFG_NODE_RW(node_vm_kernel_initrd, "initrd", NULL,
-                    &node_vm_kernel_cmdline, vm_ker_initrd_get,
-                    vm_ker_initrd_set);
-
-RCF_PCH_CFG_NODE_RW(node_vm_kernel_dtb, "dtb", NULL, &node_vm_kernel_initrd,
-                    vm_ker_dtb_get, vm_ker_dtb_set);
-
-RCF_PCH_CFG_NODE_RW(node_vm_kernel, "kernel", &node_vm_kernel_dtb,
-                    &node_vm_drive, vm_kernel_get, vm_kernel_set);
-
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_vm_net_device_opt, VM_NET_DEVICE_OPT,
-                               NULL, NULL,
-                               vm_net_opt_get, NULL, vm_net_opt_add,
-                               vm_net_opt_del, vm_net_opt_list, NULL);
-
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_vm_net_netdev_opt, VM_NET_NETDEV_OPT,
-                               NULL, &node_vm_net_device_opt,
-                               vm_net_opt_get, NULL, vm_net_opt_add,
-                               vm_net_opt_del, vm_net_opt_list, NULL);
-
-RCF_PCH_CFG_NODE_RW(node_vm_net_mac_addr, "mac_addr", NULL,
-                    &node_vm_net_netdev_opt,
-                    vm_net_property_get, vm_net_property_set);
-
-RCF_PCH_CFG_NODE_RW(node_vm_net_type_spec, "type_spec", NULL,
-                    &node_vm_net_mac_addr, vm_net_property_get,
-                    vm_net_property_set);
-
-RCF_PCH_CFG_NODE_RW(node_vm_net_type, "type", NULL, &node_vm_net_type_spec,
-                    vm_net_property_get, vm_net_property_set);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_vm_net, "net", &node_vm_net_type,
-                            &node_vm_kernel, vm_net_add, vm_net_del,
-                            vm_net_list, NULL);
-
-RCF_PCH_CFG_NODE_RW(node_vm_mgmt_net_device, "mgmt_net_device", NULL,
-                    &node_vm_net,
-                    vm_mgmt_net_device_get, vm_mgmt_net_device_set);
-
-RCF_PCH_CFG_NODE_RW(node_vm_chardev_server, "server", NULL, NULL,
-                    vm_chardev_server_get, vm_chardev_server_set);
-
-RCF_PCH_CFG_NODE_RW(node_vm_chardev_path, "path", NULL, &node_vm_chardev_server,
-                    vm_chardev_path_get, vm_chardev_path_set);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_vm_chardev, "chardev", &node_vm_chardev_path,
-                            &node_vm_mgmt_net_device,
-                            vm_chardev_add, vm_chardev_del,
-                            vm_chardev_list, NULL);
-
-RCF_PCH_CFG_NODE_RW(node_vm_mem_prealloc, "prealloc", NULL, NULL,
-                    vm_mem_prealloc_get, vm_mem_prealloc_set);
-
-RCF_PCH_CFG_NODE_RW(node_vm_mem_path, "path", NULL, &node_vm_mem_prealloc,
-                    vm_mem_path_get, vm_mem_path_set);
-
-RCF_PCH_CFG_NODE_RW(node_vm_mem_size, "size", NULL, &node_vm_mem_path,
-                    vm_mem_size_get, vm_mem_size_set);
-
-RCF_PCH_CFG_NODE_NA(node_vm_mem, "mem", &node_vm_mem_size, &node_vm_chardev);
-
-RCF_PCH_CFG_NODE_RW(node_vm_machine, "machine", NULL, &node_vm_mem,
-                    vm_machine_get, vm_machine_set);
-
-RCF_PCH_CFG_NODE_RW(node_vm_kvm, "kvm", NULL, &node_vm_machine,
-                    vm_kvm_get, vm_kvm_set);
-
-RCF_PCH_CFG_NODE_RW(node_vm_rcf_port, "rcf_port", NULL, &node_vm_kvm,
-                    vm_port_get, vm_port_set);
-
-RCF_PCH_CFG_NODE_RW(node_vm_ssh_port_guest, "guest", NULL, NULL,
-                    vm_port_get, vm_port_set);
-
-RCF_PCH_CFG_NODE_RO(node_vm_ssh_port_host, "host", NULL, &node_vm_ssh_port_guest,
-                    vm_port_get);
-
-RCF_PCH_CFG_NODE_NA(node_vm_ssh_port, "ssh_port",
-                    &node_vm_ssh_port_host, &node_vm_rcf_port);
-
-RCF_PCH_CFG_NODE_RW(node_vm_status, "status", NULL, &node_vm_ssh_port,
-                    vm_status_get, vm_status_set);
-
-RCF_PCH_CFG_NODE_RW(node_vm_qemu, "qemu", NULL, &node_vm_status,
-                    vm_qemu_get, vm_qemu_set);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_vm, "vm", &node_vm_qemu, NULL,
-                            vm_add, vm_del, vm_list, NULL);
+static const ta_conf_node *const node_vm =
+    TA_CONF_COLL("vm", vm_add, vm_del, vm_list,
+        TA_CONF_RW_STR("qemu", vm_qemu_get, vm_qemu_set),
+        TA_CONF_RW_INT32("status", vm_status_get, vm_status_set),
+        TA_CONF_NA("ssh_port",
+            TA_CONF_RO_INT32("host", vm_port_get),
+            TA_CONF_RW_INT32("guest", vm_port_get, vm_port_set)),
+        TA_CONF_RW_INT32("rcf_port", vm_port_get, vm_port_set),
+        TA_CONF_RW_INT32("kvm", vm_kvm_get, vm_kvm_set),
+        TA_CONF_RW_STR("machine", vm_machine_get, vm_machine_set),
+        TA_CONF_NA("mem",
+            TA_CONF_RW_INT32("size", vm_mem_size_get, vm_mem_size_set),
+            TA_CONF_RW_STR("path", vm_mem_path_get, vm_mem_path_set),
+            TA_CONF_RW_INT32("prealloc", vm_mem_prealloc_get,
+                             vm_mem_prealloc_set)),
+        TA_CONF_COLL("chardev", vm_chardev_add, vm_chardev_del,
+                     vm_chardev_list,
+            TA_CONF_RW_STR("path", vm_chardev_path_get, vm_chardev_path_set),
+            TA_CONF_RW_INT32("server", vm_chardev_server_get,
+                             vm_chardev_server_set)),
+        TA_CONF_RW_STR("mgmt_net_device", vm_mgmt_net_device_get,
+                       vm_mgmt_net_device_set),
+        TA_CONF_COLL("net", vm_net_add, vm_net_del, vm_net_list,
+            TA_CONF_RW_STR("type", vm_net_property_get,
+                           vm_net_property_set),
+            TA_CONF_RW_STR("type_spec", vm_net_property_get,
+                           vm_net_property_set),
+            TA_CONF_RW_STR("mac_addr", vm_net_property_get,
+                           vm_net_property_set),
+            TA_CONF_COLL_STR(VM_NET_NETDEV_OPT, vm_net_netdev_opt_get,
+                             vm_net_netdev_opt_add, vm_net_netdev_opt_del,
+                             vm_net_netdev_opt_list),
+            TA_CONF_COLL_STR(VM_NET_DEVICE_OPT, vm_net_device_opt_get,
+                             vm_net_device_opt_add, vm_net_device_opt_del,
+                             vm_net_device_opt_list)),
+        TA_CONF_RW_STR("kernel", vm_kernel_get, vm_kernel_set,
+            TA_CONF_RW_STR("dtb", vm_ker_dtb_get, vm_ker_dtb_set),
+            TA_CONF_RW_STR("initrd", vm_ker_initrd_get, vm_ker_initrd_set),
+            TA_CONF_RW_STR("cmdline", vm_ker_cmd_get, vm_ker_cmd_set)),
+        TA_CONF_COLL("drive", vm_drive_add, vm_drive_del, vm_drive_list,
+            TA_CONF_RW_STR("file", vm_file_get, vm_file_set),
+            TA_CONF_RW_INT32("snapshot", vm_snapshot_get, vm_snapshot_set),
+            TA_CONF_RW_INT32("cdrom", vm_drive_cdrom_get,
+                             vm_drive_cdrom_set)),
+        TA_CONF_COLL("virtfs", vm_virtfs_add, vm_virtfs_del, vm_virtfs_list,
+            TA_CONF_RW_STR("security_model", vm_virtfs_security_model_get,
+                           vm_virtfs_security_model_set),
+            TA_CONF_RW_STR("mount_tag", vm_virtfs_mount_tag_get,
+                           vm_virtfs_mount_tag_set),
+            TA_CONF_RW_STR("path", vm_virtfs_path_get, vm_virtfs_path_set),
+            TA_CONF_RW_STR("fsdriver", vm_virtfs_fsdriver_get,
+                           vm_virtfs_fsdriver_set)),
+        TA_CONF_NA("cpu",
+            TA_CONF_RW_STR("model", vm_cpu_model_get, vm_cpu_model_set),
+            TA_CONF_RW_INT32("num", vm_cpu_num_get, vm_cpu_num_set)),
+        TA_CONF_COLL_STR("pci_pt", vm_pci_pt_get, vm_pci_pt_add,
+                         vm_pci_pt_del, vm_pci_pt_list,
+            TA_CONF_RW_STR("vf_token", vm_pci_pt_token_get,
+                           vm_pci_pt_token_set)),
+        TA_CONF_COLL_STR("device", vm_device_get, vm_device_add,
+                         vm_device_del, vm_device_list),
+        TA_CONF_RW_STR("serial", vm_serial_get, vm_serial_set));
 
 
 static bool
@@ -3343,7 +2985,7 @@ ta_unix_conf_vm_init(void)
 
     kvm_supported = check_kvm();
 
-    return rcf_pch_add_node("/agent", &node_vm);
+    return ta_conf_register("/agent", node_vm);
 }
 
 #else /* !__linux__ */
