@@ -46,12 +46,14 @@
 #include "te_sockaddr.h"
 #include "te_string.h"
 #include "te_str.h"
+#include "te_vector.h"
 #include "cs_common.h"
 #include "logger_api.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 #include "rcf_pch_ta_cfg.h"
+#include "rcf_pch_tree.h"
 #include "unix_internal.h"
 #include "conf_route.h"
 
@@ -120,32 +122,48 @@ route_find(unsigned int gid, const char *route, ta_rt_info_t **rt_info)
 }
 
 /**
+ * Append space-separated instance names to a list vector.
+ *
+ * @param list      Space-separated names (may be @c NULL), freed here
+ * @param names     Vector of heap-allocated names to append to
+ */
+static void
+route_names_split(char *list, te_vec *names)
+{
+    char *saveptr = NULL;
+    char *tok;
+
+    if (list == NULL)
+        return;
+
+    for (tok = strtok_r(list, " ", &saveptr); tok != NULL;
+         tok = strtok_r(NULL, " ", &saveptr))
+    {
+        char *name = TE_STRDUP(tok);
+
+        TE_VEC_APPEND(names, name);
+    }
+    free(list);
+}
+
+/**
  * Obtain interface name associated with a given route.
  *
  * @param gid          Group identifier
  * @param route_name   Route node name
  * @param ifname       Where to save interface name
- * @param len          Number of bytes in ifname
  *
  * @return Status code
  */
 static te_errno
-rt_if_get(unsigned int gid, const char *route_name, char *ifname,
-          size_t len)
+rt_if_get(unsigned int gid, const char *route_name, te_string *ifname)
 {
     ta_rt_info_t *attr;
     te_errno      rc;
 
-    if (len < IF_NAMESIZE)
-    {
-        ERROR("%s(): too short buffer for interface name",
-              __FUNCTION__);
-        return TE_RC(TE_TA_UNIX, TE_ENOBUFS);
-    }
-
     rc = route_find(gid, route_name, &attr);
     if (rc == 0)
-        te_strlcpy(ifname, attr->ifname, len);
+        te_string_append(ifname, "%s", attr->ifname);
 
     return rc;
 }
@@ -153,88 +171,108 @@ rt_if_get(unsigned int gid, const char *route_name, char *ifname,
 /**
  * Obtain interface name from IPv4 default route record.
  *
- * @param gid          Group identifier
- * @param oid          Full object instance identifier (unused)
+ * @param ctx          Request context
  * @param ifname       Where to save interface name
  *
  * @return             Status code
  */
 static te_errno
-ip4_rt_default_if_get(unsigned int gid, const char *oid, char *ifname)
+ip4_rt_default_if_get(const ta_conf_ctx *ctx, te_string *ifname)
 {
-    UNUSED(oid);
-
-    return rt_if_get(gid, "0.0.0.0|0", ifname, RCF_MAX_VAL);
+    return rt_if_get(ta_conf_ctx_gid(ctx), "0.0.0.0|0", ifname);
 }
 
 /**
  * Obtain interface name from IPv6 default route record.
  *
- * @param gid          Group identifier
- * @param oid          Full object instance identifier (unused)
+ * @param ctx          Request context
  * @param ifname       Where to save interface name
  *
  * @return             Status code
  */
 static te_errno
-ip6_rt_default_if_get(unsigned int gid, const char *oid, char *ifname)
+ip6_rt_default_if_get(const ta_conf_ctx *ctx, te_string *ifname)
 {
-    UNUSED(oid);
+    return rt_if_get(ta_conf_ctx_gid(ctx), "::|0", ifname);
+}
 
-    return rt_if_get(gid, "::|0", ifname, RCF_MAX_VAL);
+/**
+ * Copy the IP address of @p addr to @p value, in the address family
+ * of the route destination: an address that is not set (no gateway,
+ * no source) reads as the unspecified address of that family.
+ *
+ * @param rt_info       Route
+ * @param addr          Gateway or source address of the route
+ * @param value         Where to put the address
+ *
+ * @return              Status code
+ */
+static te_errno
+route_addr_get(const ta_rt_info_t *rt_info,
+               const struct sockaddr_storage *addr,
+               struct sockaddr_storage *value)
+{
+    memset(value, 0, sizeof(*value));
+
+    switch (rt_info->dst.ss_family)
+    {
+        case AF_INET:
+            SIN(value)->sin_family = AF_INET;
+            SIN(value)->sin_addr = CONST_SIN(addr)->sin_addr;
+            return 0;
+
+        case AF_INET6:
+            SIN6(value)->sin6_family = AF_INET6;
+            SIN6(value)->sin6_addr = CONST_SIN6(addr)->sin6_addr;
+            return 0;
+
+        default:
+            ERROR("Unexpected destination address family: %d",
+                  rt_info->dst.ss_family);
+            return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
+    }
+}
+
+/**
+ * Format an address for a route object, which keeps addresses in
+ * their textual form until the commit parses them.
+ *
+ * @param addr          Address
+ * @param buf           Buffer of RCF_MAX_VAL bytes for the text
+ *
+ * @return              Status code
+ */
+static te_errno
+route_addr2str(const struct sockaddr *addr, char *buf)
+{
+    te_string str = TE_STRING_EXT_BUF_INIT(buf, RCF_MAX_VAL);
+
+    return te_netaddr2te_str(addr, &str);
 }
 
 /**
  * Get route value.
  *
- * @param  gid          Group identifier (unused)
- * @param  oid          Object identifier (unused)
- * @param  value        Place for route value (gateway address
+ * @param ctx           Request context
+ * @param value         Place for route value (gateway address
  *                      or zero if it is a direct route)
- * @param route_name    Name of the route
  *
  * @return              Status code
  */
 static te_errno
-route_get(unsigned int gid, const char *oid,
-          char *value, const char *route_name)
+route_get(const ta_conf_ctx *ctx, struct sockaddr_storage *value)
 {
+    const char   *route_name = ta_conf_ctx_inst(ctx, "route");
     ta_rt_info_t *attr;
     te_errno      rc;
 
-    UNUSED(oid);
-
-    if ((rc = route_find(gid, route_name, &attr)) != 0)
+    if ((rc = route_find(ta_conf_ctx_gid(ctx), route_name, &attr)) != 0)
     {
         ERROR("Route %s cannot be found", route_name);
         return rc;
     }
 
-    switch (attr->dst.ss_family)
-    {
-        case AF_INET:
-        {
-            inet_ntop(AF_INET, &SIN(&attr->gw)->sin_addr,
-                      value, INET_ADDRSTRLEN);
-            break;
-        }
-
-        case AF_INET6:
-        {
-            inet_ntop(AF_INET6, &SIN6(&attr->gw)->sin6_addr,
-                      value, INET6_ADDRSTRLEN);
-            break;
-        }
-
-        default:
-        {
-            ERROR("Unexpected destination address family: %d",
-                  attr->dst.ss_family);
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        }
-    }
-
-    return 0;
+    return route_addr_get(attr, &attr->gw, value);
 }
 
 /**
@@ -350,200 +388,209 @@ route_load_attrs(ta_cfg_obj_t *obj)
 /**
  * Set route value.
  *
- * @param       gid        Group identifier
- * @param       oid        Object identifier
+ * @param       ctx        Request context
  * @param       value      New value for the route
- * @param       route_name Name of the route
  *
  * @return      Status code.
  */
 static te_errno
-route_set(unsigned int gid, const char *oid, const char *value,
-          const char *route_name)
+route_set(const ta_conf_ctx *ctx, const struct sockaddr *value)
 {
-    UNUSED(oid);
+    char     buf[RCF_MAX_VAL];
+    te_errno rc;
 
-    return ta_obj_value_set(TA_OBJ_TYPE_ROUTE, route_name, value, gid,
-                            route_load_attrs);
+    rc = route_addr2str(value, buf);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    return ta_obj_value_set(TA_OBJ_TYPE_ROUTE,
+                            ta_conf_ctx_inst(ctx, "route"), buf,
+                            ta_conf_ctx_gid(ctx), route_load_attrs);
 }
 
 #define DEF_ROUTE_GET_FUNC(field_) \
-static te_errno                                             \
-route_ ## field_ ## _get(unsigned int gid, const char *oid, \
-                         char *value, const char *route)    \
-{                                                           \
-    te_errno        rc;                                     \
-    ta_rt_info_t   *rt_info;                                \
-                                                            \
-    UNUSED(oid);                                            \
-                                                            \
-    if ((rc = route_find(gid, route, &rt_info)) != 0)       \
-        return rc;                                          \
-                                                            \
-    sprintf(value, "%d", rt_info->field_);                  \
-    return 0;                                               \
+static te_errno                                                     \
+route_ ## field_ ## _get(const ta_conf_ctx *ctx, int32_t *value)    \
+{                                                                   \
+    te_errno        rc;                                             \
+    ta_rt_info_t   *rt_info;                                        \
+                                                                    \
+    rc = route_find(ta_conf_ctx_gid(ctx),                           \
+                    ta_conf_ctx_inst(ctx, "route"), &rt_info);      \
+    if (rc != 0)                                                    \
+        return rc;                                                  \
+                                                                    \
+    *value = (int32_t)rt_info->field_;                              \
+    return 0;                                                       \
 }
 
 #define DEF_ROUTE_SET_FUNC(field_) \
-static te_errno                                                \
-route_ ## field_ ## _set(unsigned int gid, const char *oid,    \
-                         const char *value, const char *route) \
-{                                                              \
-    UNUSED(oid);                                               \
-                                                               \
-    return ta_obj_set(TA_OBJ_TYPE_ROUTE, route, #field_,       \
-                      value, gid, route_load_attrs);           \
+static te_errno                                                     \
+route_ ## field_ ## _set(const ta_conf_ctx *ctx, const char *value) \
+{                                                                   \
+    return ta_obj_set(TA_OBJ_TYPE_ROUTE,                            \
+                      ta_conf_ctx_inst(ctx, "route"), #field_,      \
+                      value, ta_conf_ctx_gid(ctx),                  \
+                      route_load_attrs);                            \
+}
+
+#define DEF_ROUTE_SET_INT_FUNC(field_) \
+static te_errno                                                     \
+route_ ## field_ ## _set(const ta_conf_ctx *ctx, int32_t value)     \
+{                                                                   \
+    char buf[16];                                                   \
+                                                                    \
+    snprintf(buf, sizeof(buf), "%" PRId32, value);                  \
+    return ta_obj_set(TA_OBJ_TYPE_ROUTE,                            \
+                      ta_conf_ctx_inst(ctx, "route"), #field_,      \
+                      buf, ta_conf_ctx_gid(ctx),                    \
+                      route_load_attrs);                            \
 }
 
 DEF_ROUTE_GET_FUNC(mtu);
-DEF_ROUTE_SET_FUNC(mtu);
+DEF_ROUTE_SET_INT_FUNC(mtu);
 DEF_ROUTE_GET_FUNC(win);
-DEF_ROUTE_SET_FUNC(win);
+DEF_ROUTE_SET_INT_FUNC(win);
 DEF_ROUTE_GET_FUNC(irtt);
-DEF_ROUTE_SET_FUNC(irtt);
+DEF_ROUTE_SET_INT_FUNC(irtt);
 DEF_ROUTE_GET_FUNC(hoplimit);
-DEF_ROUTE_SET_FUNC(hoplimit);
+DEF_ROUTE_SET_INT_FUNC(hoplimit);
 
 static te_errno
-route_src_get(unsigned int gid, const char *oid,
-              char *value, const char *route)
+route_src_get(const ta_conf_ctx *ctx, struct sockaddr_storage *value)
 {
     te_errno        rc;
     ta_rt_info_t   *rt_info;
 
-    UNUSED(oid);
-
-    if ((rc = route_find(gid, route, &rt_info)) != 0)
+    rc = route_find(ta_conf_ctx_gid(ctx), ta_conf_ctx_inst(ctx, "route"),
+                    &rt_info);
+    if (rc != 0)
         return rc;
 
-    /*
-     * Switch by destination address family in order to process
-     * zero (non-specified) source address correctly.
-     */
-    switch (rt_info->dst.ss_family)
-    {
-        case AF_INET:
-            inet_ntop(AF_INET, &SIN(&rt_info->src)->sin_addr,
-                      value, INET_ADDRSTRLEN);
-            break;
-        case AF_INET6:
-            inet_ntop(AF_INET6, &SIN6(&rt_info->src)->sin6_addr,
-                      value, INET6_ADDRSTRLEN);
-            break;
-        default:
-            return TE_EAFNOSUPPORT;
-    }
-    return 0;
+    return route_addr_get(rt_info, &rt_info->src, value);
 }
 
-DEF_ROUTE_SET_FUNC(src);
+static te_errno
+route_src_set(const ta_conf_ctx *ctx, const struct sockaddr *value)
+{
+    char     buf[RCF_MAX_VAL];
+    te_errno rc;
+
+    rc = route_addr2str(value, buf);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    return ta_obj_set(TA_OBJ_TYPE_ROUTE, ta_conf_ctx_inst(ctx, "route"),
+                      "src", buf, ta_conf_ctx_gid(ctx), route_load_attrs);
+}
+
 DEF_ROUTE_SET_FUNC(dev);
 DEF_ROUTE_SET_FUNC(type);
 
 static te_errno
-route_dev_get(unsigned int gid, const char *oid,
-              char *value, const char *route)
+route_dev_get(const ta_conf_ctx *ctx, te_string *value)
 {
     te_errno        rc;
     ta_rt_info_t   *rt_info;
 
-    UNUSED(oid);
-
-    if ((rc = route_find(gid, route, &rt_info)) != 0)
+    rc = route_find(ta_conf_ctx_gid(ctx), ta_conf_ctx_inst(ctx, "route"),
+                    &rt_info);
+    if (rc != 0)
         return rc;
 
-    sprintf(value, "%s", rt_info->ifname);
+    te_string_append(value, "%s", rt_info->ifname);
     return 0;
 }
 
 static te_errno
-route_type_get(unsigned int gid, const char *oid,
-              char *value, const char *route)
+route_type_get(const ta_conf_ctx *ctx, te_string *value)
 {
     te_errno        rc;
     ta_rt_info_t   *rt_info;
 
-    UNUSED(oid);
-
-    if ((rc = route_find(gid, route, &rt_info)) != 0)
+    rc = route_find(ta_conf_ctx_gid(ctx), ta_conf_ctx_inst(ctx, "route"),
+                    &rt_info);
+    if (rc != 0)
         return rc;
 
     if (rt_info->type >= TA_RT_TYPE_MAX_VALUE)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    sprintf(value, "%s", ta_rt_type2name(rt_info->type));
+    te_string_append(value, "%s", ta_rt_type2name(rt_info->type));
     return 0;
 }
 
 #undef DEF_ROUTE_GET_FUNC
 #undef DEF_ROUTE_SET_FUNC
+#undef DEF_ROUTE_SET_INT_FUNC
 
 
 /**
  * Add a new route.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param ctx           Request context (route instance name: see
+ *                      doc/cm_cm_base.xml for the format)
  * @param value         value string
- * @param route         route instance name: see doc/cm_cm_base.xml
- *                      for the format
  *
  * @return              Status code
  */
 static te_errno
-route_add(unsigned int gid, const char *oid, const char *value,
-          const char *route)
+route_add(const ta_conf_ctx *ctx, const struct sockaddr *value)
 {
-    UNUSED(oid);
+    char     buf[RCF_MAX_VAL];
+    te_errno rc;
 
-    return ta_obj_add(TA_OBJ_TYPE_ROUTE, route, value, gid,
-                      NULL, NULL, NULL);
+    rc = route_addr2str(value, buf);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    return ta_obj_add(TA_OBJ_TYPE_ROUTE, ta_conf_ctx_inst(ctx, "route"),
+                      buf, ta_conf_ctx_gid(ctx), NULL, NULL, NULL);
 }
 
 /**
  * Delete a route.
  *
- * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
- * @param route         route instance name: see doc/cm_cm_base.xml
- *                      for the format
+ * @param ctx           Request context (route instance name: see
+ *                      doc/cm_cm_base.xml for the format)
  *
  * @return              Status code
  */
 static te_errno
-route_del(unsigned int gid, const char *oid, const char *route)
+route_del(const ta_conf_ctx *ctx)
 {
-    UNUSED(oid);
-
-    return ta_obj_del(TA_OBJ_TYPE_ROUTE, route, NULL, NULL, gid,
-                      route_load_attrs);
+    return ta_obj_del(TA_OBJ_TYPE_ROUTE, ta_conf_ctx_inst(ctx, "route"),
+                      NULL, NULL, ta_conf_ctx_gid(ctx), route_load_attrs);
 }
 
 
 static te_errno
-route_list(unsigned int gid, const char *oid, const char *sub_id,
-           char **list)
+route_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    char     *list = NULL;
+    te_errno  rc;
 
-    return ta_unix_conf_route_list(list);
+    UNUSED(ctx);
+
+    rc = ta_unix_conf_route_list(&list);
+    if (rc != 0)
+        return rc;
+
+    route_names_split(list, names);
+    return 0;
 }
 
 
 static te_errno
-route_commit(unsigned int gid, const cfg_oid *p_oid)
+route_commit(const ta_conf_ctx *ctx)
 {
-    const char             *route;
+    unsigned int            gid = ta_conf_ctx_gid(ctx);
+    const char             *route = ta_conf_ctx_inst(ctx, "route");
     ta_cfg_obj_t           *obj;
     ta_rt_info_t            rt_info;
     te_errno                rc;
     ta_cfg_obj_action_e     obj_action;
 
-    UNUSED(gid);
-
-    route = ((cfg_inst_subid *)(p_oid->ids))[p_oid->len - 1].name;
     ENTRY("%s", route);
 
     if ((obj = ta_obj_find(TA_OBJ_TYPE_ROUTE, route, gid)) == NULL)
@@ -583,46 +630,47 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
 
 
 static te_errno
-blackhole_list(unsigned int gid, const char *oid, const char *sub_id,
-               char **list)
+blackhole_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
+    char     *list = NULL;
+    te_errno  rc;
 
-    return ta_unix_conf_route_blackhole_list(list);
+    UNUSED(ctx);
+
+    rc = ta_unix_conf_route_blackhole_list(&list);
+    if (rc != 0)
+        return rc;
+
+    route_names_split(list, names);
+    return 0;
 }
 
 static te_errno
-blackhole_add(unsigned int gid, const char *oid, const char *value,
-              const char *route)
+blackhole_add(const ta_conf_ctx *ctx)
 {
-    UNUSED(oid);
-    UNUSED(value);
-
-    return ta_obj_add(TA_OBJ_TYPE_BLACKHOLE, route, value, gid,
-                      NULL, NULL, NULL);
+    return ta_obj_add(TA_OBJ_TYPE_BLACKHOLE,
+                      ta_conf_ctx_inst(ctx, "blackhole"), NULL,
+                      ta_conf_ctx_gid(ctx), NULL, NULL, NULL);
 }
 
 static te_errno
-blackhole_del(unsigned int gid, const char *oid, const char *route)
+blackhole_del(const ta_conf_ctx *ctx)
 {
-    UNUSED(oid);
-
-    return ta_obj_del(TA_OBJ_TYPE_BLACKHOLE, route, NULL,
-                      NULL, gid, route_load_attrs);
+    return ta_obj_del(TA_OBJ_TYPE_BLACKHOLE,
+                      ta_conf_ctx_inst(ctx, "blackhole"), NULL,
+                      NULL, ta_conf_ctx_gid(ctx), route_load_attrs);
 }
 
 static te_errno
-blackhole_commit(unsigned int gid, const cfg_oid *p_oid)
+blackhole_commit(const ta_conf_ctx *ctx)
 {
-    const char             *route;
+    unsigned int            gid = ta_conf_ctx_gid(ctx);
+    const char             *route = ta_conf_ctx_inst(ctx, "blackhole");
     ta_cfg_obj_t           *obj;
     ta_rt_info_t            rt_info;
     te_errno                rc;
     ta_cfg_obj_action_e     obj_action;
 
-    route = ((cfg_inst_subid *)(p_oid->ids))[p_oid->len - 1].name;
     ENTRY("%s", route);
 
     obj = ta_obj_find(TA_OBJ_TYPE_BLACKHOLE, route, gid);
@@ -671,33 +719,29 @@ blackhole_commit(unsigned int gid, const cfg_oid *p_oid)
 }
 
 static te_errno
-blackhole_type_get(unsigned int gid, const char *oid,
-                   char *value, const char *route)
+blackhole_type_get(const ta_conf_ctx *ctx, te_string *value)
 {
     te_errno rc;
     ta_rt_info_t *rt_info;
 
-    UNUSED(oid);
-
-    rc = route_find(gid, route, &rt_info);
+    rc = route_find(ta_conf_ctx_gid(ctx), ta_conf_ctx_inst(ctx, "blackhole"),
+                    &rt_info);
     if (rc != 0)
         return rc;
 
     if (rt_info->type >= TA_RT_TYPE_MAX_VALUE)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    snprintf(value, RCF_MAX_VAL, "%s", ta_rt_type2name(rt_info->type));
+    te_string_append(value, "%s", ta_rt_type2name(rt_info->type));
     return 0;
 }
 
 static te_errno
-blackhole_type_set(unsigned int gid, const char *oid,
-                   char *value, const char *route)
+blackhole_type_set(const ta_conf_ctx *ctx, const char *value)
 {
-    UNUSED(oid);
-
-    return ta_obj_set(TA_OBJ_TYPE_BLACKHOLE, route, "type",
-                      value, gid, route_load_attrs);
+    return ta_obj_set(TA_OBJ_TYPE_BLACKHOLE,
+                      ta_conf_ctx_inst(ctx, "blackhole"), "type",
+                      value, ta_conf_ctx_gid(ctx), route_load_attrs);
 }
 
 /**
@@ -844,31 +888,25 @@ route_nexthop_get_find(unsigned int gid, const char *route,
 /**
  * Add nexthop to a multipath route.
  *
- * @param gid     Group ID (unused).
- * @param oid     OID (unused).
- * @param value   Node value (unused).
- * @param route   Route node name.
- * @param hop_id  Nexthop index (unused, assigned automatically).
+ * @param ctx     Request context (the nexthop index is assigned
+ *                automatically and only checked for uniqueness).
  *
  * @return Status code.
  */
 static te_errno
-route_nexthop_add(unsigned int gid, const char *oid,
-                  const char *value, const char *route, const char *hop_id)
+route_nexthop_add(const ta_conf_ctx *ctx)
 {
+    const char        *route = ta_conf_ctx_inst(ctx, "route");
+    const char        *hop_id = ta_conf_ctx_inst(ctx, "nexthop");
     ta_cfg_obj_t      *route_obj;
     ta_rt_nexthop_t   *nh;
     ta_rt_nexthop_t   *nh_aux;
     ta_rt_nexthops_t  *hops;
     unsigned int       id;
 
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-
     CONVERT_NH_ID(hop_id, id);
 
-    route_obj = ta_obj_find(TA_OBJ_TYPE_ROUTE, route, gid);
+    route_obj = ta_obj_find(TA_OBJ_TYPE_ROUTE, route, ta_conf_ctx_gid(ctx));
     if (route_obj == NULL)
     {
         ERROR("%s(): failed to find a route '%s'", __FUNCTION__, route);
@@ -915,24 +953,21 @@ route_nexthop_add(unsigned int gid, const char *oid,
 /**
  * Remove nexthop of a multipath route.
  *
- * @param gid       Group ID.
- * @param oid       OID (unused).
- * @param route     Route node name.
- * @param hop_id    Nexthop index.
+ * @param ctx       Request context.
  *
  * @return Status code.
  */
 static te_errno
-route_nexthop_del(unsigned int gid, const char *oid,
-                  const char *route, const char *hop_id)
+route_nexthop_del(const ta_conf_ctx *ctx)
 {
     ta_rt_nexthops_t    *hops = NULL;
     ta_rt_nexthop_t     *rt_nh = NULL;
     te_errno             rc;
 
-    UNUSED(oid);
-
-    rc = route_nexthop_set_find(gid, route, hop_id, &hops, &rt_nh);
+    rc = route_nexthop_set_find(ta_conf_ctx_gid(ctx),
+                                ta_conf_ctx_inst(ctx, "route"),
+                                ta_conf_ctx_inst(ctx, "nexthop"),
+                                &hops, &rt_nh);
     if (rc != 0)
     {
         /*
@@ -961,29 +996,22 @@ route_nexthop_del(unsigned int gid, const char *oid,
 /**
  * List nexthops (paths) of a multipath route.
  *
- * @param gid     Group ID.
- * @param oid     OID (unused).
- * @param sub_id  Unused.
- * @param list    Where to save pointer to a string with list of names.
- * @param route   Route node name.
+ * @param ctx     Request context.
+ * @param names   Where to append the names.
  *
  * @return Status code.
  */
 static te_errno
-route_nexthop_list(unsigned int gid, const char *oid, const char *sub_id,
-                   char **list, const char *route)
+route_nexthop_list(const ta_conf_ctx *ctx, te_vec *names)
 {
     ta_rt_info_t *rt_info = NULL;
     te_errno      rc;
-    te_string     str = TE_STRING_INIT;
 
     ta_rt_nexthop_t *rt_nh = NULL;
     unsigned int     i = 0;
 
-    UNUSED(oid);
-    UNUSED(sub_id);
-
-    rc = route_find(gid, route, &rt_info);
+    rc = route_find(ta_conf_ctx_gid(ctx), ta_conf_ctx_inst(ctx, "route"),
+                    &rt_info);
     if (rc != 0)
         return rc;
 
@@ -991,101 +1019,93 @@ route_nexthop_list(unsigned int gid, const char *oid, const char *sub_id,
     {
         TAILQ_FOREACH(rt_nh, &rt_info->nexthops, links)
         {
-            te_string_append(&str, "%u ", i);
+            char  buf[16];
+            char *name;
+
+            snprintf(buf, sizeof(buf), "%u", i);
+            name = TE_STRDUP(buf);
+            TE_VEC_APPEND(names, name);
             i++;
         }
     }
 
-    *list = str.ptr;
     return 0;
 }
 
 /**
  * Get gateway of a nexthop of a multipath route.
  *
- * @param gid       Group ID.
- * @param oid       OID (unused).
+ * @param ctx       Request context.
  * @param value     Where to save obtained value.
- * @param route     Route node name.
- * @param hop_id    Nexthop index.
  *
  * @return Status code.
  */
 static te_errno
-route_nexthop_gw_get(unsigned int gid, const char *oid,
-                     char *value, const char *route, const char *hop_id)
+route_nexthop_gw_get(const ta_conf_ctx *ctx, struct sockaddr_storage *value)
 {
     te_errno         rc;
     ta_rt_nexthop_t *rt_nh = NULL;
     ta_rt_info_t    *rt_info = NULL;
 
-    UNUSED(oid);
-
-    rc = route_nexthop_get_find(gid, route, hop_id, &rt_info, &rt_nh);
+    rc = route_nexthop_get_find(ta_conf_ctx_gid(ctx),
+                                ta_conf_ctx_inst(ctx, "route"),
+                                ta_conf_ctx_inst(ctx, "nexthop"),
+                                &rt_info, &rt_nh);
     if (rc != 0)
         return rc;
 
-    if (rt_nh->flags & TA_RT_NEXTHOP_FLG_GW)
+    if (!(rt_nh->flags & TA_RT_NEXTHOP_FLG_GW))
     {
-        rc = te_sockaddr_h2str_buf(SA(&rt_nh->gw), value, RCF_MAX_VAL);
-        if (rc != 0)
-        {
-            ERROR("%s(): failed to convert address to string, errno=%r",
-                  __FUNCTION__, rc);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
-    }
-    else
-    {
-        switch (rt_info->dst.ss_family)
-        {
-            case AF_INET:
-                TE_STRLCPY(value, "0.0.0.0", RCF_MAX_VAL);
-                break;
+        /* No gateway: the unspecified address of the route family */
+        if (rt_info->dst.ss_family != AF_INET &&
+            rt_info->dst.ss_family != AF_INET6)
+            return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
 
-            case AF_INET6:
-                TE_STRLCPY(value, "::", RCF_MAX_VAL);
-                break;
-
-            default:
-                return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
-        }
+        memset(value, 0, sizeof(*value));
+        value->ss_family = rt_info->dst.ss_family;
+        return 0;
     }
 
+    if (rt_nh->gw.ss_family != AF_INET && rt_nh->gw.ss_family != AF_INET6)
+    {
+        ERROR("%s(): unexpected gateway address family %d", __FUNCTION__,
+              rt_nh->gw.ss_family);
+        return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
+    }
+
+    *value = rt_nh->gw;
     return 0;
 }
 
 /**
  * Set gateway of a nexthop of a multipath route.
  *
- * @param gid       Group ID.
- * @param oid       OID (unused).
+ * @param ctx       Request context.
  * @param value     Value to set.
- * @param route     Route node name.
- * @param hop_id    Nexthop index.
  *
  * @return Status code.
  */
 static te_errno
-route_nexthop_gw_set(unsigned int gid, const char *oid,
-                     const char *value, const char *route, const char *hop_id)
+route_nexthop_gw_set(const ta_conf_ctx *ctx, const struct sockaddr *value)
 {
     te_errno             rc;
     ta_rt_nexthop_t     *rt_nh = NULL;
 
-    UNUSED(oid);
-
-    rc = route_nexthop_set_find(gid, route, hop_id, NULL, &rt_nh);
+    rc = route_nexthop_set_find(ta_conf_ctx_gid(ctx),
+                                ta_conf_ctx_inst(ctx, "route"),
+                                ta_conf_ctx_inst(ctx, "nexthop"),
+                                NULL, &rt_nh);
     if (rc != 0)
         return rc;
 
-    rc = te_sockaddr_netaddr_from_string(value, SA(&rt_nh->gw));
-    if (rc != 0)
+    if (value->sa_family != AF_INET && value->sa_family != AF_INET6)
     {
-        ERROR("%s(): failed to parse address '%s'", __FUNCTION__, value);
-        return TE_RC(TE_TA_UNIX, rc);
+        ERROR("%s(): gateway is not an IP address", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
+    rt_nh->gw.ss_family = value->sa_family;
+    te_sockaddr_set_netaddr(SA(&rt_nh->gw), te_sockaddr_get_netaddr(value));
     rt_nh->flags |= TA_RT_NEXTHOP_FLG_GW;
 
     return 0;
@@ -1094,29 +1114,26 @@ route_nexthop_gw_set(unsigned int gid, const char *oid,
 /**
  * Get interface name of a nexthop of a multipath route.
  *
- * @param gid       Group ID.
- * @param oid       OID (unused).
+ * @param ctx       Request context.
  * @param value     Where to save obtained value.
- * @param route     Route node name.
- * @param hop_id    Nexthop index.
  *
  * @return Status code.
  */
 static te_errno
-route_nexthop_dev_get(unsigned int gid, const char *oid,
-                      char *value, const char *route, const char *hop_id)
+route_nexthop_dev_get(const ta_conf_ctx *ctx, te_string *value)
 {
     te_errno         rc;
     ta_rt_nexthop_t *rt_nh = NULL;
 
-    UNUSED(oid);
-
-    rc = route_nexthop_get_find(gid, route, hop_id, NULL, &rt_nh);
+    rc = route_nexthop_get_find(ta_conf_ctx_gid(ctx),
+                                ta_conf_ctx_inst(ctx, "route"),
+                                ta_conf_ctx_inst(ctx, "nexthop"),
+                                NULL, &rt_nh);
     if (rc != 0)
         return rc;
 
     if (rt_nh->flags & TA_RT_NEXTHOP_FLG_OIF)
-        TE_STRLCPY(value, rt_nh->ifname, RCF_MAX_VAL);
+        te_string_append(value, "%s", rt_nh->ifname);
 
     return 0;
 }
@@ -1124,25 +1141,22 @@ route_nexthop_dev_get(unsigned int gid, const char *oid,
 /**
  * Set interface of a nexthop of a multipath route.
  *
- * @param gid       Group ID.
- * @param oid       OID (unused).
+ * @param ctx       Request context.
  * @param value     Value to set.
- * @param route     Route node name.
- * @param hop_id    Nexthop index.
  *
  * @return Status code.
  */
 static te_errno
-route_nexthop_dev_set(unsigned int gid, const char *oid,
-                      const char *value, const char *route, const char *hop_id)
+route_nexthop_dev_set(const ta_conf_ctx *ctx, const char *value)
 {
     te_errno             rc;
     ta_rt_nexthop_t     *rt_nh = NULL;
     size_t               val_len;
 
-    UNUSED(oid);
-
-    rc = route_nexthop_set_find(gid, route, hop_id, NULL, &rt_nh);
+    rc = route_nexthop_set_find(ta_conf_ctx_gid(ctx),
+                                ta_conf_ctx_inst(ctx, "route"),
+                                ta_conf_ctx_inst(ctx, "nexthop"),
+                                NULL, &rt_nh);
     if (rc != 0)
         return rc;
 
@@ -1163,141 +1177,107 @@ route_nexthop_dev_set(unsigned int gid, const char *oid,
 /**
  * Get weight of a nexthop of a multipath route.
  *
- * @param gid       Group ID.
- * @param oid       OID (unused).
+ * @param ctx       Request context.
  * @param value     Where to save obtained value.
- * @param route     Route node name.
- * @param hop_id    Nexthop index.
  *
  * @return Status code.
  */
 static te_errno
-route_nexthop_weight_get(unsigned int gid, const char *oid,
-                         char *value, const char *route, const char *hop_id)
+route_nexthop_weight_get(const ta_conf_ctx *ctx, uint32_t *value)
 {
     te_errno         rc;
     ta_rt_nexthop_t *rt_nh = NULL;
 
-    UNUSED(oid);
-
-    rc = route_nexthop_get_find(gid, route, hop_id, NULL, &rt_nh);
+    rc = route_nexthop_get_find(ta_conf_ctx_gid(ctx),
+                                ta_conf_ctx_inst(ctx, "route"),
+                                ta_conf_ctx_inst(ctx, "nexthop"),
+                                NULL, &rt_nh);
     if (rc != 0)
         return rc;
 
-    snprintf(value, RCF_MAX_VAL, "%u", rt_nh->weight);
+    *value = rt_nh->weight;
     return 0;
 }
 
 /**
  * Set weight of a nexthop of a multipath route.
  *
- * @param gid       Group ID.
- * @param oid       OID (unused).
+ * @param ctx       Request context.
  * @param value     Value to set.
- * @param route     Route node name.
- * @param hop_id    Nexthop index.
  *
  * @return Status code.
  */
 static te_errno
-route_nexthop_weight_set(unsigned int gid, const char *oid,
-                         const char *value, const char *route, const char *hop_id)
+route_nexthop_weight_set(const ta_conf_ctx *ctx, uint32_t value)
 {
     te_errno             rc;
     ta_rt_nexthop_t     *rt_nh = NULL;
-    long unsigned int    weight;
 
-    UNUSED(oid);
-
-    rc = te_strtoul(value, 10, &weight);
-    if (rc != 0 || weight > UINT_MAX || weight < 1)
+    if (value < 1)
     {
-        ERROR("%s(): failed to convert '%s' to correct nexthop weight",
-              __FUNCTION__, value);
-        return TE_RC(TE_TA_UNIX, rc != 0 ? rc : TE_EINVAL);
+        ERROR("%s(): failed to convert '%" PRIu32 "' to correct nexthop "
+              "weight", __FUNCTION__, value);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    rc = route_nexthop_set_find(gid, route, hop_id, NULL, &rt_nh);
+    rc = route_nexthop_set_find(ta_conf_ctx_gid(ctx),
+                                ta_conf_ctx_inst(ctx, "route"),
+                                ta_conf_ctx_inst(ctx, "nexthop"),
+                                NULL, &rt_nh);
     if (rc != 0)
         return rc;
 
-    rt_nh->weight = weight;
+    rt_nh->weight = value;
 
     return 0;
 }
 
 /*
  * Unix Test Agent routing configuration tree.
+ *
+ * The four roots are registered on "/agent" one by one, see
+ * ta_unix_conf_route_init().
  */
 
-RCF_PCH_CFG_NODE_RO(node_ip4_rt_default_if, "ip4_rt_default_if",
-                    NULL, NULL, ip4_rt_default_if_get);
+static const ta_conf_node *const node_ip4_rt_default_if =
+    TA_CONF_RO_STR("ip4_rt_default_if", ip4_rt_default_if_get);
 
-RCF_PCH_CFG_NODE_RO(node_ip6_rt_default_if, "ip6_rt_default_if",
-                    NULL, &node_ip4_rt_default_if, ip6_rt_default_if_get);
+static const ta_conf_node *const node_ip6_rt_default_if =
+    TA_CONF_RO_STR("ip6_rt_default_if", ip6_rt_default_if_get);
 
-static rcf_pch_cfg_object node_blackhole;
+static const ta_conf_node *const node_blackhole =
+    TA_CONF_COLL_COMMIT("blackhole", blackhole_add, blackhole_del,
+                        blackhole_list, blackhole_commit,
+        TA_CONF_RW_STR("type", blackhole_type_get, blackhole_type_set));
 
-RCF_PCH_CFG_NODE_RWC(node_blackhole_type, "type", NULL, NULL,
-                     blackhole_type_get, blackhole_type_set, &node_blackhole);
-
-RCF_PCH_CFG_NODE_COLLECTION(node_blackhole, "blackhole",
-                            &node_blackhole_type, &node_ip6_rt_default_if,
-                            blackhole_add, blackhole_del,
-                            blackhole_list, blackhole_commit);
-
-static rcf_pch_cfg_object node_route;
-
-RCF_PCH_CFG_NODE_RWC(node_route_type, "type", NULL, NULL,
-                     route_type_get, route_type_set, &node_route);
-
-/*
- * This attribute influences both IPv4 Time To Live and IPv6 Hop Limit
- * header fields.
- */
-RCF_PCH_CFG_NODE_RWC(node_route_hoplimit, "hoplimit", NULL,
-                     &node_route_type,
-                     route_hoplimit_get, route_hoplimit_set, &node_route);
-
-RCF_PCH_CFG_NODE_RWC(node_route_irtt, "irtt", NULL, &node_route_hoplimit,
-                     route_irtt_get, route_irtt_set, &node_route);
-
-RCF_PCH_CFG_NODE_RWC(node_route_win, "win", NULL, &node_route_irtt,
-                     route_win_get, route_win_set, &node_route);
-
-RCF_PCH_CFG_NODE_RWC(node_route_mtu, "mtu", NULL, &node_route_win,
-                     route_mtu_get, route_mtu_set, &node_route);
-
-RCF_PCH_CFG_NODE_RWC(node_route_dev, "dev", NULL, &node_route_mtu,
-                     route_dev_get, route_dev_set, &node_route);
-
-RCF_PCH_CFG_NODE_RWC(node_route_src, "src", NULL, &node_route_dev,
-                     route_src_get, route_src_set, &node_route);
-
-RCF_PCH_CFG_NODE_RWC(node_route_nexthop_weight, "weight", NULL, NULL,
-                     route_nexthop_weight_get,
-                     route_nexthop_weight_set, &node_route);
-RCF_PCH_CFG_NODE_RWC(node_route_nexthop_dev, "dev", NULL,
-                     &node_route_nexthop_weight,
-                     route_nexthop_dev_get,
-                     route_nexthop_dev_set, &node_route);
-RCF_PCH_CFG_NODE_RWC(node_route_nexthop_gw, "gw", NULL,
-                     &node_route_nexthop_dev,
-                     route_nexthop_gw_get,
-                     route_nexthop_gw_set, &node_route);
-
-static rcf_pch_cfg_object node_route_nexthop =
-    { "nexthop", 0, &node_route_nexthop_gw, &node_route_src,
-      (rcf_ch_cfg_get)NULL, (rcf_ch_cfg_set)NULL,
-      (rcf_ch_cfg_add)route_nexthop_add, (rcf_ch_cfg_del)route_nexthop_del,
-      (rcf_ch_cfg_list)route_nexthop_list, (rcf_ch_cfg_commit)NULL,
-      &node_route, NULL};
-
-static rcf_pch_cfg_object node_route =
-    {"route", 0, &node_route_nexthop, &node_blackhole,
-     (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
-     (rcf_ch_cfg_add)route_add, (rcf_ch_cfg_del)route_del,
-     (rcf_ch_cfg_list)route_list, (rcf_ch_cfg_commit)route_commit, NULL, NULL};
+static const ta_conf_node *const node_route =
+    TA_CONF_NODE((.name = "route", .type = CVT_ADDRESS,
+                  .get = { .as_addr = route_get },
+                  .set = { .as_addr = route_set },
+                  .add = { .as_addr = route_add },
+                  .del = route_del,
+                  .list = route_list,
+                  .commit = route_commit),
+        TA_CONF_COLL("nexthop", route_nexthop_add, route_nexthop_del,
+                     route_nexthop_list,
+            TA_CONF_RW_ADDRESS("gw", route_nexthop_gw_get,
+                               route_nexthop_gw_set),
+            TA_CONF_RW_STR("dev", route_nexthop_dev_get,
+                           route_nexthop_dev_set),
+            TA_CONF_RW_UINT32("weight", route_nexthop_weight_get,
+                              route_nexthop_weight_set)),
+        TA_CONF_RW_ADDRESS("src", route_src_get, route_src_set),
+        TA_CONF_RW_STR("dev", route_dev_get, route_dev_set),
+        TA_CONF_RW_INT32("mtu", route_mtu_get, route_mtu_set),
+        TA_CONF_RW_INT32("win", route_win_get, route_win_set),
+        TA_CONF_RW_INT32("irtt", route_irtt_get, route_irtt_set),
+        /*
+         * This attribute influences both IPv4 Time To Live and IPv6
+         * Hop Limit header fields.
+         */
+        TA_CONF_RW_INT32("hoplimit", route_hoplimit_get,
+                         route_hoplimit_set),
+        TA_CONF_RW_STR("type", route_type_get, route_type_set));
 
 /* See the description in conf_route.h */
 te_errno
@@ -1354,7 +1334,26 @@ ta_unix_conf_outgoing_if(ta_rt_info_t *rt_info)
 te_errno
 ta_unix_conf_route_init(void)
 {
-    return rcf_pch_add_node("/agent", &node_route);
+    te_errno rc;
+
+    /*
+     * Each ta_conf_register() call prepends its root to the children
+     * of "/agent", so register in reverse to keep the legacy order:
+     * route, blackhole, ip6_rt_default_if, ip4_rt_default_if.
+     */
+    rc = ta_conf_register("/agent", node_ip4_rt_default_if);
+    if (rc != 0)
+        return rc;
+
+    rc = ta_conf_register("/agent", node_ip6_rt_default_if);
+    if (rc != 0)
+        return rc;
+
+    rc = ta_conf_register("/agent", node_blackhole);
+    if (rc != 0)
+        return rc;
+
+    return ta_conf_register("/agent", node_route);
 }
 #else
 /* See the description in conf_route.h */
