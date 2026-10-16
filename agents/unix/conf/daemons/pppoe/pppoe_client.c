@@ -14,6 +14,7 @@
 #include "config.h"
 #endif
 
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "te_defs.h"
 #include "te_ethernet.h"

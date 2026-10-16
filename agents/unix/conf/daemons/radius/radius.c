@@ -15,6 +15,7 @@
 #ifdef WITH_RADIUS_SERVER
 #include <stddef.h>
 #include "conf_daemons_internal.h"
+#include "te_alloc.h"
 
 /* Part 1: Common parsing and creating configuration files */
 
@@ -1101,16 +1102,6 @@ write_radius_users(FILE *conf)
     fflush(conf);
 }
 
-static void
-log_radius_tree (radius_parameter *parm)
-{
-    RING("%p %d %s = %s %s %p %p\n", parm, parm->kind, parm->name,
-         parm->value ? parm->value : "EMPTY",
-         parm->deleted ? "DELETED" : "", parm->children, parm->next);
-    for (parm = parm->children; parm != NULL; parm = parm->next)
-        log_radius_tree(parm);
-}
-
 /** Name of RADIUS server in the distribution */
 static const char *radius_daemon = NULL;
 
@@ -1613,7 +1604,7 @@ static rcf_pch_cfg_object node_ds_radiusserver_user = {
     (rcf_ch_cfg_set)ds_radius_user_set,
     (rcf_ch_cfg_add)ds_radius_user_add,
     (rcf_ch_cfg_del)ds_radius_user_del,
-    ds_radius_user_list,
+    (rcf_ch_cfg_list)ds_radius_user_list,
     NULL, NULL, NULL
 };
 
