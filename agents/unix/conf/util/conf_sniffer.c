@@ -63,13 +63,15 @@
 #include "te_sleep.h"
 #include "te_sniffers.h"
 #include "te_sniffer_proc.h"
+#include "te_string.h"
+#include "te_vector.h"
+#include "rcf_pch_tree.h"
 
 #ifndef IF_NAMESIZE
 #define IF_NAMESIZE IFNAMSIZ
 #endif
 
 /* Default constants */
-#define SNIFFER_LIST_SIZE           1024
 #define SNIFFER_AGENT_TOTAL_SIZE    256
 #define SNIFFER_SPACE               64
 #define SNIFFER_ROTATION            4
@@ -90,9 +92,6 @@
 
 /* Size of a PCAP file header. */
 #define SNIF_PCAP_HSIZE 24
-
-static te_errno sniffer_add(unsigned int gid, const char *oid, char *ssn,
-                            const char *ifname, const char *snifname);
 
 /** Overfill handle methods constants. */
 typedef enum overfill_meth_t {
@@ -351,68 +350,86 @@ sniffer_find(const char *ifname, const char *snifname)
 }
 
 /**
- * Common get function for the sniffers settings.
+ * Put a string value of a sniffer setting, truncated like a legacy
+ * RCF_MAX_VAL buffer.
  *
- * @param gid          Group identifier (unused).
- * @param oid          Full object instance identifier.
- * @param value        Obtained value (Out).
+ * @param val           Location for the value
+ * @param str           String or @c NULL (empty value)
+ */
+static void
+sniffer_value_put(te_string *val, const char *str)
+{
+    te_string_append(val, "%.*s", RCF_MAX_VAL - 1, te_str_empty_if_null(str));
+}
+
+/**
+ * Common get function for the integer sniffers settings.
+ *
+ * @param ctx          Request context.
+ * @param val          Location for the value.
  *
  * @return Status code.
  */
 static te_errno
-sniffer_get_params(unsigned int gid, const char *oid, char *value)
+sniffer_get_params_int(const ta_conf_ctx *ctx, int32_t *val)
 {
-    UNUSED(gid);
-
-    if (value == NULL)
-    {
-       ERROR("A buffer for sniffers settings to get val is not provided");
-       return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
+    const char *oid = ta_conf_ctx_oid(ctx);
 
     if (strstr(oid, "/enable:") != NULL)
-        sprintf(value, "%d", snif_sets.enable);
+        *val = snif_sets.enable;
     else if (strstr(oid, "/snaplen:") != NULL)
-        sprintf(value, "%d", snif_sets.snaplen);
+        *val = snif_sets.snaplen;
     else if (strstr(oid, "/total_size:") != NULL)
-        sprintf(value, "%zd", snif_sets.total_size);
+        *val = (int32_t)snif_sets.total_size;
     else if (strstr(oid, "/file_size:") != NULL)
-        sprintf(value, "%zd", snif_sets.file_size);
+        *val = (int32_t)snif_sets.file_size;
     else if (strstr(oid, "/rotation:") != NULL)
-        sprintf(value, "%d", snif_sets.rotation);
+        *val = snif_sets.rotation;
     else if (strstr(oid, "/overfill_meth:") != NULL)
-        sprintf(value, "%d", snif_sets.overfill_meth);
-    else if (strstr(oid, "/path:") != NULL)
-        sprintf(value, "%s", snif_sets.path);
-    else if ((strstr(oid, "/filter_exp_str:") != NULL) &&
-             (snif_sets.filter_exp_str != NULL))
-        sprintf(value, "%s", snif_sets.filter_exp_str);
-    else if ((strstr(oid, "/filter_exp_file:") != NULL) &&
-             (snif_sets.filter_exp_str != NULL))
-        sprintf(value, "%s", snif_sets.filter_exp_file);
+        *val = snif_sets.overfill_meth;
+    else
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     return 0;
 }
 
 /**
- * Common set function for the sniffers settings.
+ * Common get function for the string sniffers settings.
  *
- * @param gid          Group identifier (unused).
- * @param oid          Full object instance identifier.
- * @param value        New value.
+ * @param ctx          Request context.
+ * @param val          Location for the value.
  *
  * @return Status code.
  */
 static te_errno
-sniffer_set_params(unsigned int gid, const char *oid, const char *value)
+sniffer_get_params_str(const ta_conf_ctx *ctx, te_string *val)
 {
-    UNUSED(gid);
+    const char *oid = ta_conf_ctx_oid(ctx);
 
-    if (value == NULL)
-    {
-       ERROR("A buffer for sniffer settings to set val is not provided.");
-       return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
+    if (strstr(oid, "/path:") != NULL)
+        sniffer_value_put(val, snif_sets.path);
+    else if (strstr(oid, "/filter_exp_str:") != NULL)
+        sniffer_value_put(val, snif_sets.filter_exp_str);
+    else if (strstr(oid, "/filter_exp_file:") != NULL)
+        sniffer_value_put(val, snif_sets.filter_exp_file);
+    else
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    return 0;
+}
+
+/**
+ * Common set function for the integer sniffers settings.
+ *
+ * @param ctx          Request context.
+ * @param val          New value.
+ *
+ * @return Status code.
+ */
+static te_errno
+sniffer_set_params_int(const ta_conf_ctx *ctx, int32_t val)
+{
+    const char *oid = ta_conf_ctx_oid(ctx);
 
     /* After sniffers start common setting should not be changed. */
     if (snif_sets.lock == true)
@@ -420,26 +437,51 @@ sniffer_set_params(unsigned int gid, const char *oid, const char *value)
 
     if (strstr(oid, "/enable:") != NULL)
     {
-        snif_sets.enable = atoi(value) ? true : false;
+        snif_sets.enable = val ? true : false;
         if (snif_sets.enable)
             snif_sets.lock = true;
     }
     else if (strstr(oid, "/snaplen:") != NULL)
-        snif_sets.snaplen = atoi(value);
+        snif_sets.snaplen = val;
     else if (strstr(oid, "/total_size:") != NULL)
-        snif_sets.total_size = (size_t)atoi(value);
+        snif_sets.total_size = (size_t)val;
     else if (strstr(oid, "/file_size:") != NULL)
-        snif_sets.file_size = (size_t)atoi(value);
+        snif_sets.file_size = (size_t)val;
     else if (strstr(oid, "/rotation:") != NULL)
-        snif_sets.rotation = atoi(value);
+        snif_sets.rotation = val;
     else if (strstr(oid, "/overfill_meth:") != NULL)
     {
-        if (atoi(value) == 0)
+        if (val == 0)
             snif_sets.overfill_meth = ROTATION;
         else
             snif_sets.overfill_meth = TAIL_DROP;
     }
-    else if (strstr(oid, "/path:") != NULL)
+    else
+    {
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    return 0;
+}
+
+/**
+ * Common set function for the string sniffers settings.
+ *
+ * @param ctx          Request context.
+ * @param value        New value.
+ *
+ * @return Status code.
+ */
+static te_errno
+sniffer_set_params_str(const ta_conf_ctx *ctx, const char *value)
+{
+    const char *oid = ta_conf_ctx_oid(ctx);
+
+    /* After sniffers start common setting should not be changed. */
+    if (snif_sets.lock == true)
+        return 0;
+
+    if (strstr(oid, "/path:") != NULL)
     {
         te_strlcpy(snif_sets.path, value, sizeof(snif_sets.path));
     }
@@ -455,118 +497,188 @@ sniffer_set_params(unsigned int gid, const char *oid, const char *value)
             free(snif_sets.filter_exp_file);
         snif_sets.filter_exp_file = TE_STRDUP(value);
     }
+    else
+    {
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
 
     return 0;
 }
 
 /**
- * Common get function for the sniffer instance.
+ * Find the sniffer a request is addressed to.
  *
- * @param gid           Group identifier (unused).
- * @param oid           Full object instance identifier (unused).
- * @param value         New value.
- * @param ifname        The interface name.
- * @param snifname      The sniffer name.
+ * @param ctx           Request context.
+ *
+ * @return The sniffer unit or @c NULL.
+ */
+static sniffer_t *
+sniffer_find_by_ctx(const ta_conf_ctx *ctx)
+{
+    return sniffer_find(ta_conf_ctx_inst(ctx, "interface"),
+                        ta_conf_ctx_inst(ctx, "sniffer"));
+}
+
+/**
+ * Common get function for the integer settings of the sniffer instance.
+ *
+ * @param ctx           Request context.
+ * @param val           Location for the value.
  *
  * @return Status code.
  */
 static te_errno
-sniffer_common_get(unsigned int gid, const char *oid, char *value,
-                   const char *ifname, const char *snifname)
+sniffer_common_get_int(const ta_conf_ctx *ctx, int32_t *val)
 {
-    UNUSED(gid);
+    const char  *oid = ta_conf_ctx_oid(ctx);
+    sniffer_t   *sniff;
 
-    sniffer_t   *sniff = NULL;
-
-    sniff = sniffer_find(ifname, snifname);
+    sniff = sniffer_find_by_ctx(ctx);
     if (sniff == NULL)
     {
         ERROR("sniffer_common_get: Couldn't find the sniffer for oid %s", oid);
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
-    if (value == NULL)
-    {
-       ERROR("A buffer for sniffer common get is not provided");
-       return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
     if (strstr(oid, "/enable:") != NULL)
-        sprintf(value, "%d", sniff->enable);
+        *val = sniff->enable;
     else if (strstr(oid, "/snaplen:") != NULL)
-        sprintf(value, "%d", sniff->snaplen);
+        *val = sniff->snaplen;
     else if (strstr(oid, "/sniffer_space:") != NULL)
-        sprintf(value, "%zd", sniff->sniffer_space);
+        *val = (int32_t)sniff->sniffer_space;
     else if (strstr(oid, "/file_size:") != NULL)
-        sprintf(value, "%zd", sniff->file_size);
+        *val = (int32_t)sniff->file_size;
     else if (strstr(oid, "/rotation:") != NULL)
-        sprintf(value, "%zd", sniff->rotation);
+        *val = (int32_t)sniff->rotation;
     else if (strstr(oid, "/overfill_meth:") != NULL)
-        sprintf(value, "%d", sniff->overfill_meth);
-    else if ((strstr(oid, "/filter_exp_str:") != NULL) &&
-             (sniff->filter_exp_str != NULL))
-        sprintf(value, "%s", sniff->filter_exp_str);
-    else if ((strstr(oid, "/filter_exp_file:") != NULL) &&
-             (sniff->filter_exp_str != NULL))
-        sprintf(value, "%s", sniff->filter_exp_file);
+        *val = sniff->overfill_meth;
+    else
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     return 0;
 }
 
 /**
- * Common set function for the sniffer instance.
+ * Common get function for the string settings of the sniffer instance.
  *
- * @param gid           Group identifier (unused).
- * @param oid           Full object instance identifier (unused).
- * @param value         New value.
- * @param ifname        Interface name.
- * @param snifname      Sniffer name.
+ * @param ctx           Request context.
+ * @param val           Location for the value.
  *
  * @return Status code.
  */
 static te_errno
-sniffer_common_set(unsigned int gid, const char *oid, const char *value,
-               const char *ifname, const char *snifname)
+sniffer_common_get_str(const ta_conf_ctx *ctx, te_string *val)
 {
+    const char  *oid = ta_conf_ctx_oid(ctx);
     sniffer_t   *sniff;
 
-    UNUSED(gid);
-
-    sniff = sniffer_find(ifname, snifname);
+    sniff = sniffer_find_by_ctx(ctx);
     if (sniff == NULL)
     {
-        ERROR("Couldn't find the sniffer on the oid %s", oid);
+        ERROR("sniffer_common_get: Couldn't find the sniffer for oid %s", oid);
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
-    if (value == NULL)
+    if (strstr(oid, "/filter_exp_str:") != NULL)
+        sniffer_value_put(val, sniff->filter_exp_str);
+    else if (strstr(oid, "/filter_exp_file:") != NULL)
+        sniffer_value_put(val, sniff->filter_exp_file);
+    else
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    return 0;
+}
+
+/**
+ * Find the sniffer to change: it must exist and must not be running.
+ *
+ * @param ctx           Request context.
+ * @param sniff         Location for the sniffer.
+ *
+ * @return Status code.
+ */
+static te_errno
+sniffer_find_stopped(const ta_conf_ctx *ctx, sniffer_t **sniff)
+{
+    *sniff = sniffer_find_by_ctx(ctx);
+    if (*sniff == NULL)
     {
-       ERROR("A buffer for sniffer common set is not provided");
-       return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        ERROR("Couldn't find the sniffer on the oid %s",
+              ta_conf_ctx_oid(ctx));
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
-    if (sniff->enable == true)
+    if ((*sniff)->enable == true)
     {
        WARN("The sniffer has been started.");
        return TE_RC(TE_TA_UNIX, TE_EBUSY);
     }
 
+    return 0;
+}
+
+/**
+ * Common set function for the integer settings of the sniffer instance.
+ *
+ * @param ctx           Request context.
+ * @param val           New value.
+ *
+ * @return Status code.
+ */
+static te_errno
+sniffer_common_set_int(const ta_conf_ctx *ctx, int32_t val)
+{
+    const char  *oid = ta_conf_ctx_oid(ctx);
+    sniffer_t   *sniff;
+    te_errno     rc;
+
+    rc = sniffer_find_stopped(ctx, &sniff);
+    if (rc != 0)
+        return rc;
+
     if (strstr(oid, "/snaplen:") != NULL)
-        sniff->snaplen = atoi(value);
+        sniff->snaplen = val;
     else if (strstr(oid, "/sniffer_space:") != NULL)
-        sniff->sniffer_space = (size_t)atoi(value);
+        sniff->sniffer_space = (size_t)val;
     else if (strstr(oid, "/file_size:") != NULL)
-        sniff->file_size = (size_t)atoi(value);
+        sniff->file_size = (size_t)val;
     else if (strstr(oid, "/rotation:") != NULL)
-        sniff->rotation = atoi(value);
+        sniff->rotation = (size_t)val;
     else if (strstr(oid, "/overfill_meth:") != NULL)
     {
-        if (atoi(value) == 0)
+        if (val == 0)
             sniff->overfill_meth = ROTATION;
         else
             sniff->overfill_meth = TAIL_DROP;
     }
-    else if (strstr(oid, "/filter_exp_str:") != NULL)
+    else
+    {
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    return 0;
+}
+
+/**
+ * Common set function for the string settings of the sniffer instance.
+ *
+ * @param ctx           Request context.
+ * @param value         New value.
+ *
+ * @return Status code.
+ */
+static te_errno
+sniffer_common_set_str(const ta_conf_ctx *ctx, const char *value)
+{
+    const char  *oid = ta_conf_ctx_oid(ctx);
+    sniffer_t   *sniff;
+    te_errno     rc;
+
+    rc = sniffer_find_stopped(ctx, &sniff);
+    if (rc != 0)
+        return rc;
+
+    if (strstr(oid, "/filter_exp_str:") != NULL)
     {
         if (sniff->filter_exp_str != NULL)
             free(sniff->filter_exp_str);
@@ -577,6 +689,10 @@ sniffer_common_set(unsigned int gid, const char *oid, const char *value,
         if (sniff->filter_exp_file != NULL)
             free(sniff->filter_exp_file);
         sniff->filter_exp_file = TE_STRDUP(value);
+    }
+    else
+    {
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
     return 0;
@@ -1371,38 +1487,26 @@ sniffer_add_clone(sniffer_t *sniff)
 /**
  * Set the sniffer enable. Calls to start/stop of the sniffer process fuctions.
  *
- * @param gid           Group identifier (unused).
- * @param oid           Full object instance identifier (unused).
- * @param value         New value.
- * @param ifname        Interface name.
- * @param snifname      Sniffer name.
+ * @param ctx           Request context.
+ * @param enable        New value.
  *
  * @return Status code.
  */
 static te_errno
-sniffer_set_enable(unsigned int gid, const char *oid, const char *value,
-                   const char *ifname, const char *snifname)
+sniffer_set_enable(const ta_conf_ctx *ctx, int32_t enable)
 {
+    const char   *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char   *snifname = ta_conf_ctx_inst(ctx, "sniffer");
     sniffer_t    *sniff;
-    int           enable;
     te_errno      rc;
-
-    UNUSED(gid);
 
     sniff = sniffer_find(ifname, snifname);
     if (sniff == NULL)
     {
-        ERROR("Couldn't find the sniffer on the oid %s.", oid);
+        ERROR("Couldn't find the sniffer on the oid %s.",
+              ta_conf_ctx_oid(ctx));
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
-
-    if (value == NULL)
-    {
-       ERROR("A buffer for sniffer set enable is not provided.");
-       return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    enable = atoi(value);
 
     if (sniff->enable == enable)
     {
@@ -1455,23 +1559,16 @@ sniffer_set_enable(unsigned int gid, const char *oid, const char *value,
 /**
  * Fake sniffer set function for Configurator.
  *
- * @param gid          Group identifier (unused).
- * @param oid          Full object instance identifier (unused).
- * @param value        New value (OUT).
- * @param ifname       Interface name.
- * @param snifname     The sniffer name.
+ * @param ctx          Request context (unused).
+ * @param val          New value (unused).
  *
  * @return Status code.
  */
 static te_errno
-sniffer_set(unsigned int gid, const char *oid, char *value,
-            const char *ifname, const char *snifname)
+sniffer_set(const ta_conf_ctx *ctx, int32_t val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(value);
-    UNUSED(ifname);
-    UNUSED(snifname);
+    UNUSED(ctx);
+    UNUSED(val);
 
     return 0;
 }
@@ -1480,79 +1577,52 @@ sniffer_set(unsigned int gid, const char *oid, char *value,
 /**
  * Sniffer get function write to value (OUT) field the ssn value.
  *
- * @param gid          Group identifier (unused).
- * @param oid          Full object instance identifier (unused).
- * @param value        New value (OUT).
- * @param ifname       Interface name.
- * @param snifname     The sniffer name.
+ * @param ctx          Request context.
+ * @param val          Location for the ssn.
  *
  * @return Status code.
  */
 static te_errno
-sniffer_get(unsigned int gid, const char *oid, char *value,
-            const char *ifname, const char *snifname)
+sniffer_get(const ta_conf_ctx *ctx, int32_t *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
     sniffer_t   *sniff;
 
-    sniff = sniffer_find(ifname, snifname);
+    sniff = sniffer_find_by_ctx(ctx);
     if (sniff == NULL)
     {
-        ERROR("sniffer_get: Couldn't find the sniffer, oid %s", oid);
+        ERROR("sniffer_get: Couldn't find the sniffer, oid %s",
+              ta_conf_ctx_oid(ctx));
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
-    if (value == NULL)
-    {
-       ERROR("A buffer to get sniffer val is not provided");
-       return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-    sprintf(value, "%d", sniff->id.ssn);
+    *val = sniff->id.ssn;
     return 0;
 }
 
 /**
  * Get instance list of the sniffers for object "/agent/interface/sniffer".
  *
- * @param gid       Request's group identifier (unused).
- * @param oid       Full parent object instance identifier (unused).
- * @param sub_id    ID of the object to be listed (unused).
- * @param list      Location for the list pointer.
- * @param ifname    Interface name.
+ * @param ctx       Request context.
+ * @param names     Vector of heap-allocated names to append to.
  *
  * @return Status code.
  */
 static te_errno
-sniffers_list(unsigned int gid, const char *oid, const char *sub_id,
-              char **list, const char *ifname)
+sniffers_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-    UNUSED(ifname);
-
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
     sniffer_t  *sniff;
-    size_t      list_size = 0;
-    size_t      list_len  = 0;
-
-    list_size = SNIFFER_LIST_SIZE;
-    *list = TE_ALLOC(list_size);
-    list_len = 0;
 
     SLIST_FOREACH(sniff, &snifferl_h, ent_l)
     {
+        char *name;
+
         if ((strcmp(sniff->id.ifname, ifname) != 0) ||
             ((sniff->state & SNIF_ST_DEL) == SNIF_ST_DEL))
             continue;
-        if (list_len + strlen(sniff->id.snifname) + 1 >= list_size)
-        {
-            list_size *= 2;
-            TE_REALLOC(*list, list_size);
-        }
 
-        list_len += sprintf(*list + list_len, "%s ", sniff->id.snifname);
+        name = TE_STRDUP(sniff->id.snifname);
+        TE_VEC_APPEND(names, name);
     }
 
     return 0;
@@ -1606,21 +1676,16 @@ sniffer_check_exst_backup(sniffer_t *sniff)
 /**
  * Add a new Sniffer to the interface.
  *
- * @param gid       Request's group identifier (unused).
- * @param oid       Full object instance identifier (unused).
+ * @param ctx       Request context.
  * @param ssn       Sniffer session sequence number.
- * @param ifname    Interface name.
- * @param snifname  Sniffer name.
  *
  * @return Status code.
  */
 static te_errno
-sniffer_add(unsigned int gid, const char *oid, char *ssn,
-            const char *ifname, const char *snifname)
+sniffer_add(const ta_conf_ctx *ctx, int32_t ssn)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    const char *snifname = ta_conf_ctx_inst(ctx, "sniffer");
     sniffer_t *sniff;
     bool backup = false;
 
@@ -1630,7 +1695,7 @@ sniffer_add(unsigned int gid, const char *oid, char *ssn,
     sniff = TE_ALLOC(sizeof(sniffer_t));
     sniff->id.snifname      = TE_STRDUP(snifname);
     sniff->id.ifname        = TE_STRDUP(ifname);
-    sniff->id.ssn           = atoi(ssn);
+    sniff->id.ssn           = ssn;
 
     sniff->id.abs_offset    = 0;
     sniff->enable           = 0;
@@ -1698,27 +1763,21 @@ sniffer_add(unsigned int gid, const char *oid, char *ssn,
 /**
  * Delete the Sniffer from the interface.
  *
- * @param gid       Request's group identifier (unused).
- * @param oid       Full object instance identifier (unused).
- * @param ifname    Interface name.
- * @param snifname  Sniffer name.
+ * @param ctx       Request context.
  *
  * @return Status code.
  */
 static te_errno
-sniffer_del(unsigned int gid, const char *oid, const char *ifname,
-            const char *snifname)
+sniffer_del(const ta_conf_ctx *ctx)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
     sniffer_t           *sniff;
     unsigned long long   offset;
 
-    sniff = sniffer_find(ifname, snifname);
+    sniff = sniffer_find_by_ctx(ctx);
     if (sniff == NULL)
     {
-        ERROR("sniffer_del: Couldn't find the sniffer, oid %s", oid);
+        ERROR("sniffer_del: Couldn't find the sniffer, oid %s",
+              ta_conf_ctx_oid(ctx));
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
@@ -1746,74 +1805,51 @@ sniffer_del(unsigned int gid, const char *oid, const char *ifname,
 /*
  * Test Agent /sniffer_settings configuration subtree.
  */
-RCF_PCH_CFG_NODE_RW(node_overfill_meth_s, "overfill_meth", NULL, NULL,
-                    sniffer_get_params, sniffer_set_params);
-
-RCF_PCH_CFG_NODE_RW(node_rotation_s, "rotation", NULL, &node_overfill_meth_s,
-                    sniffer_get_params, sniffer_set_params);
-
-RCF_PCH_CFG_NODE_RW(node_total_size_s, "total_size", NULL, &node_rotation_s,
-                    sniffer_get_params, sniffer_set_params);
-
-RCF_PCH_CFG_NODE_RW(node_path_s, "path", NULL, &node_total_size_s,
-                    sniffer_get_params, sniffer_set_params);
-
-RCF_PCH_CFG_NODE_RW(node_file_size_s, "file_size", NULL, &node_path_s,
-                    sniffer_get_params, sniffer_set_params);
-
-RCF_PCH_CFG_NODE_RO(node_tmp_logs_s, "tmp_logs", &node_file_size_s, NULL,
-                    sniffer_get_params);
-
-RCF_PCH_CFG_NODE_RW(node_filter_file_s, "filter_exp_file", NULL,
-                    &node_tmp_logs_s, sniffer_get_params, sniffer_set_params);
-
-RCF_PCH_CFG_NODE_RW(node_snaplen_s, "snaplen", NULL, &node_filter_file_s,
-                    sniffer_get_params, sniffer_set_params);
-
-RCF_PCH_CFG_NODE_RW(node_filter_exp_str_s, "filter_exp_str", NULL,
-                    &node_snaplen_s, sniffer_get_params, sniffer_set_params);
-
-RCF_PCH_CFG_NODE_RW(node_enable_s, "enable", NULL, &node_filter_exp_str_s,
-                    sniffer_get_params, sniffer_set_params);
-
-RCF_PCH_CFG_NODE_RO(node_sniffer_settings, "sniffer_settings",
-                    &node_enable_s, NULL, sniffer_get);
+static const ta_conf_node *const node_sniffer_settings =
+    TA_CONF_NA("sniffer_settings",
+        TA_CONF_RW_INT32("enable", sniffer_get_params_int,
+                         sniffer_set_params_int),
+        TA_CONF_RW_STR("filter_exp_str", sniffer_get_params_str,
+                       sniffer_set_params_str),
+        TA_CONF_RW_INT32("snaplen", sniffer_get_params_int,
+                         sniffer_set_params_int),
+        TA_CONF_RW_STR("filter_exp_file", sniffer_get_params_str,
+                       sniffer_set_params_str),
+        TA_CONF_NA("tmp_logs",
+            TA_CONF_RW_INT32("file_size", sniffer_get_params_int,
+                             sniffer_set_params_int),
+            TA_CONF_RW_STR("path", sniffer_get_params_str,
+                           sniffer_set_params_str),
+            TA_CONF_RW_INT32("total_size", sniffer_get_params_int,
+                             sniffer_set_params_int),
+            TA_CONF_RW_INT32("rotation", sniffer_get_params_int,
+                             sniffer_set_params_int),
+            TA_CONF_RW_INT32("overfill_meth", sniffer_get_params_int,
+                             sniffer_set_params_int)));
 
 /*
  * Test Agent /interface/sniffer configuration subtree.
  */
-RCF_PCH_CFG_NODE_RW(node_overfill_meth, "overfill_meth", NULL, NULL,
-                    sniffer_common_get, sniffer_common_set);
-
-RCF_PCH_CFG_NODE_RW(node_rotation, "rotation", NULL, &node_overfill_meth,
-                    sniffer_common_get, sniffer_common_set);
-
-RCF_PCH_CFG_NODE_RW(sniffer_space, "sniffer_space", NULL, &node_rotation,
-                    sniffer_common_get, sniffer_common_set);
-
-RCF_PCH_CFG_NODE_RW(node_file_size, "file_size", NULL, &sniffer_space,
-                    sniffer_common_get, sniffer_common_set);
-
-RCF_PCH_CFG_NODE_RO(node_tmp_logs, "tmp_logs", &node_file_size, NULL,
-                    sniffer_common_get);
-
-RCF_PCH_CFG_NODE_RW(node_filter_file, "filter_exp_file", NULL,
-                    &node_tmp_logs, sniffer_common_get, sniffer_common_set);
-
-RCF_PCH_CFG_NODE_RW(node_snaplen, "snaplen", NULL, &node_filter_file,
-                    sniffer_common_get, sniffer_common_set);
-
-RCF_PCH_CFG_NODE_RW(node_filter_exp_str, "filter_exp_str", NULL,
-                    &node_snaplen, sniffer_common_get, sniffer_common_set);
-
-RCF_PCH_CFG_NODE_RW(node_enable, "enable", NULL, &node_filter_exp_str,
-                    sniffer_common_get, sniffer_set_enable);
-
-static rcf_pch_cfg_object node_sniffer_inst =
-    { "sniffer", 0, &node_enable, NULL,
-      (rcf_ch_cfg_get)sniffer_get, (rcf_ch_cfg_set)sniffer_set,
-      (rcf_ch_cfg_add)sniffer_add, (rcf_ch_cfg_del)sniffer_del,
-      (rcf_ch_cfg_list)sniffers_list, NULL, NULL, NULL };
+static const ta_conf_node *const node_sniffer =
+    TA_CONF_COLL_INT32_RW("sniffer", sniffer_get, sniffer_set, sniffer_add,
+                          sniffer_del, sniffers_list,
+        TA_CONF_RW_INT32("enable", sniffer_common_get_int,
+                         sniffer_set_enable),
+        TA_CONF_RW_STR("filter_exp_str", sniffer_common_get_str,
+                       sniffer_common_set_str),
+        TA_CONF_RW_INT32("snaplen", sniffer_common_get_int,
+                         sniffer_common_set_int),
+        TA_CONF_RW_STR("filter_exp_file", sniffer_common_get_str,
+                       sniffer_common_set_str),
+        TA_CONF_NA("tmp_logs",
+            TA_CONF_RW_INT32("file_size", sniffer_common_get_int,
+                             sniffer_common_set_int),
+            TA_CONF_RW_INT32("sniffer_space", sniffer_common_get_int,
+                             sniffer_common_set_int),
+            TA_CONF_RW_INT32("rotation", sniffer_common_get_int,
+                             sniffer_common_set_int),
+            TA_CONF_RW_INT32("overfill_meth", sniffer_common_get_int,
+                             sniffer_common_set_int)));
 
 /**
  * Get capture logs of the sniffer and send it as the answer with a binary
@@ -1921,10 +1957,10 @@ ta_unix_conf_sniffer_init(void)
 
     if ((res = sniffer_settings_init()) != 0)
         return res;
-    if ((res = rcf_pch_add_node("/agent/interface", &node_sniffer_inst)) != 0)
+    if ((res = ta_conf_register("/agent/interface", node_sniffer)) != 0)
         return res;
 
-    return rcf_pch_add_node("/agent", &node_sniffer_settings);
+    return ta_conf_register("/agent", node_sniffer_settings);
 }
 
 /**
