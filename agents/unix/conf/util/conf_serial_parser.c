@@ -28,12 +28,15 @@
 #include "logger_api.h"
 #include "te_raw_log.h"
 #include "te_sockaddr.h"
+#include "te_string.h"
+#include "te_vector.h"
 #include "unix_internal.h"
+#include "rcf_pch_tree.h"
 
 #include <semaphore.h>
 
 /**< Head of the parsers list */
-SLIST_HEAD(, serial_parser_t) parsers_h;
+static SLIST_HEAD(, serial_parser_t) parsers_h;
 
 /**
  * Check return code of the pthread_mutex_lock and
@@ -185,23 +188,46 @@ parser_stop_thread(serial_parser_t *parser)
 }
 
 /**
+ * Find the parser a request is addressed to.
+ *
+ * @param ctx       Request context
+ *
+ * @return The parser unit or @c NULL.
+ */
+static serial_parser_t *
+parser_find(const ta_conf_ctx *ctx)
+{
+    return parser_get_by_name(ta_conf_ctx_inst(ctx, "parser"));
+}
+
+/**
+ * Find the parser event a request is addressed to.
+ *
+ * @param ctx       Request context
+ * @param parser    Location for the parser
+ *
+ * @return The event unit or @c NULL.
+ */
+static serial_event_t *
+parser_event_find(const ta_conf_ctx *ctx, serial_parser_t **parser)
+{
+    *parser = parser_find(ctx);
+    return parser_get_event_by_name(*parser, ta_conf_ctx_inst(ctx, "event"));
+}
+
+/**
  * Add the parser object
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
+ * @param ctx       Request context
  * @param cname     The serial console name
- * @param pname     The parser name
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parser_add(unsigned int gid, const char *oid, char *cname,
-           const char *pname)
+parser_add(const ta_conf_ctx *ctx, const char *cname)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
+    const char      *pname = ta_conf_ctx_inst(ctx, "parser");
     serial_parser_t *parser;
     int              rc;
 
@@ -242,22 +268,17 @@ parser_add(unsigned int gid, const char *oid, char *cname,
 /**
  * Delete the parser object.
  *
- * @param gid          Group identifier (unused).
- * @param oid          Full object instance identifier (unused).
- * @param pname        The parser name.
+ * @param ctx       Request context
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parser_del(unsigned int gid, const char *oid, const char *pname)
+parser_del(const ta_conf_ctx *ctx)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
     serial_parser_t *parser;
 
-    parser = parser_get_by_name(pname);
+    parser = parser_find(ctx);
     if (parser == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     parser_stop_thread(parser);
@@ -272,24 +293,18 @@ parser_del(unsigned int gid, const char *oid, const char *pname)
 /**
  * Set a serial console name for the parser.
  *
- * @param gid          Group identifier (unused).
- * @param oid          Full object instance identifier (unused).
- * @param cname        Serial console name.
- * @param pname        The parser name.
+ * @param ctx       Request context
+ * @param cname     Serial console name
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parser_set(unsigned int gid, const char *oid, char *cname,
-           const char *pname)
+parser_set(const ta_conf_ctx *ctx, const char *cname)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
     serial_parser_t *parser;
 
-    parser = parser_get_by_name(pname);
+    parser = parser_find(ctx);
     if (parser == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -301,28 +316,22 @@ parser_set(unsigned int gid, const char *oid, char *cname,
 /**
  * Get a serial console name of the parser.
  *
- * @param gid          Group identifier (unused).
- * @param oid          Full object instance identifier (unused).
- * @param cname        Serial console name.
- * @param pname        The parser name.
+ * @param ctx       Request context
+ * @param cname     Location for the serial console name
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parser_get(unsigned int gid, const char *oid, char *cname,
-           const char *pname)
+parser_get(const ta_conf_ctx *ctx, te_string *cname)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
     serial_parser_t *parser;
 
-    parser = parser_get_by_name(pname);
+    parser = parser_find(ctx);
     if (parser == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    te_strlcpy(cname, parser->c_name, RCF_MAX_VAL);
+    te_string_append(cname, "%s", parser->c_name);
 
     return 0;
 }
@@ -330,80 +339,93 @@ parser_get(unsigned int gid, const char *oid, char *cname,
 /**
  * Get instance list of the parsers.
  *
- * @param gid       Group identifier (unused).
- * @param oid       Full parent object instance identifier (unused).
- * @param sub_id    ID of the object to be listed (unused).
- * @param list      Location for the list pointer.
+ * @param ctx       Request context (unused)
+ * @param names     Vector of heap-allocated names to append to
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parsers_list(unsigned int gid, const char *oid, const char *sub_id,
-             char **list)
+parsers_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
     serial_parser_t  *parser;
-    size_t            list_size = 0;
-    size_t            list_len  = 0;
 
-    list_size = PARSER_LIST_SIZE;
-    *list = TE_ALLOC(list_size);
+    UNUSED(ctx);
 
-    list_len = 0;
     SLIST_FOREACH(parser, &parsers_h, ent_pars_l)
     {
-        if (list_len + strlen(parser->name) + 1 >= list_size)
-        {
-            list_size *= 2;
-            TE_REALLOC(*list, list_size);
-        }
+        char *name = TE_STRDUP(parser->name);
 
-        list_len += sprintf(*list + list_len, "%s ", parser->name);
+        TE_VEC_APPEND(names, name);
     }
 
     return 0;
 }
 
 /**
+ * Parser thread entry point.
+ *
+ * @param arg       The parser location
+ *
+ * @return @c NULL
+ */
+static void *
+parser_thread(void *arg)
+{
+    te_serial_parser_connect(arg);
+    return NULL;
+}
+
+/**
+ * Get the parser thread state.
+ *
+ * @param ctx       Request context
+ * @param val       Location for the state
+ *
+ * @return Status code
+ */
+static te_errno
+parser_enable_get(const ta_conf_ctx *ctx, int32_t *val)
+{
+    serial_parser_t *parser = parser_find(ctx);
+
+    if (parser == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    *val = parser->enable;
+    return 0;
+}
+
+/**
  * Start/stop the parser thread.
  *
- * @param gid          Group identifier (unused).
- * @param oid          Full object instance identifier (unused).
- * @param value        New value.
- * @param pname        The parser name.
+ * @param ctx       Request context
+ * @param val       Non-zero to start, 0 to stop
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parser_set_enable(unsigned int gid, const char *oid, char *value,
-                  const char *pname)
+parser_set_enable(const ta_conf_ctx *ctx, int32_t val)
 {
-    UNUSED(gid);
-
     serial_parser_t *parser;
     bool en;
     int              rc;
 
-    parser = parser_get_by_name(pname);
+    parser = parser_find(ctx);
     if (parser == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    en = atoi(value) == 0 ? false : true;
+    en = val == 0 ? false : true;
 
     if (en == parser->enable)
         return 0;
     if (en == true)
     {
-        rc = pthread_create(&parser->thread, NULL,
-                            (void *)&te_serial_parser_connect, parser);
+        rc = pthread_create(&parser->thread, NULL, parser_thread, parser);
         if (rc != 0)
         {
             ERROR("Couldn't to start the parser thread %s, oid %s",
-                  pname, oid);
+                  parser->name, ta_conf_ctx_oid(ctx));
             return TE_OS_RC(TE_TA_UNIX, rc);
         }
     }
@@ -422,153 +444,164 @@ parser_set_enable(unsigned int gid, const char *oid, char *value,
 }
 
 /**
- * Common function to set variable values.
+ * Get the conserver port of the parser.
  *
- * @param gid          Group identifier (unused).
- * @param oid          Full object instance identifier (unused).
- * @param value        New value.
- * @param pname        The parser name.
+ * @param ctx       Request context
+ * @param val       Location for the port
  *
  * @return Status code
- * @retval 0        Success
  */
 static te_errno
-parser_common_set(unsigned int gid, const char *oid, char *value,
-                  const char *pname)
+parser_port_get(const ta_conf_ctx *ctx, int32_t *val)
 {
-    UNUSED(gid);
+    serial_parser_t *parser = parser_find(ctx);
 
-    serial_parser_t *parser;
-
-    parser = parser_get_by_name(pname);
     if (parser == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    if (value == NULL)
-    {
-        ERROR("A buffer to set a variable value is not provided");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
 
-    if (strstr(oid, "/port:") != NULL)
-        parser->port= atoi(value);
-    else if (strstr(oid, "/mode:") != NULL)
-        snprintf(parser->mode, TE_SERIAL_MAX_NAME, "%s", value);
-    else if (strstr(oid, "/interval:") != NULL)
-    {
-        parser->interval = atoi(value);
-        if (parser->interval == -1)
-            parser->interval = TE_SERIAL_INTERVAL;
-    }
-    else if (strstr(oid, "/logging:") != NULL)
-    {
-        TE_SERIAL_CHECK_LOCK(pthread_mutex_lock(&parser->mutex));
-        if (strstr(oid, "/level:") != NULL)
-        {
-            parser->level = map_name_to_level(value);
-            if (parser->level == 0)
-                parser->level = TE_LL_WARN;
-        }
-        else if (strstr(oid, "/user:") != NULL)
-        {
-            snprintf(parser->log_user, TE_SERIAL_MAX_NAME, "%s", value);
-        }
-        else
-            parser->logging = atoi(value) == 0 ? false : true;
-        TE_SERIAL_CHECK_LOCK(pthread_mutex_unlock(&parser->mutex));
-    }
-    else if (strstr(oid, "/user:") != NULL)
-        snprintf(parser->user, TE_SERIAL_MAX_NAME, "%s", value);
-    else
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
+    *val = parser->port;
     return 0;
 }
 
 /**
- * Common function to get variable values.
+ * Set the conserver port of the parser.
  *
- * @param gid          Group identifier (unused).
- * @param oid          Full object instance identifier (unused).
- * @param value        New value (OUT).
- * @param pname        The parser name.
+ * @param ctx       Request context
+ * @param val       Port
  *
  * @return Status code
- * @retval 0        Success
  */
 static te_errno
-parser_common_get(unsigned int gid, const char *oid, char *value,
-                  const char *pname)
+parser_port_set(const ta_conf_ctx *ctx, int32_t val)
 {
-    UNUSED(gid);
+    serial_parser_t *parser = parser_find(ctx);
 
-    const char *log_level_str;
-    serial_parser_t *parser;
-
-    parser = parser_get_by_name(pname);
     if (parser == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    if (value == NULL)
-    {
-       ERROR("A buffer to get a variable value is not provided");
-       return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
 
-    if (strstr(oid, "/enable:") != NULL)
-        snprintf(value, RCF_MAX_VAL, "%d", parser->enable);
-    else if (strstr(oid, "/port:") != NULL)
-        snprintf(value, RCF_MAX_VAL, "%d", parser->port);
-    else if (strstr(oid, "/interval:") != NULL)
-        snprintf(value, RCF_MAX_VAL, "%d", parser->interval);
-    else if (strstr(oid, "/reset:") != NULL)
-        snprintf(value, RCF_MAX_VAL, "%d", 0);
-    else if (strstr(oid, "/mode:") != NULL)
-        snprintf(value, RCF_MAX_VAL, "%s", parser->mode);
-    else if (strstr(oid, "/logging:") != NULL)
-    {
-        if (strstr(oid, "/level:") != NULL)
-        {
-            log_level_str = te_log_level2str(parser->level);
-            snprintf(value, RCF_MAX_VAL, "%s",
-                     log_level_str != NULL ? log_level_str : TE_LL_WARN_STR);
-        }
-        else if (strstr(oid, "/user:") != NULL)
-            snprintf(value, RCF_MAX_VAL, "%s", parser->log_user);
-        else
-            snprintf(value, RCF_MAX_VAL, "%d", parser->logging);
-    }
-    else if (strstr(oid, "/user:") != NULL)
-        snprintf(value, RCF_MAX_VAL, "%s", parser->user);
-    else
+    parser->port = val;
+    return 0;
+}
+
+/**
+ * Get the conserver user of the parser.
+ *
+ * @param ctx       Request context
+ * @param val       Location for the user name
+ *
+ * @return Status code
+ */
+static te_errno
+parser_user_get(const ta_conf_ctx *ctx, te_string *val)
+{
+    serial_parser_t *parser = parser_find(ctx);
+
+    if (parser == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
+    te_string_append(val, "%s", parser->user);
+    return 0;
+}
+
+/**
+ * Set the conserver user of the parser.
+ *
+ * @param ctx       Request context
+ * @param val       User name
+ *
+ * @return Status code
+ */
+static te_errno
+parser_user_set(const ta_conf_ctx *ctx, const char *val)
+{
+    serial_parser_t *parser = parser_find(ctx);
+
+    if (parser == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(parser->user, TE_SERIAL_MAX_NAME, "%s", val);
+    return 0;
+}
+
+/**
+ * Get the console polling interval of the parser.
+ *
+ * @param ctx       Request context
+ * @param val       Location for the interval, in milliseconds
+ *
+ * @return Status code
+ */
+static te_errno
+parser_interval_get(const ta_conf_ctx *ctx, int32_t *val)
+{
+    serial_parser_t *parser = parser_find(ctx);
+
+    if (parser == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    *val = parser->interval;
+    return 0;
+}
+
+/**
+ * Set the console polling interval of the parser.
+ *
+ * @param ctx       Request context
+ * @param val       Interval, in milliseconds, -1 for the default
+ *
+ * @return Status code
+ */
+static te_errno
+parser_interval_set(const ta_conf_ctx *ctx, int32_t val)
+{
+    serial_parser_t *parser = parser_find(ctx);
+
+    if (parser == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    parser->interval = val;
+    if (parser->interval == -1)
+        parser->interval = TE_SERIAL_INTERVAL;
+    return 0;
+}
+
+/**
+ * Get the reset node value: always 0.
+ *
+ * @param ctx       Request context
+ * @param val       Location for the value
+ *
+ * @return Status code
+ */
+static te_errno
+parser_reset_get(const ta_conf_ctx *ctx, int32_t *val)
+{
+    if (parser_find(ctx) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    *val = 0;
     return 0;
 }
 
 /**
  * Reset status of each event of the parser.
  *
- * @param gid          Group identifier (unused).
- * @param oid          Full object instance identifier (unused).
- * @param value        New value.
- * @param pname        The parser name.
+ * @param ctx       Request context
+ * @param val       Non-zero to reset, 0 to do nothing
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parser_reset(unsigned int gid, const char *oid, char *value,
-             const char *pname)
+parser_reset(const ta_conf_ctx *ctx, int32_t val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
     serial_parser_t  *parser;
     serial_event_t   *event;
 
-    if (atoi(value) == false)
+    if (val == 0)
         return 0;
 
-    parser = parser_get_by_name(pname);
+    parser = parser_find(ctx);
     if (parser == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -581,48 +614,160 @@ parser_reset(unsigned int gid, const char *oid, char *value,
 }
 
 /**
+ * Get the console logging state of the parser.
+ *
+ * @param ctx       Request context
+ * @param val       Location for the state
+ *
+ * @return Status code
+ */
+static te_errno
+parser_logging_get(const ta_conf_ctx *ctx, int32_t *val)
+{
+    serial_parser_t *parser = parser_find(ctx);
+
+    if (parser == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    *val = parser->logging;
+    return 0;
+}
+
+/**
+ * Enable/disable the console logging of the parser.
+ *
+ * @param ctx       Request context
+ * @param val       Non-zero to enable, 0 to disable
+ *
+ * @return Status code
+ */
+static te_errno
+parser_logging_set(const ta_conf_ctx *ctx, int32_t val)
+{
+    serial_parser_t *parser = parser_find(ctx);
+
+    if (parser == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    TE_SERIAL_CHECK_LOCK(pthread_mutex_lock(&parser->mutex));
+    parser->logging = val == 0 ? false : true;
+    TE_SERIAL_CHECK_LOCK(pthread_mutex_unlock(&parser->mutex));
+    return 0;
+}
+
+/**
+ * Get the Logger level of the console messages.
+ *
+ * @param ctx       Request context
+ * @param val       Location for the level name
+ *
+ * @return Status code
+ */
+static te_errno
+parser_log_level_get(const ta_conf_ctx *ctx, te_string *val)
+{
+    serial_parser_t *parser = parser_find(ctx);
+    const char      *log_level_str;
+
+    if (parser == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    log_level_str = te_log_level2str(parser->level);
+    te_string_append(val, "%s",
+                     log_level_str != NULL ? log_level_str : TE_LL_WARN_STR);
+    return 0;
+}
+
+/**
+ * Set the Logger level of the console messages.
+ *
+ * @param ctx       Request context
+ * @param val       Level name
+ *
+ * @return Status code
+ */
+static te_errno
+parser_log_level_set(const ta_conf_ctx *ctx, const char *val)
+{
+    serial_parser_t *parser = parser_find(ctx);
+
+    if (parser == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    TE_SERIAL_CHECK_LOCK(pthread_mutex_lock(&parser->mutex));
+    parser->level = map_name_to_level(val);
+    if (parser->level == 0)
+        parser->level = TE_LL_WARN;
+    TE_SERIAL_CHECK_LOCK(pthread_mutex_unlock(&parser->mutex));
+    return 0;
+}
+
+/**
+ * Get the Logger user of the console messages.
+ *
+ * @param ctx       Request context
+ * @param val       Location for the user name
+ *
+ * @return Status code
+ */
+static te_errno
+parser_log_user_get(const ta_conf_ctx *ctx, te_string *val)
+{
+    serial_parser_t *parser = parser_find(ctx);
+
+    if (parser == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    te_string_append(val, "%s", parser->log_user);
+    return 0;
+}
+
+/**
+ * Set the Logger user of the console messages.
+ *
+ * @param ctx       Request context
+ * @param val       User name
+ *
+ * @return Status code
+ */
+static te_errno
+parser_log_user_set(const ta_conf_ctx *ctx, const char *val)
+{
+    serial_parser_t *parser = parser_find(ctx);
+
+    if (parser == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    TE_SERIAL_CHECK_LOCK(pthread_mutex_lock(&parser->mutex));
+    snprintf(parser->log_user, TE_SERIAL_MAX_NAME, "%s", val);
+    TE_SERIAL_CHECK_LOCK(pthread_mutex_unlock(&parser->mutex));
+    return 0;
+}
+
+/**
  * Get instance list of the events, that are located on the parser subtree
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full parent object instance identifier (unused)
- * @param sub_id    ID of the object to be listed (unused)
- * @param list      Location for the list pointer
- * @param pname     The parser name
+ * @param ctx       Request context (the parser instance)
+ * @param names     Vector of heap-allocated names to append to
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parser_event_list(unsigned int gid, const char *oid, const char *sub_id,
-                  char **list, const char *pname)
+parser_event_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
     serial_parser_t  *parser;
     serial_event_t   *event;
-    size_t            list_size = 0;
-    size_t            list_len  = 0;
 
-    parser = parser_get_by_name(pname);
+    parser = parser_find(ctx);
     if (parser == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    list_size = PARSER_LIST_SIZE;
-    *list = TE_ALLOC(list_size);
-
-    list_len = 0;
-
     SLIST_FOREACH(event, &parser->events, ent_ev_l)
     {
-        if (list_len + strlen(event->name) + 1 >= list_size)
-        {
-            list_size *= 2;
-            TE_REALLOC(*list, list_size);
-        }
+        char *name = TE_STRDUP(event->name);
 
-        list_len += sprintf(*list + list_len, "%s ", event->name);
+        TE_VEC_APPEND(names, name);
     }
 
     return 0;
@@ -631,26 +776,20 @@ parser_event_list(unsigned int gid, const char *oid, const char *sub_id,
 /**
  * Add event to the parser
  *
- * @param gid       Group identifier (unused).
- * @param oid       Full object instance identifier (unused).
+ * @param ctx       Request context
  * @param t_name    The Tester event name
- * @param pname     The parser name
- * @param ename     Parser event name
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parser_event_add(unsigned int gid, const char *oid, char *t_name,
-                 const char *pname, const char *ename)
+parser_event_add(const ta_conf_ctx *ctx, const char *t_name)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
+    const char      *ename = ta_conf_ctx_inst(ctx, "event");
     serial_parser_t *parser;
     serial_event_t  *event;
 
-    parser = parser_get_by_name(pname);
+    parser = parser_find(ctx);
     if (parser == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     if (strlen(ename) > TE_SERIAL_MAX_NAME)
@@ -678,26 +817,18 @@ parser_event_add(unsigned int gid, const char *oid, char *t_name,
 /**
  * Delete event from the parser
  *
- * @param gid       Group identifier (unused).
- * @param oid       Full object instance identifier (unused).
- * @param ename     Parser event name
- * @param pname     The parser name
+ * @param ctx       Request context
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parser_event_del(unsigned int gid, const char *oid, const char *pname,
-                 const char *ename)
+parser_event_del(const ta_conf_ctx *ctx)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
     serial_parser_t     *parser;
     serial_event_t      *event;
 
-    parser = parser_get_by_name(pname);
-    event = parser_get_event_by_name(parser, ename);
+    event = parser_event_find(ctx, &parser);
     if (event == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -714,31 +845,23 @@ parser_event_del(unsigned int gid, const char *oid, const char *pname,
 /**
  * Get value (tester event name) of the parser event
  *
- * @param gid       Group identifier (unused).
- * @param oid       Full object instance identifier (unused).
- * @param value     Value of the parser event (OUT)
- * @param pname     The parser name
- * @param ename     Parser event name
+ * @param ctx       Request context
+ * @param value     Location for the value of the parser event
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parser_event_get(unsigned int gid, const char *oid, char *value,
-                 const char *pname, const char *ename)
+parser_event_get(const ta_conf_ctx *ctx, te_string *value)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
     serial_parser_t     *parser;
     serial_event_t      *event;
 
-    parser = parser_get_by_name(pname);
-    event = parser_get_event_by_name(parser, ename);
+    event = parser_event_find(ctx, &parser);
     if (event == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    te_strlcpy(value, event->t_name, RCF_MAX_VAL);
+    te_string_append(value, "%s", event->t_name);
 
     return 0;
 }
@@ -746,27 +869,19 @@ parser_event_get(unsigned int gid, const char *oid, char *value,
 /**
  * Set value (tester event name) of the parser event
  *
- * @param gid       Group identifier (unused).
- * @param oid       Full object instance identifier (unused).
+ * @param ctx       Request context
  * @param value     Value of the parser event
- * @param pname     The parser name
- * @param ename     Parser event name
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parser_event_set(unsigned int gid, const char *oid, char *value,
-                 const char *pname, const char *ename)
+parser_event_set(const ta_conf_ctx *ctx, const char *value)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
     serial_parser_t     *parser;
     serial_event_t      *event;
 
-    parser = parser_get_by_name(pname);
-    event = parser_get_event_by_name(parser, ename);
+    event = parser_event_find(ctx, &parser);
     if (event == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -779,50 +894,28 @@ parser_event_set(unsigned int gid, const char *oid, char *value,
 /**
  * Get instance list of the patterns, that are located on the event subtree
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full parent object instance identifier (unused)
- * @param sub_id    ID of the object to be listed (unused)
- * @param list      Location for the list pointer
- * @param pname     The parser name
- * @param ename     The event name
+ * @param ctx       Request context (the event instance)
+ * @param names     Vector of heap-allocated names to append to
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parser_pattern_list(unsigned int gid, const char *oid,
-                    const char *sub_id, char **list,
-                    const char *pname, const char *ename)
+parser_pattern_list(const ta_conf_ctx *ctx, te_vec *names)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(sub_id);
-
     serial_parser_t  *parser;
     serial_event_t   *event;
     serial_pattern_t *pat;
-    size_t            list_size = 0;
-    size_t            list_len  = 0;
 
-    parser = parser_get_by_name(pname);
-    event = parser_get_event_by_name(parser, ename);
+    event = parser_event_find(ctx, &parser);
     if (event == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    list_size = PARSER_LIST_SIZE;
-    *list = TE_ALLOC(list_size);
-
-    list_len = 0;
-
     SLIST_FOREACH(pat, &event->patterns, ent_pat_l)
     {
-        if (list_len + strlen(pat->name) + 1 >= list_size)
-        {
-            list_size *= 2;
-            TE_REALLOC(*list, list_size);
-        }
+        char *name = TE_STRDUP(pat->name);
 
-        list_len += sprintf(*list + list_len, "%s ", pat->name);
+        TE_VEC_APPEND(names, name);
     }
 
     return 0;
@@ -831,23 +924,16 @@ parser_pattern_list(unsigned int gid, const char *oid,
 /**
  * Add pattern to the event
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
+ * @param ctx       Request context
  * @param pattern   A pattern expression string
- * @param pname     The parser name
- * @param ename     Parser event name
- * @param name      Pattern name
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parser_pattern_add(unsigned int gid, const char *oid, const char *pattern,
-                 const char *pname, const char *ename, const char *name)
+parser_pattern_add(const ta_conf_ctx *ctx, const char *pattern)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
+    const char          *name = ta_conf_ctx_inst(ctx, "pattern");
     serial_parser_t     *parser;
     serial_event_t      *event;
     serial_pattern_t    *pat;
@@ -855,8 +941,7 @@ parser_pattern_add(unsigned int gid, const char *oid, const char *pattern,
     if (atoi(name) <= 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    parser = parser_get_by_name(pname);
-    event = parser_get_event_by_name(parser, ename);
+    event = parser_event_find(ctx, &parser);
     if (event == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     if (strlen(name) > TE_SERIAL_MAX_NAME)
@@ -877,31 +962,39 @@ parser_pattern_add(unsigned int gid, const char *oid, const char *pattern,
 }
 
 /**
+ * Find the event pattern a request is addressed to.
+ *
+ * @param ctx       Request context
+ * @param parser    Location for the parser
+ * @param event     Location for the event
+ *
+ * @return The pattern unit or @c NULL.
+ */
+static serial_pattern_t *
+parser_pattern_find(const ta_conf_ctx *ctx, serial_parser_t **parser,
+                    serial_event_t **event)
+{
+    *event = parser_event_find(ctx, parser);
+    return parser_get_pattern_by_name(*event,
+                                      ta_conf_ctx_inst(ctx, "pattern"));
+}
+
+/**
  * Delete a pattern from an event
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param pname     The parser name
- * @param ename     The parser event name
- * @param name      The pattern name
+ * @param ctx       Request context
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parser_pattern_del(unsigned int gid, const char *oid, const char *pname,
-                   const char *ename, const char *name)
+parser_pattern_del(const ta_conf_ctx *ctx)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
     serial_parser_t     *parser;
     serial_event_t      *event;
     serial_pattern_t    *pat;
 
-    parser = parser_get_by_name(pname);
-    event  = parser_get_event_by_name(parser, ename);
-    pat    = parser_get_pattern_by_name(event, name);
+    pat = parser_pattern_find(ctx, &parser, &event);
     if (pat == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -916,34 +1009,24 @@ parser_pattern_del(unsigned int gid, const char *oid, const char *pname,
 /**
  * Get value (pattern) of the pattern instance
  *
- * @param gid       Group identifier (unused).
- * @param oid       Full object instance identifier (unused).
- * @param value     Value of the pattern (OUT)
- * @param pname     The parser name
- * @param ename     The parser event name
- * @param name      The pattern name
+ * @param ctx       Request context
+ * @param value     Location for the pattern
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parser_pattern_get(unsigned int gid, const char *oid, char *value,
-                   const char *pname, const char *ename, const char *name)
+parser_pattern_get(const ta_conf_ctx *ctx, te_string *value)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
     serial_parser_t     *parser;
     serial_event_t      *event;
     serial_pattern_t    *pat;
 
-    parser = parser_get_by_name(pname);
-    event  = parser_get_event_by_name(parser, ename);
-    pat    = parser_get_pattern_by_name(event, name);
+    pat = parser_pattern_find(ctx, &parser, &event);
     if (pat == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    te_strlcpy(value, pat->v, RCF_MAX_VAL);
+    te_string_append(value, "%s", pat->v);
 
     return 0;
 }
@@ -951,30 +1034,20 @@ parser_pattern_get(unsigned int gid, const char *oid, char *value,
 /**
  * Set value (pattern) of the pattern instance
  *
- * @param gid       Group identifier (unused).
- * @param oid       Full object instance identifier (unused).
- * @param value     Value of the pattern (OUT)
- * @param pname     The parser name
- * @param ename     The parser event name
- * @param name      The pattern name
+ * @param ctx       Request context
+ * @param value     The pattern
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parser_pattern_set(unsigned int gid, const char *oid, char *value,
-                   const char *pname, const char *ename, const char *name)
+parser_pattern_set(const ta_conf_ctx *ctx, const char *value)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-
     serial_parser_t     *parser;
     serial_event_t      *event;
     serial_pattern_t    *pat;
 
-    parser = parser_get_by_name(pname);
-    event  = parser_get_event_by_name(parser, ename);
-    pat    = parser_get_pattern_by_name(event, name);
+    pat = parser_pattern_find(ctx, &parser, &event);
     if (pat == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
@@ -986,143 +1059,133 @@ parser_pattern_set(unsigned int gid, const char *oid, char *value,
 }
 
 /**
- * Get value of the event instance variable
+ * Get the counter of the event occurrences
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param value     Value of the pattern (OUT)
- * @param pname     The parser name
- * @param ename     The parser event name
- * @param name      The instance name
+ * @param ctx       Request context
+ * @param val       Location for the counter
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parser_event_common_get(unsigned int gid, const char *oid, char *value,
-                        const char *pname, const char *ename,
-                        const char *name)
+parser_event_counter_get(const ta_conf_ctx *ctx, int32_t *val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(name);
-
     serial_parser_t     *parser;
     serial_event_t      *event;
 
-    parser = parser_get_by_name(pname);
-    event  = parser_get_event_by_name(parser, ename);
+    event = parser_event_find(ctx, &parser);
     if (event == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     TE_SERIAL_CHECK_LOCK(pthread_mutex_lock(&parser->mutex));
-    if (strstr(oid, "/status:") != NULL)
-        snprintf(value, RCF_MAX_VAL, "%d", event->status);
-    else if (strstr(oid, "/counter:") != NULL)
-        snprintf(value, RCF_MAX_VAL, "%d", event->count);
-    else
-    {
-        TE_SERIAL_CHECK_LOCK(pthread_mutex_unlock(&parser->mutex));
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    }
+    *val = event->count;
     TE_SERIAL_CHECK_LOCK(pthread_mutex_unlock(&parser->mutex));
 
     return 0;
 }
 
 /**
- * Set value of the event instance variable
+ * Set the counter of the event occurrences
  *
- * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
- * @param value     Value of the pattern
- * @param pname     The parser name
- * @param ename     The parser event name
- * @param name      The instance name
+ * @param ctx       Request context
+ * @param val       Counter
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parser_event_common_set(unsigned int gid, const char *oid, char *value,
-                        const char *pname, const char *ename,
-                        const char *name)
+parser_event_counter_set(const ta_conf_ctx *ctx, int32_t val)
 {
-    UNUSED(gid);
-    UNUSED(oid);
-    UNUSED(name);
-
     serial_parser_t     *parser;
     serial_event_t      *event;
 
-    parser = parser_get_by_name(pname);
-    event  = parser_get_event_by_name(parser, ename);
+    event = parser_event_find(ctx, &parser);
     if (event == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     TE_SERIAL_CHECK_LOCK(pthread_mutex_lock(&parser->mutex));
-    if (strstr(oid, "/status:") != NULL)
-        event->status = atoi(value) == 0 ? false : true;
-    else if (strstr(oid, "/counter:") != NULL)
-        event->count = atoi(value);
-    else
-    {
-        TE_SERIAL_CHECK_LOCK(pthread_mutex_unlock(&parser->mutex));
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    }
+    event->count = val;
     TE_SERIAL_CHECK_LOCK(pthread_mutex_unlock(&parser->mutex));
 
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RW(serial_event_status, "status", NULL, NULL,
-                    parser_event_common_get, parser_event_common_set);
+/**
+ * Get the event status
+ *
+ * @param ctx       Request context
+ * @param val       Location for the status
+ *
+ * @return Status code
+ * @retval 0        Success
+ */
+static te_errno
+parser_event_status_get(const ta_conf_ctx *ctx, int32_t *val)
+{
+    serial_parser_t     *parser;
+    serial_event_t      *event;
 
-RCF_PCH_CFG_NODE_RW(serial_event_counter, "counter", NULL,
-                    &serial_event_status, parser_event_common_get,
-                    parser_event_common_set);
+    event = parser_event_find(ctx, &parser);
+    if (event == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-static rcf_pch_cfg_object serial_pattern =
-    { "pattern", 0, NULL, &serial_event_counter,
-     (rcf_ch_cfg_get)parser_pattern_get, (rcf_ch_cfg_set)parser_pattern_set,
-     (rcf_ch_cfg_add)parser_pattern_add, (rcf_ch_cfg_del)parser_pattern_del,
-     (rcf_ch_cfg_list)parser_pattern_list, NULL, NULL, NULL };
+    TE_SERIAL_CHECK_LOCK(pthread_mutex_lock(&parser->mutex));
+    *val = event->status;
+    TE_SERIAL_CHECK_LOCK(pthread_mutex_unlock(&parser->mutex));
 
-static rcf_pch_cfg_object serial_event =
-    { "event", 0, &serial_pattern, NULL,
-     (rcf_ch_cfg_get)parser_event_get, (rcf_ch_cfg_set)parser_event_set,
-     (rcf_ch_cfg_add)parser_event_add, (rcf_ch_cfg_del)parser_event_del,
-     (rcf_ch_cfg_list)parser_event_list, NULL, NULL, NULL };
+    return 0;
+}
 
-RCF_PCH_CFG_NODE_RW(serial_log_user, "user", NULL, NULL,
-                    parser_common_get, parser_common_set);
+/**
+ * Set the event status
+ *
+ * @param ctx       Request context
+ * @param val       Non-zero if the event has been detected
+ *
+ * @return Status code
+ * @retval 0        Success
+ */
+static te_errno
+parser_event_status_set(const ta_conf_ctx *ctx, int32_t val)
+{
+    serial_parser_t     *parser;
+    serial_event_t      *event;
 
-RCF_PCH_CFG_NODE_RW(serial_log_level, "level", NULL, &serial_log_user,
-                    parser_common_get, parser_common_set);
+    event = parser_event_find(ctx, &parser);
+    if (event == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-RCF_PCH_CFG_NODE_RW(serial_logging, "logging", &serial_log_level,
-                    &serial_event, parser_common_get, parser_common_set);
+    TE_SERIAL_CHECK_LOCK(pthread_mutex_lock(&parser->mutex));
+    event->status = val == 0 ? false : true;
+    TE_SERIAL_CHECK_LOCK(pthread_mutex_unlock(&parser->mutex));
 
-RCF_PCH_CFG_NODE_RW(serial_reset, "reset", NULL, &serial_logging,
-                    parser_common_get, parser_reset);
+    return 0;
+}
 
-RCF_PCH_CFG_NODE_RW(serial_interval, "interval", NULL, &serial_reset,
-                    parser_common_get, parser_common_set);
-
-RCF_PCH_CFG_NODE_RW(serial_user, "user", NULL, &serial_interval,
-                    parser_common_get, parser_common_set);
-
-RCF_PCH_CFG_NODE_RW(serial_port, "port", NULL, &serial_user,
-                    parser_common_get, parser_common_set);
-
-RCF_PCH_CFG_NODE_RW(serial_enable, "enable", NULL, &serial_port,
-                    parser_common_get, parser_set_enable);
-
-static rcf_pch_cfg_object node_parser_inst =
-    { "parser", 0, &serial_enable, NULL,
-      (rcf_ch_cfg_get)parser_get, (rcf_ch_cfg_set)parser_set,
-      (rcf_ch_cfg_add)parser_add, (rcf_ch_cfg_del)parser_del,
-      (rcf_ch_cfg_list)parsers_list, NULL, NULL, NULL };
+static const ta_conf_node *const node_parser =
+    TA_CONF_COLL_STR_RW("parser", parser_get, parser_set,
+                        parser_add, parser_del, parsers_list,
+        TA_CONF_RW_INT32("enable", parser_enable_get, parser_set_enable),
+        TA_CONF_RW_INT32("port", parser_port_get, parser_port_set),
+        TA_CONF_RW_STR("user", parser_user_get, parser_user_set),
+        TA_CONF_RW_INT32("interval", parser_interval_get,
+                         parser_interval_set),
+        TA_CONF_RW_INT32("reset", parser_reset_get, parser_reset),
+        TA_CONF_RW_INT32("logging", parser_logging_get, parser_logging_set,
+            TA_CONF_RW_STR("level", parser_log_level_get,
+                           parser_log_level_set),
+            TA_CONF_RW_STR("user", parser_log_user_get,
+                           parser_log_user_set)),
+        TA_CONF_COLL_STR_RW("event", parser_event_get, parser_event_set,
+                            parser_event_add, parser_event_del,
+                            parser_event_list,
+            TA_CONF_COLL_STR_RW("pattern", parser_pattern_get,
+                                parser_pattern_set, parser_pattern_add,
+                                parser_pattern_del, parser_pattern_list),
+            TA_CONF_RW_INT32("counter", parser_event_counter_get,
+                             parser_event_counter_set),
+            TA_CONF_RW_INT32("status", parser_event_status_get,
+                             parser_event_status_set)));
 
 /* See description in conf_serial_parser.h */
 te_errno
@@ -1130,7 +1193,7 @@ ta_unix_serial_parser_init(void)
 {
     SLIST_INIT(&parsers_h);
 
-    return rcf_pch_add_node("/agent", &node_parser_inst);
+    return ta_conf_register("/agent", node_parser);
 }
 
 /* See description in conf_serial_parser.h */
