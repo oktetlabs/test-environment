@@ -91,7 +91,7 @@ stop_cmd_monitors(cmd_monitor_descrs *monitors)
                 monitor->enabled = false;
             else
             {
-                ERROR("Failed to enable command monitor for '%s'",
+                ERROR("Failed to disable command monitor for '%s'",
                       monitor->command);
                 rc = -1;
             }
