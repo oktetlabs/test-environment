@@ -127,6 +127,32 @@ typedef struct tapi_dcb_ets_state {
     bool cbs;
 } tapi_dcb_ets_state;
 
+/** Configurable PFC parameters. */
+typedef struct tapi_dcb_pfc_config {
+    /** MACsec bypass state. */
+    bool mbc;
+    /** Round-trip link propagation delay allowance, in link bits. */
+    uint16_t delay;
+    /** PFC enablement states. */
+    bool pfc_en[TAPI_DCB_NUM_PRIORITIES];
+} tapi_dcb_pfc_config;
+
+/** Complete PFC state. */
+typedef struct tapi_dcb_pfc_state {
+    /** Read/write PFC configuration. */
+    tapi_dcb_pfc_config config;
+
+    /**
+     * Maximum number of TCs for which PFC may be enabled simultaneously
+     * (read-only).
+     */
+    uint8_t pfc_cap;
+    /** Number of transmitted PFC frames, indexed by priority. */
+    uint64_t requests[TAPI_DCB_NUM_PRIORITIES];
+    /** Number of received PFC frames, indexed by priority. */
+    uint64_t indications[TAPI_DCB_NUM_PRIORITIES];
+} tapi_dcb_pfc_state;
+
 /**
  * Convert a single DCBX flag to its textual representation.
  *
