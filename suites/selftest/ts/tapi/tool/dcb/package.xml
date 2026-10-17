@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2026 Advanced Micro Devices, Inc. All rights reserved. -->
+<package version="1.0">
+
+    <description>Test Suite to test the usage of DCB TAPI implementation</description>
+
+    <author mailto="Daniil.Byshenko@arknetworks.am"/>
+    <author mailto="kushakov@oktet.co.il"/>
+
+    <session>
+        <run>
+            <script name="dcb"/>
+            <arg name="env">
+                <value>{{{'iut_rpcs':IUT},if:'iut_if'}}</value>
+            </arg>
+            <arg name="cmd">
+                <value>SHOW_PFC</value>
+                <value>SHOW_ETS</value>
+                <value>SHOW_DCBX</value>
+                <value>SET_PFC</value>
+                <value>SET_ETS</value>
+                <value>SET_DCBX</value>
+            </arg>
+        </run>
+    </session>
+</package>

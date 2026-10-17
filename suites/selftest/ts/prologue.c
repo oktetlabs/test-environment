@@ -42,6 +42,7 @@
 #include "tapi_test.h"
 #include "tapi_tags.h"
 #include "tapi_sh_env.h"
+#include "tapi_rpc_misc.h"
 #include "conf_api.h"
 #include "tapi_cfg_dcbx.h"
 #include "tapi_cfg_ets.h"
@@ -51,14 +52,17 @@
  * Add TRC tags telling which DCB tests cannot run:
  * - @c no_dcbx, @c no_ets, @c no_pfc: the IUT interface (node A of net1)
  *   does not provide DCBX, ETS or PFC data (see tapi_cfg_dcbx_is_present()
- *   and others).
+ *   and others);
+ * - @c no_dcb_tool: the dcb tool is not found on the IUT.
  *
  * The tests check the same conditions themselves and skip.
+ *
+ * @param iut_rpcs  RPC server on the IUT.
  *
  * @return Status code.
  */
 static te_errno
-add_dcb_tags(void)
+add_dcb_tags(rcf_rpc_server *iut_rpcs)
 {
     static const struct {
         const char *name;
@@ -107,6 +111,12 @@ add_dcb_tags(void)
             if (rc != 0)
                 goto out;
         }
+    }
+
+    if (rpc_te_file_check_executable(iut_rpcs, "dcb") != 0)
+    {
+        RING("dcb tool is not found on the IUT");
+        rc = tapi_tags_add_tag("no_dcb_tool", "");
     }
 
 out:
@@ -172,7 +182,7 @@ main(int argc, char **argv)
     }
 
     TEST_STEP("Add TRC tags for DCB tests which cannot run");
-    CHECK_RC(add_dcb_tags());
+    CHECK_RC(add_dcb_tags(iut_rpcs));
 
     /* Print /local: subtree to see which TRC tags have been added */
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/local:%s", ""));

@@ -1,0 +1,104 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright (C) 2026 Advanced Micro Devices, Inc. All rights reserved. -->
+
+<test name="dcb" type="package">
+    <objective>TAPI DCB implementation</objective>
+    <notes/>
+    <iter result="PASSED">
+        <test name="dcb">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="cmd">SHOW_PFC</arg>
+                <notes/>
+                <results tags="no_dcb_tool">
+                    <result value="SKIPPED">
+                        <verdict>dcb tool is not found on the IUT</verdict>
+                    </result>
+                </results>
+                <results tags="no_pfc">
+                    <result value="SKIPPED">
+                        <verdict>The interface does not provide the DCB data</verdict>
+                    </result>
+                </results>
+            </iter>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="cmd">SET_PFC</arg>
+                <notes/>
+                <results tags="no_dcb_tool">
+                    <result value="SKIPPED">
+                        <verdict>dcb tool is not found on the IUT</verdict>
+                    </result>
+                </results>
+                <results tags="no_pfc">
+                    <result value="SKIPPED">
+                        <verdict>The interface does not provide the DCB data</verdict>
+                    </result>
+                </results>
+            </iter>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="cmd">SHOW_ETS</arg>
+                <notes/>
+                <results tags="no_dcb_tool">
+                    <result value="SKIPPED">
+                        <verdict>dcb tool is not found on the IUT</verdict>
+                    </result>
+                </results>
+                <results tags="no_ets">
+                    <result value="SKIPPED">
+                        <verdict>The interface does not provide the DCB data</verdict>
+                    </result>
+                </results>
+            </iter>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="cmd">SET_ETS</arg>
+                <notes/>
+                <results tags="no_dcb_tool">
+                    <result value="SKIPPED">
+                        <verdict>dcb tool is not found on the IUT</verdict>
+                    </result>
+                </results>
+                <results tags="no_ets">
+                    <result value="SKIPPED">
+                        <verdict>The interface does not provide the DCB data</verdict>
+                    </result>
+                </results>
+            </iter>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="cmd">SHOW_DCBX</arg>
+                <notes/>
+                <results tags="no_dcb_tool">
+                    <result value="SKIPPED">
+                        <verdict>dcb tool is not found on the IUT</verdict>
+                    </result>
+                </results>
+                <results tags="no_dcbx">
+                    <result value="SKIPPED">
+                        <verdict>The interface does not provide the DCB data</verdict>
+                    </result>
+                </results>
+            </iter>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="cmd">SET_DCBX</arg>
+                <notes/>
+                <results tags="no_dcb_tool">
+                    <result value="SKIPPED">
+                        <verdict>dcb tool is not found on the IUT</verdict>
+                    </result>
+                </results>
+                <results tags="no_dcbx">
+                    <result value="SKIPPED">
+                        <verdict>The interface does not provide the DCB data</verdict>
+                    </result>
+                </results>
+            </iter>
+        </test>
+    </iter>
+</test>
