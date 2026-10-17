@@ -1145,6 +1145,22 @@ extern te_errno ta_conf_register(const char *father,
                   .children = TA_CONF_CHILDREN(__VA_ARGS__))
 
 /**
+ * Unvalued collection (add/del/list) whose commit covers its subtree.
+ *
+ * @param name_         node's Configurator sub-identifier
+ * @param add_          add handler (as_none)
+ * @param del_          delete handler
+ * @param list_         list handler
+ * @param commit_       commit handler covering the subtree
+ * @param ...           child node pointers, in sibling order
+ */
+#define TA_CONF_COLL_COMMIT(name_, add_, del_, list_, commit_, ...) \
+    TA_CONF__NODE(.name = (name_), \
+                  .add = { .as_none = (add_) }, .del = (del_), \
+                  .list = (list_), .commit = (commit_), \
+                  .children = TA_CONF_CHILDREN(__VA_ARGS__))
+
+/**
  * String-valued collection (get/add/del/list).
  *
  * @param name_         node's Configurator sub-identifier
