@@ -1037,3 +1037,35 @@ ta_conf_register(const char *father, const ta_conf_node *root)
 
     return rc;
 }
+
+/* See description in rcf_pch_tree.h */
+te_errno
+ta_conf_unregister(const ta_conf_node *root)
+{
+    ta_conf_reg *reg;
+    te_errno rc;
+
+    SLIST_FOREACH(reg, &regs, links)
+    {
+        if (reg->root == root)
+            break;
+    }
+
+    if (reg == NULL)
+        return TE_RC(TE_RCF_PCH, TE_ENOENT);
+
+    /*
+     * Detach the mirror before dropping the registration, for the same
+     * reason ta_conf_register() inserts it before grafting.
+     */
+    rc = rcf_pch_del_node(&reg->mirror[0].pch);
+    if (rc != 0)
+    {
+        ERROR("ta_conf_unregister(): mirror of '%s' is not in the "
+              "configuration tree: %r", root->name, rc);
+    }
+
+    reg_free(reg);
+
+    return rc;
+}
