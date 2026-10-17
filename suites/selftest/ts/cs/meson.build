@@ -5,6 +5,7 @@ tests = [
     'changed',
     'dcbx',
     'dir',
+    'ets',
     'key',
     'loadavg',
     'local_seq_abandon',

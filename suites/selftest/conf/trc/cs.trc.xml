@@ -18,6 +18,20 @@
             </iter>
         </test>
 
+        <test name="ets" type="script">
+            <objective>Check ETS support in Configurator</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <notes/>
+                <results tags="no_ets">
+                    <result value="SKIPPED">
+                        <verdict>ETS is not supported by the interface</verdict>
+                    </result>
+                </results>
+            </iter>
+        </test>
+
         <test name="set_restore" type="script">
             <objective>Check configurator set and rollback by accessing /proc/sys</objective>
             <notes/>

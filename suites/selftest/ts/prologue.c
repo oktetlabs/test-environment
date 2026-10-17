@@ -44,11 +44,13 @@
 #include "tapi_sh_env.h"
 #include "conf_api.h"
 #include "tapi_cfg_dcbx.h"
+#include "tapi_cfg_ets.h"
 
 /**
  * Add TRC tags telling which DCB tests cannot run:
- * - @c no_dcbx: the IUT interface (node A of net1) does not provide DCBX
- *   data (see tapi_cfg_dcbx_is_present()).
+ * - @c no_dcbx, @c no_ets: the IUT interface (node A of net1) does not
+ *   provide DCBX or ETS data (see tapi_cfg_dcbx_is_present() and
+ *   tapi_cfg_ets_is_present()).
  *
  * The tests check the same conditions themselves and skip.
  *
@@ -63,6 +65,7 @@ add_dcb_tags(void)
         te_errno (*is_present)(const char *, const char *, bool *);
     } features[] = {
         { "DCBX", "no_dcbx", tapi_cfg_dcbx_is_present },
+        { "ETS", "no_ets", tapi_cfg_ets_is_present },
     };
     char *if_oid = NULL;
     cfg_oid *oid = NULL;
