@@ -89,6 +89,13 @@
         </run>
 
         <run>
+            <script name="pfc"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT},if:'iut_if'}}</value>
+            </arg>
+        </run>
+
+        <run>
             <script name="set_restore" track_conf="yes"/>
             <arg name="env">
                 <value>{{{'pco_iut':IUT}}}</value>

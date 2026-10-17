@@ -15,6 +15,7 @@ tests = [
     'oid',
     'partial_restore',
     'pci',
+    'pfc',
     'phy',
     'process',
     'process_autorestart',

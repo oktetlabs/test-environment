@@ -45,12 +45,13 @@
 #include "conf_api.h"
 #include "tapi_cfg_dcbx.h"
 #include "tapi_cfg_ets.h"
+#include "tapi_cfg_pfc.h"
 
 /**
  * Add TRC tags telling which DCB tests cannot run:
- * - @c no_dcbx, @c no_ets: the IUT interface (node A of net1) does not
- *   provide DCBX or ETS data (see tapi_cfg_dcbx_is_present() and
- *   tapi_cfg_ets_is_present()).
+ * - @c no_dcbx, @c no_ets, @c no_pfc: the IUT interface (node A of net1)
+ *   does not provide DCBX, ETS or PFC data (see tapi_cfg_dcbx_is_present()
+ *   and others).
  *
  * The tests check the same conditions themselves and skip.
  *
@@ -66,6 +67,7 @@ add_dcb_tags(void)
     } features[] = {
         { "DCBX", "no_dcbx", tapi_cfg_dcbx_is_present },
         { "ETS", "no_ets", tapi_cfg_ets_is_present },
+        { "PFC", "no_pfc", tapi_cfg_pfc_is_present },
     };
     char *if_oid = NULL;
     cfg_oid *oid = NULL;
