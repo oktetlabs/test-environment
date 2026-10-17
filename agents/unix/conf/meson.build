@@ -67,6 +67,7 @@ if conf.contains('dcb')
     includes += include_directories('dcb')
     sources += files(
         'dcb/conf_dcb.c',
+        'dcb/conf_dcbx.c',
     )
     # In theory link_whole could be used, but it is intended for
     # internal static libraries build inside the project.

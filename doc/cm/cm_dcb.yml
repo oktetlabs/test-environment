@@ -15,3 +15,21 @@
          Data Center Bridging node. Exists only if the interface driver
          supports DCB netlink requests.
          Name: empty
+
+    - oid: "/agent/interface/dcb/dcbx"
+      access: read_write
+      type: uint8
+      d: |
+         Data Center Bridging Exchange operating mode. Exists only if the
+         interface driver reports the DCBX mode.
+         Setting the mode fails with TE_EFAIL if the driver returns
+         a non-zero status (in-tree drivers return 1 on any failure).
+         Setting the mode that the driver already reports succeeds
+         without a request to the driver.
+         Name: empty
+         Value: Bitmask of DCBX mode flags:
+                0x01 - DCBX is run by the host (an LLDP agent of the OS);
+                0x02 - DCBX is run by the device firmware;
+                0x04 - CEE (pre-standard) version of the protocol;
+                0x08 - IEEE 802.1Qaz version of the protocol;
+                0x10 - static configuration without negotiation.
