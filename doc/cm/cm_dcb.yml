@@ -157,3 +157,84 @@
          Recommended Priority to Traffic Class mapping
          Name:  Priority number from 0 to 7
          Value: Recommended Traffic Class number from 0 to 7
+
+    - oid: "/agent/interface/dcb/pfc"
+      access: read_only
+      type: none
+      unit: true
+      depends:
+        - oid: "/agent/interface/dcb/dcbx"
+        - oid: "/agent/interface/dcb/ets"
+      d: |
+         IEEE 802.1Qbb Priority Flow Control configuration.
+         Exists only if the interface driver reports the PFC configuration.
+         The kernel does not tell a missing driver getter from a failed one,
+         so the node is also missing if the getter fails.
+         Successful commit does not prove that the driver applied the
+         configuration: the kernel reports success if the driver has no
+         ieee_setpfc() callback, and the driver may adjust the values.
+         Read the configuration back to check what is applied.
+         PFC is a unit: a restore from a backup sends it in one request,
+         after the DCBX mode and ETS (some drivers reject PFC without
+         a valid ETS configuration, or derive the PFC map from it).
+         Name: empty
+
+    - oid: "/agent/interface/dcb/pfc/pfc_cap"
+      access: read_only
+      type: uint8
+      volatile: true
+      d: |
+         Number of Traffic Classes that may simultaneously have PFC
+         enabled, as reported by the driver. Drivers may change it (e.g.
+         report 0 after the first IEEE ETS request), so it is volatile: it is
+         not saved in configuration backups. PFC requests carry the value
+         just read from the driver.
+         Name:  None
+         Value: Number of TCs that may simultaneously have PFC enabled
+
+    - oid: "/agent/interface/dcb/pfc/macsec_bypass"
+      access: read_write
+      type: bool
+      d: |
+         MACsec Bypass Capability
+         Name:  None
+         Value: The MACsec Bypass Capability (MBC) bit of the IEEE 802.1Qbb
+                PFC configuration.
+
+    - oid: "/agent/interface/dcb/pfc/delay"
+      access: read_write
+      type: uint16
+      d: |
+         Signal propagation delay
+         Name:  None
+         Value: Delay status, in link bits
+
+    - oid: "/agent/interface/dcb/pfc/pfc_en"
+      access: read_write
+      type: uint8
+      d: |
+         PFC enablement by IEEE 802.1p priority
+         Name: None
+         Value: Bitmap indicating priorities for which PFC is enabled
+
+    - oid: "/agent/interface/dcb/pfc/requests"
+      access: read_only
+      type: uint64
+      volatile: true
+      d: |
+         Transmitted PFC frames statistic. The counters of all priorities
+         read in one synchronization of the PFC subtree come from one
+         driver request. Getting a single counter synchronizes it alone.
+         Name:  Priority number from 0 to 7
+         Value: Transmitted PFC frames count
+
+    - oid: "/agent/interface/dcb/pfc/indications"
+      access: read_only
+      type: uint64
+      volatile: true
+      d: |
+         Received PFC frames statistic. The counters of all priorities
+         read in one synchronization of the PFC subtree come from one
+         driver request. Getting a single counter synchronizes it alone.
+         Name:  Priority number from 0 to 7
+         Value: Received PFC frames count

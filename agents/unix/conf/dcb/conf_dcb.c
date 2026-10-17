@@ -4,7 +4,7 @@
  * @brief Unix TA DCB configuration support
  *
  * The DCB node, the DCB netlink requests shared by its subtrees, and
- * the registration of the ETS and DCBX subtrees.
+ * the registration of the PFC, ETS and DCBX subtrees.
  */
 
 #define TE_LGR_USER     "Unix Conf DCB"
@@ -27,6 +27,7 @@
 #include "conf_dcb.h"
 #include "conf_dcbx.h"
 #include "conf_ets.h"
+#include "conf_pfc.h"
 
 #include <errno.h>
 #include <linux/dcbnl.h>
@@ -1031,6 +1032,13 @@ ta_unix_conf_dcb_init(void)
     rc = ta_conf_register("/agent/interface", node_dcb);
     if (rc != 0)
         return TE_RC(TE_TA_UNIX, rc);
+
+    rc = ta_unix_conf_pfc_init();
+    if (rc != 0)
+    {
+        ERROR("Failed to configure PFC configuration subtree: %r", rc);
+        return rc;
+    }
 
     rc = ta_unix_conf_ets_init();
     if (rc != 0)

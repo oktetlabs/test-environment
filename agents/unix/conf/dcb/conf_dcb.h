@@ -3,7 +3,7 @@
 /** @file
  * @brief Unix TA Traffic Control DCB configuration support
  *
- * Registration of ETS and DCBX subtrees for DCB node.
+ * Registration of PFC, ETS, and DCBX subtrees for DCB node.
  */
 
 #ifndef __TE_AGENTS_UNIX_CONF_DCB_CONF_DCB_H_

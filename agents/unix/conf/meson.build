@@ -69,6 +69,7 @@ if conf.contains('dcb')
         'dcb/conf_dcb.c',
         'dcb/conf_dcbx.c',
         'dcb/conf_ets.c',
+        'dcb/conf_pfc.c',
     )
     # In theory link_whole could be used, but it is intended for
     # internal static libraries build inside the project.
