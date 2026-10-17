@@ -33,3 +33,127 @@
                 0x04 - CEE (pre-standard) version of the protocol;
                 0x08 - IEEE 802.1Qaz version of the protocol;
                 0x10 - static configuration without negotiation.
+
+    - oid: "/agent/interface/dcb/ets"
+      access: read_only
+      type: none
+      unit: true
+      depends:
+        - oid: "/agent/interface/dcb/dcbx"
+      d: |
+         IEEE 802.1Qaz Enhanced Transmission Selection configuration.
+         Exists only if the interface driver reports the ETS configuration.
+         The kernel does not tell a missing driver getter from a failed one,
+         so the node is also missing if the getter fails.
+         Successful commit does not prove that the driver applied the
+         configuration: the kernel reports success if the driver has no
+         ieee_setets() callback, and the driver may adjust the values.
+         Read the configuration back to check what is applied.
+         ETS is a unit: a restore from a backup sends it in one request,
+         after the DCBX mode. The restore can succeed only if the saved
+         DCBX mode accepts IEEE requests.
+         Name: empty
+
+    - oid: "/agent/interface/dcb/ets/ets_cap"
+      access: read_only
+      type: uint8
+      volatile: true
+      d: |
+         Number of Traffic Classes supported by ETS, as reported by the
+         driver. Drivers may change it (e.g. take it from the configuration
+         they are given), so it is volatile: it is not saved in
+         configuration backups. ETS requests carry the value just read
+         from the driver.
+         Name: None
+         Value: Number of supported ETS Traffic Classes
+
+    - oid: "/agent/interface/dcb/ets/cbs"
+      access: read_only
+      type: bool
+      volatile: true
+      d: |
+         Credit-Based Shaper Transmission Selection Algorithm capability,
+         as reported by the driver. Volatile for the same reason as
+         ets_cap, and ETS requests carry the value just read from the
+         driver.
+         Name: None
+         Value: Whether the driver and/or hardware support the CBS TSA.
+
+    - oid: "/agent/interface/dcb/ets/willing"
+      access: read_write
+      type: bool
+      d: |
+         ETS willing state
+         Name: None
+         Value: Whether the local system accepts ETS configuration received
+                from a peer or not.
+
+    - oid: "/agent/interface/dcb/ets/tc_bw"
+      access: read_write
+      type: uint8
+      d: |
+         Transmit bandwidth allocated to a Traffic Class
+         Name: Traffic Class number from 0 to 7
+         Value: Percentage of transmit bandwidth allocated to the traffic
+                class. The value is conventionally interpreted as a
+                percentage, but the API accepts the full uint8 range.
+
+    - oid: "/agent/interface/dcb/ets/pg_bw"
+      access: read_write
+      type: uint8
+      d: |
+         Receive bandwidth allocated to a Priority Group
+         Name: Priority Group number from 0 to 7
+         Value: Receive bandwidth allocation for an ETS ingress Traffic Class
+                (Priority Group). Its precise meaning is not standardized. The
+                value is conventionally interpreted as a percentage, but the
+                API accepts the full uint8 range.
+
+    - oid: "/agent/interface/dcb/ets/tc_tsa"
+      access: read_write
+      type: uint8
+      d: |
+         Transmission Selection Algorithm assigned to a Traffic Class
+         Name:  Traffic Class number from 0 to 7
+         Value: Transmission Selection Algorithm identifier of
+                IEEE 802.1Q:
+                0 - strict priority;
+                1 - credit-based shaper;
+                2 - enhanced transmission selection;
+                255 - vendor specific.
+
+    - oid: "/agent/interface/dcb/ets/prio_tc"
+      access: read_write
+      type: uint8
+      d: |
+         IEEE 802.1p Priority <-> Traffic Class mapping
+         Name:  Priority number from 0 to 7
+         Value: Traffic Class number from 0 to 7
+
+    - oid: "/agent/interface/dcb/ets/reco_tc_bw"
+      access: read_write
+      type: uint8
+      d: |
+         Recommended transmit bandwidth for a Traffic Class
+         Name:  Traffic Class number from 0 to 7
+         Value: Recommended percentage of transmit bandwidth, advertised
+                in the ETS recommendation TLV. The value is conventionally
+                interpreted as a percentage, but the API accepts the full
+                uint8 range.
+
+    - oid: "/agent/interface/dcb/ets/reco_tc_tsa"
+      access: read_write
+      type: uint8
+      d: |
+         Recommended Transmission Selection Algorithm for a Traffic Class
+         Name:  Traffic Class number from 0 to 7
+         Value: Recommended Transmission Selection Algorithm, the same
+                identifiers as for tc_tsa.
+
+    - oid: "/agent/interface/dcb/ets/reco_prio_tc"
+      access: read_write
+      type: uint8
+      d: |
+         Recommended Priority to Traffic Class mapping
+         Name:  Priority number from 0 to 7
+         Value: Recommended Traffic Class number from 0 to 7
