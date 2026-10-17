@@ -28,6 +28,13 @@
         </run>
 
         <run>
+            <script name="dcbx"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT},if:'iut_if'}}</value>
+            </arg>
+        </run>
+
+        <run>
             <script name="loop" />
             <arg name="env">
                 <value>{{{'pco_iut':IUT}}}</value>

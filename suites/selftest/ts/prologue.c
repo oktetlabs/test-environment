@@ -42,6 +42,73 @@
 #include "tapi_test.h"
 #include "tapi_tags.h"
 #include "tapi_sh_env.h"
+#include "conf_api.h"
+#include "tapi_cfg_dcbx.h"
+
+/**
+ * Add TRC tags telling which DCB tests cannot run:
+ * - @c no_dcbx: the IUT interface (node A of net1) does not provide DCBX
+ *   data (see tapi_cfg_dcbx_is_present()).
+ *
+ * The tests check the same conditions themselves and skip.
+ *
+ * @return Status code.
+ */
+static te_errno
+add_dcb_tags(void)
+{
+    static const struct {
+        const char *name;
+        const char *tag;
+        te_errno (*is_present)(const char *, const char *, bool *);
+    } features[] = {
+        { "DCBX", "no_dcbx", tapi_cfg_dcbx_is_present },
+    };
+    char *if_oid = NULL;
+    cfg_oid *oid = NULL;
+    unsigned int i;
+    bool present;
+    te_errno rc;
+
+    rc = cfg_get_instance_string_fmt(&if_oid, "/net:net1/node:A");
+    if (rc != 0)
+    {
+        ERROR("Failed to get the IUT interface: %r", rc);
+        return rc;
+    }
+
+    oid = cfg_convert_oid_str(if_oid);
+    if (oid == NULL || !oid->inst || oid->len != 3 ||
+        strcmp(cfg_oid_inst_subid(oid, 2), "interface") != 0)
+    {
+        ERROR("IUT node '%s' is not an agent interface", if_oid);
+        rc = TE_RC(TE_TAPI, TE_EINVAL);
+        goto out;
+    }
+
+    for (i = 0; i < TE_ARRAY_LEN(features); i++)
+    {
+        rc = features[i].is_present(CFG_OID_GET_INST_NAME(oid, 1),
+                                    CFG_OID_GET_INST_NAME(oid, 2),
+                                    &present);
+        if (rc != 0)
+            goto out;
+
+        if (!present)
+        {
+            RING("IUT interface '%s' does not provide %s", if_oid,
+                 features[i].name);
+            rc = tapi_tags_add_tag(features[i].tag, "");
+            if (rc != 0)
+                goto out;
+        }
+    }
+
+out:
+    cfg_free_oid(oid);
+    free(if_oid);
+    return rc;
+}
 
 int
 main(int argc, char **argv)
@@ -98,6 +165,9 @@ main(int argc, char **argv)
         WARN("Path to TRex exec is not specified in environment");
         CHECK_RC(tapi_tags_add_tag("no_trex", ""));
     }
+
+    TEST_STEP("Add TRC tags for DCB tests which cannot run");
+    CHECK_RC(add_dcb_tags());
 
     /* Print /local: subtree to see which TRC tags have been added */
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/local:%s", ""));

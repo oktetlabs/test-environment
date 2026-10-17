@@ -3,6 +3,7 @@
 
 tests = [
     'changed',
+    'dcbx',
     'dir',
     'key',
     'loadavg',

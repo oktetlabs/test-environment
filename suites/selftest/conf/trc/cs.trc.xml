@@ -4,6 +4,20 @@
 <test name="cs" type="package">
     <objective>Package for demonstrating minimal tests</objective>
     <iter result="PASSED">
+        <test name="dcbx" type="script">
+            <objective>Check DCBX support in Configurator</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <notes/>
+                <results tags="no_dcbx">
+                    <result value="SKIPPED">
+                        <verdict>DCBX is not supported by the interface</verdict>
+                    </result>
+                </results>
+            </iter>
+        </test>
+
         <test name="set_restore" type="script">
             <objective>Check configurator set and rollback by accessing /proc/sys</objective>
             <notes/>
