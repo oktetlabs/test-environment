@@ -2283,6 +2283,7 @@ monitors_process(xmlNodePtr *node, run_item *ritem)
             break;
 
         monitor = TE_ALLOC(sizeof(*monitor));
+        monitor->run_monitor = true;
         p = xmlNodeChildren(*node);
         while (p != NULL)
         {
