@@ -4,6 +4,7 @@
 headers += files(
     'tapi_bttrack.h',
     'tapi_ctorrent.h',
+    'tapi_dcb.h',
     'tapi_ethtool.h',
     'tapi_haproxy.h',
     'tapi_haproxy_cfg.h',
@@ -25,6 +26,7 @@ headers += files(
 sources += files(
     'tapi_bttrack.c',
     'tapi_ctorrent.c',
+    'tapi_dcb.c',
     'tapi_ethtool.c',
     'tapi_haproxy.c',
     'tapi_haproxy_cfg.c',
