@@ -357,6 +357,8 @@ process_agent_unix_parms() {
             --with-sniffers=no|--without-sniffers)
                 set_sniffers false
                 ;;
+            --with-dcb)
+                conf="${conf} dcb" ;;
             --with-tc)
                 conf="${conf} tc" ;;
             --with-tirpc)

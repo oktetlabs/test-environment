@@ -276,6 +276,11 @@ extern void ta_unix_conf_key_fini(void);
 extern te_errno ta_unix_conf_openvpn_init(void);
 #endif
 
+#ifdef WITH_DCB
+extern te_errno ta_unix_conf_dcb_init(void);
+extern void ta_unix_conf_dcb_fini(void);
+#endif
+
 #ifdef WITH_TC
 extern te_errno ta_unix_conf_tc_init(void);
 extern te_errno ta_unix_conf_tc_fini(void);
@@ -939,6 +944,14 @@ rcf_ch_conf_init(void)
         }
 #endif /* WITH_OPENVPN */
 
+#ifdef WITH_DCB
+    if (ta_unix_conf_dcb_init() != 0)
+    {
+        ERROR("Failed to add resource DCB configuration subtree");
+        goto fail;
+    }
+#endif /* WITH_DCB */
+
 #ifdef WITH_TC
         if (ta_unix_conf_tc_init() != 0)
         {
@@ -1033,7 +1046,9 @@ rcf_ch_conf_fini(void)
     ta_unix_conf_if_xdp_cleanup();
     ta_unix_conf_bpf_cleanup();
 #endif
-
+#ifdef WITH_DCB
+    ta_unix_conf_dcb_fini();
+#endif
 #ifdef ENABLE_PCI_SUPPORT
     ta_unix_conf_pci_cleanup();
 #endif

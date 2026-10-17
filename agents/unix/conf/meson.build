@@ -61,6 +61,32 @@ sources += files(
 )
 
 conf = get_option('agent-unix-conf')
+
+if conf.contains('dcb')
+    c_args += [ '-DWITH_DCB' ]
+    includes += include_directories('dcb')
+    sources += files(
+        'dcb/conf_dcb.c',
+    )
+    # In theory link_whole could be used, but it is intended for
+    # internal static libraries build inside the project.
+    link_args += [
+        '-Wl,-whole-archive',
+        '-lnl-3',
+        '-Wl,-no-whole-archive',
+    ]
+    # In theory we need partial dependency here to add CFLAGS and
+    # include directories, but partial_dependency() method is supported
+    # since 0.46.0 version only.
+    dep_libnl = dependency('libnl-3.0', required: false)
+    required_deps += 'libnl-3.0'
+    if dep_libnl.found()
+        deps += dep_libnl
+    else
+        missed_deps += 'libnl-3.0'
+    endif
+endif
+
 if conf.contains('pam')
     dep_pam = cc.find_library('pam', required: false)
     if dep_pam.found() and cc.has_function('pam_start', args: te_cflags,

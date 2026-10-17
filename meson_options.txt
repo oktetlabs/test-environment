@@ -86,7 +86,7 @@ option('agent-unix-name', type: 'string', value: '',
 option('agent-unix-platform', type: 'string', value: '',
        description: 'Unix Test Agent platform')
 option('agent-unix-conf', type: 'array', value: [],
-       choices: ['8021x', 'aggr', 'bpf', 'disable-networkmanager-check',
+       choices: ['8021x', 'aggr', 'bpf', 'disable-networkmanager-check', 'dcb',
                  'iptables', 'ntpd', 'ovs', 'pam', 'pci', 'serial',
                  'serial-parser', 'sfptpd', 'tc', 'upnp_cp', 'vcm'],
        description: 'Unix Test Agent configuration support')

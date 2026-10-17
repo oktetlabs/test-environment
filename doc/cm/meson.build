@@ -13,6 +13,7 @@ cm_files = files(
     'cm_conf_delay.yml',
     'cm_configfs.yml',
     'cm_crypt.yml',
+    'cm_dcb.yml',
     'cm_dhcpserver.yml',
     'cm_dnsserver.yml',
     'cm_echoserver.yml',

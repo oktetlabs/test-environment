@@ -1,0 +1,17 @@
+---
+# SPDX-License-Identifier: Apache-2.0
+
+- comment: |
+    Data Center Bridging interfaces on Test Agents.
+
+    Copyright (C) 2026 Advanced Micro Devices, Inc. All rights reserved.
+
+- register:
+
+    - oid: "/agent/interface/dcb"
+      access: read_only
+      type: none
+      d: |
+         Data Center Bridging node. Exists only if the interface driver
+         supports DCB netlink requests.
+         Name: empty
