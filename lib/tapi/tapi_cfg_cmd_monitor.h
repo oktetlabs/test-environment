@@ -80,7 +80,7 @@ tapi_cfg_cmd_monitor_end(char const *ta,
                          char const *name)
 {
     return cfg_del_instance_fmt(false,
-                                "/agent:%s/monitor:%s",
+                                "/agent:%s/command_monitor:%s",
                                 ta, name);
 }
 
