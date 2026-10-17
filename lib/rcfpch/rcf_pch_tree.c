@@ -47,6 +47,7 @@ typedef struct ta_conf_reg {
     SLIST_ENTRY(ta_conf_reg) links;
     const ta_conf_node *root;
     cfg_oid *father;           /* parsed object OID of the father */
+    ta_conf_mirror *mirror;    /* mirror array, the root comes first */
 } ta_conf_reg;
 
 static SLIST_HEAD(, ta_conf_reg) regs = SLIST_HEAD_INITIALIZER(regs);
@@ -916,10 +917,12 @@ count_nodes(const ta_conf_node *n)
  * commit handler (or NULL); it is used to wire up commit_parent the
  * same way the engine's dispatch derives commit_obj (see
  * rcf_pch_conf.c: commit_obj = obj->commit_parent ?: obj).
+ * @p depth is the length of the node's OID, stored as oid_len the
+ * way rcf_pch_cfg_subtree_init() would.
  */
 static ta_conf_mirror *
 build(const ta_conf_node *n, ta_conf_mirror **cursor,
-      rcf_pch_cfg_object *commit_anc)
+      rcf_pch_cfg_object *commit_anc, unsigned int depth)
 {
     ta_conf_mirror *m = (*cursor)++;
     rcf_pch_cfg_object *my_anc = commit_anc;
@@ -928,6 +931,7 @@ build(const ta_conf_node *n, ta_conf_mirror **cursor,
 
     m->node = n;
     TE_STRLCPY(m->pch.sub_id, n->name, RCF_MAX_NAME);
+    m->pch.oid_len = depth;
 
     if (has_get(n))
         m->pch.get = tramp_get;
@@ -957,7 +961,7 @@ build(const ta_conf_node *n, ta_conf_mirror **cursor,
     {
         for (c = n->children + 1; *c != NULL; c++)
         {
-            ta_conf_mirror *son = build(*c, cursor, my_anc);
+            ta_conf_mirror *son = build(*c, cursor, my_anc, depth + 1);
 
             if (prev_son == NULL)
                 m->pch.son = &son->pch;
@@ -970,16 +974,24 @@ build(const ta_conf_node *n, ta_conf_mirror **cursor,
     return m;
 }
 
+/* Drop a registration: remove it from the registry and free it */
+static void
+reg_free(ta_conf_reg *reg)
+{
+    SLIST_REMOVE(&regs, reg, ta_conf_reg, links);
+    free(reg->mirror);
+    cfg_free_oid(reg->father);
+    free(reg);
+}
+
 /* See description in rcf_pch_tree.h */
 te_errno
 ta_conf_register(const char *father, const ta_conf_node *root)
 {
     cfg_oid *p;
     ta_conf_reg *reg;
-    ta_conf_mirror *arr;
     ta_conf_mirror *cursor;
     ta_conf_mirror *mirror_root;
-    size_t count;
     te_errno rc;
 
     rc = validate(root);
@@ -998,6 +1010,7 @@ ta_conf_register(const char *father, const ta_conf_node *root)
     reg = TE_ALLOC(sizeof(*reg));
     reg->root = root;
     reg->father = p;
+    reg->mirror = TE_ALLOC(count_nodes(root) * sizeof(*reg->mirror));
     /*
      * Insert before grafting the mirror onto the PCH tree: the mirror
      * becomes reachable by trampolines the moment rcf_pch_add_node()
@@ -1006,17 +1019,21 @@ ta_conf_register(const char *father, const ta_conf_node *root)
      */
     SLIST_INSERT_HEAD(&regs, reg, links);
 
-    count = count_nodes(root);
-    arr = TE_ALLOC(count * sizeof(*arr));
-    cursor = arr;
-    mirror_root = build(root, &cursor, NULL);
-
+    cursor = reg->mirror;
     /*
-     * ta_conf_register() must be called during rcf_ch_conf_init():
-     * rcf_pch_cfg_subtree_init() fills in each mirrored node's
-     * oid_len only after rcf_ch_conf_init() returns, and commit OID
-     * truncation (rcf_pch_conf.c, commit()) relies on that oid_len
-     * being correct by the time a commit is dispatched.
+     * oid_len is filled in here rather than left to
+     * rcf_pch_cfg_subtree_init(), which runs only once after
+     * rcf_ch_conf_init() returns: commit OID truncation (rcf_pch_conf.c,
+     * commit()) relies on it, and a subtree registered later (e.g. by
+     * a resource grab callback) would otherwise keep zeros there.
+     * The father OID includes the root level, so its length is
+     * exactly the depth of the father node.
      */
-    return rcf_pch_add_node(father, &mirror_root->pch);
+    mirror_root = build(root, &cursor, NULL, p->len + 1);
+
+    rc = rcf_pch_add_node(father, &mirror_root->pch);
+    if (rc != 0)
+        reg_free(reg);
+
+    return rc;
 }

@@ -292,10 +292,11 @@ typedef struct ta_conf_node {
 
 /**
  * Validate @p root and graft it (and its subtree) under the object
- * OID @p father (e.g. "/agent"), like rcf_pch_add_node().  Must be
+ * OID @p father (e.g. "/agent"), like rcf_pch_add_node().  Normally
  * called during rcf_ch_conf_init(), i.e. from an agent conf init
- * function.  Returns TE_EINVAL (with an ERROR naming the node) on an
- * inconsistent tree.
+ * function; a subtree that exists only while a resource is grabbed
+ * may instead be registered from the grab callback.  Returns TE_EINVAL
+ * (with an ERROR naming the node) on an inconsistent tree.
  *
  * @param father        object OID to graft the subtree under
  * @param root          root of the subtree to register
