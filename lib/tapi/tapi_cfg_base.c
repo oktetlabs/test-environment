@@ -1440,7 +1440,7 @@ tapi_cfg_base_if_del_veth(const char *ta, const char *ifname)
     if (rc == 0)
         rc = rc2;
 
-    rc2 = cfg_del_instance_fmt(true, "/agent:%s/rsrc:veth_%s", ta, ifname);
+    rc2 = cfg_del_instance_fmt(false, "/agent:%s/rsrc:veth_%s", ta, ifname);
     if (rc == 0)
         rc = rc2;
 
