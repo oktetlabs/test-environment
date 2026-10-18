@@ -4,7 +4,9 @@
 #
 # Doxygen input filter for package.md test scenario documents: adds
 # the "## Description" section of a package to the documentation of
-# its group. Point the suite's Doxyfile at it:
+# its group, and gives every test the document describes but the
+# package does not implement yet a page of its own in that group.
+# Point the suite's Doxyfile at it:
 #
 #     FILE_PATTERNS     = ... package.md
 #     FILTER_PATTERNS   = ... *.md="${TE_BASE}/scripts/md2dox"

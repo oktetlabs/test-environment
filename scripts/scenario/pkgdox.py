@@ -16,6 +16,11 @@ the navigation sidebar of the group page, which lists the tests.
 "> impl:" blockquotes are advice for the implementor and are left
 out.  The comment is written with "///" lines, which a "*/" in the
 prose cannot end.
+
+A test the document describes but the package does not implement
+yet - there is no <test>.c - gets a page of its own in the group,
+built from the markdown and opening with a warning that there is no
+test to run.  Once the source exists, its page replaces this one.
 """
 
 from __future__ import annotations
@@ -24,9 +29,15 @@ import argparse
 import re
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from mdparse import parse_package
 from model import Package, ScenarioError
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from model import Step, Test, Value
 
 _HEADING = re.compile(r'^#{3,6}\s+(.*?)\s*$')
 _FENCE = re.compile(r'^\s*(```|~~~)')
@@ -73,19 +84,76 @@ def _doc_lines(pkg: Package) -> list[str]:
     return squeezed
 
 
-def render(pkg: Package) -> str:
-    """The doxygen comment adding the description to the package group.
+def _steps(steps: list[Step], depth: int = 0) -> list[str]:
+    """Doxygen list markup for steps: numbered at the top, bullets below."""
+    pad = '   ' * (depth + 1)
+    marker = '-#' if depth == 0 else '-'
+    out: list[str] = []
+    for step in steps:
+        out.append(f'{pad}{marker} {step.text}')
+        text_pad = pad + ' ' * (len(marker) + 1)
+        out.extend(f'{text_pad}{note.text}' for note in step.notes if not note.impl)
+        out.extend(_steps(step.sub, depth + 1))
+    return out
+
+
+def _value(value: Value) -> str:
+    """A listed parameter value as a bullet under its @param."""
+    if value.comment:
+        return f'  - `{value.name}` ({value.comment})'
+    return f'  - `{value.name}`'
+
+
+def _planned_lines(pkg: Package, test: Test) -> list[str]:
+    """A page for a test that is described but not implemented yet."""
+    out = [
+        f'@defgroup {pkg.name}-{test.name} {test.summary}',
+        f'@ingroup {pkg.group}',
+        '@{',
+        '',
+        (
+            f'@warning Not implemented yet: this is the planned scenario from '
+            f'{pkg.name}/package.md, there is no test to run.'
+        ),
+        '',
+        f'@objective {test.objective}',
+    ]
+    if test.params:
+        out.append('')
+    for p in test.params:
+        desc = p.description.rstrip('.:') + ':' if p.values else p.description
+        out.append(f'@param {p.name} {desc}')
+        out.extend(_value(v) for v in p.values)
+    for note in test.notes:
+        out += ['', f'@note {note}']
+    if test.type:
+        out += ['', f'@type {test.type}']
+    out += ['', '@par Scenario:', *_steps(test.steps), '@}']
+    return out
+
+
+def _comment(lines: list[str]) -> str:
+    return '\n'.join(f'/// {line}' if line else '///' for line in lines) + '\n'
+
+
+def render(pkg: Package, pending: Sequence[Test] = ()) -> str:
+    """The doxygen comments for the package group.
 
     Args:
         pkg: The parsed package document.
+        pending: The tests described but not implemented yet.
 
     Returns:
-        The comment, or an empty string when there is no description.
+        The comment adding the description to the package group, and
+        one more per pending test; an empty string when there is
+        neither a description nor a pending test.
     """
-    if not pkg.description:
-        return ''
-    lines = [f'@addtogroup {pkg.group}', '', *_doc_lines(pkg)]
-    return '\n'.join(f'/// {line}' if line else '///' for line in lines) + '\n'
+    blocks: list[list[str]] = []
+    if pkg.description:
+        blocks.append([f'@addtogroup {pkg.group}', '', *_doc_lines(pkg)])
+    blocks.extend(_planned_lines(pkg, t) for t in pending)
+    # An empty line between blocks keeps doxygen from joining them.
+    return '\n'.join(_comment(b) for b in blocks)
 
 
 def filter_text(source: Path) -> str:
@@ -95,16 +163,18 @@ def filter_text(source: Path) -> str:
         source: The package document doxygen wants filtered.
 
     Returns:
-        The group comment; empty for a document without a description
-        or one that does not parse - the markdown itself must never
-        reach doxygen, which would read it as C.
+        The group comments; empty for a document with neither a
+        description nor a pending test, or one that does not parse -
+        the markdown itself must never reach doxygen, which would read
+        it as C.
     """
     try:
         pkg = parse_package(source)
     except ScenarioError as exc:
         print(f'pkgdox: warning: {exc}; the description is not documented', file=sys.stderr)
         return ''
-    return render(pkg)
+    pending = [t for t in pkg.tests if not (source.parent / f'{t.name}.c').exists()]
+    return render(pkg, pending)
 
 
 def main(argv: list[str] | None = None) -> int:

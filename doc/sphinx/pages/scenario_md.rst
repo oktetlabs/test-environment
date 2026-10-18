@@ -175,6 +175,12 @@ tests. Within the description:
 * ``> impl:`` blockquotes are left out: they advise the
   implementor, as they do under a step.
 
+A test the document describes but the package does not implement
+yet - there is no ``<test>.c`` - gets a page as well, built from
+its section. It sits in the group with the implemented tests and
+opens with a warning that there is no test to run. Once the source
+exists, the page comes from it instead, under the same name.
+
 Steps, substeps and notes
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
