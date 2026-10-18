@@ -137,6 +137,22 @@ def test_filter_text_adds_scenario_marker(tmp_path: Path) -> None:
 
 
 @pytest.mark.skipif(not aststeps.HAVE_CLANG, reason='libclang not installed')
+def test_filter_text_marker_after_paragraph(tmp_path: Path) -> None:
+    # Without a blank line the marker joins the paragraph above it,
+    # and doxyrest runs the step list into that paragraph's text.
+    src = tmp_path / 'demo.c'
+    prose = FILTER_SRC.replace(
+        ' * @author A U Thor <author@example.com>\n *\n * @par Scenario:\n',
+        ' * A remark that closes the header.\n',
+    )
+    src.write_text(textwrap.dedent(prose), encoding='utf-8')
+    lines = filter_text(src).splitlines()
+    marker = lines.index(' * @par Scenario:')
+    assert lines[marker - 1] == ' *'
+    assert lines[marker - 2] == ' * A remark that closes the header.'
+
+
+@pytest.mark.skipif(not aststeps.HAVE_CLANG, reason='libclang not installed')
 def test_filter_text_no_steps(tmp_path: Path) -> None:
     src = tmp_path / 'demo.c'
     src.write_text(textwrap.dedent(HEADER_SRC), encoding='utf-8')

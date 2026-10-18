@@ -280,6 +280,9 @@ def filter_text(source: Path) -> str:
     out = list(header)
     if steps:
         if not any('@par Scenario' in line for line in header):
+            # A paragraph right above would swallow the marker.
+            if out[-1].strip() != '*':
+                out.append(' *')
             out.append(' * @par Scenario:')
         out.extend(render_dox(build(steps)))
     if authors:
