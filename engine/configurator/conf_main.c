@@ -79,6 +79,7 @@ static bool cs_inconsistency_state = false;
 
 static void process_backup(cfg_backup_msg *msg, bool release_dh);
 static te_errno create_backup(char **bkp_filename);
+static void cfg_local_seq_abort(void);
 static te_errno process_backup_op(const char *name, uint8_t op);
 static te_errno release_backup(const char *name);
 static te_errno restore_backup(const char *name);
@@ -293,20 +294,10 @@ cfg_wipe_cmd_error(uint8_t type, cfg_handle handle)
         int rc;
 
         /* Restore configuration before the first local SET/ADD/DEL */
-        local_cmd_seq = false;
-        rc = cfg_dh_restore_backup(local_cmd_bkp, false);
+        rc = cfg_local_seq_rollback();
         WARN("Restore backup to configuration which was before "
              "the first local ADD/DEL/SET commands. Restored with code %r",
              rc);
-
-        /*
-         * Detach backup file from dynamic history as it will never
-         * be used again.
-         */
-        cfg_dh_release_backup(local_cmd_bkp);
-
-        free(local_cmd_bkp);
-        local_cmd_bkp = NULL;
     }
     else if (type == CFG_ADD)
     {
@@ -2310,6 +2301,8 @@ process_backup(cfg_backup_msg *msg, bool release_dh)
         {
             te_string backup = TE_STRING_INIT;
 
+            cfg_local_seq_abort();
+
             msg->rc = check_and_reanimate_agents(NULL);
             if (msg->rc != 0)
                 return;
@@ -2376,6 +2369,20 @@ process_backup(cfg_backup_msg *msg, bool release_dh)
             te_string backup = TE_STRING_INIT;
 
             /*
+             * Local changes are only in the database, so the comparison
+             * would not show the agents' configuration. The sequence is
+             * rolled back when the backup is restored.
+             */
+            if (local_cmd_seq)
+            {
+                WARN("Local command sequence on %s is not committed: "
+                     "the configuration differs from the backup",
+                     max_commit_subtree);
+                msg->rc = TE_EBACKUP;
+                break;
+            }
+
+            /*
              * If subtrees is NULL @p backup string will contain
              * filename specified by the user
              */
@@ -2420,6 +2427,26 @@ process_backup(cfg_backup_msg *msg, bool release_dh)
     }
 
     te_vec_deep_free(&subtrees_vec);
+}
+
+/**
+ * Roll back the local command sequence if it is open: nobody is going to
+ * commit it, for example, because the test which started it has failed.
+ */
+static void
+cfg_local_seq_abort(void)
+{
+    te_errno rc;
+
+    if (!local_cmd_seq)
+        return;
+
+    WARN("Local command sequence on %s is not committed: roll it back",
+         max_commit_subtree);
+
+    rc = cfg_local_seq_rollback();
+    if (rc != 0)
+        ERROR("Failed to roll back local commands: %r", rc);
 }
 
 /**
@@ -2771,6 +2798,7 @@ cfg_process_msg(cfg_msg **msg, bool update_dh)
         case CFG_SHUTDOWN:
             /* Remove commands initiated by configuration file */
             rcf_log_cfg_changes(true);
+            cfg_local_seq_abort();
             cfg_dh_restore_backup_on_shutdown();
             rcf_log_cfg_changes(false);
             cs_flags |= CS_SHUTDOWN;

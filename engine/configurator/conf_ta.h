@@ -52,6 +52,19 @@ extern char max_commit_subtree[CFG_INST_NAME_MAX];
 extern char *local_cmd_bkp;
 
 /**
+ * End the local command sequence and roll it back: undo its additions
+ * and deletions in the database, then synchronise the subtree of the
+ * sequence with Test Agents. The restore from history leaves the values
+ * set locally in the database, and a failed commit may have changed an
+ * agent: the synchronisation makes the database show what the agents
+ * have. Nothing of the sequence is sent to Test Agents.
+ *
+ * @return Status code of restoring the backup taken at the start of
+ *         the sequence, or of the synchronisation.
+ */
+extern te_errno cfg_local_seq_rollback(void);
+
+/**
  * Reboot all Test Agents (before re-initializing of the Configurator).
  */
 extern void cfg_ta_reboot_all(void);

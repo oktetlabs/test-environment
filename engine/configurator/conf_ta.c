@@ -900,6 +900,55 @@ handle_result:
     return ret;
 }
 
+/* See the description in conf_ta.h */
+te_errno
+cfg_local_seq_rollback(void)
+{
+    char oid[CFG_INST_NAME_MAX];
+    cfg_handle handle;
+    te_errno rc;
+    te_errno ret;
+
+    local_cmd_seq = false;
+    rc = cfg_dh_restore_backup(local_cmd_bkp, false);
+
+    /*
+     * Detach backup file from dynamic history as it will never
+     * be used again.
+     */
+    cfg_dh_release_backup(local_cmd_bkp);
+    free(local_cmd_bkp);
+    local_cmd_bkp = NULL;
+
+    /*
+     * The restore leaves the values set locally in the database, and a
+     * failed commit may have changed a Test Agent: synchronise the
+     * subtree of the sequence. The maximum commit subtree is the common
+     * prefix of OIDs, which may end in the middle of a name, and the
+     * restore may have deleted its instance: synchronise the nearest
+     * instance which exists.
+     */
+    TE_SNPRINTF(oid, sizeof(oid), "%s", max_commit_subtree);
+    while (oid[0] != '\0' &&
+           (strchr(strrchr(oid, '/'), ':') == NULL ||
+            cfg_db_find(oid, &handle) != 0))
+    {
+        *strrchr(oid, '/') = '\0';
+    }
+    if (oid[0] == '\0')
+        TE_SNPRINTF(oid, sizeof(oid), "/:");
+
+    ret = cfg_ta_sync(oid, true);
+    if (ret != 0)
+    {
+        ERROR("Failed to synchronise %s after rolling back local "
+              "commands: %r", oid, ret);
+        TE_RC_UPDATE(rc, ret);
+    }
+
+    return rc;
+}
+
 /**
  * Commit changes in local Configurator database to all Test Agents.
  *
@@ -981,32 +1030,26 @@ cfg_tas_commit(const char *oid)
 
     if (local_cmd_seq)
     {
-        local_cmd_seq = false;
-
         if (rc == 0)
         {
+            local_cmd_seq = false;
+
             /* Save configuration changes */
             cfg_dh_release_backup(local_cmd_bkp);
             cfg_conf_delay_update(inst->oid);
+            free(local_cmd_bkp);
+            local_cmd_bkp = NULL;
         }
         else
         {
             int ret;
 
             /* Restore configuration before the first local SET/ADD/DEL */
-            ret = cfg_dh_restore_backup(local_cmd_bkp, false);
+            ret = cfg_local_seq_rollback();
             WARN("Restore backup to configuration which was before "
                  "the first local ADD/DEL/SET commands restored with "
                  "code %r", ret);
-
-            /*
-             * Detach backup file from dynamic history as it will never
-             * be used again.
-             */
-            cfg_dh_release_backup(local_cmd_bkp);
         }
-        free(local_cmd_bkp);
-        local_cmd_bkp = NULL;
     }
 
     EXIT("%r", rc);
