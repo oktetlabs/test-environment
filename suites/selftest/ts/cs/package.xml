@@ -287,5 +287,20 @@
             </arg>
         </run>
 
+        <!-- local_seq_check checks what local_seq_abandon leaves -->
+        <run>
+            <script name="local_seq_abandon"/>
+            <arg name="ta">
+                <value>Agt_A</value>
+            </arg>
+        </run>
+
+        <run>
+            <script name="local_seq_check"/>
+            <arg name="ta">
+                <value>Agt_A</value>
+            </arg>
+        </run>
+
     </session>
 </package>

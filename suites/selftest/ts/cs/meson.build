@@ -6,6 +6,8 @@ tests = [
     'dir',
     'key',
     'loadavg',
+    'local_seq_abandon',
+    'local_seq_check',
     'loop',
     'num_jobs',
     'oid',

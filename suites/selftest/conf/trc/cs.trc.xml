@@ -15,5 +15,13 @@
                 <notes/>
             </iter>
         </test>
+        <test name="local_seq_abandon" type="script">
+            <objective>Fail with a local command sequence open</objective>
+            <notes/>
+            <iter result="FAILED">
+                <arg name="ta"/>
+                <notes>The test fails on purpose</notes>
+            </iter>
+        </test>
     </iter>
 </test>
