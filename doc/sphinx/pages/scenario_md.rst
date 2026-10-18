@@ -250,6 +250,18 @@ against the markdown; comments are never compared. A ``.c`` file
 not described in any markdown is reported only with ``--strict``,
 so a suite can adopt scenario documents incrementally.
 
+The check also reports two mistakes that leave a page out of the
+documentation tree:
+
+* an implemented test whose header does not start with
+  ``@defgroup <package>-<test>`` and ``@ingroup <group>``, as the
+  generated stub does; a ``@page`` header, for instance, gives the
+  test a page that nothing links to;
+* a package description whose group no ``@defgroup`` defines, in a
+  ``.dox`` file or a ``package.xml``: the description joins its
+  group with ``@addtogroup``, which creates a new untitled group
+  when the group does not exist.
+
 Status
 ~~~~~~
 

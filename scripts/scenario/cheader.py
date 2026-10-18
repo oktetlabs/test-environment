@@ -14,6 +14,7 @@ from __future__ import annotations
 import re
 
 _TAG = re.compile(r'^@(\w+)\s*(.*)$')
+_GROUP_NAME = re.compile(r'[A-Za-z0-9_-]+')
 # Doxygen inline markers: @p, @a, @b, @c, @e mark up a single word
 # within running text, not a new block tag - a continuation line
 # that happens to start with one (wrapped @p foo text, say) must
@@ -159,3 +160,27 @@ def parse_doc_header(text: str) -> tuple[str, str, str | None, list[tuple[str, s
             name, _, desc = joined.partition(' ')
             params.append((name, desc.strip()))
     return summary, objective, type_, params
+
+
+def doc_groups(text: str) -> tuple[str, list[str]]:
+    """The group a test header defines, and the groups it joins.
+
+    Args:
+        text: The full C source text.
+
+    Returns:
+        The @defgroup name (empty for a @page header or none at all)
+        and the names listed by its @ingroup lines.
+    """
+    split = split_source(text)
+    if split is None:
+        return '', []
+    defgroup = ''
+    ingroups: list[str] = []
+    for tag, joined in _header_tags(split[0]):
+        if tag == 'defgroup' and joined:
+            defgroup = joined.split(maxsplit=1)[0]
+        elif tag == 'ingroup':
+            # The tag text runs on into an "@{" line below it.
+            ingroups.extend(w for w in joined.split() if _GROUP_NAME.fullmatch(w))
+    return defgroup, ingroups

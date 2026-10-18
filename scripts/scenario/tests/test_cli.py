@@ -45,6 +45,7 @@ Steps:
 
 C_TWO = """\
 /** @defgroup usecases-two Second test
+ * @ingroup usecases
  * @objective Objective two.
  *
  * @par Scenario:
@@ -178,6 +179,36 @@ def test_check_param_docs(tmp_path: Path, capsys: pytest.CaptureFixture[str]) ->
     )
     assert main(['check', '-t', str(tmp_path), '--strict']) == 0
     assert '@param' not in c.read_text(encoding='utf-8')
+
+
+def test_check_header_joins_group(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    root = tmp_path / 'ts'
+    (root / 'usecases').mkdir(parents=True)
+    (root / 'usecases' / 'package.md').write_text(textwrap.dedent(PKG_PARAMS), encoding='utf-8')
+    page = C_TWO.replace('@defgroup usecases-two', '@page usecases-two')
+    page = page.replace(' * @ingroup usecases\n', '')
+    (root / 'usecases' / 'two.c').write_text(page, encoding='utf-8')
+    assert main(['check', '-t', str(tmp_path)]) == 1
+    out = capsys.readouterr().out
+    assert 'usecases/two: header has no "@defgroup usecases-two"' in out
+    assert 'usecases/two: header has no "@ingroup usecases"' in out
+
+
+def test_check_description_group_defined(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    suite = make_suite(tmp_path)
+    pkg_dir = suite / 'ts' / 'usecases'
+    described = PKG.replace('## one:', '## Description\n\nWhat it covers.\n\n## one:')
+    (pkg_dir / 'package.md').write_text(described, encoding='utf-8')
+    assert main(['check', '-t', str(suite)]) == 1
+    assert (
+        'usecases/package.md: the description joins group "usecases", '
+        'which no @defgroup defines'
+    ) in capsys.readouterr().out
+    dox = pkg_dir / 'package.dox'
+    dox.write_text('/** @defgroup usecases Use cases */\n', encoding='utf-8')
+    assert main(['check', '-t', str(suite)]) == 0
 
 
 def test_unknown_test(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

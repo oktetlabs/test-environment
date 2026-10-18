@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -22,6 +23,7 @@ import aststeps
 import condeval
 import cparam
 import emit_md
+from cheader import doc_groups
 from cstep import compare
 from emit_c import emit_test
 from mdparse import parse_package
@@ -29,6 +31,8 @@ from model import Package, ScenarioError
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
+
+_DEFGROUP = re.compile(r'@defgroup\s+([A-Za-z0-9_-]+)')
 
 
 def _root(opt: str) -> Path:
@@ -99,13 +103,37 @@ def _cmd_generate(args: argparse.Namespace) -> int:
     return 0
 
 
-def _check_package(root: Path, md: Path, *, strict: bool) -> list[str]:
+def _defined_groups(root: Path) -> set[str]:
+    """The doxygen groups the suite defines in .dox files and package.xml."""
+    groups: set[str] = set()
+    for f in [*root.rglob('*.dox'), *root.rglob('package.xml')]:
+        groups.update(_DEFGROUP.findall(f.read_text(encoding='utf-8', errors='replace')))
+    return groups
+
+
+def _check_groups(pkg: Package, name: str, c_text: str, c_name: str) -> list[str]:
+    """Findings for a test header that does not join the package group."""
+    defgroup, ingroups = doc_groups(c_text)
+    findings: list[str] = []
+    if defgroup != f'{pkg.name}-{name}':
+        findings.append(f'{c_name}: header has no "@defgroup {pkg.name}-{name}"')
+    if pkg.group not in ingroups:
+        findings.append(f'{c_name}: header has no "@ingroup {pkg.group}"')
+    return findings
+
+
+def _check_package(root: Path, md: Path, *, strict: bool, groups: set[str]) -> list[str]:
     findings: list[str] = []
     try:
         pkg = parse_package(md)
     except ScenarioError as exc:
         return [str(exc)]
     ref = _pkg_ref(root, md)
+    if pkg.description and pkg.group not in groups:
+        findings.append(
+            f'{ref}/{md.name}: the description joins group "{pkg.group}", '
+            'which no @defgroup defines'
+        )
     for t in pkg.tests:
         c_path = md.parent / f'{t.name}.c'
         if not c_path.exists():
@@ -113,6 +141,7 @@ def _check_package(root: Path, md: Path, *, strict: bool) -> list[str]:
         c_name = f'{ref}/{t.name}'
         c_text = c_path.read_text(encoding='utf-8')
         findings.extend(compare(t, c_text, c_name))
+        findings.extend(_check_groups(pkg, t.name, c_text, c_name))
         findings.extend(cparam.check_docs(c_text, c_name, strict=strict))
         findings.extend(cparam.doc_drift(t, c_text, c_name))
     if strict:
@@ -128,8 +157,9 @@ def _check_package(root: Path, md: Path, *, strict: bool) -> list[str]:
 def _cmd_check(args: argparse.Namespace) -> int:
     root = _root(args.test_suite)
     findings: list[str] = []
+    groups = _defined_groups(root)
     for md in _packages(root, args.packages):
-        findings.extend(_check_package(root, md, strict=args.strict))
+        findings.extend(_check_package(root, md, strict=args.strict, groups=groups))
     for f in findings:
         print(f)
     if findings:
