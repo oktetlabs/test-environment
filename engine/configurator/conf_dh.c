@@ -1310,8 +1310,16 @@ cfg_dh_restore_backup_ext(char *filename, bool hard_check, bool shutdown)
 
             case CFG_SET:
             {
-                cfg_set_msg *msg = TE_ALLOC(sizeof(cfg_set_msg) +
-                                            CFG_MAX_INST_VALUE);
+                cfg_set_msg *msg;
+
+                if (!tmp->committed)
+                {
+                    VERB("Do not restore %s as it is locally modified",
+                         tmp->old_oid);
+                    break;
+                }
+
+                msg = TE_ALLOC(sizeof(cfg_set_msg) + CFG_MAX_INST_VALUE);
 
                 if ((rc = cfg_db_find(tmp->old_oid, &msg->handle)) != 0)
                 {
@@ -1337,15 +1345,7 @@ cfg_dh_restore_backup_ext(char *filename, bool hard_check, bool shutdown)
                 cfg_types[msg->val_type].put_to_msg(tmp->old_val,
                                                     (cfg_msg *)msg);
 
-                if (tmp->committed)
-                {
-                    cfg_process_msg((cfg_msg **)&msg, false);
-                }
-                else
-                {
-                    VERB("Do not restore %s as it is locally modified",
-                         tmp->old_oid);
-                }
+                cfg_process_msg((cfg_msg **)&msg, false);
 
                 rc = msg->rc;
                 free(msg);
