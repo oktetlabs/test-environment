@@ -1162,26 +1162,9 @@ has_backup(cfg_dh_entry *entry, char *filename)
     return tmp != NULL;
 }
 
-/**
- * Restore backup with specified name using reversed command
- * of the dynamic history. Processed commands are removed
- * from the history.
- *
- * @param filename      name of the backup file
- * @param hard_check    whether hard check should be applied
- *                      on restore backup. For instance if on deleting
- *                      some instance we got ESRCH or ENOENT, we should
- *                      keep processing without any error.
- * @param shutdown      if @c true - the configurator shuts down.
- *                      Do no stop restoring backup when error @c ENOENT
- *                      occurs (for example for @c CFG_SET command).
- *
- * @return status code (see te_errno.h)
- * @retval TE_ENOENT       there is not command in dynamic history to which
- *                      the specified backup is attached
- */
-static int
-cfg_dh_restore_backup_ext(char *filename, bool hard_check, bool shutdown)
+/* See description in conf_dh.h */
+int
+cfg_dh_restore_backup(char *filename, bool hard_check)
 {
     cfg_dh_entry *limit = NULL;
     cfg_dh_entry *tmp;
@@ -1324,18 +1307,21 @@ cfg_dh_restore_backup_ext(char *filename, bool hard_check, bool shutdown)
                 if ((rc = cfg_db_find(tmp->old_oid, &msg->handle)) != 0)
                 {
                     free(msg);
-                    if (!shutdown || TE_RC_GET_ERROR(rc) != TE_ENOENT)
+                    if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
                     {
                         ERROR("cfg_db_find(%s) failed: %r", tmp->old_oid, rc);
                         return rc;
                     }
 
                     /*
-                     * Let is try to restore the remaining entries,
-                     * even if this one failed
+                     * The instance is gone: for example, it disappeared
+                     * with an object which created it, and is not back in
+                     * the database after the object is created again.
+                     * Restore the remaining entries: the result of
+                     * restoring a backup is compared with the backup.
                      */
-                    ERROR("cfg_db_find(%s) returned %r, trying to restore "
-                          "the rest", tmp->old_oid, rc);
+                    WARN("Instance %s is gone: its value is not restored",
+                         tmp->old_oid);
                     break;
                 }
 
@@ -1431,16 +1417,9 @@ cfg_dh_restore_backup_ext(char *filename, bool hard_check, bool shutdown)
 
 /* See description in conf_dh.h */
 int
-cfg_dh_restore_backup(char *filename, bool hard_check)
-{
-    return cfg_dh_restore_backup_ext(filename, hard_check, false);
-}
-
-/* See description in conf_dh.h */
-int
 cfg_dh_restore_backup_on_shutdown()
 {
-    return cfg_dh_restore_backup_ext(NULL, true, true);
+    return cfg_dh_restore_backup(NULL, true);
 }
 
 

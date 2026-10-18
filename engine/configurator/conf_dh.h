@@ -61,6 +61,9 @@ extern int cfg_dh_attach_backup(char *filename);
  *                      some instance we got ESRCH or ENOENT, we should
  *                      keep processing without any error.
  *
+ * A value set to an instance which is not in the database any more is not
+ * restored: the remaining commands are still processed.
+ *
  * @return status code (see te_errno.h)
  * @retval TE_ENOENT       there is not command in dynamic history to which
  *                      the specified backup is attached
