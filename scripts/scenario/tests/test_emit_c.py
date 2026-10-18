@@ -130,6 +130,13 @@ def test_golden() -> None:
     assert out == GOLDEN
 
 
+def test_ingroup_follows_package_group() -> None:
+    pkg, test = make_test()
+    pkg.group = 'suite_tests'
+    out = emit_test(pkg, test, author='A <a@b.c>', copyright_line='C')
+    assert '/** @defgroup usecases-set_mtu Set MTU of IUT\n * @ingroup suite_tests\n' in out
+
+
 def test_long_step_wraps() -> None:
     pkg, test = make_test()
     test.steps = [

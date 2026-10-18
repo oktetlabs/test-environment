@@ -160,7 +160,7 @@ def emit_test(
     out.append('/* SPDX-License-Identifier: Apache-2.0 */')
     out.append(f'/* {copyright_line} */')
     out.append(f'/** @defgroup {package.name}-{test.name} {test.summary}')
-    out.append(f' * @ingroup {package.name}')
+    out.append(f' * @ingroup {package.group}')
     out.append(' * @{')
     out.append(' *')
     _doxy_para(out, '@objective', resolve_inline(test.objective, names, values))

@@ -106,6 +106,45 @@ The rules:
   level below the test heading, with or without the colon:
   ``### Steps`` in a package file, ``## Steps`` in a per-test
   file. The label and heading forms mean the same thing.
+* ``## Description`` opens the package description; a
+  ``Group: <id>`` paragraph names the documentation group of the
+  package. Both are described below.
+
+Package description
+~~~~~~~~~~~~~~~~~~~
+
+Prose at the top level of a package document is for its readers
+only. What the package documentation should say goes under
+``## Description``:
+
+.. code-block:: markdown
+
+    # usecases: Reliability in normal use
+
+    Planning notes for the reviewers stay out of the documentation.
+
+    ## Description
+
+    The tests check the port in the states a user application
+    leaves it in.
+
+    ### Common rules
+
+    Every test reads the effective MTU back before using it.
+
+    ## set_mtu: Set MTU of IUT
+
+The rules:
+
+* The section is optional, appears at most once, and comes before
+  the first test - inline or referenced.
+* It runs up to the next second-level heading. Deeper headings
+  structure it; a test reference inside it is an error.
+* The documentation group of the package is the package name,
+  which is also the group the generated tests join with
+  ``@ingroup``. A ``Group: <id>`` paragraph before the first
+  second-level heading names another group, for instance the one
+  of the suite root.
 
 Steps, substeps and notes
 ~~~~~~~~~~~~~~~~~~~~~~~~~

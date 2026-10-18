@@ -26,6 +26,8 @@ _LINK = re.compile(r'^\[([a-z0-9_]+)\]\(([^)]+\.md)\)$')
 _PARAM = re.compile(r'^`([^`]+)`(?::\s+(.*))?$')
 _SECTION = re.compile(r'^(Parameters|Steps):?$')
 _IMPL_TAG = re.compile(r'^impl:\s*', re.IGNORECASE)
+_GROUP = re.compile(r'^Group:\s+([A-Za-z0-9_-]+)$')
+_DESCRIPTION = 'Description'
 
 
 @dataclass
@@ -250,6 +252,56 @@ def parse_test_file(path: Path) -> Test:
     return test
 
 
+def _take_description(lines: list[str], i: int, path: Path) -> tuple[list[str], int]:
+    """Collect the "## Description" body: raw lines up to the next H1 or H2."""
+    body: list[str] = []
+    while i < len(lines):
+        line = lines[i]
+        h = _HEADING.match(line)
+        if h and len(h.group(1)) <= _H2:
+            break
+        m = _ITEM.match(line)
+        if m and not m.group(1) and _LINK.match(m.group(3)):
+            raise ScenarioError(path, i + 1, 'test reference inside "## Description"')
+        body.append(line)
+        i += 1
+    while body and not body[-1].strip():
+        body.pop()
+    while body and not body[0].strip():
+        body.pop(0)
+    return body, i
+
+
+def _lone_line(lines: list[str], i: int) -> bool:
+    """Whether line i is a paragraph of its own."""
+    before = i == 0 or not lines[i - 1].strip() or _HEADING.match(lines[i - 1]) is not None
+    after = i + 1 == len(lines) or not lines[i + 1].strip()
+    return before and after
+
+
+def _parse_description(pkg: Package, lines: list[str], i: int) -> int:
+    """Take the "## Description" section whose heading is line i."""
+    if pkg.tests:
+        raise ScenarioError(pkg.path, i + 1, '"## Description" must come before the first test')
+    if pkg.description_line:
+        raise ScenarioError(pkg.path, i + 1, 'duplicate "## Description"')
+    pkg.description_line = i + 1
+    pkg.description, i = _take_description(lines, i + 1, pkg.path)
+    return i
+
+
+def _set_group(pkg: Package, lineno: int, group: str, *, after_h2: bool, again: bool) -> int:
+    """Apply a "Group:" label found at lineno; lineno comes back."""
+    if after_h2:
+        raise ScenarioError(
+            pkg.path, lineno, '"Group:" must come before the first second-level heading'
+        )
+    if again:
+        raise ScenarioError(pkg.path, lineno, 'duplicate "Group:"')
+    pkg.group = group
+    return lineno
+
+
 def parse_package(path: Path) -> Package:
     """Parse a package.md, following per-test file references."""
     lines = _read(path)
@@ -262,6 +314,8 @@ def parse_package(path: Path) -> Package:
         )
     pkg = Package(name=name, summary=summary, path=path)
     seen: dict[str, int] = {}
+    seen_h2 = False
+    group_line = 0
 
     def add(test: Test, lineno: int) -> None:
         if test.name in seen:
@@ -278,11 +332,22 @@ def parse_package(path: Path) -> Package:
         if h and len(h.group(1)) == _H1:
             raise ScenarioError(path, i + 1, 'only one H1 allowed')
         if h and len(h.group(1)) == _H2:
+            seen_h2 = True
             nm = _NAMED.match(h.group(2))
             if nm:
                 test, i = _parse_test_body(lines, i + 1, path, nm.group(1), nm.group(2), i + 1)
                 add(test, test.line)
                 continue
+            if h.group(2) == _DESCRIPTION:
+                i = _parse_description(pkg, lines, i)
+                continue
+            i += 1
+            continue
+        g = _GROUP.match(line)
+        if g and _lone_line(lines, i):
+            group_line = _set_group(
+                pkg, i + 1, g.group(1), after_h2=seen_h2, again=group_line > 0
+            )
             i += 1
             continue
         m = _ITEM.match(line)

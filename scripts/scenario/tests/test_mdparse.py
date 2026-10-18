@@ -311,3 +311,151 @@ def test_non_section_heading_still_rejected(tmp_path: Path) -> None:
     """
     with pytest.raises(ScenarioError, match='heading'):
         parse_package(write_pkg(tmp_path, 'p', body))
+
+
+GROUPED = """\
+# p: S
+
+Group: suite_tests
+
+Planning prose that stays in the markdown.
+
+## Description
+
+What the package covers.
+
+### Common rules
+
+A rule every test follows.
+
+## t: T
+
+O.
+
+Steps:
+
+1. A.
+"""
+
+
+def test_group_defaults_to_package_name(tmp_path: Path) -> None:
+    pkg = parse_package(write_pkg(tmp_path, 'p', '# p: S\n'))
+    assert pkg.group == 'p'
+
+
+def test_group_label(tmp_path: Path) -> None:
+    pkg = parse_package(write_pkg(tmp_path, 'p', GROUPED))
+    assert pkg.group == 'suite_tests'
+
+
+def test_group_label_twice(tmp_path: Path) -> None:
+    body = GROUPED.replace('Group: suite_tests\n', 'Group: a\n\nGroup: b\n')
+    with pytest.raises(ScenarioError, match='duplicate "Group:"'):
+        parse_package(write_pkg(tmp_path, 'p', body))
+
+
+def test_group_label_after_heading(tmp_path: Path) -> None:
+    body = """\
+    # p: S
+
+    ## Referenced tests
+
+    Group: late
+    """
+    with pytest.raises(ScenarioError, match='"Group:" must come before'):
+        parse_package(write_pkg(tmp_path, 'p', body))
+
+
+def test_group_label_inside_paragraph_is_prose(tmp_path: Path) -> None:
+    body = """\
+    # p: S
+
+    A paragraph that wraps onto a line
+    Group: wrapped
+    """
+    assert parse_package(write_pkg(tmp_path, 'p', body)).group == 'p'
+
+
+def test_description(tmp_path: Path) -> None:
+    pkg = parse_package(write_pkg(tmp_path, 'p', GROUPED))
+    assert pkg.description == [
+        'What the package covers.',
+        '',
+        '### Common rules',
+        '',
+        'A rule every test follows.',
+    ]
+    assert pkg.description_line == 7
+    assert [t.name for t in pkg.tests] == ['t']
+
+
+def test_no_description(tmp_path: Path) -> None:
+    pkg = parse_package(write_pkg(tmp_path, 'p', FULL.replace('usecases', 'p')))
+    assert pkg.description == []
+
+
+def test_description_after_test(tmp_path: Path) -> None:
+    body = """\
+    # p: S
+
+    ## t: T
+
+    O.
+
+    Steps:
+
+    1. A.
+
+    ## Description
+
+    Too late.
+    """
+    with pytest.raises(ScenarioError, match='before the first test'):
+        parse_package(write_pkg(tmp_path, 'p', body))
+
+
+def test_description_after_referenced_test(tmp_path: Path) -> None:
+    body = """\
+    # p: S
+
+    - [other](other.md)
+
+    ## Description
+
+    Too late.
+    """
+    f = write_pkg(tmp_path, 'p', body)
+    other = tmp_path / 'p' / 'other.md'
+    other.write_text('# other: T\n\nO.\n\nSteps:\n\n1. A.\n', encoding='utf-8')
+    with pytest.raises(ScenarioError, match='before the first test'):
+        parse_package(f)
+
+
+def test_description_twice(tmp_path: Path) -> None:
+    body = """\
+    # p: S
+
+    ## Description
+
+    One.
+
+    ## Description
+
+    Two.
+    """
+    with pytest.raises(ScenarioError, match='duplicate "## Description"'):
+        parse_package(write_pkg(tmp_path, 'p', body))
+
+
+def test_description_rejects_test_reference(tmp_path: Path) -> None:
+    body = """\
+    # p: S
+
+    ## Description
+
+    Covers one test:
+
+    - [other](other.md)
+    """
+    with pytest.raises(ScenarioError, match='test reference inside "## Description"'):
+        parse_package(write_pkg(tmp_path, 'p', body))

@@ -87,6 +87,17 @@ class Package:
     summary: str
     path: Path
     tests: list[Test] = field(default_factory=list)
+    # The doxygen group the tests and the description join: the
+    # package name unless a "Group:" label names another one.
+    group: str = ''
+    # The "## Description" section as raw markdown lines, and the
+    # line of its heading (0 when there is none).
+    description: list[str] = field(default_factory=list)
+    description_line: int = 0
+
+    def __post_init__(self) -> None:
+        if not self.group:
+            self.group = self.name
 
 
 def normalize_ws(text: str) -> str:
