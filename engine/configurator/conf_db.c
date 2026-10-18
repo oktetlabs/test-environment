@@ -1102,6 +1102,36 @@ cfg_process_msg_family(cfg_family_msg *msg)
 #undef RET
 }
 
+void
+cfg_process_msg_is_local(cfg_is_local_msg *msg)
+{
+    cfg_instance *inst;
+
+    if (!CFG_IS_INST(msg->handle))
+    {
+        msg->rc = TE_EINVAL;
+        return;
+    }
+
+    inst = CFG_GET_INST(msg->handle);
+    if (inst == NULL)
+    {
+        msg->rc = TE_ENOENT;
+        return;
+    }
+
+    /* A locally added ancestor is recognised as in cfg_db_find() */
+    msg->local = false;
+    for (; inst != NULL; inst = inst->father)
+    {
+        if (inst->obj->access == CFG_READ_CREATE && !inst->added)
+        {
+            msg->local = true;
+            break;
+        }
+    }
+}
+
 /**
  * Process a user request to find all objects or object instances
  * matching a pattern.

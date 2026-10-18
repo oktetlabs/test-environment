@@ -1769,6 +1769,11 @@ log_msg(cfg_msg *msg, bool before)
                     s1, s2, addon);
             break;
 
+        case CFG_IS_LOCAL:
+            GET_STRS(cfg_is_local_msg);
+            LOG_MSG(level, "Is local %s%s%s", s1, s2, addon);
+            break;
+
         case CFG_ADD:
         {
             cfg_add_msg *m = (cfg_add_msg *)msg;
@@ -2702,6 +2707,11 @@ cfg_process_msg(cfg_msg **msg, bool update_dh)
         case CFG_FAMILY:
             CFG_CHECK_NO_LOCAL_SEQ_BREAK("family", *msg);
             cfg_process_msg_family((cfg_family_msg *)*msg);
+            break;
+
+        case CFG_IS_LOCAL:
+            /* Served while a local command sequence is open */
+            cfg_process_msg_is_local((cfg_is_local_msg *)*msg);
             break;
 
         case CFG_ADD:

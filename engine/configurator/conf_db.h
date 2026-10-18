@@ -216,6 +216,7 @@ extern void cfg_process_msg_get_descr(cfg_get_descr_msg *msg);
 extern void cfg_process_msg_get_oid(cfg_get_oid_msg *msg);
 extern void cfg_process_msg_get_id(cfg_get_id_msg *msg);
 extern void cfg_process_msg_family(cfg_family_msg *msg);
+extern void cfg_process_msg_is_local(cfg_is_local_msg *msg);
 extern void cfg_process_msg_add_dependency(cfg_add_dependency_msg *msg);
 extern void cfg_process_msg_tree_print(cfg_tree_print_msg *msg);
 extern void cfg_process_msg_unregister(cfg_unregister_msg *msg);
