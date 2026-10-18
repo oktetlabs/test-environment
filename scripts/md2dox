@@ -1,0 +1,25 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (C) 2026 Advanced Micro Devices, Inc. All rights reserved.
+#
+# Doxygen input filter for package.md test scenario documents: adds
+# the "## Description" section of a package to the documentation of
+# its group. Point the suite's Doxyfile at it:
+#
+#     FILE_PATTERNS     = ... package.md
+#     FILTER_PATTERNS   = ... *.md="${TE_BASE}/scripts/md2dox"
+#     EXTENSION_MAPPING = ... md=C
+#
+# The pattern needs the wildcard: doxygen silently skips a filter
+# whose pattern does not match the full path.
+#
+# Prints nothing when python3 is missing, because doxygen would read
+# the markdown itself as C.
+
+SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+
+if command -v python3 >/dev/null 2>&1; then
+    exec python3 "${SCRIPTS_DIR}/scenario/pkgdox.py" "$1"
+fi
+
+echo "md2dox: python3 not found, the description of $1 is not documented" >&2

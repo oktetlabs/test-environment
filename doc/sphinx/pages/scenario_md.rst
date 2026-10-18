@@ -146,6 +146,35 @@ The rules:
   second-level heading names another group, for instance the one
   of the suite root.
 
+The ``scripts/md2dox`` doxygen input filter adds the description
+to the documentation of that group, on the page that lists the
+package's tests:
+
+.. code-block:: none
+
+    FILE_PATTERNS     = ... package.md
+    FILTER_PATTERNS   = ... *.md="${TE_BASE}/scripts/md2dox"
+    EXTENSION_MAPPING = ... md=C
+
+The filter pattern needs the wildcard: doxygen silently skips a
+filter whose pattern does not match the full path. Listing only
+``package.md`` in ``FILE_PATTERNS`` keeps a ``README.md`` and the
+per-test files out.
+
+The group is still defined where it was, in a ``package.dox`` for
+instance: the filter only adds to it with ``@addtogroup``. A build
+without the filter loses the description, never the group or its
+tests. Within the description:
+
+* the markdown stays markdown, doxygen renders it;
+* ``###`` to ``######`` headings become bold lines with a
+  ``<group>-<title>`` anchor, so ``### Common rules`` of package
+  ``dcb`` can be referred to as ``@ref dcb-common-rules``. They
+  are not made doxygen sections, which would add entries to the
+  navigation sidebar of the page;
+* ``> impl:`` blockquotes are left out: they advise the
+  implementor, as they do under a step.
+
 Steps, substeps and notes
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
