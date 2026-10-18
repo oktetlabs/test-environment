@@ -334,5 +334,12 @@
             </arg>
         </run>
 
+        <run>
+            <script name="local_instance"/>
+            <arg name="ta">
+                <value>Agt_A</value>
+            </arg>
+        </run>
+
     </session>
 </package>
