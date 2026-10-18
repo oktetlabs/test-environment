@@ -1378,20 +1378,30 @@ tapi_cfg_base_if_add_veth(const char *ta, const char *ifname,
     char veth_oid[CFG_OID_MAX];
 
     snprintf(veth_oid, CFG_OID_MAX, "/agent:%s/veth:%s", ta, ifname);
-    rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, peer), "%s", veth_oid);
+
+    /*
+     * Grab the veth before creating it. Test Agent lists only grabbed
+     * veths, so if the veth were released first, as restoring a backup
+     * from history does when it undoes the changes below in reverse
+     * order, the veth would leave the database and would not be deleted.
+     */
+    rc = cfg_add_instance_fmt(NULL, CVT_STRING, veth_oid,
+                              "/agent:%s/rsrc:veth_%s", ta, ifname);
     if (rc != 0)
         return rc;
+
+    rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, peer), "%s", veth_oid);
+    if (rc != 0)
+    {
+        cfg_del_instance_fmt(false, "/agent:%s/rsrc:veth_%s", ta, ifname);
+        return rc;
+    }
 
     rc = tapi_cfg_base_if_add_rsrc(ta, ifname);
     if (rc != 0)
         return rc;
 
     rc = tapi_cfg_base_if_add_rsrc(ta, peer);
-    if (rc != 0)
-        return rc;
-
-    rc = cfg_add_instance_fmt(NULL, CVT_STRING, veth_oid,
-                              "/agent:%s/rsrc:veth_%s", ta, ifname);
     if (rc != 0)
         return rc;
 
