@@ -255,6 +255,17 @@
          Value: 0 (link down) or 1 (link up)
          Limit: 1
 
+    - oid: "/agent/interface/carrier_changes"
+      access: read_only
+      type: uint64
+      volatile: true
+      d: |
+         Number of times the carrier of the interface went up or down
+         (/sys/class/net/<interface>/carrier_changes). Not listed if it
+         cannot be read.
+         Name:  empty
+         Limit: 1
+
     - oid: "/agent/interface/hwtstamp"
       access: read_only
       type: none

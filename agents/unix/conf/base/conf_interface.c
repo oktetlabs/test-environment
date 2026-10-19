@@ -298,6 +298,8 @@ static te_errno ifindex_get(const ta_conf_ctx *ctx, int32_t *val);
 
 static te_errno oper_status_get(const ta_conf_ctx *ctx, bool *val);
 
+static te_errno carrier_changes_get(const ta_conf_ctx *ctx, uint64_t *val);
+
 static te_errno status_get(const ta_conf_ctx *ctx, bool *val);
 static te_errno status_set(const ta_conf_ctx *ctx, bool val);
 
@@ -407,6 +409,7 @@ static const ta_conf_node *const node_interface =
         TA_CONF_RO_UINT16("min_mtu", min_mtu_get),
         TA_CONF_RO_UINT16("max_mtu", max_mtu_get),
         TA_CONF_RO_BOOL("oper_status", oper_status_get),
+        TA_CONF_RO_UINT64("carrier_changes", carrier_changes_get),
         TA_CONF_RW_BOOL("status", status_get, status_set),
         TA_CONF_RW_BOOL("promisc", promisc_get, promisc_set),
         TA_CONF_RW_BOOL("allmulti", allmulti_get, allmulti_set),
@@ -4442,6 +4445,47 @@ oper_status_get(const ta_conf_ctx *ctx, bool *val)
     const char *ifname = ta_conf_ctx_inst(ctx, "interface");
 
     return ta_interface_oper_status_get(ifname, val);
+}
+
+/**
+ * Size of the buffer for the value of carrier_changes in sysfs: a decimal
+ * 64-bit number takes up to @c 20 characters, plus a newline and
+ * the terminating zero.
+ */
+#define CARRIER_CHANGES_BUF_LEN 32
+
+/**
+ * Get the number of carrier changes of the interface, as sysfs counts
+ * them. The leaf is volatile: a value that cannot be read is reported as
+ * an absent instance, since any other error stops a synchronization.
+ *
+ * @param ctx           request context
+ * @param val           value location
+ *
+ * @return              Status code
+ * @retval TE_ENOENT    The value cannot be read.
+ */
+static te_errno
+carrier_changes_get(const ta_conf_ctx *ctx, uint64_t *val)
+{
+#if __linux__
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    char value[CARRIER_CHANGES_BUF_LEN];
+
+    /* The digit check refuses a sign, which the conversion would accept */
+    if (read_sys_value(value, sizeof(value), false,
+                       "/sys/class/net/%s/carrier_changes", ifname) != 0 ||
+        !isdigit((unsigned char)value[0]) ||
+        te_str_to_uint64(value, 10, val) != 0)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    return 0;
+#else
+    UNUSED(ctx);
+    UNUSED(val);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
 }
 
 /**
