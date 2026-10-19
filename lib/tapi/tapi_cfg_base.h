@@ -627,6 +627,22 @@ extern te_errno tapi_cfg_base_if_await_link_up(const char *ta, const char *iface
                                                unsigned int wait_int_ms,
                                                unsigned int after_up_ms);
 
+/**
+ * Get the number of times the carrier of an interface went up or down,
+ * as the kernel counts them (@c /agent/interface/carrier_changes). The
+ * object is volatile, so Configurator reads the value from the agent.
+ *
+ * @param[in]  ta       Test Agent.
+ * @param[in]  if_name  Interface name.
+ * @param[out] n        Number of carrier changes.
+ *
+ * @return Status code.
+ * @retval TE_ENOENT    The agent cannot read the counter.
+ */
+extern te_errno tapi_cfg_base_if_get_carrier_changes(const char *ta,
+                                                     const char *if_name,
+                                                     uint64_t *n);
+
 static inline te_errno
 tapi_cfg_base_if_arp_enable(const char *ta, const char * iface)
 {

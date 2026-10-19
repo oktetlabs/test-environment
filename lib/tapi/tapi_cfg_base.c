@@ -1592,6 +1592,27 @@ tapi_cfg_base_if_await_link_up(const char *ta, const char *iface,
 
 /* See description in tapi_cfg_base.h */
 te_errno
+tapi_cfg_base_if_get_carrier_changes(const char *ta, const char *if_name,
+                                     uint64_t *n)
+{
+    te_errno rc;
+
+    if (ta == NULL || if_name == NULL || n == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    rc = cfg_get_uint64(n, "/agent:%s/interface:%s/carrier_changes:",
+                        ta, if_name);
+    if (rc != 0)
+    {
+        ERROR("Failed to get the carrier changes of %s on %s: %r",
+              if_name, ta, rc);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
 tapi_cfg_base_get_loadavg(const char *agent, tapi_cfg_base_loadavg *loadavg)
 {
     te_errno rc;
