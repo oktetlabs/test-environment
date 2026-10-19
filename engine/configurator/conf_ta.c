@@ -902,6 +902,44 @@ handle_result:
 
 /* See the description in conf_ta.h */
 te_errno
+cfg_ta_commit_oids(const char *ta, const te_vec *oids)
+{
+    char * const *oid;
+    cfg_handle handle;
+    te_errno ret;
+    te_errno rc;
+
+    ret = rcf_ta_cfg_group(ta, 0, true);
+    if (ret != 0)
+    {
+        ERROR("Failed(%r) to start group on TA '%s'", ret, ta);
+        return ret;
+    }
+
+    TE_VEC_FOREACH(oids, oid)
+    {
+        ret = cfg_db_find(*oid, &handle);
+        if (ret == 0)
+            ret = cfg_ta_commit_instance(ta, CFG_GET_INST(handle));
+        if (ret != 0)
+        {
+            ERROR("Failed(%r) to commit '%s'", ret, *oid);
+            break;
+        }
+    }
+
+    rc = rcf_ta_cfg_group(ta, 0, false);
+    if (rc != 0)
+    {
+        ERROR("Failed(%r) to end group on TA '%s'", rc, ta);
+        TE_RC_UPDATE(ret, rc);
+    }
+
+    return ret;
+}
+
+/* See the description in conf_ta.h */
+te_errno
 cfg_local_seq_rollback(void)
 {
     char oid[CFG_INST_NAME_MAX];

@@ -1162,6 +1162,191 @@ has_backup(cfg_dh_entry *entry, char *filename)
     return tmp != NULL;
 }
 
+/**
+ * Get the unit instance whose subtree a history entry changes, if the
+ * entry is a committed set of an agent instance of a unit object (one
+ * with unit=true) or of a part of one.
+ *
+ * @param[in]  entry    History entry.
+ * @param[out] handle   Handle of the instance the entry sets.
+ *
+ * @return The unit instance, or @c NULL if the entry is something else
+ *         or its instance is not in the database.
+ */
+static cfg_instance *
+cfg_dh_entry_unit(const cfg_dh_entry *entry, cfg_handle *handle)
+{
+    cfg_instance *inst;
+
+    if (entry->cmd->type != CFG_SET || !entry->committed ||
+        strcmp_start(CFG_TA_PREFIX, entry->old_oid) != 0 ||
+        cfg_db_find(entry->old_oid, handle) != 0)
+        return NULL;
+
+    inst = CFG_GET_INST(*handle);
+    if (inst == NULL || !(inst->obj->unit || inst->obj->unit_part))
+        return NULL;
+
+    while (inst != NULL && !inst->obj->unit)
+        inst = inst->father;
+
+    return inst;
+}
+
+/**
+ * Check whether a history entry is a committed addition of a unit
+ * instance or of one of its ancestors: reverting it deletes the unit
+ * instance.
+ *
+ * @param entry     History entry.
+ * @param unit      Unit instance.
+ *
+ * @return @c true if it is.
+ */
+static bool
+cfg_dh_entry_adds_unit(const cfg_dh_entry *entry, const cfg_instance *unit)
+{
+    const cfg_instance *inst;
+    cfg_handle handle;
+
+    if (entry->cmd->type != CFG_ADD || !entry->committed ||
+        cfg_db_find((char *)entry->cmd +
+                    ((cfg_add_msg *)entry->cmd)->oid_offset, &handle) != 0)
+        return false;
+
+    for (inst = unit; inst != NULL; inst = inst->father)
+    {
+        if (inst == CFG_GET_INST(handle))
+            return true;
+    }
+
+    return false;
+}
+
+/**
+ * Roll back a run of history entries which set instances of one unit
+ * instance together, so that the agent applies the unit once.
+ *
+ * Reverting the sets one by one would make the agent apply the unit
+ * once per set (e.g. re-create an mqprio qdisc or send ETS to the driver
+ * per leaf), and apply intermediate states it may refuse.
+ *
+ * The run is the entry @p run and the entries before it, up to @p limit
+ * (not included), as long as they are committed sets of instances of
+ * @p unit. Their old values are written to the database directly, and
+ * the instances they set are sent to the agent in one group. Messages
+ * are not used for it: local ones would start a local command sequence,
+ * which attaches a backup to the last history entry (one of those freed
+ * here) and whose failure rolls back by calling cfg_dh_restore_backup()
+ * again.
+ *
+ * As with the sets one by one, the other leaves of the unit are not sent:
+ * the agent keeps them as they are. Then the dependants of the instances
+ * sent are synchronized, as after a set.
+ *
+ * The entries of the run are freed, so the history ends before the run.
+ * If the group fails, the unit instance is synchronized: the agent may
+ * not have applied the old values. If the entry before the run adds the
+ * unit instance or an ancestor of it, nothing is sent: the walk deletes
+ * the instance next.
+ *
+ * @param run       Last entry of the run.
+ * @param limit     Entry the rollback stops at.
+ * @param unit      Unit instance.
+ * @param result    Status of the rollback to update on failure.
+ *
+ * @return The entry before the run.
+ */
+static cfg_dh_entry *
+cfg_dh_unit_run_revert(cfg_dh_entry *run, cfg_dh_entry *limit,
+                       const cfg_instance *unit, int *result)
+{
+    te_vec oids = TE_VEC_INIT_AUTOPTR(char *);
+    char *oid = TE_STRDUP(unit->oid);
+    char ta[RCF_MAX_NAME];
+    char * const *leaf;
+    cfg_dh_entry *tmp = run;
+    cfg_dh_entry *prev;
+    cfg_handle handle;
+    unsigned int count = 0;
+    te_errno rc;
+
+    while (tmp != limit && cfg_dh_entry_unit(tmp, &handle) == unit)
+    {
+        rc = cfg_db_set(handle, tmp->old_val);
+        if (rc != 0)
+        {
+            ERROR("%s(): failed to restore %s in the database: %r",
+                  __func__, tmp->old_oid, rc);
+            TE_RC_UPDATE(*result, rc);
+        }
+        if (!te_vec_find_str(&oids, tmp->old_oid, NULL))
+            te_vec_append_str_fmt(&oids, "%s", tmp->old_oid);
+
+        VERB("Restored command %d in the database", tmp->seq);
+        prev = tmp->prev;
+        free_dh_entry(tmp);
+        if (prev != NULL)
+            prev->next = NULL;
+        else
+            first = NULL;
+        last = prev;
+        tmp = prev;
+        count++;
+    }
+
+    /*
+     * The sets of a unit added after the backup go back to the values
+     * its leaves had before the commit that created it (e.g. num_tc 0 of
+     * mqprio), which the agent may refuse. The deletion of the instance
+     * comes next, so do not commit them: the values written to the
+     * database go away with the instance.
+     */
+    if (tmp != limit && tmp != NULL && cfg_dh_entry_adds_unit(tmp, unit))
+    {
+        INFO("Do not commit %s to restore %u commands from history: it is "
+             "deleted next", oid, count);
+        te_vec_free(&oids);
+        free(oid);
+        return tmp;
+    }
+
+    /*
+     * Committing the unit instance would send the leaves outside the run
+     * too, with their values in the database, which the agent may refuse:
+     * phy/speed_admin reads -1 while phy/autoneg is on, and cannot be
+     * set to it.
+     */
+    INFO("Commit %zu instances of %s to restore %u commands from history",
+         te_vec_size(&oids), oid, count);
+    if (cfg_get_ta_name(oid, ta))
+        rc = cfg_ta_commit_oids(ta, &oids);
+    else
+        rc = TE_EINVAL;
+    if (rc != 0)
+    {
+        ERROR("%s(): commit of %s failed: %r", __func__, oid, rc);
+        TE_RC_UPDATE(*result, rc);
+
+        rc = cfg_ta_sync(oid, true);
+        if (rc != 0)
+            ERROR("%s(): failed to synchronize %s: %r", __func__, oid, rc);
+    }
+
+    /* Look the instances up again: a synchronization may delete one. */
+    TE_VEC_FOREACH(&oids, leaf)
+    {
+        if (cfg_db_find(*leaf, &handle) == 0)
+            cfg_ta_sync_dependants(CFG_GET_INST(handle), false);
+        cfg_conf_delay_update(*leaf);
+    }
+    cfg_conf_delay_update(oid);
+
+    te_vec_free(&oids);
+    free(oid);
+    return tmp;
+}
+
 /* See description in conf_dh.h */
 int
 cfg_dh_restore_backup(char *filename, bool hard_check)
@@ -1219,6 +1404,21 @@ cfg_dh_restore_backup(char *filename, bool hard_check)
 
     for (tmp = last; tmp != limit; tmp = prev)
     {
+        const cfg_instance *unit;
+        cfg_handle          handle;
+
+        /*
+         * Sets of a unit go back together. Not while a local command
+         * sequence is open: the synchronizations that follow would
+         * overwrite the values it set in the database.
+         */
+        if (!local_cmd_seq &&
+            (unit = cfg_dh_entry_unit(tmp, &handle)) != NULL)
+        {
+            prev = cfg_dh_unit_run_revert(tmp, limit, unit, &result);
+            continue;
+        }
+
         prev = tmp->prev;
         switch (tmp->cmd->type)
         {

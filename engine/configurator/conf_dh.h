@@ -64,6 +64,12 @@ extern int cfg_dh_attach_backup(char *filename);
  * A value set to an instance which is not in the database any more is not
  * restored: the remaining commands are still processed.
  *
+ * Consecutive committed sets of instances of one unit instance (an object
+ * with @c unit=true and its subtree) are restored together: the instances
+ * they set are sent to the Test Agent in one group, which applies the unit
+ * once. Nothing is sent if the entry before them adds the unit instance or
+ * one of its ancestors, which is deleted next.
+ *
  * @return status code (see te_errno.h)
  * @retval TE_ENOENT       there is not command in dynamic history to which
  *                      the specified backup is attached

@@ -107,6 +107,18 @@ extern int cfg_ta_add_agent_instances(void);
 extern int cfg_tas_commit(const char *oid);
 
 /**
+ * Commit the values of instances in Configurator database to a Test
+ * Agent in one group, which the Test Agent applies at once. Unlike
+ * cfg_tas_commit(), only the instances are sent, not their subtrees.
+ *
+ * @param ta        Test Agent name.
+ * @param oids      OIDs of the instances (strings).
+ *
+ * @return Status code.
+ */
+extern te_errno cfg_ta_commit_oids(const char *ta, const te_vec *oids);
+
+/**
  * Synchronize dependant nodes.
  *
  * @param inst          Instance whose dependants to synchronize.

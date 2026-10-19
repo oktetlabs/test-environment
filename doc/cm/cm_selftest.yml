@@ -23,9 +23,10 @@
       unit: true
       d: |
          The object with commit method. Its "a" property must
-         have the same value as its "b" property, so it is not possible
-         to restore its state from history since Configurator does not
-         try to commit things in this mode.
+         have the same value as its "b" property, so the properties
+         must be changed in one commit. It is a unit: Configurator
+         restores its state from history, as from a backup, by setting
+         both properties and committing it once.
          Name: none
          Value: none
 

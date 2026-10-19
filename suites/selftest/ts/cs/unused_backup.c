@@ -71,9 +71,9 @@ main(int argc, char *argv[])
     RING("Created configuration backup 2: %s", bkp2);
 
     TEST_STEP("In a single commit, set both properties of @b commit_obj to "
-              "@c 1. Configurator can roll this change back only by "
-              "restoring configuration state from backup without using "
-              "history of commands.");
+              "@c 1. They must be equal at a commit: Configurator rolls "
+              "this change back in one commit of the unit, from history "
+              "of commands as from a backup.");
 
     CHECK_RC(cfg_set_instance_local_fmt(
                                     CFG_VAL(UINT32, 1),
