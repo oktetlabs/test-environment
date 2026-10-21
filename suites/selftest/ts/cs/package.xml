@@ -140,6 +140,10 @@
         </run>
 
         <run>
+            <script name="process_group"/>
+        </run>
+
+        <run>
             <script name="process_ping"/>
         </run>
 

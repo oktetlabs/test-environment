@@ -14,6 +14,7 @@ tests = [
     'phy',
     'process',
     'process_autorestart',
+    'process_group',
     'process_ping',
     'set_restore',
     'ta_conf_demo',
