@@ -385,6 +385,25 @@ extern te_errno ta_job_kill(ta_job_manager_t *manager, unsigned int job_id,
  */
 extern te_errno ta_job_killpg(ta_job_manager_t *manager, unsigned int job_id,
                               int signo);
+
+/**
+ * Choose whether stopping a job signals its whole process group.
+ *
+ * A job is started as the leader of a new process group. By default
+ * ta_job_stop() and ta_job_destroy() signal the job's main process
+ * only, so a tool run through a wrapper script keeps running once the
+ * wrapper has been killed. With @p stop_group set, the stop signal and
+ * the @c SIGKILL fallback go to the process group instead, which takes
+ * every descendant that stayed in the group down together with the job.
+ *
+ * @param      manager         Job manager handle
+ * @param      job_id          ID of the job
+ * @param      stop_group      Whether to signal the process group
+ *
+ * @return     Status code
+ */
+extern te_errno ta_job_set_stop_group(ta_job_manager_t *manager,
+                                      unsigned int job_id, bool stop_group);
 /**
  * Wait for a job completion (or check its status if @p timeout_ms is zero)
  *
