@@ -1212,6 +1212,35 @@ cfg_add_instance_child_fmt(cfg_handle *p_handle, cfg_val_type type,
 }
 
 /*
+ * Check whether an object instance can be deleted on its own.
+ *
+ * Only READ-CREATE instances can: the others come and go with their
+ * parent, and the Configurator refuses to delete them, logging an
+ * error for each. A subtree removal therefore skips them rather than
+ * asking.
+ *
+ * @param handle        Object instance handle
+ * @param deletable     Location for the answer
+ *
+ * @return Status code
+ */
+static te_errno
+is_deletable(cfg_handle handle, bool *deletable)
+{
+    cfg_obj_descr   descr;
+    te_errno        rc;
+
+    rc = cfg_get_object_descr(handle, &descr);
+    if (rc != 0)
+        return rc;
+
+    /* The description is copied out of the reply; nothing to free. */
+    *deletable = (descr.access == CFG_READ_CREATE);
+
+    return 0;
+}
+
+/*
  * Delete an object instance with it's subtree
  *
  * @param handle    object instance handle
@@ -1225,6 +1254,7 @@ kill_all(cfg_handle handle, bool local)
     te_errno    ret_val;
     cfg_handle  son;
     cfg_handle  brother;
+    bool        deletable;
 
     if (handle == CFG_HANDLE_INVALID)
     {
@@ -1257,6 +1287,16 @@ kill_all(cfg_handle handle, bool local)
         {
             return TE_RC(TE_CONF_API, ret_val);
         }
+    }
+
+    ret_val = is_deletable(handle, &deletable);
+    if (ret_val != 0)
+    {
+        return TE_RC(TE_CONF_API, ret_val);
+    }
+    if (!deletable)
+    {
+        return 0;
     }
 
     ret_val = kill(handle, local);
