@@ -209,6 +209,40 @@ extern te_errno tapi_cfg_ps_get_autorestart(const char *ta,
                                             unsigned int *value);
 
 /**
+ * Choose whether stopping the process signals its whole process group.
+ *
+ * The agent starts the process as the leader of a new process group,
+ * so with @p value set (the default) a stop takes down everything the
+ * process forked that did not move to another group, a program run
+ * through a wrapper script above all. With @p value unset only the
+ * process the agent started is signalled. Cannot be changed while the
+ * process is running.
+ *
+ * @param ta            Test Agent.
+ * @param ps_name       Process.
+ * @param value         @c true to signal the process group on stop,
+ *                      @c false to signal the process alone.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_ps_set_stop_group(const char *ta,
+                                           const char *ps_name,
+                                           bool value);
+
+/**
+ * Get whether stopping the process signals its whole process group.
+ *
+ * @param[in]  ta       Test Agent.
+ * @param[in]  ps_name  Process.
+ * @param[out] value    @c true if the process group is signalled.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_ps_get_stop_group(const char *ta,
+                                           const char *ps_name,
+                                           bool *value);
+
+/**
  * Set working directory.
  *
  * @param ta        Test Agent name.

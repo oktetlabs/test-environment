@@ -243,6 +243,51 @@ tapi_cfg_ps_get_workdir(const char *ta, const char *ps_name,
     return rc;
 }
 
+/* See descriptions in tapi_cfg_process.h */
+te_errno
+tapi_cfg_ps_set_stop_group(const char *ta, const char *ps_name, bool value)
+{
+    te_errno rc;
+
+    if (ta == NULL || ps_name == NULL)
+    {
+        ERROR("%s: arguments must not be NULL", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = cfg_set_instance_fmt(CFG_VAL(BOOL, value),
+                              TE_CFG_TA_PS "/stop_group:", ta, ps_name);
+    if (rc != 0)
+    {
+        ERROR("Cannot set stop_group value (process '%s', TA '%s'): %r",
+              ps_name, ta, rc);
+    }
+
+    return rc;
+}
+
+/* See descriptions in tapi_cfg_process.h */
+te_errno
+tapi_cfg_ps_get_stop_group(const char *ta, const char *ps_name, bool *value)
+{
+    te_errno rc;
+
+    if (ta == NULL || ps_name == NULL || value == NULL)
+    {
+        ERROR("%s: arguments must not be NULL", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = cfg_get_bool(value, TE_CFG_TA_PS "/stop_group:", ta, ps_name);
+    if (rc != 0)
+    {
+        ERROR("Cannot get stop_group value (process '%s', TA '%s'): %r",
+              ps_name, ta, rc);
+    }
+
+    return rc;
+}
+
 te_errno
 tapi_cfg_ps_set_autorestart(const char *ta, const char *ps_name,
                             unsigned int value)
