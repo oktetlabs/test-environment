@@ -94,6 +94,8 @@ struct ps_entry {
     unsigned int            autorestart;
     unsigned int            time_until_check;
     bool autorestart_failed;
+    /* Whether stopping the process signals its whole process group */
+    bool                    stop_group;
     struct ps_ta_job        ta_job;
 
     te_vec                  exec_params;
@@ -567,6 +569,14 @@ ps_ta_job_reconfigure(struct ps_entry *ps)
 
     ta_job->created = true;
 
+    rc = ta_job_set_stop_group(manager, ta_job->id, ps->stop_group);
+    if (rc != 0)
+    {
+        ERROR("Failed to set process group stop mode of the process '%s', error: %r",
+              ps->name, rc);
+        return rc;
+    }
+
     exec_params = ps_get_exec_params(ps);
     rc = ta_job_add_exec_param(manager, ta_job->id, exec_params);
     if (rc != 0)
@@ -711,6 +721,7 @@ ps_add(unsigned int gid, const char *oid, const char *value,
     ps->autorestart = 0;
     ps->time_until_check = 0;
     ps->autorestart_failed = false;
+    ps->stop_group = true;
     ps->exec_params = TE_VEC_INIT(te_exec_param);
 
     ps_ta_job_init(&ps->ta_job);
@@ -1115,6 +1126,74 @@ ps_autorestart_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     return te_strtoui(value, 10, &ps->autorestart);
+}
+
+static te_errno
+ps_stop_group_get(unsigned int gid, const char *oid, char *value,
+                  const char *ps_name)
+{
+    struct ps_entry *ps;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", ps_name);
+
+    ps = ps_find(ps_name);
+    if (ps == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%d", ps->stop_group);
+
+    return 0;
+}
+
+static te_errno
+ps_stop_group_set(unsigned int gid, const char *oid, const char *value,
+                  const char *ps_name)
+{
+    struct ps_entry *ps;
+    unsigned int stop_group;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", ps_name);
+
+    ps = ps_find(ps_name);
+    if (ps == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (ps->enabled)
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
+
+    rc = te_strtoui(value, 10, &stop_group);
+    if (rc != 0)
+        return rc;
+
+    if (stop_group > 1)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    ps->stop_group = (stop_group != 0);
+
+    /*
+     * The job survives a stop and is reused by the next start, so a
+     * value changed in between has to reach it now rather than at the
+     * next reconfiguration.
+     */
+    if (ps->ta_job.created)
+    {
+        rc = ta_job_set_stop_group(manager, ps->ta_job.id, ps->stop_group);
+        if (rc != 0)
+        {
+            ERROR("Failed to set process group stop mode of the process '%s', error: %r",
+                  ps->name, rc);
+            return rc;
+        }
+    }
+
+    return 0;
 }
 
 static te_errno
@@ -1892,6 +1971,10 @@ RCF_PCH_CFG_NODE_RW(node_ps_autorestart, "autorestart", NULL,
                     &node_ps_workdir, ps_autorestart_get,
                     ps_autorestart_set);
 
+RCF_PCH_CFG_NODE_RW(node_ps_stop_group, "stop_group", NULL,
+                    &node_ps_autorestart, ps_stop_group_get,
+                    ps_stop_group_set);
+
 RCF_PCH_CFG_NODE_RW(node_ps_kill_self, "self", NULL, NULL,
                     ps_kill_common_get, ps_kill_self_set);
 
@@ -1899,7 +1982,7 @@ RCF_PCH_CFG_NODE_RW(node_ps_kill_group, "group", NULL, &node_ps_kill_self,
                     ps_kill_common_get, ps_kill_group_set);
 
 RCF_PCH_CFG_NODE_NA(node_ps_kill, "kill", &node_ps_kill_group,
-                    &node_ps_autorestart);
+                    &node_ps_stop_group);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_ps, "process", &node_ps_kill, NULL,
                             ps_add, ps_del, ps_list, NULL);

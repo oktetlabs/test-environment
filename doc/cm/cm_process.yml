@@ -44,6 +44,9 @@
         0 means stop, restart failure, or that the process should not be
         restarted.
         If the status is 0, it is not allowed to reconfigure the process.
+        Setting 0 sends SIGTERM to the process, or to its whole process
+        group when stop_group is 1, and SIGKILL to the same target if
+        it is still running after a short grace period.
 
     - oid: "/agent/process/status/exit_status"
       access: read_only
@@ -79,6 +82,20 @@
         Time period in seconds to check if the process stopped working and
         restart it if this is the case. 0 means that the process should not be
         restarted.
+
+    - oid: "/agent/process/stop_group"
+      access: read_write
+      type: bool
+      d: |
+        Whether stopping the process (setting status to 0, deleting or
+        reconfiguring a running instance) signals its whole process
+        group rather than the process alone. 1 by default.
+        The process is started as the leader of a new process group, so
+        the group is the process and everything it forked that did not
+        move elsewhere: a program run through a wrapper script, a shell
+        running a pipeline, their helpers. With 0 only the process the
+        agent started is signalled and whatever it forked keeps running.
+        Cannot be changed while the process is running.
 
     - oid: "/agent/process/workdir"
       access: read_write
