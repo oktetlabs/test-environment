@@ -198,8 +198,12 @@ def _parse_test_body(
             # the "Parameters:"/"Steps:" label paragraph.
             para = f'{sm.group(1)}:'
             i += 1
+        elif line.startswith('>'):
+            text, i = _take_quote(lines, i, 0)
+            test.impl.append(text)
+            continue
         elif line.lstrip().startswith('>'):
-            raise ScenarioError(path, i + 1, 'blockquote outside a step')
+            raise ScenarioError(path, i + 1, 'misaligned blockquote')
         elif _ITEM.match(line):
             raise ScenarioError(path, i + 1, 'list outside "Parameters:" or "Steps:"')
         else:

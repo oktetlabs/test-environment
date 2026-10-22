@@ -75,6 +75,9 @@ class Test:
     objective: str = ''
     type: str | None = None
     notes: list[str] = field(default_factory=list)
+    # Implementor advice for the test as a whole: the blockquotes
+    # outside the steps. Never documented, never compared.
+    impl: list[str] = field(default_factory=list)
     params: list[Param] = field(default_factory=list)
     steps: list[Step] = field(default_factory=list)
 

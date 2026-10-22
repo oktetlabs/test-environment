@@ -44,6 +44,7 @@ main(int argc, char *argv[])
     /* enum: consider TEST_GET_ENUM_PARAM */
     TEST_GET_STRING_PARAM(ethdev_state);
 
+    /* IMPL: the port comes from the iut_port env. */
     TEST_STEP("Initialize EAL and configure iut_port.");
     /* The driver may round the value down; read it back.
      *
@@ -72,6 +73,7 @@ def make_test() -> tuple[Package, Test]:
         line=1,
         objective=('Make sure that MTU-sized packets pass and larger do not.'),
         type='use case',
+        impl=['the port comes from the `iut_port` env.'],
         params=[
             Param(name='mtu', description='MTU on IUT'),
             Param(

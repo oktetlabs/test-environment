@@ -96,7 +96,10 @@ The rules:
   appear only once per package.
 * Inside a test, the first paragraph is the ``@objective``; a
   ``Type:`` paragraph sets the ``@type``; any other paragraph
-  before ``Steps:`` becomes a ``@note``.
+  before ``Steps:`` becomes a ``@note``. A blockquote there is
+  implementor advice for the test as a whole, placed in the stub
+  as a comment before the first step; it is not documented and
+  the drift check does not compare it.
 * ``Parameters:`` is followed by a list of
   :literal:`\`name\`: description` items; nested items list the
   values, optionally with a comment after a colon.

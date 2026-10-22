@@ -8,10 +8,10 @@ import re
 import textwrap
 from typing import TYPE_CHECKING
 
-from model import flatten_steps, param_doc_lines, resolve_inline
+from model import Note, flatten_steps, param_doc_lines, resolve_inline
 
 if TYPE_CHECKING:
-    from model import Note, Package, Param, Test
+    from model import Package, Param, Test
 
 _WIDTH = 80
 _INT_RE = re.compile(r'-?\d+')
@@ -209,6 +209,7 @@ def _emit_main(out: list[str], test: Test) -> None:
                 out.append('    /* enum: consider TEST_GET_ENUM_PARAM */')
             out.append(f'    TEST_GET_STRING_PARAM({p.name});')
     out.append('')
+    _emit_notes(out, [Note(text=t, impl=True) for t in test.impl], names, values)
     _emit_steps(out, test)
     out.append('')
     out.append('    TEST_SUCCESS;')

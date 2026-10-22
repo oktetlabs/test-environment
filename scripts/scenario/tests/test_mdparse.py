@@ -39,6 +39,8 @@ Parameters:
   - `TEST_ETHDEV_CONFIGURED`: configured, not started
   - `TEST_ETHDEV_STARTED`
 
+> impl: the port comes from the `iut_port` env.
+
 Steps:
 
 1. Initialize EAL and configure `iut_port`.
@@ -66,6 +68,7 @@ def test_full_document(tmp_path: Path) -> None:
     assert t.objective.startswith('Make sure that MTU-sized')
     assert t.type == 'use case'
     assert t.notes == ['A test-level remark.']
+    assert t.impl == ['the port comes from the `iut_port` env.']
     assert [p.name for p in t.params] == ['mtu', 'ethdev_state']
     vals = t.params[1].values
     assert vals[0].name == 'TEST_ETHDEV_CONFIGURED'
@@ -177,7 +180,7 @@ def test_heading_inside_test(tmp_path: Path) -> None:
         parse_package(write_pkg(tmp_path, 'p', body))
 
 
-def test_blockquote_outside_step(tmp_path: Path) -> None:
+def test_test_level_blockquote(tmp_path: Path) -> None:
     body = """\
     # p: S
 
@@ -185,7 +188,29 @@ def test_blockquote_outside_step(tmp_path: Path) -> None:
 
     O.
 
-    > stray quote
+    > impl: read the queue counters
+    > with the XDP program.
+
+    > Plain advice.
+
+    Steps:
+
+    1. A.
+    """
+    t = parse_package(write_pkg(tmp_path, 'p', body)).tests[0]
+    assert t.impl == ['read the queue counters with the XDP program.', 'Plain advice.']
+    assert t.notes == []
+
+
+def test_misaligned_blockquote(tmp_path: Path) -> None:
+    body = """\
+    # p: S
+
+    ## t: T
+
+    O.
+
+      > stray quote
 
     Steps:
 
