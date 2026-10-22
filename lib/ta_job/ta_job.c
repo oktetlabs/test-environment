@@ -972,6 +972,9 @@ proc_kill(pid_t pid, int signo, int term_timeout_ms, bool group)
             ERROR("Failed to wait for killed process");
             return te_rc_os2te(errno);
         }
+
+        /* The process is gone, which is all the caller asked for */
+        rc = 0;
     }
 
     return rc;
