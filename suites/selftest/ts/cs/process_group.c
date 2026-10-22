@@ -16,7 +16,9 @@
  * agent knows the wrapper's pid, the wrapper forks the real program
  * and waits for it. Killing the wrapper alone leaves the program
  * running, which is what the next test, or the next run, then
- * stumbles over.
+ * stumbles over. The wrapper dies on the first signal at once, so the
+ * stop must keep watching the group after that: a program that
+ * ignores SIGTERM only goes with the SIGKILL the stop falls back to.
  *
  * @par Scenario:
  *
@@ -27,6 +29,8 @@
 #define TE_TEST_NAME    "process_group"
 
 #include "te_config.h"
+
+#include <stdarg.h>
 
 #include "tapi_test.h"
 #include "conf_api.h"
@@ -44,16 +48,22 @@
 
 /**
  * Run a one-shot tool as a process entry and return its exit status.
+ * The argument list is terminated by @c NULL.
  */
 static void
 run_tool(const char *ta, const char *ps_name, const char *exe,
-         const char *arg1, const char *arg2, int *exit_value)
+         int *exit_value, ...)
 {
     tapi_cfg_ps_exit_status_t exit_status;
+    const char *arg;
+    unsigned int i;
+    va_list ap;
 
     CHECK_RC(tapi_cfg_ps_add(ta, ps_name, exe, false));
-    CHECK_RC(tapi_cfg_ps_add_arg(ta, ps_name, 1, arg1));
-    CHECK_RC(tapi_cfg_ps_add_arg(ta, ps_name, 2, arg2));
+    va_start(ap, exit_value);
+    for (i = 1; (arg = va_arg(ap, const char *)) != NULL; i++)
+        CHECK_RC(tapi_cfg_ps_add_arg(ta, ps_name, i, arg));
+    va_end(ap);
     CHECK_RC(tapi_cfg_ps_start(ta, ps_name));
     CHECK_RC(tapi_cfg_ps_wait(ta, ps_name, CHECK_TIMEOUT_MS, &exit_status));
     CHECK_RC(tapi_cfg_ps_del(ta, ps_name));
@@ -74,7 +84,7 @@ child_is_running(const char *ta, const char *ps_name)
 {
     int value;
 
-    run_tool(ta, ps_name, "pgrep", "-fx", CHILD_CMD, &value);
+    run_tool(ta, ps_name, "pgrep", &value, "-fx", CHILD_CMD, NULL);
     if (value != 0 && value != 1)
         TEST_FAIL("pgrep exited with unexpected status %d", value);
 
@@ -103,10 +113,16 @@ main(int argc, char *argv[])
 {
     const char *ta = "Agt_A";
     const char *ps_name = "pgroup_shell";
+    const char *ign_name = "pgroup_shell_ign";
     bool stop_group;
     int value;
 
     TEST_START;
+
+    TEST_STEP("Kill a child an earlier failed run may have left behind");
+    /* SIGKILL: one of the children below ignores SIGTERM */
+    run_tool(ta, "pgroup_pkill0", "pkill", &value, "-9", "-fx", CHILD_CMD,
+             NULL);
 
     TEST_STEP("Add a shell process that forks a child and waits for it");
     CHECK_RC(tapi_cfg_ps_add(ta, ps_name, "sh", false));
@@ -125,6 +141,24 @@ main(int argc, char *argv[])
     if (child_is_running(ta, "pgroup_check1"))
         TEST_VERDICT("The child survived a stop with stop_group on");
 
+    TEST_STEP("Add a shell whose child ignores SIGTERM, start and stop "
+              "it: the stop must fall back to SIGKILL for the child");
+    CHECK_RC(tapi_cfg_ps_add(ta, ign_name, "sh", false));
+    CHECK_RC(tapi_cfg_ps_add_arg(ta, ign_name, 1, "-c"));
+    /*
+     * The outer shell dies on SIGTERM at once, like a wrapper script.
+     * The inner one ignores it and so does the sleep it execs: the
+     * ignored disposition is inherited.
+     */
+    CHECK_RC(tapi_cfg_ps_add_arg(ta, ign_name, 2,
+                                 "sh -c 'trap \"\" TERM; " CHILD_CMD
+                                 "'; true"));
+    start_and_stop(ta, ign_name);
+    if (child_is_running(ta, "pgroup_check_ign"))
+        TEST_VERDICT("A child ignoring SIGTERM survived a stop "
+                     "with stop_group on");
+    CHECK_RC(tapi_cfg_ps_del(ta, ign_name));
+
     TEST_STEP("Turn stop_group off, start and stop the shell again: "
               "the child must survive");
     CHECK_RC(tapi_cfg_ps_set_stop_group(ta, ps_name, false));
@@ -137,7 +171,7 @@ main(int argc, char *argv[])
         TEST_VERDICT("The child did not survive a stop with stop_group off");
 
     TEST_STEP("Kill the surviving child");
-    run_tool(ta, "pgroup_pkill", "pkill", "-fx", CHILD_CMD, &value);
+    run_tool(ta, "pgroup_pkill", "pkill", &value, "-fx", CHILD_CMD, NULL);
     if (value != 0)
         TEST_FAIL("pkill did not find the child it was supposed to kill");
 
