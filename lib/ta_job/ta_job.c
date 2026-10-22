@@ -933,11 +933,39 @@ proc_signal(pid_t pid, int signo, bool group)
     return kill(pid, signo);
 }
 
+/*
+ * Wait until no process of the group @p pgid is left, or @p timeout_ms
+ * passes. A child that outlives the leader keeps the group alive and
+ * is reaped by init, not by us, so the probe is killpg() with signal 0
+ * rather than waitpid(). The kernel does not hand the number out again
+ * while any process still has it as its group, so the probe cannot
+ * hit somebody else's group.
+ */
+static te_errno
+group_wait(pid_t pgid, int timeout_ms)
+{
+    struct timeval tv_start;
+    struct timeval tv_now;
+
+    gettimeofday(&tv_start, NULL);
+    while (killpg(pgid, 0) == 0)
+    {
+        gettimeofday(&tv_now, NULL);
+        if (TE_US2MS(TIMEVAL_SUB(tv_now, tv_start)) > timeout_ms)
+            return TE_EINPROGRESS;
+
+        usleep(PROC_WAIT_US);
+    }
+
+    return 0;
+}
+
 static te_errno
 proc_kill(pid_t pid, int signo, int term_timeout_ms, bool group)
 {
     te_errno rc;
     int timeout = term_timeout_ms >= 0 ? term_timeout_ms : KILL_TIMEOUT_MS;
+    bool leader_gone;
 
     /* Don't consider kill() failure if the call failed with ESRCH */
     if (proc_signal(pid, signo, group) < 0 && errno != ESRCH)
@@ -949,17 +977,36 @@ proc_kill(pid_t pid, int signo, int term_timeout_ms, bool group)
     }
 
     /*
-     * Wait for process for requested amount of time (or default)
-     * before killing the process with SIGKILL
+     * Wait for the process, and for a group stop also for everything
+     * it forked, for the requested amount of time (or default) before
+     * killing with SIGKILL. A wrapper script dies on the first signal
+     * at once; the program it ran is what the stop is really about.
      */
-    if ((rc = proc_wait(pid, timeout, NULL)) != 0 && signo != SIGKILL)
-    {
-        WARN("Failed to wait for killed process");
+    rc = proc_wait(pid, timeout, NULL);
+    leader_gone = (rc == 0);
+    if (leader_gone && group)
+        rc = group_wait(pid, timeout);
 
-        if (proc_signal(pid, SIGKILL, group) < 0 && errno != ESRCH)
+    if (rc != 0 && signo != SIGKILL)
+    {
+        WARN("Failed to wait for killed process%s", group ? " group" : "");
+
+        /*
+         * The leader may be gone already while its children live on,
+         * in which case proc_signal() would not find its group: the
+         * group is the job's own (see te_exec_child()), so kill it by
+         * its number, and the leader by its pid while it still lives.
+         */
+        if (group && killpg(pid, SIGKILL) < 0 && errno != ESRCH)
         {
-            ERROR("Process %s(%d, SIGKILL) failed: %s",
-                  group ? "killpg" : "kill", pid, strerror(errno));
+            ERROR("Process killpg(%d, SIGKILL) failed: %s", pid,
+                  strerror(errno));
+            return te_rc_os2te(errno);
+        }
+        if (!leader_gone && kill(pid, SIGKILL) < 0 && errno != ESRCH)
+        {
+            ERROR("Process kill(%d, SIGKILL) failed: %s", pid,
+                  strerror(errno));
             return te_rc_os2te(errno);
         }
 
@@ -967,13 +1014,23 @@ proc_kill(pid_t pid, int signo, int term_timeout_ms, bool group)
          * Since SIGKILL cannot be intercepted, wait for process for
          * default amout of time
          */
-        if (proc_wait(pid, KILL_TIMEOUT_MS, NULL) != 0)
+        if (!leader_gone && proc_wait(pid, KILL_TIMEOUT_MS, NULL) != 0)
         {
             ERROR("Failed to wait for killed process");
             return te_rc_os2te(errno);
         }
 
-        /* The process is gone, which is all the caller asked for */
+        /*
+         * A big process takes a while to be torn down even by SIGKILL,
+         * so give the group the same time it had for the first signal
+         */
+        if (group && (rc = group_wait(pid, timeout)) != 0)
+        {
+            ERROR("Process group %d is still not empty after SIGKILL",
+                  pid);
+            return rc;
+        }
+
         rc = 0;
     }
 
