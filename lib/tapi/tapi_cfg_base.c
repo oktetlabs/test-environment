@@ -59,6 +59,19 @@
 #define CFG_ALIEN_LINK_ADDR "/volatile:/alien_link_addr:"
 #define CFG_FAKE_LINK_ADDR "/volatile:/fake_link_addr:"
 
+/** Format of the OID of a VLAN of an interface */
+#define TAPI_CFG_BASE_VLAN_FMT "/agent:%s/interface:%s/vlans:%u"
+
+/** Format of the OID of an egress QoS mapping of a VLAN */
+#define TAPI_CFG_BASE_VLAN_EGRESS_QOS_FMT \
+    TAPI_CFG_BASE_VLAN_FMT "/egress_qos:%u"
+
+/** Largest VLAN ID of a VLAN interface: IEEE 802.1Q reserves 4095 */
+#define TAPI_CFG_BASE_VLAN_VID_MAX 4094
+
+/** Largest PCP of a VLAN tag */
+#define TAPI_CFG_BASE_VLAN_PCP_MAX 7
+
 /* See the description in tapi_cfg_base.h */
 char *
 tapi_cfg_base_get_ta_dir(const char *ta, tapi_cfg_base_ta_dir kind)
@@ -970,6 +983,92 @@ tapi_cfg_base_if_add_vlan_with_name(const char *ta, const char *if_name,
     free(result_vlan_ifname);
 
     return 0;
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_vlan_egress_qos_set(const char *ta, const char *if_name,
+                                     uint16_t vid, uint32_t prio,
+                                     uint8_t pcp)
+{
+    cfg_handle handle;
+    te_errno rc;
+
+    if (ta == NULL || if_name == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    if (vid > TAPI_CFG_BASE_VLAN_VID_MAX)
+    {
+        ERROR("%s(): VLAN ID %u is out of the range 0..%u", __FUNCTION__,
+              vid, TAPI_CFG_BASE_VLAN_VID_MAX);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    /* The kernel treats PCP 0 as no mapping: delete the mapping instead */
+    if (pcp < 1 || pcp > TAPI_CFG_BASE_VLAN_PCP_MAX)
+    {
+        ERROR("%s(): PCP %u is out of the range 1..%u", __FUNCTION__,
+              pcp, TAPI_CFG_BASE_VLAN_PCP_MAX);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = cfg_find_fmt(&handle, TAPI_CFG_BASE_VLAN_EGRESS_QOS_FMT,
+                      ta, if_name, (unsigned int)vid, (unsigned int)prio);
+    if (rc == 0)
+    {
+        return cfg_set_instance_fmt(CFG_VAL(UINT8, pcp),
+                                    TAPI_CFG_BASE_VLAN_EGRESS_QOS_FMT,
+                                    ta, if_name, (unsigned int)vid,
+                                    (unsigned int)prio);
+    }
+    if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
+        return rc;
+
+    return cfg_add_instance_fmt(NULL, CFG_VAL(UINT8, pcp),
+                                TAPI_CFG_BASE_VLAN_EGRESS_QOS_FMT,
+                                ta, if_name, (unsigned int)vid,
+                                (unsigned int)prio);
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_vlan_egress_qos_get(const char *ta, const char *if_name,
+                                     uint16_t vid, uint32_t prio,
+                                     uint8_t *pcp)
+{
+    te_errno rc;
+
+    if (ta == NULL || if_name == NULL || pcp == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    /*
+     * The map may be changed outside TE: get the PCP the kernel has.
+     * cfg_get_uint8_sync() does not do for that: it looks the mapping up
+     * in the database first and so misses one added outside TE. A
+     * synchronization of the OID of the mapping adds it to the database,
+     * or removes it if the kernel has no such mapping.
+     */
+    rc = cfg_synchronize_fmt(false, TAPI_CFG_BASE_VLAN_EGRESS_QOS_FMT,
+                             ta, if_name, (unsigned int)vid,
+                             (unsigned int)prio);
+    if (rc != 0)
+        return rc;
+
+    return cfg_get_uint8(pcp, TAPI_CFG_BASE_VLAN_EGRESS_QOS_FMT,
+                         ta, if_name, (unsigned int)vid, (unsigned int)prio);
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_vlan_egress_qos_del(const char *ta, const char *if_name,
+                                     uint16_t vid, uint32_t prio)
+{
+    if (ta == NULL || if_name == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    return cfg_del_instance_fmt(false, TAPI_CFG_BASE_VLAN_EGRESS_QOS_FMT,
+                                ta, if_name, (unsigned int)vid,
+                                (unsigned int)prio);
 }
 
 /* See description in tapi_cfg_base.h */

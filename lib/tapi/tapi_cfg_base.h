@@ -801,6 +801,62 @@ extern te_errno tapi_cfg_base_if_add_vlan_with_name(const char *ta,
                                                     const char *vlan_ifname);
 
 /**
+ * Map a socket priority to a PCP in the egress QoS map of a VLAN
+ * interface: add the mapping, or change it if the priority has one.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Base interface name
+ * @param vid           VLAN ID, from @c 0 to @c 4094
+ * @param prio          Socket priority (@c SO_PRIORITY)
+ * @param pcp           PCP, from @c 1 to @c 7
+ *
+ * @return Status code; @c TE_EINVAL for a VLAN ID or a PCP out of range,
+ *         PCP 0 included: the kernel treats it as no mapping (delete the
+ *         mapping instead).
+ */
+extern te_errno tapi_cfg_base_if_vlan_egress_qos_set(const char *ta,
+                                                     const char *if_name,
+                                                     uint16_t vid,
+                                                     uint32_t prio,
+                                                     uint8_t pcp);
+
+/**
+ * Get the PCP a socket priority maps to in the egress QoS map of a VLAN
+ * interface. The mapping is synchronized with the Test Agent first, so
+ * the PCP is the one the kernel reports, also for a mapping changed
+ * outside TE.
+ *
+ * @param[in]  ta       Test Agent name
+ * @param[in]  if_name  Base interface name
+ * @param[in]  vid      VLAN ID
+ * @param[in]  prio     Socket priority
+ * @param[out] pcp      PCP
+ *
+ * @return Status code; @c TE_ENOENT if the priority has no mapping.
+ */
+extern te_errno tapi_cfg_base_if_vlan_egress_qos_get(const char *ta,
+                                                     const char *if_name,
+                                                     uint16_t vid,
+                                                     uint32_t prio,
+                                                     uint8_t *pcp);
+
+/**
+ * Remove the mapping of a socket priority from the egress QoS map of a
+ * VLAN interface.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Base interface name
+ * @param vid           VLAN ID
+ * @param prio          Socket priority
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_base_if_vlan_egress_qos_del(const char *ta,
+                                                     const char *if_name,
+                                                     uint16_t vid,
+                                                     uint32_t prio);
+
+/**
  * Delete VLAN if it exists and add VLAN interface and get its name if
  * possible.
  *
