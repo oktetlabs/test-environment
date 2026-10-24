@@ -65,5 +65,18 @@
                 <notes>The test fails on purpose</notes>
             </iter>
         </test>
+        <test name="vlan_egress_qos" type="script">
+            <objective>Check the VLAN egress QoS map</objective>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <notes/>
+                <results tags="no_veth_if">
+                    <result value="SKIPPED">
+                        <verdict>Cannot create a veth pair</verdict>
+                    </result>
+                </results>
+            </iter>
+        </test>
     </iter>
 </test>

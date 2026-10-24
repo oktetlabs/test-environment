@@ -28,6 +28,7 @@ tests = [
     'uname',
     'unused_backup',
     'user',
+    'vlan_egress_qos',
     'vlans',
     'vm',
 ]
