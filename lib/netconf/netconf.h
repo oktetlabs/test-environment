@@ -229,12 +229,21 @@ typedef struct netconf_ipvlan {
     char       *ifname;    /**< Interface name */
 } netconf_ipvlan;
 
+/** Mapping of a VLAN QoS map */
+typedef struct netconf_vlan_qos_map {
+    uint32_t    from;      /**< Socket priority (egress map) */
+    uint32_t    to;        /**< PCP of the tag (egress map) */
+} netconf_vlan_qos_map;
+
 /** VLAN network interface */
 typedef struct netconf_vlan {
     int         link;      /**< Parent (link) interface index */
     int         ifindex;   /**< VLAN interface index */
     char       *ifname;    /**< Interface name */
     uint32_t    vid;       /**< VLAN ID */
+    netconf_vlan_qos_map *egress_qos;  /**< Egress QoS map entries */
+    unsigned int n_egress_qos;         /**< Number of egress QoS map
+                                            entries */
 } netconf_vlan;
 
 /** Virtual Ethernet network interface */
@@ -905,6 +914,41 @@ extern te_errno netconf_vlan_list(netconf_handle nh, const char *link,
 extern te_errno netconf_vlan_get_ifname(netconf_handle nh, const char *link,
                                         unsigned int vid,
                                         char *ifname, size_t len);
+
+/**
+ * Set a mapping of the egress QoS map of a VLAN interface: the PCP of
+ * the tag for packets of a socket priority. A mapping to PCP @c 0 is how
+ * the kernel removes a mapping.
+ *
+ * @param nh        Netconf session handle
+ * @param link      Link (main) interface name
+ * @param vid       VLAN ID
+ * @param from      Socket priority
+ * @param to        PCP
+ *
+ * @return Status code
+ */
+extern te_errno netconf_vlan_egress_qos_set(netconf_handle nh,
+                                            const char *link,
+                                            unsigned int vid,
+                                            uint32_t from, uint32_t to);
+
+/**
+ * Get the egress QoS map of a VLAN interface as the kernel reports it
+ * (mappings to PCP @c 0 are not reported).
+ *
+ * @param nh        Netconf session handle
+ * @param link      Link (main) interface name
+ * @param vid       VLAN ID
+ * @param maps      Vector of @ref netconf_vlan_qos_map the mappings are
+ *                  appended to
+ *
+ * @return Status code; @c TE_ENOENT if there is no such VLAN
+ */
+extern te_errno netconf_vlan_egress_qos_get(netconf_handle nh,
+                                            const char *link,
+                                            unsigned int vid,
+                                            te_vec *maps);
 
 /**
  * Add new veth interface.

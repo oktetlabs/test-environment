@@ -511,6 +511,18 @@
          Name: VLAN id
          Value: OS name of VLAN interface
 
+    - oid: "/agent/interface/vlans/egress_qos"
+      access: read_create
+      type: uint8
+      d: |
+         Egress QoS map of the VLAN interface: the PCP written into the
+         tag of the packets of a socket priority. The collection lists
+         the mappings the kernel reports, including ones made outside TE.
+         Name: socket priority (skb->priority), a decimal number
+         Value: PCP, 1 to 7. 0 is refused with TE_EINVAL: the kernel
+                treats a mapping to PCP 0 as no mapping and does not
+                report it. Deleting the instance removes the mapping.
+
     - oid: "/agent/interface/macvlan"
       access: read_create
       type: string

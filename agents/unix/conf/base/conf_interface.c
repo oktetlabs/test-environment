@@ -107,6 +107,9 @@
 #define IF_NAMESIZE IFNAMSIZ
 #endif
 
+/** Largest PCP of a VLAN tag */
+#define VLAN_PCP_MAX 7
+
 
 /**
  * Determine family of the address in string representation.
@@ -289,6 +292,11 @@ static te_errno bcast_link_addr_set(const ta_conf_ctx *ctx,
 
 static te_errno vlan_ifname_get(const ta_conf_ctx *ctx, te_string *val);
 
+static te_errno vlan_egress_qos_get(const ta_conf_ctx *ctx, uint8_t *val);
+static te_errno vlan_egress_qos_set(const ta_conf_ctx *ctx, uint8_t val);
+static te_errno vlan_egress_qos_del(const ta_conf_ctx *ctx);
+static te_errno vlan_egress_qos_list(const ta_conf_ctx *ctx, te_vec *names);
+
 #ifndef USE_LIBNETCONF
 static te_errno vlan_ifname_get_internal(const char *ifname, int vlan_id,
                                          char *v_ifname);
@@ -417,7 +425,11 @@ static const ta_conf_node *const node_interface =
         TA_CONF_RW_STR("rp_filter", rp_filter_get, rp_filter_set),
         TA_CONF_COLL_STR("vlans", vlans_get, vlans_add, vlans_del,
                          vlans_list,
-            TA_CONF_RO_STR("ifname", vlan_ifname_get)),
+            TA_CONF_RO_STR("ifname", vlan_ifname_get),
+            TA_CONF_COLL_UINT8_RW("egress_qos", vlan_egress_qos_get,
+                                  vlan_egress_qos_set, vlan_egress_qos_set,
+                                  vlan_egress_qos_del,
+                                  vlan_egress_qos_list)),
         TA_CONF_COLL("mcast_link_addr", mcast_link_addr_add,
                     mcast_link_addr_del, mcast_link_addr_list),
         TA_CONF_COLL_STR_RW("net_addr", prefix_get, prefix_set,
@@ -1256,6 +1268,247 @@ vlans_add(const ta_conf_ctx *ctx, const char *value)
     }
 #else
     ERROR("This test agent does not support VLANs");
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+}
+
+#ifdef USE_LIBNETCONF
+/**
+ * Get the VLAN ID of an "agent/interface/vlans" instance from its name.
+ *
+ * @param ctx           request context
+ * @param vid           VLAN ID location
+ *
+ * @return              Status code
+ */
+static te_errno
+vlan_egress_qos_vid(const ta_conf_ctx *ctx, unsigned int *vid)
+{
+    const char *vid_str = ta_conf_ctx_inst(ctx, "vlans");
+    te_errno rc;
+
+    rc = te_strtoui(vid_str, 10, vid);
+    if (rc != 0)
+    {
+        ERROR("Invalid VLAN ID '%s': %r", vid_str, rc);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    return 0;
+}
+
+/**
+ * Get the socket priority of an "agent/interface/vlans/egress_qos"
+ * instance from its name.
+ *
+ * @param ctx           request context
+ * @param prio          socket priority location
+ *
+ * @return              Status code
+ */
+static te_errno
+vlan_egress_qos_prio(const ta_conf_ctx *ctx, uint32_t *prio)
+{
+    const char *prio_str = ta_conf_ctx_inst(ctx, "egress_qos");
+    unsigned int val;
+    te_errno rc;
+
+    rc = te_strtoui(prio_str, 10, &val);
+    if (rc != 0)
+    {
+        ERROR("Invalid socket priority '%s': %r", prio_str, rc);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    *prio = val;
+
+    return 0;
+}
+
+/**
+ * Set a mapping of the egress QoS map of a VLAN interface.
+ *
+ * @param ctx           request context
+ * @param pcp           PCP, or @c 0 to remove the mapping
+ *
+ * @return              Status code
+ */
+static te_errno
+vlan_egress_qos_apply(const ta_conf_ctx *ctx, uint8_t pcp)
+{
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    unsigned int vid;
+    uint32_t prio;
+    te_errno rc;
+
+    rc = vlan_egress_qos_vid(ctx, &vid);
+    if (rc != 0)
+        return rc;
+
+    rc = vlan_egress_qos_prio(ctx, &prio);
+    if (rc != 0)
+        return rc;
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    return netconf_vlan_egress_qos_set(nh, ifname, vid, prio, pcp);
+}
+
+/**
+ * Get the egress QoS map of a VLAN interface.
+ *
+ * @param ctx           request context
+ * @param maps          vector of @ref netconf_vlan_qos_map to fill
+ *
+ * @return              Status code
+ */
+static te_errno
+vlan_egress_qos_maps(const ta_conf_ctx *ctx, te_vec *maps)
+{
+    const char *ifname = ta_conf_ctx_inst(ctx, "interface");
+    unsigned int vid;
+    te_errno rc;
+
+    rc = vlan_egress_qos_vid(ctx, &vid);
+    if (rc != 0)
+        return rc;
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    return netconf_vlan_egress_qos_get(nh, ifname, vid, maps);
+}
+#endif /* USE_LIBNETCONF */
+
+/**
+ * Get the PCP of an "agent/interface/vlans/egress_qos" instance.
+ *
+ * @param ctx           request context
+ * @param val           PCP location
+ *
+ * @return              Status code
+ */
+static te_errno
+vlan_egress_qos_get(const ta_conf_ctx *ctx, uint8_t *val)
+{
+#ifdef USE_LIBNETCONF
+    te_vec maps = TE_VEC_INIT(netconf_vlan_qos_map);
+    netconf_vlan_qos_map *map;
+    uint32_t prio;
+    te_errno rc;
+
+    rc = vlan_egress_qos_prio(ctx, &prio);
+    if (rc != 0)
+        return rc;
+
+    rc = vlan_egress_qos_maps(ctx, &maps);
+    if (rc != 0)
+        return rc;
+
+    rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+    TE_VEC_FOREACH(&maps, map)
+    {
+        if (map->from == prio && map->to != 0)
+        {
+            *val = map->to;
+            rc = 0;
+            break;
+        }
+    }
+    te_vec_free(&maps);
+
+    return rc;
+#else
+    UNUSED(ctx);
+    UNUSED(val);
+
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+}
+
+/**
+ * Add or change an "agent/interface/vlans/egress_qos" instance.
+ *
+ * @param ctx           request context
+ * @param val           PCP, from @c 1 to @ref VLAN_PCP_MAX
+ *
+ * @return              Status code
+ */
+static te_errno
+vlan_egress_qos_set(const ta_conf_ctx *ctx, uint8_t val)
+{
+    if (val < 1 || val > VLAN_PCP_MAX)
+    {
+        ERROR("PCP %u is out of the range 1..%u", val, VLAN_PCP_MAX);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+#ifdef USE_LIBNETCONF
+    return vlan_egress_qos_apply(ctx, val);
+#else
+    UNUSED(ctx);
+
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+}
+
+/**
+ * Delete an "agent/interface/vlans/egress_qos" instance: map the
+ * priority to PCP 0, which removes the mapping.
+ *
+ * @param ctx           request context
+ *
+ * @return              Status code
+ */
+static te_errno
+vlan_egress_qos_del(const ta_conf_ctx *ctx)
+{
+#ifdef USE_LIBNETCONF
+    return vlan_egress_qos_apply(ctx, 0);
+#else
+    UNUSED(ctx);
+
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+}
+
+/**
+ * List the "agent/interface/vlans/egress_qos" instances: the socket
+ * priorities the kernel reports a mapping for.
+ *
+ * @param ctx           request context
+ * @param names         vector the names are appended to
+ *
+ * @return              Status code
+ */
+static te_errno
+vlan_egress_qos_list(const ta_conf_ctx *ctx, te_vec *names)
+{
+#ifdef USE_LIBNETCONF
+    te_vec maps = TE_VEC_INIT(netconf_vlan_qos_map);
+    netconf_vlan_qos_map *map;
+    te_errno rc;
+
+    rc = vlan_egress_qos_maps(ctx, &maps);
+    if (rc != 0)
+        return rc;
+
+    TE_VEC_FOREACH(&maps, map)
+    {
+        if (map->to != 0)
+        {
+            char *name = te_string_fmt("%u", (unsigned int)map->from);
+
+            TE_VEC_APPEND(names, name);
+        }
+    }
+    te_vec_free(&maps);
+
+    return 0;
+#else
+    UNUSED(ctx);
+    UNUSED(names);
+
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif
 }
