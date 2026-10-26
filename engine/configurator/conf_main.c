@@ -1894,6 +1894,8 @@ log_msg(cfg_msg *msg, bool before)
                     op == CFG_BACKUP_RESTORE ? "Restore" :
                     op == CFG_BACKUP_RESTORE_NOHISTORY ?
                     "Restore w/o history" :
+                    op == CFG_BACKUP_RESTORE_HISTORY ?
+                    "Restore from history" :
                     op == CFG_BACKUP_RELEASE ? "Release" :
                     op == CFG_BACKUP_VERIFY ? "Verify" : "unknown",
                     op == CFG_BACKUP_CREATE ? "" : bkp_filename,
@@ -2303,6 +2305,7 @@ process_backup(cfg_backup_msg *msg, bool release_dh)
 
         case CFG_BACKUP_RESTORE:
         case CFG_BACKUP_RESTORE_NOHISTORY:
+        case CFG_BACKUP_RESTORE_HISTORY:
         {
             te_string backup = TE_STRING_INIT;
 
@@ -2318,7 +2321,12 @@ process_backup(cfg_backup_msg *msg, bool release_dh)
             {
                 /* Try to restore using dynamic history */
                 msg->rc = cfg_dh_restore_backup(backup_filename, true);
-                if (msg->rc != 0)
+                if (msg->rc != 0 && msg->op == CFG_BACKUP_RESTORE_HISTORY)
+                {
+                    ERROR("Restoring backup from history failed: %r",
+                          msg->rc);
+                }
+                else if (msg->rc != 0)
                 {
                     WARN("Restoring backup from history failed; "
                          "restore from the file");
@@ -2343,6 +2351,13 @@ process_backup(cfg_backup_msg *msg, bool release_dh)
                     rcf_check_agents();
                 }
                 cfg_ta_sync("/:", true);
+
+                /* The caller checks the rollback: no fallback to the file */
+                if (msg->op == CFG_BACKUP_RESTORE_HISTORY)
+                {
+                    rcf_log_cfg_changes(false);
+                    break;
+                }
             }
 
             /*

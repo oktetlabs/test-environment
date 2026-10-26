@@ -289,6 +289,9 @@ typedef struct cfg_backup_msg {
 
 /** Restore configuration backup w/o trying to process history */
 #define CFG_BACKUP_RESTORE_NOHISTORY  5
+
+/** Restore configuration backup from history only, w/o the backup file */
+#define CFG_BACKUP_RESTORE_HISTORY    6
     unsigned int subtrees_num; /**< Number of subtrees */
     size_t subtrees_offset;    /**< Offset to subtrees string from message
                                     start. The string must contain subtrees

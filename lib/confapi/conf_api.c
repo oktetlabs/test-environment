@@ -2542,6 +2542,13 @@ cfg_restore_backup_nohistory(const char *name)
     return cfg_backup(NULL, name, CFG_BACKUP_RESTORE_NOHISTORY);
 }
 
+/* See description in conf_api.h */
+te_errno
+cfg_restore_backup_history(const char *name)
+{
+    return cfg_backup(NULL, name, CFG_BACKUP_RESTORE_HISTORY);
+}
+
 
 /* See description in conf_api.h */
 te_errno

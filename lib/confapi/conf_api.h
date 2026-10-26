@@ -1015,6 +1015,19 @@ extern te_errno cfg_restore_backup_ta(const char *ta, const char *name);
  */
 extern te_errno cfg_restore_backup_nohistory(const char *name);
 
+/**
+ * Restore the backup from the configuration history only. Unlike
+ * cfg_restore_backup(), do not fall back to the backup file if the
+ * rollback fails, so that a test can check the rollback itself.
+ *
+ * @param name      name returned by cfg_create_backup
+ *
+ * @return Status code (see te_errno.h): the error of the rollback, or of
+ *         the check of its result against the backup. After a failure the
+ *         configuration is synchronized with the agents and left as it is.
+ */
+extern te_errno cfg_restore_backup_history(const char *name);
+
 
 /**
  * Ask Configurator to forget about the backup, if known.
