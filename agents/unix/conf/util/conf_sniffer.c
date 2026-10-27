@@ -280,8 +280,8 @@ sniffer_settings_init(void)
     snif_sets.file_size         = SNIFFER_FILE_SIZE;
     snif_sets.overfill_meth     = ROTATION;
     snif_sets.rotation          = SNIFFER_ROTATION;
-    snif_sets.filter_exp_str    = strdup("");
-    snif_sets.filter_exp_file   = strdup("");
+    snif_sets.filter_exp_str    = TE_STRDUP("");
+    snif_sets.filter_exp_file   = TE_STRDUP("");
 
     SLIST_INIT(&snifferl_h);
 
@@ -447,15 +447,13 @@ sniffer_set_params(unsigned int gid, const char *oid, const char *value)
     {
         if (snif_sets.filter_exp_str != NULL)
             free(snif_sets.filter_exp_str);
-        if ((snif_sets.filter_exp_str = strdup(value)) == NULL)
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        snif_sets.filter_exp_str = TE_STRDUP(value);
     }
     else if (strstr(oid, "/filter_exp_file:") != NULL)
     {
         if (snif_sets.filter_exp_file != NULL)
             free(snif_sets.filter_exp_file);
-        if ((snif_sets.filter_exp_file = strdup(value)) == NULL)
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        snif_sets.filter_exp_file = TE_STRDUP(value);
     }
 
     return 0;
@@ -572,15 +570,13 @@ sniffer_common_set(unsigned int gid, const char *oid, const char *value,
     {
         if (sniff->filter_exp_str != NULL)
             free(sniff->filter_exp_str);
-        if ((sniff->filter_exp_str = strdup(value)) == NULL)
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        sniff->filter_exp_str = TE_STRDUP(value);
     }
     else if (strstr(oid, "/filter_exp_file:") != NULL)
     {
         if (sniff->filter_exp_file != NULL)
             free(sniff->filter_exp_file);
-        if ((sniff->filter_exp_file = strdup(value)) == NULL)
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        sniff->filter_exp_file = TE_STRDUP(value);
     }
 
     return 0;
@@ -639,7 +635,7 @@ sniffer_parse_sniff_id(const char* buf, sniffer_id *id)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     strl = ptr - buf;
-    id->snifname = strndup(buf, strl);
+    id->snifname = TE_STRNDUP(buf, strl);
     buf = ptr;
 
     SNIF_SK_SPS(buf);
@@ -651,7 +647,7 @@ sniffer_parse_sniff_id(const char* buf, sniffer_id *id)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     strl = ptr - buf;
-    id->ifname = strndup(buf, strl);
+    id->ifname = TE_STRNDUP(buf, strl);
     buf = ptr;
 
     SNIF_SK_SPS(buf);
@@ -1357,15 +1353,15 @@ sniffer_add_clone(sniffer_t *sniff)
     new_sniff = TE_ALLOC(sizeof(sniffer_t));
     memcpy(new_sniff, sniff, sizeof(sniffer_t));
     if (sniff->curr_file_name != NULL)
-        new_sniff->curr_file_name = strdup(sniff->curr_file_name);
+        new_sniff->curr_file_name = TE_STRDUP(sniff->curr_file_name);
     if (sniff->filter_exp_file != NULL)
-        new_sniff->filter_exp_file = strdup(sniff->filter_exp_file);
+        new_sniff->filter_exp_file = TE_STRDUP(sniff->filter_exp_file);
     if (sniff->filter_exp_str != NULL)
-        new_sniff->filter_exp_str = strdup(sniff->filter_exp_str);
+        new_sniff->filter_exp_str = TE_STRDUP(sniff->filter_exp_str);
     if (sniff->id.snifname != NULL)
-        new_sniff->id.snifname = strdup(sniff->id.snifname);
+        new_sniff->id.snifname = TE_STRDUP(sniff->id.snifname);
     if (sniff->id.ifname != NULL)
-        new_sniff->id.ifname = strdup(sniff->id.ifname);
+        new_sniff->id.ifname = TE_STRDUP(sniff->id.ifname);
 
     new_sniff->state |= SNIF_ST_DEL;
 
@@ -1632,16 +1628,16 @@ sniffer_add(unsigned int gid, const char *oid, char *ssn,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     sniff = TE_ALLOC(sizeof(sniffer_t));
-    sniff->id.snifname      = strdup(snifname);
-    sniff->id.ifname        = strdup(ifname);
+    sniff->id.snifname      = TE_STRDUP(snifname);
+    sniff->id.ifname        = TE_STRDUP(ifname);
     sniff->id.ssn           = atoi(ssn);
 
     sniff->id.abs_offset    = 0;
     sniff->enable           = 0;
     sniff->snaplen          = snif_sets.snaplen;
     sniff->pid              = 0;
-    sniff->filter_exp_file  = strdup(snif_sets.filter_exp_file);
-    sniff->filter_exp_str   = strdup(snif_sets.filter_exp_str);
+    sniff->filter_exp_file  = TE_STRDUP(snif_sets.filter_exp_file);
+    sniff->filter_exp_str   = TE_STRDUP(snif_sets.filter_exp_str);
     sniff->overfill_meth    = snif_sets.overfill_meth;
     sniff->file_size        = snif_sets.file_size;
     sniff->rotation         = snif_sets.rotation;
