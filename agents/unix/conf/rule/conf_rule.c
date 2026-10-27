@@ -326,7 +326,7 @@ ta_unix_conf_rule_list(char **list)
         return rc;
     }
 
-    *list = strdup(str.ptr);
+    *list = strdup(te_string_value(&str));
     te_string_free(&str);
 
     if (*list == NULL)
