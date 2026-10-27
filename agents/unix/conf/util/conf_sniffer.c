@@ -1183,6 +1183,7 @@ make_argv_str(sniffer_t *sniff, int *s_argc)
         *s_argc += 1;
     }
 
+    free(int_buff);
     return s_argv;
 cleanup_m_argv:
     ERROR("Filed make_argv_str");
@@ -1267,6 +1268,7 @@ sniffer_start_process(sniffer_t *sniff)
     char      **s_argv;
     char       *te_snif_path = SNIFFER_EXEC;
     te_errno    rc           = 0;
+    int         i;
 
     rc = sniffer_make_dir(sniff);
     if (rc != 0)
@@ -1279,8 +1281,14 @@ sniffer_start_process(sniffer_t *sniff)
     if ((s_argv == NULL) || (s_argc == 0))
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    if ((rc = rcf_ch_start_process(&sniff->pid, -1, te_snif_path, true,
-                                   s_argc, (void **)s_argv)) != 0)
+    rc = rcf_ch_start_process(&sniff->pid, -1, te_snif_path, true,
+                              s_argc, (void **)s_argv);
+
+    for (i = 0; i < s_argc; i++)
+        free(s_argv[i]);
+    free(s_argv);
+
+    if (rc != 0)
     {
         ERROR("Start the sniffer process failed.");
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
