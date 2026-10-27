@@ -178,6 +178,7 @@ parser_stop_thread(serial_parser_t *parser)
         /* Stop the thread */
         pthread_cancel(parser->thread);
         TE_SERIAL_CHECK_LOCK(pthread_mutex_unlock(&parser->mutex));
+        pthread_join(parser->thread, NULL);
         parser->enable = false;
     }
     return 0;
@@ -412,6 +413,7 @@ parser_set_enable(unsigned int gid, const char *oid, char *value,
         TE_SERIAL_CHECK_LOCK(pthread_mutex_lock(&parser->mutex));
         rc = pthread_cancel(parser->thread);
         TE_SERIAL_CHECK_LOCK(pthread_mutex_unlock(&parser->mutex));
+        pthread_join(parser->thread, NULL);
     }
 
     parser->enable = en;
