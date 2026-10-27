@@ -1890,7 +1890,6 @@ rcf_ch_get_sniffers(struct rcf_comm_connection *handle, char *cbuf,
         {
             ERROR("Too long sniffer id: %s", sniff_id_str);
             alen = 0;
-            free(abuf);
         }
     }
 
