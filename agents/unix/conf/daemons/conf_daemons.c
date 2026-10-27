@@ -692,9 +692,6 @@ ds_xinetd_service_addr_set(const char *service, const char *value)
     if (index < 0)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if (strlen(value) != 1 || (*value != '0' && *value != '1'))
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
     if ((f = fopen(ds_backup(index), "r")) == NULL)
     {
         rc = TE_OS_RC(TE_TA_UNIX, errno);
