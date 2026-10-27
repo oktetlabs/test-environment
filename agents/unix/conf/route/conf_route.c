@@ -659,7 +659,7 @@ blackhole_commit(unsigned int gid, const cfg_oid *p_oid)
               ta_rt_type2name(rt_info.type));
         ta_obj_free(obj);
         ta_rt_info_clean(&rt_info);
-        return TE_RC(TE_TAPI, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
     obj_action = obj->action;
