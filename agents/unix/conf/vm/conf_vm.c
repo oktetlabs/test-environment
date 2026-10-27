@@ -862,7 +862,7 @@ vm_free(struct vm_entry *vm)
 
     SLIST_FOREACH_SAFE(virtfs, &vm->virtfses, links, virtfs_tmp)
     {
-        SLIST_REMOVE(&vm->virtfses, drive, vm_virtfs_entry, links);
+        SLIST_REMOVE(&vm->virtfses, virtfs, vm_virtfs_entry, links);
         vm_virtfs_free(virtfs);
     }
 
