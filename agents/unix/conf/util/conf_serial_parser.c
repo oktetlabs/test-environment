@@ -209,7 +209,7 @@ parser_add(unsigned int gid, const char *oid, char *cname,
     if (parser_get_by_name(pname) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    parser = TE_ALLOC_UNINITIALIZED(sizeof(serial_parser_t));
+    parser = TE_ALLOC(sizeof(serial_parser_t));
     parser->enable      = false;
     parser->rcf         = false;
     parser->port        = TE_SERIAL_PORT;
