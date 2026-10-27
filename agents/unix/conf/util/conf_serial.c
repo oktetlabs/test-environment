@@ -71,6 +71,9 @@ console_add(unsigned int gid, const char *oid, const char *cname,
     UNUSED(gid);
     UNUSED(oid);
 
+    if (console_get_by_name(inst_name) != NULL)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+
     console = TE_ALLOC_UNINITIALIZED(sizeof(serial_console_t));
     console->port                           = TE_SERIAL_PORT;
     te_strlcpy(console->inst_name, inst_name, sizeof(console->inst_name));
