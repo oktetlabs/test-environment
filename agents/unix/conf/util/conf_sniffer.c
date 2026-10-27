@@ -244,7 +244,7 @@ sniffer_agent_id_init(void)
 
     res = snprintf(snif_sets.ta_path, RCF_MAX_PATH, "%s%s", SNIFFER_PATH,
                    snif_sets.agt_id);
-    if (res > RCF_MAX_PATH)
+    if (res >= RCF_MAX_PATH)
     {
         ERROR("Sniffers path is too long.");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -253,7 +253,7 @@ sniffer_agent_id_init(void)
 
     res = snprintf(snif_sets.ssn_fname, RCF_MAX_PATH, "%s/%s_%s",
                    snif_sets.ta_path, ta_name, SNIFFER_SSN_F);
-    if (res > RCF_MAX_PATH)
+    if (res >= RCF_MAX_PATH)
     {
         ERROR("Too long agent ssn file name");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -755,7 +755,7 @@ sniffer_get_capture_fname(sniffer_t *snif, int *fnum, char **wp_fname,
     {
         resname = TE_ALLOC(RCF_MAX_PATH);
         res = snprintf(resname, RCF_MAX_PATH, "%s/%s", snif->path, fname);
-        if (res > RCF_MAX_PATH)
+        if (res >= RCF_MAX_PATH)
         {
             WARN("Too long file name string for sniffer cpture file.");
             free(resname);
@@ -1268,7 +1268,7 @@ sniffer_make_dir(sniffer_t *sniff)
 
     res = snprintf(sniffers_dir, RCF_MAX_PATH, "%s/sniffers",
                    snif_sets.path);
-    if (res > RCF_MAX_PATH)
+    if (res >= RCF_MAX_PATH)
     {
         ERROR("Too long directory name, %d\n", errno);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -1285,7 +1285,7 @@ sniffer_make_dir(sniffer_t *sniff)
     res = snprintf(sniff->path, RCF_MAX_PATH, "%s/%s_%s_%s_%u/",
                    sniffers_dir, ta_name, sniff->id.ifname,
                    sniff->id.snifname, sniff->id.ssn);
-    if (res > RCF_MAX_PATH)
+    if (res >= RCF_MAX_PATH)
     {
         WARN("Too long path string for sniffer logs folder.");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -1581,7 +1581,7 @@ sniffer_check_exst_backup(sniffer_t *sniff)
     res = snprintf(sniff->path, RCF_MAX_PATH, "%s/sniffers/%s_%s_%s_%u/",
                    snif_sets.path, ta_name, sniff->id.ifname,
                    sniff->id.snifname, sniff->id.ssn);
-    if (res > RCF_MAX_PATH)
+    if (res >= RCF_MAX_PATH)
     {
         WARN("Too long path string for sniffer logs folder.");
         return false;
@@ -1949,7 +1949,7 @@ ta_unix_conf_sniffer_cleanup(void)
     }
 
     if (snprintf(sniffers_dir, RCF_MAX_PATH, "%s/sniffers",
-                 snif_sets.path) > RCF_MAX_PATH)
+                 snif_sets.path) >= RCF_MAX_PATH)
     {
         ERROR("Too long directory name, %d\n", errno);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
