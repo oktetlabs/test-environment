@@ -310,6 +310,8 @@ sniffer_cleanup(sniffer_t *sniff)
         free(sniff->id.ifname);
     if (sniff->curr_file_name != NULL)
         free(sniff->curr_file_name);
+    free(sniff->filter_exp_str);
+    free(sniff->filter_exp_file);
 
     /* Clean up the sniffer directory */
     if (strlen(sniff->path) > 0)
