@@ -1549,8 +1549,12 @@ sniffer_check_exst_backup(sniffer_t *sniff)
     sniff->curr_file_name = sniffer_get_capture_fname(sniff, &fnum,
                                                       &wp_fname, false);
     if (sniff->curr_file_name == NULL)
+    {
+        free(wp_fname);
         return false;
+    }
     sniff->id.abs_offset = strtoll(wp_fname, NULL, 10);
+    free(wp_fname);
     sniff->curr_offset = SNIF_PCAP_HSIZE;
     sniff->state |= SNIF_ST_START;
 
