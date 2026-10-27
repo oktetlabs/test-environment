@@ -753,15 +753,16 @@ sniffer_get_capture_fname(sniffer_t *snif, int *fnum, char **wp_fname,
 
     if (fname != NULL)
     {
-        *wp_fname = fname;
         resname = TE_ALLOC(RCF_MAX_PATH);
         res = snprintf(resname, RCF_MAX_PATH, "%s/%s", snif->path, fname);
         if (res > RCF_MAX_PATH)
         {
             WARN("Too long file name string for sniffer cpture file.");
             free(resname);
+            free(fname);
             return NULL;
         }
+        *wp_fname = fname;
     }
 
     return resname;
