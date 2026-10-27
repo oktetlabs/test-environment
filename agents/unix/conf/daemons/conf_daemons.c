@@ -1895,12 +1895,15 @@ ftpserver_release(const char *name)
     {
         if (ftp_indices[i] != -1)
             ds_restore_backup(ftp_indices[i]);
+        /* The slot is free now and may go to another service */
+        ftp_indices[i] = -1;
     }
 
 #ifdef WITH_XINETD
     if (ftp_xinetd_index != -1)
     {
         ds_restore_backup(ftp_xinetd_index);
+        ftp_xinetd_index = -1;
         ta_system("/etc/init.d/xinetd restart >/dev/null");
     }
 #endif
