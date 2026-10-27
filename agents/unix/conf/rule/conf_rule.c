@@ -121,6 +121,11 @@ rule_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(value);
 
     rc = te_conf_ip_rule_from_str(rule, &required, &ip_rule);
+    if (rc != 0)
+    {
+        ERROR("Cannot parse instance name: %s", rule);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
     memcpy(&found_ip_rule, &ip_rule, sizeof(ip_rule));
 
     rc = ta_unix_conf_rule_find(required, &found_ip_rule);
