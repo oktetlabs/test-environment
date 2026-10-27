@@ -1634,6 +1634,12 @@ sniffer_add(unsigned int gid, const char *oid, char *ssn,
     if (sniffer_get_ssn_ff(snif_sets.ssn_fname) != 0)
     {
         ERROR("Couldn't get SSN from the file %s", snif_sets.ssn_fname);
+        free(sniff->id.snifname);
+        free(sniff->id.ifname);
+        free(sniff->filter_exp_file);
+        free(sniff->filter_exp_str);
+        free(sniff->curr_file_name);
+        free(sniff);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     sniff->id.ssn = snif_sets.ssn;
