@@ -687,7 +687,7 @@ ds_xinetd_service_addr_set(const char *service, const char *value)
     int        rc;
 
     if (inet_aton(value, (struct in_addr *)&addr) == 0)
-        return TE_EINVAL;
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     if (index < 0)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
