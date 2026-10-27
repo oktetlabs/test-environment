@@ -1830,8 +1830,8 @@ ftpserver_grab(const char *name)
 #ifdef WITH_XINETD
     if (file_exists(XINETD_ETC_DIR "ftp"))
     {
-        ftp_register |= ds_create_backup(XINETD_ETC_DIR, "ftp",
-                                         &ftp_xinetd_index);
+        ftp_register |= (ds_create_backup(XINETD_ETC_DIR, "ftp",
+                                          &ftp_xinetd_index) == 0);
     }
 #endif
 
