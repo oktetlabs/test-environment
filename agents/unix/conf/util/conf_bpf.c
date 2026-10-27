@@ -1007,6 +1007,17 @@ static const char* bpf_map_types_str[] = {
     [BPF_MAP_TYPE_REUSEPORT_SOCKARRAY] = "REUSEPORT_SOCKARRAY",
 };
 
+/** Convert BPF map type to string */
+static const char *
+bpf_map_type2str(enum bpf_map_type type)
+{
+    if ((unsigned int)type >= TE_ARRAY_LEN(bpf_map_types_str) ||
+        bpf_map_types_str[type] == NULL)
+        return "<UNKNOWN>";
+
+    return bpf_map_types_str[type];
+}
+
 /**
  * Common get function for the BPF map parameters.
  *
@@ -1034,7 +1045,7 @@ bpf_get_map_params(unsigned int gid, const char *oid, char *value,
     }
 
     if (strstr(oid, "/type:") != NULL)
-        snprintf(value, RCF_MAX_VAL, "%s", bpf_map_types_str[map->type]);
+        snprintf(value, RCF_MAX_VAL, "%s", bpf_map_type2str(map->type));
     else if ((strstr(oid, "/key_size:") != NULL))
         snprintf(value, RCF_MAX_VAL, "%u", map->key_size);
     else if ((strstr(oid, "/value_size:") != NULL))
