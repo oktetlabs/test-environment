@@ -587,10 +587,25 @@ sniffer_common_set(unsigned int gid, const char *oid, const char *value,
 }
 
 /**
+ * Free the names in a sniffer ID filled by sniffer_parse_sniff_id().
+ *
+ * @param id    The sniffer ID.
+ */
+static void
+sniffer_id_free_names(sniffer_id *id)
+{
+    free(id->snifname);
+    id->snifname = NULL;
+    free(id->ifname);
+    id->ifname = NULL;
+}
+
+/**
  * Parse the buffer with sniffer ID.
  *
  * @param buf   The buffer with sniffer ID.
- * @param id    The sniffer ID (OUT).
+ * @param id    The sniffer ID (OUT); on success, the caller frees its
+ *              names with sniffer_id_free_names().
  *
  * return Status code.
  */
@@ -609,6 +624,9 @@ sniffer_parse_sniff_id(const char* buf, sniffer_id *id)
 #define SNIF_SK_SPS(_ptr)       \
         while (*(_ptr) == ' ')  \
             (_ptr)++;
+
+    id->snifname = NULL;
+    id->ifname = NULL;
 
     if (buf == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -629,6 +647,7 @@ sniffer_parse_sniff_id(const char* buf, sniffer_id *id)
     if (ptr == NULL)
     {
         WARN("Wrong sniffer interface name in the sniffer id.");
+        sniffer_id_free_names(id);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
     strl = ptr - buf;
@@ -640,6 +659,7 @@ sniffer_parse_sniff_id(const char* buf, sniffer_id *id)
     if (buf == endptr)
     {
         WARN("Wrong sniffer SSN in the sniffer id.");
+        sniffer_id_free_names(id);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
@@ -780,7 +800,9 @@ sniffer_get_curr_offset(const char *sniff_id_str, void *snif_arg,
     {
         if ((rc = sniffer_parse_sniff_id(sniff_id_str, &id)) != 0)
             return rc;
-        if ((snif = sniffer_find_by_id(&id)) == NULL)
+        snif = sniffer_find_by_id(&id);
+        sniffer_id_free_names(&id);
+        if (snif == NULL)
         {
             WARN("Couldn't find the sniffer to get offset.");
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -939,7 +961,9 @@ sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
 
     if ((rc = sniffer_parse_sniff_id(buf, &id)) != 0)
         return rc;
-    if ((snif = sniffer_find_by_id(&id)) == NULL)
+    snif = sniffer_find_by_id(&id);
+    sniffer_id_free_names(&id);
+    if (snif == NULL)
     {
         WARN("Couldn't find the sniffer to get capture logs.");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
