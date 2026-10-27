@@ -1148,7 +1148,10 @@ route_nexthop_dev_set(unsigned int gid, const char *oid,
 
     val_len = strnlen(value, RCF_MAX_VAL);
     if (val_len > sizeof(rt_nh->ifname) - 1)
+    {
         ERROR("%s(): interface name is too long", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_ENAMETOOLONG);
+    }
 
     strcpy(rt_nh->ifname, value);
 
