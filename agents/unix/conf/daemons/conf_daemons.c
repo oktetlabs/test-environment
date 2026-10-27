@@ -274,6 +274,7 @@ ds_create_backup(const char *dir, const char *name, int *index)
         WARN("Failed to create backup for %s - no such file",
              ds[i].config_file);
         free(ds[i].config_file);
+        ds[i].config_file = NULL;
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
     fclose(f);
@@ -287,7 +288,9 @@ ds_create_backup(const char *dir, const char *name, int *index)
     if ((rc = copy_or_rename(ds[i].config_file, ds[i].backup)) != 0)
     {
         free(ds[i].config_file);
+        ds[i].config_file = NULL;
         free(ds[i].backup);
+        ds[i].backup = NULL;
         return rc;
     }
 
