@@ -128,8 +128,12 @@ rule_add(unsigned int gid, const char *oid, const char *value,
     }
     memcpy(&found_ip_rule, &ip_rule, sizeof(ip_rule));
 
+    /*
+     * The lookup only matches a rule that has exactly the fields the
+     * name specifies, with the same values, i.e. the same rule.
+     */
     rc = ta_unix_conf_rule_find(required, &found_ip_rule);
-    if (rc == 0 && memcmp(&found_ip_rule, &ip_rule, sizeof(ip_rule)) == 0)
+    if (rc == 0)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     return netconf_rule_modify(nh, NETCONF_CMD_ADD, &ip_rule);
