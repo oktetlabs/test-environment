@@ -50,6 +50,20 @@ cleanup_handler(void *arg)
         close(pipefds[1]);
 }
 
+/**
+ * Kill the command if the thread is cancelled while it is running.
+ *
+ * @param arg   Pointer to the command process ID
+ */
+static void
+kill_command(void *arg)
+{
+    pid_t pid = *(pid_t *)arg;
+
+    if (pid > 0)
+        ta_kill_death(pid);
+}
+
 /* See description in te_cmd_monitor.h */
 void *
 te_command_monitor(void *arg)
@@ -99,6 +113,8 @@ te_command_monitor(void *arg)
         {
             const char *sh_argv[4];
 
+            setpgid(getpid(), getpid());
+
             if (dup2(pipefds[1], STDOUT_FILENO) < 0 ||
                 dup2(pipefds[1], STDERR_FILENO) < 0)
             {
@@ -133,6 +149,7 @@ te_command_monitor(void *arg)
             int buf_pos = 0;
 
             buf[0] = '\0';
+            pthread_cleanup_push(kill_command, &command_pid);
             do {
                 poll_fd.fd = pipefds[0];
                 poll_fd.events = POLLIN;
@@ -165,6 +182,7 @@ te_command_monitor(void *arg)
                     }
                 }
             } while ((rc = ta_waitpid(command_pid, &status, WNOHANG)) == 0);
+            pthread_cleanup_pop(0);
 
             if (buf[0] != '\0')
                 MONITOR_OUT;
