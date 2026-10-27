@@ -758,6 +758,8 @@ vm_chardev_free(struct vm_chardev_entry *chardev)
 static void
 vm_net_free(struct vm_net_entry *net)
 {
+    te_kvpair_fini(&net->netdev_opts);
+    te_kvpair_fini(&net->device_opts);
     free(net->name);
     free(net->type);
     free(net->type_spec);
@@ -815,6 +817,7 @@ vm_virtfs_free(struct vm_virtfs_entry *vfs)
     free(vfs->path);
     free(vfs->security_model);
     free(vfs->name);
+    free(vfs);
 }
 
 static void
@@ -837,6 +840,8 @@ vm_device_free(struct vm_device_entry *dev)
 static void
 vm_free(struct vm_entry *vm)
 {
+    struct vm_chardev_entry *chardev;
+    struct vm_chardev_entry *chardev_tmp;
     struct vm_net_entry *net;
     struct vm_net_entry *net_tmp;
     struct vm_drive_entry *drive;
@@ -847,6 +852,12 @@ vm_free(struct vm_entry *vm)
     struct vm_pci_pt_entry *pci_pt_tmp;
     struct vm_device_entry *device;
     struct vm_device_entry *device_tmp;
+
+    SLIST_FOREACH_SAFE(chardev, &vm->chardevs, links, chardev_tmp)
+    {
+        SLIST_REMOVE(&vm->chardevs, chardev, vm_chardev_entry, links);
+        vm_chardev_free(chardev);
+    }
 
     SLIST_FOREACH_SAFE(net, &vm->nets, links, net_tmp)
     {
@@ -882,6 +893,7 @@ vm_free(struct vm_entry *vm)
     agent_free_l4_port(vm->host_ssh_port);
 
     te_string_free(&vm->cmd);
+    te_string_free(&vm->cpu.model);
     free(vm->mem_path);
     free(vm->mgmt_net_device);
     free(vm->machine);
@@ -1702,9 +1714,6 @@ vm_net_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     SLIST_REMOVE(&vm->nets, net, vm_net_entry, links);
-
-    te_kvpair_fini(&net->netdev_opts);
-    te_kvpair_fini(&net->device_opts);
 
     vm_net_free(net);
 
