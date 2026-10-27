@@ -482,7 +482,7 @@ sniffer_common_get(unsigned int gid, const char *oid, char *value,
     if (sniff == NULL)
     {
         ERROR("sniffer_common_get: Couldn't find the sniffer for oid %s", oid);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
     if (value == NULL)
@@ -536,7 +536,7 @@ sniffer_common_set(unsigned int gid, const char *oid, const char *value,
     if (sniff == NULL)
     {
         ERROR("Couldn't find the sniffer on the oid %s", oid);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
     if (value == NULL)
@@ -1340,7 +1340,7 @@ sniffer_set_enable(unsigned int gid, const char *oid, const char *value,
     if (sniff == NULL)
     {
         ERROR("Couldn't find the sniffer on the oid %s.", oid);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
     if (value == NULL)
@@ -1447,7 +1447,7 @@ sniffer_get(unsigned int gid, const char *oid, char *value,
     if (sniff == NULL)
     {
         ERROR("sniffer_get: Couldn't find the sniffer, oid %s", oid);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
     if (value == NULL)
@@ -1655,7 +1655,7 @@ sniffer_del(unsigned int gid, const char *oid, const char *ifname,
     if (sniff == NULL)
     {
         ERROR("sniffer_del: Couldn't find the sniffer, oid %s", oid);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
     if (sniff->enable == 1)
