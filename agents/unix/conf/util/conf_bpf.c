@@ -232,6 +232,26 @@ bpf_num_possible_cpu(unsigned int *n_values)
 }
 
 /**
+ * Check that the hex string representation of a binary value
+ * (see te_str_hex_raw2str()) fits into a configuration value.
+ *
+ * @param len           Length of the binary value.
+ *
+ * @return Status code.
+ */
+static te_errno
+bpf_check_hex_len(size_t len)
+{
+    if (len * 3 > RCF_MAX_VAL)
+    {
+        ERROR("Hex string of %zu bytes does not fit into a value", len);
+        return TE_RC(TE_TA_UNIX, TE_E2BIG);
+    }
+
+    return 0;
+}
+
+/**
  * Searching for the BPF object by object id.
  *
  * @param bpf_id        The BPF object id.
@@ -1117,6 +1137,10 @@ bpf_get_map_kv_pair(unsigned int gid, const char *oid, char *value_str,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
+    rc = bpf_check_hex_len(map->value_size * map->n_values);
+    if (rc != 0)
+        return rc;
+
     key = TE_ALLOC(map->key_size);
     value = TE_ALLOC(map->kern_value_size);
 
@@ -1186,6 +1210,10 @@ bpf_list_map_kv_pair(unsigned int gid, const char *oid, const char *sub_id,
         *list = result.ptr;
         return 0;
     }
+
+    rc = bpf_check_hex_len(map->key_size);
+    if (rc != 0)
+        return rc;
 
     key = TE_ALLOC(map->key_size);
     prev_key = TE_ALLOC(map->key_size);
@@ -2021,6 +2049,10 @@ bpf_get_perf_map_event(unsigned int gid, const char *oid, char *value_str,
               __FUNCTION__, id_str);
         return rc;
     }
+
+    rc = bpf_check_hex_len(map->event_size);
+    if (rc != 0)
+        return rc;
 
     event = TE_VEC_GET(bpf_perf_map_event, &map->events, id);
     rc = te_str_hex_raw2str(event.data, map->event_size, &value_buf);
