@@ -1333,6 +1333,7 @@ sniffer_set_enable(unsigned int gid, const char *oid, const char *value,
 {
     sniffer_t    *sniff;
     int           enable;
+    te_errno      rc;
 
     UNUSED(gid);
 
@@ -1360,15 +1361,16 @@ sniffer_set_enable(unsigned int gid, const char *oid, const char *value,
 
     if (enable == 1)
     {
-        if (sniffer_start_process(sniff) == 0)
+        rc = sniffer_start_process(sniff);
+        if (rc != 0)
         {
-            snif_sets.lock = true;
-            sniff->enable = true;
-            sniff->state |= SNIF_ST_START;
-        }
-        else
             WARN("Couldn't start the sniffer process: %s_%s_%d.",
                  ifname, snifname, sniff->id.ssn);
+            return rc;
+        }
+        snif_sets.lock = true;
+        sniff->enable = true;
+        sniff->state |= SNIF_ST_START;
     }
     else if (enable == 0)
     {
