@@ -2518,12 +2518,16 @@ int conf_bpf_fd_by_prog_oid(const char *prog_oid_str)
     if (prog_oid == NULL)
         return -1;
 
-    bpf_id_str = CFG_OID_GET_INST_NAME(prog_oid, BPF_PROG_OID_LEVEL_OBJ_ID);
-    prog_name = CFG_OID_GET_INST_NAME(prog_oid, BPF_PROG_OID_LEVEL_NAME);
+    if (prog_oid->inst && prog_oid->len == BPF_PROG_OID_LEVELS)
+    {
+        bpf_id_str = CFG_OID_GET_INST_NAME(prog_oid,
+                                           BPF_PROG_OID_LEVEL_OBJ_ID);
+        prog_name = CFG_OID_GET_INST_NAME(prog_oid, BPF_PROG_OID_LEVEL_NAME);
 
-    prog = bpf_find_prog(bpf_id_str, prog_name);
-    if (prog != NULL)
-        fd = prog->fd;
+        prog = bpf_find_prog(bpf_id_str, prog_name);
+        if (prog != NULL)
+            fd = prog->fd;
+    }
 
     cfg_free_oid(prog_oid);
 
