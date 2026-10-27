@@ -952,11 +952,11 @@ sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
     sniffer_t       *snif;
     char            *fname;
     struct flock     lock;
-    int              fd;
-    off_t            offst;
+    int              fd             = -1;
+    off_t            offst          = 0;
     int              fnum;
     size_t           size;
-    char            *wp_fname;
+    char            *wp_fname       = NULL;
     size_t           len            = answer_plen;
     bool first_launch = false;
 
@@ -988,22 +988,29 @@ sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
     if (fd == -1)
     {
         WARN("Couldn't open the capture log file: %s.", fname);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        free(fname);
+        te_rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        goto out;
     }
 
     rc = fcntl(fd, F_SETLKW, &lock);
-    if (rc != 0)
+    if (rc == 0)
+    {
+        offst = lseek(fd, 0, SEEK_END);
+        lock.l_type = F_UNLCK;
+        rc = fcntl(fd, F_SETLK, &lock);
+        if (rc != 0)
+            WARN("Couldn't to unlock the capture log file: %s.", fname);
+    }
+    else
     {
         WARN("Couldn't to lock the capture log file: %s.", fname);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    offst = lseek(fd, 0, SEEK_END);
-    lock.l_type = F_UNLCK;
-    rc = fcntl(fd, F_SETLK, &lock);
     if (rc != 0)
     {
-        WARN("Couldn't to unlock the capture log file: %s.", fname);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        free(fname);
+        te_rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        goto out;
     }
 
     /* Check for the first log transmission. */
@@ -1030,7 +1037,6 @@ sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
     size = offst - snif->curr_offset;
     if (size == 0)
     {
-        close(fd);
         snif->state &= ~SNIF_ST_HAS_L;
         if (fnum > 1)
         {
@@ -1047,9 +1053,11 @@ sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
                 te_rc = TE_OS_RC(TE_TA_UNIX, errno);
                 WARN("Failed to remove the capture log file: %s; error=%r",
                      fname, te_rc);
-                return te_rc;
+                goto out;
             }
 
+            close(fd);
+            free(wp_fname);
             return sniffer_get_dump(handle, cbuf, buflen,
                                     answer_plen, buf);
         }
@@ -1063,7 +1071,8 @@ sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
             sniffer_cleanup(snif);
         }
 
-        return TE_RC(TE_TA_UNIX, TE_ENODATA);
+        te_rc = TE_RC(TE_TA_UNIX, TE_ENODATA);
+        goto out;
     }
     if (size > SNIFFER_MAX_LOG_SIZE)
     {
@@ -1074,7 +1083,8 @@ sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
     if (lseek(fd, snif->curr_offset, SEEK_SET) == -1)
     {
         WARN("Couldn't to change offset of the capture log file: %s.", fname);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        te_rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        goto out;
     }
 
     len += snprintf(cbuf + answer_plen, buflen - answer_plen,
@@ -1082,7 +1092,8 @@ sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
     if (len > buflen)
     {
         WARN("Too long rcf message. File is not passed.");
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        te_rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        goto out;
     }
 
     errno = 0;
@@ -1103,7 +1114,8 @@ sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
                 RCF_CH_UNLOCK;
                 fprintf(stderr, "Couldn't to lock the capture log file:"
                         "%s. rc %d\n", fname, rc);
-                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+                te_rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+                goto out;
             }
             res = sendfile(*((int *)handle), fd, 0, size - res);
             lock.l_type = F_UNLCK;
@@ -1113,7 +1125,8 @@ sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
                 RCF_CH_UNLOCK;
                 fprintf(stderr, "Couldn't to unlock the capture log file:"
                         "%s. rc %d\n", fname, rc);
-                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+                te_rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+                goto out;
             }
         }
     }
@@ -1134,10 +1147,13 @@ sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
     else if ((snif->state & SNIF_ST_DEL) == SNIF_ST_DEL)
         sniffer_cleanup(snif);
 
-    close(fd);
-    if (wp_fname != NULL)
-        free(wp_fname);
-    return 0;
+    te_rc = 0;
+
+out:
+    if (fd >= 0)
+        close(fd);
+    free(wp_fname);
+    return te_rc;
 }
 
 /**
