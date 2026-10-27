@@ -246,7 +246,11 @@ console_common_set(unsigned int gid, const char *oid, const char *value,
     }
     else if (strstr(oid, "/address:") != NULL)
     {
-        rc = te_sockaddr_str2h(value, SA(&console->address));
+        struct sockaddr_storage addr = console->address;
+
+        rc = te_sockaddr_str2h(value, SA(&addr));
+        if (rc == 0)
+            console->address = addr;
     }
     else
     {
