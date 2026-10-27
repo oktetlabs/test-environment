@@ -564,7 +564,6 @@ parser_reset(unsigned int gid, const char *oid, char *value,
 
     serial_parser_t  *parser;
     serial_event_t   *event;
-    serial_pattern_t *pat;
 
     if (atoi(value) == false)
         return 0;
@@ -575,12 +574,7 @@ parser_reset(unsigned int gid, const char *oid, char *value,
 
     TE_SERIAL_CHECK_LOCK(pthread_mutex_lock(&parser->mutex));
     SLIST_FOREACH(event, &parser->events, ent_ev_l)
-    {
-        SLIST_FOREACH(pat, &event->patterns, ent_pat_l)
-        {
-            event->status = false;
-        }
-    }
+        event->status = false;
     TE_SERIAL_CHECK_LOCK(pthread_mutex_unlock(&parser->mutex));
 
     return 0;
