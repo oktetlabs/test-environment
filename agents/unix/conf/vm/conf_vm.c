@@ -324,7 +324,7 @@ vm_append_vhost_user_interface_cmd(te_string *cmd, struct vm_net_entry *net,
 
     te_kvpair_to_str_gen(&net->netdev_opts, ",", &opts);
     te_string_append(&netdev,
-                     "type=vhost-user,id=netdev%u,chardev=%s,vhostforce",
+                     "type=vhost-user,id=netdev%u,chardev=%s,vhostforce%s%s",
                      interface_id, net->type_spec,
                      te_str_is_null_or_empty(opts.ptr) ? "" : ",",
                      te_str_is_null_or_empty(opts.ptr) ? "" : opts.ptr);
