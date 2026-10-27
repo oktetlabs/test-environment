@@ -2050,6 +2050,12 @@ bpf_get_perf_map_event(unsigned int gid, const char *oid, char *value_str,
         return rc;
     }
 
+    if (id >= te_vec_size(&map->events))
+    {
+        ERROR("%s(): Event %u isn't found.", __FUNCTION__, id);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
     rc = bpf_check_hex_len(map->event_size);
     if (rc != 0)
         return rc;
