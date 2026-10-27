@@ -1566,6 +1566,9 @@ sniffer_add(unsigned int gid, const char *oid, char *ssn,
     sniffer_t *sniff;
     bool backup = false;
 
+    if (sniffer_find(ifname, snifname) != NULL)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+
     sniff = TE_ALLOC(sizeof(sniffer_t));
     sniff->id.snifname      = strdup(snifname);
     sniff->id.ifname        = strdup(ifname);
