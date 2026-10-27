@@ -788,7 +788,7 @@ sniffer_get_curr_offset(const char *sniff_id_str, void *snif_arg,
     int              rc;
     char            *fname;
     struct flock     lock;
-    int              fd;
+    int              fd = -1;
     sniffer_t       *snif;
     int              fnum;
     char            *wp_fname = NULL;
@@ -823,18 +823,19 @@ sniffer_get_curr_offset(const char *sniff_id_str, void *snif_arg,
     lock.l_start = 0;
     lock.l_len = 0;
 
+    rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+
     fd = open(fname, O_RDWR);
     if (fd == -1)
     {
         WARN("Couldn't open the capture log file: %s.", fname);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        goto out;
     }
 
-    rc = fcntl(fd, F_SETLKW, &lock);
-    if (rc != 0)
+    if (fcntl(fd, F_SETLKW, &lock) != 0)
     {
         WARN("Couldn't to lock the capture log file: %s.", fname);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        goto out;
     }
     res = lseek(fd, 0, SEEK_END);
     if (res <= 0)
@@ -842,26 +843,26 @@ sniffer_get_curr_offset(const char *sniff_id_str, void *snif_arg,
     else
         *offset = res - SNIF_PCAP_HSIZE;
     lock.l_type = F_UNLCK;
-    rc = fcntl(fd, F_SETLK, &lock);
-    if (rc != 0)
+    if (fcntl(fd, F_SETLK, &lock) != 0)
     {
         WARN("Couldn't to unlock the capture log file: %s.", fname);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        goto out;
     }
-    close(fd);
 
     *offset += strtoll(wp_fname, NULL, 10);
-
-    if (wp_fname != NULL)
-        free(wp_fname);
-    if (fname != NULL)
-        free(fname);
 
     if (*offset > snif->id.abs_offset)
         snif->state |= SNIF_ST_HAS_L;
     else
         snif->state &= ~SNIF_ST_HAS_L;
-    return 0;
+    rc = 0;
+
+out:
+    if (fd >= 0)
+        close(fd);
+    free(wp_fname);
+    free(fname);
+    return rc;
 }
 
 
