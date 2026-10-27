@@ -404,7 +404,7 @@ parser_set_enable(unsigned int gid, const char *oid, char *value,
         {
             ERROR("Couldn't to start the parser thread %s, oid %s",
                   pname, oid);
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+            return TE_OS_RC(TE_TA_UNIX, rc);
         }
     }
     else
