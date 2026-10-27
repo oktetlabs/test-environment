@@ -320,7 +320,7 @@ monitor_common_set(unsigned int gid, const char *oid, char *value,
     if (monitor->enable)
     {
        ERROR("Cannot change monitor properties while it is enabled");
-       return TE_RC(TE_TA_UNIX, TE_EINVAL);
+       return TE_RC(TE_TA_UNIX, TE_EBUSY);
     }
 
     if (strstr(oid, "/command:") != NULL)
