@@ -1234,25 +1234,26 @@ static uint16_t *
 vm_port_ptr_by_oid(struct vm_entry *vm, const char *oid)
 {
     cfg_oid *coid = cfg_convert_oid_str(oid);
+    uint16_t *result = NULL;
 
     if (coid == NULL)
         return NULL;
 
     if (strcmp(cfg_oid_inst_subid(coid, 3), "rcf_port") == 0)
     {
-        return &vm->rcf_port;
+        result = &vm->rcf_port;
     }
     else if (strcmp(cfg_oid_inst_subid(coid, 3), "ssh_port") == 0)
     {
         if (strcmp(cfg_oid_inst_subid(coid, 4), "host") == 0)
-            return &vm->host_ssh_port;
+            result = &vm->host_ssh_port;
         else if (strcmp(cfg_oid_inst_subid(coid, 4), "guest") == 0)
-            return &vm->guest_ssh_port;
-        else
-            return NULL;
+            result = &vm->guest_ssh_port;
     }
-    else
-        return NULL;
+
+    cfg_free_oid(coid);
+
+    return result;
 }
 
 static te_errno
