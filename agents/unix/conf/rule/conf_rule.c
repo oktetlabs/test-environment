@@ -135,6 +135,8 @@ rule_add(unsigned int gid, const char *oid, const char *value,
     rc = ta_unix_conf_rule_find(required, &found_ip_rule);
     if (rc == 0)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
+    if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
+        return rc;
 
     return netconf_rule_modify(nh, NETCONF_CMD_ADD, &ip_rule);
 }
