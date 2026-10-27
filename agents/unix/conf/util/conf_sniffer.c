@@ -995,6 +995,12 @@ sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
         snif->curr_offset = SNIF_PCAP_HSIZE;
         snif->id.abs_offset = strtoll(wp_fname, NULL, 10);
     }
+    else
+    {
+        free(fname);
+    }
+    /* From here on the name is owned by the sniffer */
+    fname = snif->curr_file_name;
 
     size = offst - snif->curr_offset;
     if (size == 0)
