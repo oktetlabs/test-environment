@@ -3139,7 +3139,11 @@ sshd_exists(char *port)
     {
         char *tmp = strstr(line, "sshd");
 
-        tmp = strstr(tmp, "-p") + 2;
+        /* A ps line longer than the buffer comes in pieces */
+        if (tmp == NULL || (tmp = strstr(tmp, "-p")) == NULL)
+            continue;
+
+        tmp += 2;
         while (*++tmp == ' ');
 
         if (strncmp(tmp, port, len) == 0 && !isdigit(*(tmp + len)))
@@ -3263,7 +3267,11 @@ ds_sshd_list(unsigned int gid, const char *oid,
     {
         char *tmp = strstr(line, "sshd");
 
-        tmp = strstr(tmp, "-p") + 2;
+        /* A ps line longer than the buffer comes in pieces */
+        if (tmp == NULL || (tmp = strstr(tmp, "-p")) == NULL)
+            continue;
+
+        tmp += 2;
         while (*++tmp == ' ');
 
         s += sprintf(s, "%u ", atoi(tmp));
