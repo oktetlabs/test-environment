@@ -516,7 +516,8 @@ bpf_load(struct bpf_entry *bpf)
     {
         err = te_rc_os2te(errno);
         ERROR("BPF object file cannot be loaded, error=%r", err);
-        return TE_RC(TE_TA_UNIX, err);
+        rc = TE_RC(TE_TA_UNIX, err);
+        goto fail;
     }
 #endif
 
@@ -525,12 +526,13 @@ bpf_load(struct bpf_entry *bpf)
         if (prog_number == BPF_MAX_ENTRIES)
         {
             ERROR("Number of BPF programs in object file is too big.");
-            return TE_RC(TE_TA_UNIX, TE_EFBIG);
+            rc = TE_RC(TE_TA_UNIX, TE_EFBIG);
+            goto fail;
         }
 
         rc = bpf_init_prog_info(prog, &bpf->progs[prog_number]);
         if (rc != 0)
-            return rc;
+            goto fail;
 
         prog_number++;
     }
@@ -543,7 +545,8 @@ bpf_load(struct bpf_entry *bpf)
             perf_map_number == BPF_MAX_ENTRIES)
         {
             ERROR("Number of BPF maps in object file is too big.");
-            return TE_RC(TE_TA_UNIX, TE_EFBIG);
+            rc = TE_RC(TE_TA_UNIX, TE_EFBIG);
+            goto fail;
         }
 
 #if LIBBPF_MAJOR_VERSION == 0
@@ -564,7 +567,7 @@ bpf_load(struct bpf_entry *bpf)
         }
 
         if (rc != 0)
-            return rc;
+            goto fail;
     }
 
     bpf->prog_number = prog_number;
@@ -572,6 +575,11 @@ bpf_load(struct bpf_entry *bpf)
     bpf->perf_map_number = perf_map_number;
     bpf->state = BPF_STATE_LOADED;
     return 0;
+
+fail:
+    bpf_object__close(bpf->obj);
+    bpf->obj = NULL;
+    return rc;
 }
 
 /**
