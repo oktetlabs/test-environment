@@ -736,8 +736,7 @@ sniffer_get_capture_fname(sniffer_t *snif, int *fnum, char **wp_fname,
         *fnum += 1;
         if (fl)
         {
-            if((fname = strdup(ent->d_name)) == NULL)
-                return NULL;
+            fname = TE_STRDUP(ent->d_name);
             fl = false;
             continue;
         }
@@ -746,8 +745,7 @@ sniffer_get_capture_fname(sniffer_t *snif, int *fnum, char **wp_fname,
             ((strcmp(fname, ent->d_name) < 0) && newest))
         {
             free(fname);
-            if((fname = strdup(ent->d_name)) == NULL)
-                return NULL;
+            fname = TE_STRDUP(ent->d_name);
         }
     }
 
