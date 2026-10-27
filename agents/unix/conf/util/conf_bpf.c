@@ -179,6 +179,10 @@ typedef struct bpf_entry {
 static enum bpf_perf_event_ret
 bpf_xdp_perf_event_handler(void *ctx, int cpu, void *data, uint32_t size);
 
+/** Declaration of perf events enabling/disabling function */
+static te_errno
+bpf_xdp_perf_map_enable(bpf_perf_map_entry *map, bool enable);
+
 /**< Head of the BPF objects list */
 static LIST_HEAD(, bpf_entry) bpf_list_h = LIST_HEAD_INITIALIZER(bpf_list_h);
 
@@ -590,13 +594,19 @@ fail:
 static void
 bpf_unload(struct bpf_entry *bpf)
 {
+    unsigned int i;
+
     if (bpf->state == BPF_STATE_UNLOADED)
         return;
+
+    for (i = 0; i < bpf->perf_map_number; i++)
+        bpf_xdp_perf_map_enable(&bpf->perf_maps[i], false);
 
     bpf_object__close(bpf->obj);
 
     bpf->prog_number = 0;
     bpf->map_number = 0;
+    bpf->perf_map_number = 0;
     bpf->state = BPF_STATE_UNLOADED;
     return;
 }
