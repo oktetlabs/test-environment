@@ -2437,8 +2437,10 @@ bpf_set_if_xdp(unsigned int gid, const char *oid, const char *value,
     }
     else
     {
-        rc = bpf_add_and_link_xdp(cfg_convert_oid_str(value), ifindex,
-                                  xdp_flags);
+        cfg_oid *prog_oid = cfg_convert_oid_str(value);
+
+        rc = bpf_add_and_link_xdp(prog_oid, ifindex, xdp_flags);
+        cfg_free_oid(prog_oid);
         if (rc != 0)
             return rc;
     }
