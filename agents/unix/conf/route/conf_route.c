@@ -1211,7 +1211,7 @@ route_nexthop_weight_set(unsigned int gid, const char *oid,
     {
         ERROR("%s(): failed to convert '%s' to correct nexthop weight",
               __FUNCTION__, value);
-        return TE_RC(TE_TA_UNIX, rc);
+        return TE_RC(TE_TA_UNIX, rc != 0 ? rc : TE_EINVAL);
     }
 
     rc = route_nexthop_set_find(gid, route, hop_id, NULL, &rt_nh);
