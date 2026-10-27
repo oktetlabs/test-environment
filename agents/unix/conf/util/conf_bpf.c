@@ -96,6 +96,8 @@ typedef struct bpf_map_entry {
     unsigned int max_entries;
     bool writable;
     unsigned int n_values;
+    unsigned int kern_value_size; /**< Size of the value buffer the kernel
+                                       copies on lookup and update */
 } bpf_map_entry;
 
 /** Structure describing perf event data entry. */
@@ -367,6 +369,29 @@ bpf_init_map_info(struct bpf_map *map, struct bpf_map_entry *map_info)
     {
         map_info->n_values = 1;
     }
+
+    /*
+     * For per-CPU maps the kernel copies a value for each possible CPU,
+     * each one padded to 8 bytes, on lookup and update.
+     */
+    if (map_info->type == BPF_MAP_TYPE_PERCPU_ARRAY ||
+        map_info->type == BPF_MAP_TYPE_PERCPU_HASH ||
+        map_info->type == BPF_MAP_TYPE_LRU_PERCPU_HASH)
+    {
+        unsigned int n_cpus;
+
+        rc = bpf_num_possible_cpu(&n_cpus);
+        if (rc != 0)
+            return rc;
+
+        map_info->kern_value_size = TE_ALIGN(map_info->value_size, 8) *
+                                    n_cpus;
+    }
+    else
+    {
+        map_info->kern_value_size = map_info->value_size;
+    }
+
     map_info->writable = false;
 
     return 0;
@@ -1093,7 +1118,7 @@ bpf_get_map_kv_pair(unsigned int gid, const char *oid, char *value_str,
     }
 
     key = TE_ALLOC(map->key_size);
-    value = TE_ALLOC(map->value_size * map->n_values);
+    value = TE_ALLOC(map->kern_value_size);
 
     rc = te_str_hex_str2raw(key_str, key, map->key_size);
     if (rc != 0)
@@ -1466,7 +1491,7 @@ bpf_update_map_writable_kv_pair(unsigned int gid, const char *oid,
     if (rc != 0)
         goto fail_free_key;
 
-    value = TE_ALLOC(map->value_size * map->n_values);
+    value = TE_ALLOC(map->kern_value_size);
 
     rc = te_str_hex_str2raw(value_str, value, map->value_size * map->n_values);
     if (rc != 0)
