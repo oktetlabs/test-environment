@@ -258,7 +258,7 @@ route_load_attrs(ta_cfg_obj_t *obj)
     do {                                                      \
         snprintf(val, sizeof(val), "%d", rt_info->field_);    \
         if (rt_info->flags & TA_RT_INFO_FLG_ ## field_flg_ && \
-            (rc = ta_obj_attr_set(obj, #field_, val) != 0))   \
+            (rc = ta_obj_attr_set(obj, #field_, val)) != 0)   \
         {                                                     \
             return rc;                                        \
         }                                                     \
@@ -284,7 +284,7 @@ route_load_attrs(ta_cfg_obj_t *obj)
     }
 
     if (rt_info->flags & TA_RT_INFO_FLG_SRC &&
-            (rc = ta_obj_attr_set(obj, "src", val) != 0))
+            (rc = ta_obj_attr_set(obj, "src", val)) != 0)
     {
         ERROR("Invalid source address");
         return rc;
