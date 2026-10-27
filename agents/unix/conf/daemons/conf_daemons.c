@@ -889,6 +889,8 @@ echoserver_release(const char *name)
         return 0;
     ds_restore_backup(echo_index);
     ta_system("/etc/init.d/xinetd restart >/dev/null");
+
+    return 0;
 }
 
 #endif /* WITH_ECHO_SERVER */
@@ -972,6 +974,8 @@ todudpserver_release(const char *name)
         return 0;
     ds_restore_backup(todudp_index);
     ta_system("/etc/init.d/xinetd restart >/dev/null");
+
+    return 0;
 }
 
 
