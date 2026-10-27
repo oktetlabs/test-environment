@@ -71,6 +71,8 @@ console_add(unsigned int gid, const char *oid, const char *cname,
     UNUSED(gid);
     UNUSED(oid);
 
+    if (strlen(inst_name) > TE_SERIAL_MAX_NAME)
+        return TE_RC(TE_TA_UNIX, TE_ENAMETOOLONG);
     if (console_get_by_name(inst_name) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
