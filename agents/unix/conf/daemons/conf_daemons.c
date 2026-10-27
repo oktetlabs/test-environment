@@ -1925,7 +1925,7 @@ ftpserver_release(const char *name)
 #define SMTP_EMPTY_SMARTHOST    "0.0.0.0"
 
 /** /etc/hosts backup index */
-static int hosts_index;
+static int hosts_index = -1;
 
 /** Index of smarthost name: te_tester<index> */
 static unsigned int smarthost_name_index = 0;
@@ -2835,6 +2835,15 @@ smtp_release(const char *name)
 
     free(smtp_current_smarthost);
     smtp_current_smarthost = NULL;
+
+    /* The backup slots are free now and may go to other services */
+    hosts_index = -1;
+    sendmail_index = -1;
+#if defined __linux__
+    exim_index = -1;
+    postfix_index = -1;
+    qmail_index = -1;
+#endif
 
     return 0;
 }
