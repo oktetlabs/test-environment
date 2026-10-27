@@ -2084,7 +2084,7 @@ vm_kernel_get(unsigned int gid, const char *oid, char *value,
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", vm->kernel);
+    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(vm->kernel));
 
     return 0;
 }
@@ -2125,7 +2125,7 @@ vm_ker_cmd_get(unsigned int gid, const char *oid, char *value,
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", vm->ker_cmd);
+    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(vm->ker_cmd));
 
     return 0;
 }
@@ -2166,7 +2166,7 @@ vm_ker_initrd_get(unsigned int gid, const char *oid, char *value,
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", vm->ker_initrd);
+    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(vm->ker_initrd));
 
     return 0;
 }
@@ -2207,7 +2207,7 @@ vm_ker_dtb_get(unsigned int gid, const char *oid, char *value,
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", vm->ker_dtb);
+    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(vm->ker_dtb));
 
     return 0;
 }
@@ -2248,7 +2248,7 @@ vm_serial_get(unsigned int gid, const char *oid, char *value,
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", vm->serial);
+    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(vm->serial));
 
     return 0;
 }
@@ -2378,7 +2378,7 @@ vm_file_get(unsigned int gid, const char *oid, char *value,
     if (drive == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", drive->file.ptr);
+    snprintf(value, RCF_MAX_VAL, "%s", te_string_value(&drive->file));
 
     return 0;
 }
@@ -2600,7 +2600,7 @@ vm_virtfs_fsdriver_get(unsigned int gid, const char *oid, char *value,
     if (virtfs == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", virtfs->fsdriver);
+    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(virtfs->fsdriver));
 
     return 0;
 }
@@ -2642,7 +2642,7 @@ vm_virtfs_mount_tag_get(unsigned int gid, const char *oid, char *value,
     if (virtfs == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", virtfs->mount_tag);
+    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(virtfs->mount_tag));
 
     return 0;
 }
@@ -2684,7 +2684,7 @@ vm_virtfs_path_get(unsigned int gid, const char *oid, char *value,
     if (virtfs == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", virtfs->path);
+    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(virtfs->path));
 
     return 0;
 }
@@ -2726,7 +2726,8 @@ vm_virtfs_security_model_get(unsigned int gid, const char *oid, char *value,
     if (virtfs == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", virtfs->security_model);
+    snprintf(value, RCF_MAX_VAL, "%s",
+             te_str_empty_if_null(virtfs->security_model));
 
     return 0;
 }
