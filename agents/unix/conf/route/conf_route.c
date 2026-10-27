@@ -655,7 +655,8 @@ blackhole_commit(unsigned int gid, const cfg_oid *p_oid)
         rt_info.type != TA_RT_TYPE_PROHIBIT &&
         rt_info.type != TA_RT_TYPE_THROW)
     {
-        ERROR("Blackhole route type '%s' is not supported yet", rt_info.type);
+        ERROR("Blackhole route type '%s' is not supported yet",
+              ta_rt_type2name(rt_info.type));
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
