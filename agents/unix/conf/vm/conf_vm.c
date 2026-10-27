@@ -1920,7 +1920,7 @@ vm_net_opt_add(unsigned int gid, const char *oid, char *value,
 }
 
 static te_errno
-vm_net_opt_del(unsigned int gid, const char *oid, char *value,
+vm_net_opt_del(unsigned int gid, const char *oid,
                const char *vm_name, const char *net_name,
                const char *opt_name)
 {
