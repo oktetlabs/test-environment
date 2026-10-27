@@ -2830,6 +2830,9 @@ vm_pci_pt_add(unsigned int gid, const char *oid, char *value,
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
+    if (vm_pci_pt_find(vm, pci_pt_name) != NULL)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+
     pt = TE_ALLOC(sizeof(*pt));
 
     pt->name = strdup(pci_pt_name);
@@ -2976,6 +2979,9 @@ vm_device_add(unsigned int gid, const char *oid, const char *value,
 
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
+
+    if (vm_device_find(vm, device_name) != NULL)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     dev = TE_ALLOC(sizeof(*dev));
 
