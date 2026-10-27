@@ -204,6 +204,9 @@ parser_add(unsigned int gid, const char *oid, char *cname,
     serial_parser_t *parser;
     int              rc;
 
+    if (parser_get_by_name(pname) != NULL)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+
     parser = TE_ALLOC_UNINITIALIZED(sizeof(serial_parser_t));
     parser->enable      = false;
     parser->rcf         = false;
@@ -652,6 +655,8 @@ parser_event_add(unsigned int gid, const char *oid, char *t_name,
     parser = parser_get_by_name(pname);
     if (parser == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    if (parser_get_event_by_name(parser, ename) != NULL)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     event = TE_ALLOC_UNINITIALIZED(sizeof(serial_event_t));
 
@@ -854,6 +859,8 @@ parser_pattern_add(unsigned int gid, const char *oid, const char *pattern,
     event = parser_get_event_by_name(parser, ename);
     if (event == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    if (parser_get_pattern_by_name(event, name) != NULL)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     pat = TE_ALLOC_UNINITIALIZED(sizeof(serial_pattern_t));
 
