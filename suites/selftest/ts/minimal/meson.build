@@ -12,6 +12,7 @@ tests = [
     'mi_meas_highrange',
     'mi_meas_multipliers',
     'compound_params',
+    'compound_override',
     'parameters',
     'verdict',
     'multi_line_indent'

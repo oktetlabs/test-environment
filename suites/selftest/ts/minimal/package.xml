@@ -17,6 +17,13 @@
             </value>
         </enum>
 
+        <enum name="links">
+            <value name="fast">
+                <field name="speed">25G</field>
+                <field name="mtu">9000</field>
+            </value>
+        </enum>
+
         <run>
             <script name="helloworld"/>
         </run>
@@ -252,6 +259,22 @@
             </arg>
             <arg name="simple">
                 <value>Simple</value>
+            </arg>
+        </run>
+        <run>
+            <script name="compound_override">
+                <objective>${link_speed} link with ${link_mtu}-byte MTU, expecting ${expect_mtu}</objective>
+            </script>
+            <arg name="link" type="links">
+                <value ref="fast"/>
+            </arg>
+            <arg name="link_mtu" list="mtus">
+                <value>1500</value>
+                <value>9000</value>
+            </arg>
+            <arg name="expect_mtu" list="mtus">
+                <value>1500</value>
+                <value>9000</value>
             </arg>
         </run>
         <run>
