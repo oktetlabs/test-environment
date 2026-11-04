@@ -60,6 +60,12 @@
             </arg>
         </run>
         <run>
+            <script name="env_by_name"/>
+            <arg name="env">
+                <value>'net2':IUT{{{'pco_iut':IUT},if:'iut_if'}}</value>
+            </arg>
+        </run>
+        <run>
             <script name="parameters" />
 
             <!-- Note: some of values below use excessive spacing around

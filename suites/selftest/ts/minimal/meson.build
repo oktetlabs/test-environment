@@ -5,6 +5,7 @@ tests = [
     'artifact',
     'default_args',
     'env',
+    'env_by_name',
     'helloworld',
     'loggertest',
     'mi_meas_line_graph',

@@ -98,6 +98,10 @@ TS_DEFAULT_OPTS+="--trc-db=\"${TS_TOPDIR}\"/conf/trc.xml "
 TS_DEFAULT_OPTS+="--trc-db=\"${TS_TOPDIR}\"/ts/trc/distributed/trc_db/top.xml "
 TS_DEFAULT_OPTS+="--trc-tag=trc_test1 --trc-tag=trc_test2 "
 
+# Bind env nets named after configuration nets to them: needed by
+# ts/minimal/env_by_name, and no other env string names a net
+export TE_ENV_BIND_BY_NAME=yes
+
 # ta-def must be included at the end, when Test Agents are already
 # specified from processing of other options
 eval "${TE_BASE}/dispatcher.sh ${TS_DEFAULT_OPTS} ${TS_OPTS} " \
