@@ -278,6 +278,29 @@
             </arg>
         </run>
         <run>
+            <script name="compound_list">
+                <objective>Compound list for ${link_speed} with MTU ${link_mtu}</objective>
+            </script>
+            <arg name="link" type="links">
+                <value ref="fast"/>
+            </arg>
+            <arg name="link_mtu">
+                <value>1500</value>
+            </arg>
+            <arg name="expect_mtu">
+                <value>1500</value>
+            </arg>
+            <arg name="sizes">
+                <value>
+                    <field>64</field>
+                    <field>1514</field>
+                </value>
+            </arg>
+            <arg name="plain">
+                <value>x</value>
+            </arg>
+        </run>
+        <run>
             <script name="multi_line_indent">
                 <objective>
                     Check that indentation
