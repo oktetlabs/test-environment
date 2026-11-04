@@ -713,3 +713,143 @@ In this sample we create two variables **long_path** and **up_case_name** with p
 
 Todo More details should be added.
 
+
+
+
+
+.. _doxid-group__te__engine__tester_1te_engine_tester_iteration_compound:
+
+Compound parameters
+-------------------
+
+A value of an argument, a variable or an enumeration may be structured:
+instead of text it holds ``<field>`` elements. Named fields make an
+object, unnamed ones an array, and a field name given more than once
+makes an array under that name. A field holds text only, so a compound
+is one level deep.
+
+.. ref-code-block:: xml
+
+	<session>
+	  <run>
+	    <script name="link_test"/>
+	    <arg name="link">
+	      <value>
+	        <field name="speed">10G</field>
+	        <field name="duplex">full</field>
+	        <field name="mtu">1500</field>
+	      </value>
+	    </arg>
+	    <arg name="peers">
+	      <value>
+	        <field>peer1</field>
+	        <field>peer2</field>
+	      </value>
+	    </arg>
+	  </run>
+	</session>
+
+The test never sees the compound as a whole. Tester flattens it into
+one parameter per field: a named field is ``argument_field``, the
+items of an array are ``argument``, ``argument1``, ``argument2`` and so
+on, and a repeated named field ``argument_field``, ``argument_field1``.
+The run above starts the test with these parameters, and they are what
+the log shows and the ``--tester-run`` path selection operates on:
+
+.. code-block:: none
+
+
+	Starting test link_test   PASSED   <- link_speed=10G, link_duplex=full,
+	                                      link_mtu=1500, peers=peer1, peers1=peer2
+
+The TRC database, however, matches an iteration by the compound
+argument's own name: an ``<iter>`` for this run lists ``link`` and
+``peers``, not ``link_speed`` or ``peers1``.
+
+A C test reads the fields like any other parameters,
+``TEST_GET_STRING_PARAM(link_speed)``, and an array with
+``TEST_GET_PARAMS_VECTOR()`` (see ``tapi_test.h``). A field may carry
+a ``type`` attribute, in which case its text is checked against that
+type, and a ``name`` attribute of the value lets ``ref`` and
+``preferred`` point at the whole object.
+
+An enumeration of compound values is a catalog of objects. An argument
+of that type without values iterates over every object, and a
+``<value ref="name"/>`` picks one by its name:
+
+.. ref-code-block:: xml
+
+	<session>
+	  <enum name="links">
+	    <value name="fast">
+	      <field name="speed">25G</field>
+	      <field name="mtu">9000</field>
+	    </value>
+	    <value name="slow">
+	      <field name="speed">1G</field>
+	      <field name="mtu">1500</field>
+	    </value>
+	  </enum>
+
+	  <run>
+	    <script name="link_test"/>
+	    <!-- two iterations, one per object -->
+	    <arg name="link" type="links"/>
+	  </run>
+
+	  <run>
+	    <script name="link_test"/>
+	    <!-- one iteration, the object named "fast" -->
+	    <arg name="link" type="links">
+	      <value ref="fast"/>
+	    </arg>
+	  </run>
+	</session>
+
+An objective refers to the fields of a compound argument by their
+flattened names, ``${link_speed}``; a bare ``${link}`` is an error,
+and the items of an array beyond the first have no name an objective
+can use (see :ref:`Variable expansion in objectives <doxid-group__te__engine__tester_1te_engine_tester_objective_expansion>`).
+
+Every ``<value>`` of a compound argument is one object, and several
+values iterate like the values of any other argument. To vary one
+field while the rest of the object stays as declared, give a plain
+argument the flattened name of that field: a plain argument named
+``stem_field``, where ``stem`` is a compound argument of the same run
+item and ``field`` one of its single-valued named fields, replaces
+that field's value and is not passed as a parameter of its own. The
+test, the log and the objective all see the field once, with the
+overriding value, and the TRC database sees it inside the compound
+argument, whose ``<iter>`` entry does not name the plain argument;
+requirements attached to the overriding value (``reqs``) apply to the
+iteration as usual. The ``objective`` attribute of an overriding value
+is not carried over: it adds nothing to the iteration's objective,
+which can name the field instead (``${link_mtu}``).
+
+.. ref-code-block:: xml
+
+	<session>
+	  <run>
+	    <script name="link_test">
+	      <objective>${link_speed} link with ${link_mtu}-byte MTU</objective>
+	    </script>
+	    <arg name="link" type="links">
+	      <value ref="fast"/>
+	    </arg>
+	    <arg name="link_mtu">
+	      <value>1500</value>
+	      <value reqs="JUMBO">9000</value>
+	    </arg>
+	  </run>
+	</session>
+
+.. code-block:: none
+
+
+	Starting test link_test   PASSED   <- link_speed=25G, link_mtu=1500
+	Starting test link_test   PASSED   <- link_speed=25G, link_mtu=9000
+
+Overriding arguments multiply with the other arguments and may be put
+in a ``list`` like any other. Only single-valued named fields can be
+overridden: a plain argument whose name matches an array item or a
+repeated field is left as a parameter of its own.
