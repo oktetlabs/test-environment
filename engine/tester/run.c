@@ -43,6 +43,7 @@
 #include "te_str.h"
 #include "te_compound.h"
 #include "te_expand.h"
+#include "te_param.h"
 #include "conf_api.h"
 #include "log_bufs.h"
 #include "te_trc.h"
@@ -2546,6 +2547,34 @@ add_test_script_value(char *key, size_t idx, char *value,
     return 0;
 }
 
+/**
+ * Append the key of a named item of a compound to a comma-separated
+ * list, once per key.
+ *
+ * The callback for te_compound_iterate_str().
+ *
+ * @param key       Key of the item (may be @c NULL).
+ * @param idx       Index of the item among the items with this key.
+ * @param value     Value of the item (unused).
+ * @param has_more  Whether more items follow (unused).
+ * @param user      The list (te_string).
+ *
+ * @return Status code (always @c 0).
+ */
+static te_errno
+add_test_script_compound_key(char *key, size_t idx, char *value,
+                             bool has_more, void *user)
+{
+    te_string *keys = user;
+
+    if (key != NULL && idx == 0)
+        te_string_append(keys, "%s%s", keys->len == 0 ? "" : ",", key);
+
+    UNUSED(value);
+    UNUSED(has_more);
+    return 0;
+}
+
 static void
 prepare_test_script_arguments(te_vec *params, tester_flags flags,
                               const test_script *script,
@@ -2590,6 +2619,27 @@ prepare_test_script_arguments(te_vec *params, tester_flags flags,
     te_vec_append_str_fmt(params, "te_test_id=%u", (unsigned int )exec_id);
     te_vec_append_str_fmt(params, "te_test_name=%s", test_name);
     te_vec_append_str_fmt(params, "te_rand_seed=%d", rand_seed);
+
+    if (flags & TESTER_SCRIPT_COMPOUND_ARGS)
+    {
+        te_string keys = TE_STRING_INIT;
+
+        for (i = 0; i < n_args; i++)
+        {
+            if (args[i].variable)
+                continue;
+
+            te_string_reset(&keys);
+            te_compound_iterate_str(args[i].value,
+                                    add_test_script_compound_key, &keys);
+            if (keys.len != 0)
+            {
+                te_vec_append_str_fmt(params, TEST_ARG_COMP_PREFIX "%s=%s",
+                                      args[i].name, keys.ptr);
+            }
+        }
+        te_string_free(&keys);
+    }
 
     for (i = 0; i < n_args; i++)
     {
@@ -2921,6 +2971,8 @@ run_script(run_item *ri, test_script *script,
 
     if (ctx->flags & TESTER_FAIL_ON_LEAK)
         def_flags |= TESTER_FAIL_ON_LEAK;
+    if (ctx->flags & TESTER_SCRIPT_COMPOUND_ARGS)
+        def_flags |= TESTER_SCRIPT_COMPOUND_ARGS;
 
     assert(ri != NULL);
     assert(ri->n_args >= ctx->n_args);
@@ -3090,6 +3142,103 @@ run_release_cfg_backup(tester_ctx *ctx)
     return rc;
 }
 
+/**
+ * Parse a boolean value of an option of a Tester configuration file.
+ *
+ * @param opt           Option
+ * @param[out] value    Parsed value
+ *
+ * @return Status code.
+ */
+static te_errno
+run_cfg_option_bool(const test_option *opt, bool *value)
+{
+    static const struct {
+        const char *str;
+        bool value;
+    } values[] = {
+        { "yes", true }, { "true", true }, { "1", true },
+        { "no", false }, { "false", false }, { "0", false },
+    };
+    unsigned int i;
+
+    if (opt->value == NULL)
+    {
+        ERROR("Option '%s' of Tester configuration file has no value",
+              opt->name);
+        return TE_RC(TE_TESTER, TE_EINVAL);
+    }
+
+    for (i = 0; i < TE_ARRAY_LEN(values); i++)
+    {
+        if (strcasecmp(opt->value, values[i].str) == 0)
+        {
+            *value = values[i].value;
+            return 0;
+        }
+    }
+
+    ERROR("Option '%s' of Tester configuration file has invalid value '%s', expected yes, true, 1, no, false or 0",
+          opt->name, opt->value);
+    return TE_RC(TE_TESTER, TE_EINVAL);
+}
+
+/**
+ * Get the Tester flags controlled by the options of a Tester
+ * configuration file.
+ *
+ * Options with unknown names are ignored with a warning.
+ *
+ * @param opts          Options of the configuration file
+ * @param[out] set      Flags the options turn on
+ * @param[out] mask     Flags the options control (turned on or off)
+ *
+ * @return Status code.
+ */
+static te_errno
+run_cfg_options_flags(const test_options *opts, tester_flags *set,
+                      tester_flags *mask)
+{
+    const test_option *opt;
+    tester_flags flag;
+    bool enable;
+    te_errno rc;
+
+    *set = 0;
+    *mask = 0;
+
+    TAILQ_FOREACH(opt, opts, links)
+    {
+        if (strcmp(opt->name, "script_compound_args") == 0)
+        {
+            flag = TESTER_SCRIPT_COMPOUND_ARGS;
+        }
+        else
+        {
+            WARN("Option '%s' of Tester configuration file is unknown and ignored",
+                 opt->name);
+            continue;
+        }
+
+        rc = run_cfg_option_bool(opt, &enable);
+        if (rc != 0)
+            return rc;
+
+        if (!TAILQ_EMPTY(&opt->contexts))
+        {
+            WARN("Contexts of option '%s' of Tester configuration file are ignored, it applies to the whole file",
+                 opt->name);
+        }
+
+        *mask |= flag;
+        if (enable)
+            *set |= flag;
+        else
+            *set &= ~flag;
+    }
+
+    return 0;
+}
 
 static tester_cfg_walk_ctl
 run_cfg_start(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
@@ -3097,6 +3246,9 @@ run_cfg_start(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
     tester_run_data    *gctx = opaque;
     tester_ctx         *ctx;
     char               *maintainers;
+    tester_flags        opt_set;
+    tester_flags        opt_mask;
+    te_errno            rc;
 
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
@@ -3124,11 +3276,21 @@ run_cfg_start(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
     /*
      * Process options. Put options in appropriate context.
      */
-    if (!TAILQ_EMPTY(&cfg->options))
-        WARN("Options in Tester configuration files are ignored.");
+    rc = run_cfg_options_flags(&cfg->options, &opt_set, &opt_mask);
 
-    /* Clone Tester context */
+    /*
+     * Clone Tester context. It is done even if the options are bad,
+     * since run_cfg_end() destroys it.
+     */
     ctx = tester_run_more_ctx(gctx, false);
+
+    if (rc != 0)
+    {
+        ctx->group_result.status = TESTER_TEST_ERROR;
+        EXIT("FAULT");
+        return TESTER_CFG_WALK_FAULT;
+    }
+    ctx->flags = (ctx->flags & ~opt_mask) | opt_set;
 
     if (cfg->targets != NULL)
     {

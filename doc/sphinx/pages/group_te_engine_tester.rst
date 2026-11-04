@@ -172,6 +172,14 @@ Here is some description of used TAGs of configuration file:
 
     It is possible not to have both src and bin attributes in suite tag, which means you ask :ref:`Tester <doxid-group__te__engine__tester>` to build a test suite located under ${TE_BASE}/suites/[suite name] directory.
 
+* option - sets an option of :ref:`Tester <doxid-group__te__engine__tester>` for this configuration. option tags follow the suite tags and precede the run tags.
+
+  option tag keeps the following attributes:
+
+  * name - the name of the option. The only supported option is ``script_compound_args``, which makes :ref:`Tester <doxid-group__te__engine__tester>` pass every test script the names of the fields of its compound arguments (see :ref:`Telling the script which arguments are compound <doxid-group__te__engine__tester_1te_engine_tester_iteration_compound_list>`). An option with any other name is ignored with a warning;
+
+  * value - the value of the option: ``yes``, ``true`` or ``1`` turns it on, ``no``, ``false`` or ``0`` turns it off, which is the default. Values are matched case-insensitively, and ``context`` children of this option are ignored with a warning, since it applies to the whole file. Any other value, or a missing one, is an error that stops :ref:`Tester <doxid-group__te__engine__tester>`.
+
 * run - a block of tests, packages to run.
 
 In the above example we tell :ref:`Tester <doxid-group__te__engine__tester>` :
@@ -853,3 +861,45 @@ Overriding arguments multiply with the other arguments and may be put
 in a ``list`` like any other. Only single-valued named fields can be
 overridden: a plain argument whose name matches an array item or a
 repeated field is left as a parameter of its own.
+
+.. _doxid-group__te__engine__tester_1te_engine_tester_iteration_compound_list:
+
+Telling the script which arguments are compound
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The flattened parameters do not tell a test script which of them came
+from a compound argument: ``link_speed`` may be the field ``speed`` of
+``link`` or a plain argument of its own. A script that rebuilds the
+objects can ask Tester to name them with an option of the Tester
+configuration file (see :ref:`Tester Root Configuration File <doxid-group__te__engine__tester_1te_engine_tester_conf_root>`):
+
+.. ref-code-block:: xml
+
+	<option name="script_compound_args" value="yes"/>
+
+With the option on, Tester passes an entry
+``COMP.argument=field1,field2`` for every compound argument with named
+fields. It lists the names of the fields in ascending order, separated
+by commas without spaces, and a repeated field once. The entries
+follow ``te_rand_seed`` and precede the flattened parameters, which
+stay as they are. For the first example of this section, with
+``link`` and ``peers``, the script gets these arguments after its own
+name:
+
+.. code-block:: none
+
+
+	te_test_id=1
+	te_test_name=link_test
+	te_rand_seed=1804289383
+	COMP.link=duplex,mtu,speed
+	link_duplex=full
+	link_mtu=1500
+	link_speed=10G
+	peers=peer1
+	peers1=peer2
+
+An array such as ``peers`` and a plain argument get no entry. Nor
+does a plain argument that overrides a field, like ``link_mtu`` in the
+previous example: its value is the field of the compound, and the
+entry of the compound lists that field. The option is off by default.

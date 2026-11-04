@@ -31,6 +31,13 @@
  * variables */
 #define TEST_ARG_VAR_PREFIX "VAR."
 
+/**
+ * Prefix of the test script arguments which list the named fields of
+ * a compound argument: @c COMP.arg=field1,field2 tells that @c arg is
+ * a compound argument with named fields @c field1 and @c field2.
+ */
+#define TEST_ARG_COMP_PREFIX "COMP."
+
 /** Prefix for env variables which are connected with test arguments */
 #define TEST_ARG_ENV_PREFIX "TE_TEST_VAR_"
 

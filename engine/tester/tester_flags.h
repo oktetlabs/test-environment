@@ -124,6 +124,9 @@ typedef uint64_t tester_flags;
 /** Fail test scripts if valgrind detects a memory leak. */
 #define TESTER_FAIL_ON_LEAK           (1LLU << 39)
 
+/** Pass `COMP.<arg>=<fields>` entries to test scripts */
+#define TESTER_SCRIPT_COMPOUND_ARGS   (1LLU << 40)
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
