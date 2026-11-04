@@ -528,6 +528,7 @@ bool
 tester_is_run_required(const logic_expr        *targets,
                        const test_requirements *sticky_reqs,
                        const run_item          *test,
+                       unsigned int             n_args,
                        const test_iter_arg     *args,
                        tester_flags             flags,
                        bool quiet)
@@ -536,6 +537,8 @@ tester_is_run_required(const logic_expr        *targets,
     bool force = false;
     const test_requirements    *reqs;
 
+    assert(n_args <= test->n_args);
+
     reqs = tester_get_ri_reqs(test);
     if (reqs == NULL)
         return false;
@@ -543,7 +546,7 @@ tester_is_run_required(const logic_expr        *targets,
     if (targets != NULL)
     {
         result = is_reqs_expr_match(targets, sticky_reqs, reqs,
-                                    test->n_args, args, &force,
+                                    n_args, args, &force,
                                     true);
         if (!force)
             result = result || (test->type != RUN_ITEM_SCRIPT) ||
@@ -555,9 +558,9 @@ tester_is_run_required(const logic_expr        *targets,
                  "Test node requirements: %s\n"
                  "Requirements attached to parameters:%s\n",
                  tester_reqs_expr_to_string(targets),
-                 reqs_list_to_string(sticky_reqs, test->n_args, args),
-                 reqs_list_to_string(reqs, test->n_args, args),
-                 params_reqs_list_to_string(test->n_args, args));
+                 reqs_list_to_string(sticky_reqs, n_args, args),
+                 reqs_list_to_string(reqs, n_args, args),
+                 params_reqs_list_to_string(n_args, args));
         }
     }
     else

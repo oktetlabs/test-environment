@@ -77,8 +77,10 @@ extern void test_requirements_free(test_requirements *reqs);
  * @param targets       Target requirements expression
  * @param sticky_reqs   List of collected sticky requirements
  * @param test          Test to be checked
- * @param args          Array with test iteration arguments (run item
- *                      has fixed number of arguments)
+ * @param n_args        Number of iteration arguments: the run item's
+ *                      own count less the plain arguments merged into
+ *                      compound fields (at most @c test->n_args)
+ * @param args          Array with test iteration arguments
  * @param flags         Current Tester context flags
  * @param quiet         Be quiet
  *
@@ -89,6 +91,7 @@ extern bool tester_is_run_required(
                    const logic_expr           *targets,
                    const test_requirements    *sticky_reqs,
                    const struct run_item      *test,
+                   unsigned int                n_args,
                    const struct test_iter_arg *args,
                    tester_flags                flags,
                    bool quiet);
