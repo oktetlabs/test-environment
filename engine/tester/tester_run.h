@@ -40,6 +40,12 @@ typedef struct test_iter_arg {
 
     /** Current value objective */
     const char *objective;
+
+    /**
+     * Storage of a value built for this iteration (a compound with
+     * fields overridden by plain arguments); freed with the iteration.
+     */
+    char *owned;
 } test_iter_arg;
 
 /**

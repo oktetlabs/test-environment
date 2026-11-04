@@ -1681,13 +1681,15 @@ add_strings_to_array(json_t *array, tqh_strings *strs)
  *
  * @param sticky_reqs     Sticky requirements.
  * @param ri              Run item.
+ * @param n_args          Number of iteration arguments.
  * @param args            Iteration arguments.
  *
  * @return JSON array or NULL.
  */
 static json_t *
 test_reqs_to_json(const test_requirements *sticky_reqs,
-                  const run_item *ri, const test_iter_arg *args)
+                  const run_item *ri, unsigned int n_args,
+                  const test_iter_arg *args)
 {
     json_t *result;
     const test_requirements *reqs;
@@ -1697,20 +1699,19 @@ test_reqs_to_json(const test_requirements *sticky_reqs,
 
     TAILQ_INIT(&reqs_unique);
 
-    add_test_reqs_to_strings(&reqs_unique, sticky_reqs,
-                             ri->n_args, args);
+    add_test_reqs_to_strings(&reqs_unique, sticky_reqs, n_args, args);
 
     reqs = tester_get_ri_reqs(ri);
     if (reqs != NULL)
-        add_test_reqs_to_strings(&reqs_unique, reqs, ri->n_args, args);
+        add_test_reqs_to_strings(&reqs_unique, reqs, n_args, args);
 
-    for (i = 0; i < ri->n_args; i++)
+    for (i = 0; i < n_args; i++)
     {
         if (args[i].variable)
             continue;
 
         add_test_reqs_to_strings(&reqs_unique, &args[i].reqs,
-                                 ri->n_args, args);
+                                 n_args, args);
     }
 
     result = json_array();
@@ -1907,7 +1908,7 @@ log_test_start(unsigned int flags,
     char       *hash_str    = NULL;
 
     const expand_args ea = {
-        .n_args = ri->n_args,
+        .n_args = ctx->n_args,
         .args = ctx->args,
     };
 
@@ -1959,19 +1960,20 @@ log_test_start(unsigned int flags,
                        "id", test,
                        "parent", parent,
                        "plan_id", ri->plan_id,
-                       "params", test_params_to_json(ri->n_args, ctx->args),
-                       "reqs", test_reqs_to_json(&ctx->reqs, ri, ctx->args));
+                       "params", test_params_to_json(ctx->n_args, ctx->args),
+                       "reqs", test_reqs_to_json(&ctx->reqs, ri, ctx->n_args,
+                                                 ctx->args));
     if (result == NULL)
     {
         ERROR("JSON object creation failed in %s", __FUNCTION__);
         return;
     }
 
-    param_stems = test_param_names_to_json(ri->n_args, ctx->args,
+    param_stems = test_param_names_to_json(ctx->n_args, ctx->args,
                                            param_stem_to_json);
     if (param_stems != NULL)
         SET_NEW_JSON(result, "param_stems", param_stems);
-    param_fields = test_param_names_to_json(ri->n_args, ctx->args,
+    param_fields = test_param_names_to_json(ctx->n_args, ctx->args,
                                              param_field_to_json);
     if (param_fields != NULL)
         SET_NEW_JSON(result, "param_fields", param_fields);
@@ -2009,7 +2011,7 @@ log_test_start(unsigned int flags,
                 SET_NEW_JSON(result, "tin", tmp);
             }
 
-            hash_str = test_params_hash(ctx->args, ri->n_args);
+            hash_str = test_params_hash(ctx->args, ctx->n_args);
             tmp = json_string(hash_str);
             free(hash_str);
             if (tmp == NULL)
@@ -2095,7 +2097,7 @@ log_test_start(unsigned int flags,
 
             if (flags & TESTER_CFG_WALK_OUTPUT_PARAMS)
             {
-                test_params_to_te_string(&params_str, ri->n_args, ctx->args);
+                test_params_to_te_string(&params_str, ctx->n_args, ctx->args);
                 fprintf(stderr, "\n"
                         "                       "
                         "ARGs%s\n"
@@ -2130,7 +2132,7 @@ log_test_start(unsigned int flags,
             ERROR("Invalid run item type %d", ri->type);
     }
 
-    collect_objectives(&obj_str, objective, ri->n_args, ctx->args, &ea);
+    collect_objectives(&obj_str, objective, ctx->n_args, ctx->args, &ea);
     objective = te_string_value(&obj_str);
     if (!te_str_is_null_or_empty(objective))
     {
@@ -2921,7 +2923,7 @@ run_script(run_item *ri, test_script *script,
         def_flags |= TESTER_FAIL_ON_LEAK;
 
     assert(ri != NULL);
-    assert(ri->n_args == ctx->n_args);
+    assert(ri->n_args >= ctx->n_args);
     if (run_test_script(script, ri->name, ctx->current_result.id,
                         ctx->n_args, ctx->args,
                         gctx->act == NULL ? def_flags : /* FIXME */
@@ -4068,6 +4070,163 @@ run_prepare_args(const test_iter_arg *ctx_args,
     return rc;
 }
 
+/**
+ * Release the resources of an iteration argument.
+ *
+ * @param arg           Iteration argument
+ */
+static void
+test_iter_arg_release(test_iter_arg *arg)
+{
+    test_requirements_free(&arg->reqs);
+    free(arg->owned);
+    arg->owned = NULL;
+    arg->objective = NULL;
+}
+
+/**
+ * Move an iteration argument to another slot of its array.
+ *
+ * The source slot holds no resources afterwards.
+ *
+ * @param dst           Slot to move to; it must hold no resources
+ * @param src           Argument to move
+ */
+static void
+test_iter_arg_move(test_iter_arg *dst, test_iter_arg *src)
+{
+    if (dst == src)
+        return;
+
+    dst->name = src->name;
+    dst->value = src->value;
+    dst->variable = src->variable;
+    dst->objective = src->objective;
+    dst->owned = src->owned;
+    src->owned = NULL;
+    src->objective = NULL;
+    TAILQ_INIT(&dst->reqs);
+    TAILQ_CONCAT(&dst->reqs, &src->reqs, links);
+}
+
+/**
+ * Find the compound argument a plain argument overrides a field of.
+ *
+ * The candidates are the arguments already kept, at the start of the
+ * array, and those not yet examined, after the current one; the slots
+ * in between hold no arguments.
+ *
+ * @param[in]  args     Iteration arguments
+ * @param[in]  n_kept   Number of arguments kept so far
+ * @param[in]  cur      Index of the argument examined
+ * @param[in]  n_args   Number of arguments
+ * @param[out] field    Name of the overridden field
+ *
+ * @return The compound argument, or @c NULL if the argument examined
+ *         overrides nothing.
+ */
+static test_iter_arg *
+run_find_overridden(test_iter_arg *args, unsigned int n_kept,
+                    unsigned int cur, unsigned int n_args,
+                    const char **field)
+{
+    const test_iter_arg    *arg = &args[cur];
+    te_compound_kind        kind;
+    unsigned int            i;
+
+    if (arg->value == NULL)
+        return NULL;
+
+    kind = te_compound_classify(
+               &(te_string)TE_STRING_INIT_RO_PTR(arg->value));
+    if (kind != TE_COMPOUND_PLAIN && kind != TE_COMPOUND_NULL)
+        return NULL;
+
+    for (i = 0; i < n_args; i++)
+    {
+        te_string   comp;
+        size_t      stem_len;
+        const char *name;
+
+        if ((i >= n_kept && i <= cur) || args[i].value == NULL)
+            continue;
+
+        stem_len = strlen(args[i].name);
+        if (strncmp(arg->name, args[i].name, stem_len) != 0 ||
+            arg->name[stem_len] != '_')
+            continue;
+
+        name = arg->name + stem_len + 1;
+        if (*name == '\0')
+            continue;
+
+        comp = (te_string)TE_STRING_INIT_RO_PTR(args[i].value);
+        if (te_compound_classify(&comp) != TE_COMPOUND_OBJECT ||
+            te_compound_count(&comp, name) != 1)
+            continue;
+
+        *field = name;
+        return &args[i];
+    }
+
+    return NULL;
+}
+
+/**
+ * Let plain arguments override fields of compound ones.
+ *
+ * A plain argument named @c stem_field, where @c stem is the name of
+ * a compound argument of the same iteration and @c field one of its
+ * single-valued named fields, replaces that field's value and is
+ * dropped from the iteration, so that the parameter is seen exactly
+ * once by the test, the log, the TRC and the objective. Requirements
+ * of the plain argument's value move to the compound argument.
+ *
+ * Arrays (unnamed or repeated fields) cannot be overridden: such a
+ * plain argument is left alone.
+ *
+ * The arguments left keep their order and move to the start of the
+ * array; the slots past the new end of the array hold no resources.
+ *
+ * @param args          Prepared iteration arguments
+ * @param n_args        Number of arguments; updated to the number
+ *                      left after the merge
+ */
+static void
+run_override_fields(test_iter_arg *args, unsigned int *n_args)
+{
+    unsigned int    n = *n_args;
+    unsigned int    k;
+    unsigned int    w;
+
+    for (k = 0, w = 0; k < n; k++)
+    {
+        const char     *field = NULL;
+        test_iter_arg  *target;
+        te_string       comp = TE_STRING_INIT;
+
+        target = run_find_overridden(args, w, k, n, &field);
+        if (target == NULL)
+        {
+            test_iter_arg_move(&args[w++], &args[k]);
+            continue;
+        }
+
+        VERB("%s(): '%s' overrides field '%s' of '%s'", __FUNCTION__,
+             args[k].name, field, target->name);
+        te_string_append(&comp, "%s", target->value);
+        te_compound_set(&comp, field, TE_COMPOUND_MOD_OP_REPLACE,
+                        "%s", args[k].value);
+        free(target->owned);
+        target->owned = comp.ptr;
+        target->value = comp.ptr;
+        TAILQ_CONCAT(&target->reqs, &args[k].reqs, links);
+        test_iter_arg_release(&args[k]);
+    }
+
+    *n_args = w;
+}
+
 static tester_cfg_walk_ctl
 run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                unsigned int iter, void *opaque)
@@ -4134,6 +4293,8 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                               ri, iter, ctx->args);
         if (rc != 0)
             args_preparation_fail = true;
+        else
+            run_override_fields(ctx->args, &ctx->n_args);
     }
 
     /*
@@ -4209,12 +4370,16 @@ run_iter_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 #endif
 
     /* TODO: Optimize arguments fill in */
-    assert(ri->n_args == ctx->n_args);
+    assert(ri->n_args >= ctx->n_args);
     for (i = 0; i < ctx->n_args; ++i)
     {
         test_requirements_free(&ctx->args[i].reqs);
         ctx->args[i].objective = NULL;
+        free(ctx->args[i].owned);
+        ctx->args[i].owned = NULL;
     }
+    /* Slots freed by run_override_fields() are reusable again */
+    ctx->n_args = ri->n_args;
 
     EXIT("CONT");
     return TESTER_CFG_WALK_CONT;
@@ -4241,7 +4406,7 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     if (ri->type == RUN_ITEM_SCRIPT && gctx->act != NULL &&
         gctx->act->hash != NULL && ~ctx->flags & TESTER_INLOGUE)
     {
-        hash_str = test_params_hash(ctx->args, ri->n_args);
+        hash_str = test_params_hash(ctx->args, ctx->n_args);
 
         if (strcmp(hash_str, gctx->act->hash) != 0)
         {
