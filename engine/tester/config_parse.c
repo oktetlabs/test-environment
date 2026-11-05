@@ -538,17 +538,16 @@ static te_errno
 alloc_and_get_tqe_string(xmlNodePtr node, tqh_strings *strs)
 {
     tqe_string  *p;
+    char        *str = NULL;
+    te_errno     rc;
 
-#ifndef XML_DOC_ASSUME_VALID
-    if (node->children != NULL)
-    {
-        ERROR("'string' cannot have children");
-        return TE_RC(TE_TESTER, TE_EINVAL);
-    }
-#endif
+    rc = get_text_content(node, (const char *)node->name, &str);
+    if (rc != 0)
+        return TE_RC(TE_TESTER, rc);
+
     p = TE_ALLOC(sizeof(*p));
 
-    p->v = XML2CHAR_DUP(node->content);
+    p->v = str;
 
     TAILQ_INSERT_TAIL(strs, p, links);
 
