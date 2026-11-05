@@ -9,6 +9,7 @@
 # - Extracts Doxygen comments and directives (@page, @defgroup, etc.)
 # - Handles @autogroup and @autogroupprefix for automatic group generation
 # - Processes <enum> and <var> elements
+# - Lists the fields of compound <enum> values
 # - Extracts <script> objectives (single and multi-line)
 # - Handles nested <session> elements within <run> elements
 # - Extracts requirements from <req> elements and reqs attributes
@@ -144,6 +145,90 @@ function process(str)
     }
 
     return;
+}
+
+# List item head that the opening line of a plain enum value gets
+function enum_value_head(str)
+{
+    if (str ~ /req=/) {
+        sub(/.*req="/, "-# (req=", str);
+        sub(/">/, ") ", str);
+    } else {
+        sub(/.*>/, "-# ", str);
+    }
+    return str;
+}
+
+# Add the <field> elements found in str to the compound value item
+function compound_add(str,    field, name, text)
+{
+    while (match(str, /<field[^>]*(\/>|>[^<]*<\/field>)/)) {
+        field = substr(str, RSTART, RLENGTH);
+        str = substr(str, RSTART + RLENGTH);
+
+        text = field;
+        sub(/^<field[^>]*>/, "", text);
+        sub(/<\/field>$/, "", text);
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", text);
+
+        if (field ~ /^<field[^>]*[[:space:]]name="/) {
+            name = field;
+            sub(/^<field[^>]*[[:space:]]name="/, "", name);
+            sub(/".*/, "", name);
+            text = name "=" text;
+        }
+
+        compound_item = compound_item (compound_nfields++ ? ", " : "") text;
+    }
+}
+
+function compound_close()
+{
+    print compound_item ",";
+    compound_open = 0;
+}
+
+# A compound enum value holds <field> elements instead of text.  The
+# fields are collected up to </value> and listed in one item, after the
+# value name if it has one: "-# name: field=text, field=text,", or
+# "-# text, text," for an array.  Whether a value opened on a line of
+# its own is compound becomes known on the next line: if it is not,
+# that line goes on to the rules below exactly as it did before, so
+# these rules come first.
+compound_open && !compound_nfields && !/<field/ {
+    print compound_plain;
+    compound_open = 0;
+}
+
+compound_open {
+    compound_add($0);
+    if (/<\/value>/)
+        compound_close();
+    next;
+}
+
+in_enum && match($0, /<value([[:space:]][^>]*[^\/])?>/) {
+    compound_tag = substr($0, RSTART, RLENGTH);
+    compound_rest = substr($0, RSTART + RLENGTH);
+
+    if (compound_tag !~ /[[:space:]]ref="/ &&
+        (compound_rest ~ /<field/ || compound_rest ~ /^[[:space:]]*$/)) {
+        compound_plain = enum_value_head($0);
+        compound_item = enum_value_head(compound_tag);
+        if (compound_tag ~ /[[:space:]]name="/) {
+            compound_name = compound_tag;
+            sub(/.*[[:space:]]name="/, "", compound_name);
+            sub(/".*/, "", compound_name);
+            compound_item = compound_item compound_name ": ";
+        }
+        compound_nfields = 0;
+        compound_open = 1;
+
+        compound_add(compound_rest);
+        if (compound_rest ~ /<\/value>/)
+            compound_close();
+        next;
+    }
 }
 
 in_dox_comment && /^[[:space:]]*\*/ { sub(/^[[:space:]]*\*/, ""); }
