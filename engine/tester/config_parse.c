@@ -761,6 +761,7 @@ alloc_and_get_option(xmlNodePtr node, test_options *opts)
     value = xmlGetProp(node, CONST_CHAR2XML("value"));
 
     p = TE_ALLOC(sizeof(*p));
+    TAILQ_INIT(&p->contexts);
 
     p->name = XML2CHAR(name);
     p->value = XML2CHAR(value);
