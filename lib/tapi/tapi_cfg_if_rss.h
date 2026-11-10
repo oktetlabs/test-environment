@@ -220,7 +220,8 @@ extern te_errno tapi_cfg_if_rss_indir_default_set(
 
 /**
  * Commit changes related to hash key, hash functions and
- * indirection table.
+ * indirection table, and synchronize them with the Test Agent, so that
+ * the getters return what the driver has applied.
  *
  * @param ta            Test Agent name
  * @param if_name       Network interface name
