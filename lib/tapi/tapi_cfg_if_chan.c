@@ -53,6 +53,29 @@ tapi_cfg_if_chan_cur_get(const char *ta,
 
 /* See description in the tapi_cfg_if_chan.h */
 te_errno
+tapi_cfg_if_chan_tx_queues_get(const char *ta, const char *if_name,
+                               int *num)
+{
+    int combined = 0;
+    int tx = 0;
+    te_errno rc;
+
+    rc = tapi_cfg_if_chan_cur_get(ta, if_name, TAPI_CFG_IF_CHAN_COMBINED,
+                                  &combined);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_cfg_if_chan_cur_get(ta, if_name, TAPI_CFG_IF_CHAN_TX, &tx);
+    if (rc != 0)
+        return rc;
+
+    *num = combined + tx;
+
+    return 0;
+}
+
+/* See description in the tapi_cfg_if_chan.h */
+te_errno
 tapi_cfg_if_chan_max_get(const char *ta,
                          const char *if_name,
                          tapi_cfg_if_chan chan_type,

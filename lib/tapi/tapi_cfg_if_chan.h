@@ -75,6 +75,20 @@ extern te_errno tapi_cfg_if_chan_cur_set(const char *ta,
                                          tapi_cfg_if_chan chan_type,
                                          int num);
 
+/**
+ * Get the current number of Tx queues of an interface: the sum of its
+ * combined and Tx-only channels.
+ *
+ * @param[in]  ta       Test Agent name
+ * @param[in]  if_name  Interface name
+ * @param[out] num      Number of Tx queues
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_chan_tx_queues_get(const char *ta,
+                                               const char *if_name,
+                                               int *num);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
