@@ -224,6 +224,31 @@ tapi_cfg_pci_enable_vfs_of_pf(const char *pf_oid, unsigned int n_vfs)
 }
 
 te_errno
+tapi_cfg_pci_get_num_vfs_of_pf(const char *pf_oid, unsigned int *n_vfs)
+{
+    int32_t val = 0;
+    te_errno rc;
+
+    if (pf_oid == NULL || n_vfs == NULL)
+    {
+        ERROR("%s(): invalid arguments", __func__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    /* The driver may change the number, e.g. when it is reloaded */
+    rc = cfg_get_int32_sync(&val, "%s/sriov:/num_vfs:", pf_oid);
+    if (rc != 0)
+    {
+        if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
+            ERROR("Failed to get the number of VFs of a device: %r", rc);
+        return rc;
+    }
+    *n_vfs = val;
+
+    return 0;
+}
+
+te_errno
 tapi_cfg_pci_addr_by_oid(const cfg_oid *pci_device, char **pci_addr)
 {
     char *result;

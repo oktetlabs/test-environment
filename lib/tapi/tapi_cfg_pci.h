@@ -118,6 +118,18 @@ extern te_errno tapi_cfg_pci_get_vfs_of_pf(const char *pf_oid,
                                            unsigned int **pci_vf_ids);
 
 /**
+ * Get the number of enabled VFs by a PCI PF object identifier. The value
+ * is synchronized with the Test Agent first.
+ *
+ * @param[in]  pf_oid        PF OID in string representation
+ * @param[out] n_vfs         Number of enabled VFs
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_pci_get_num_vfs_of_pf(const char *pf_oid,
+                                               unsigned int *n_vfs);
+
+/**
  * Set number of VFs by a PCI PF object identifier.
  *
  * @param[in]  pf_oid        PF OID in string representation
