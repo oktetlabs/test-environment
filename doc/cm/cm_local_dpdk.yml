@@ -296,3 +296,13 @@
 
         Name: none
         Value: default, mod15
+
+    - oid: "/local/dpdk/rx_free_thresh"
+      access: read_write
+      type: uint16
+      d: |
+        Absolute Rx free threshold to apply to Rx queue setups performed
+        without an explicit queue configuration. 0 means no override.
+
+        Name: none
+        Value: Number, 0 by default
