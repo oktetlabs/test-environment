@@ -17,7 +17,40 @@
 #include "tapi_cfg_if_rss.h"
 #include "te_alloc.h"
 #include "te_str.h"
+#include "te_enum.h"
 #include "logger_api.h"
+
+/* Format of OID of the hash fields of a flow type */
+#define FLOW_HASH_FMT \
+    "/agent:%s/interface:%s/rss:/context:%u/flow_hash:%s"
+
+/* Names of flow types in the configuration tree */
+static const te_enum_map flow_hash_names[] = {
+    { .name = "tcp4", .value = TAPI_CFG_IF_RSS_FLOW_TCP4 },
+    { .name = "udp4", .value = TAPI_CFG_IF_RSS_FLOW_UDP4 },
+    { .name = "sctp4", .value = TAPI_CFG_IF_RSS_FLOW_SCTP4 },
+    { .name = "ah_esp4", .value = TAPI_CFG_IF_RSS_FLOW_AH_ESP4 },
+    { .name = "tcp6", .value = TAPI_CFG_IF_RSS_FLOW_TCP6 },
+    { .name = "udp6", .value = TAPI_CFG_IF_RSS_FLOW_UDP6 },
+    { .name = "sctp6", .value = TAPI_CFG_IF_RSS_FLOW_SCTP6 },
+    { .name = "ah_esp6", .value = TAPI_CFG_IF_RSS_FLOW_AH_ESP6 },
+    TE_ENUM_MAP_END
+};
+
+/* Names of hash fields in the configuration tree */
+static const te_enum_map flow_hash_field_names[] = {
+    { .name = "l2da", .value = TAPI_CFG_IF_RSS_FIELD_BIT_L2DA },
+    { .name = "vlan", .value = TAPI_CFG_IF_RSS_FIELD_BIT_VLAN },
+    { .name = "l3_proto", .value = TAPI_CFG_IF_RSS_FIELD_BIT_L3_PROTO },
+    { .name = "ip_src", .value = TAPI_CFG_IF_RSS_FIELD_BIT_IP_SRC },
+    { .name = "ip_dst", .value = TAPI_CFG_IF_RSS_FIELD_BIT_IP_DST },
+    { .name = "l4_b_0_1", .value = TAPI_CFG_IF_RSS_FIELD_BIT_L4_SRC },
+    { .name = "l4_b_2_3", .value = TAPI_CFG_IF_RSS_FIELD_BIT_L4_DST },
+    { .name = "gtp_teid", .value = TAPI_CFG_IF_RSS_FIELD_BIT_GTP_TEID },
+    { .name = "ip6_fl", .value = TAPI_CFG_IF_RSS_FIELD_BIT_IP6_FL },
+    { .name = "discard", .value = TAPI_CFG_IF_RSS_FIELD_BIT_DISCARD },
+    TE_ENUM_MAP_END
+};
 
 /* See description in tapi_cfg_if_rss.h */
 te_errno
@@ -430,4 +463,239 @@ cleanup:
     free(hfuncs);
 
     return rc;
+}
+
+/* Get the name of a flow type in the configuration tree */
+static te_errno
+flow_hash_name(tapi_cfg_if_rss_flow flow, const char **flow_name)
+{
+    *flow_name = te_enum_map_from_any_value(flow_hash_names, flow, NULL);
+    if (*flow_name == NULL)
+    {
+        ERROR("%s(): unknown flow type %d", __func__, (int)flow);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    return 0;
+}
+
+/*
+ * Find the field instances of a flow type and get the flags of
+ * the fields (zero for a field that has no flag).
+ * The arrays should be released by the caller.
+ */
+static te_errno
+flow_hash_fields_find(const char *ta, const char *if_name,
+                      unsigned int rss_context, const char *flow_name,
+                      unsigned int *num, cfg_handle **handles,
+                      unsigned int **flags)
+{
+    cfg_handle flow_handle;
+    cfg_handle *set = NULL;
+    unsigned int *result = NULL;
+    unsigned int count;
+    unsigned int i;
+    char *name;
+    te_errno rc;
+
+    /* There is no instance if the driver does not support the type. */
+    rc = cfg_find_fmt(&flow_handle, FLOW_HASH_FMT, ta, if_name,
+                      rss_context, flow_name);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_find_pattern_fmt(&count, &set, FLOW_HASH_FMT "/field:*",
+                              ta, if_name, rss_context, flow_name);
+    if (rc != 0)
+        return rc;
+
+    result = TE_ALLOC(sizeof(*result) * (count + 1));
+
+    for (i = 0; i < count; i++)
+    {
+        rc = cfg_get_inst_name(set[i], &name);
+        if (rc != 0)
+        {
+            free(set);
+            free(result);
+            return rc;
+        }
+
+        result[i] = te_enum_map_from_str(flow_hash_field_names, name, 0);
+        free(name);
+    }
+
+    *num = count;
+    *handles = set;
+    *flags = result;
+
+    return 0;
+}
+
+/* See description in tapi_cfg_if_rss.h */
+te_errno
+tapi_cfg_if_rss_flow_hash_get(const char *ta,
+                              const char *if_name,
+                              unsigned int rss_context,
+                              tapi_cfg_if_rss_flow flow,
+                              unsigned int *fields)
+{
+    const char *flow_name;
+    cfg_handle *handles = NULL;
+    unsigned int *flags = NULL;
+    unsigned int result = 0;
+    unsigned int num;
+    unsigned int i;
+    te_errno rc;
+
+    if (ta == NULL || if_name == NULL || fields == NULL)
+    {
+        ERROR("%s(): invalid arguments", __func__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = flow_hash_name(flow, &flow_name);
+    if (rc != 0)
+        return rc;
+
+    /*
+     * Configurator does not read values back after a commit, and
+     * the fields may be changed outside of it: get what the driver
+     * reports.
+     */
+    rc = cfg_synchronize_fmt(true, FLOW_HASH_FMT, ta, if_name,
+                             rss_context, flow_name);
+    if (rc != 0)
+        return rc;
+
+    rc = flow_hash_fields_find(ta, if_name, rss_context, flow_name,
+                               &num, &handles, &flags);
+    if (rc != 0)
+        return rc;
+
+    for (i = 0; i < num; i++)
+    {
+        cfg_val_type type = CVT_BOOL;
+        bool enabled;
+
+        rc = cfg_get_instance(handles[i], &type, &enabled);
+        if (rc != 0)
+            goto cleanup;
+
+        if (enabled)
+            result |= flags[i];
+    }
+
+    *fields = result;
+
+cleanup:
+
+    free(handles);
+    free(flags);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_if_rss.h */
+te_errno
+tapi_cfg_if_rss_flow_hash_set_local(const char *ta,
+                                    const char *if_name,
+                                    unsigned int rss_context,
+                                    tapi_cfg_if_rss_flow flow,
+                                    unsigned int fields)
+{
+    const char *flow_name;
+    cfg_handle *handles = NULL;
+    unsigned int *flags = NULL;
+    unsigned int known = 0;
+    unsigned int num;
+    unsigned int i;
+    te_errno rc;
+
+    rc = flow_hash_name(flow, &flow_name);
+    if (rc != 0)
+        return rc;
+
+    rc = flow_hash_fields_find(ta, if_name, rss_context, flow_name,
+                               &num, &handles, &flags);
+    if (rc != 0)
+        return rc;
+
+    for (i = 0; i < num; i++)
+        known |= flags[i];
+
+    if ((fields & ~known) != 0)
+    {
+        ERROR("%s(): hash fields 0x%x are not known to TA %s",
+              __func__, fields & ~known, ta);
+        rc = TE_RC(TE_TAPI, TE_EOPNOTSUPP);
+        goto cleanup;
+    }
+
+    /*
+     * A field that has no flag here cannot be requested, and
+     * the fields that are not requested are excluded.
+     */
+    for (i = 0; i < num; i++)
+    {
+        unsigned int enabled = ((fields & flags[i]) != 0 ? 1 : 0);
+
+        rc = cfg_set_instance_local(handles[i], CVT_BOOL, enabled);
+        if (rc != 0)
+            goto cleanup;
+    }
+
+cleanup:
+
+    free(handles);
+    free(flags);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_if_rss.h */
+te_errno
+tapi_cfg_if_rss_flow_hash_commit(const char *ta,
+                                 const char *if_name,
+                                 unsigned int rss_context,
+                                 tapi_cfg_if_rss_flow flow)
+{
+    const char *flow_name;
+    te_errno rc;
+
+    rc = flow_hash_name(flow, &flow_name);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_commit_fmt(FLOW_HASH_FMT, ta, if_name, rss_context,
+                        flow_name);
+    if (rc != 0)
+        return rc;
+
+    /*
+     * Configurator does not read values back after a commit: get what
+     * the driver has applied, so that the getter does not return what
+     * was requested.
+     */
+    return cfg_synchronize_fmt(true, FLOW_HASH_FMT, ta, if_name,
+                               rss_context, flow_name);
+}
+
+/* See description in tapi_cfg_if_rss.h */
+te_errno
+tapi_cfg_if_rss_flow_hash_set(const char *ta,
+                              const char *if_name,
+                              unsigned int rss_context,
+                              tapi_cfg_if_rss_flow flow,
+                              unsigned int fields)
+{
+    te_errno rc;
+
+    rc = tapi_cfg_if_rss_flow_hash_set_local(ta, if_name, rss_context,
+                                             flow, fields);
+    if (rc != 0)
+        return rc;
+
+    return tapi_cfg_if_rss_flow_hash_commit(ta, if_name, rss_context,
+                                            flow);
 }

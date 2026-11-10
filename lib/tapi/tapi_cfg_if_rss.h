@@ -18,6 +18,59 @@
 extern "C" {
 #endif
 
+/** Flow types whose RSS hash fields can be configured. */
+typedef enum tapi_cfg_if_rss_flow {
+    /** TCP over IPv4. */
+    TAPI_CFG_IF_RSS_FLOW_TCP4,
+    /** UDP over IPv4. */
+    TAPI_CFG_IF_RSS_FLOW_UDP4,
+    /** SCTP over IPv4. */
+    TAPI_CFG_IF_RSS_FLOW_SCTP4,
+    /** AH or ESP over IPv4. */
+    TAPI_CFG_IF_RSS_FLOW_AH_ESP4,
+    /** TCP over IPv6. */
+    TAPI_CFG_IF_RSS_FLOW_TCP6,
+    /** UDP over IPv6. */
+    TAPI_CFG_IF_RSS_FLOW_UDP6,
+    /** SCTP over IPv6. */
+    TAPI_CFG_IF_RSS_FLOW_SCTP6,
+    /** AH or ESP over IPv6. */
+    TAPI_CFG_IF_RSS_FLOW_AH_ESP6,
+} tapi_cfg_if_rss_flow;
+
+/**
+ * Fields that may be included in RSS hash of a flow type (flags of
+ * a bitmask).
+ */
+typedef enum tapi_cfg_if_rss_field {
+    /** Destination MAC address. */
+    TAPI_CFG_IF_RSS_FIELD_BIT_L2DA = (1 << 0),
+    /** VLAN tag. */
+    TAPI_CFG_IF_RSS_FIELD_BIT_VLAN = (1 << 1),
+    /** L3 protocol number. */
+    TAPI_CFG_IF_RSS_FIELD_BIT_L3_PROTO = (1 << 2),
+    /** Source IP address. */
+    TAPI_CFG_IF_RSS_FIELD_BIT_IP_SRC = (1 << 3),
+    /** Destination IP address. */
+    TAPI_CFG_IF_RSS_FIELD_BIT_IP_DST = (1 << 4),
+    /**
+     * Bytes @c 0 and @c 1 of L4 header: the source port of TCP, UDP
+     * and SCTP.
+     */
+    TAPI_CFG_IF_RSS_FIELD_BIT_L4_SRC = (1 << 5),
+    /**
+     * Bytes @c 2 and @c 3 of L4 header: the destination port of TCP,
+     * UDP and SCTP.
+     */
+    TAPI_CFG_IF_RSS_FIELD_BIT_L4_DST = (1 << 6),
+    /** GTP tunnel endpoint ID. */
+    TAPI_CFG_IF_RSS_FIELD_BIT_GTP_TEID = (1 << 7),
+    /** IPv6 flow label. */
+    TAPI_CFG_IF_RSS_FIELD_BIT_IP6_FL = (1 << 8),
+    /** Do not hash, discard all the packets of the flow type. */
+    TAPI_CFG_IF_RSS_FIELD_BIT_DISCARD = (1 << 9),
+} tapi_cfg_if_rss_field;
+
 /**
  * Get number of available RX queues.
  *
@@ -287,6 +340,96 @@ extern te_errno tapi_cfg_if_rss_hfunc_set_single_local(
                                              const char *if_name,
                                              unsigned int rss_context,
                                              const char *func_name);
+
+/**
+ * Get the fields included in RSS hash of a flow type.
+ *
+ * The fields are synchronized with the Test Agent first, so they are
+ * the ones the driver reports. Do not call the function between
+ * tapi_cfg_if_rss_flow_hash_set_local() and
+ * tapi_cfg_if_rss_flow_hash_commit() for the same flow type:
+ * the synchronization discards values that are not committed.
+ *
+ * @param[in]  ta           Test Agent name
+ * @param[in]  if_name      Network interface name
+ * @param[in]  rss_context  RSS context
+ * @param[in]  flow         Flow type
+ * @param[out] fields       Bitmask of @ref tapi_cfg_if_rss_field flags
+ *                          of the fields included in the hash
+ *
+ * @return Status code.
+ * @retval TE_ENOENT    The interface does not report hash fields for
+ *                      the flow type.
+ */
+extern te_errno tapi_cfg_if_rss_flow_hash_get(const char *ta,
+                                              const char *if_name,
+                                              unsigned int rss_context,
+                                              tapi_cfg_if_rss_flow flow,
+                                              unsigned int *fields);
+
+/**
+ * Set locally the fields included in RSS hash of a flow type: the fields
+ * present in @p fields are included, all the other ones are excluded.
+ * This change should be committed with
+ * tapi_cfg_if_rss_flow_hash_commit().
+ *
+ * @param[in] ta            Test Agent name
+ * @param[in] if_name       Network interface name
+ * @param[in] rss_context   RSS context
+ * @param[in] flow          Flow type
+ * @param[in] fields        Bitmask of @ref tapi_cfg_if_rss_field flags
+ *                          of the fields to include in the hash
+ *
+ * @return Status code.
+ * @retval TE_ENOENT        The interface does not report hash fields for
+ *                          the flow type.
+ * @retval TE_EOPNOTSUPP    A field of @p fields is not known to
+ *                          the Test Agent.
+ */
+extern te_errno tapi_cfg_if_rss_flow_hash_set_local(
+                                              const char *ta,
+                                              const char *if_name,
+                                              unsigned int rss_context,
+                                              tapi_cfg_if_rss_flow flow,
+                                              unsigned int fields);
+
+/**
+ * Commit changes of the fields included in RSS hash of a flow type, and
+ * synchronize them with the Test Agent, so that
+ * tapi_cfg_if_rss_flow_hash_get() returns what the driver has applied.
+ *
+ * @param[in] ta            Test Agent name
+ * @param[in] if_name       Network interface name
+ * @param[in] rss_context   RSS context
+ * @param[in] flow          Flow type
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_rss_flow_hash_commit(
+                                              const char *ta,
+                                              const char *if_name,
+                                              unsigned int rss_context,
+                                              tapi_cfg_if_rss_flow flow);
+
+/**
+ * Set the fields included in RSS hash of a flow type and commit
+ * the change (see tapi_cfg_if_rss_flow_hash_set_local() and
+ * tapi_cfg_if_rss_flow_hash_commit()).
+ *
+ * @param[in] ta            Test Agent name
+ * @param[in] if_name       Network interface name
+ * @param[in] rss_context   RSS context
+ * @param[in] flow          Flow type
+ * @param[in] fields        Bitmask of @ref tapi_cfg_if_rss_field flags
+ *                          of the fields to include in the hash
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_rss_flow_hash_set(const char *ta,
+                                              const char *if_name,
+                                              unsigned int rss_context,
+                                              tapi_cfg_if_rss_flow flow,
+                                              unsigned int fields);
 
 #ifdef __cplusplus
 } /* extern "C" */
