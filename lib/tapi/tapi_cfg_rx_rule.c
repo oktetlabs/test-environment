@@ -419,18 +419,26 @@ tapi_cfg_rx_rule_commit(const char *ta,
     RULE_ACCESSOR_START;
 
     rc = cfg_commit(rule_oid);
-    if (rc == 0 && location < 0)
+    if (rc != 0)
+        return rc;
+
+    if (location < 0)
     {
         /*
          * Special insertion location was used - added rule will appear
          * under its real location after synchronization.
          */
-        rc = cfg_synchronize_fmt(
+        return cfg_synchronize_fmt(
                               true, "/agent:%s/interface:%s/rx_rules:",
                               ta, if_name);
     }
 
-    return rc;
+    /*
+     * Configurator does not read values back after a commit, and a
+     * driver may apply a rule that differs from the requested one:
+     * get the fields of the rule that the driver reports.
+     */
+    return cfg_synchronize(rule_oid, true);
 }
 
 /* See description in tapi_cfg_rx_rule.h */
