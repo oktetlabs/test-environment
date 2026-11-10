@@ -29,7 +29,9 @@ typedef enum tapi_cfg_if_chan {
 } tapi_cfg_if_chan;
 
 /**
- * Get current number of network channels of a given type.
+ * Get current number of network channels of a given type. The number
+ * is synchronized with the Test Agent first, so it is the one the driver
+ * reports.
  *
  * @param ta          Test Agent name
  * @param if_name     Interface name

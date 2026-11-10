@@ -42,9 +42,13 @@ tapi_cfg_if_chan_cur_get(const char *ta,
                          tapi_cfg_if_chan chan_type,
                          int *num)
 {
-    return cfg_get_int32(num,
-                         "/agent:%s/interface:%s/channels:/%s:/current:",
-                         ta, if_name, chan_name(chan_type));
+    /*
+     * Configurator does not read the value back after a set, and a
+     * driver may change the number itself: get what the driver reports.
+     */
+    return cfg_get_int32_sync(num,
+                              "/agent:%s/interface:%s/channels:/%s:/current:",
+                              ta, if_name, chan_name(chan_type));
 }
 
 /* See description in the tapi_cfg_if_chan.h */
