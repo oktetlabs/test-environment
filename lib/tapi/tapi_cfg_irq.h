@@ -34,6 +34,20 @@ extern "C" {
  */
 
 /**
+ * Get the number of the interrupts of an interface. The interface is
+ * synchronized with the Test Agent first, as a driver adds and removes
+ * interrupts with its queues.
+ *
+ * @param[in]  ta        Test agent name.
+ * @param[in]  if_name   Interface name.
+ * @param[out] count     Number of interrupts.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_irq_count_get(const char *ta, const char *if_name,
+                                       unsigned int *count);
+
+/**
  * Get the affinity of a single IRQ as a CPU list.
  *
  * @param[in]  ta        Test agent name.

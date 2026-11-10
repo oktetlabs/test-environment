@@ -16,6 +16,30 @@
 #include "te_intset.h"
 #include "te_str.h"
 
+/* See description in tapi_cfg_irq.h */
+te_errno
+tapi_cfg_irq_count_get(const char *ta, const char *if_name,
+                       unsigned int *count)
+{
+    cfg_handle *handles = NULL;
+    te_errno rc;
+
+    /*
+     * A driver adds and removes interrupts with its queues. The list of
+     * the instances can be synchronized only through their parent, which
+     * is the interface.
+     */
+    rc = cfg_synchronize_fmt(true, "/agent:%s/interface:%s", ta, if_name);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_find_pattern_fmt(count, &handles,
+                              "/agent:%s/interface:%s/irq:*", ta, if_name);
+    free(handles);
+
+    return rc;
+}
+
 te_errno
 tapi_cfg_irq_affinity_get(const char *ta, const char *if_name,
                           unsigned int irq, char **cpu_list)
