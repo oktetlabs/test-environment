@@ -516,6 +516,53 @@ extern te_errno ta_ethtool_commit_rssh(unsigned int gid,
 
 #endif
 
+#ifdef ETHTOOL_GRXFH
+
+/**
+ * Get the fields included in the RSS hash of a flow type via
+ * @c ETHTOOL_GRXFH.
+ * This may return a pointer to a cached value if it was already obtained
+ * for the current @p gid. Changes made to the obtained value should be
+ * committed via ta_ethtool_commit_rx_flow_hash().
+ *
+ * @param[in]  gid          Request group ID.
+ * @param[in]  if_name      Interface name.
+ * @param[in]  rss_context  RSS context ID.
+ * @param[in]  flow_type    Flow type (@c TCP_V4_FLOW, @c UDP_V4_FLOW,
+ *                          etc).
+ * @param[out] fields       Where to save a pointer to the bitmask of
+ *                          @c RXH_* flags (the caller should not release
+ *                          it).
+ *
+ * @return Status code.
+ */
+extern te_errno ta_ethtool_get_rx_flow_hash(unsigned int gid,
+                                            const char *if_name,
+                                            unsigned int rss_context,
+                                            uint32_t flow_type,
+                                            uint64_t **fields);
+
+#ifdef ETHTOOL_SRXFH
+/**
+ * Commit changes to the fields included in the RSS hash of a flow type
+ * via @c ETHTOOL_SRXFH.
+ *
+ * @param[in] gid           Request group ID.
+ * @param[in] if_name       Interface name.
+ * @param[in] rss_context   RSS context ID.
+ * @param[in] flow_type     Flow type (@c TCP_V4_FLOW, @c UDP_V4_FLOW,
+ *                          etc).
+ *
+ * @return Status code.
+ */
+extern te_errno ta_ethtool_commit_rx_flow_hash(unsigned int gid,
+                                               const char *if_name,
+                                               unsigned int rss_context,
+                                               uint32_t flow_type);
+#endif
+
+#endif
+
 #ifdef ETHTOOL_GRXCLSRLALL
 
 /** Information about Rx rules */

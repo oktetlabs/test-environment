@@ -232,6 +232,12 @@ ta_ethtool_cmd2str(int cmd)
 #ifdef ETHTOOL_SRSSH
         CASE_CMD(ETHTOOL_SRSSH);
 #endif
+#ifdef ETHTOOL_GRXFH
+        CASE_CMD(ETHTOOL_GRXFH);
+#endif
+#ifdef ETHTOOL_SRXFH
+        CASE_CMD(ETHTOOL_SRXFH);
+#endif
         CASE_CMD(ETHTOOL_GPFLAGS);
         CASE_CMD(ETHTOOL_SPFLAGS);
 #ifdef ETHTOOL_GRXCLSRLCNT
@@ -1233,6 +1239,127 @@ ta_ethtool_commit_rssh(unsigned int gid, const char *if_name,
     }
 
     rc = call_ethtool_ioctl(if_name, ETHTOOL_SRSSH, ta_rxfh->rxfh);
+    ta_obj_free(obj);
+    return rc;
+}
+#endif
+
+#endif
+
+#ifdef ETHTOOL_GRXFH
+
+/* Fill object name for ETHTOOL_GRXFH/ETHTOOL_SRXFH */
+static void
+rx_flow_hash_object_name(te_string *str, const char *if_name,
+                         unsigned int rss_context, uint32_t flow_type)
+{
+    te_string_append(str, "%s.%u.%u", if_name, rss_context,
+                     (unsigned int)flow_type);
+}
+
+/*
+ * Fill the request structure of ETHTOOL_GRXFH/ETHTOOL_SRXFH with
+ * the flow type and the RSS context.
+ */
+static te_errno
+rx_flow_hash_fill_rxnfc(struct ethtool_rxnfc *rxnfc,
+                        unsigned int rss_context, uint32_t flow_type)
+{
+    memset(rxnfc, 0, sizeof(*rxnfc));
+    rxnfc->flow_type = flow_type;
+
+    /* The default RSS context is addressed without FLOW_RSS flag. */
+    if (rss_context != 0)
+    {
+#ifdef HAVE_STRUCT_ETHTOOL_RXNFC_RSS_CONTEXT
+        rxnfc->flow_type |= FLOW_RSS;
+        rxnfc->rss_context = rss_context;
+#else
+        ERROR("%s(): hash fields of a not default RSS context cannot be "
+              "accessed", __func__);
+        return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
+    }
+
+    return 0;
+}
+
+/* See description in conf_ethtool.h */
+te_errno
+ta_ethtool_get_rx_flow_hash(unsigned int gid, const char *if_name,
+                            unsigned int rss_context, uint32_t flow_type,
+                            uint64_t **fields)
+{
+    te_string obj_name = TE_STRING_INIT_STATIC(MAX_OBJ_NAME_LEN);
+    struct ethtool_rxnfc rxnfc;
+    uint64_t *result;
+    ta_cfg_obj_t *obj;
+    te_errno rc;
+
+    rx_flow_hash_object_name(&obj_name, if_name, rss_context, flow_type);
+
+    obj = ta_obj_find(TA_OBJ_TYPE_IF_RX_FLOW_HASH,
+                      te_string_value(&obj_name), gid);
+    if (obj != NULL)
+    {
+        *fields = obj->user_data;
+        return 0;
+    }
+
+    rc = rx_flow_hash_fill_rxnfc(&rxnfc, rss_context, flow_type);
+    if (rc != 0)
+        return rc;
+
+    rc = call_ethtool_ioctl(if_name, ETHTOOL_GRXFH, &rxnfc);
+    if (rc != 0)
+        return rc;
+
+    result = TE_ALLOC(sizeof(*result));
+    *result = rxnfc.data;
+
+    rc = ta_obj_add(TA_OBJ_TYPE_IF_RX_FLOW_HASH,
+                    te_string_value(&obj_name), "", gid, result, &free,
+                    &obj);
+    if (rc != 0)
+    {
+        free(result);
+        return rc;
+    }
+
+    *fields = result;
+    return 0;
+}
+
+#ifdef ETHTOOL_SRXFH
+/* See description in conf_ethtool.h */
+te_errno
+ta_ethtool_commit_rx_flow_hash(unsigned int gid, const char *if_name,
+                               unsigned int rss_context,
+                               uint32_t flow_type)
+{
+    te_string obj_name = TE_STRING_INIT_STATIC(MAX_OBJ_NAME_LEN);
+    struct ethtool_rxnfc rxnfc;
+    ta_cfg_obj_t *obj;
+    te_errno rc;
+
+    rx_flow_hash_object_name(&obj_name, if_name, rss_context, flow_type);
+
+    obj = ta_obj_find(TA_OBJ_TYPE_IF_RX_FLOW_HASH,
+                      te_string_value(&obj_name), gid);
+    if (obj == NULL)
+    {
+        ERROR("%s(): failed to find object %s",
+              __func__, te_string_value(&obj_name));
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    rc = rx_flow_hash_fill_rxnfc(&rxnfc, rss_context, flow_type);
+    if (rc == 0)
+    {
+        rxnfc.data = *(uint64_t *)(obj->user_data);
+        rc = call_ethtool_ioctl(if_name, ETHTOOL_SRXFH, &rxnfc);
+    }
+
     ta_obj_free(obj);
     return rc;
 }

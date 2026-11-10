@@ -335,6 +335,12 @@ extern void ta_cfg_obj_log(const ta_cfg_obj_t *obj);
 #define TA_OBJ_TYPE_IF_RSSH "if_rssh"
 
 /**
+ * Name for the object type containing the fields included in the RSS
+ * hash of a flow type.
+ */
+#define TA_OBJ_TYPE_IF_RX_FLOW_HASH "if_rx_flow_hash"
+
+/**
  * Name for the object type containing private flags for network
  * interface.
  */

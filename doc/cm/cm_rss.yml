@@ -93,3 +93,42 @@
          Name: none
          Value: If set to nonzero, indirection table is reset.
                 TA always returns zero as value of this node.
+
+    - oid: "/agent/interface/rss/context/flow_hash"
+      access: read_only
+      type: none
+      unit: true
+      d: |
+         Fields included in RSS hash of a flow type (what
+         "ethtool -n|-N <interface> rx-flow-hash <flow type>" shows and
+         sets). Only the flow types for which the driver reports hash
+         fields are listed. Changes of the fields are applied when
+         the instance is committed. The fields of a not default RSS
+         context are accessed with FLOW_RSS flag of the flow type.
+         Name: Flow type: tcp4, udp4, sctp4, ah_esp4, tcp6, udp6, sctp6
+               or ah_esp6
+         Value: none
+
+    - oid: "/agent/interface/rss/context/flow_hash/field"
+      access: read_write
+      type: bool
+      d: |
+         Field that may be included in RSS hash of the flow type
+         Name: one of:
+               l2da     - destination MAC address,
+               vlan     - VLAN tag,
+               l3_proto - L3 protocol number,
+               ip_src   - source IP address,
+               ip_dst   - destination IP address,
+               l4_b_0_1 - bytes 0 and 1 of L4 header (source port of
+                          TCP, UDP and SCTP),
+               l4_b_2_3 - bytes 2 and 3 of L4 header (destination port
+                          of TCP, UDP and SCTP),
+               gtp_teid - GTP tunnel endpoint ID,
+               ip6_fl   - IPv6 flow label,
+               discard  - do not hash, discard all the packets of
+                          the flow type.
+               Only the fields known to the kernel headers Test Agent
+               is built with are present.
+         Value: 1 - the field is included in the hash,
+                0 - the field is not included
