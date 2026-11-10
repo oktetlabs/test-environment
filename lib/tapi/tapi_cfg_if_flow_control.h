@@ -163,6 +163,11 @@ typedef struct tapi_cfg_if_fc {
 /**
  * Get all flow control parameter values for a given interface.
  *
+ * The parameters are synchronized with the Test Agent first, so the
+ * values are the ones the driver reports. Do not call the function
+ * between local sets and tapi_cfg_if_fc_commit(): the synchronization
+ * discards values that are not committed.
+ *
  * @param ta        Test agent name
  * @param ifname    Interface name
  * @param params    Where to save parameter values
