@@ -16,8 +16,13 @@
 #include "ndn.h"
 
 
+/** Mask of the priority (PCP) in the VLAN TCI. */
 #define NDN_ETH_VLAN_TCI_MASK_PRIO 0xe000
+/** Shift of the priority (PCP) in the VLAN TCI. */
+#define NDN_ETH_VLAN_TCI_SHIFT_PRIO 13
+/** Mask of the CFI (DEI) bit in the VLAN TCI. */
 #define NDN_ETH_VLAN_TCI_MASK_CFI 0x1000
+/** Mask of the VLAN ID in the VLAN TCI. */
 #define NDN_ETH_VLAN_TCI_MASK_ID 0xfff
 
 #ifdef __cplusplus
