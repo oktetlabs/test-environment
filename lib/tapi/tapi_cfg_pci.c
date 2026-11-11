@@ -431,6 +431,38 @@ out:
 }
 
 te_errno
+tapi_cfg_pci_release(const cfg_oid *pci_instance)
+{
+    const char *ta = CFG_OID_GET_INST_NAME(pci_instance, 1);
+    char *rsrc_name = NULL;
+    te_errno rc;
+
+    rsrc_name = tapi_cfg_pci_rsrc_name(pci_instance);
+
+    rc = cfg_get_instance_fmt(NULL, NULL, "/agent:%s/rsrc:%s", ta,
+                              rsrc_name);
+    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+    {
+        rc = 0;
+        goto out;
+    }
+    if (rc != 0)
+    {
+        ERROR("Failed to get resource '%s': %r", rsrc_name, rc);
+        goto out;
+    }
+
+    rc = cfg_del_instance_fmt(false, "/agent:%s/rsrc:%s", ta, rsrc_name);
+    if (rc != 0)
+        ERROR("Failed to release resource '%s': %r", rsrc_name, rc);
+
+out:
+    free(rsrc_name);
+
+    return rc;
+}
+
+te_errno
 tapi_cfg_pci_bind_ta_driver_on_device(const char *ta,
                                       enum tapi_cfg_driver_type type,
                                       const char *pci_addr)

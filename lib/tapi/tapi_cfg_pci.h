@@ -182,6 +182,18 @@ extern char * tapi_cfg_pci_fn_netdev_rsrc_name(const cfg_oid *oid);
 extern te_errno tapi_cfg_pci_grab(const cfg_oid *pci_instance);
 
 /**
+ * Release a PCI device grabbed with tapi_cfg_pci_grab(). A device must be
+ * released before it disappears (e.g. a VF before the VFs of its PF are
+ * disabled), otherwise the resource cannot be removed afterwards.
+ *
+ * @param[in]  pci_instance     PCI instance OID
+ *                              (/agent/hardware/pci/vendor/device/instance)
+ *
+ * @return Status code; @c 0 if the device is not grabbed.
+ */
+extern te_errno tapi_cfg_pci_release(const cfg_oid *pci_instance);
+
+/**
  * Get PCI device OID by the PCI address
  *
  * @param[in]  ta           Test Agent name
