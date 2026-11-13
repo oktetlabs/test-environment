@@ -69,7 +69,8 @@ extern te_errno tapi_bpf_rxq_stats_init(const char *ta, const char *if_name,
  * @param prog_dir      Where rxq_stats object file is located (may be
  *                      a path relative to TA directory).
  * @param attach_mode   XDP attach mode.
- * @param bpf_id        Where to save BPF object ID (may be @c NULL).
+ * @param bpf_id        Where to save BPF object ID on success (may be
+ *                      @c NULL).
  *
  * @return Status code.
  */

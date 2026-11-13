@@ -53,6 +53,9 @@ tapi_bpf_rxq_stats_init_mode(const char *ta, const char *if_name,
     char *ta_dir = NULL;
     unsigned int id = 0;
     te_string prog_path = TE_STRING_INIT;
+    bool obj_initialized = false;
+    bool prog_linked = false;
+    te_errno cleanup_rc;
     te_errno rc;
 
     prog_name = rxq_stats_get_prog_name(attach_mode);
@@ -81,19 +84,43 @@ tapi_bpf_rxq_stats_init_mode(const char *ta, const char *if_name,
     if (rc != 0)
         goto finish;
 
-    if (bpf_id != NULL)
-        *bpf_id = id;
+    obj_initialized = true;
 
     rc = tapi_bpf_prog_link(ta, if_name, id, TAPI_BPF_LINK_XDP,
                             prog_name);
     if (rc != 0)
         goto finish;
 
+    prog_linked = true;
+
     rc = tapi_bpf_map_set_writable(ta, id, "params");
     if (rc != 0)
         goto finish;
 
+    if (bpf_id != NULL)
+        *bpf_id = id;
+
 finish:
+
+    if (rc != 0 && prog_linked)
+    {
+        cleanup_rc = tapi_bpf_prog_unlink(ta, if_name, TAPI_BPF_LINK_XDP);
+        if (cleanup_rc != 0)
+        {
+            ERROR("Failed to unlink rxq_stats during rollback: %r",
+                  cleanup_rc);
+        }
+    }
+
+    if (rc != 0 && obj_initialized)
+    {
+        cleanup_rc = tapi_bpf_obj_fini(ta, id);
+        if (cleanup_rc != 0)
+        {
+            ERROR("Failed to destroy rxq_stats object %u during rollback: %r",
+                  id, cleanup_rc);
+        }
+    }
 
     free(ta_dir);
     te_string_free(&prog_path);
