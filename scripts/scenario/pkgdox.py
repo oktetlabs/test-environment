@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     from model import Step, Test, Value
 
 _HEADING = re.compile(r'^#{3,6}\s+(.*?)\s*$')
-_FENCE = re.compile(r'^\s*(```|~~~)')
+_FENCE = re.compile(r'^\s*(`{3,}|~{3,})(.*)$')
 _IMPL_QUOTE = re.compile(r'^\s*>\s*impl:', re.IGNORECASE)
 _QUOTE = re.compile(r'^\s*>')
 
@@ -50,17 +50,27 @@ def _anchor(group: str, title: str) -> str:
     return f'{group}-{slug}'
 
 
+def _fence_after(fence: str, line: str) -> tuple[str, bool]:
+    """The code fence open after @p line and whether the line is code."""
+    m = _FENCE.match(line)
+    if not fence:
+        return (m.group(1), True) if m else ('', False)
+    if m is None or m.group(2).strip():
+        return fence, True
+    # A block ends at a fence of its own character that is not shorter.
+    marker = m.group(1)
+    closed = marker[0] == fence[0] and len(marker) >= len(fence)
+    return ('' if closed else fence), True
+
+
 def _doc_lines(pkg: Package) -> list[str]:
     """The description as doxygen input, before comment markup."""
     out: list[str] = []
-    fenced = False
+    fence = ''
     in_impl = False
     for line in pkg.description:
-        if _FENCE.match(line):
-            fenced = not fenced
-            out.append(line)
-            continue
-        if fenced:
+        fence, code = _fence_after(fence, line)
+        if code:
             out.append(line)
             continue
         if in_impl and _QUOTE.match(line):

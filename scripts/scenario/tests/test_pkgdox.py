@@ -201,3 +201,11 @@ def test_md2dox_wrapper(tmp_path: Path) -> None:
         [str(wrapper), str(md)], capture_output=True, text=True, check=True
     )
     assert out.stdout.splitlines()[0] == '/// @addtogroup dcb'
+
+
+def test_fence_is_closed_by_its_own_marker_only() -> None:
+    desc = ['````', '~~~', '```', '### not a heading', '````', '### Heading']
+    out = render(make_pkg(desc))
+    lines = out.splitlines()
+    assert '/// ### not a heading' in lines
+    assert '/// **Heading**' in lines
