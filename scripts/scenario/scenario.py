@@ -129,9 +129,9 @@ def _check_package(root: Path, md: Path, *, strict: bool, groups: set[str]) -> l
     except ScenarioError as exc:
         return [str(exc)]
     ref = _pkg_ref(root, md)
-    if pkg.description and pkg.group not in groups:
+    if (pkg.description or pkg.tests) and pkg.group not in groups:
         findings.append(
-            f'{ref}/{md.name}: the description joins group "{pkg.group}", '
+            f'{ref}/{md.name}: the package joins group "{pkg.group}", '
             'which no @defgroup defines'
         )
     for t in pkg.tests:

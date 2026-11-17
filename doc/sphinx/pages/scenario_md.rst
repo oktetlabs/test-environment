@@ -260,10 +260,10 @@ documentation tree:
   ``@defgroup <package>-<test>`` and ``@ingroup <group>``, as the
   generated stub does; a ``@page`` header, for instance, gives the
   test a page that nothing links to;
-* a package description whose group no ``@defgroup`` defines, in a
-  ``.dox`` file or a ``package.xml``: the description joins its
-  group with ``@addtogroup``, which creates a new untitled group
-  when the group does not exist.
+* a package whose group no ``@defgroup`` defines, in a ``.dox`` file
+  or a ``package.xml``: the tests join the group with ``@ingroup``
+  and the description with ``@addtogroup``, which creates a new
+  untitled group when the group does not exist.
 
 Status
 ~~~~~~

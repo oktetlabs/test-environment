@@ -66,10 +66,17 @@ main(void)
 """
 
 
+def define_group(root: Path) -> Path:
+    dox = root / 'usecases' / 'package.dox'
+    dox.write_text('/** @defgroup usecases Use cases */\n', encoding='utf-8')
+    return dox
+
+
 def make_suite(tmp_path: Path) -> Path:
     root = tmp_path / 'ts'
     (root / 'usecases').mkdir(parents=True)
     (root / 'usecases' / 'package.md').write_text(textwrap.dedent(PKG), encoding='utf-8')
+    define_group(root)
     return tmp_path
 
 
@@ -151,6 +158,7 @@ def test_check_param_docs(tmp_path: Path, capsys: pytest.CaptureFixture[str]) ->
     root = tmp_path / 'ts'
     (root / 'usecases').mkdir(parents=True)
     (root / 'usecases' / 'package.md').write_text(textwrap.dedent(PKG_PARAMS), encoding='utf-8')
+    define_group(root)
     c = root / 'usecases' / 'two.c'
     c.write_text(textwrap.dedent(C_TWO), encoding='utf-8')
     assert main(['check', '-t', str(tmp_path)]) == 0
@@ -185,6 +193,7 @@ def test_check_header_joins_group(tmp_path: Path, capsys: pytest.CaptureFixture[
     root = tmp_path / 'ts'
     (root / 'usecases').mkdir(parents=True)
     (root / 'usecases' / 'package.md').write_text(textwrap.dedent(PKG_PARAMS), encoding='utf-8')
+    define_group(root)
     page = C_TWO.replace('@defgroup usecases-two', '@page usecases-two')
     page = page.replace(' * @ingroup usecases\n', '')
     (root / 'usecases' / 'two.c').write_text(page, encoding='utf-8')
@@ -194,20 +203,14 @@ def test_check_header_joins_group(tmp_path: Path, capsys: pytest.CaptureFixture[
     assert 'usecases/two: header has no "@ingroup usecases"' in out
 
 
-def test_check_description_group_defined(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_check_group_defined(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     suite = make_suite(tmp_path)
-    pkg_dir = suite / 'ts' / 'usecases'
-    described = PKG.replace('## one:', '## Description\n\nWhat it covers.\n\n## one:')
-    (pkg_dir / 'package.md').write_text(described, encoding='utf-8')
+    define_group(suite / 'ts').unlink()
     assert main(['check', '-t', str(suite)]) == 1
     assert (
-        'usecases/package.md: the description joins group "usecases", '
-        'which no @defgroup defines'
+        'usecases/package.md: the package joins group "usecases", which no @defgroup defines'
     ) in capsys.readouterr().out
-    dox = pkg_dir / 'package.dox'
-    dox.write_text('/** @defgroup usecases Use cases */\n', encoding='utf-8')
+    define_group(suite / 'ts')
     assert main(['check', '-t', str(suite)]) == 0
 
 
