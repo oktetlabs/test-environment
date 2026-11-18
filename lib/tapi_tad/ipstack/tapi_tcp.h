@@ -1373,6 +1373,20 @@ extern te_errno tapi_tcp_get_hdrs_payload_len(asn_value *pkt,
                                               unsigned int *hdrs_len,
                                               unsigned int *pld_len);
 
+/**
+ * Enable or disable acceptance of partially overlapping TCP segments.
+ *
+ * @note We do not check that overlapped data match in two packets.
+ *
+ * @param handler    TAPI handler of TCP connection.
+ * @param enable     If @c false, reject partially overlapping TCP segments.
+ *                   If @c true, accept them, passing the first received
+ *                   variant of the overlapping data to the user.
+ * @return Status code.
+ */
+extern te_errno tapi_tcp_set_accept_partial_overlap(tapi_tcp_handler_t handler,
+                                                    bool enable);
+
 #endif /* !__TE_TAPI_TCP_H__ */
 
 /**@} <!-- END tapi_tad_tcp --> */
