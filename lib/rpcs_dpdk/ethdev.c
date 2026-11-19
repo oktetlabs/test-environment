@@ -2250,7 +2250,12 @@ TARPC_FUNC(rte_eth_dev_get_name_by_port, {},
 {
     out->name = TE_ALLOC(RPC_RTE_ETH_NAME_MAX_LEN);
 
+#if HAVE_RTE_ETH_DEV_GET_NAME_BY_PORT_ARG_SIZE
+    MAKE_CALL(out->retval = func(in->port_id, out->name,
+                                 RPC_RTE_ETH_NAME_MAX_LEN));
+#else
     MAKE_CALL(out->retval = func(in->port_id, out->name));
+#endif
 
     neg_errno_h2rpc(&out->retval);
 })

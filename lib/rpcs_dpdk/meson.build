@@ -99,6 +99,24 @@ if cc.compiles(code_dev_info_return, args: te_cflags + ['-Werror'],
     c_args += [ '-DHAVE_RTE_DEV_INFO_GET_RETURN_VOID' ]
 endif
 
+# Check if rte_eth_dev_get_name_by_port() has size argument
+code_get_name_by_port = '''
+#include <stdint.h>
+#include <stddef.h>
+#include "rte_ethdev.h"
+
+int main(void) {
+    typedef int (*func)(uint16_t, char *, size_t);
+    func f = rte_eth_dev_get_name_by_port;
+    (void)f;
+    return 0;
+}
+'''
+if cc.compiles(code_get_name_by_port, args: te_cflags + ['-Werror'],
+               name: 'rte_eth_dev_get_name_by_port() size argument')
+    c_args += [ '-DHAVE_RTE_ETH_DEV_GET_NAME_BY_PORT_ARG_SIZE' ]
+endif
+
 t = 'struct rte_ether_addr'
 if cc.has_type(t, args: te_cflags,
                prefix: '#include "rte_ethdev.h"')
