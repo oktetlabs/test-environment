@@ -140,7 +140,8 @@ tapi_rpc_rte_eth_make_eth_conf(rcf_rpc_server *rpcs, uint16_t port_id,
     if (rc != 0)
         return NULL;
 
-    ret = rpc_rte_eth_dev_get_name_by_port(rpcs, port_id, dev_name);
+    ret = rpc_rte_eth_dev_get_name_by_port(rpcs, port_id, dev_name,
+                                           sizeof(dev_name));
     if (ret != 0)
         return NULL;
 

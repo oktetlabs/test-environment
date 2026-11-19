@@ -2248,13 +2248,21 @@ TARPC_FUNC(rte_eth_dev_get_port_by_name, {},
 
 TARPC_FUNC(rte_eth_dev_get_name_by_port, {},
 {
+#if HAVE_RTE_ETH_DEV_GET_NAME_BY_PORT_ARG_SIZE
+    out->name = TE_ALLOC(MAX((size_t)in->size, 1));
+
+    MAKE_CALL(out->retval = func(in->port_id, out->name, (size_t)in->size));
+#else
     out->name = TE_ALLOC(RPC_RTE_ETH_NAME_MAX_LEN);
 
-#if HAVE_RTE_ETH_DEV_GET_NAME_BY_PORT_ARG_SIZE
-    MAKE_CALL(out->retval = func(in->port_id, out->name,
-                                 RPC_RTE_ETH_NAME_MAX_LEN));
-#else
     MAKE_CALL(out->retval = func(in->port_id, out->name));
+
+    /*
+     * Emulate the behaviour of DPDK 26.11+ which returns -ERANGE
+     * when the name with the terminating zero does not fit the buffer.
+     */
+    if (out->retval == 0 && strlen(out->name) + 1 > in->size)
+        out->retval = -ERANGE;
 #endif
 
     neg_errno_h2rpc(&out->retval);

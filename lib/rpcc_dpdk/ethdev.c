@@ -3292,7 +3292,8 @@ rpc_rte_eth_dev_get_port_by_name(rcf_rpc_server *rpcs,
 int
 rpc_rte_eth_dev_get_name_by_port(rcf_rpc_server *rpcs,
                                  uint16_t        port_id,
-                                 char           *name)
+                                 char           *name,
+                                 size_t          size)
 {
     tarpc_rte_eth_dev_get_name_by_port_in  in;
     tarpc_rte_eth_dev_get_name_by_port_out out;
@@ -3301,18 +3302,20 @@ rpc_rte_eth_dev_get_name_by_port(rcf_rpc_server *rpcs,
     memset(&out, 0, sizeof(out));
 
     in.port_id = port_id;
+    in.size = size;
 
     rcf_rpc_call(rpcs, "rte_eth_dev_get_name_by_port", &in, &out);
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_get_name_by_port,
                                           out.retval);
 
     TAPI_RPC_LOG(rpcs, rte_eth_dev_get_name_by_port,
-                 "port_id=%d", "name='%s'; " NEG_ERRNO_FMT,
-                 in.port_id, (out.retval == 0) ? out.name : "",
+                 "port_id=%d, size=%llu", "name='%s'; " NEG_ERRNO_FMT,
+                 in.port_id, (unsigned long long)in.size,
+                 (out.retval == 0) ? out.name : "",
                  NEG_ERRNO_ARGS(out.retval));
 
     if (out.retval == 0 && name != NULL && out.name != NULL)
-        te_strlcpy(name, out.name, RPC_RTE_ETH_NAME_MAX_LEN);
+        te_strlcpy(name, out.name, size);
 
     RETVAL_ZERO_INT(rte_eth_dev_get_name_by_port, out.retval);
 }

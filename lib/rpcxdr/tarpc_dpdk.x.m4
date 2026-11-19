@@ -1839,7 +1839,11 @@ struct tarpc_rte_eth_dev_get_port_by_name_out {
 };
 
 /** rte_eth_dev_get_name_by_port() */
-typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_get_name_by_port_in;
+struct tarpc_rte_eth_dev_get_name_by_port_in {
+    struct tarpc_in_arg             common;
+    uint16_t                        port_id;
+    tarpc_size_t                    size;
+};
 
 struct tarpc_rte_eth_dev_get_name_by_port_out {
     struct tarpc_out_arg common;
