@@ -121,6 +121,9 @@ te_strlcpy(char *dst, const char *src, size_t size)
 #else
     size_t len = strlen(src);
 
+    if (size == 0)
+        return len;
+
     if (len < size)
     {
         memcpy(dst, src, len + 1);
