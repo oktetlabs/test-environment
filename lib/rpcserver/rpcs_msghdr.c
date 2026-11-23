@@ -36,6 +36,7 @@ rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
     te_errno        rc = 0;
     unsigned int    i;
     size_t          control_len;
+    size_t          cmsg_len;
     size_t          max_addr_len = 0;
 
     va_list ap;
@@ -123,13 +124,15 @@ rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
         msg->msg_control = TE_ALLOC(helper->real_controllen);
         helper->orig_control = TE_ALLOC(control_len);
         msg->msg_controllen = control_len;
+        cmsg_len = control_len;
 
         rc = msg_control_rpc2h(
                       tarpc_msg->msg_control.msg_control_val,
                       tarpc_msg->msg_control.msg_control_len,
                       tarpc_msg->msg_control_tail.msg_control_tail_val,
                       tarpc_msg->msg_control_tail.msg_control_tail_len,
-                      msg->msg_control, &msg->msg_controllen);
+                      msg->msg_control, &cmsg_len);
+        msg->msg_controllen = cmsg_len;
         if (rc != 0)
             return rc;
 
