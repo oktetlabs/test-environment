@@ -14,6 +14,7 @@
 
 #include "te_vector.h"
 #include "te_string.h"
+#include "te_str.h"
 
 #include "logger_api.h"
 
@@ -272,6 +273,23 @@ te_vec_split_string(const char *str, te_vec *strvec, char sep,
     }
 
     return 0;
+}
+
+bool
+te_vec_find_str(const te_vec *strvec, const char *str, unsigned int *index)
+{
+    unsigned int pos;
+
+    assert(strvec->element_size == sizeof(char *));
+
+    if (te_str_find_index(str, (const char **)strvec->data.ptr,
+                          te_vec_size(strvec), &pos) != 0)
+        return false;
+
+    if (index != NULL)
+        *index = pos;
+
+    return true;
 }
 
 void

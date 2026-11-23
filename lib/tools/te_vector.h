@@ -593,6 +593,27 @@ extern te_errno te_vec_split_string(const char *str, te_vec *strvec, char sep,
                                     bool empty_is_none);
 
 /**
+ * Find a string in a vector of strings.
+ *
+ * It is te_str_find_index() for a vector: the strings are compared
+ * with strcmp() one by one, so the vector need not be sorted, and
+ * a @c NULL or an empty @p str is never found.
+ *
+ * @note The element size of @p strvec must be `sizeof(char *)`
+ *       and it must not have @c NULL elements.
+ *
+ * @param[in]  strvec   Vector of strings.
+ * @param[in]  str      String to look for.
+ * @param[out] index    Index of the first element equal to @p str
+ *                      (may be @c NULL to just check that there is
+ *                      one).
+ *
+ * @return @c true iff @p str is found.
+ */
+extern bool te_vec_find_str(const te_vec *strvec, const char *str,
+                            unsigned int *index);
+
+/**
  * Sort the elements of @p vec in place according to @p compar.
  *
  * @param vec      Vector to sort.
