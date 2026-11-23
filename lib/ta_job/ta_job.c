@@ -34,6 +34,9 @@
 #if HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
+#if HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
 #if HAVE_SIGNAL_H
 #include <signal.h>
 #endif
@@ -119,6 +122,11 @@ typedef struct filter_t {
     char *name;
     message_queue_t queue;
     regexp_data_t *regexp_data;
+
+    /* File the filter output is appended to, -1 if there is none */
+    int file_fd;
+    /* Path of the file behind file_fd, for diagnostics */
+    char *file_path;
 } filter_t;
 
 typedef LIST_HEAD(channel_list, channel_t) channel_list;
@@ -675,6 +683,8 @@ filter_alloc(const char *filter_name, bool readable, te_log_level log_level,
     result->readable = readable;
     result->log_level = log_level;
     result->regexp_data = NULL;
+    result->file_fd = -1;
+    result->file_path = NULL;
 
     *filter = result;
 
@@ -686,6 +696,18 @@ queue_destroy(message_queue_t *queue)
 {
     while (queue_drop_oldest(queue))
         ; /* Do nothing */
+}
+
+/* Close the file the filter output is appended to, if there is one */
+static void
+filter_file_close(filter_t *filter)
+{
+    if (filter->file_fd >= 0)
+        close(filter->file_fd);
+
+    filter->file_fd = -1;
+    free(filter->file_path);
+    filter->file_path = NULL;
 }
 
 static void
@@ -700,6 +722,7 @@ filter_destroy(filter_t *filter)
     te_string_free(&filter->saved_string);
     queue_destroy(&filter->queue);
     regexp_data_destroy(filter->regexp_data);
+    filter_file_close(filter);
 
     free(filter);
 }
@@ -1037,6 +1060,39 @@ proc_kill(pid_t pid, int signo, int term_timeout_ms, bool group)
     return rc;
 }
 
+/*
+ * Append data to the file of the filter. On failure the error is logged
+ * and the file is closed, so that the filter stops writing to it while
+ * the job keeps running.
+ */
+static void
+filter_file_write(filter_t *filter, const char *buf, size_t size)
+{
+    while (size > 0)
+    {
+        ssize_t written = write(filter->file_fd, buf, size);
+        te_errno rc;
+
+        if (written > 0)
+        {
+            buf += written;
+            size -= written;
+            continue;
+        }
+
+        if (written < 0 && errno == EINTR)
+            continue;
+
+        rc = written < 0 ? te_rc_os2te(errno) : TE_EIO;
+        ERROR("Failed to write output of filter '%s' to '%s': %r; "
+              "the file is not written any more",
+              filter->name == NULL ? "Unnamed" : filter->name,
+              filter->file_path, rc);
+        filter_file_close(filter);
+        return;
+    }
+}
+
 static te_errno
 match_callback(ta_job_manager_t *manager, filter_t *filter,
                unsigned int channel_id, pid_t pid, size_t size,
@@ -1044,6 +1100,9 @@ match_callback(ta_job_manager_t *manager, filter_t *filter,
 {
     int log_size = size > (size_t)INT_MAX ? INT_MAX : (int)size;
     te_errno rc;
+
+    if (!eos && filter->file_fd >= 0)
+        filter_file_write(filter, buf, size);
 
     if (!eos && filter->log_level != 0)
     {
@@ -1931,6 +1990,80 @@ ta_job_filter_add_regexp(ta_job_manager_t *manager, unsigned int filter_id,
     pthread_mutex_lock(&manager->channels_lock);
 
     rc = ta_job_filter_add_regexp_unsafe(manager, filter_id, re, extract);
+
+    pthread_mutex_unlock(&manager->channels_lock);
+
+    return rc;
+}
+
+static te_errno
+ta_job_filter_set_file_unsafe(ta_job_manager_t *manager,
+                              unsigned int filter_id, const char *path,
+                              bool truncate)
+{
+    /*
+     * O_NONBLOCK keeps the open of a FIFO without a reader from blocking
+     * under the lock. It does not affect a regular file, the only kind
+     * accepted, so it is not cleared.
+     */
+    int flags = O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC | O_NONBLOCK;
+    filter_t *filter;
+    const char *name;
+    struct stat st;
+    te_errno rc;
+    int fd;
+
+    if ((filter = get_filter(manager, filter_id)) == NULL)
+        return TE_EINVAL;
+
+    name = filter->name == NULL ? "Unnamed" : filter->name;
+
+    if (truncate)
+        flags |= O_TRUNC;
+
+    fd = open(path, flags, 0644);
+    if (fd < 0)
+    {
+        rc = te_rc_os2te(errno);
+        ERROR("Failed to open '%s' for output of filter '%s': %r", path,
+              name, rc);
+        return rc;
+    }
+
+    if (fstat(fd, &st) != 0)
+    {
+        rc = te_rc_os2te(errno);
+        ERROR("Failed to stat '%s' for output of filter '%s': %r", path,
+              name, rc);
+        close(fd);
+        return rc;
+    }
+
+    if (!S_ISREG(st.st_mode))
+    {
+        ERROR("Cannot write output of filter '%s' to '%s': it is not "
+              "a regular file", name, path);
+        close(fd);
+        return TE_EINVAL;
+    }
+
+    filter_file_close(filter);
+    filter->file_fd = fd;
+    filter->file_path = TE_STRDUP(path);
+
+    return 0;
+}
+
+/* See description in ta_job.h */
+te_errno
+ta_job_filter_set_file(ta_job_manager_t *manager, unsigned int filter_id,
+                       const char *path, bool truncate)
+{
+    te_errno rc;
+
+    pthread_mutex_lock(&manager->channels_lock);
+
+    rc = ta_job_filter_set_file_unsafe(manager, filter_id, path, truncate);
 
     pthread_mutex_unlock(&manager->channels_lock);
 

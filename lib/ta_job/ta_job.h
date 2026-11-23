@@ -216,6 +216,34 @@ extern te_errno ta_job_filter_add_regexp(ta_job_manager_t *manager,
                                          char *re, unsigned int extract);
 
 /**
+ * Append everything the filter matches to a file on the agent.
+ * This is done regardless of whether the filter is readable and of
+ * its log level. A file set earlier for the filter is replaced; if the
+ * new file cannot be opened, the filter is left as it was.
+ *
+ * If writing to the file fails, the error is logged and the filter
+ * stops writing to the file; the job keeps running.
+ *
+ * The path must be a regular file, anything else is refused: the file
+ * is written as output arrives under the job manager's lock, so a file
+ * that blocks on write (a FIFO, a device) would stall all jobs of the
+ * manager. A regular file on a hung network filesystem still can.
+ *
+ * @param      manager         Job manager handle
+ * @param      filter_id       ID of the filter
+ * @param      path            Path to the file, it is created if it does
+ *                             not exist
+ * @param      truncate        Empty the file first
+ *
+ * @return     Status code: @c TE_EINVAL if there is no filter with such ID
+ *             or the path is not a regular file, a code derived from
+ *             @c errno if the file cannot be opened
+ */
+extern te_errno ta_job_filter_set_file(ta_job_manager_t *manager,
+                                       unsigned int filter_id,
+                                       const char *path, bool truncate);
+
+/**
  * Attach an existing filter to additional output channels
  *
  * @param      manager         Job manager handle
