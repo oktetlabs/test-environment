@@ -18,6 +18,15 @@ error() {
 }
 
 #####################################################################
+# Print warning message.
+# Arguments:
+#   All arguments are passed to "echo".
+#####################################################################
+warn() {
+    echo "${0}:" "$@" >&2
+}
+
+#####################################################################
 # Perform cleanup when the script terminates.
 # Globals:
 #   tar_dir
@@ -43,6 +52,10 @@ Usage: publish_logs [<options>]
   --meta=<path>         Testing metadata.
   --bundle=<path>       Raw log bundle.
   --raw=<path>          Raw log.
+  --attachments=<dir>   Directory with test attachments to add to the
+                        archive (attachments/node_id<N>/...). By default,
+                        'attachments' next to the raw log is used if it
+                        exists.
   -h, --help            Show help message and exit.
 
 All the other options will be passed to raw-log-bundle-create
@@ -59,6 +72,7 @@ EOF
 #   meta
 #   bundle
 #   raw_log
+#   attachments
 #   bundle_opts
 #####################################################################
 process_opts() {
@@ -77,10 +91,56 @@ process_opts() {
 
             --raw=*) raw_log="${1#--raw=}" ;;
 
+            --attachments=*) attachments="${1#--attachments=}" ;;
+
             *) bundle_opts+=("$1")
         esac
         shift 1
     done
+}
+
+
+#####################################################################
+# Copy the attachments the log server accepts: regular files with
+# allowed names in node_id<N> directories. Any other entry would make
+# the log server reject the whole archive, so it is skipped with a
+# warning. Files are copied one by one, since with --dereference tar
+# would store hard links as such, and the log server rejects them.
+# Arguments:
+#   Directory with attachments
+#   Directory to copy them to, created only if something is copied
+# Globals:
+#   ATTACH_NAME_REGEX
+#   ATTACH_NODE_REGEX
+#####################################################################
+copy_attachments() {
+    local src="$1"
+    local dst="$2"
+    local node
+    local node_name
+    local f
+    local name
+
+    while IFS= read -r -d '' node ; do
+        node_name="${node##*/}"
+        if [[ ! -d "${node}" || ! "${node_name}" =~ ${ATTACH_NODE_REGEX} \
+              || ! "${node_name}" =~ ${ATTACH_NAME_REGEX} ]] ; then
+            warn "Skipped attachment '${node}': not a node_id<N> directory"
+            continue
+        fi
+        while IFS= read -r -d '' f ; do
+            name="${f##*/}"
+            if [[ ! -f "${f}" ]] ; then
+                warn "Skipped attachment '${f}': not a regular file"
+            elif [[ ! "${name}" =~ ${ATTACH_NAME_REGEX} \
+                    || "${name}" == "." || "${name}" == ".." ]] ; then
+                warn "Skipped attachment '${f}': name not allowed"
+            else
+                mkdir -p "${dst}/${node_name}"
+                cp -L -- "${f}" "${dst}/${node_name}/${name}"
+            fi
+        done < <(find -H "${node}" -mindepth 1 -maxdepth 1 -print0 | sort -z)
+    done < <(find -H "${src}" -mindepth 1 -maxdepth 1 -print0 | sort -z)
 }
 
 
@@ -94,6 +154,7 @@ process_opts() {
 #   meta
 #   bundle
 #   raw_log
+#   attachments
 #   bundle_opts
 #   tar_dir
 #####################################################################
@@ -102,12 +163,19 @@ main() {
     declare -a bundle_opts
     readonly BUNDLE_NAME="raw_log_bundle.tpxz"
     readonly META_NAME="meta_data.json"
+    readonly ATTACH_NAME="attachments"
+    # What the log server accepts in attachments, see
+    # tools/log_server/publish-logs-unpack.sh
+    readonly ATTACH_NODE_REGEX="^node_id[0-9]+$"
+    readonly ATTACH_NAME_REGEX="^[-_.:0-9a-zA-Z]{1,128}$"
+    declare -a tar_files
 
     tar_dir=
     script=
     meta=
     bundle=
     raw_log=
+    attachments=
 
     trap cleanup EXIT ERR
 
@@ -142,8 +210,25 @@ main() {
         ln -s "${bundle}" "${tar_dir}/${BUNDLE_NAME}"
     fi
 
+    # By default, attachments are next to the raw log
+    if [[ -z "${attachments}" && -d "$(dirname "${raw_log}")/${ATTACH_NAME}" ]]
+    then
+        attachments="$(dirname "${raw_log}")/${ATTACH_NAME}"
+    fi
+
+    tar_files=("${META_NAME}" "${BUNDLE_NAME}")
+    if [[ -n "${attachments}" ]] ; then
+        if [[ ! -d "${attachments}" ]] ; then
+            error "Attachments directory '${attachments}' not found"
+        fi
+        copy_attachments "${attachments}" "${tar_dir}/${ATTACH_NAME}"
+        if [[ -d "${tar_dir}/${ATTACH_NAME}" ]] ; then
+            tar_files+=("${ATTACH_NAME}")
+        fi
+    fi
+
     tar -cf "${tar_dir}/te_logs.tar" -C "${tar_dir}" --dereference \
-        "${META_NAME}" "${BUNDLE_NAME}"
+        "${tar_files[@]}"
 
     "${script}" "${tar_dir}/te_logs.tar"
 }
