@@ -26,6 +26,13 @@ ALLOWED_FILES+=(trc-brief.html)
 ALLOWED_FILES+=(trc-stats.txt)
 ALLOWED_FILES+=("${DONE_MARKER}")
 
+# Optional directory with test attachments. Allowed shapes are
+# attachments/, attachments/node_id<N>/ and attachments/node_id<N>/<file>,
+# regular files and directories only.
+ATTACHMENTS_DIR="attachments"
+ATTACH_NAME_REGEX="^[-_.:0-9a-zA-Z]{1,128}$"
+ATTACH_NODE_REGEX="^node_id[0-9]+$"
+
 
 #######################################################################
 # Output optional error message to stderr and usage information
@@ -180,6 +187,55 @@ function mk_storage_path()
 }
 
 #######################################################################
+# Check that a tar entry under attachments/ is allowed.
+# Globals:
+#   ATTACHMENTS_DIR
+#   ATTACH_NAME_REGEX
+#   ATTACH_NODE_REGEX
+# Arguments:
+#   Entry name as printed by tar -t
+#   Entry type character from tar -tv (- for file, d for directory)
+# Returns:
+#   0 if allowed, 1 otherwise
+#######################################################################
+function attachment_entry_allowed()
+{
+    local name="$1"
+    local type="$2"
+    local parts
+    local p
+    local is_dir=false
+
+    # A directory entry must be of directory type and vice versa
+    if [[ "${type}" == "d" ]] ; then
+        is_dir=true
+        [[ "${name}" == */ ]] || return 1
+        name="${name%/}"
+        [[ "${name}" != */ ]] || return 1
+    elif [[ "${type}" != "-" || "${name}" == */ ]] ; then
+        return 1
+    fi
+
+    IFS=/ read -r -a parts <<<"${name}"
+    [[ "${#parts[@]}" -ge 1 && "${#parts[@]}" -le 3 ]] || return 1
+    [[ "${parts[0]}" == "${ATTACHMENTS_DIR}" ]] || return 1
+    for p in "${parts[@]}" ; do
+        [[ "${p}" =~ ${ATTACH_NAME_REGEX} \
+           && "${p}" != "." && "${p}" != ".." ]] || return 1
+    done
+    if [[ "${#parts[@]}" -ge 2 ]] ; then
+        [[ "${parts[1]}" =~ ${ATTACH_NODE_REGEX} ]] || return 1
+    fi
+    # Directories are attachments or attachments/node_id<N>, files are
+    # attachments/node_id<N>/<file>
+    if ${is_dir} ; then
+        [[ "${#parts[@]}" -le 2 ]] || return 1
+    else
+        [[ "${#parts[@]}" -eq 3 ]] || return 1
+    fi
+}
+
+#######################################################################
 # Extract meta information, unpack logs to storage and request import
 # to Bublik.
 #
@@ -198,12 +254,41 @@ function process_tar_file()
     local tarfile="$1"
     local missing=("${MANDATORY_FILES[@]}")
     local not_allowed_found=false
-    local files
+    local files=()
+    local types=()
+    local listing
     local f
+    local i
     local subpath
+    local has_attachments=false
 
-    files=($(tar -tf "${tarfile}")) || return 1
-    for f in "${files[@]}"; do
+    # Names are escaped by tar, so that every entry takes one line.
+    listing="$(tar --quoting-style=escape -tf "${tarfile}")" || return 1
+    if [[ -n "${listing}" ]] ; then
+        mapfile -t files <<<"${listing}"
+        # The verbose listing shows entry types (the first character of
+        # each line), which are checked before anything is extracted.
+        listing="$(tar --quoting-style=escape -tvf "${tarfile}")" || return 1
+        mapfile -t types <<<"${listing}"
+    fi
+    if [[ "${#types[@]}" -ne "${#files[@]}" ]] ; then
+        error "${tarfile}: inconsistent listing"
+        return 1
+    fi
+
+    for i in "${!files[@]}"; do
+        f="${files[$i]}"
+        if [[ "${f}" == "${ATTACHMENTS_DIR}" \
+              || "${f}" == "${ATTACHMENTS_DIR}/"* ]] ; then
+            if attachment_entry_allowed "${f}" "${types[$i]:0:1}" ; then
+                has_attachments=true
+            else
+                error "${tarfile}: not allowed file: ${f}"
+                not_allowed_found=true
+            fi
+            continue
+        fi
+
         # Entry names are compared as plain strings
         local m
         for m in "${!missing[@]}" ; do
@@ -217,6 +302,9 @@ function process_tar_file()
         done
         if ! ${allowed} ; then
             error "${tarfile}: not allowed file: ${f}"
+            not_allowed_found=true
+        elif [[ "${types[$i]:0:1}" != "-" ]] ; then
+            error "${tarfile}: not a regular file: ${f}"
             not_allowed_found=true
         fi
     done
@@ -245,8 +333,19 @@ function process_tar_file()
       && ${DRY_RUN}umask 0007 && ${DRY_RUN}mkdir "${destdir}" ) || return 1
 
     # Extract everything except done marker
-    ${DRY_RUN}tar -C "${destdir}" -xf "${tarfile}" \
+    # Members are listed explicitly, so recursion is not needed.
+    ${DRY_RUN}tar -C "${destdir}" --no-recursion --no-same-owner \
+        --no-same-permissions -xf "${tarfile}" \
         -- "${files[@]/${DONE_MARKER}|}"
+    if ${has_attachments} ; then
+        # Modes come from the archive: make the tree readable and its
+        # directories enterable. +rX has no who letters, so the umask
+        # limits what group and others get. No symbolic link can be
+        # followed: the listing check admits only a directory as
+        # attachments and only directories and regular files in it,
+        # and chmod -R does not follow links met in the tree anyway.
+        ${DRY_RUN}chmod -R u+rwX,+rX "${destdir}/${ATTACHMENTS_DIR}"
+    fi
     # Create done marker when everything is in place
     ${DRY_RUN}touch "${destdir}/${DONE_MARKER}"
 
