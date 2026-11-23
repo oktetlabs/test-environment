@@ -12,6 +12,19 @@
  * describes location of IUT and Tester RPC servers, nets, interfaces and
  * addresses.
  *
+ * Nets of the @b env string are bound to configuration nets (@c /net:
+ * instances) by shape: configuration nets are tried in order and the
+ * first combination where every env net fits by type and every host
+ * fits a node is taken. With @c TE_ENV_BIND_BY_NAME=yes in the test's
+ * environment an env net whose name equals a @c /net: instance name
+ * binds only to that net, and the binding fails when it does not fit
+ * there; env nets without a configuration net of their name bind by
+ * shape as before. This tells apart configuration nets of the same
+ * shape, e.g. a PF and a VF wire of one port. It is off by default
+ * because existing suites use env net names (@c net1, @c net2, ...)
+ * that coincide with their rigs' net names, sometimes with a different
+ * type, and their binding must not change.
+ *
  * Copyright (C) 2004-2025 OKTET Labs Ltd. All rights reserved.
  */
 
