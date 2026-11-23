@@ -37,6 +37,7 @@
 
 #include "te_config.h"
 #include "te_string.h"
+#include "tapi_cfg_base.h"
 #include "tapi_cfg_memory.h"
 #include "tapi_env.h"
 #include "tapi_test.h"
@@ -125,6 +126,53 @@ out:
     return rc;
 }
 
+/**
+ * Add the TRC tag @c no_veth_if if the IUT cannot create the veth pair
+ * which cs/vlan_egress_qos needs (for example, without
+ * @c CAP_NET_ADMIN). The test checks the same and skips.
+ *
+ * @param ta    Test Agent of the IUT.
+ *
+ * @return Status code.
+ */
+static te_errno
+add_veth_tags(const char *ta)
+{
+    cfg_handle handle;
+    te_errno rc;
+
+    /* A pair left by an interrupted run */
+    if (cfg_find_fmt(&handle, "/agent:%s/veth:te_probe0", ta) == 0)
+    {
+        RING("Delete the probe veth pair left by an earlier run");
+        rc = tapi_cfg_base_if_del_veth(ta, "te_probe0");
+        if (rc != 0)
+        {
+            ERROR("Failed to delete the probe veth pair: %r", rc);
+            return rc;
+        }
+    }
+
+    rc = tapi_cfg_base_if_add_veth(ta, "te_probe0", "te_probe1");
+    if (rc == 0)
+        return tapi_cfg_base_if_del_veth(ta, "te_probe0");
+
+    if (cfg_find_fmt(&handle, "/agent:%s/veth:te_probe0", ta) == 0)
+    {
+        te_errno del_rc;
+
+        /* The pair is created: something else failed */
+        ERROR("Failed to set up the probe veth pair: %r", rc);
+        del_rc = tapi_cfg_base_if_del_veth(ta, "te_probe0");
+        if (del_rc != 0)
+            ERROR("Failed to delete the probe veth pair: %r", del_rc);
+        return rc;
+    }
+
+    RING("A veth pair cannot be created on the IUT: %r", rc);
+    return tapi_tags_add_tag("no_veth_if", "");
+}
+
 int
 main(int argc, char **argv)
 {
@@ -183,6 +231,9 @@ main(int argc, char **argv)
 
     TEST_STEP("Add TRC tags for DCB tests which cannot run");
     CHECK_RC(add_dcb_tags(iut_rpcs));
+
+    TEST_STEP("Add TRC tags for veth tests which cannot run");
+    CHECK_RC(add_veth_tags(iut_rpcs->ta));
 
     /* Print /local: subtree to see which TRC tags have been added */
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/local:%s", ""));
