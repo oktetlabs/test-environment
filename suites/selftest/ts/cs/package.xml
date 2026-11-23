@@ -144,6 +144,10 @@
         </run>
 
         <run>
+            <script name="process_output"/>
+        </run>
+
+        <run>
             <script name="process_ping"/>
         </run>
 
