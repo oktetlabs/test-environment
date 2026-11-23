@@ -196,7 +196,12 @@ te_strerror_r(int in_errno, char *buf, size_t buf_len)
 {
     char *ret;
 
-#if defined(_GNU_SOURCE) || (_POSIX_C_SOURCE < 200112L)
+/*
+ * On glibc with _GNU_SOURCE, strerror_r() is the GNU char * variant.
+ * On everything else -- musl included, even with _GNU_SOURCE -- it is
+ * the POSIX int variant.
+ */
+#if defined(__GLIBC__) && defined(_GNU_SOURCE)
     ret = strerror_r(in_errno, buf, buf_len);
 #else
     if (strerror_r(in_errno, buf, buf_len) == 0)
