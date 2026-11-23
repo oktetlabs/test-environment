@@ -207,7 +207,7 @@ function process_tar_file()
         # Entry names are compared as plain strings
         local m
         for m in "${!missing[@]}" ; do
-            [[ "${missing[$m]}" != "${f}" ]] || missing[$m]=
+            [[ "${missing[$m]}" != "${f}" ]] || unset "missing[${m}]"
         done
 
         local allowed=false
@@ -221,7 +221,7 @@ function process_tar_file()
         fi
     done
 
-    if [[ "${#missing}" -ne 0 ]] ;  then
+    if [[ "${#missing[@]}" -ne 0 ]] ; then
         error "${tarfile}: missing mandatory: ${missing[*]}"
         return 1
     fi

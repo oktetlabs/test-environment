@@ -117,6 +117,7 @@ run_case() {
 
 pop_none() { :; }
 pop_unrelated() { echo x >extra.txt; }
+pop_no_bundle() { rm raw_log_bundle.tpxz; }
 # Entry names are matched as strings, not as patterns
 pop_bypass_link() { ln -s /etc/passwd lnk; }
 pop_bypass_option() {
@@ -125,6 +126,11 @@ pop_bypass_option() {
 
 run_case "no attachments (as before)" ok pop_none
 run_case "unrelated top-level file" reject pop_unrelated
+run_case "only metadata" reject pop_no_bundle
+if ! grep -q 'missing mandatory: raw_log_bundle.tpxz$' <<<"${LAST_OUT}" ; then
+    echo "FAIL: only metadata: missing log bundle not reported"
+    failed=1
+fi
 run_case "pattern-like symlink name" reject pop_bypass_link \
     -P --transform='s,^lnk$,./attachments/node_id8/x|trc-stats.txt,'
 run_case "option-like name" reject pop_bypass_option
