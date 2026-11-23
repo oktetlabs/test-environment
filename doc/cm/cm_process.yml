@@ -160,6 +160,23 @@
         or VERB, or none to not log it.
         RING for stdout and WARN for stderr by default.
 
+    - oid: "/agent/process/output/file"
+      access: read_write
+      type: string
+      d: |
+        Path to a file on the Test Agent host the stream is written to as
+        it arrives, whatever log_level is. Empty (default) means no file.
+        The file is created if it does not exist. It is truncated when the
+        process is started by setting status to 1 and appended to when
+        the process is restarted by autorestart. If the file cannot be
+        opened, the start fails. A failed start may already have emptied
+        the files of the process.
+        The file is opened by the Test Agent, not by the process, so
+        workdir does not apply to it. It must be a regular file, anything
+        else fails the start.
+        The file is not deleted with the process: whoever chose the path
+        deletes it.
+
     - oid: "/agent/process/kill"
       access: read_only
       type: none

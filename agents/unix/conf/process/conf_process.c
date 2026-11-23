@@ -92,6 +92,8 @@ static const te_enum_map ps_output_log_levels[] = {
 struct ps_output {
     /** Level the stream is logged at, 0 to not log it */
     te_log_level log_level;
+    /** File the stream is written to, @c NULL for none */
+    char *file;
 };
 
 struct ps_ta_job {
@@ -106,6 +108,8 @@ struct ps_ta_job {
      */
     bool reconfigure_required;
     ta_job_status_t  exit_status;
+    /* Filters of the output streams, valid once the job is configured */
+    unsigned int     filter_ids[PS_OUTPUT_NUM];
 };
 
 struct ps_entry {
@@ -499,7 +503,7 @@ ps_enable_stdout_and_stderr_logging(struct ps_entry *ps)
     unsigned int channel_ids[2]; /* stdout and stderr */
     char *stdout_filter_name = NULL;
     char *stderr_filter_name = NULL;
-    unsigned int stdout_filter_id;
+    unsigned int *filter_ids = ta_job->filter_ids;
 
     rc = ta_job_allocate_channels(manager, ta_job->id, false, 2, channel_ids);
     if (rc != 0)
@@ -520,7 +524,7 @@ ps_enable_stdout_and_stderr_logging(struct ps_entry *ps)
     /* Attach stdout filter */
     rc = ta_job_attach_filter(manager, stdout_filter_name, 1, &channel_ids[0],
                               false, ps->output[PS_OUTPUT_STDOUT].log_level,
-                              &stdout_filter_id);
+                              &filter_ids[PS_OUTPUT_STDOUT]);
     if (rc != 0)
     {
         ERROR("Failed to attach stdout filter for TA job corresponding to "
@@ -531,13 +535,14 @@ ps_enable_stdout_and_stderr_logging(struct ps_entry *ps)
     /* Attach stderr filter */
     rc = ta_job_attach_filter(manager, stderr_filter_name, 1, &channel_ids[1],
                               false, ps->output[PS_OUTPUT_STDERR].log_level,
-                              NULL);
+                              &filter_ids[PS_OUTPUT_STDERR]);
     if (rc != 0)
     {
         ERROR("Failed to attach stderr filter for TA job corresponding to "
               "process '%s', error: %r", ps->name, rc);
 
-        (void)ta_job_filter_remove_channels(manager, stdout_filter_id, 1,
+        (void)ta_job_filter_remove_channels(manager,
+                                            filter_ids[PS_OUTPUT_STDOUT], 1,
                                             &channel_ids[0]);
         goto out;
     }
@@ -630,8 +635,52 @@ ps_ta_job_reconfigure(struct ps_entry *ps)
     return ps_enable_stdout_and_stderr_logging(ps);
 }
 
+/**
+ * Let the output filters of the process TA job write to the files set
+ * for the process output. The files are opened anew at each start since
+ * a TA job and its filters are reused by the next start when nothing
+ * requires to reconfigure the job.
+ *
+ * @param ps        Process
+ * @param truncate  Empty the files
+ *
+ * @return Status code
+ */
 static te_errno
-ps_start(struct ps_entry *ps)
+ps_open_output_files(struct ps_entry *ps, bool truncate)
+{
+    unsigned int i;
+    te_errno rc;
+
+    for (i = 0; i < PS_OUTPUT_NUM; i++)
+    {
+        const char *file = ps->output[i].file;
+
+        if (file == NULL)
+            continue;
+
+        /* The failure is logged with the file and the filter name */
+        rc = ta_job_filter_set_file(manager, ps->ta_job.filter_ids[i], file,
+                                    truncate);
+        if (rc != 0)
+            return TE_RC_UPSTREAM(TE_TA_UNIX, rc);
+    }
+
+    return 0;
+}
+
+/**
+ * Start the process.
+ *
+ * @param ps            Process
+ * @param autorestart   Whether this is a restart by the autorestart
+ *                      subsystem: the output files are appended to then,
+ *                      and are emptied otherwise
+ *
+ * @return Status code
+ */
+static te_errno
+ps_start(struct ps_entry *ps, bool autorestart)
 {
     te_errno rc;
 
@@ -643,6 +692,10 @@ ps_start(struct ps_entry *ps)
 
         ps->ta_job.reconfigure_required = false;
     }
+
+    rc = ps_open_output_files(ps, !autorestart);
+    if (rc != 0)
+        return rc;
 
     rc = ta_job_start(manager, ps->ta_job.id);
     if (rc != 0)
@@ -834,6 +887,7 @@ ps_free(struct ps_entry *ps)
     struct ps_env_entry *env_tmp;
     struct ps_opt_entry *opt;
     struct ps_opt_entry *opt_tmp;
+    unsigned int i;
 
     SLIST_FOREACH_SAFE(arg, &ps->args, links, arg_tmp)
     {
@@ -854,6 +908,9 @@ ps_free(struct ps_entry *ps)
     }
 
     ps_free_exec_params(&ps->exec_params);
+
+    for (i = 0; i < PS_OUTPUT_NUM; i++)
+        free(ps->output[i].file);
 
     free(ps->name);
     free(ps->exe);
@@ -1053,7 +1110,7 @@ ps_status_set(const ta_conf_ctx *ctx, int32_t val)
 
     if (enable)
     {
-        rc = ps_start(ps);
+        rc = ps_start(ps, false);
         if (rc == 0 && ps->autorestart != 0)
         {
             ps->autorestart_failed = false;
@@ -1267,6 +1324,54 @@ ps_output_log_level_set(const ta_conf_ctx *ctx, int val)
     pthread_mutex_unlock(&autorestart_lock);
 
     return 0;
+}
+
+static te_errno
+ps_output_file_get(const ta_conf_ctx *ctx, te_string *val)
+{
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
+    const char *stream_name = ta_conf_ctx_inst(ctx, "output");
+    struct ps_entry *ps;
+    struct ps_output *output;
+    te_errno rc;
+
+    ENTRY("%s %s", ps_name, stream_name);
+
+    output = ps_output_find(ps_name, stream_name, &ps);
+    if (output == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    rc = te_string_append_chk(val, "%s", te_str_empty_if_null(output->file));
+    return rc == 0 ? 0 : TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+}
+
+/* Accepted while the process runs, see ps_output_log_level_set() */
+static te_errno
+ps_output_file_set(const ta_conf_ctx *ctx, const char *value)
+{
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
+    const char *stream_name = ta_conf_ctx_inst(ctx, "output");
+    struct ps_entry *ps;
+    struct ps_output *output;
+    te_errno rc;
+
+    ENTRY("%s %s", ps_name, stream_name);
+
+    output = ps_output_find(ps_name, stream_name, &ps);
+    if (output == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    pthread_mutex_lock(&autorestart_lock);
+    /*
+     * A filter cannot drop its file, so the TA job is recreated with new
+     * filters at the next start.
+     */
+    rc = string_replace(&output->file, value);
+    if (rc == 0)
+        ps->ta_job.reconfigure_required = true;
+    pthread_mutex_unlock(&autorestart_lock);
+
+    return rc;
 }
 
 static te_errno
@@ -1816,7 +1921,7 @@ autorestart_loop(void *arg)
                 ps_status_check(ps, &is_running);
                 if (!is_running)
                 {
-                    rc = ps_start(ps);
+                    rc = ps_start(ps, true);
                     if (rc != 0)
                     {
                         ps->autorestart_failed = true;
@@ -1956,7 +2061,9 @@ static const ta_conf_node *const node_ps =
         TA_CONF_COLL("output", NULL, NULL, ps_output_list,
             TA_CONF_RW_ENUM("log_level", ps_output_log_levels,
                             ps_output_log_level_get,
-                            ps_output_log_level_set)),
+                            ps_output_log_level_set),
+            TA_CONF_RW_STR("file", ps_output_file_get,
+                           ps_output_file_set)),
         TA_CONF_RW_INT32("autorestart", ps_autorestart_get,
                          ps_autorestart_set),
         TA_CONF_RW_STR("workdir", ps_workdir_get, ps_workdir_set),
