@@ -204,10 +204,18 @@ function process_tar_file()
 
     files=($(tar -tf "${tarfile}")) || return 1
     for f in "${files[@]}"; do
-        missing=("${missing[@]/$f}")
+        # Entry names are compared as plain strings
+        local m
+        for m in "${!missing[@]}" ; do
+            [[ "${missing[$m]}" != "${f}" ]] || missing[$m]=
+        done
 
-        local f_regex="\<${f}\>"
-        if [[ ! "${ALLOWED_FILES[@]}" =~ ${f_regex} ]]; then
+        local allowed=false
+        local a
+        for a in "${ALLOWED_FILES[@]}" ; do
+            [[ "${a}" != "${f}" ]] || allowed=true
+        done
+        if ! ${allowed} ; then
             error "${tarfile}: not allowed file: ${f}"
             not_allowed_found=true
         fi
@@ -237,7 +245,8 @@ function process_tar_file()
       && ${DRY_RUN}umask 0007 && ${DRY_RUN}mkdir "${destdir}" ) || return 1
 
     # Extract everything except done marker
-    ${DRY_RUN}tar -C "${destdir}" -xf "${tarfile}" "${files[@]/${DONE_MARKER}|}"
+    ${DRY_RUN}tar -C "${destdir}" -xf "${tarfile}" \
+        -- "${files[@]/${DONE_MARKER}|}"
     # Create done marker when everything is in place
     ${DRY_RUN}touch "${destdir}/${DONE_MARKER}"
 
