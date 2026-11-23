@@ -29,6 +29,7 @@
 #include "te_str.h"
 #include "te_sigmap.h"
 #include "te_sleep.h"
+#include "te_enum.h"
 #include "rcf_pch.h"
 #include "rcf_pch_tree.h"
 #include "agentlib.h"
@@ -67,6 +68,32 @@ typedef SLIST_HEAD(ps_arg_list_t, ps_arg_entry) ps_arg_list_t;
 typedef SLIST_HEAD(ps_env_list_t, ps_env_entry) ps_env_list_t;
 typedef SLIST_HEAD(ps_opt_list_t, ps_opt_entry) ps_opt_list_t;
 
+/** Output streams of a process, in the order of its TA job channels */
+typedef enum ps_output_stream {
+    PS_OUTPUT_STDOUT = 0,
+    PS_OUTPUT_STDERR,
+    PS_OUTPUT_NUM,
+} ps_output_stream;
+
+/** Instance names of /agent/process/output, indexed by ps_output_stream */
+static const char *const ps_output_names[PS_OUTPUT_NUM] = {
+    [PS_OUTPUT_STDOUT] = "stdout",
+    [PS_OUTPUT_STDERR] = "stderr",
+};
+
+/** Values of /agent/process/output/log_level */
+static const te_enum_map ps_output_log_levels[] = {
+    TE_LL_USER_ENUM_MAP_ENTRIES,
+    {.name = "none", .value = 0},
+    TE_ENUM_MAP_END
+};
+
+/** What is done with an output stream of a process */
+struct ps_output {
+    /** Level the stream is logged at, 0 to not log it */
+    te_log_level log_level;
+};
+
 struct ps_ta_job {
     unsigned int     id;
     bool created;
@@ -97,6 +124,8 @@ struct ps_entry {
     bool autorestart_failed;
     /* Whether stopping the process signals its whole process group */
     bool                    stop_group;
+    /* Output settings, read when the process is started */
+    struct ps_output        output[PS_OUTPUT_NUM];
     struct ps_ta_job        ta_job;
 
     te_vec                  exec_params;
@@ -490,7 +519,8 @@ ps_enable_stdout_and_stderr_logging(struct ps_entry *ps)
 
     /* Attach stdout filter */
     rc = ta_job_attach_filter(manager, stdout_filter_name, 1, &channel_ids[0],
-                              false, TE_LL_RING, &stdout_filter_id);
+                              false, ps->output[PS_OUTPUT_STDOUT].log_level,
+                              &stdout_filter_id);
     if (rc != 0)
     {
         ERROR("Failed to attach stdout filter for TA job corresponding to "
@@ -500,7 +530,8 @@ ps_enable_stdout_and_stderr_logging(struct ps_entry *ps)
 
     /* Attach stderr filter */
     rc = ta_job_attach_filter(manager, stderr_filter_name, 1, &channel_ids[1],
-                              false, TE_LL_WARN, NULL);
+                              false, ps->output[PS_OUTPUT_STDERR].log_level,
+                              NULL);
     if (rc != 0)
     {
         ERROR("Failed to attach stderr filter for TA job corresponding to "
@@ -710,6 +741,8 @@ ps_add(const ta_conf_ctx *ctx)
     ps->time_until_check = 0;
     ps->autorestart_failed = false;
     ps->stop_group = true;
+    ps->output[PS_OUTPUT_STDOUT].log_level = TE_LL_RING;
+    ps->output[PS_OUTPUT_STDERR].log_level = TE_LL_WARN;
     ps->exec_params = TE_VEC_INIT(te_exec_param);
 
     ps_ta_job_init(&ps->ta_job);
@@ -1138,6 +1171,100 @@ ps_stop_group_set(const ta_conf_ctx *ctx, bool val)
             return rc;
         }
     }
+
+    return 0;
+}
+
+static te_errno
+ps_output_list(const ta_conf_ctx *ctx, te_vec *names)
+{
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
+    unsigned int i;
+
+    if (ps_find(ps_name) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    for (i = 0; i < PS_OUTPUT_NUM; i++)
+    {
+        char *name = TE_STRDUP(ps_output_names[i]);
+
+        TE_VEC_APPEND(names, name);
+    }
+
+    return 0;
+}
+
+/**
+ * Find the settings of an output stream of a process.
+ *
+ * @param ps_name       Process name
+ * @param stream_name   Stream name, i.e. the name of an output instance
+ * @param ps            Where to store the process
+ *
+ * @return Settings of the stream, or @c NULL if there is no such process
+ *         or stream
+ */
+static struct ps_output *
+ps_output_find(const char *ps_name, const char *stream_name,
+               struct ps_entry **ps)
+{
+    unsigned int i;
+
+    *ps = ps_find(ps_name);
+    if (*ps == NULL)
+        return NULL;
+
+    for (i = 0; i < PS_OUTPUT_NUM; i++)
+    {
+        if (strcmp(stream_name, ps_output_names[i]) == 0)
+            return &(*ps)->output[i];
+    }
+
+    return NULL;
+}
+
+static te_errno
+ps_output_log_level_get(const ta_conf_ctx *ctx, int *val)
+{
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
+    const char *stream_name = ta_conf_ctx_inst(ctx, "output");
+    struct ps_entry *ps;
+    struct ps_output *output;
+
+    ENTRY("%s %s", ps_name, stream_name);
+
+    output = ps_output_find(ps_name, stream_name, &ps);
+    if (output == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    *val = output->log_level;
+
+    return 0;
+}
+
+/*
+ * Unlike most settings of a process, the output settings may be changed
+ * while the process is running: they reach it at the next start, which
+ * may be an autorestart. Hence the lock.
+ */
+static te_errno
+ps_output_log_level_set(const ta_conf_ctx *ctx, int val)
+{
+    const char *ps_name = ta_conf_ctx_inst(ctx, "process");
+    const char *stream_name = ta_conf_ctx_inst(ctx, "output");
+    struct ps_entry *ps;
+    struct ps_output *output;
+
+    ENTRY("%s %s", ps_name, stream_name);
+
+    output = ps_output_find(ps_name, stream_name, &ps);
+    if (output == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    pthread_mutex_lock(&autorestart_lock);
+    output->log_level = val;
+    ps->ta_job.reconfigure_required = true;
+    pthread_mutex_unlock(&autorestart_lock);
 
     return 0;
 }
@@ -1826,6 +1953,10 @@ static const ta_conf_node *const node_ps =
             TA_CONF_RW_STR("group", ps_kill_common_get, ps_kill_group_set),
             TA_CONF_RW_STR("self", ps_kill_common_get, ps_kill_self_set)),
         TA_CONF_RW_BOOL("stop_group", ps_stop_group_get, ps_stop_group_set),
+        TA_CONF_COLL("output", NULL, NULL, ps_output_list,
+            TA_CONF_RW_ENUM("log_level", ps_output_log_levels,
+                            ps_output_log_level_get,
+                            ps_output_log_level_set)),
         TA_CONF_RW_INT32("autorestart", ps_autorestart_get,
                          ps_autorestart_set),
         TA_CONF_RW_STR("workdir", ps_workdir_get, ps_workdir_set),

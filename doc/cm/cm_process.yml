@@ -139,6 +139,27 @@
         Additional process environment variables.
         Name: environment variable name
 
+    - oid: "/agent/process/output"
+      access: read_only
+      type: none
+      d: |
+        Output stream of the process and what the Test Agent does with it.
+        There are always exactly two instances, stdout and stderr; they
+        cannot be added or deleted.
+        Unlike most settings of a process, the settings of a stream may
+        be changed while the process is running. They are read when the
+        process is started, so a change takes effect at the next start,
+        be it an explicit one or an autorestart.
+        Name: stdout or stderr
+
+    - oid: "/agent/process/output/log_level"
+      access: read_write
+      type: string
+      d: |
+        Level the Test Agent logs the stream at: ERROR, WARN, RING, INFO
+        or VERB, or none to not log it.
+        RING for stdout and WARN for stderr by default.
+
     - oid: "/agent/process/kill"
       access: read_only
       type: none
