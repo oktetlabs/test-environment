@@ -88,9 +88,35 @@ check_split(const char *input, bool empty_is_none,
     te_vec_free(&strvec);
 }
 
+static void
+check_find_str(const te_vec *strvec, const char *str, bool exp_found,
+               unsigned int exp_index)
+{
+    const char *name = str == NULL ? "(null)" : str;
+    unsigned int index = UINT_MAX;
+    bool found = te_vec_find_str(strvec, str, &index);
+
+    if (found != exp_found)
+    {
+        TEST_VERDICT("'%s' is %s, but it should%s be", name,
+                     found ? "found" : "not found", exp_found ? "" : " not");
+    }
+    if (found && index != exp_index)
+    {
+        TEST_VERDICT("'%s' is found at index %u instead of %u", name, index,
+                     exp_index);
+    }
+    if (!found && index != UINT_MAX)
+        TEST_VERDICT("The index is changed though '%s' is not found", name);
+    if (te_vec_find_str(strvec, str, NULL) != exp_found)
+        TEST_VERDICT("The result for '%s' differs without the index", name);
+}
+
 int
 main(int argc, char **argv)
 {
+    te_vec strvec = TE_VEC_INIT_AUTOPTR(char *);
+
     TEST_START;
 
     TEST_STEP("Test splitting of an empty string");
@@ -112,9 +138,29 @@ main(int argc, char **argv)
     TEST_STEP("Test splitting an empty string as a single chunk");
     check_split("", false, 1, (const char *[]){""});
 
+    TEST_STEP("Test finding a string in an empty vector");
+    check_find_str(&strvec, "a", false, 0);
+
+    TEST_STEP("Test finding a string in a vector of strings");
+    CHECK_RC(te_vec_split_string("a:bc::bc:d", &strvec, ':', true));
+    check_find_str(&strvec, "a", true, 0);
+    check_find_str(&strvec, "d", true, 4);
+
+    TEST_STEP("Test that the first of equal strings is found");
+    check_find_str(&strvec, "bc", true, 1);
+
+    TEST_STEP("Test that a prefix and an absent string are not found");
+    check_find_str(&strvec, "b", false, 0);
+    check_find_str(&strvec, "bcd", false, 0);
+
+    TEST_STEP("Test that an empty string and NULL are never found");
+    check_find_str(&strvec, "", false, 0);
+    check_find_str(&strvec, NULL, false, 0);
+
     TEST_SUCCESS;
 
 cleanup:
+    te_vec_free(&strvec);
 
     TEST_END;
 }
