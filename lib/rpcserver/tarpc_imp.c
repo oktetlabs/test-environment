@@ -1069,7 +1069,7 @@ TARPC_FUNC(pthread_self, {},
 /*-------------- pthread_cancel() --------------------------*/
 TARPC_FUNC(pthread_cancel, {},
 {
-    MAKE_CALL(out->retval = func(in->tid));
+    MAKE_CALL(out->retval = func((pthread_t)in->tid));
     if (out->retval != 0)
     {
         te_rpc_error_set(TE_OS_RC(TE_RPC, out->retval), "");
@@ -1116,7 +1116,7 @@ TARPC_FUNC(pthread_setcanceltype, {},
 TARPC_FUNC(pthread_join, {},
 {
     void *p;
-    MAKE_CALL(out->retval = func(in->tid, &p));
+    MAKE_CALL(out->retval = func((pthread_t)in->tid, &p));
     out->ret = (uintptr_t)p;
     if (out->retval != 0)
     {
@@ -3383,7 +3383,8 @@ TARPC_FUNC(kill, {},
 
 TARPC_FUNC(pthread_kill, {},
 {
-    MAKE_CALL(out->retval = func(in->tid, signum_rpc2h(in->signum)));
+    MAKE_CALL(out->retval = func((pthread_t)in->tid,
+                                 signum_rpc2h(in->signum)));
 }
 )
 
