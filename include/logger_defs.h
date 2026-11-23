@@ -132,6 +132,21 @@ extern const char *te_lgr_entity;
 #define TE_LL_CONTROL_STR     "CONTROL"
 /*@}*/
 
+/**
+ * Entries of an enum map (see te_enum.h) from the names of the log
+ * levels a user may choose for messages to the levels themselves.
+ *
+ * It is a list of entries and not a complete map, so that a map may
+ * have its own values next to the log levels. Such a map is terminated
+ * as usual.
+ */
+#define TE_LL_USER_ENUM_MAP_ENTRIES \
+    {.name = TE_LL_ERROR_STR, .value = TE_LL_ERROR},    \
+    {.name = TE_LL_WARN_STR, .value = TE_LL_WARN},      \
+    {.name = TE_LL_RING_STR, .value = TE_LL_RING},      \
+    {.name = TE_LL_INFO_STR, .value = TE_LL_INFO},      \
+    {.name = TE_LL_VERB_STR, .value = TE_LL_VERB}
+
 /*
  * Override default level macros into the user' module for logging
  * behaviour tunning at compilation time.
