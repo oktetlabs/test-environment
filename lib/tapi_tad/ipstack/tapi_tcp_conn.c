@@ -140,6 +140,10 @@ typedef struct tapi_tcp_connection_t {
                                expected SEQN was got; used by
                                conn_wait_msg() and can be reset to
                                @c false by it */
+    /**
+     * Set to @c true if partially overlapping TCP segments should be accepted.
+     */
+    bool accept_partial_overlap;
 
     bool enabled_ts;        /**< Whether TCP timestamp is
                                            enabled. */
@@ -748,6 +752,9 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
                    ack_got;
     te_tad_protocols_t ip_proto;
 
+    size_t overlap = 0;
+    tapi_tcp_pos_t expected_seq;
+
     /*
      * This handler DOES NOT check that got packet related to
      * connection, which descriptor passed as user data.
@@ -836,6 +843,22 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
     conn_descr->last_win_got = pdu_field;
 
     pkt = TE_ALLOC(sizeof(*pkt));
+
+    /*
+     * Accept a segment which starts before the expected SEQN but contains
+     * new data after it if partially overlapping segments are allowed.
+     * Trim the already received prefix.
+     */
+    expected_seq = conn_descr->seq_got + conn_descr->last_len_got;
+
+    if (conn_descr->accept_partial_overlap && data_len > 0 &&
+        tapi_tcp_compare_seqn(seq_got, expected_seq) < 0 &&
+        tapi_tcp_compare_seqn(seq_got + data_len, expected_seq) > 0)
+    {
+        overlap = expected_seq - seq_got;
+        seq_got = expected_seq;
+        data_len -= overlap;
+    }
 
     if (conn_descr->seq_got + conn_descr->last_len_got == seq_got ||
         (conn_descr->peer_isn == 0 && (flags & TCP_SYN_FLAG)) ||
@@ -947,6 +970,15 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
             rc = asn_read_value_field(tcp_message, pkt->data, &pld_len,
                                       "payload.#bytes");
             CHECK_ERROR("read TCP payload error");
+
+            if (overlap > 0)
+            {
+                /*
+                 * data_len has already been reduced above. Keep only the new
+                 * suffix of the overlapping TCP payload.
+                 */
+                memmove(pkt->data, pkt->data + overlap, data_len);
+            }
         }
 
         if ((int)pld_len < data_len)
@@ -1345,6 +1377,21 @@ tapi_tcp_start_conn(tapi_tcp_handler_t handler,
         return TE_RC(TE_TAPI, TE_EINVAL);
 
     return conn_send_syn(conn_descr);
+}
+
+/* See description in tapi_tcp.h */
+te_errno
+tapi_tcp_set_accept_partial_overlap(tapi_tcp_handler_t handler,
+                                    bool enable)
+{
+    tapi_tcp_connection_t *conn_descr;
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    conn_descr->accept_partial_overlap = enable;
+
+    return 0;
 }
 
 /* See description in tapi_tcp.h */
